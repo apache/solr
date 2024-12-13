@@ -25,14 +25,15 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
-  implements SolrInfoBean, NamedListInitializedPlugin {
-  
+    implements SolrInfoBean, NamedListInitializedPlugin {
+
   public static final String DEFAULT_PRE_TAGS = "<em>";
   public static final String DEFAULT_POST_TAGS = "</em>";
 
   /**
-   * Return a {@link org.apache.lucene.search.vectorhighlight.FragmentsBuilder} appropriate for this field.
-   * 
+   * Return a {@link org.apache.lucene.search.vectorhighlight.FragmentsBuilder} appropriate for this
+   * field.
+   *
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.vectorhighlight.FragmentsBuilder}.
    */
@@ -40,41 +41,43 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
     numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
 
-    return getFragmentsBuilder( params, getPreTags( params, null ), getPostTags( params, null ), bs );
+    return getFragmentsBuilder(params, getPreTags(params, null), getPostTags(params, null), bs);
   }
-  
-  public String[] getPreTags( SolrParams params, String fieldName ){
-    return getTags( params, HighlightParams.TAG_PRE, fieldName, DEFAULT_PRE_TAGS );
+
+  public String[] getPreTags(SolrParams params, String fieldName) {
+    return getTags(params, HighlightParams.TAG_PRE, fieldName, DEFAULT_PRE_TAGS);
   }
-  
-  public String[] getPostTags( SolrParams params, String fieldName ){
-    return getTags( params, HighlightParams.TAG_POST, fieldName, DEFAULT_POST_TAGS );
+
+  public String[] getPostTags(SolrParams params, String fieldName) {
+    return getTags(params, HighlightParams.TAG_POST, fieldName, DEFAULT_POST_TAGS);
   }
-  
-  private String[] getTags( SolrParams params, String paramName, String fieldName, String def ){
+
+  private String[] getTags(SolrParams params, String paramName, String fieldName, String def) {
     params = SolrParams.wrapDefaults(params, defaults);
 
     String value = null;
-    if( fieldName == null )
-      value = params.get( paramName, def );
-    else
-      value = params.getFieldParam( fieldName, paramName, def );
-    String[] tags = value.split( "," );
-    for( int i = 0; i < tags.length; i++ ){
+    if (fieldName == null) value = params.get(paramName, def);
+    else value = params.getFieldParam(fieldName, paramName, def);
+    String[] tags = value.split(",");
+    for (int i = 0; i < tags.length; i++) {
       tags[i] = tags[i].trim();
     }
     return tags;
   }
-  
-  protected abstract FragmentsBuilder getFragmentsBuilder( SolrParams params,
-      String[] preTags, String[] postTags, BoundaryScanner bs );
-  
-  protected char getMultiValuedSeparatorChar( SolrParams params ){
-    String separator = params.get( HighlightParams.MULTI_VALUED_SEPARATOR, " " );
-    if( separator.length() > 1 ){
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-          HighlightParams.MULTI_VALUED_SEPARATOR + " parameter must be a char, but is \"" + separator + "\"" );
+
+  protected abstract FragmentsBuilder getFragmentsBuilder(
+      SolrParams params, String[] preTags, String[] postTags, BoundaryScanner bs);
+
+  protected char getMultiValuedSeparatorChar(SolrParams params) {
+    String separator = params.get(HighlightParams.MULTI_VALUED_SEPARATOR, " ");
+    if (separator.length() > 1) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          HighlightParams.MULTI_VALUED_SEPARATOR
+              + " parameter must be a char, but is \""
+              + separator
+              + "\"");
     }
-    return separator.charAt( 0 );
+    return separator.charAt(0);
   }
 }

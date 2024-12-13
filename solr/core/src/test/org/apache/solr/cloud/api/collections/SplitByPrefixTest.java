@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,9 +39,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 
- *  This class tests higher level SPLITSHARD functionality when splitByPrefix is specified.
- *  See SplitHandlerTest for random tests of lower-level split selection logic.
+/**
+ * This class tests higher level SPLITSHARD functionality when splitByPrefix is specified. See
+ * SplitHandlerTest for random tests of lower-level split selection logic.
  */
 public class SplitByPrefixTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -51,15 +50,13 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");  // needed by cloud-managed config set
+    System.setProperty("managed.schema.mutable", "true"); // needed by cloud-managed config set
 
     // clould-managed has the copyField from ID to id_prefix
     // cloud-minimal does not and thus histogram should be driven from the "id" field directly
     String configSetName = random().nextBoolean() ? "cloud-minimal" : "cloud-managed";
 
-    configureCluster(1)
-        .addConfig("conf", configset(configSetName))  // cloud-managed has the id copyfield to id_prefix
-        .configure();
+    configureCluster(1).addConfig("conf", configset(configSetName)).configure();
   }
 
   @Before
@@ -86,21 +83,19 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
     @Override
     public String toString() {
-      return "prefix=" + key + ",range="+range;
+      return "prefix=" + key + ",range=" + range;
     }
   }
 
-  /**
-   * find prefixes (shard keys) matching certain criteria
-   */
+  /** find prefixes (shard keys) matching certain criteria */
   public static List<Prefix> findPrefixes(int numToFind, int lowerBound, int upperBound) {
     CompositeIdRouter router = new CompositeIdRouter();
 
     ArrayList<Prefix> prefixes = new ArrayList<>();
     int maxTries = 1000000;
     int numFound = 0;
-    for (int i=0; i<maxTries; i++) {
-      String shardKey = Integer.toHexString(i)+"!";
+    for (int i = 0; i < maxTries; i++) {
+      String shardKey = Integer.toHexString(i) + "!";
       DocRouter.Range range = router.getSearchRangeSingle(shardKey, null, null);
       int lower = range.min;
       if (lower >= lowerBound && lower <= upperBound) {
@@ -117,14 +112,12 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     return prefixes;
   }
 
-  /**
-   * remove duplicate prefixes from the SORTED prefix list
-   */
+  /** remove duplicate prefixes from the SORTED prefix list */
   public static List<Prefix> removeDups(List<Prefix> prefixes) {
     ArrayList<Prefix> result = new ArrayList<>();
     Prefix last = null;
     for (Prefix prefix : prefixes) {
-      if (last!=null && prefix.range.equals(last.range)) {
+      if (last != null && prefix.range.equals(last.range)) {
         continue;
       }
       last = prefix;
@@ -134,17 +127,17 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
   }
 
   // Randomly add a second level prefix to test that
-  // they are all collapsed to a single bucket.  This behavior should change if/when counting support
-  // for more levels of compositeId values
+  // they are all collapsed to a single bucket.  This behavior should change if/when counting
+  // support for more levels of compositeId values
   SolrInputDocument getDoc(String prefix, String unique) {
     String secondLevel = "";
     if (random().nextBoolean()) {
-      prefix = prefix.substring(0, prefix.length()-1) + "/16!";  // change "foo!" into "foo/16!" to match 2 level compositeId
-      secondLevel="" + random().nextInt(2) + "!";
+      // change "foo!" into "foo/16!" to match 2 level compositeId
+      prefix = prefix.substring(0, prefix.length() - 1) + "/16!";
+      secondLevel = "" + random().nextInt(2) + "!";
     }
     return sdoc("id", prefix + secondLevel + unique);
   }
-
 
   @Test
   public void doTest() throws IOException, SolrServerException {
@@ -152,135 +145,162 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     // Also, autoscale triggers use async with splits as well.
     boolean doAsync = true;
 
-    CollectionAdminRequest
-        .createCollection(COLLECTION_NAME, "conf", 1, 1)
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
 
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION_NAME);
 
-    CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(COLLECTION_NAME);
+    // splitting an empty collection by prefix should still work (i.e. fall back to old method of
+    // just dividing the hash range
 
-    // splitting an empty collection by prefix should still work (i.e. fall back to old method of just dividing the hash range
-
-    CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
-        .setNumSubShards(2)
-        .setSplitByPrefix(true)
-        .setShardName("shard1");
+    CollectionAdminRequest.SplitShard splitShard =
+        CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setNumSubShards(2)
+            .setSplitByPrefix(true)
+            .setShardName("shard1");
     if (doAsync) {
       splitShard.setAsyncId("SPLIT1");
     }
     splitShard.process(client);
-    waitForState("Timed out waiting for sub shards to be active.",
-        COLLECTION_NAME, activeClusterShape(2, 3));  // expectedReplicas==3 because original replica still exists (just inactive)
-
+    // expectedReplicas==2 because original replica still exists and active but its shard is
+    // inactive
+    waitForState(
+        "Timed out waiting for sub shards to be active.",
+        COLLECTION_NAME,
+        activeClusterShape(2, 2));
 
     List<Prefix> prefixes = findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = removeDups(prefixes);
-    if (uniquePrefixes.size() % 2 == 1) {  // make it an even sized list so we can split it exactly in two
-      uniquePrefixes.remove(uniquePrefixes.size()-1);
+    // make it an even sized list, so we can split it exactly in two
+    if (uniquePrefixes.size() % 2 == 1) {
+      uniquePrefixes.remove(uniquePrefixes.size() - 1);
     }
     log.info("Unique prefixes: {}", uniquePrefixes);
 
     for (Prefix prefix : uniquePrefixes) {
-      client.add( getDoc(prefix.key, "doc1") );
-      client.add( getDoc(prefix.key, "doc2") );
+      client.add(getDoc(prefix.key, "doc1"));
+      client.add(getDoc(prefix.key, "doc2"));
     }
     client.commit();
 
-
-    splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
-        .setSplitByPrefix(true)
-        .setShardName("shard1_1");  // should start out with the range of 0-7fffffff
+    splitShard =
+        CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setSplitByPrefix(true)
+            .setShardName("shard1_1"); // should start out with the range of 0-7fffffff
     if (doAsync) {
       splitShard.setAsyncId("SPLIT2");
     }
     splitShard.process(client);
-    waitForState("Timed out waiting for sub shards to be active.",
-        COLLECTION_NAME, activeClusterShape(3, 5));
+    waitForState(
+        "Timed out waiting for sub shards to be active.",
+        COLLECTION_NAME,
+        activeClusterShape(3, 3));
 
     // OK, now let's check that the correct split point was chosen
-    // We can use the router to find the shards for the middle prefixes and they should be different.
+    // We can use the router to find the shards for the middle prefixes, and they should be
+    // different.
 
-    DocCollection collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
-    Collection<Slice> slices1 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(uniquePrefixes.size()/2 - 1).key, null, collection);
-    Collection<Slice> slices2 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(uniquePrefixes.size()/2    ).key, null, collection);
+    DocCollection collection = client.getClusterState().getCollection(COLLECTION_NAME);
+    Collection<Slice> slices1 =
+        collection
+            .getRouter()
+            .getSearchSlicesSingle(
+                uniquePrefixes.get(uniquePrefixes.size() / 2 - 1).key, null, collection);
+    Collection<Slice> slices2 =
+        collection
+            .getRouter()
+            .getSearchSlicesSingle(
+                uniquePrefixes.get(uniquePrefixes.size() / 2).key, null, collection);
 
     Slice slice1 = slices1.iterator().next();
     Slice slice2 = slices2.iterator().next();
 
     assertTrue(slices1.size() == 1 && slices2.size() == 1);
-    assertTrue(slice1 != slice2);
-
+    assertNotSame(slice1, slice2);
 
     //
-    // now lets add enough documents to the first prefix to get it split out on its own
+    // now let's add enough documents to the first prefix to get it split out on its own
     //
-    for (int i=0; i<uniquePrefixes.size(); i++) {
-      client.add(  getDoc(uniquePrefixes.get(0).key, "doc"+(i+100)));
+    for (int i = 0; i < uniquePrefixes.size(); i++) {
+      client.add(getDoc(uniquePrefixes.get(0).key, "doc" + (i + 100)));
     }
     client.commit();
 
-    splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
-        .setSplitByPrefix(true)
-        .setShardName(slice1.getName());
+    splitShard =
+        CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setSplitByPrefix(true)
+            .setShardName(slice1.getName());
     if (doAsync) {
       splitShard.setAsyncId("SPLIT3");
     }
     splitShard.process(client);
-    waitForState("Timed out waiting for sub shards to be active.",
-        COLLECTION_NAME, activeClusterShape(4, 7));
+    waitForState(
+        "Timed out waiting for sub shards to be active.",
+        COLLECTION_NAME,
+        activeClusterShape(4, 4));
 
-    collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
-    slices1 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
-    slices2 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(1).key, null, collection);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
+    slices1 =
+        collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
+    slices2 =
+        collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(1).key, null, collection);
 
     slice1 = slices1.iterator().next();
     slice2 = slices2.iterator().next();
 
     assertTrue(slices1.size() == 1 && slices2.size() == 1);
-    assertTrue(slice1 != slice2);
+    assertNotSame(slice1, slice2);
 
+    // Now if we call split (with splitByPrefix) on a shard that has a single prefix, it should
+    // split it in half
 
-    // Now if we call split (with splitByPrefix) on a shard that has a single prefix, it should split it in half
-
-    splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
-        .setSplitByPrefix(true)
-        .setShardName(slice1.getName());
+    splitShard =
+        CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setSplitByPrefix(true)
+            .setShardName(slice1.getName());
     if (doAsync) {
       splitShard.setAsyncId("SPLIT4");
     }
     splitShard.process(client);
-    waitForState("Timed out waiting for sub shards to be active.",
-        COLLECTION_NAME, activeClusterShape(5, 9));
+    waitForState(
+        "Timed out waiting for sub shards to be active.",
+        COLLECTION_NAME,
+        activeClusterShape(5, 5));
 
-    collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
-    slices1 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
+    slices1 =
+        collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
     slice1 = slices1.iterator().next();
 
-    assertTrue(slices1.size() == 2);
+    assertEquals(2, slices1.size());
 
     //
     // split one more time, this time on a partial prefix/bucket
     //
-    splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
-        .setSplitByPrefix(true)
-        .setShardName(slice1.getName());
+    splitShard =
+        CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setSplitByPrefix(true)
+            .setShardName(slice1.getName());
     if (doAsync) {
       splitShard.setAsyncId("SPLIT5");
     }
     splitShard.process(client);
-    waitForState("Timed out waiting for sub shards to be active.",
-        COLLECTION_NAME, activeClusterShape(6, 11));
+    waitForState(
+        "Timed out waiting for sub shards to be active.",
+        COLLECTION_NAME,
+        activeClusterShape(6, 6));
 
-    collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
-    slices1 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
+    slices1 =
+        collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
 
-    assertTrue(slices1.size() == 3);
+    assertEquals(3, slices1.size());
 
-    // System.err.println("### STATE=" + cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME));
-    // System.err.println("### getActiveSlices()=" + cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices());
+    // System.err.println("### STATE=" +
+    // cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME));
+    // System.err.println("### getActiveSlices()=" +
+    // cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices());
   }
-
 }

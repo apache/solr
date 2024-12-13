@@ -20,7 +20,7 @@
      loaded once at startup.  If it is found in Solr's data
      directory, it will be re-loaded every commit.
 
-   See https://solr.apache.org/guide/query-elevation-component.html for more info
+   See https://solr.apache.org/guide/solr/latest/query-guide/query-elevation-component.html for more info
 
 -->
 <elevate>

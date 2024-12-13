@@ -1,0 +1,101 @@
+<div class="nav-panel-explore{{#unless page.navigation}} is-active{{/unless}}" data-panel="explore">
+  {{#if page.component}}
+  <div class="context">
+    <span class="title">{{page.component.title}}</span>
+    <span class="version">{{page.componentVersion.displayVersion}}</span>
+  </div>
+  {{/if}}
+<!-- Programmatically creates the component and version list -->
+  <ul class="components">
+    {{#each site.components}}
+    <li class="component{{#if (eq this @root.page.component)}} is-current{{/if}}">
+      <a class="title" href="{{{relativize ./url}}}">{{{./title}}}</a>
+      <ul class="versions">
+        {{#each ./versions}}
+        <li class="version
+          {{~#if (and (eq .. @root.page.component) (eq this @root.page.componentVersion))}} is-current{{/if~}}
+          {{~#if (eq this ../latest)}} is-latest{{/if}}">
+          <a href="{{{relativize ./url}}}">{{./displayVersion}}</a>
+        </li>
+        {{/each}}
+      </ul>
+    </li>
+    {{/each}}
+  </ul>
+
+  <!-- Solr Additions - Start -->
+  <!-- A hard-coded list of older Ref Guides, pre-Antora -->
+  <ul class="components">
+    <li class="component"> <a class="title" href="https://solr.apache.org/guide">Pre-9.0 Reference Guides</a>
+    <ul class="versions">
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_11">8.11</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_10">8.10</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_9">8.9</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_8">8.8</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_7">8.7</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_6">8.6</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_5">8.5</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_4">8.4</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_3">8.3</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_2">8.2</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_1">8.1</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/8_0">8.0</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/7_7">7.7</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/7_6">7.6</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/7_5">7.5</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/7_4">7.4</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/7_3">7.3</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/7_2">7.2</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/7_1">7.1</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/7_0">7.0</a>
+      </li>
+      <li class="version">
+        <a href="https://solr.apache.org/guide/6_6">6.6</a>
+      </li>
+      <li class="version">
+        <a href="http://archive.apache.org/dist/lucene/solr/ref-guide/">Older</a>
+      </li>
+    </ul>
+  </li>
+  <!-- Solr Additions - End -->
+  </ul>
+</div>

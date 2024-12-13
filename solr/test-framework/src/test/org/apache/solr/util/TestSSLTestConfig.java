@@ -19,9 +19,7 @@ package org.apache.solr.util;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.util.Constants;
-
 import org.apache.solr.SolrTestCase;
 
 public class TestSSLTestConfig extends SolrTestCase {
@@ -33,9 +31,10 @@ public class TestSSLTestConfig extends SolrTestCase {
     final List<String> suffixes = Arrays.asList("", "+42", "-ea", "-ea+42");
 
     // as far as we know, any Java 8, 9 or 10 impl should be fine...
-    for (String base : Arrays.asList("1.8", "1.8.0", "1.8.1", 
-                                     "9", "9.0", "9.1", "9.0.0", "9.1.0", "9.1.1",
-                                     "10", "10.0", "10.1", "10.0.0", "10.1.0", "10.1.1")) {
+    for (String base :
+        Arrays.asList(
+            "1.8", "1.8.0", "1.8.1", "9", "9.0", "9.1", "9.0.0", "9.1.0", "9.1.1", "10", "10.0",
+            "10.1", "10.0.0", "10.1.0", "10.1.1")) {
       for (String suffix : suffixes) {
         final String v = base + suffix;
         assertFalse(v, SSLTestConfig.isOpenJdkJvmVersionKnownToHaveProblems(v));
@@ -51,7 +50,7 @@ public class TestSSLTestConfig extends SolrTestCase {
         assertTrue(v, SSLTestConfig.isOpenJdkJvmVersionKnownToHaveProblems(v));
       }
     }
-    
+
     // ...but 11.0.3 or higher should be ok.
     for (String ok : Arrays.asList("11.0.3", "11.0.42", "11.1", "11.1.42")) {
       for (String suffix : suffixes) {
@@ -59,7 +58,7 @@ public class TestSSLTestConfig extends SolrTestCase {
         assertFalse(v, SSLTestConfig.isOpenJdkJvmVersionKnownToHaveProblems(v));
       }
     }
-    
+
     // As far as we know/hope, all "official" java 12 and higher impls should be fine...
     for (String major : Arrays.asList("12", "13", "99")) {
       for (String minor : Arrays.asList("", ".0", ".42", ".0.42")) {
@@ -83,22 +82,23 @@ public class TestSSLTestConfig extends SolrTestCase {
       final String v = "13" + suffix;
       assertTrue(v, SSLTestConfig.isOpenJdkJvmVersionKnownToHaveProblems(v));
     }
-    
   }
 
   public void testFailIfUserRunsTestsWithJVMThatHasKnownSSLBugs() {
-    // NOTE: If there is some future JVM version, where all available "ea" builds are known to be buggy,
-    // but we still want to be able to use for running tests (ie: via jenkins) to look for *other* bugs,
-    // then those -ea versions can be "white listed" here...
+    // NOTE: If there is some future JVM version, where all available "ea" builds are known to be
+    // buggy, but we still want to be able to use for running tests (ie: via jenkins) to look for
+    // *other* bugs, then those -ea versions can be "white listed" here...
 
     try {
       SSLTestConfig.assumeSslIsSafeToTest();
     } catch (org.junit.AssumptionViolatedException ave) {
-      fail("Current JVM (" + Constants.JVM_NAME + " / " + Constants.JVM_VERSION +
-           ") is known to have SSL Bugs.  Other tests that (explicitly or via randomization) " +
-           " use SSL will be SKIPed");
+      fail(
+          "Current JVM ("
+              + Constants.JVM_NAME
+              + " / "
+              + Constants.JVM_VERSION
+              + ") is known to have SSL Bugs.  Other tests that (explicitly or via randomization) "
+              + " use SSL will be SKIPed");
     }
   }
-
-  
 }

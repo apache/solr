@@ -19,7 +19,6 @@ package org.apache.solr.common.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
@@ -49,7 +48,7 @@ public class NamedListTest extends SolrTestCase {
     assertEquals("value2", value);
     assertEquals(0, nl.size());
   }
-  
+
   public void testRemoveAll() {
     NamedList<String> nl = new NamedList<>();
     nl.add("key1", "value1-1");
@@ -76,7 +75,6 @@ public class NamedListTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRemoveArgs() {
     NamedList<Object> nl = new NamedList<>();
     nl.add("key1", "value1-1");
@@ -103,7 +101,7 @@ public class NamedListTest extends SolrTestCase {
     // nl should be unmodified when removeArgs throws an exception.
     assertEquals(7, nl.size());
   }
-  
+
   public void testRecursive() {
     // key1
     // key2
@@ -120,7 +118,7 @@ public class NamedListTest extends SolrTestCase {
     // --- key3a3
     // - key3b
     // - key3c
-    
+
     // this is a varied NL structure.
     NamedList<String> nl2b = new NamedList<>();
     nl2b.add("key2b1", "value2b1");
@@ -142,7 +140,7 @@ public class NamedListTest extends SolrTestCase {
     nl.add("key1", "value1");
     nl.add("key2", nl2);
     nl.add("key3", nl3);
-    
+
     // Simple three-level checks.
     String test1 = (String) nl.findRecursive("key2", "key2b", "key2b2");
     assertEquals("value2b2", test1);
@@ -180,7 +178,7 @@ public class NamedListTest extends SolrTestCase {
     enlkey1.add("key1b", "value1b");
     enl.add("key1", enlkey1);
     enl.add("key2", enlkey2);
-    
+
     // Tests that are very similar to the test above, just repeated
     // on the explicitly nested object type.
     String enltest1 = (String) enl.findRecursive("key1", "key1a");
@@ -196,11 +194,10 @@ public class NamedListTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testShallowMap() {
     NamedList<String> nl = new NamedList<>();
     nl.add("key1", "Val1");
-    Map<String,String> m = nl.asShallowMap();
+    Map<String, String> m = nl.asShallowMap();
     m.put("key1", "Val1_");
     assertEquals("Val1_", nl.get("key1"));
     assertEquals("Val1_", m.get("key1"));
@@ -211,6 +208,5 @@ public class NamedListTest extends SolrTestCase {
     assertEquals(0, nl.indexOf("key1", 0));
     assertEquals("Val2", nl.get("key2"));
     assertEquals("Val2", m.get("key2"));
-
   }
 }

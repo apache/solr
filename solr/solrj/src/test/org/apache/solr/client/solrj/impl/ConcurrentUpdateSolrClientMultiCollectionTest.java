@@ -16,9 +16,9 @@
  */
 
 package org.apache.solr.client.solrj.impl;
+
 import java.io.File;
 import java.io.IOException;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,8 +32,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * {@link ConcurrentUpdateSolrClient} reuses the same HTTP connection to send multiple requests.  These tests ensure
- * that this connection-reuse never results in documents being sent to the wrong collection.  See SOLR-12803
+ * {@link ConcurrentUpdateSolrClient} reuses the same HTTP connection to send multiple requests.
+ * These tests ensure that this connection-reuse never results in documents being sent to the wrong
+ * collection. See SOLR-12803
  */
 public class ConcurrentUpdateSolrClientMultiCollectionTest extends SolrCloudTestCase {
 
@@ -53,8 +54,10 @@ public class ConcurrentUpdateSolrClientMultiCollectionTest extends SolrCloudTest
   public void createCollections() throws Exception {
     solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
-    CollectionAdminRequest.createCollection(COLLECTION_ONE_NAME, "conf", 1, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection(COLLECTION_TWO_NAME, "conf", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION_ONE_NAME, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION_TWO_NAME, "conf", 1, 1)
+        .process(cluster.getSolrClient());
   }
 
   @After
@@ -66,22 +69,26 @@ public class ConcurrentUpdateSolrClientMultiCollectionTest extends SolrCloudTest
   public void testEnsureDocumentsSentToCorrectCollection() throws Exception {
     int numTotalDocs = 1000;
     int numExpectedPerCollection = numTotalDocs / 2;
-    try (SolrClient client = new ConcurrentUpdateSolrClient.Builder(solrUrl)
-        .withQueueSize(numTotalDocs).build()) {
+    try (SolrClient client =
+        new ConcurrentUpdateSolrClient.Builder(solrUrl).withQueueSize(numTotalDocs).build()) {
       splitDocumentsAcrossCollections(client, numTotalDocs);
 
-      assertEquals(numExpectedPerCollection, client.query(COLLECTION_ONE_NAME, new SolrQuery("*:*")).getResults().getNumFound());
-      assertEquals(numExpectedPerCollection, client.query(COLLECTION_TWO_NAME, new SolrQuery("*:*")).getResults().getNumFound());
+      assertEquals(
+          numExpectedPerCollection,
+          client.query(COLLECTION_ONE_NAME, new SolrQuery("*:*")).getResults().getNumFound());
+      assertEquals(
+          numExpectedPerCollection,
+          client.query(COLLECTION_TWO_NAME, new SolrQuery("*:*")).getResults().getNumFound());
     }
-
   }
 
-  private void splitDocumentsAcrossCollections(SolrClient client, int numTotalDocs) throws IOException, SolrServerException {
+  private void splitDocumentsAcrossCollections(SolrClient client, int numTotalDocs)
+      throws IOException, SolrServerException {
     for (int docNum = 0; docNum < numTotalDocs; docNum++) {
       final SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", "value" + docNum);
 
-      if (docNum %2 == 0) {
+      if (docNum % 2 == 0) {
         client.add(COLLECTION_ONE_NAME, doc);
       } else {
         client.add(COLLECTION_TWO_NAME, doc);

@@ -16,34 +16,32 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.commons.lang3.LocaleUtils;
+import java.util.Locale;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
-
-import java.util.Locale;
+import org.apache.solr.util.LocaleUtils;
 
 /**
- * Abstract base class for numeric parsing update processor factories.
- * Subclasses can optionally configure a locale.  If no locale is configured,
- * then {@link Locale#ROOT} will be used.  E.g. to configure the French/France
- * locale:
- * 
+ * Abstract base class for numeric parsing update processor factories. Subclasses can optionally
+ * configure a locale. If no locale is configured, then {@link Locale#ROOT} will be used. E.g. to
+ * configure the French/France locale:
+ *
  * <pre class="prettyprint">
  * &lt;processor class="solr.Parse[Type]FieldUpdateProcessorFactory"&gt;
  *   &lt;str name="locale"&gt;fr_FR&lt;/str&gt;
  *   [...]
  * &lt;/processor&gt;</pre>
  *
- * <p>
- * See {@link Locale} for a description of acceptable language, country (optional)
- * and variant (optional) values, joined with underscore(s).
- * </p>
+ * <p>See {@link Locale} for a description of acceptable language, country (optional) and variant
+ * (optional) values, joined with underscore(s).
+ *
  * @since 4.4.0
  */
-public abstract class ParseNumericFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
+public abstract class ParseNumericFieldUpdateProcessorFactory
+    extends FieldMutatingUpdateProcessorFactory {
 
   private static final String LOCALE_PARAM = "locale";
 
@@ -51,21 +49,20 @@ public abstract class ParseNumericFieldUpdateProcessorFactory extends FieldMutat
 
   @Override
   public void init(NamedList<?> args) {
-    String localeParam = (String)args.remove(LOCALE_PARAM);
+    String localeParam = (String) args.remove(LOCALE_PARAM);
     if (null != localeParam) {
       locale = LocaleUtils.toLocale(localeParam);
     }
     super.init(args);
   }
 
-  /**
-   * Returns true if the given FieldType is compatible with this parsing factory.
-   */
-  protected abstract boolean isSchemaFieldTypeCompatible(FieldType type);  
+  /** Returns true if the given FieldType is compatible with this parsing factory. */
+  protected abstract boolean isSchemaFieldTypeCompatible(FieldType type);
 
   /**
-   * Returns true if the field doesn't match any schema field or dynamic field,
-   *           or if the matched field's type is compatible
+   * Returns true if the field doesn't match any schema field or dynamic field, or if the matched
+   * field's type is compatible
+   *
    * @param core Where to get the current schema from
    */
   @Override

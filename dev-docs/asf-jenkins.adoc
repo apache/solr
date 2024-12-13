@@ -1,0 +1,73 @@
+= ASF Jenkins Setup
+:toc: left
+
+The Solr project uses a Jenkins instance provided by the Apache Software Foundation ("ASF") for running tests, validation, etc.
+
+This file aims to document our [ASF Jenkins](https://ci-builds.apache.org/job/Solr/) usage and administration, to prevent it from becoming "tribal knowledge" understood by just a few.
+
+== Jobs
+
+We run a number of jobs on Jenkins, each validating an overlapping set of concerns:
+
+* `Solr-Artifacts-*` - daily jobs that run `./gradlew assemble` to ensure that build artifacts (except docker images) can be created successfully
+* `Solr-Lint-*` - daily jobs that run static analysis (i.e. `precommit` and `check -x test`) on a branch
+* `Solr-Test-*` - "hourly" jobs that run all (non-integration) tests (i.e. `./gradlew test`)
+* `Solr-TestIntegration-*` - daily jobs that run project integration tests (i.e. `./gradlew integrationTests`)
+* `Solr-Docker-Nightly-*` - daily jobs that `./gradlew testDocker dockerPush` to validate docker image packaging.  Snapshot images are pushed to hub.docker.com
+* `Solr-reference-guide-*` - daily jobs that build the Solr reference guide via `./gradlew checkSite` and push the resulting artifact to the staging/preview site `nightlies.apache.org`
+* `Solr-Smoketest-*` - daily jobs that produce a snapshot release (via the `assembleRelease` task) and run the release smoketester
+
+Most jobs that validate particular build artifacts are run "daily", which is sufficient to prevent any large breaks from creeping into the build.
+On the other hand, jobs that run tests are triggered "hourly" in order to squeeze as many test runs as possible out of our Jenkins hardware.
+This is a necessary consequence of Solr's heavy use of randomization in its test-suite.
+"Hourly" scheduling ensures that a test run is either currently running or in the build queue at all times, and enables us to get the maximum data points from our hardware.
+
+== Jenkins Agents
+
+All Solr jobs run on Jenkins agents marked with the 'solr' label.
+Currently, this maps to two Jenkins agents:
+
+* `lucene-solr-1` - available at lucene1-us-west.apache.org
+* `lucene-solr-2` - available (confusingly) at lucene-us-west.apache.org
+
+These agents are "project-specific" VMs shared by the Lucene and Solr projects.
+That is: they are VMs requested by a project for their exclusive use.
+(INFRA policy appears to be that each Apache project may request 1 dedicated VM; it's unclear how Solr ended up with 2.)
+
+Maintenance of these agent VMs falls into a bit of a gray area.
+INFRA will still intervene when asked: to reboot nodes, to deploy OS upgrades, etc.
+But some burden also falls on Lucene and Solr as project teams to monitor the the VMs and keep them healthy.
+
+=== Accessing Jenkins Agents
+
+With a few steps, Solr committers can access our project's Jenkins agent VMs via SSH to troubleshoot and resolve issues.
+
+1. Ensure your account on id.apache.org has an SSH key associated with it.
+2. Ask INFRA to give your Apache ID SSH access to these boxes. (See [this JIRA ticket](https://issues.apache.org/jira/browse/INFRA-3682) for an example.)
+3. SSH into the desired box with: `ssh <apache-id>@$HOSTNAME` (where `$HOSTNAME` is either `lucene1-us-west.apache.org` or `lucene-us-west.apache.org`)
+
+Often, SSH access on the boxes is not sufficient, and administrators require "root" access to diagnose and solve problems.
+Sudo/su priveleges can be accessed via a one-time pad ("OTP") challenge, managed by the "Orthrus PAM" module.
+Users in need of root access can perform the following steps:
+
+1. Open the ASF's [OTP Generator Tool](https://selfserve.apache.org/otp-calculator.html) in your browser of choice
+2. Run `ortpasswd` on the machine.  This will print out a OTP "challenge" (e.g. `otp-md5 497 lu6126`) and provide a password prompt.  This password prompt should be given a OTP password, generated in steps 3-5 below.
+3. Copy the "challenge" from the previous step into the relevant field on the "OTP Generator Tool" form.
+4. Choose a password to use for OTP Challenges (or recall one you've used in the past), and type this into the relevant field on the "OTP Generator Tool" form.
+5. Click "Compute", and copy the first line from the "Response" box into your SSH session's password prompt.  You're now established in the "Orthrus PAM" system.
+6. Run a command requesting `su` escalation (e.g. `sudo su -`).  This should print another "challenge" and password prompt.  Repeat steps 3-5.
+
+If this fails at any point, open a ticket with INFRA.
+You may need to be added to the 'sudoers' file for the VM(s) in question.
+
+=== Known Jenkins Issues
+
+One recurring problem with the Jenkins agents is that they periodically run out of disk-space.
+Usually this happens when enough "workspaces" are orphaned or left behind, consuming all of the agent's disk space.
+
+Solr Jenkins jobs are currently configured to clean up the previous workspace at the *start* of the subsequent run.
+This avoids orphans in the common case but leaves workspaces behind any time a job is renamed or deleted (as happens during the Solr release process).
+
+Luckily, this has an easy fix: SSH into the agent VM and delete any workspaces no longer needed in `/home/jenkins/jenkins-slave/workspace/Solr`.
+Any workspace that doesn't correspond to a [currently existing job](https://ci-builds.apache.org/job/Solr/) can be safely deleted.
+(It may also be worth comparing the Lucene workspaces in `/home/jenkins/jenkins-slave/workspace/Lucene` to [that project's list of jobs](https://ci-builds.apache.org/job/Lucene/).)

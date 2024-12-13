@@ -31,7 +31,7 @@
   <requestHandler name="/select" class="solr.SearchHandler" />
 
   <searchComponent class="solr.SuggestComponent" name="suggest">
-    
+
     <!-- Suggest component (default index based dictionary) -->
     <lst name="suggester">
       <str name="name">suggest_fuzzy_with_high_freq_dict</str>
@@ -43,7 +43,7 @@
 
       <float name="threshold">0.0</float>
     </lst>
-  
+
   <!-- Suggest component (default file based dictionary) -->
     <lst name="suggester">
       <str name="name">suggest_fuzzy_file_based</str>
@@ -79,7 +79,7 @@
       <str name="suggestAnalyzerFieldType">text</str>
       <str name="buildOnCommit">true</str>
     </lst>
-     
+
     <!-- Suggest component (Document Dictionary) that is built on startup-->
     <lst name="suggester">
       <str name="name">suggest_fuzzy_doc_dict_build_startup</str>
@@ -91,10 +91,10 @@
       <str name="buildOnCommit">false</str>
       <str name="buildOnStartup">true</str>
     </lst>
-    
+
     <!-- Suggest component (Document Dictionary) only builds manually-->
     <lst name="suggester">
-      <str name="name">suggest_fuzzy_doc_manal_build</str>
+      <str name="name">suggest_fuzzy_doc_manual_build</str>
       <str name="lookupImpl">FuzzyLookupFactory</str>
       <str name="dictionaryImpl">DocumentDictionaryFactory</str>
       <str name="field">cat</str>
@@ -102,9 +102,9 @@
       <str name="suggestAnalyzerFieldType">text</str>
       <str name="buildOnCommit">false</str>
       <str name="buildOnStartup">false</str>
-      <str name="storeDir">suggest_fuzzy_doc_manal_build</str>
+      <str name="storeDir">suggest_fuzzy_doc_manual_build</str>
     </lst>
-    
+
     <!-- Suggest component (Document Dictionary) only builds manually and
          has the default buildOnStartup behavior -->
     <lst name="suggester">
@@ -117,7 +117,7 @@
       <str name="buildOnCommit">false</str>
       <str name="storeDir">suggest_doc_default_startup</str>
     </lst>
-    
+
     <!-- Suggest component (Document Dictionary) only builds manually and
          has the default buildOnStartup behavior with no storeDir -->
     <lst name="suggester">
@@ -129,7 +129,7 @@
       <str name="suggestAnalyzerFieldType">text</str>
       <str name="buildOnCommit">false</str>
     </lst>
-    
+
   </searchComponent>
 
   <requestHandler name="/suggest" class="org.apache.solr.handler.component.SearchHandler">

@@ -16,13 +16,10 @@
  */
 package org.apache.solr.cluster.events;
 
+import java.io.Closeable;
 import org.apache.solr.cloud.ClusterSingleton;
 
-import java.io.Closeable;
-
-/**
- * Component that produces {@link ClusterEvent} instances.
- */
+/** Component that produces {@link ClusterEvent} instances. */
 public interface ClusterEventProducer extends ClusterSingleton, Closeable {
 
   /** Unique name for the registration of a plugin-based implementation. */
@@ -35,16 +32,18 @@ public interface ClusterEventProducer extends ClusterSingleton, Closeable {
 
   /**
    * Register an event listener for processing the specified event types.
-   * @param listener non-null listener. If the same instance of the listener is
-   *                 already registered for some event types then it will be also registered
-   *                 for additional event types specified in this call.
-   * @param eventTypes event types that this listener is being registered for.
-   *                   If this is null or empty then all types will be used.
+   *
+   * @param listener non-null listener. If the same instance of the listener is already registered
+   *     for some event types then it will be also registered for additional event types specified
+   *     in this call.
+   * @param eventTypes event types that this listener is being registered for. If this is null or
+   *     empty then all types will be used.
    */
   void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes);
 
   /**
    * Unregister an event listener for all event types.
+   *
    * @param listener non-null listener.
    */
   default void unregisterListener(ClusterEventListener listener) {
@@ -53,10 +52,10 @@ public interface ClusterEventProducer extends ClusterSingleton, Closeable {
 
   /**
    * Unregister an event listener for specified event types.
+   *
    * @param listener non-null listener.
-   * @param eventTypes event types from which the listener will be unregistered. If this
-   *                   is null or empty then all event types will be used
+   * @param eventTypes event types from which the listener will be unregistered. If this is null or
+   *     empty then all event types will be used
    */
   void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes);
-
 }

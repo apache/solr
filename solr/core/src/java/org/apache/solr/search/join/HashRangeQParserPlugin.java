@@ -23,15 +23,17 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 
 /**
- * Matches documents where the specified field hashes to a value within the given range.
- * <br>Can be used to create a filter that will only match documents falling within a certain shard's hash range.
+ * Matches documents where the specified field hashes to a value within the given range. <br>
+ * Can be used to create a filter that will only match documents falling within a certain shard's
+ * hash range.
  */
 public class HashRangeQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "hash_range";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new HashRangeQParser(qstr, localParams, params, req);
   }
 

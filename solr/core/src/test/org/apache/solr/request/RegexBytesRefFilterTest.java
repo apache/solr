@@ -30,5 +30,4 @@ public class RegexBytesRefFilterTest extends SolrTestCase {
     assertFalse(filter.test(new BytesRef("qux")));
     assertFalse(filter.test(new BytesRef("quxfoo")));
   }
-
 }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Support for triggering exceptions on excessive resource usage
- */
+/** Support for triggering exceptions on excessive resource usage */
 package org.apache.solr.util.circuitbreaker;

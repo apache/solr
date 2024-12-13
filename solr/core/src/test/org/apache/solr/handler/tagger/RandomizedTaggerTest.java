@@ -22,23 +22,20 @@
 
 package org.apache.solr.handler.tagger;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Randomly generate taggable text and verify via simple tag algorithm.
- */
+/** Randomly generate taggable text and verify via simple tag algorithm. */
 @Repeat(iterations = 10)
 public class RandomizedTaggerTest extends TaggerTestCase {
 
@@ -52,48 +49,53 @@ public class RandomizedTaggerTest extends TaggerTestCase {
     final Random R = random();
 
     Set<String> names = new HashSet<>();
-    //random list of single-word names
-    final int NUM_SINGLES = 4;//RandomInts.randomIntBetween(R, 1, 5);
+    // random list of single-word names
+    final int NUM_SINGLES = 4; // RandomInts.randomIntBetween(R, 1, 5);
     for (int i = 0; i < NUM_SINGLES; i++) {
-      if (i == 0)//first is a big string (perhaps triggers bugs related to growing buffers)
-        names.add(randomStringOfLength(16, 32));
-      else
-        names.add(randomString());
+      if (i == 0) // first is a big string (perhaps triggers bugs related to growing buffers)
+      names.add(randomStringOfLength(16, 32));
+      else names.add(randomString());
     }
 
-    //add random list of multi-word names, partially including existing names
+    // add random list of multi-word names, partially including existing names
     final int NUM_MULTI = 10;
     for (int i = 0; i < NUM_MULTI; i++) {
       final int numWords = RandomNumbers.randomIntBetween(R, 2, 4);
       StringBuilder buf = new StringBuilder();
       for (int j = 0; j < numWords; j++) {
-        if (j != 0)
-          buf.append(' ');
-        if (R.nextBoolean()) {//new likely non-existent word
+        if (j != 0) buf.append(' ');
+        if (R.nextBoolean()) { // new likely non-existent word
           buf.append(randomString());
-        } else {//existing word (possible multi-word from prev iteration)
+        } else { // existing word (possible multi-word from prev iteration)
           buf.append(RandomPicks.randomFrom(R, names));
+        }
+
+        // This loop has an exponential effect, because we add existing an name to a new name. In
+        // case we generate a too long name, the test will fail because of a too big automaton.
+        // Stop at 500 chars to prevent this.
+        if (buf.length() > 500) {
+          break;
         }
       }
       names.add(buf.toString());
     }
 
     // BUILD NAMES
-    buildNames(names.toArray(new String[names.size()]));
+    buildNames(names.toArray(new String[0]));
 
     // QUERY LOOP
     for (int tTries = 0; tTries < 10 * RANDOM_MULTIPLIER; tTries++) {
       // Build up random input, similar to multi-word random names above
       StringBuilder input = new StringBuilder();
       final int INPUT_WORD_LEN = 20;
-      input.append(' ');//must start with space based on assertBruteForce logic
+      input.append(' '); // must start with space based on assertBruteForce logic
       for (int i = 0; i < INPUT_WORD_LEN; i++) {
-        if (R.nextBoolean()) {//new likely non-existent word
+        if (R.nextBoolean()) { // new likely non-existent word
           input.append(randomString());
-        } else {//existing word (possible multi-word from prev iteration)
+        } else { // existing word (possible multi-word from prev iteration)
           input.append(RandomPicks.randomFrom(R, NAMES));
         }
-        input.append(' ');//must end with a space
+        input.append(' '); // must end with a space
       }
 
       boolean madeIt = false;
@@ -105,46 +107,45 @@ public class RandomizedTaggerTest extends TaggerTestCase {
           System.out.println("Reproduce with:");
           System.out.print(" buildNames(");
           for (int i = 0; i < NAMES.size(); i++) {
-            if (i != 0)
-              System.out.print(',');
+            if (i != 0) System.out.print(',');
             System.out.print('"');
             System.out.print(NAMES.get(i));
             System.out.print('"');
           }
           System.out.println(");");
-          System.out.println(" assertBruteForce(\"" + input+"\");");
+          System.out.println(" assertBruteForce(\"" + input + "\");");
         }
       }
     }
-
   }
 
   private void assertBruteForce(String input) throws Exception {
-    assert input.matches(" .* ");
+    assertTrue(input.matches(" .* "));
     baseParams.set("overlaps", "ALL");
 
-    //loop through NAMES and find all tag offsets
+    // loop through NAMES and find all tag offsets
     List<TestTag> testTags = new ArrayList<>();
     for (String name : NAMES) {
-      String spaceName = " "+name+" ";
+      String spaceName = " " + name + " ";
       int off = 0;
       while (true) {
         int idx = input.indexOf(spaceName, off);
-        if (idx < 0)
-          break;
+        if (idx < 0) break;
         testTags.add(new TestTag(idx + 1, idx + 1 + name.length(), name, name));
         off = idx + 1;
       }
     }
 
-    //assert
-    assertTags(reqDoc(input), testTags.toArray(new TestTag[testTags.size()]));
+    // assert
+    assertTags(reqDoc(input), testTags.toArray(new TestTag[0]));
   }
 
-  private String randomString() { return randomStringOfLength(1, 1); }
+  private String randomString() {
+    return randomStringOfLength(1, 1);
+  }
 
   private String randomStringOfLength(int min, int max) {
-    return RandomStrings.randomAsciiLettersOfLengthBetween(random(), min, max).toLowerCase(Locale.ROOT);
+    return RandomStrings.randomAsciiLettersOfLengthBetween(random(), min, max)
+        .toLowerCase(Locale.ROOT);
   }
-
 }

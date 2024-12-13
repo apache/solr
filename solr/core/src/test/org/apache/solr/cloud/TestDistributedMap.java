@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Locale;
-import org.apache.commons.io.FileUtils;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -29,33 +31,37 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestDistributedMap extends SolrTestCaseJ4 {
-  
+
   private static Path zkDir;
-  
+
   protected static ZkTestServer zkServer;
-  
+
   @BeforeClass
   public static void setUpClass() throws Exception {
     zkDir = createTempDir("TestDistributedMap");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
   }
-  
+
   @AfterClass
   public static void tearDownClass() throws IOException, InterruptedException {
-    
+
     if (zkServer != null) {
       zkServer.shutdown();
       zkServer = null;
     }
     if (null != zkDir) {
-      FileUtils.deleteDirectory(zkDir.toFile());
+      PathUtils.deleteDirectory(zkDir);
       zkDir = null;
     }
   }
-  
+
   public void testPut() throws KeeperException, InterruptedException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
@@ -63,41 +69,75 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       assertTrue(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
     }
   }
-  
+
   public void testGet() throws KeeperException, InterruptedException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       byte[] data = "data".getBytes(Charset.defaultCharset());
-      zkClient.makePath(path + "/" + DistributedMap.PREFIX + "foo", data, CreateMode.PERSISTENT, null, false, true);
+      zkClient.makePath(
+          path + "/" + DistributedMap.PREFIX + "foo",
+          data,
+          CreateMode.PERSISTENT,
+          null,
+          false,
+          true);
       DistributedMap map = createMap(zkClient, path);
-      assertArrayEquals(data,  map.get("foo"));
+      assertArrayEquals(data, map.get("foo"));
     }
   }
-  
+
   public void testContains() throws KeeperException, InterruptedException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertFalse(map.contains("foo"));
-      zkClient.makePath(path + "/" + DistributedMap.PREFIX + "foo", new byte[0], CreateMode.PERSISTENT, null, false, true);
+      zkClient.makePath(
+          path + "/" + DistributedMap.PREFIX + "foo",
+          new byte[0],
+          CreateMode.PERSISTENT,
+          null,
+          false,
+          true);
       assertTrue(map.contains("foo"));
     }
   }
-  
+
   public void testRemove() throws KeeperException, InterruptedException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertFalse(map.remove("foo"));
-      zkClient.makePath(path + "/" + DistributedMap.PREFIX + "foo", new byte[0], CreateMode.PERSISTENT, null, false, true);
+      zkClient.makePath(
+          path + "/" + DistributedMap.PREFIX + "foo",
+          new byte[0],
+          CreateMode.PERSISTENT,
+          null,
+          false,
+          true);
       assertTrue(map.remove("foo"));
       assertFalse(map.contains("foo"));
       assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
     }
   }
-  
+
   public void testSize() throws KeeperException, InterruptedException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertEquals(0, map.size());
@@ -111,9 +151,13 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       assertEquals(1, map.size());
     }
   }
-  
+
   public void testPutIfAbsent() throws KeeperException, InterruptedException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertEquals(0, map.size());
@@ -131,31 +175,38 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       assertEquals(1, map.size());
       assertTrue(map.contains("foo"));
     }
-    
   }
-  
+
   public void testKeys() throws KeeperException, InterruptedException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       assertEquals(0, map.keys().size());
       map.put("foo", new byte[0]);
       assertTrue(map.keys().contains("foo"));
       assertEquals(1, map.keys().size());
-      
+
       map.put("bar", new byte[0]);
       assertTrue(map.keys().contains("bar"));
       assertTrue(map.keys().contains("foo"));
       assertEquals(2, map.keys().size());
-      
+
       map.remove("foo");
       assertTrue(map.keys().contains("bar"));
       assertEquals(1, map.keys().size());
     }
   }
-  
+
   public void testClear() throws KeeperException, InterruptedException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
       map.clear();
@@ -167,16 +218,45 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       assertEquals(0, map.size());
     }
   }
-  
+
+  public void testMalformed() throws InterruptedException, KeeperException {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
+      String path = getAndMakeInitialPath(zkClient);
+      DistributedMap map = createMap(zkClient, path);
+      expectThrows(SolrException.class, () -> map.put("has/slash", new byte[0]));
+    }
+  }
+
+  public void testRemoveMalformed() throws InterruptedException, KeeperException {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
+      String path = getAndMakeInitialPath(zkClient);
+      // Add a "legacy" / malformed key
+      final var key = "slash/test/0";
+      zkClient.makePath(path + "/" + DistributedMap.PREFIX + key, new byte[0], true);
+
+      DistributedMap map = createMap(zkClient, path);
+      assertEquals(1, map.size());
+      map.remove("slash");
+      assertEquals(0, map.size());
+    }
+  }
+
   protected DistributedMap createMap(SolrZkClient zkClient, String path) {
     return new DistributedMap(zkClient, path);
   }
-  
-  protected String getAndMakeInitialPath(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+
+  protected String getAndMakeInitialPath(SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
     String path = String.format(Locale.ROOT, "/%s/%s", getClass().getName(), getSaferTestName());
     zkClient.makePath(path, false, true);
     return path;
   }
-  
-
 }

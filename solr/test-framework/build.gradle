@@ -20,24 +20,71 @@ apply plugin: 'java-library'
 description = 'Solr Test Framework'
 
 dependencies {
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly libs.spotbugs.annotations
+  permitUnusedDeclared libs.spotbugs.annotations
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   api project(':solr:core')
   api project(':solr:solrj')
+  implementation project(':solr:solrj-zookeeper')
 
-  api "org.apache.lucene:lucene-test-framework"
-  api "org.apache.lucene:lucene-analysis-common"
+  api libs.apache.lucene.testframework
+  implementation libs.apache.lucene.core
+  implementation libs.apache.lucene.queries
+  implementation libs.apache.lucene.suggest
 
-  implementation('org.apache.zookeeper:zookeeper', {
+
+  var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "log4j", module: "log4j"
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
+  }
+  implementation(libs.apache.curator.client) {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  }
+  implementation(libs.apache.curator.framework) {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  }
+  // Necessary because ChaosMonkey uses KillSession from curator-test
+  implementation(libs.apache.curator.test) {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+    exclude group: 'com.google.guava', module: 'guava'
+    exclude group: 'io.dropwizard.metrics', module: 'metrics-core'
+  }
+
+  implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
+  implementation(libs.apache.zookeeper.jute, zkExcludes)
+  implementation(variantOf(libs.apache.zookeeper.zookeeper) { classifier 'tests' }, zkExcludes)
+
+  implementation libs.commonsio.commonsio
+  implementation libs.slf4j.api
+  implementation libs.apache.log4j.api
+  implementation libs.apache.log4j.core
+  implementation libs.dropwizard.metrics.core
+  implementation libs.dropwizard.metrics.jetty10
+  implementation libs.commonscli.commonscli
+  permitUnusedDeclared libs.commonscli.commonscli
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
+  implementation libs.opentelemetry.api
+
+  implementation libs.eclipse.jetty.toolchain.servletapi
+  implementation libs.eclipse.jetty.server
+  api libs.eclipse.jetty.servlet
+  implementation libs.eclipse.jetty.util
+  implementation libs.eclipse.jetty.alpnserver
+  runtimeOnly(libs.eclipse.jetty.alpnjavaserver, {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
+  implementation libs.eclipse.jetty.rewrite
+  implementation libs.eclipse.jetty.http2.server
+  implementation libs.eclipse.jetty.http2.common
 
-  implementation 'commons-io:commons-io'
-  implementation 'org.apache.logging.log4j:log4j-core'
-  implementation 'io.opentracing:opentracing-noop'
-  implementation 'io.opentracing:opentracing-util'
-  implementation ('com.google.guava:guava') { transitive = false }
-  implementation 'io.dropwizard.metrics:metrics-jetty9'
-  implementation 'commons-cli:commons-cli'
+  implementation libs.carrotsearch.randomizedtesting.runner
+  implementation libs.junit.junit
+  implementation libs.hamcrest.hamcrest
 }
-

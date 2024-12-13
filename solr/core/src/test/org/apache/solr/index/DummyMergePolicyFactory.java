@@ -20,14 +20,13 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
 /**
- * Dummy implementation of {@link org.apache.solr.index.MergePolicyFactory}
- * which doesn't have a suitable public constructor and thus is expected to
- * fail if used within Solr.
+ * Dummy implementation of {@link org.apache.solr.index.MergePolicyFactory} which doesn't have a
+ * suitable public constructor and thus is expected to fail if used within Solr.
  */
 class DummyMergePolicyFactory extends LogByteSizeMergePolicyFactory {
 
-  private DummyMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+  private DummyMergePolicyFactory(
+      SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
   }
-
 }

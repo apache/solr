@@ -17,14 +17,17 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.OverseerMessageHandler.Lock;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -32,34 +35,31 @@ import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
-
 public class TestLockTree extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
   public void testLocks() throws Exception {
     LockTree lockTree = new LockTree();
-    Lock coll1Lock = lockTree.getSession().lock(CollectionAction.CREATE,
-        Arrays.asList("coll1"));
+    Lock coll1Lock = lockTree.getSession().lock(CollectionAction.CREATE, Arrays.asList("coll1"));
     assertNotNull(coll1Lock);
-    assertNull("Should not be able to lock coll1/shard1", lockTree.getSession().lock(CollectionAction.BALANCESHARDUNIQUE,
-        Arrays.asList("coll1", "shard1")));
+    assertNull(
+        "Should not be able to lock coll1/shard1",
+        lockTree
+            .getSession()
+            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1")));
 
-    assertNull(lockTree.getSession().lock(ADDREPLICAPROP,
-        Arrays.asList("coll1", "shard1", "core_node2")));
+    assertNull(
+        lockTree.getSession().lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2")));
     coll1Lock.unlock();
-    Lock shard1Lock = lockTree.getSession().lock(CollectionAction.BALANCESHARDUNIQUE,
-        Arrays.asList("coll1", "shard1"));
+    Lock shard1Lock =
+        lockTree
+            .getSession()
+            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"));
     assertNotNull(shard1Lock);
     shard1Lock.unlock();
-    Lock replica1Lock = lockTree.getSession().lock(ADDREPLICAPROP,
-        Arrays.asList("coll1", "shard1", "core_node2"));
+    Lock replica1Lock =
+        lockTree.getSession().lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2"));
     assertNotNull(replica1Lock);
-
 
     List<Pair<CollectionAction, List<String>>> operations = new ArrayList<>();
     operations.add(new Pair<>(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2")));
@@ -69,18 +69,18 @@ public class TestLockTree extends SolrTestCaseJ4 {
     operations.add(new Pair<>(MODIFYCOLLECTION, Arrays.asList("coll2")));
     operations.add(new Pair<>(DELETEREPLICA, Arrays.asList("coll2", "shard1")));
 
-    List<Set<String>> orderOfExecution = Arrays.asList(
-        ImmutableSet.of("coll1/shard1/core_node2", "coll2/shard2"),
-        ImmutableSet.of("coll1", "coll2"),
-        ImmutableSet.of("coll1/shard1", "coll2/shard1"));
+    List<Set<String>> orderOfExecution =
+        Arrays.asList(
+            Set.of("coll1/shard1/core_node2", "coll2/shard2"),
+            Set.of("coll1", "coll2"),
+            Set.of("coll1/shard1", "coll2/shard1"));
     lockTree = new LockTree();
     for (int counter = 0; counter < orderOfExecution.size(); counter++) {
       LockTree.Session session = lockTree.getSession();
       List<Pair<CollectionAction, List<String>>> completedOps = new CopyOnWriteArrayList<>();
       List<Lock> locks = new CopyOnWriteArrayList<>();
       List<Thread> threads = new ArrayList<>();
-      for (int i = 0; i < operations.size(); i++) {
-        Pair<CollectionAction, List<String>> operation = operations.get(i);
+      for (Pair<CollectionAction, List<String>> operation : operations) {
         final Lock lock = session.lock(operation.first(), operation.second());
         if (lock != null) {
           Thread thread = new Thread(getRunnable(completedOps, operation, locks, lock));
@@ -88,7 +88,6 @@ public class TestLockTree extends SolrTestCaseJ4 {
           thread.start();
         }
       }
-
 
       for (Thread thread : threads) thread.join();
       if (locks.isEmpty())
@@ -98,7 +97,9 @@ public class TestLockTree extends SolrTestCaseJ4 {
       log.info("counter : {} , expected : {}, actual : {}", counter, expectedOps, locks);
       assertEquals(expectedOps.size(), locks.size());
       for (Lock lock : locks)
-        assertTrue("locks : " + locks + " expectedOps : " + expectedOps, expectedOps.contains(lock.toString()));
+        assertTrue(
+            "locks : " + locks + " expectedOps : " + expectedOps,
+            expectedOps.contains(lock.toString()));
       locks.clear();
       for (Pair<CollectionAction, List<String>> completedOp : completedOps) {
         operations.remove(completedOp);
@@ -106,8 +107,11 @@ public class TestLockTree extends SolrTestCaseJ4 {
     }
   }
 
-  private Runnable getRunnable(List<Pair<CollectionAction, List<String>>> completedOps, Pair<CollectionAction,
-      List<String>> operation, List<Lock> locks, Lock lock) {
+  private Runnable getRunnable(
+      List<Pair<CollectionAction, List<String>>> completedOps,
+      Pair<CollectionAction, List<String>> operation,
+      List<Lock> locks,
+      Lock lock) {
     return () -> {
       try {
         Thread.sleep(1);

@@ -26,12 +26,9 @@ public class MigrateDocsPayload implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String splitKey;
 
-  @JsonProperty
-  public Integer forwardTimeout = 60;
+  @JsonProperty public Integer forwardTimeout = 60;
 
-  @JsonProperty
-  public Boolean followAliases;
+  @JsonProperty public Boolean followAliases;
 
-  @JsonProperty
-  public String async;
+  @JsonProperty public String async;
 }

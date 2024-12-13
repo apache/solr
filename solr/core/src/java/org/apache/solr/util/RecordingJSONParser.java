@@ -19,7 +19,6 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
-
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +28,7 @@ public class RecordingJSONParser extends JSONParser {
 
   static ThreadLocal<char[]> buf = new ThreadLocal<>();
   private final char[] bufCopy;
-  //global position is the global position at the beginning of my buffer
+  // global position is the global position at the beginning of my buffer
   private long globalPosition = 0;
 
   private StringBuilder sb = new StringBuilder();
@@ -37,7 +36,6 @@ public class RecordingJSONParser extends JSONParser {
   private long lastMarkedPosition = 0;
   private long lastGlobalPosition = 0;
   private static final int BUFFER_SIZE = 8192;
-
 
   public RecordingJSONParser(Reader in) {
     super(in, getChars());
@@ -72,7 +70,7 @@ public class RecordingJSONParser extends JSONParser {
 
   private void captureMissing() {
     long currPosition = getPosition() - globalPosition;
-    if(currPosition < 0){
+    if (currPosition < 0) {
       log.error("currPosition less than zero in captureMissing()?");
     }
 
@@ -94,13 +92,11 @@ public class RecordingJSONParser extends JSONParser {
     lastMarkedPosition = currPosition;
   }
 
-
   @Override
   protected void fill() throws IOException {
     captureMissing();
     super.fill();
     this.globalPosition = getPosition();
-
   }
 
   public String getBuf() {

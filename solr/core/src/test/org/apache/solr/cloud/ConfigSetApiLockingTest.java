@@ -16,8 +16,9 @@
  */
 
 package org.apache.solr.cloud;
-import java.util.concurrent.CountDownLatch;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.junit.Test;
@@ -39,8 +40,14 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
     try {
       server.run();
-      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
-        ConfigSetApiLockFactory apiLockFactory = new ConfigSetApiLockFactory(new ZkDistributedConfigSetLockFactory(zkClient, "/apiLockTestRoot"));
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        ConfigSetApiLockFactory apiLockFactory =
+            new ConfigSetApiLockFactory(
+                new ZkDistributedConfigSetLockFactory(zkClient, "/apiLockTestRoot"));
 
         monothreadedTests(apiLockFactory);
         multithreadedTests(apiLockFactory);
@@ -50,31 +57,36 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void monothreadedTests(ConfigSetApiLockFactory apiLockingHelper) throws Exception {
+  private void monothreadedTests(ConfigSetApiLockFactory apiLockingHelper) {
     // Config set lock without a base config set
     DistributedMultiLock cs1Lock = apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_1, null);
     assertTrue("cs1Lock should have been acquired", cs1Lock.isAcquired());
 
     // This lock does have a base config set
-    DistributedMultiLock cs2Lock = apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_2, BASE_CONFIG_SET_NAME);
+    DistributedMultiLock cs2Lock =
+        apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_2, BASE_CONFIG_SET_NAME);
     assertTrue("cs2Lock should have been acquired", cs2Lock.isAcquired());
 
-    // This lock does has the same base config set, but that shouldn't prevent acquiring it
-    DistributedMultiLock cs3Lock = apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_3, BASE_CONFIG_SET_NAME);
+    // This lock has the same base config set, but that shouldn't prevent acquiring it
+    DistributedMultiLock cs3Lock =
+        apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_3, BASE_CONFIG_SET_NAME);
     assertTrue("cs3Lock should have been acquired", cs3Lock.isAcquired());
 
     // But we shouldn't be able to lock at this stage the base config set
-    DistributedMultiLock csBaseLock = apiLockingHelper.createConfigSetApiLock(BASE_CONFIG_SET_NAME, null);
+    DistributedMultiLock csBaseLock =
+        apiLockingHelper.createConfigSetApiLock(BASE_CONFIG_SET_NAME, null);
     assertFalse("csBaseLock should not have been acquired", csBaseLock.isAcquired());
 
     cs2Lock.release();
-    assertFalse("csBaseLock should not have been acquired, cs3Lock still there", csBaseLock.isAcquired());
+    assertFalse(
+        "csBaseLock should not have been acquired, cs3Lock still there", csBaseLock.isAcquired());
     cs3Lock.release();
     assertTrue("csBaseLock should have been acquired", csBaseLock.isAcquired());
 
     // Acquiring a lock with a locked base config set should not be possible
     cs2Lock = apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_2, BASE_CONFIG_SET_NAME);
-    assertFalse("cs2Lock should not have been acquired, csBaseLock still held", cs2Lock.isAcquired());
+    assertFalse(
+        "cs2Lock should not have been acquired, csBaseLock still held", cs2Lock.isAcquired());
 
     csBaseLock.release();
     assertTrue("cs2Lock should now be acquired, csBaseLock was freed", cs2Lock.isAcquired());
@@ -84,41 +96,55 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
 
   private void multithreadedTests(ConfigSetApiLockFactory apiLockingHelper) throws Exception {
     // This lock does have a base config set
-    DistributedMultiLock cs2Lock = apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_2, BASE_CONFIG_SET_NAME);
+    DistributedMultiLock cs2Lock =
+        apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_2, BASE_CONFIG_SET_NAME);
     assertTrue("cs2Lock should have been acquired", cs2Lock.isAcquired());
 
     // But we shouldn't be able to lock at this stage the base config set
-    DistributedMultiLock csBaseLock = apiLockingHelper.createConfigSetApiLock(BASE_CONFIG_SET_NAME, null);
+    DistributedMultiLock csBaseLock =
+        apiLockingHelper.createConfigSetApiLock(BASE_CONFIG_SET_NAME, null);
     assertFalse("csBaseLock should not have been acquired", csBaseLock.isAcquired());
 
-    // Wait for acquisition of the base config set lock on another thread (and be notified via a latch)
+    // Wait for acquisition of the base config set lock on another thread (and be notified via a
+    // latch)
     final CountDownLatch latch = new CountDownLatch(1);
-    new Thread(() -> {
-      csBaseLock.waitUntilAcquired();
-      // countDown() will not be called if waitUntilAcquired() threw exception of any kind
-      latch.countDown();
-    }).start();
+    new Thread(
+            () -> {
+              csBaseLock.waitUntilAcquired();
+              // countDown() will not be called if waitUntilAcquired() threw an exception
+              latch.countDown();
+            })
+        .start();
 
     // Wait for the thread to start and to get blocked in waitUntilAcquired()
-    // (thread start could have been checked more reliably using another latch, and verifying the thread is in waitUntilAcquired
-    // done through that thread stacktrace, but that would be overkill compared to the very slight race condition of waiting 30ms,
-    // but a race that would not cause the test to fail since we're testing... that nothing happened yet).
+    // (thread start could have been checked more reliably using another latch, and verifying the
+    // thread is in waitUntilAcquired done through that thread stacktrace, but that would be
+    // overkill compared to the very slight race condition of waiting 30ms, but a race that would
+    // not cause the test to fail since we're testing... that nothing happened yet).
     Thread.sleep(30);
 
-    assertEquals("we should not have been notified that base config set lock was acquired", 1, latch.getCount());
+    assertEquals(
+        "we should not have been notified that base config set lock was acquired",
+        1,
+        latch.getCount());
     assertFalse("base config set lock should not have been acquired", csBaseLock.isAcquired());
 
     cs2Lock.release();
-    assertTrue("basec config set lock should have been acquired now that other lock was released", csBaseLock.isAcquired());
+    assertTrue(
+        "base config set lock should have been acquired now that other lock was released",
+        csBaseLock.isAcquired());
 
     // Wait for the Zookeeper watch to fire + the thread to be unblocked and countdown the latch
-    // We'll wait up to 10 seconds here, so should be safe even if GC is extraordinarily high with a pause
+    // We'll wait up to 10 seconds here, so should be safe even if GC is extraordinarily high with a
+    // pause
     int i = 0;
     while (i < 1000 && latch.getCount() != 0) {
       Thread.sleep(10);
       i++;
     }
-    assertEquals("we should have been notified that the base config set lock was acquired", 0, latch.getCount());
+    assertEquals(
+        "we should have been notified that the base config set lock was acquired",
+        0,
+        latch.getCount());
   }
 }
-

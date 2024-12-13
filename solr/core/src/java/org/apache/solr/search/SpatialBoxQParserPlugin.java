@@ -23,10 +23,9 @@ public class SpatialBoxQParserPlugin extends SpatialFilterQParserPlugin {
   public static final String NAME = "bbox";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams,
-                              SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
 
     return new SpatialFilterQParser(qstr, localParams, params, req, true);
   }
-
 }

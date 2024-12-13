@@ -18,10 +18,9 @@ package org.apache.solr.client.solrj.request.schema;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
@@ -31,26 +30,31 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 
 /**
- * <p>This class offers access to the operations exposed by the Solr Schema API.</p>
- * <p>Most of the operations of this class offer a very abstract interface avoiding
- * in this manner eventual changes due to Solr Schema API updates. On the other
- * hand, the creation of request parameters for creating new fields or field types
- * can be tedious because it is not strongly typed (the user has to build on his own
- * a {@link NamedList} argument containing the field/field type properties).</p>
- * <p>The class does not currently offer explicit support for the Schema API operations exposed
- * through Managed Resources, but such operations can be built with little effort manually
- * based on this class within the client applications.</p>
- * <p>This class is experimental and it is subject to change.</p>
+ * This class offers access to the operations exposed by the Solr Schema API.
  *
- * @see <a href="https://lucene.apache.org/solr/guide/schema-api.html">Solr Schema API</a>
- * @see <a href="https://lucene.apache.org/solr/guide/managed-resources.html">Solr managed resources</a>
+ * <p>Most of the operations of this class offer a very abstract interface avoiding in this manner
+ * eventual changes due to Solr Schema API updates. On the other hand, the creation of request
+ * parameters for creating new fields or field types can be tedious because it is not strongly typed
+ * (the user has to build on his own a {@link NamedList} argument containing the field/field type
+ * properties).
+ *
+ * <p>The class does not currently offer explicit support for the Schema API operations exposed
+ * through Managed Resources, but such operations can be built with little effort manually based on
+ * this class within the client applications.
+ *
+ * <p>This class is experimental and it is subject to change.
+ *
+ * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html">Solr
+ *     Schema API</a>
+ * @see <a
+ *     href="https://solr.apache.org/guide/solr/latest/configuration-guide/managed-resources.html">Solr
+ *     managed resources</a>
  * @since solr 5.3
  */
 public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
 
   /**
-   * Default constructor.
-   * It can be used to retrieve the entire schema.
+   * Default constructor. It can be used to retrieve the entire schema.
    *
    * @see #process(SolrClient)
    */
@@ -62,7 +66,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     super(METHOD.GET, "/schema", q);
   }
 
-  private static NamedList<Object> createAddFieldTypeNamedList(FieldTypeDefinition fieldTypeDefinition) {
+  private static NamedList<Object> createAddFieldTypeNamedList(
+      FieldTypeDefinition fieldTypeDefinition) {
     final NamedList<Object> addFieldTypeNamedList = new NamedList<>();
     addFieldTypeNamedList.addAll(fieldTypeDefinition.getAttributes());
     AnalyzerDefinition analyzerDefinition = fieldTypeDefinition.getAnalyzer();
@@ -82,7 +87,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
     AnalyzerDefinition multiTermAnalyzerDefinition = fieldTypeDefinition.getMultiTermAnalyzer();
     if (multiTermAnalyzerDefinition != null) {
-      NamedList<Object> multiTermAnalyzerNamedList = createAnalyzerNamedList(multiTermAnalyzerDefinition);
+      NamedList<Object> multiTermAnalyzerNamedList =
+          createAnalyzerNamedList(multiTermAnalyzerDefinition);
       addFieldTypeNamedList.add("multiTermAnalyzer", multiTermAnalyzerNamedList);
     }
     Map<String, Object> similarityAttributes = fieldTypeDefinition.getSimilarity();
@@ -96,11 +102,10 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   private static NamedList<Object> createAnalyzerNamedList(AnalyzerDefinition analyzerDefinition) {
     NamedList<Object> analyzerNamedList = new NamedList<>();
     Map<String, Object> analyzerAttributes = analyzerDefinition.getAttributes();
-    if (analyzerAttributes != null)
-      analyzerNamedList.addAll(analyzerAttributes);
+    if (analyzerAttributes != null) analyzerNamedList.addAll(analyzerAttributes);
     List<Map<String, Object>> charFiltersAttributes = analyzerDefinition.getCharFilters();
     if (charFiltersAttributes != null) {
-      List<NamedList<Object>> charFiltersList = new LinkedList<>();
+      List<NamedList<Object>> charFiltersList = new ArrayList<>();
       for (Map<String, Object> charFilterAttributes : charFiltersAttributes)
         charFiltersList.add(new NamedList<>(charFilterAttributes));
       analyzerNamedList.add("charFilters", charFiltersList);
@@ -111,7 +116,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
     List<Map<String, Object>> filtersAttributes = analyzerDefinition.getFilters();
     if (filtersAttributes != null) {
-      List<NamedList<Object>> filtersList = new LinkedList<>();
+      List<NamedList<Object>> filtersList = new ArrayList<>();
       for (Map<String, Object> filterAttributes : filtersAttributes)
         filtersList.add(new NamedList<>(filterAttributes));
       analyzerNamedList.add("filters", filtersList);
@@ -130,9 +135,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     return new SchemaResponse();
   }
 
-  /**
-   * Schema API request class that can be used to retrieve the name of the schema.
-   */
+  /** Schema API request class that can be used to retrieve the name of the schema. */
   public static class SchemaName extends AbstractSchemaRequest<SchemaResponse.SchemaNameResponse> {
     public SchemaName() {
       this(null);
@@ -149,10 +152,11 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Schema API request that can be used to retrieve the version
-   * of the schema for the specified collection.
+   * Schema API request that can be used to retrieve the version of the schema for the specified
+   * collection.
    */
-  public static class SchemaVersion extends AbstractSchemaRequest<SchemaResponse.SchemaVersionResponse> {
+  public static class SchemaVersion
+      extends AbstractSchemaRequest<SchemaResponse.SchemaVersionResponse> {
     public SchemaVersion() {
       this(null);
     }
@@ -167,9 +171,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
   }
 
-  /**
-   * Schema API request class that lists the field definitions contained in the schema.
-   */
+  /** Schema API request class that lists the field definitions contained in the schema. */
   public static class Fields extends AbstractSchemaRequest<SchemaResponse.FieldsResponse> {
     public Fields() {
       this(null);
@@ -186,8 +188,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Schema API request that lists the field definition for the specified field
-   * contained in the schema.
+   * Schema API request that lists the field definition for the specified field contained in the
+   * schema.
    */
   public static class Field extends AbstractSchemaRequest<SchemaResponse.FieldResponse> {
     /**
@@ -209,10 +211,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
   }
 
-  /**
-   * Schema API request that lists the dynamic field definitions contained in the schema.
-   */
-  public static class DynamicFields extends AbstractSchemaRequest<SchemaResponse.DynamicFieldsResponse> {
+  /** Schema API request that lists the dynamic field definitions contained in the schema. */
+  public static class DynamicFields
+      extends AbstractSchemaRequest<SchemaResponse.DynamicFieldsResponse> {
 
     public DynamicFields() {
       this(null);
@@ -229,14 +230,16 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Schema API request that lists the dynamic field definition for the specified field
-   * contained in the schema.
+   * Schema API request that lists the dynamic field definition for the specified field contained in
+   * the schema.
    */
-  public static class DynamicField extends AbstractSchemaRequest<SchemaResponse.DynamicFieldResponse> {
+  public static class DynamicField
+      extends AbstractSchemaRequest<SchemaResponse.DynamicFieldResponse> {
     /**
      * Creates a new instance of the class.
      *
-     * @param dynamicFieldName the name of the dynamic field for which the definition is to be retrieved
+     * @param dynamicFieldName the name of the dynamic field for which the definition is to be
+     *     retrieved
      */
     public DynamicField(String dynamicFieldName) {
       this(dynamicFieldName, null);
@@ -252,10 +255,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
   }
 
-  /**
-   * Schema API request that lists the types definitions contained
-   * in the schema.
-   */
+  /** Schema API request that lists the types definitions contained in the schema. */
   public static class FieldTypes extends AbstractSchemaRequest<SchemaResponse.FieldTypesResponse> {
     public FieldTypes() {
       this(null);
@@ -272,8 +272,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Schema API request that retrieves the type definitions for the specified field
-   * type contained in the schema.
+   * Schema API request that retrieves the type definitions for the specified field type contained
+   * in the schema.
    */
   public static class FieldType extends AbstractSchemaRequest<SchemaResponse.FieldTypeResponse> {
     /**
@@ -296,8 +296,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Schema API request that retrieves the source and destination of
-   * each copy field in the schema.
+   * Schema API request that retrieves the source and destination of each copy field in the schema.
    */
   public static class CopyFields extends AbstractSchemaRequest<SchemaResponse.CopyFieldsResponse> {
     public CopyFields() {
@@ -315,8 +314,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Schema API request that retrieves the field name that is defined as
-   * the uniqueKey for the index of the specified collection.
+   * Schema API request that retrieves the field name that is defined as the uniqueKey for the index
+   * of the specified collection.
    */
   public static class UniqueKey extends AbstractSchemaRequest<SchemaResponse.UniqueKeyResponse> {
     public UniqueKey() {
@@ -333,10 +332,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
   }
 
-  /**
-   * Retrieves the class name of the global similarity defined (if any) in the schema.
-   */
-  public static class GlobalSimilarity extends AbstractSchemaRequest<SchemaResponse.GlobalSimilarityResponse> {
+  /** Retrieves the class name of the global similarity defined (if any) in the schema. */
+  public static class GlobalSimilarity
+      extends AbstractSchemaRequest<SchemaResponse.GlobalSimilarityResponse> {
     public GlobalSimilarity() {
       this(null);
     }
@@ -352,18 +350,18 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Adds a new field definition to the schema.
-   * If the field already exists, the method {@link #process(SolrClient, String)} will fail.
-   * Note that the request will be translated to json, so please use concrete values (e.g. : true, 1)
-   * instead of their string representation (e.g. : "true", "1") for the field attributes expecting
-   * boolean or number values.
+   * Adds a new field definition to the schema. If the field already exists, the method {@link
+   * #process(SolrClient, String)} will fail. Note that the request will be translated to json, so
+   * please use concrete values (e.g. : true, 1) instead of their string representation (e.g. :
+   * "true", "1") for the field attributes expecting boolean or number values.
    */
   public static class AddField extends SingleUpdate {
     /**
      * Creates a new instance of the request.
      *
      * @param fieldAttributes field type attributes that can be used to enrich the field definition.
-     * @see <a href="https://lucene.apache.org/solr/guide/defining-fields.html">Defining Solr fields</a>
+     * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining
+     *     Solr fields</a>
      */
     public AddField(Map<String, Object> fieldAttributes) {
       this(fieldAttributes, null);
@@ -382,11 +380,12 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Replaces a field's definition.  Note that the full definition for a field must be supplied - this command
-   * will not partially modify a field's definition.  If the field does not exist in the schema the method call
-   * {@link #process(SolrClient, String)} will fail.
+   * Replaces a field's definition. Note that the full definition for a field must be supplied -
+   * this command will not partially modify a field's definition. If the field does not exist in the
+   * schema the method call {@link #process(SolrClient, String)} will fail.
    *
-   * @see <a href="https://lucene.apache.org/solr/guide/defining-fields.html">Defining Solr fields</a>
+   * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining
+   *     Solr fields</a>
    */
   public static class ReplaceField extends SingleUpdate {
     /**
@@ -411,9 +410,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Removes a field definition from the schema. If the field does not exist in the schema,
-   * or if the field is the source or destination of a copy field rule the method call
-   * {@link #process(SolrClient, String)} will fail.
+   * Removes a field definition from the schema. If the field does not exist in the schema, or if
+   * the field is the source or destination of a copy field rule the method call {@link
+   * #process(SolrClient, String)} will fail.
    */
   public static class DeleteField extends SingleUpdate {
 
@@ -442,8 +441,11 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   /**
    * Adds a new dynamic field rule to the schema of the specified collection.
    *
-   * @see <a href="https://lucene.apache.org/solr/guide/defining-fields.html">Defining Solr fields</a>
-   * @see <a href="https://lucene.apache.org/solr/guide/dynamic-fields.html">Solr dynamic fields</a>
+   * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining
+   *     Solr fields</a>
+   * @see <a
+   *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/dynamic-fields.html">Solr
+   *     dynamic fields</a>
    */
   public static class AddDynamicField extends SingleUpdate {
     /**
@@ -468,19 +470,22 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Replaces a dynamic field rule in the schema of the specified collection.
-   * Note that the full definition for a dynamic field rule must be supplied - this command
-   * will not partially modify a dynamic field rule's definition.
-   * If the dynamic field rule does not exist in the schema the method call
-   * {@link #process(SolrClient, String)} will fail.
+   * Replaces a dynamic field rule in the schema of the specified collection. Note that the full
+   * definition for a dynamic field rule must be supplied - this command will not partially modify a
+   * dynamic field rule's definition. If the dynamic field rule does not exist in the schema the
+   * method call {@link #process(SolrClient, String)} will fail.
    */
   public static class ReplaceDynamicField extends SingleUpdate {
     /**
      * Creates a new instance of the request.
      *
-     * @param dynamicFieldAttributes field type attributes that can be used to enrich the field definition.
-     * @see <a href="https://lucene.apache.org/solr/guide/defining-fields.html">Defining Solr fields</a>
-     * @see <a href="https://lucene.apache.org/solr/guide/dynamic-fields.html">Solr dynamic fields</a>
+     * @param dynamicFieldAttributes field type attributes that can be used to enrich the field
+     *     definition.
+     * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining
+     *     Solr fields</a>
+     * @see <a
+     *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/dynamic-fields.html">Solr
+     *     dynamic fields</a>
      */
     public ReplaceDynamicField(Map<String, Object> dynamicFieldAttributes) {
       this(dynamicFieldAttributes, null);
@@ -492,7 +497,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
 
     private static NamedList<Object> createRequestParameters(
         Map<String, Object> dynamicFieldAttributes) {
-      final NamedList<Object> replaceDynamicFieldParameters = createAddFieldNamedList(dynamicFieldAttributes);
+      final NamedList<Object> replaceDynamicFieldParameters =
+          createAddFieldNamedList(dynamicFieldAttributes);
       final NamedList<Object> requestParameters = new NamedList<>();
       requestParameters.add("replace-dynamic-field", replaceDynamicFieldParameters);
       return requestParameters;
@@ -500,9 +506,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Deletes a dynamic field rule from your schema. If the dynamic field rule does not exist in the schema,
-   * or if the schema contains a copy field rule with a target or destination that matches only this
-   * dynamic field rule the method call {@link #process(SolrClient, String)} will fail.
+   * Deletes a dynamic field rule from your schema. If the dynamic field rule does not exist in the
+   * schema, or if the schema contains a copy field rule with a target or destination that matches
+   * only this dynamic field rule the method call {@link #process(SolrClient, String)} will fail.
    */
   public static class DeleteDynamicField extends SingleUpdate {
     /**
@@ -527,15 +533,13 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
   }
 
-  /**
-   * Update request used to add a new field type to the schema.
-   */
+  /** Update request used to add a new field type to the schema. */
   public static class AddFieldType extends SingleUpdate {
     /**
      * Creates a new instance of the request.
      *
      * @param fieldTypeDefinition the field type definition
-     * @see <a href="https://lucene.apache.org/solr/guide/solr-field-types.html">Solr field types</a>
+     * @see <a href="https://solr.apache.org/guide/solr-field-types.html">Solr field types</a>
      */
     public AddFieldType(FieldTypeDefinition fieldTypeDefinition) {
       this(fieldTypeDefinition, null);
@@ -545,8 +549,10 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
       super(createRequestParameters(fieldTypeDefinition), q);
     }
 
-    private static NamedList<Object> createRequestParameters(FieldTypeDefinition fieldTypeDefinition) {
-      final NamedList<Object> addFieldTypeParameters = createAddFieldTypeNamedList(fieldTypeDefinition);
+    private static NamedList<Object> createRequestParameters(
+        FieldTypeDefinition fieldTypeDefinition) {
+      final NamedList<Object> addFieldTypeParameters =
+          createAddFieldTypeNamedList(fieldTypeDefinition);
       final NamedList<Object> requestParameters = new NamedList<>();
       requestParameters.add("add-field-type", addFieldTypeParameters);
       return requestParameters;
@@ -554,17 +560,17 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Replaces a field type in schema belonging to the schema of the specified collection.
-   * Note that the full definition for a field type must be supplied- this command will not partially modify
-   * a field type's definition.  If the field type does not exist in the schema the
-   * method call {@link #process(SolrClient, String)} will fail.
+   * Replaces a field type in schema belonging to the schema of the specified collection. Note that
+   * the full definition for a field type must be supplied- this command will not partially modify a
+   * field type's definition. If the field type does not exist in the schema the method call {@link
+   * #process(SolrClient, String)} will fail.
    */
   public static class ReplaceFieldType extends SingleUpdate {
     /**
      * Creates a new instance of the request.
      *
      * @param fieldTypeDefinition the field type definition
-     * @see <a href="https://lucene.apache.org/solr/guide/solr-field-types.html">Solr field types</a>
+     * @see <a href="https://solr.apache.org/guide/solr-field-types.html">Solr field types</a>
      */
     public ReplaceFieldType(FieldTypeDefinition fieldTypeDefinition) {
       this(fieldTypeDefinition, null);
@@ -574,8 +580,10 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
       super(createRequestParameters(fieldTypeDefinition), q);
     }
 
-    private static NamedList<Object> createRequestParameters(FieldTypeDefinition fieldTypeDefinition) {
-      final NamedList<Object> replaceFieldTypeParameters = createAddFieldTypeNamedList(fieldTypeDefinition);
+    private static NamedList<Object> createRequestParameters(
+        FieldTypeDefinition fieldTypeDefinition) {
+      final NamedList<Object> replaceFieldTypeParameters =
+          createAddFieldTypeNamedList(fieldTypeDefinition);
       final NamedList<Object> requestParameters = new NamedList<>();
       requestParameters.add("replace-field-type", replaceFieldTypeParameters);
       return requestParameters;
@@ -583,10 +591,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Removes a field type from the schema of the specified collection.
-   * If the field type does not exist in the schema, or if any
-   * field or dynamic field rule in the schema uses the field type, the
-   * method call {@link #process(SolrClient, String)} will fail.
+   * Removes a field type from the schema of the specified collection. If the field type does not
+   * exist in the schema, or if any field or dynamic field rule in the schema uses the field type,
+   * the method call {@link #process(SolrClient, String)} will fail.
    */
   public static class DeleteFieldType extends SingleUpdate {
     /**
@@ -611,16 +618,16 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
   }
 
-  /**
-   * Adds a new copy field rule to the schema of the specified collection.
-   */
+  /** Adds a new copy field rule to the schema of the specified collection. */
   public static class AddCopyField extends SingleUpdate {
     /**
      * Creates a new instance of the request.
      *
      * @param source the source field name
-     * @param dest   the collection of the destination field names
-     * @see <a href="https://lucene.apache.org/solr/guide/copying-fields.html">Copying fields</a>
+     * @param dest the collection of the destination field names
+     * @see <a
+     *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/copy-fields.html">Copying
+     *     fields</a>
      */
     public AddCopyField(String source, List<String> dest) {
       this(source, dest, (SolrParams) null);
@@ -629,11 +636,13 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     /**
      * Creates a new instance of the request.
      *
-     * @param source   the source field name
-     * @param dest     the collection of the destination field names
+     * @param source the source field name
+     * @param dest the collection of the destination field names
      * @param maxChars the number of characters to be copied from the source to the dest. Specifying
-     *                 0 as value, means that all the source characters will be copied to the dest.
-     * @see <a href="https://lucene.apache.org/solr/guide/copying-fields.html">Copying fields</a>
+     *     0 as value, means that all the source characters will be copied to the dest.
+     * @see <a
+     *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/copy-fields.html">Copying
+     *     fields</a>
      */
     public AddCopyField(String source, List<String> dest, Integer maxChars) {
       this(source, dest, maxChars, null);
@@ -647,7 +656,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
       super(createRequestParameters(source, dest, maxChars), q);
     }
 
-    private static NamedList<Object> createRequestParameters(String source, List<String> dest, Integer maxchars) {
+    private static NamedList<Object> createRequestParameters(
+        String source, List<String> dest, Integer maxchars) {
       final NamedList<Object> addCopyFieldParameters = new NamedList<>();
       addCopyFieldParameters.add("source", source);
       addCopyFieldParameters.add("dest", dest);
@@ -661,16 +671,16 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * Deletes a copy field rule from the schema of the specified collection.
-   * If the copy field rule does not exist in the schema then the
-   * method call {@link #process(SolrClient, String)} will fail.
+   * Deletes a copy field rule from the schema of the specified collection. If the copy field rule
+   * does not exist in the schema then the method call {@link #process(SolrClient, String)} will
+   * fail.
    */
   public static class DeleteCopyField extends SingleUpdate {
     /**
      * Creates a new instance of the request.
      *
      * @param source the source field name
-     * @param dest   the collection of the destination field names
+     * @param dest the collection of the destination field names
      */
     public DeleteCopyField(String source, List<String> dest) {
       this(source, dest, null);
@@ -707,8 +717,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
       return new RequestWriter.ContentWriter() {
         @Override
         public void write(OutputStream os) throws IOException {
-          Utils.writeJson(getRequestParameters(),
-              os, false);
+          Utils.writeJson(getRequestParameters(), os, false);
         }
 
         @Override
@@ -724,7 +733,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
   }
 
-  private static abstract class SingleUpdate extends Update {
+  private abstract static class SingleUpdate extends Update {
     private final NamedList<Object> requestParameters;
 
     public SingleUpdate(NamedList<Object> requestParameters) {
@@ -743,12 +752,13 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   }
 
   /**
-   * <p>The Schema API offers the possibility to perform one or more add requests in a single command.</p>
-   * <p>The API is transactional and all commands in a single {@link #process(SolrClient, String)} call
-   * either succeed or fail together.</p>
+   * The Schema API offers the possibility to perform one or more add requests in a single command.
+   *
+   * <p>The API is transactional and all commands in a single {@link #process(SolrClient, String)}
+   * call either succeed or fail together.
    */
   public static class MultiUpdate extends Update {
-    private List<Update> updateSchemaRequests = new LinkedList<>();
+    private final List<Update> updateSchemaRequests = new ArrayList<>();
 
     public MultiUpdate(List<Update> updateSchemaRequests) {
       this(updateSchemaRequests, null);
@@ -776,5 +786,4 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
       return multipleRequestsParameters;
     }
   }
-
 }

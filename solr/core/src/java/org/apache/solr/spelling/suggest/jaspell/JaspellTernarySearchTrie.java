@@ -33,9 +33,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
@@ -64,16 +64,16 @@ public class JaspellTernarySearchTrie implements Accountable {
   protected static final class TSTNode implements Accountable {
 
     /** Index values for accessing relatives array. */
-    protected static final int PARENT = 0, LOKID = 1, EQKID = 2, HIKID = 3;
+    static final int PARENT = 0, LOKID = 1, EQKID = 2, HIKID = 3;
 
     /** The key to the node. */
-    protected Object data;
+    Object data;
 
     /** The relative nodes. */
-    protected final TSTNode[] relatives = new TSTNode[4];
+    final TSTNode[] relatives = new TSTNode[4];
 
     /** The char used in the split. */
-    protected char splitchar;
+    char splitchar;
 
     /**
      * Constructor method.
@@ -81,7 +81,7 @@ public class JaspellTernarySearchTrie implements Accountable {
      * @param splitchar The char used in the split.
      * @param parent The parent node.
      */
-    protected TSTNode(char splitchar, TSTNode parent) {
+    TSTNode(char splitchar, TSTNode parent) {
       this.splitchar = splitchar;
       relatives[PARENT] = parent;
     }
@@ -204,7 +204,7 @@ public class JaspellTernarySearchTrie implements Accountable {
       int pos;
       Float occur, one = 1f;
       while ((word = in.readLine()) != null) {
-        pos = word.indexOf("\t");
+        pos = word.indexOf('\t');
         occur = one;
         if (pos != -1) {
           occur = Float.parseFloat(word.substring(pos + 1).trim());
@@ -540,7 +540,7 @@ public class JaspellTernarySearchTrie implements Accountable {
         matchAlmostDiff,
         key,
         ((numReturnValues < 0) ? -1 : numReturnValues),
-        new Vector<String>(),
+        new ArrayList<>(),
         false);
   }
 
@@ -636,13 +636,13 @@ public class JaspellTernarySearchTrie implements Accountable {
    * @return A <code>List</code> with the results
    */
   public List<String> matchPrefix(CharSequence prefix, int numReturnValues) {
-    Vector<String> sortKeysResult = new Vector<>();
+    List<String> sortKeysResult = new ArrayList<>();
     TSTNode startNode = getNode(prefix);
     if (startNode == null) {
       return sortKeysResult;
     }
     if (startNode.data != null) {
-      sortKeysResult.addElement(getKey(startNode));
+      sortKeysResult.add(getKey(startNode));
     }
     return sortKeysRecursion(
         startNode.relatives[TSTNode.EQKID],
@@ -764,7 +764,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    * the methods mentioned above provide overloaded versions that allow you to specify the maximum
    * number of return values, in which case this value is temporarily overridden.
    *
-   * <p>*@param num The number of values that will be returned when calling the methods above.
+   * @param num The number of values that will be returned when calling the methods above.
    */
   public void setNumReturnValues(int num) {
     defaultNumReturnValues = (num < 0) ? -1 : num;
@@ -783,7 +783,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    */
   protected List<String> sortKeys(TSTNode startNode, int numReturnValues) {
     return sortKeysRecursion(
-        startNode, ((numReturnValues < 0) ? -1 : numReturnValues), new Vector<String>());
+        startNode, ((numReturnValues < 0) ? -1 : numReturnValues), new ArrayList<>());
   }
 
   /**

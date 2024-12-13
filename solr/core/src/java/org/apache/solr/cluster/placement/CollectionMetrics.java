@@ -21,12 +21,12 @@ import java.util.Iterator;
 import java.util.Optional;
 
 /**
- * Collection-level metrics. Currently this class is a container just
- * for shard-level metrics but future versions may add other
- * primitive collection-level metrics.
+ * Collection-level metrics. Currently this class is a container just for shard-level metrics but
+ * future versions may add other primitive collection-level metrics.
  */
 public interface CollectionMetrics {
 
   Optional<ShardMetrics> getShardMetrics(String shardName);
+
   Iterator<ShardMetrics> iterator();
 }

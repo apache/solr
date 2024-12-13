@@ -21,7 +21,7 @@
  */
 
 /**
- * The {@link org.apache.solr.handler.tagger.TaggerRequestHandler} and supporting classes.
- * This was formerly known as OpenSextant's SolrTextTagger.
+ * The {@link org.apache.solr.handler.tagger.TaggerRequestHandler} and supporting classes. This was
+ * formerly known as OpenSextant's SolrTextTagger.
  */
 package org.apache.solr.handler.tagger;

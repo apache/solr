@@ -17,32 +17,31 @@
 package org.apache.solr.search.join;
 
 import org.apache.lucene.search.Query;
+
 /**
- * Frontier Query represents the next hop of a GraphTraversal.
- * It contains the query to execute and the number of edges to traverse.
+ * Frontier Query represents the next hop of a GraphTraversal. It contains the query to execute and
+ * the number of edges to traverse.
+ *
  * @lucene.internal
  */
 class FrontierQuery {
-  
+
   private final Query query;
   private final Integer frontierSize;
-  
+
   public FrontierQuery(Query query, Integer frontierSize) {
     super();
     this.query = query;
     this.frontierSize = frontierSize;
   }
-  /**
-   * Return the query that represents the frontier at the current level.
-   */
+
+  /** Return the query that represents the frontier at the current level. */
   public Query getQuery() {
     return query;
   }
-  /**
-   * Return the number of edges in the frontier query.
-   */
+
+  /** Return the number of edges in the frontier query. */
   public Integer getFrontierSize() {
     return frontierSize;
   }
-  
 }

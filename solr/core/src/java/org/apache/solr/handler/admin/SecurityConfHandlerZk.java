@@ -17,76 +17,82 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_SECURITY_CONF_PATH;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_SECURITY_CONF_PATH;
-
-/**
- * Security Configuration Handler which works with Zookeeper
- */
+/** Security Configuration Handler which works with Zookeeper */
 public class SecurityConfHandlerZk extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public SecurityConfHandlerZk(CoreContainer coreContainer) {
     super(coreContainer);
   }
 
   /**
    * Fetches security props from Zookeeper and adds version
+   *
    * @param getFresh refresh from ZK
-   * @return SecurityConfig whose data property either contains security.json, or an empty map if not found
+   * @return SecurityConfig whose data property either contains security.json, or an empty map if
+   *     not found
    */
   @Override
   public SecurityConfig getSecurityConfig(boolean getFresh) {
-    ZkStateReader.ConfigData configDataFromZk = cores.getZkController().getZkStateReader().getSecurityProps(getFresh);
-    return configDataFromZk == null ? 
-        new SecurityConfig() :
-        new SecurityConfig().setData(configDataFromZk.data).setVersion(configDataFromZk.version);
+    ZkStateReader.ConfigData configDataFromZk =
+        cores.getZkController().getZkStateReader().getSecurityProps(getFresh);
+    return configDataFromZk == null
+        ? new SecurityConfig()
+        : new SecurityConfig().setData(configDataFromZk.data).setVersion(configDataFromZk.version);
   }
 
   @Override
   protected void getConf(SolrQueryResponse rsp, String key) {
-    ZkStateReader.ConfigData map = cores.getZkController().getZkStateReader().getSecurityProps(false);
+    ZkStateReader.ConfigData map =
+        cores.getZkController().getZkStateReader().getSecurityProps(false);
     Object o = map == null ? null : map.data.get(key);
     if (o == null) {
       rsp.add(CommandOperation.ERR_MSGS, Collections.singletonList("No " + key + " configured"));
     } else {
-      rsp.add(key+".enabled", getPlugin(key)!=null);
+      rsp.add(key + ".enabled", getPlugin(key) != null);
       rsp.add(key, o);
     }
   }
-  
+
   @Override
   protected boolean persistConf(SecurityConfig securityConfig) throws IOException {
     try {
-      cores.getZkController().getZkClient().setData(SOLR_SECURITY_CONF_PATH, 
-          Utils.toJSON(securityConfig.getData()), 
-          securityConfig.getVersion(), true);
+      cores
+          .getZkController()
+          .getZkClient()
+          .setData(
+              SOLR_SECURITY_CONF_PATH,
+              Utils.toJSON(securityConfig.getData()),
+              securityConfig.getVersion(),
+              true);
       log.debug("Persisted security.json to {}", SOLR_SECURITY_CONF_PATH);
       return true;
-    } catch (KeeperException.BadVersionException bdve){
+    } catch (KeeperException.BadVersionException bdve) {
       log.warn("Failed persisting security.json to {}", SOLR_SECURITY_CONF_PATH, bdve);
       return false;
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to persist security.json", e);
     }
   }
-  
+
   @Override
   public String getDescription() {
     return "Edit or read security configuration from Zookeeper";
   }
-  
 }

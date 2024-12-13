@@ -20,26 +20,23 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * A No-Op implementation of DistributingUpdateProcessorFactory that 
- * allways returns the next processor instead of inserting a new URP in front of it.
- * <p> 
- * This implementation may be useful for Solr installations in which neither 
- * the <code>{@link DistributedUpdateProcessorFactory}</code> nor any custom 
- * implementation of <code>{@link DistributingUpdateProcessorFactory}</code> 
- * is desired (ie: shards are managed externally from Solr)
- * </p>
+ * A No-Op implementation of DistributingUpdateProcessorFactory that allways returns the next
+ * processor instead of inserting a new URP in front of it.
+ *
+ * <p>This implementation may be useful for Solr installations in which neither the <code>
+ * {@link DistributedUpdateProcessorFactory}</code> nor any custom implementation of <code>
+ * {@link DistributingUpdateProcessorFactory}</code> is desired (ie: shards are managed externally
+ * from Solr)
+ *
  * @since 4.0.0
  */
-public class NoOpDistributingUpdateProcessorFactory 
-  extends UpdateRequestProcessorFactory 
-  implements DistributingUpdateProcessorFactory {    
+public class NoOpDistributingUpdateProcessorFactory extends UpdateRequestProcessorFactory
+    implements DistributingUpdateProcessorFactory {
 
-  /** Returns the next
-   */
+  /** Returns the next */
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
-                                            SolrQueryResponse rsp, 
-                                            UpdateRequestProcessor next ) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return next;
   }
 }

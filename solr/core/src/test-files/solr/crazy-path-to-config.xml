@@ -38,7 +38,7 @@
   </query>
 
   <requestDispatcher>
-    <requestParsers enableStreamBody="true" />
+    <requestParsers/>
   </requestDispatcher>
 
   <requestHandler name="/select" class="solr.SearchHandler" />
@@ -51,11 +51,6 @@
 
   <queryResponseWriter name="standard" class="solr.XMLResponseWriter"/>
   <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter" startup="lazy"/>
-
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
 
   <initParams path="/select,/crazy_custom_qt">
     <lst name="defaults">

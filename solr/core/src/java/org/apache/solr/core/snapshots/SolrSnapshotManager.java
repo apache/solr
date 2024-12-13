@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core.snapshots;
 
+import static org.apache.solr.client.api.model.Constants.SNAPSHOT_GENERATION_NUM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -42,13 +44,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class provides functionality required to handle the data files corresponding to Solr snapshots.
+ * This class provides functionality required to handle the data files corresponding to Solr
+ * snapshots.
  */
 public class SolrSnapshotManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String INDEX_DIR_PATH = "indexDirPath";
-  public static final String GENERATION_NUM = "generation";
+  public static final String GENERATION_NUM = SNAPSHOT_GENERATION_NUM;
   public static final String SNAPSHOT_STATUS = "status";
   public static final String CREATION_DATE = "creationDate";
   public static final String SNAPSHOT_REPLICAS = "replicas";
@@ -63,12 +66,12 @@ public class SolrSnapshotManager {
    * @param zkClient Zookeeper client
    * @param collectionName The name of the collection
    * @param commitName The name of the snapshot
-   * @return true if the named snapshot exists
-   *         false Otherwise
+   * @return true if the named snapshot exists false Otherwise
    * @throws KeeperException In case of Zookeeper error
    * @throws InterruptedException In case of thread interruption.
    */
-  public static boolean snapshotExists(SolrZkClient zkClient, String collectionName, String commitName)
+  public static boolean snapshotExists(
+      SolrZkClient zkClient, String collectionName, String commitName)
       throws KeeperException, InterruptedException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.ofNullable(commitName));
     return zkClient.exists(zkPath, true);
@@ -83,8 +86,9 @@ public class SolrSnapshotManager {
    * @throws KeeperException In case of Zookeeper error
    * @throws InterruptedException In case of thread interruption.
    */
-  public static void createCollectionLevelSnapshot(SolrZkClient zkClient, String collectionName,
-      CollectionSnapshotMetaData meta) throws KeeperException, InterruptedException {
+  public static void createCollectionLevelSnapshot(
+      SolrZkClient zkClient, String collectionName, CollectionSnapshotMetaData meta)
+      throws KeeperException, InterruptedException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.getName()));
     zkClient.makePath(zkPath, Utils.toJSON(meta), CreateMode.PERSISTENT, true);
   }
@@ -93,13 +97,14 @@ public class SolrSnapshotManager {
    * This method updates an entry for the named snapshot for the specified collection in Zookeeper.
    *
    * @param zkClient Zookeeper client
-   * @param collectionName  The name of the collection
+   * @param collectionName The name of the collection
    * @param meta The {@linkplain CollectionSnapshotMetaData} corresponding to named snapshot
    * @throws KeeperException In case of Zookeeper error
    * @throws InterruptedException In case of thread interruption.
    */
-  public static void updateCollectionLevelSnapshot(SolrZkClient zkClient, String collectionName,
-      CollectionSnapshotMetaData meta) throws KeeperException, InterruptedException {
+  public static void updateCollectionLevelSnapshot(
+      SolrZkClient zkClient, String collectionName, CollectionSnapshotMetaData meta)
+      throws KeeperException, InterruptedException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.getName()));
     zkClient.setData(zkPath, Utils.toJSON(meta), -1, true);
   }
@@ -109,11 +114,12 @@ public class SolrSnapshotManager {
    *
    * @param zkClient Zookeeper client
    * @param collectionName The name of the collection
-   * @param commitName  The name of the snapshot
+   * @param commitName The name of the snapshot
    * @throws InterruptedException In case of thread interruption.
-   * @throws KeeperException  In case of Zookeeper error
+   * @throws KeeperException In case of Zookeeper error
    */
-  public static void deleteCollectionLevelSnapshot(SolrZkClient zkClient, String collectionName, String commitName)
+  public static void deleteCollectionLevelSnapshot(
+      SolrZkClient zkClient, String collectionName, String commitName)
       throws InterruptedException, KeeperException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(commitName));
     zkClient.delete(zkPath, -1, true);
@@ -122,7 +128,7 @@ public class SolrSnapshotManager {
   /**
    * This method deletes all snapshots for the specified collection in Zookeeper.
    *
-   * @param zkClient  Zookeeper client
+   * @param zkClient Zookeeper client
    * @param collectionName The name of the collection
    * @throws InterruptedException In case of thread interruption.
    * @throws KeeperException In case of Zookeeper error
@@ -139,7 +145,7 @@ public class SolrSnapshotManager {
           zkClient.delete(path, -1, true);
         } catch (KeeperException ex) {
           // Gracefully handle the case when the zk node doesn't exist
-          if ( ex.code() != KeeperException.Code.NONODE ) {
+          if (ex.code() != KeeperException.Code.NONODE) {
             throw ex;
           }
         }
@@ -148,34 +154,38 @@ public class SolrSnapshotManager {
       // Delete the parent node.
       zkClient.delete(zkPath, -1, true);
     } catch (KeeperException ex) {
-      // Gracefully handle the case when the zk node doesn't exist (e.g. if no snapshots were created for this collection).
-      if ( ex.code() != KeeperException.Code.NONODE ) {
+      // Gracefully handle the case when the zk node doesn't exist (e.g. if no snapshots were
+      // created for this collection).
+      if (ex.code() != KeeperException.Code.NONODE) {
         throw ex;
       }
     }
   }
 
   /**
-   * This method returns the {@linkplain CollectionSnapshotMetaData} for the named snapshot for the specified collection in Zookeeper.
+   * This method returns the {@linkplain CollectionSnapshotMetaData} for the named snapshot for the
+   * specified collection in Zookeeper.
    *
-   * @param zkClient  Zookeeper client
-   * @param collectionName  The name of the collection
+   * @param zkClient Zookeeper client
+   * @param collectionName The name of the collection
    * @param commitName The name of the snapshot
    * @return (Optional) the {@linkplain CollectionSnapshotMetaData}
    * @throws InterruptedException In case of thread interruption.
    * @throws KeeperException In case of Zookeeper error
    */
-  public static Optional<CollectionSnapshotMetaData> getCollectionLevelSnapshot(SolrZkClient zkClient, String collectionName, String commitName)
+  public static Optional<CollectionSnapshotMetaData> getCollectionLevelSnapshot(
+      SolrZkClient zkClient, String collectionName, String commitName)
       throws InterruptedException, KeeperException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(commitName));
     try {
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> data = (Map<String, Object>)Utils.fromJSON(zkClient.getData(zkPath, null, null, true));
+      Map<String, Object> data =
+          (Map<String, Object>) Utils.fromJSON(zkClient.getData(zkPath, null, null, true));
       return Optional.of(new CollectionSnapshotMetaData(data));
     } catch (KeeperException ex) {
       // Gracefully handle the case when the zk node for a specific
       // snapshot doesn't exist (e.g. due to a concurrent delete operation).
-      if ( ex.code() == KeeperException.Code.NONODE ) {
+      if (ex.code() == KeeperException.Code.NONODE) {
         return Optional.empty();
       }
       throw ex;
@@ -183,7 +193,8 @@ public class SolrSnapshotManager {
   }
 
   /**
-   * This method returns the {@linkplain CollectionSnapshotMetaData} for each named snapshot for the specified collection in Zookeeper.
+   * This method returns the {@linkplain CollectionSnapshotMetaData} for each named snapshot for the
+   * specified collection in Zookeeper.
    *
    * @param zkClient Zookeeper client
    * @param collectionName The name of the collection
@@ -191,55 +202,62 @@ public class SolrSnapshotManager {
    * @throws InterruptedException In case of thread interruption.
    * @throws KeeperException In case of Zookeeper error
    */
-  public static Collection<CollectionSnapshotMetaData> listSnapshots(SolrZkClient zkClient, String collectionName)
-      throws InterruptedException, KeeperException {
+  public static Collection<CollectionSnapshotMetaData> listSnapshots(
+      SolrZkClient zkClient, String collectionName) throws InterruptedException, KeeperException {
     Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.empty());
 
     try {
       Collection<String> snapshots = zkClient.getChildren(zkPath, null, true);
       for (String snapshot : snapshots) {
-        Optional<CollectionSnapshotMetaData> s = getCollectionLevelSnapshot(zkClient, collectionName, snapshot);
+        Optional<CollectionSnapshotMetaData> s =
+            getCollectionLevelSnapshot(zkClient, collectionName, snapshot);
         if (s.isPresent()) {
           result.add(s.get());
         }
       }
     } catch (KeeperException ex) {
-      // Gracefully handle the case when the zk node doesn't exist (e.g. due to a concurrent delete collection operation).
-      if ( ex.code() != KeeperException.Code.NONODE ) {
+      // Gracefully handle the case when the zk node doesn't exist (e.g. due to a concurrent delete
+      // collection operation).
+      if (ex.code() != KeeperException.Code.NONODE) {
         throw ex;
       }
     }
     return result;
   }
 
-
   /**
-   * This method deletes index files of the {@linkplain IndexCommit} for the specified generation number.
+   * This method deletes index files of the {@linkplain IndexCommit} for the specified generation
+   * number.
    *
    * @param core The Solr core
    * @param dir The index directory storing the snapshot.
    * @param gen The generation number of the {@linkplain IndexCommit} to be deleted.
    * @throws IOException in case of I/O errors.
    */
-  public static void deleteSnapshotIndexFiles(SolrCore core, Directory dir, final long gen) throws IOException {
-    deleteSnapshotIndexFiles(core, dir, new IndexDeletionPolicy() {
-      @Override
-      public void onInit(List<? extends IndexCommit> commits) throws IOException {
-        for (IndexCommit ic : commits) {
-          if (gen == ic.getGeneration()) {
-            if (log.isInfoEnabled()) {
-              log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+  public static void deleteSnapshotIndexFiles(SolrCore core, Directory dir, final long gen)
+      throws IOException {
+    deleteSnapshotIndexFiles(
+        core,
+        dir,
+        new IndexDeletionPolicy() {
+          @Override
+          public void onInit(List<? extends IndexCommit> commits) throws IOException {
+            for (IndexCommit ic : commits) {
+              if (gen == ic.getGeneration()) {
+                if (log.isInfoEnabled()) {
+                  log.info(
+                      "Deleting non-snapshotted index commit with generation {}",
+                      ic.getGeneration());
+                }
+                ic.delete();
+              }
             }
-            ic.delete();
           }
-        }
-      }
 
-      @Override
-      public void onCommit(List<? extends IndexCommit> commits)
-          throws IOException {}
-    });
+          @Override
+          public void onCommit(List<? extends IndexCommit> commits) throws IOException {}
+        });
   }
 
   /**
@@ -250,57 +268,65 @@ public class SolrSnapshotManager {
    * @param snapshots The snapshots to be preserved.
    * @throws IOException in case of I/O errors.
    */
-  public static void deleteNonSnapshotIndexFiles(SolrCore core, Directory dir, Collection<SnapshotMetaData> snapshots) throws IOException {
+  public static void deleteNonSnapshotIndexFiles(
+      SolrCore core, Directory dir, Collection<SnapshotMetaData> snapshots) throws IOException {
     final Set<Long> genNumbers = new HashSet<>();
     for (SnapshotMetaData m : snapshots) {
       genNumbers.add(m.getGenerationNumber());
     }
 
-    deleteSnapshotIndexFiles(core, dir, new IndexDeletionPolicy() {
-      @Override
-      public void onInit(List<? extends IndexCommit> commits) throws IOException {
-        for (IndexCommit ic : commits) {
-          if (!genNumbers.contains(ic.getGeneration())) {
-            if (log.isInfoEnabled()) {
-              log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+    deleteSnapshotIndexFiles(
+        core,
+        dir,
+        new IndexDeletionPolicy() {
+          @Override
+          public void onInit(List<? extends IndexCommit> commits) throws IOException {
+            for (IndexCommit ic : commits) {
+              if (!genNumbers.contains(ic.getGeneration())) {
+                if (log.isInfoEnabled()) {
+                  log.info(
+                      "Deleting non-snapshotted index commit with generation {}",
+                      ic.getGeneration());
+                }
+                ic.delete();
+              }
             }
-            ic.delete();
           }
-        }
-      }
 
-      @Override
-      public void onCommit(List<? extends IndexCommit> commits)
-          throws IOException {}
-    });
+          @Override
+          public void onCommit(List<? extends IndexCommit> commits) throws IOException {}
+        });
   }
 
   /**
-   * This method deletes index files of the {@linkplain IndexCommit} for the specified generation number.
+   * This method deletes index files of the {@linkplain IndexCommit} for the specified generation
+   * number.
    *
    * @param core The Solr core
    * @param dir The index directory storing the snapshot.
    * @throws IOException in case of I/O errors.
    */
-
   @SuppressWarnings({"try", "unused"})
-  private static void deleteSnapshotIndexFiles(SolrCore core, Directory dir, IndexDeletionPolicy delPolicy) throws IOException {
+  private static void deleteSnapshotIndexFiles(
+      SolrCore core, Directory dir, IndexDeletionPolicy delPolicy) throws IOException {
     IndexWriterConfig conf = core.getSolrConfig().indexConfig.toIndexWriterConfig(core);
     conf.setOpenMode(OpenMode.APPEND);
-    conf.setMergePolicy(NoMergePolicy.INSTANCE);//Don't want to merge any commits here!
+    conf.setMergePolicy(NoMergePolicy.INSTANCE); // Don't want to merge any commits here!
     conf.setIndexDeletionPolicy(delPolicy);
     conf.setCodec(core.getCodec());
     try (SolrIndexWriter iw = new SolrIndexWriter("SolrSnapshotCleaner", dir, conf)) {
-      // Do nothing. The only purpose of opening index writer is to invoke the Lucene IndexDeletionPolicy#onInit
-      // method so that we can cleanup the files associated with specified index commit.
-      // Note the index writer creates a new commit during the close() operation (which is harmless).
+      // Do nothing. The only purpose of opening index writer is to invoke the Lucene
+      // IndexDeletionPolicy#onInit method so that we can cleanup the files associated with
+      // specified index commit. Note the index writer creates a new commit during the close()
+      // operation (which is harmless).
     }
   }
 
-  private static String getSnapshotMetaDataZkPath(String collectionName, Optional<String> commitName) {
+  private static String getSnapshotMetaDataZkPath(
+      String collectionName, Optional<String> commitName) {
     if (commitName.isPresent()) {
-      return "/snapshots/"+collectionName+"/"+commitName.get();
+      return "/snapshots/" + collectionName + "/" + commitName.get();
     }
-    return "/snapshots/"+collectionName;
+    return "/snapshots/" + collectionName;
   }
 }

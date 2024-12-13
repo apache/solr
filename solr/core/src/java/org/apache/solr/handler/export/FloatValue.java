@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -39,31 +38,36 @@ class FloatValue implements SortValue {
     this.present = false;
   }
 
+  @Override
   public Object getCurrentValue() {
     assert present == true;
     return currentValue;
   }
 
-  public void toGlobalValue(SortValue previousValue) {
+  @Override
+  public void toGlobalValue(SortValue previousValue) {}
 
-  }
-
+  @Override
   public String getField() {
     return field;
   }
 
+  @Override
   public FloatValue copy() {
     return new FloatValue(field, comp);
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.vals = DocValues.getNumeric(context.reader(), field);
     lastDocID = 0;
   }
 
+  @Override
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
-      throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
+      throw new AssertionError(
+          "docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
     lastDocID = docId;
     int curDocID = vals.docID();
@@ -72,7 +76,7 @@ class FloatValue implements SortValue {
     }
     if (docId == curDocID) {
       present = true;
-      currentValue = Float.intBitsToFloat((int)vals.longValue());
+      currentValue = Float.intBitsToFloat((int) vals.longValue());
     } else {
       present = false;
       currentValue = 0f;
@@ -84,17 +88,20 @@ class FloatValue implements SortValue {
     return present;
   }
 
+  @Override
   public void setCurrentValue(SortValue sv) {
     FloatValue fv = (FloatValue) sv;
     this.currentValue = fv.currentValue;
     this.present = fv.present;
   }
 
+  @Override
   public void reset() {
     this.currentValue = comp.resetValue();
     this.present = false;
   }
 
+  @Override
   public int compareTo(SortValue o) {
     FloatValue fv = (FloatValue) o;
     return comp.compare(currentValue, fv.currentValue);

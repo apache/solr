@@ -16,46 +16,41 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 
-import java.io.IOException;
-
 public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
   /**
-   * Runs a document through the specified chain, and returns the final
-   * document used when the chain is completed (NOTE: some chains may
-   * modify the document in place
+   * Runs a document through the specified chain, and returns the final document used when the chain
+   * is completed (NOTE: some chains may modify the document in place
    */
-  protected SolrInputDocument processAdd(final String chain,
-                                         final SolrInputDocument docIn)
-    throws IOException {
+  protected SolrInputDocument processAdd(final String chain, final SolrInputDocument docIn)
+      throws IOException {
 
     return processAdd(chain, new ModifiableSolrParams(), docIn);
   }
 
   /**
-   * Runs a document through the specified chain, and returns the final
-   * document used when the chain is completed (NOTE: some chains may
-   * modify the document in place
+   * Runs a document through the specified chain, and returns the final document used when the chain
+   * is completed (NOTE: some chains may modify the document in place
    */
-  protected SolrInputDocument processAdd(final String chain,
-                                         final SolrParams requestParams,
-                                         final SolrInputDocument docIn)
-    throws IOException {
+  protected SolrInputDocument processAdd(
+      final String chain, final SolrParams requestParams, final SolrInputDocument docIn)
+      throws IOException {
 
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
@@ -91,7 +86,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 
-    CommitUpdateCommand cmd = new CommitUpdateCommand(req,false);
+    CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
     UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
     try {
       processor.processCommit(cmd);
@@ -136,10 +131,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
     }
   }
 
-
-  /**
-   * Convenience method for building up SolrInputDocuments
-   */
+  /** Convenience method for building up SolrInputDocuments */
   protected final SolrInputDocument doc(SolrInputField... fields) {
     SolrInputDocument d = new SolrInputDocument();
     for (SolrInputField f : fields) {
@@ -148,9 +140,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
     return d;
   }
 
-  /**
-   * Convenience method for building up SolrInputFields
-   */
+  /** Convenience method for building up SolrInputFields */
   final SolrInputField field(String name, Object... values) {
     SolrInputField f = new SolrInputField(name);
     for (Object v : values) {
@@ -159,9 +149,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
     return f;
   }
 
-  /**
-   * Convenience method for building up SolrInputFields with default boost
-   */
+  /** Convenience method for building up SolrInputFields with default boost */
   protected final SolrInputField f(String name, Object... values) {
     return field(name, values);
   }

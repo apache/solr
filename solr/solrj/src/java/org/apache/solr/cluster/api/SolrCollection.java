@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.api;
 
 /** Represents a collection in Solr */
+@Deprecated
 public interface SolrCollection {
 
   String name();
@@ -28,7 +29,6 @@ public interface SolrCollection {
   /** Name of the configset used by this collection */
   String config();
 
-  /**Router used in this collection */
+  /** Router used in this collection */
   Router router();
-
 }

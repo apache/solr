@@ -16,38 +16,43 @@
  */
 package org.apache.solr.security;
 
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.util.ResourceLoader;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.api.ModifyMultiPluginAuthConfigAPI;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
 
 /**
- * Authentication plugin that supports multiple Authorization schemes, such as Bearer and Basic.
- * The impl simply delegates to one of Solr's other AuthenticationPlugins, such as the BasicAuthPlugin or JWTAuthPlugin.
+ * Authentication plugin that supports multiple Authorization schemes, such as Bearer and Basic. The
+ * impl simply delegates to one of Solr's other AuthenticationPlugins, such as the BasicAuthPlugin
+ * or JWTAuthPlugin.
  *
  * @lucene.experimental
  */
-public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin, SpecProvider {
+public class MultiAuthPlugin extends AuthenticationPlugin
+    implements ConfigEditablePlugin, SpecProvider {
   public static final String PROPERTY_SCHEMES = "schemes";
   public static final String PROPERTY_SCHEME = "scheme";
   public static final String AUTHORIZATION_HEADER = "Authorization";
@@ -56,21 +61,30 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   private static final String UNKNOWN_SCHEME = "";
 
   private final Map<String, AuthenticationPlugin> pluginMap = new LinkedHashMap<>();
+  private final Map<String, String> realms = new LinkedHashMap<>();
+  private final List<String> WWWAuthenticateHeaders = new ArrayList<>();
   private final ResourceLoader loader;
-  private AuthenticationPlugin allowsUnknown = null; // the first of our plugins that allows anonymous requests
+  // the first of our plugins that allows anonymous requests
+  private AuthenticationPlugin allowsUnknown = null;
 
-  // Get the loader from the CoreContainer so we can load the sub-plugins, such as the BasicAuthPlugin for Basic
+  // Get the loader from the CoreContainer so we can load the sub-plugins, such as the
+  // BasicAuthPlugin for Basic
   public MultiAuthPlugin(CoreContainer cc) {
     this.loader = cc.getResourceLoader();
   }
 
   @SuppressWarnings({"unchecked"})
-  static boolean applyEditCommandToSchemePlugin(String scheme, ConfigEditablePlugin plugin, CommandOperation c, Map<String, Object> latestConf) {
+  static boolean applyEditCommandToSchemePlugin(
+      String scheme,
+      ConfigEditablePlugin plugin,
+      CommandOperation c,
+      Map<String, Object> latestConf) {
     boolean madeChanges = false;
     // Send in the config for the plugin only
     Map<String, Object> latestPluginConf = null;
     int updateAt = -1;
-    List<Map<String, Object>> schemes = (List<Map<String, Object>>) latestConf.get(PROPERTY_SCHEMES);
+    List<Map<String, Object>> schemes =
+        (List<Map<String, Object>>) latestConf.get(PROPERTY_SCHEMES);
     for (int i = 0; i < schemes.size(); i++) {
       Map<String, Object> schemeConfig = schemes.get(i);
       if (scheme.equals(schemeConfig.get(PROPERTY_SCHEME))) {
@@ -82,7 +96,8 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
     // shouldn't happen
     if (latestPluginConf == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Config for scheme '" + scheme + "' not found!");
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST, "Config for scheme '" + scheme + "' not found!");
     }
 
     Map<String, Object> updated = plugin.edit(latestPluginConf, Collections.singletonList(c));
@@ -100,7 +115,8 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     return updatedData;
   }
 
-  private static Map<String, Object> withScheme(final String scheme, final Map<String, Object> data) {
+  private static Map<String, Object> withScheme(
+      final String scheme, final Map<String, Object> data) {
     Map<String, Object> updatedData = new HashMap<>(data);
     updatedData.put(PROPERTY_SCHEME, scheme);
     return updatedData;
@@ -111,34 +127,45 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   public void init(Map<String, Object> pluginConfig) {
     Object o = pluginConfig.get(PROPERTY_SCHEMES);
     if (!(o instanceof List)) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires a list of schemes!");
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires a list of schemes!");
     }
 
     List<Object> schemeList = (List<Object>) o;
     // if you only have one scheme, then you don't need to use this class
     if (schemeList.size() < 2) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires at least two schemes!");
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires at least two schemes!");
     }
 
     for (Object s : schemeList) {
       if (!(s instanceof Map)) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid scheme config, expected JSON object but found: " + s);
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR, "Invalid scheme config, expected JSON object but found: " + s);
       }
       initPluginForScheme((Map<String, Object>) s);
     }
+    initWWWAuthenticateHeaders();
   }
 
   protected void initPluginForScheme(Map<String, Object> schemeMap) {
     Map<String, Object> schemeConfig = new HashMap<>(schemeMap);
 
     String scheme = (String) schemeConfig.remove(PROPERTY_SCHEME);
-    if (StringUtils.isEmpty(scheme)) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "'scheme' is a required attribute: " + schemeMap);
+    if (StrUtils.isNullOrEmpty(scheme)) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "'scheme' is a required attribute: " + schemeMap);
     }
 
     String clazz = (String) schemeConfig.remove("class");
-    if (StringUtils.isEmpty(clazz)) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "'class' is a required attribute: " + schemeMap);
+    if (StrUtils.isNullOrEmpty(clazz)) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "'class' is a required attribute: " + schemeMap);
+    }
+
+    String realm = (String) schemeConfig.remove("realm");
+    if (!StrUtils.isNullOrEmpty(realm)) {
+      realms.put(scheme, realm);
     }
 
     AuthenticationPlugin pluginForScheme = loader.newInstance(clazz, AuthenticationPlugin.class);
@@ -147,9 +174,24 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
     if (allowsUnknown == null) {
       if (!Boolean.parseBoolean(String.valueOf(schemeConfig.getOrDefault("blockUnknown", true)))) {
-        // plugin allows anonymous requests, so we'll send any non-AJAX requests without an authorization header to it
+        // plugin allows anonymous requests, so we'll send any non-AJAX requests without an
+        // authorization header to it
         allowsUnknown = pluginForScheme;
       }
+    }
+  }
+
+  private void initWWWAuthenticateHeaders() {
+    for (String scheme : pluginMap.keySet()) {
+      String realm = realms.get(scheme);
+      String realmStr = realm == null ? "" : " realm=\"" + realm + "\"";
+      WWWAuthenticateHeaders.add(scheme + realmStr);
+    }
+  }
+
+  private void addWWWAuthenticateHeaders(HttpServletResponse response) {
+    for (String wwwAuthHeader : WWWAuthenticateHeaders) {
+      response.addHeader(HttpHeaders.WWW_AUTHENTICATE, wwwAuthHeader);
     }
   }
 
@@ -162,21 +204,29 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
   private String getSchemeFromAuthHeader(final String authHeader) {
     final int firstSpace = authHeader.indexOf(' ');
-    return (firstSpace != -1) ? authHeader.substring(0, firstSpace).toLowerCase(Locale.ROOT) : UNKNOWN_SCHEME;
+    return (firstSpace != -1)
+        ? authHeader.substring(0, firstSpace).toLowerCase(Locale.ROOT)
+        : UNKNOWN_SCHEME;
   }
 
   @Override
-  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
+  public boolean doAuthenticate(
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws Exception {
     final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
     if (authHeader == null) {
-      // no Authorization header but if it's an AJAX request, forward to the default scheme so it can handle it
-      // otherwise, send to the first plugin that allows blockUnknown = false
-      final AuthenticationPlugin plugin = BasicAuthPlugin.isAjaxRequest(request) ? pluginMap.values().iterator().next() : allowsUnknown;
+      // no Authorization header but if it's an AJAX request, forward to the default scheme so it
+      // can handle it otherwise, send to the first plugin that allows blockUnknown = false
+      final AuthenticationPlugin plugin =
+          BasicAuthPlugin.isAjaxRequest(request)
+              ? pluginMap.values().iterator().next()
+              : allowsUnknown;
       boolean result = false;
       if (plugin != null) {
         pluginInRequest.set(plugin);
         result = plugin.doAuthenticate(request, response, filterChain);
       } else {
+        addWWWAuthenticateHeaders(response);
         response.sendError(ErrorCode.UNAUTHORIZED.code, "No Authorization header");
       }
       return result;
@@ -185,7 +235,9 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     final String scheme = getSchemeFromAuthHeader(authHeader);
     final AuthenticationPlugin plugin = pluginMap.get(scheme);
     if (plugin == null) {
-      response.sendError(ErrorCode.UNAUTHORIZED.code, "Authorization scheme '" + scheme + "' not supported!");
+      addWWWAuthenticateHeaders(response);
+      response.sendError(
+          ErrorCode.UNAUTHORIZED.code, "Authorization scheme '" + scheme + "' not supported!");
       return false;
     }
 
@@ -242,7 +294,8 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return Utils.getSpec("cluster.security.MultiPluginAuth.Commands").getSpec();
+    final List<Api> apis = AnnotatedApi.getApis(new ModifyMultiPluginAuthConfigAPI());
+    return apis.get(0).getSpec();
   }
 
   @Override
@@ -253,20 +306,25 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       Map<String, Object> dataMap = c.getDataMap();
       // expect the "scheme" wrapper map around the actual command data
       if (dataMap == null || dataMap.size() != 1) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "All edit commands must include a 'scheme' wrapper object!");
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "All edit commands must include a 'scheme' wrapper object!");
       }
 
       final String scheme = dataMap.keySet().iterator().next().toLowerCase(Locale.ROOT);
       AuthenticationPlugin plugin = pluginMap.get(scheme);
       if (plugin == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "No authentication plugin configured for the '" + scheme + "' scheme!");
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "No authentication plugin configured for the '" + scheme + "' scheme!");
       }
       if (!(plugin instanceof ConfigEditablePlugin)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Plugin for scheme '" + scheme + "' is not editable!");
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Plugin for scheme '" + scheme + "' is not editable!");
       }
 
       CommandOperation cmdForPlugin = new CommandOperation(c.name, dataMap.get(scheme));
-      if (applyEditCommandToSchemePlugin(scheme, (ConfigEditablePlugin) plugin, cmdForPlugin, latestConf)) {
+      if (applyEditCommandToSchemePlugin(
+          scheme, (ConfigEditablePlugin) plugin, cmdForPlugin, latestConf)) {
         madeChanges = true;
       }
       // copy over any errors from the cloned command

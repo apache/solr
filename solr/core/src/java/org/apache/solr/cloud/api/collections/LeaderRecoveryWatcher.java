@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.Set;
-
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
@@ -26,7 +25,8 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 
 /**
- * We use this watcher to wait for any eligible replica in a shard to become active so that it can become a leader.
+ * We use this watcher to wait for any eligible replica in a shard to become active so that it can
+ * become a leader.
  */
 public class LeaderRecoveryWatcher implements CollectionStateWatcher {
   String collectionId;
@@ -38,13 +38,18 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
   /**
    * Watch for recovery of a replica
    *
-   * @param collectionId   collection name
-   * @param shardId        shard id
-   * @param replicaId      source replica name (coreNodeName)
-   * @param targetCore     specific target core name - if null then any active replica will do
+   * @param collectionId collection name
+   * @param shardId shard id
+   * @param replicaId source replica name (coreNodeName)
+   * @param targetCore specific target core name - if null then any active replica will do
    * @param latch countdown when recovered
    */
-  LeaderRecoveryWatcher(String collectionId, String shardId, String replicaId, String targetCore, SolrCloseableLatch latch) {
+  LeaderRecoveryWatcher(
+      String collectionId,
+      String shardId,
+      String replicaId,
+      String targetCore,
+      SolrCloseableLatch latch) {
     this.collectionId = collectionId;
     this.shardId = shardId;
     this.replicaId = replicaId;
@@ -68,7 +73,7 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
       // as long as it's active and can become a leader, in which case we don't have to wait
       // for recovery of specifically the one that we've just added
       if (!replica.getName().equals(replicaId)) {
-        if (replica.getType().equals(Replica.Type.PULL)) { // not eligible for leader election
+        if (!replica.getType().leaderEligible) {
           continue;
         }
         // check its state

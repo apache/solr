@@ -24,7 +24,7 @@
   <!-- The presence of bogusParam should trigger failure -->
   <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">false</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
+    <str name="managedSchemaResourceName">managed-schema.xml</str>
     <str name="bogusParam">bogusValue</str>
   </schemaFactory>
 

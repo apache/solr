@@ -15,34 +15,33 @@
  * limitations under the License.
  */
 package org.apache.solr.analysis;
-import java.io.IOException;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- * This class produces a special form of reversed tokens, suitable for
- * better handling of leading wildcards. Tokens from the input TokenStream
- * are reversed and prepended with a special "reversed" marker character.
- * If <code>withOriginal</code> argument is <code>true</code> then first the
- * original token is returned, and then the reversed token (with
- * <code>positionIncrement == 0</code>) is returned. Otherwise only reversed
- * tokens are returned.
- * <p>Note: this filter doubles the number of tokens in the input stream when
- * <code>withOriginal == true</code>, which proportionally increases the size
- * of postings and term dictionary in the index.
+ * This class produces a special form of reversed tokens, suitable for better handling of leading
+ * wildcards. Tokens from the input TokenStream are reversed and prepended with a special "reversed"
+ * marker character. If <code>withOriginal</code> argument is <code>true</code> then first the
+ * original token is returned, and then the reversed token (with <code>positionIncrement == 0</code>
+ * ) is returned. Otherwise only reversed tokens are returned.
+ *
+ * <p>Note: this filter doubles the number of tokens in the input stream when <code>
+ * withOriginal == true</code>, which proportionally increases the size of postings and term
+ * dictionary in the index.
  */
 public final class ReversedWildcardFilter extends TokenFilter {
-  
+
   private final boolean withOriginal;
   private final char markerChar;
   private final CharTermAttribute termAtt;
   private final PositionIncrementAttribute posAtt;
   private State save = null;
 
-  protected ReversedWildcardFilter(TokenStream input, boolean withOriginal, char markerChar) {
+  ReversedWildcardFilter(TokenStream input, boolean withOriginal, char markerChar) {
     super(input);
     this.termAtt = addAttribute(CharTermAttribute.class);
     this.posAtt = addAttribute(PositionIncrementAttribute.class);
@@ -52,7 +51,7 @@ public final class ReversedWildcardFilter extends TokenFilter {
 
   @Override
   public boolean incrementToken() throws IOException {
-    if( save != null ) {
+    if (save != null) {
       // clearAttributes();  // not currently necessary
       restoreState(save);
       save = null;
@@ -63,34 +62,32 @@ public final class ReversedWildcardFilter extends TokenFilter {
 
     // pass through zero-length terms
     int oldLen = termAtt.length();
-    if (oldLen ==0) return true;
+    if (oldLen == 0) return true;
     int origOffset = posAtt.getPositionIncrement();
-    if (withOriginal == true){
+    if (withOriginal == true) {
       posAtt.setPositionIncrement(0);
       save = captureState();
     }
-    char [] buffer = termAtt.resizeBuffer(oldLen + 1);
+    char[] buffer = termAtt.resizeBuffer(oldLen + 1);
     buffer[oldLen] = markerChar;
     reverse(buffer, 0, oldLen + 1);
 
     posAtt.setPositionIncrement(origOffset);
-    termAtt.copyBuffer(buffer, 0, oldLen +1);
+    termAtt.copyBuffer(buffer, 0, oldLen + 1);
     return true;
   }
-  
 
   /**
-   * Partially reverses the given input buffer in-place from the given offset
-   * up to the given length, keeping surrogate pairs in the correct (non-reversed) order.
+   * Partially reverses the given input buffer in-place from the given offset up to the given
+   * length, keeping surrogate pairs in the correct (non-reversed) order.
+   *
    * @param buffer the input char array to reverse
    * @param start the offset from where to reverse the buffer
-   * @param len the length in the buffer up to where the
-   *        buffer should be reversed
+   * @param len the length in the buffer up to where the buffer should be reversed
    */
   public static void reverse(final char[] buffer, final int start, final int len) {
     /* modified version of Apache Harmony AbstractStringBuilder reverse0() */
-    if (len < 2)
-      return;
+    if (len < 2) return;
     int end = (start + len) - 1;
     char frontHigh = buffer[start];
     char endLow = buffer[end];
@@ -99,14 +96,12 @@ public final class ReversedWildcardFilter extends TokenFilter {
     for (int i = start; i < mid; ++i, --end) {
       final char frontLow = buffer[i + 1];
       final char endHigh = buffer[end - 1];
-      final boolean surAtFront = allowFrontSur
-          && Character.isSurrogatePair(frontHigh, frontLow);
+      final boolean surAtFront = allowFrontSur && Character.isSurrogatePair(frontHigh, frontLow);
       if (surAtFront && (len < 3)) {
         // nothing to do since surAtFront is allowed and 1 char left
         return;
       }
-      final boolean surAtEnd = allowEndSur
-          && Character.isSurrogatePair(endHigh, endLow);
+      final boolean surAtEnd = allowEndSur && Character.isSurrogatePair(endHigh, endLow);
       allowFrontSur = allowEndSur = true;
       if (surAtFront == surAtEnd) {
         if (surAtFront) {
@@ -145,11 +140,10 @@ public final class ReversedWildcardFilter extends TokenFilter {
       buffer[end] = allowFrontSur ? endLow : frontHigh;
     }
   }
-  
+
   @Override
   public void reset() throws IOException {
     super.reset();
     save = null;
   }
-
 }

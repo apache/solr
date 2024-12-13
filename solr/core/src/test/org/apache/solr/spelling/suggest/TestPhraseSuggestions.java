@@ -22,24 +22,24 @@ import org.junit.BeforeClass;
 
 public class TestPhraseSuggestions extends SolrTestCaseJ4 {
   static final String URI = "/suggest_wfst";
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
+    initCore("solrconfig-phrasesuggest.xml", "schema-phrasesuggest.xml");
     assertQ(req("qt", URI, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
   }
-  
+
   public void test() {
-    assertQ(req("qt", URI, "q", "the f", SpellingParams.SPELLCHECK_COUNT, "4"),
+    assertQ(
+        req("qt", URI, "q", "the f", SpellingParams.SPELLCHECK_COUNT, "4"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='the f']/int[@name='numFound'][.='3']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='the f']/arr[@name='suggestion']/str[1][.='the final phrase']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='the f']/arr[@name='suggestion']/str[2][.='the fifth phrase']",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='the f']/arr[@name='suggestion']/str[3][.='the first phrase']"
-    );
-    
-    assertQ(req("qt", URI, "q", "Testing +12", SpellingParams.SPELLCHECK_COUNT, "4"),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='the f']/arr[@name='suggestion']/str[3][.='the first phrase']");
+
+    assertQ(
+        req("qt", URI, "q", "Testing +12", SpellingParams.SPELLCHECK_COUNT, "4"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='testing 12']/int[@name='numFound'][.='1']",
-        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='testing 12']/arr[@name='suggestion']/str[1][.='testing 1234']"
-    );
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='testing 12']/arr[@name='suggestion']/str[1][.='testing 1234']");
   }
 }

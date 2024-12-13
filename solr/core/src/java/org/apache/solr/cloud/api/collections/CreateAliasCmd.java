@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +16,9 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,9 +27,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Sets;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -36,14 +37,11 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 public class CreateAliasCmd extends AliasCmd {
 
-
   private static boolean anyRoutingParams(ZkNodeProps message) {
-    return message.keySet().stream().anyMatch(k -> k.startsWith(CollectionAdminParams.ROUTER_PREFIX));
+    return message.keySet().stream()
+        .anyMatch(k -> k.startsWith(CollectionAdminParams.ROUTER_PREFIX));
   }
 
   @SuppressWarnings("WeakerAccess")
@@ -57,6 +55,7 @@ public class CreateAliasCmd extends AliasCmd {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     // make sure we have the latest version of existing aliases
+    //noinspection ConstantConditions
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       zkStateReader.aliasesManager.update();
     }
@@ -71,47 +70,57 @@ public class CreateAliasCmd extends AliasCmd {
     //
     // THIS IS A KLUDGE.
     //
-    // Solr's view of the cluster is eventually consistent. *Eventually* all nodes and CloudSolrClients will be aware of
-    // alias changes, but not immediately. If a newly created alias is queried, things should work right away since Solr
-    // will attempt to see if it needs to get the latest aliases when it can't otherwise resolve the name.  However
-    // modifications to an alias will take some time.
+    // Solr's view of the cluster is eventually consistent. *Eventually* all nodes and
+    // CloudSolrClients will be aware of alias changes, but not immediately. If a newly created
+    // alias is queried, things should work right away since Solr will attempt to see if it needs to
+    // get the latest aliases when it can't otherwise resolve the name.  However, modifications to
+    // an alias will take some time.
     //
-    // We could levy this requirement on the client but they would probably always add an obligatory sleep, which is
-    // just kicking the can down the road.  Perhaps ideally at this juncture here we could somehow wait until all
-    // Solr nodes in the cluster have the latest aliases?
+    // We could levy this requirement on the client, but they would probably always add an
+    // obligatory sleep, which is just kicking the can down the road.  Perhaps ideally at this
+    // juncture here we could somehow wait until all Solr nodes in the cluster have the
+    // latest aliases?
     Thread.sleep(100);
   }
 
-  private void callCreatePlainAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader) {
-    final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
+  private void callCreatePlainAlias(
+      ZkNodeProps message, String aliasName, ZkStateReader zkStateReader) {
+    final List<String> canonicalCollectionList =
+        parseCollectionsParameter(message.get("collections"));
     if (canonicalCollectionList.isEmpty()) {
-      throw new SolrException(BAD_REQUEST, "'collections' parameter doesn't contain any collection names.");
+      throw new SolrException(
+          BAD_REQUEST, "'collections' parameter doesn't contain any collection names.");
     }
     final String canonicalCollectionsString = StrUtils.join(canonicalCollectionList, ',');
     validateAllCollectionsExistAndNoDuplicates(canonicalCollectionList, zkStateReader);
-    zkStateReader.aliasesManager
-        .applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, canonicalCollectionsString));
+    zkStateReader.aliasesManager.applyModificationAndExportToZk(
+        aliases -> aliases.cloneWithCollectionAlias(aliasName, canonicalCollectionsString));
   }
 
   /**
-   * The v2 API directs that the 'collections' parameter be provided as a JSON array (e.g. ["a", "b"]).  We also
-   * maintain support for the legacy format, a comma-separated list (e.g. a,b).
+   * The v2 API directs that the 'collections' parameter be provided as a JSON array (e.g. ["a",
+   * "b"]). We also maintain support for the legacy format, a comma-separated list (e.g. a,b).
    */
   @SuppressWarnings("unchecked")
-  private List<String> parseCollectionsParameter(Object colls) {
-    if (colls == null) throw new SolrException(BAD_REQUEST, "missing collections param");
-    if (colls instanceof List) return (List<String>) colls;
-    return StrUtils.splitSmart(colls.toString(), ",", true).stream()
+  private List<String> parseCollectionsParameter(Object collections) {
+    if (collections == null) throw new SolrException(BAD_REQUEST, "missing collections param");
+    if (collections instanceof List) return (List<String>) collections;
+    return StrUtils.splitSmart(collections.toString(), ",", true).stream()
         .map(String::trim)
         .filter(s -> !s.isEmpty())
         .collect(Collectors.toList());
   }
 
-  private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
+  private void callCreateRoutedAlias(
+      ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state)
+      throws Exception {
     // Validate we got a basic minimum
     if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
-      throw new SolrException(BAD_REQUEST, "A routed alias requires these params: " + RoutedAlias.MINIMAL_REQUIRED_PARAMS
-      + " plus some create-collection prefixed ones.");
+      throw new SolrException(
+          BAD_REQUEST,
+          "A routed alias requires these params: "
+              + RoutedAlias.MINIMAL_REQUIRED_PARAMS
+              + " plus some create-collection prefixed ones.");
     }
 
     // convert values to strings
@@ -122,44 +131,75 @@ public class CreateAliasCmd extends AliasCmd {
     RoutedAlias routedAlias = RoutedAlias.fromProps(aliasName, props);
     if (routedAlias == null) {
       // should never happen here, but keep static analysis in IDE's happy...
-      throw new SolrException(SERVER_ERROR,"Tried to create a routed alias with no type!");
+      throw new SolrException(SERVER_ERROR, "Tried to create a routed alias with no type!");
     }
 
     if (!props.keySet().containsAll(routedAlias.getRequiredParams())) {
-      throw new SolrException(BAD_REQUEST, "Not all required params were supplied. Missing params: " +
-          StrUtils.join(Sets.difference(routedAlias.getRequiredParams(), props.keySet()), ','));
+      throw new SolrException(
+          BAD_REQUEST,
+          "Not all required params were supplied. Missing params: "
+              + routedAlias.getRequiredParams().stream()
+                  .filter(e -> !props.containsKey(e))
+                  .collect(Collectors.joining(",")));
     }
 
-    // Create the first collection.
-    String initialColl = routedAlias.computeInitialCollectionName();
-      ensureAliasCollection(aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), initialColl);
-      // Create/update the alias
-      zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
-          .cloneWithCollectionAlias(aliasName, initialColl)
-          .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
+    Aliases aliases = zkStateReader.aliasesManager.getAliases();
+
+    final String collectionListStr;
+    if (!aliases.isRoutedAlias(aliasName)) {
+      // Create the first collection. Prior validation ensures that this is not a standard alias
+      collectionListStr = routedAlias.computeInitialCollectionName();
+      ensureAliasCollection(
+          aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), collectionListStr);
+    } else {
+      List<String> collectionList = aliases.resolveAliases(aliasName);
+      collectionListStr = String.join(",", collectionList);
+    }
+    // Create/update the alias
+    zkStateReader.aliasesManager.applyModificationAndExportToZk(
+        a ->
+            a.cloneWithCollectionAlias(aliasName, collectionListStr)
+                .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
   }
 
-  private void ensureAliasCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
+  private void ensureAliasCollection(
+      String aliasName,
+      ZkStateReader zkStateReader,
+      ClusterState state,
+      Map<String, String> aliasProperties,
+      String initialCollectionName)
+      throws Exception {
     // Create the collection
     createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ccc);
-    validateAllCollectionsExistAndNoDuplicates(Collections.singletonList(initialCollectionName), zkStateReader);
+    validateAllCollectionsExistAndNoDuplicates(
+        Collections.singletonList(initialCollectionName), zkStateReader);
   }
 
-  private void validateAllCollectionsExistAndNoDuplicates(List<String> collectionList, ZkStateReader zkStateReader) {
+  private void validateAllCollectionsExistAndNoDuplicates(
+      List<String> collectionList, ZkStateReader zkStateReader) {
     final String collectionStr = StrUtils.join(collectionList, ',');
 
     if (new HashSet<>(collectionList).size() != collectionList.size()) {
-      throw new SolrException(BAD_REQUEST,
-          String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', since it contains duplicates", collectionStr));
+      throw new SolrException(
+          BAD_REQUEST,
+          String.format(
+              Locale.ROOT,
+              "Can't create collection alias for collections='%s', since it contains duplicates",
+              collectionStr));
     }
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> aliasNames = zkStateReader.getAliases().getCollectionAliasListMap().keySet();
     for (String collection : collectionList) {
-      if (clusterState.getCollectionOrNull(collection) == null && !aliasNames.contains(collection)) {
-        throw new SolrException(BAD_REQUEST,
-            String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias", collectionStr, collection));
+      if (clusterState.getCollectionOrNull(collection) == null
+          && !aliasNames.contains(collection)) {
+        throw new SolrException(
+            BAD_REQUEST,
+            String.format(
+                Locale.ROOT,
+                "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias",
+                collectionStr,
+                collection));
       }
     }
   }
-
 }

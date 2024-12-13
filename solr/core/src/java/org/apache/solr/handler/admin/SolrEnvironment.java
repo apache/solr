@@ -19,28 +19,28 @@ package org.apache.solr.handler.admin;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 
 /**
  * It is possible to define an environment code when starting Solr, through
- * -Dsolr.environment=prod|stage|test|dev or by setting the cluster property "environment".
- * This class checks if any of these are defined, and parses the string, which may also
- * contain custom overrides for environment name (label) and color to be shown in Admin UI
+ * -Dsolr.environment=prod|stage|test|dev or by setting the cluster property "environment". This
+ * class checks if any of these are defined, and parses the string, which may also contain custom
+ * overrides for environment name (label) and color to be shown in Admin UI
  */
 public class SolrEnvironment {
   private String code = "unknown";
   private String label;
   private String color;
-  private static Pattern pattern = Pattern.compile("^(prod|stage|test|dev)(,label=([\\w\\d+ _-]+))?(,color=([#\\w\\d]+))?");
+  private static Pattern pattern =
+      Pattern.compile("^(prod|stage|test|dev)(,label=([\\w\\d+ _-]+))?(,color=([#\\w\\d]+))?");
 
   public String getCode() {
     return code;
   }
 
   public String getLabel() {
-    return label == null ? null : label.replaceAll("\\+", " ");
+    return label == null ? null : label.replace("+", " ");
   }
 
   public String getColor() {
@@ -52,8 +52,9 @@ public class SolrEnvironment {
   }
 
   /**
-   * Parse an environment string of format &lt;prod|stage|test|dev&gt;
-   * with an optional label and color as arguments
+   * Parse an environment string of format &lt;prod|stage|test|dev&gt; with an optional label and
+   * color as arguments
+   *
    * @param environmentString the raw string to parse
    * @return an instance of this object
    */
@@ -64,7 +65,8 @@ public class SolrEnvironment {
     }
     Matcher m = pattern.matcher(environmentString);
     if (!m.matches()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad environment pattern: " + environmentString);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Bad environment pattern: " + environmentString);
     }
     env.code = m.group(1);
     if (m.group(3) != null) {
@@ -77,8 +79,9 @@ public class SolrEnvironment {
   }
 
   /**
-   * Gets and parses the solr environment configuration string from either
-   * System properties "solr.environment" or from Clusterprop "environment"
+   * Gets and parses the solr environment configuration string from either System properties
+   * "solr.environment" or from Clusterprop "environment"
+   *
    * @param zkStateReader pass in the zkStateReader if in cloud mode
    * @return an instance of this class
    */

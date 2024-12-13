@@ -17,14 +17,15 @@
 package org.apache.solr.bench;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.MBeanServer;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.bench.generators.SolrGen;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.openjdk.jmh.annotations.Level;
@@ -40,11 +41,29 @@ import org.slf4j.LoggerFactory;
 @State(Scope.Benchmark)
 public class BaseBenchState {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final long RANDOM_SEED;
 
-  private static final long RANDOM_SEED = 6624420638116043983L;
+  static {
+    Long seed = Long.getLong("solr.bench.seed");
 
-  private static final SplittableRandom random = new SplittableRandom(getInitRandomeSeed());
+    if (seed == null) {
+      String prop = System.getProperty("tests.seed"); // RandomizedTesting framework
+      if (prop != null) {
+        // if there is a test failure we remain reproducible based on the test seed:
+        prop = prop.split(":")[0]; // main seed
+        seed = Long.parseUnsignedLong(prop, 16);
+      } else {
+        seed = System.nanoTime();
+      }
+    }
+
+    log("");
+    log("benchmark random seed: " + seed);
+
+    RANDOM_SEED = seed;
+  }
+
+  private static final SplittableRandom random = new SplittableRandom(RANDOM_SEED);
 
   /**
    * Gets random seed.
@@ -122,29 +141,17 @@ public class BaseBenchState {
 
       boolean dumpHeap = HEAP_DUMPED.compareAndExchange(false, true);
       if (dumpHeap) {
-        File file = new File(heapDump);
-        FileUtils.deleteDirectory(file);
-        file.mkdirs();
-        File dumpFile = new File(file, benchmarkParams.id() + ".hprof");
+        Path file = Path.of(heapDump);
+        PathUtils.deleteDirectory(file);
+        Files.createDirectories(file);
+        Path dumpFile = file.resolve(benchmarkParams.id() + ".hprof");
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         HotSpotDiagnosticMXBean mxBean =
             ManagementFactory.newPlatformMXBeanProxy(
                 server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
-        mxBean.dumpHeap(dumpFile.getAbsolutePath(), true);
+        mxBean.dumpHeap(dumpFile.toAbsolutePath().toString(), true);
       }
     }
-  }
-
-  private static Long getInitRandomeSeed() {
-    Long seed = Long.getLong("solr.bench.seed");
-
-    if (seed == null) {
-      seed = RANDOM_SEED;
-    }
-
-    log("benchmark random seed: " + seed);
-
-    return seed;
   }
 }

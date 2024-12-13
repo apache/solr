@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Utilities for Solr client applications.
- */
+
+/** Utilities for Solr client applications. */
 package org.apache.solr.client.solrj.util;
-
-

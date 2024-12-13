@@ -18,54 +18,39 @@
 package org.apache.solr.security;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.solr.common.StringUtils;
-import org.apache.solr.core.CloudConfig;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 
-import java.io.IOException;
-import java.net.URL;
-import java.security.spec.InvalidKeySpecException;
-
 public class PublicKeyHandler extends RequestHandlerBase {
   public static final String PATH = "/admin/info/key";
 
-  final CryptoKeys.RSAKeyPair keyPair;
+  private final SolrNodeKeyPair nodeKeyPair;
 
   @VisibleForTesting
   public PublicKeyHandler() {
-    keyPair = new CryptoKeys.RSAKeyPair();
+    this(new SolrNodeKeyPair(null));
   }
 
-  public PublicKeyHandler(CloudConfig config) throws IOException, InvalidKeySpecException {
-    keyPair = createKeyPair(config);
+  public PublicKeyHandler(SolrNodeKeyPair nodeKeyPair) {
+    this.nodeKeyPair = nodeKeyPair;
   }
 
-  private CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) throws IOException, InvalidKeySpecException {
-    if (config == null) {
-      return new CryptoKeys.RSAKeyPair();
-    }
-
-    String publicKey = config.getPkiHandlerPublicKeyPath();
-    String privateKey = config.getPkiHandlerPrivateKeyPath();
-
-    // If both properties unset, then we fall back to generating a new key pair
-    if (StringUtils.isEmpty(publicKey) && StringUtils.isEmpty(privateKey)) {
-      return new CryptoKeys.RSAKeyPair();
-    }
-
-    return new CryptoKeys.RSAKeyPair(new URL(privateKey), new URL(publicKey));
-  }
-
-  public String getPublicKey() {
-    return keyPair.getPublicKeyStr();
+  public CryptoKeys.RSAKeyPair getKeyPair() {
+    return nodeKeyPair.getKeyPair();
   }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    rsp.add("key", keyPair.getPublicKeyStr());
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+        rsp, new GetPublicKey(nodeKeyPair).getPublicKey());
   }
 
   @Override
@@ -76,5 +61,25 @@ public class PublicKeyHandler extends RequestHandlerBase {
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.ALL;
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return new ArrayList<>();
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(GetPublicKey.class);
   }
 }

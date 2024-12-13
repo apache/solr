@@ -16,8 +16,5 @@
  */
 package org.apache.solr.schema;
 
-/**
- * Marker interface for Date-valued field types.
- */
-public interface DateValueFieldType {
-}
+/** Marker interface for Date-valued field types. */
+public interface DateValueFieldType {}

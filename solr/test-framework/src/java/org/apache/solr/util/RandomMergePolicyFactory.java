@@ -31,5 +31,4 @@ public final class RandomMergePolicyFactory extends MergePolicyFactory {
   public MergePolicy getMergePolicy() {
     return new RandomMergePolicy();
   }
-
 }

@@ -17,24 +17,27 @@
 
 package org.apache.solr.cloud;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.Timer;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ClusterStateUtil;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
@@ -44,20 +47,16 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.Timer;
-
 public class TestCloudRecovery extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
   private static boolean onlyLeaderIndexes;
-  
+
   private int nrtReplicas;
   private int tlogReplicas;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("metricsEnabled", "true");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
@@ -66,19 +65,20 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   @Before
   public void beforeTest() throws Exception {
     configureCluster(2)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     onlyLeaderIndexes = random().nextBoolean();
     nrtReplicas = 2; // onlyLeaderIndexes?0:2;
     tlogReplicas = 0; // onlyLeaderIndexes?2:0; TODO: SOLR-12313 tlog replicas break tests because
-                          // TestInjection#waitForInSyncWithLeader is broken
-    CollectionAdminRequest
-        .createCollection(COLLECTION, "config", 2, nrtReplicas, tlogReplicas, 0)
+    // TestInjection#waitForInSyncWithLeader is broken
+    CollectionAdminRequest.createCollection(COLLECTION, "config", 2, nrtReplicas, tlogReplicas, 0)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
 
-    // SOLR-12314 : assert that these values are from the solr.xml file and not UpdateShardHandlerConfig#DEFAULT
+    // SOLR-12314 : assert that these values are from the solr.xml file and not
+    // UpdateShardHandlerConfig#DEFAULT
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       UpdateShardHandler shardHandler = jettySolrRunner.getCoreContainer().getUpdateShardHandler();
       int socketTimeout = shardHandler.getSocketTimeout();
@@ -87,7 +87,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
       assertEquals(45000, connectionTimeout);
     }
   }
-  
+
   @After
   public void afterTest() throws Exception {
     TestInjection.reset(); // do after every test, don't wait for AfterClass
@@ -95,7 +95,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void leaderRecoverFromLogOnStartupTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     TestInjection.skipIndexWriterCommitOnClose = true;
@@ -114,40 +113,47 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
     ChaosMonkey.stop(cluster.getJettySolrRunners());
 
-    
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       cluster.waitForJettyToStop(jettySolrRunner);
     }
-    assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(cloudClient.getZkStateReader(), 45000));
+    assertTrue(
+        "Timeout waiting for all not live",
+        ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cloudClient), 45000));
     ChaosMonkey.start(cluster.getJettySolrRunners());
-    
+
     cluster.waitForAllNodes(30);
-    
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cloudClient.getZkStateReader(), COLLECTION, 120000));
+
+    assertTrue(
+        "Timeout waiting for all live and active",
+        ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+            ZkStateReader.from(cloudClient), COLLECTION, 120000));
 
     resp = cloudClient.query(COLLECTION, params);
     assertEquals(4, resp.getResults().getNumFound());
     // Make sure all nodes is recover from tlog
     if (onlyLeaderIndexes) {
-      // Leader election can be kicked off, so 2 tlog replicas will replay its tlog before becoming new leader
-      assertTrue( countReplayLog.get() >=2);
+      // Leader election can be kicked off, so 2 tlog replicas will replay its tlog before becoming
+      // new leader
+      assertTrue(countReplayLog.get() >= 2);
     } else {
       assertEquals(4, countReplayLog.get());
     }
 
     // check metrics
-    int replicationCount = 0;
-    int errorsCount = 0;
-    int skippedCount = 0;
+    long replicationCount = 0;
+    long errorsCount = 0;
+    long skippedCount = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       SolrMetricManager manager = jetty.getCoreContainer().getMetricManager();
-      List<String> registryNames = manager.registryNames().stream()
-          .filter(s -> s.startsWith("solr.core.")).collect(Collectors.toList());
+      List<String> registryNames =
+          manager.registryNames().stream()
+              .filter(s -> s.startsWith("solr.core."))
+              .collect(Collectors.toList());
       for (String registry : registryNames) {
         Map<String, Metric> metrics = manager.registry(registry).getMetrics();
-        Timer timer = (Timer)metrics.get("REPLICATION.peerSync.time");
-        Counter counter = (Counter)metrics.get("REPLICATION.peerSync.errors");
-        Counter skipped = (Counter)metrics.get("REPLICATION.peerSync.skipped");
+        Timer timer = (Timer) metrics.get("REPLICATION.peerSync.time");
+        Counter counter = (Counter) metrics.get("REPLICATION.peerSync.errors");
+        Counter skipped = (Counter) metrics.get("REPLICATION.peerSync.skipped");
         replicationCount += timer.getCount();
         errorsCount += counter.getCount();
         skippedCount += skipped.getCount();
@@ -161,7 +167,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void corruptedLogTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     TestInjection.skipIndexWriterCommitOnClose = true;
@@ -183,32 +188,32 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     Map<String, byte[]> contentFiles = new HashMap<>();
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        File tlogFolder = new File(solrCore.getUlogDir(), UpdateLog.TLOG_NAME);
+        File tlogFolder = new File(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
         String[] tLogFiles = tlogFolder.list();
         Arrays.sort(tLogFiles);
         String lastTLogFile = tlogFolder.getAbsolutePath() + "/" + tLogFiles[tLogFiles.length - 1];
-        try (FileInputStream inputStream = new FileInputStream(lastTLogFile)){
-          byte[] tlogBytes = IOUtils.toByteArray(inputStream);
-          contentFiles.put(lastTLogFile, tlogBytes);
-          logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
-        }
+        byte[] tlogBytes = Files.readAllBytes(Path.of(lastTLogFile));
+        contentFiles.put(lastTLogFile, tlogBytes);
+        logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
       }
     }
 
     ChaosMonkey.stop(cluster.getJettySolrRunners());
-    
+
     for (JettySolrRunner j : cluster.getJettySolrRunners()) {
       cluster.waitForJettyToStop(j);
     }
-    
-    assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(cloudClient.getZkStateReader(), 45000));
+
+    assertTrue(
+        "Timeout waiting for all not live",
+        ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cloudClient), 45000));
 
     for (Map.Entry<String, byte[]> entry : contentFiles.entrySet()) {
       byte[] tlogBytes = entry.getValue();
 
       if (tlogBytes.length <= logHeaderSize) continue;
       try (FileOutputStream stream = new FileOutputStream(entry.getKey())) {
-        int skipLastBytes = Math.max(random().nextInt(tlogBytes.length - logHeaderSize)-2, 2);
+        int skipLastBytes = Math.max(random().nextInt(tlogBytes.length - logHeaderSize) - 2, 2);
         for (int i = 0; i < entry.getValue().length - skipLastBytes; i++) {
           stream.write(tlogBytes[i]);
         }
@@ -217,19 +222,19 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
     ChaosMonkey.start(cluster.getJettySolrRunners());
     cluster.waitForAllNodes(30);
-    
+
     Thread.sleep(1000);
-    
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cloudClient.getZkStateReader(), COLLECTION, 120000));
-    
+
+    assertTrue(
+        "Timeout waiting for all live and active",
+        ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+            ZkStateReader.from(cloudClient), COLLECTION, 120000));
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
-    
-    cloudClient.getZkStateReader().forceUpdateCollection(COLLECTION);
-    
+
+    ZkStateReader.from(cloudClient).forceUpdateCollection(COLLECTION);
     resp = cloudClient.query(COLLECTION, params);
     // Make sure cluster still healthy
     // TODO: AwaitsFix - this will fail under test beasting
     // assertTrue(resp.toString(), resp.getResults().getNumFound() >= 2);
   }
-
 }

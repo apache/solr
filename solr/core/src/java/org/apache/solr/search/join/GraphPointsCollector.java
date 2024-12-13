@@ -17,8 +17,10 @@
 
 package org.apache.solr.search.join;
 
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongSet;
+import com.carrotsearch.hppc.cursors.LongCursor;
 import java.io.IOException;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
@@ -31,12 +33,12 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.util.LongIterator;
-import org.apache.solr.util.LongSet;
 
-/** @lucene.internal */
+/**
+ * @lucene.internal
+ */
 public class GraphPointsCollector extends GraphEdgeCollector {
-  final LongSet set = new LongSet(256);
+  final LongSet set = new LongHashSet(256);
 
   SortedNumericDocValues values = null;
 
@@ -69,48 +71,49 @@ public class GraphPointsCollector extends GraphEdgeCollector {
 
   @Override
   public Query getResultQuery(SchemaField matchField, boolean useAutomaton) {
-    if (set.cardinality() == 0) return null;
+    if (set.isEmpty()) return null;
 
     Query q = null;
 
-    // How we interpret the longs collected depends on the field we collect from (single valued can be diff from multi valued)
+    // How we interpret the longs collected depends on the field we collect from (single valued can
+    // be diff from multi valued)
     // The basic type of the from & to field must match though (int/long/float/double)
     NumberType ntype = collectField.getType().getNumberType();
     boolean multiValued = collectField.multiValued();
 
     if (ntype == NumberType.LONG || ntype == NumberType.DATE) {
-      long[] vals = new long[set.cardinality()];
+      long[] vals = new long[set.size()];
       int i = 0;
-      for (LongIterator iter = set.iterator(); iter.hasNext(); ) {
-        long bits = iter.next();
-        long v = bits;
-        vals[i++] = v;
+      for (LongCursor c : set) {
+        vals[i++] = c.value;
       }
       q = LongPoint.newSetQuery(matchField.getName(), vals);
     } else if (ntype == NumberType.INTEGER) {
-      int[] vals = new int[set.cardinality()];
+      int[] vals = new int[set.size()];
       int i = 0;
-      for (LongIterator iter = set.iterator(); iter.hasNext(); ) {
-        long bits = iter.next();
-        int v = (int)bits;
-        vals[i++] = v;
+      for (LongCursor c : set) {
+        vals[i++] = (int) c.value;
       }
       q = IntPoint.newSetQuery(matchField.getName(), vals);
     } else if (ntype == NumberType.DOUBLE) {
-      double[] vals = new double[set.cardinality()];
+      double[] vals = new double[set.size()];
       int i = 0;
-      for (LongIterator iter = set.iterator(); iter.hasNext(); ) {
-        long bits = iter.next();
-        double v = multiValued ? NumericUtils.sortableLongToDouble(bits) : Double.longBitsToDouble(bits);
+      for (LongCursor c : set) {
+        long bits = c.value;
+        double v =
+            multiValued ? NumericUtils.sortableLongToDouble(bits) : Double.longBitsToDouble(bits);
         vals[i++] = v;
       }
       q = DoublePoint.newSetQuery(matchField.getName(), vals);
     } else if (ntype == NumberType.FLOAT) {
-      float[] vals = new float[set.cardinality()];
+      float[] vals = new float[set.size()];
       int i = 0;
-      for (LongIterator iter = set.iterator(); iter.hasNext(); ) {
-        long bits = iter.next();
-        float v = multiValued ? NumericUtils.sortableIntToFloat((int) bits) : Float.intBitsToFloat((int) bits);
+      for (LongCursor c : set) {
+        long bits = c.value;
+        float v =
+            multiValued
+                ? NumericUtils.sortableIntToFloat((int) bits)
+                : Float.intBitsToFloat((int) bits);
         vals[i++] = v;
       }
       q = FloatPoint.newSetQuery(matchField.getName(), vals);
@@ -118,6 +121,4 @@ public class GraphPointsCollector extends GraphEdgeCollector {
 
     return q;
   }
-
-
 }

@@ -21,12 +21,11 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
-/**
- * A {@link MergePolicyFactory} for {@link LogDocMergePolicy} objects.
- */
+/** A {@link MergePolicyFactory} for {@link LogDocMergePolicy} objects. */
 public class LogDocMergePolicyFactory extends SimpleMergePolicyFactory {
 
-  public LogDocMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+  public LogDocMergePolicyFactory(
+      SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
   }
 
@@ -34,5 +33,4 @@ public class LogDocMergePolicyFactory extends SimpleMergePolicyFactory {
   protected MergePolicy getMergePolicyInstance() {
     return new LogDocMergePolicy();
   }
-
 }

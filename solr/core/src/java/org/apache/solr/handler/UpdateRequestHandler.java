@@ -16,10 +16,12 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -30,6 +32,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.loader.CSVLoader;
+import org.apache.solr.handler.loader.CborLoader;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.handler.loader.JsonLoader;
@@ -40,13 +43,9 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
-
-/**
- * UpdateHandler that uses content-type to pick the right Loader
- */
-public class UpdateRequestHandler extends ContentStreamHandlerBase implements PermissionNameProvider {
+/** UpdateHandler that uses content-type to pick the right Loader */
+public class UpdateRequestHandler extends ContentStreamHandlerBase
+    implements PermissionNameProvider {
 
   // XML Constants
   public static final String ADD = "add";
@@ -64,53 +63,57 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   // NOTE: This constant is for use with the <add> XML tag, not the HTTP param with same name
   public static final String COMMIT_WITHIN = "commitWithin";
 
-  protected Map<String,ContentStreamLoader> loaders = null;
+  protected Map<String, ContentStreamLoader> loaders = null;
 
-  ContentStreamLoader instance = new ContentStreamLoader() {
-    @Override
-    public void load(SolrQueryRequest req, SolrQueryResponse rsp,
-        ContentStream stream, UpdateRequestProcessor processor) throws Exception {
+  ContentStreamLoader instance =
+      new ContentStreamLoader() {
+        @Override
+        public void load(
+            SolrQueryRequest req,
+            SolrQueryResponse rsp,
+            ContentStream stream,
+            UpdateRequestProcessor processor)
+            throws Exception {
 
-      ContentStreamLoader loader = pathVsLoaders.get(req.getContext().get(PATH));
-      if(loader == null) {
-        String type = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
-        if (type == null) {
-          type = stream.getContentType();
-        }
-        if (type == null) { // Normal requests will not get here.
-          throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Missing ContentType");
-        }
-        int idx = type.indexOf(';');
-        if (idx > 0) {
-          type = type.substring(0, idx);
-        }
-        loader = loaders.get(type);
-        if (loader == null) {
-          throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Unsupported ContentType: "
-              + type + "  Not in: " + loaders.keySet());
-        }
-      }
+          ContentStreamLoader loader = pathVsLoaders.get(req.getContext().get(PATH));
+          if (loader == null) {
+            String type = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
+            if (type == null) {
+              type = stream.getContentType();
+            }
+            if (type == null) { // Normal requests will not get here.
+              throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Missing ContentType");
+            }
+            int idx = type.indexOf(';');
+            if (idx > 0) {
+              type = type.substring(0, idx);
+            }
+            loader = loaders.get(type);
+            if (loader == null) {
+              throw new SolrException(
+                  ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+                  "Unsupported ContentType: " + type + "  Not in: " + loaders.keySet());
+            }
+          }
 
-      if(loader.getDefaultWT()!=null) {
-        setDefaultWT(req,loader);
-      }
-      loader.load(req, rsp, stream, processor);
-    }
-
-    private void setDefaultWT(SolrQueryRequest req, ContentStreamLoader loader) {
-      SolrParams params = req.getParams();
-      if( params.get(CommonParams.WT) == null ) {
-        String wt = loader.getDefaultWT();
-        // Make sure it is a valid writer
-        if(req.getCore().getQueryResponseWriter(wt)!=null) {
-          Map<String,String> map = new HashMap<>(1);
-          map.put(CommonParams.WT, wt);
-          req.setParams(SolrParams.wrapDefaults(params,
-              new MapSolrParams(map)));
+          if (loader.getDefaultWT() != null) {
+            setDefaultWT(req, loader);
+          }
+          loader.load(req, rsp, stream, processor);
         }
-      }
-    }
-  };
+
+        private void setDefaultWT(SolrQueryRequest req, ContentStreamLoader loader) {
+          SolrParams params = req.getParams();
+          if (params.get(CommonParams.WT) == null) {
+            String wt = loader.getDefaultWT();
+            // Make sure it is a valid writer
+            if (req.getCore().getQueryResponseWriter(wt) != null) {
+              Map<String, String> map = Map.of(CommonParams.WT, wt);
+              req.setParams(SolrParams.wrapDefaults(params, new MapSolrParams(map)));
+            }
+          }
+        }
+      };
 
   @Override
   public void init(NamedList<?> args) {
@@ -121,36 +124,39 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   }
 
   protected void setAssumeContentType(String ct) {
-    if(invariants==null) {
-      Map<String,String> map = new HashMap<>();
-      map.put(UpdateParams.ASSUME_CONTENT_TYPE,ct);
+    if (invariants == null) {
+      Map<String, String> map = new HashMap<>();
+      map.put(UpdateParams.ASSUME_CONTENT_TYPE, ct);
       invariants = new MapSolrParams(map);
-    }
-    else {
+    } else {
       ModifiableSolrParams params = new ModifiableSolrParams(invariants);
-      params.set(UpdateParams.ASSUME_CONTENT_TYPE,ct);
+      params.set(UpdateParams.ASSUME_CONTENT_TYPE, ct);
       invariants = params;
     }
   }
-  private Map<String ,ContentStreamLoader> pathVsLoaders = new HashMap<>();
-  protected Map<String,ContentStreamLoader> createDefaultLoaders(NamedList<?> args) {
+
+  private Map<String, ContentStreamLoader> pathVsLoaders = new HashMap<>();
+
+  protected Map<String, ContentStreamLoader> createDefaultLoaders(NamedList<?> args) {
     SolrParams p = null;
-    if(args!=null) {
+    if (args != null) {
       p = args.toSolrParams();
     }
-    Map<String,ContentStreamLoader> registry = new HashMap<>();
-    registry.put("application/xml", new XMLLoader().init(p) );
-    registry.put("application/json", new JsonLoader().init(p) );
-    registry.put("application/csv", new CSVLoader().init(p) );
-    registry.put("application/javabin", new JavabinLoader(instance).init(p) );
-    registry.put("text/csv", registry.get("application/csv") );
-    registry.put("text/xml", registry.get("application/xml") );
+    Map<String, ContentStreamLoader> registry = new HashMap<>();
+    registry.put("application/xml", new XMLLoader().init(p));
+    registry.put("application/json", new JsonLoader().init(p));
+    registry.put("application/csv", new CSVLoader().init(p));
+    registry.put("application/javabin", new JavabinLoader(instance).init(p));
+    registry.put("application/cbor", CborLoader.createLoader(p));
+    registry.put("text/csv", registry.get("application/csv"));
+    registry.put("text/xml", registry.get("application/xml"));
     registry.put("text/json", registry.get("application/json"));
 
-    pathVsLoaders.put(JSON_PATH,registry.get("application/json"));
-    pathVsLoaders.put(DOC_PATH,registry.get("application/json"));
-    pathVsLoaders.put(CSV_PATH,registry.get("application/csv"));
-    pathVsLoaders.put(BIN_PATH,registry.get("application/javabin"));
+    pathVsLoaders.put(JSON_PATH, registry.get("application/json"));
+    pathVsLoaders.put(DOC_PATH, registry.get("application/json"));
+    pathVsLoaders.put(CSV_PATH, registry.get("application/csv"));
+    pathVsLoaders.put(BIN_PATH, registry.get("application/javabin"));
+    pathVsLoaders.put(CBOR_PATH, registry.get("application/cbor"));
     return registry;
   }
 
@@ -160,7 +166,8 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   }
 
   @Override
-  protected ContentStreamLoader newLoader(SolrQueryRequest req, final UpdateRequestProcessor processor) {
+  protected ContentStreamLoader newLoader(
+      SolrQueryRequest req, final UpdateRequestProcessor processor) {
     return instance;
   }
 
@@ -180,5 +187,5 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   public static final String JSON_PATH = "/update/json";
   public static final String CSV_PATH = "/update/csv";
   public static final String BIN_PATH = "/update/bin";
-
+  public static final String CBOR_PATH = "/update/cbor";
 }

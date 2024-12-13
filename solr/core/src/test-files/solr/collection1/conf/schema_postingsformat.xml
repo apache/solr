@@ -19,14 +19,14 @@
 
   <fieldType name="str_none" class="solr.StrField"/>
   <fieldType name="str_direct_asserting" class="solr.StrField" postingsFormat="Direct" docValuesFormat="Asserting"/>
-  <fieldType name="str_standard_simple" class="solr.StrField" postingsFormat="Lucene84" docValuesFormat="SimpleTextDocValuesFormat"/>
+  <fieldType name="str_standard_simple" class="solr.StrField" postingsFormat="Lucene84" docValuesFormat="Lucene80"/>
 
   <field name="str_none_f" type="str_none"/>
   <field name="str_direct_asserting_f" type="str_direct_asserting"/>
   <field name="str_standard_simple_f" type="str_standard_simple"/>
 
   <field name="str_none_lucene80_f" type="str_none" postingsFormat="Lucene80"/>
-  <field name="str_standard_lucene80_f" type="str_standard_simple" postingsFormat="Lucene80"/>
+  <field name="str_standard_lucene90_f" type="str_standard_simple" postingsFormat="Lucene90"/>
 
   <field name="str_none_asserting_f" type="str_none" docValuesFormat="Asserting"/>
   <field name="str_standard_asserting_f" type="str_standard_simple" docValuesFormat="Asserting"/>
@@ -36,6 +36,6 @@
   <dynamicField name="*_lucene70" type="str_none" postingsFormat="Lucene70"/>
 
   <dynamicField name="*_asserting" type="str_none" docValuesFormat="Asserting"/>
-  <dynamicField name="*_simple" type="str_direct_asserting" docValuesFormat="SimpleTextDocValuesFormat"/>
+  <dynamicField name="*_simple" type="str_direct_asserting" docValuesFormat="Lucene80"/>
 
 </schema>

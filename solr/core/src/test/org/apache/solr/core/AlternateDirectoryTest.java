@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
@@ -26,45 +25,40 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
-/**
- * test that configs can override the DirectoryFactory and 
- * IndexReaderFactory used in solr.
- */
+/** test that configs can override the DirectoryFactory and IndexReaderFactory used in solr. */
 public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-altdirectory.xml", "schema.xml");
   }
 
-  public void testAltDirectoryUsed() throws Exception {
-    assertQ(req("q","*:*","qt","/select"));
+  public void testAltDirectoryUsed() {
+    assertQ(req("q", "*:*", "qt", "/select"));
     assertTrue(TestFSDirectoryFactory.openCalled);
     assertTrue(TestIndexReaderFactory.newReaderCalled);
   }
-  
-  public void testAltReaderUsed() throws Exception {
+
+  public void testAltReaderUsed() {
     IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
     assertNotNull("Factory is null", readerFactory);
-    assertEquals("readerFactory is wrong class",
-                 AlternateDirectoryTest.TestIndexReaderFactory.class.getName(), 
-                 readerFactory.getClass().getName());
+    assertEquals(
+        "readerFactory is wrong class",
+        AlternateDirectoryTest.TestIndexReaderFactory.class.getName(),
+        readerFactory.getClass().getName());
   }
 
-  static public class TestFSDirectoryFactory extends StandardDirectoryFactory {
+  public static class TestFSDirectoryFactory extends StandardDirectoryFactory {
     public static volatile boolean openCalled = false;
-    public static volatile Directory dir;
-    
+
     @Override
-    public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
+    public Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
       openCalled = true;
 
-      return dir = newFSDirectory(Path.of(path), lockFactory);
+      return newFSDirectory(Path.of(path), lockFactory);
     }
-
   }
 
-
-  static public class TestIndexReaderFactory extends IndexReaderFactory {
+  public static class TestIndexReaderFactory extends IndexReaderFactory {
     static volatile boolean newReaderCalled = false;
 
     @Override
@@ -79,5 +73,4 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
       return DirectoryReader.open(writer);
     }
   }
-
 }

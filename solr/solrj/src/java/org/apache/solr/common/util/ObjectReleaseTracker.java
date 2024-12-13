@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import java.io.Closeable;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -28,39 +27,43 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-
+import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ThreadSafe
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
-      "org.junit.",
-      "junit.framework.",
-      "sun.",
-      "java.lang.reflect.",
-      "com.carrotsearch.randomizedtesting.",
-  });
+  private static final List<String> DEFAULT_STACK_FILTERS =
+      Arrays.asList(
+          new String[] {
+            "org.junit.",
+            "junit.framework.",
+            "sun.",
+            "java.lang.reflect.",
+            "com.carrotsearch.randomizedtesting.",
+          });
 
   public static final Map<Object, Exception> OBJECTS = new ConcurrentHashMap<>();
-  
+
   public static boolean track(Object object) {
-    // This is called from within constructors, be careful not to make assumptions about state of object here
+    // This is called from within constructors, be careful not to make assumptions about state of
+    // object here
     Throwable submitter = ExecutorUtil.submitter.get(); // Could be null
     OBJECTS.put(object, new ObjectTrackerException(object.getClass().getName(), submitter));
     return true;
   }
-  
+
   public static boolean release(Object object) {
     OBJECTS.remove(object);
     return true;
   }
-  
+
   public static void clear() {
     OBJECTS.clear();
   }
-  
+
   /**
    * @return null if ok else error message
    */
@@ -70,12 +73,16 @@ public class ObjectReleaseTracker {
     }
 
     StringBuilder error = new StringBuilder();
-    error.append("ObjectTracker found ").append(OBJECTS.size()).append(" object(s) that were not released!!! ");
+    error
+        .append("ObjectTracker found ")
+        .append(OBJECTS.size())
+        .append(" object(s) that were not released!!! ");
 
     ArrayList<String> objects = new ArrayList<>(OBJECTS.size());
     for (Object object : OBJECTS.keySet()) {
       Class<?> clazz = object.getClass();
-      objects.add(clazz.isAnonymousClass() ? clazz.getSuperclass().getSimpleName() : clazz.getSimpleName());
+      objects.add(
+          clazz.isAnonymousClass() ? clazz.getSuperclass().getSimpleName() : clazz.getSimpleName());
     }
     error.append(objects).append("\n");
 
@@ -87,10 +94,10 @@ public class ObjectReleaseTracker {
       error.append(entry.getKey().getClass().getName()).append(":");
       error.append(sw).append("\n");
     }
-    
+
     return error.toString();
   }
-  
+
   public static void tryClose() {
     for (Object object : OBJECTS.keySet()) {
       if (object instanceof Closeable) {
@@ -117,7 +124,7 @@ public class ObjectReleaseTracker {
     ObjectReleaseTracker.clear();
     return result;
   }
-  
+
   static class ObjectTrackerException extends RuntimeException {
     ObjectTrackerException(String msg, Throwable submitter) {
       super(msg, submitter);

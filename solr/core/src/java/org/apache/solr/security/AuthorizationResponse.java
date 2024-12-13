@@ -16,9 +16,9 @@
  */
 package org.apache.solr.security;
 
-/* This class currently only stores an int statusCode (HttpStatus) value and a message but can 
-   be used to return ACLs and other information from the authorization plugin.
- */
+/* This class currently only stores an int statusCode (HttpStatus) value and a message but can
+  be used to return ACLs and other information from the authorization plugin.
+*/
 public class AuthorizationResponse {
   public static final AuthorizationResponse OK = new AuthorizationResponse(200);
   public static final AuthorizationResponse FORBIDDEN = new AuthorizationResponse(403);
@@ -29,7 +29,7 @@ public class AuthorizationResponse {
   public AuthorizationResponse(int httpStatusCode) {
     this.statusCode = httpStatusCode;
   }
-  
+
   public String getMessage() {
     return message;
   }

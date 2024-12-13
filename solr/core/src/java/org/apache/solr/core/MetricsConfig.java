@@ -17,16 +17,11 @@
 package org.apache.solr.core;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
-/**
- *
- */
+/** */
 public class MetricsConfig {
 
   private final PluginInfo[] metricReporters;
-  private final Set<String> hiddenSysProps;
   private final PluginInfo counterSupplier;
   private final PluginInfo meterSupplier;
   private final PluginInfo timerSupplier;
@@ -36,15 +31,22 @@ public class MetricsConfig {
   private final Object nullString;
   private final Object nullObject;
   private final boolean enabled;
+  private final CacheConfig cacheConfig;
 
-  private MetricsConfig(boolean enabled,
-                        PluginInfo[] metricReporters, Set<String> hiddenSysProps,
-                        PluginInfo counterSupplier, PluginInfo meterSupplier,
-                        PluginInfo timerSupplier, PluginInfo histogramSupplier,
-                        Object nullNumber, Object notANumber, Object nullString, Object nullObject) {
+  private MetricsConfig(
+      boolean enabled,
+      PluginInfo[] metricReporters,
+      PluginInfo counterSupplier,
+      PluginInfo meterSupplier,
+      PluginInfo timerSupplier,
+      PluginInfo histogramSupplier,
+      Object nullNumber,
+      Object notANumber,
+      Object nullString,
+      Object nullObject,
+      CacheConfig cacheConfig) {
     this.enabled = enabled;
     this.metricReporters = metricReporters;
-    this.hiddenSysProps = hiddenSysProps;
     this.counterSupplier = counterSupplier;
     this.meterSupplier = meterSupplier;
     this.timerSupplier = timerSupplier;
@@ -53,10 +55,15 @@ public class MetricsConfig {
     this.notANumber = notANumber;
     this.nullString = nullString;
     this.nullObject = nullObject;
+    this.cacheConfig = cacheConfig;
   }
 
   public boolean isEnabled() {
     return enabled;
+  }
+
+  public CacheConfig getCacheConfig() {
+    return cacheConfig;
   }
 
   private static final PluginInfo[] NO_OP_REPORTERS = new PluginInfo[0];
@@ -85,21 +92,11 @@ public class MetricsConfig {
     return nullObject;
   }
 
-  public Set<String> getHiddenSysProps() {
-    if (enabled) {
-      return hiddenSysProps;
-    } else {
-      return Collections.emptySet();
-    }
-  }
-
   /** Symbolic name to use as plugin class name for no-op implementations. */
   public static final String NOOP_IMPL_CLASS = "__noop__";
 
   private static final PluginInfo NO_OP_PLUGIN =
-      new PluginInfo("typeUnused",
-            Collections.singletonMap("class", NOOP_IMPL_CLASS),
-            null, null);
+      new PluginInfo("typeUnused", Collections.singletonMap("class", NOOP_IMPL_CLASS), null, null);
 
   public PluginInfo getCounterSupplier() {
     if (enabled) {
@@ -135,7 +132,6 @@ public class MetricsConfig {
 
   public static class MetricsConfigBuilder {
     private PluginInfo[] metricReporterPlugins = new PluginInfo[0];
-    private Set<String> hiddenSysProps = new HashSet<>();
     private PluginInfo counterSupplier;
     private PluginInfo meterSupplier;
     private PluginInfo timerSupplier;
@@ -146,26 +142,23 @@ public class MetricsConfig {
     private Object nullObject = null;
     // default to metrics enabled
     private boolean enabled = true;
+    private CacheConfig cacheConfig = null;
 
-    public MetricsConfigBuilder() {
-
-    }
+    public MetricsConfigBuilder() {}
 
     public MetricsConfigBuilder setEnabled(boolean enabled) {
       this.enabled = enabled;
       return this;
     }
 
-    public MetricsConfigBuilder setHiddenSysProps(Set<String> hiddenSysProps) {
-      if (hiddenSysProps != null && !hiddenSysProps.isEmpty()) {
-        this.hiddenSysProps.clear();
-        this.hiddenSysProps.addAll(hiddenSysProps);
-      }
+    public MetricsConfigBuilder setCacheConfig(CacheConfig cacheConfig) {
+      this.cacheConfig = cacheConfig;
       return this;
     }
 
     public MetricsConfigBuilder setMetricReporterPlugins(PluginInfo[] metricReporterPlugins) {
-      this.metricReporterPlugins = metricReporterPlugins != null ? metricReporterPlugins : new PluginInfo[0];
+      this.metricReporterPlugins =
+          metricReporterPlugins != null ? metricReporterPlugins : new PluginInfo[0];
       return this;
     }
 
@@ -210,11 +203,26 @@ public class MetricsConfig {
     }
 
     public MetricsConfig build() {
-      return new MetricsConfig(enabled, metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
-          timerSupplier, histogramSupplier,
-          nullNumber, notANumber, nullString, nullObject);
+      return new MetricsConfig(
+          enabled,
+          metricReporterPlugins,
+          counterSupplier,
+          meterSupplier,
+          timerSupplier,
+          histogramSupplier,
+          nullNumber,
+          notANumber,
+          nullString,
+          nullObject,
+          cacheConfig);
     }
-
   }
 
+  public static class CacheConfig {
+    public Integer threadsIntervalSeconds; // intervals for which the threads metrics are cached
+
+    public CacheConfig(Integer threadsIntervalSeconds) {
+      this.threadsIntervalSeconds = threadsIntervalSeconds;
+    }
+  }
 }

@@ -17,68 +17,62 @@
 package org.apache.solr.util.hll;
 
 /**
- * A serialization schema for HLLs. Reads and writes HLL metadata to
- * and from <code>byte[]</code> representations.
+ * A serialization schema for HLLs. Reads and writes HLL metadata to and from <code>byte[]</code>
+ * representations.
  */
 public interface ISchemaVersion {
-    /**
-     * The number of metadata bytes required for a serialized HLL of the
-     * specified type.
-     *
-     * @param  type the type of the serialized HLL
-     * @return the number of padding bytes needed in order to fully accommodate
-     *         the needed metadata.
-     */
-    int paddingBytes(HLLType type);
+  /**
+   * The number of metadata bytes required for a serialized HLL of the specified type.
+   *
+   * @param type the type of the serialized HLL
+   * @return the number of padding bytes needed in order to fully accommodate the needed metadata.
+   */
+  int paddingBytes(HLLType type);
 
-    /**
-     * Writes metadata bytes to serialized HLL.
-     *
-     * @param bytes the padded data bytes of the HLL
-     * @param metadata the metadata to write to the padding bytes
-     */
-    void writeMetadata(byte[] bytes, IHLLMetadata metadata);
+  /**
+   * Writes metadata bytes to serialized HLL.
+   *
+   * @param bytes the padded data bytes of the HLL
+   * @param metadata the metadata to write to the padding bytes
+   */
+  void writeMetadata(byte[] bytes, IHLLMetadata metadata);
 
-    /**
-     * Reads the metadata bytes of the serialized HLL.
-     *
-     * @param  bytes the serialized HLL
-     * @return the HLL metadata
-     */
-    IHLLMetadata readMetadata(byte[] bytes);
+  /**
+   * Reads the metadata bytes of the serialized HLL.
+   *
+   * @param bytes the serialized HLL
+   * @return the HLL metadata
+   */
+  IHLLMetadata readMetadata(byte[] bytes);
 
-    /**
-     * Builds an HLL serializer that matches this schema version.
-     *
-     * @param  type the HLL type that will be serialized. This cannot be
-     *         <code>null</code>.
-     * @param  wordLength the length of the 'words' that comprise the data of the
-     *         HLL. Words must be at least 5 bits and at most 64 bits long.
-     * @param  wordCount the number of 'words' in the HLL's data.
-     * @return a byte array serializer used to serialize a HLL according
-     *         to this schema version's specification.
-     * @see #paddingBytes(HLLType)
-     * @see IWordSerializer
-     */
-    IWordSerializer getSerializer(HLLType type, int wordLength, int wordCount);
+  /**
+   * Builds an HLL serializer that matches this schema version.
+   *
+   * @param type the HLL type that will be serialized. This cannot be <code>null</code>.
+   * @param wordLength the length of the 'words' that comprise the data of the HLL. Words must be at
+   *     least 5 bits and at most 64 bits long.
+   * @param wordCount the number of 'words' in the HLL's data.
+   * @return a byte array serializer used to serialize a HLL according to this schema version's
+   *     specification.
+   * @see #paddingBytes(HLLType)
+   * @see IWordSerializer
+   */
+  IWordSerializer getSerializer(HLLType type, int wordLength, int wordCount);
 
-    /**
-     * Builds an HLL deserializer that matches this schema version.
-     *
-     * @param  type the HLL type that will be deserialized. This cannot be
-     *         <code>null</code>.
-     * @param  wordLength the length of the 'words' that comprise the data of the
-     *         serialized HLL. Words must be at least 5 bits and at most 64
-     *         bits long.
-     * @param  bytes the serialized HLL to deserialize. This cannot be
-     *         <code>null</code>.
-     * @return a byte array deserializer used to deserialize a HLL serialized
-     *         according to this schema version's specification.
-     */
-    IWordDeserializer getDeserializer(HLLType type, int wordLength, byte[] bytes);
+  /**
+   * Builds an HLL deserializer that matches this schema version.
+   *
+   * @param type the HLL type that will be deserialized. This cannot be <code>null</code>.
+   * @param wordLength the length of the 'words' that comprise the data of the serialized HLL. Words
+   *     must be at least 5 bits and at most 64 bits long.
+   * @param bytes the serialized HLL to deserialize. This cannot be <code>null</code>.
+   * @return a byte array deserializer used to deserialize a HLL serialized according to this schema
+   *     version's specification.
+   */
+  IWordDeserializer getDeserializer(HLLType type, int wordLength, byte[] bytes);
 
-    /**
-     * @return the schema version number.
-     */
-    int schemaVersionNumber();
+  /**
+   * @return the schema version number.
+   */
+  int schemaVersionNumber();
 }

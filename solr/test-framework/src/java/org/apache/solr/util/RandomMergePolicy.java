@@ -17,24 +17,34 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
-import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.FilterMergePolicy;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.tests.index.MockRandomMergePolicy;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link MergePolicy} with a no-arg constructor that proxies to an
- * instance retrieved from {@link LuceneTestCase#newMergePolicy}.
- * Solr tests utilizing the Lucene randomized test framework can refer 
- * to this class in solrconfig.xml to get a fully randomized merge policy.
+ * A {@link MergePolicy} with a no-arg constructor that proxies to an instance retrieved from {@link
+ * LuceneTestCase#newMergePolicy}. Solr tests utilizing the Lucene randomized test framework can
+ * refer to this class in solrconfig.xml to get a fully randomized merge policy.
  */
 public class RandomMergePolicy extends FilterMergePolicy {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   public RandomMergePolicy() {
     this(LuceneTestCase.newMergePolicy());
+  }
+
+  /**
+   * Creates an instance.
+   *
+   * @param allowMockMP whether to give a chance to return {@linkplain MockRandomMergePolicy}, which
+   *     may reverse docs in the segment
+   */
+  public RandomMergePolicy(boolean allowMockMP) {
+    this(LuceneTestCase.newMergePolicy(LuceneTestCase.random(), allowMockMP));
   }
 
   protected RandomMergePolicy(MergePolicy inner) {
@@ -43,5 +53,4 @@ public class RandomMergePolicy extends FilterMergePolicy {
       log.info("RandomMergePolicy wrapping {}: {}", inner.getClass(), inner);
     }
   }
-
 }

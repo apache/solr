@@ -1,0 +1,177 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
+#content #paramsets
+{
+    background-image: url( ../../img/div.gif );
+    background-position: 45% 0;
+    background-repeat: repeat-y;
+}
+
+#content #paramsets #form
+{
+    float: left;
+}
+
+#content #paramsets #sample-paramset
+{
+    margin-top: 15px;
+}
+
+#content #paramsets #delete-paramset
+{
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+
+#content #paramsets #form fieldset legend, #content #paramsets #form .optional.expanded legend {
+    display: block;
+    margin-left: 10px;
+    margin-top: 15px;
+    padding: 0px 5px;
+}
+
+legend {
+    display: block;
+    padding-inline-start: 2px;
+    padding-inline-end: 2px;
+    border-width: initial;
+    border-style: none;
+    border-color: initial;
+    border-image: initial;
+}
+
+#content #paramsets #form label
+{
+    cursor: pointer;
+    display: block;
+    margin-top: 5px;
+}
+
+#content #paramsets #form input,
+#content #paramsets #form select,
+#content #paramsets #form textarea
+{
+    margin-bottom: 2px;
+}
+
+#content #paramsets #form input,
+#content #paramsets #form textarea
+{
+    margin-bottom: 2px;
+}
+
+#content #paramsets #form #start
+{
+    float: left;
+}
+
+#content #paramsets #form #rows
+{
+    float: right;
+}
+
+#content #paramsets #form .checkbox input
+{
+    margin-bottom: 0;
+    width: auto;
+}
+
+#content #paramsets #form fieldset,
+#content #paramsets #form .optional.expanded
+{
+    border: 1px solid #fff;
+    border-top: 1px solid #c0c0c0;
+    margin-bottom: 5px;
+}
+
+#content #paramsets #form fieldset.common
+{
+    margin-top: 10px;
+}
+
+#content #paramsets #form fieldset legend,
+#content #paramsets #form .optional.expanded legend
+{
+    display: block;
+    margin-left: 10px;
+    padding: 0px 5px;
+}
+
+#content #paramsets #form fieldset legend label
+{
+    margin-top: 0;
+}
+
+#content #paramsets #form fieldset .fieldset
+{
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 5px;
+    padding-bottom: 10px;
+}
+
+#content #paramsets #form .optional
+{
+    border: 0;
+}
+
+#content #paramsets #form .optional legend
+{
+    margin-left: 0;
+    padding-left: 0;
+}
+
+#content #paramsets #form .optional.expanded .fieldset
+{
+    display: block;
+}
+
+#content #paramsets #result
+{
+    float: right;
+    width: 54%;
+}
+
+#content #paramsets #result #response
+{
+}
+
+#content #paramsets #result #response pre
+{
+    padding-left: 20px;
+}
+
+.description{
+    font-weight: bold;
+}
+
+#content #paramsets .chosen-container
+{
+  width: 71% !important;
+}
+
+#content #paramsets .chosen-container {
+  margin-left: 6px;
+  width: 100%;
+}
+#content #paramsets .chosen-drop input,
+#content #paramsets .chosen-results {
+  width: 100% !important;
+}

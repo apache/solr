@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/**
- * Indexing related classes.
- */
-package org.apache.solr.index;
 
+/** Indexing related classes. */
+package org.apache.solr.index;

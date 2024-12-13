@@ -23,26 +23,27 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 
-public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
+public class TestSolrJsonWriter extends SolrTestCaseJ4 {
   public void test() throws IOException {
 
     Map<String, Object> map = new HashMap<>();
-    map.put("k1","v1");
-    map.put("k2",1);
-    map.put("k3",false);
-    map.put("k4",Utils.makeMap("k41", "v41", "k42","v42")); // Compare in order
-    map.put("k5", (MapWriter) ew -> {
-      ew.put("k61","v61");
-      ew.put("k62","v62");
-      ew.put("k63", (IteratorWriter) iw -> iw.add("v631")
-          .add("v632"));
-    });
+    map.put("k1", "v1");
+    map.put("k2", 1);
+    map.put("k3", false);
+    map.put("k4", Utils.makeMap("k41", "v41", "k42", "v42")); // Compare in order
+    map.put(
+        "k5",
+        (MapWriter)
+            ew -> {
+              ew.put("k61", "v61");
+              ew.put("k62", "v62");
+              ew.put("k63", (IteratorWriter) iw -> iw.add("v631").add("v632"));
+            });
 
     StringWriter writer = new StringWriter();
     try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer).setIndent(false)) {
@@ -66,88 +67,72 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
     try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer).setIndent(false)) {
       jsonWriter.writeObj(c1);
     }
-   assertEquals(json, writer.toString());
+    assertEquals(json, writer.toString());
 
+    /*Used in perf testing
+    System.out.println("JSON REFLECT write time : "+write2String(c1,iters));
+     System.out.println("JSON Map write time : "+write2String(map, iters));
 
-   /*Used in perf testing
-   System.out.println("JSON REFLECT write time : "+write2String(c1,iters));
-    System.out.println("JSON Map write time : "+write2String(map, iters));
-
-    System.out.println("javabin REFLECT write time : "+write2Javabin(c1,iters));
-    System.out.println("javabin Map write time : "+write2Javabin(map, iters));
-    */
+     System.out.println("javabin REFLECT write time : "+write2Javabin(c1,iters));
+     System.out.println("javabin Map write time : "+write2Javabin(map, iters));
+     */
 
   }
 
-  @SuppressForbidden(reason="used for perf testing numbers only")
+  @SuppressForbidden(reason = "used for perf testing numbers only")
   private long write2String(Object o, int iters) throws IOException {
-    long start = System.currentTimeMillis() ;
-    for
-    (int i = 0;i<iters;i++) {
+    long start = System.currentTimeMillis();
+    for (int i = 0; i < iters; i++) {
       StringWriter writer = new StringWriter();
 
       try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer)) {
         jsonWriter.setIndent(true).writeObj(o);
       }
     }
-    return System.currentTimeMillis()-start;
-
+    return System.currentTimeMillis() - start;
   }
-  @SuppressForbidden(reason="used for perf testing numbers only")
+
+  @SuppressForbidden(reason = "used for perf testing numbers only")
   private long write2Javabin(Object o, int iters) throws IOException {
-    long start = System.currentTimeMillis() ;
-    for (int i = 0;i<iters;i++) {
+    long start = System.currentTimeMillis();
+    for (int i = 0; i < iters; i++) {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       new JavaBinCodec(null).marshal(o, baos);
     }
-    return System.currentTimeMillis()-start;
+    return System.currentTimeMillis() - start;
 
-//    JSON REFLECT write time : 76
-//    JSON Map write time : 42
-//    javabin REFLECT write time : 50
-//    javabin Map write time : 32
-//
-//    before
-//    JSON REFLECT write time : 181
-//    JSON Map write time : 38
-//    javabin REFLECT write time : 111
-//    javabin Map write time : 33
+    //    JSON REFLECT write time : 76
+    //    JSON Map write time : 42
+    //    javabin REFLECT write time : 50
+    //    javabin Map write time : 32
+    //
+    //    before
+    //    JSON REFLECT write time : 181
+    //    JSON Map write time : 38
+    //    javabin REFLECT write time : 111
+    //    javabin Map write time : 33
   }
 
-
   public static class C1 implements ReflectMapWriter {
-    @JsonProperty
-    public String k1 = "v1";
-    @JsonProperty
-    public int k2 = 1;
-    @JsonProperty
-    public boolean k3 = false;
-    @JsonProperty
-    public C2 k4 = new C2();
+    @JsonProperty public String k1 = "v1";
+    @JsonProperty public int k2 = 1;
+    @JsonProperty public boolean k3 = false;
+    @JsonProperty public C2 k4 = new C2();
 
-    @JsonProperty
-    public C3 k5 = new C3() ;
-
-
+    @JsonProperty public C3 k5 = new C3();
   }
 
   public static class C3 implements ReflectMapWriter {
-    @JsonProperty
-    public String k61 = "v61";
+    @JsonProperty public String k61 = "v61";
 
-    @JsonProperty
-    public String k62 = "v62";
+    @JsonProperty public String k62 = "v62";
 
-    @JsonProperty
-    public List<String> k63= List.of("v631","v632");
+    @JsonProperty public List<String> k63 = List.of("v631", "v632");
   }
 
   public static class C2 implements ReflectMapWriter {
-    @JsonProperty
-    public String k41 = "v41";
+    @JsonProperty public String k41 = "v41";
 
-    @JsonProperty
-    public String k42 = "v42";
-
+    @JsonProperty public String k42 = "v42";
   }
 }

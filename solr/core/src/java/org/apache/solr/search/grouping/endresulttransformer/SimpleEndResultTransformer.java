@@ -17,7 +17,6 @@
 package org.apache.solr.search.grouping.endresulttransformer;
 
 import java.util.Map;
-
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.grouping.GroupDocs;
@@ -31,12 +30,14 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
 /**
- * Implementation of {@link EndResultTransformer} that transforms the grouped result into a single flat list.
+ * Implementation of {@link EndResultTransformer} that transforms the grouped result into a single
+ * flat list.
  */
 public class SimpleEndResultTransformer implements EndResultTransformer {
 
   @Override
-  public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
+  public void transform(
+      Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new SimpleOrderedMap<>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
@@ -69,8 +70,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
         }
         command.add("doclist", docList);
         commands.add(entry.getKey(), command);
-      } else if (value instanceof QueryCommandResult) {
-        QueryCommandResult queryCommandResult = (QueryCommandResult) value;
+      } else if (value instanceof QueryCommandResult queryCommandResult) {
         NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", queryCommandResult.getMatches());
 

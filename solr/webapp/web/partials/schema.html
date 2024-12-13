@@ -23,6 +23,7 @@ limitations under the License.
       <button id="addField" class="action" ng-click="toggleAddField()"><span>Add Field</span></button>
       <button id="addDynamicField" class="action" ng-click="toggleAddDynamicField()"><span>Add Dynamic Field</span></button>
       <button id="addCopyField" class="action" ng-click="toggleAddCopyField()"><span>Add Copy Field</span></button>
+      <button id="manipulateFieldType" class="action" ng-click="toggleManipulateFieldType()"><span>Manipulate Field Type</span></button>
 
       <div class="action add" data-rel="add" ng-show="showAddField" escape-pressed="hideAll()">
 
@@ -49,7 +50,7 @@ limitations under the License.
             indexed
             </label>
           </p>
-          
+
           <p class="clearfix">
             <label class="checkbox" for="add_uninvertible">
               <input type="checkbox" ng-model="newField.uninvertible" id="add_uninvertible" title="Field should be uninvertible, it is generally recomended to use docValues instead." ng-true-value="'true'" ng-false-value="'false'">
@@ -202,8 +203,41 @@ limitations under the License.
           </p>
 
         </form>
-
       </div>
+        <div class="action add field-type" data-rel="add" ng-show="showManipulateFieldType" escape-pressed="hideAll()">
+            <form>
+                <select id="field_type_manipulation_options"
+                        ng-model="fieldTypeManipulationOption"
+                        chosen
+                        disable-search="true"
+                        ng-change="selectFieldTypeManipulationOption()"
+                        ng-options="f.value for f in fieldTypeManipulationOptions"></select>
+                <a ng-click="showHelp('fieldTypeManipulationHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                <div id="sampleDocsHelp" class="help" ng-show="helpId === 'fieldTypeManipulationHelp'">
+                    <p>
+                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#add-a-new-field-type">Add a New Field Type</a>: The <b>add-field-type</b> command adds a new field type to your schema.
+                    </p>
+                    <p>
+                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#delete-a-field-type">Delete a Field Type</a>: The <b>delete-field-type</b> command removes a field type from your schema.
+                    </p>
+                    <p>
+                        <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html#replace-a-field-type">Replace a Field Type</a>: The <b>replace-field-type</b> command replaces a field type in your schema.
+                    </p>
+                </div>
+
+                <p class="clearfix">
+                    <textarea rows="20" cols="50" type="text" id="manipulate_field_type" ng-model="fieldTypeObj" focus-when="showManipulateFieldType" placeholder="specify field type operation(add, delete, replace) with field type patterns"></textarea>
+                </p>
+
+                <div ng-repeat="error in manipulateFieldTypeErrors" ng-show="addFieldTypeErrors" class="clearfix note error">
+                    <span>{{error}}</span></div>
+                <p class="clearfix buttons">
+                    <button type="submit" class="submit" ng-class="{success: added}" ng-click="manipulateFieldType()"><span>{{fieldTypeManipulationOption.label}}</span></button>
+                    <button type="reset" class="reset" ng-click="hideAll()"><span>Cancel</span></button>
+                </p>
+
+            </form>
+        </div>
     </div>
 
     <div id="data">
@@ -411,15 +445,16 @@ limitations under the License.
                 </form>
             </div>
         </dd>
-        <dt class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-show="leftbar.dynamicFields">Dynamic Field {{dynamicFields}} / {{dynamicFields.length()}}</dt>
+        
+        <dt class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-show="leftbar.dynamicFields">Dynamic Field</dt>
         <dd class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-repeat="field in leftbar.dynamicFields"><a href="#/{{core}}/schema?dynamic-field={{field}}">{{field}}</a></dd>
 
         <dt class="type" ng-class="{active: selectedType=='Type'}" ng-show="leftbar.types">Type</dt>
         <dd class="type" ng-class="{active: selectedType=='Type'}" ng-repeat="type in leftbar.types"><a href="#/{{core}}/schema?type={{type}}">{{type}}</a></dd>
 
         <dt></dt>
-        <dd class="active delete-field" ng-show="isSchemaUpdatable &amp;&amp; leftbar.fields &amp;&amp;!showDelete"><button ng-click="toggleDelete()"><span>delete field</span></button></dd>
-        <dd class="active delete-field" ng-show="isSchemaUpdatable &amp;&amp; leftbar.dynamicFields &amp;&amp;!showDelete"><button ng-click="toggleDelete()"><span>delete dynamic field</span></button></dd>
+        <dd class="active delete-field" ng-show="isSchemaUpdatable && is.field && !showDelete"><button ng-click="toggleDelete()"><span>delete field</span></button></dd>
+        <dd class="active delete-field" ng-show="isSchemaUpdatable && is.dynamicField && !showDelete"><button ng-click="toggleDelete()"><span>delete dynamic field</span></button></dd>
 
         <div class="action delete" ng-show="showDelete">
 

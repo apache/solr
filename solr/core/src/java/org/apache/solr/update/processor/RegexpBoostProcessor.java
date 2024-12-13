@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -37,20 +35,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A processor which will match content of "inputField" against regular expressions
- * found in "boostFilename", and if it matches will return the corresponding boost
- * value from the file and output this to "boostField" as a double value.
- * If more than one pattern matches, the boosts from each are multiplied.
- * <p>
- * A typical use case may be to match a URL against patterns to boost or deboost
- * web documents based on the URL itself:
+ * A processor which will match content of "inputField" against regular expressions found in
+ * "boostFilename", and if it matches will return the corresponding boost value from the file and
+ * output this to "boostField" as a double value. If more than one pattern matches, the boosts from
+ * each are multiplied.
+ *
+ * <p>A typical use case may be to match a URL against patterns to boost or deboost web documents
+ * based on the URL itself:
+ *
  * <pre>
  * # Format of each line: &lt;pattern&gt;&lt;TAB&gt;&lt;boost&gt;
  * # Example:
  * https?://my.domain.com/temp.*  0.2
  * </pre>
- * <p>
- * Both inputField, boostField and boostFilename are mandatory parameters.
+ *
+ * <p>Both inputField, boostField and boostFilename are mandatory parameters.
  */
 public class RegexpBoostProcessor extends UpdateRequestProcessor {
 
@@ -69,11 +68,12 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
   private List<BoostEntry> boostEntries = new ArrayList<>();
   private static final String BOOST_ENTRIES_CACHE_KEY = "boost-entries";
 
-  RegexpBoostProcessor(SolrParams parameters,
-                       SolrQueryRequest request,
-                       SolrQueryResponse response,
-                       UpdateRequestProcessor nextProcessor,
-                       final Map<Object, Object> sharedObjectCache) {
+  RegexpBoostProcessor(
+      SolrParams parameters,
+      SolrQueryRequest request,
+      SolrQueryResponse response,
+      UpdateRequestProcessor nextProcessor,
+      final Map<Object, Object> sharedObjectCache) {
     super(nextProcessor);
     this.initParameters(parameters);
 
@@ -106,7 +106,8 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
         this.boostEntries = cachedBoostEntries;
       }
     } catch (IOException ioe) {
-      log.warn("IOException while initializing boost entries from file {}", this.boostFilename, ioe);
+      log.warn(
+          "IOException while initializing boost entries from file {}", this.boostFilename, ioe);
     }
   }
 
@@ -121,10 +122,10 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
 
   private List<BoostEntry> initBoostEntries(InputStream is) throws IOException {
     List<BoostEntry> newBoostEntries = new ArrayList<>();
-    
-    BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-    try {
-      String line = null;
+
+    try (BufferedReader reader =
+        new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+      String line;
       while ((line = reader.readLine()) != null) {
         // Remove comments
         line = line.replaceAll("\\s+#.*$", "");
@@ -143,12 +144,12 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
           newBoostEntries.add(new BoostEntry(Pattern.compile(regexp), Double.parseDouble(boost)));
           log.debug("Read regexp {} with boost {}", regexp, boost);
         } else {
-          log.warn("Malformed config input line: {} (expected 2 fields, got {} fields).  Skipping entry.", line, fields.length);
-          continue;
+          log.warn(
+              "Malformed config input line: {} (expected 2 fields, got {} fields).  Skipping entry.",
+              line,
+              fields.length);
         }
       }
-    } finally {
-      IOUtils.closeQuietly(reader);
     }
 
     return newBoostEntries;

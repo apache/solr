@@ -21,6 +21,7 @@ import java.io.IOException;
 
 /**
  * A Function that may throw an IOException
+ *
  * @see java.util.function.Function
  */
 @FunctionalInterface

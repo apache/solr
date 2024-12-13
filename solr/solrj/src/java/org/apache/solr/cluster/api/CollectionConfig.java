@@ -17,11 +17,10 @@
 
 package org.apache.solr.cluster.api;
 
-
+@Deprecated
 public interface CollectionConfig {
 
   String name();
 
   SimpleMap<Resource> resources();
-
 }

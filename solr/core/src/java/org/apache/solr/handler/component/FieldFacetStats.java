@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -32,16 +32,14 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 
-
 /**
- * FieldFacetStats is a utility to accumulate statistics on a set of values in one field,
- * for facet values present in another field.
- * <p>
- * 9/10/2009 - Moved out of StatsComponent to allow open access to UnInvertedField
- * @see org.apache.solr.handler.component.StatsComponent
+ * FieldFacetStats is a utility to accumulate statistics on a set of values in one field, for facet
+ * values present in another field.
  *
+ * <p>9/10/2009 - Moved out of StatsComponent to allow open access to UnInvertedField
+ *
+ * @see org.apache.solr.handler.component.StatsComponent
  */
-
 public class FieldFacetStats {
   public final String name;
   final StatsField statsField;
@@ -84,9 +82,7 @@ public class FieldFacetStats {
 
   // docID is relative to the context
   public void facet(int docID) throws IOException {
-    final String key = values.exists(docID)
-        ? values.strVal(docID)
-        : null;
+    final String key = values.exists(docID) ? values.strVal(docID) : null;
     final StatsValues stats = getStatsValues(key);
     stats.accumulate(docID);
   }
@@ -101,14 +97,14 @@ public class FieldFacetStats {
     if (docID > topLevelSortedValues.docID()) {
       topLevelSortedValues.advance(docID);
     }
- 
+
     int term;
     if (docID == topLevelSortedValues.docID()) {
       term = topLevelSortedValues.ordValue();
     } else {
       term = -1;
     }
-    
+
     int arrIdx = term;
     if (arrIdx >= 0 && arrIdx < topLevelSortedValues.getValueCount()) {
       final String key;
@@ -120,8 +116,7 @@ public class FieldFacetStats {
       while (facetStatsTerms.size() <= statsTermNum) {
         facetStatsTerms.add(new HashMap<String, Integer>());
       }
-      
-      
+
       final Map<String, Integer> statsTermCounts = facetStatsTerms.get(statsTermNum);
       Integer statsTermCount = statsTermCounts.get(key);
       if (statsTermCount == null) {
@@ -131,12 +126,11 @@ public class FieldFacetStats {
       }
       return true;
     }
-    
+
     return false;
   }
 
-
-  //function to accumulate counts for statsTermNum to specified value
+  // function to accumulate counts for statsTermNum to specified value
   public boolean accumulateTermNum(int statsTermNum, BytesRef value) throws IOException {
     if (value == null) return false;
     while (facetStatsTerms.size() <= statsTermNum) {
@@ -169,11 +163,11 @@ public class FieldFacetStats {
     if (topLevelSortedValues == null) {
       topLevelSortedValues = DocValues.getSorted(topLevelReader, name);
     }
-    
+
     if (docID > topLevelSortedValues.docID()) {
       topLevelSortedValues.advance(docID);
     }
- 
+
     if (docID == topLevelSortedValues.docID()) {
       int ord = topLevelSortedValues.ordValue();
       Integer missingCount = missingStats.get(ord);
@@ -184,10 +178,10 @@ public class FieldFacetStats {
       }
     }
   }
-  
+
   public void accumulateMissing() throws IOException {
     StatsValues statsValue;
-    
+
     for (Map.Entry<Integer, Integer> entry : missingStats.entrySet()) {
       if (entry.getKey() >= 0) {
         String key = topLevelSortedValues.lookupOrd(entry.getKey()).utf8ToString();
@@ -196,8 +190,5 @@ public class FieldFacetStats {
         }
       }
     }
-    return;
   }
 }
-
-

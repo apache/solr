@@ -18,16 +18,13 @@ package org.apache.solr.analysis;
 
 import java.util.Arrays;
 import java.util.Map;
-
-import org.apache.lucene.analysis.MockTokenFilter;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.tests.analysis.MockTokenFilter;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
-/**
- * Factory for {@link MockTokenFilter} for testing purposes.
- */
+/** Factory for {@link MockTokenFilter} for testing purposes. */
 public class MockTokenFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
@@ -42,7 +39,8 @@ public class MockTokenFilterFactory extends TokenFilterFactory {
     String stopregex = get(args, "stopregex");
     if (null != stopset) {
       if (null != stopregex) {
-        throw new IllegalArgumentException("Parameters stopset and stopregex cannot both be specified.");
+        throw new IllegalArgumentException(
+            "Parameters stopset and stopregex cannot both be specified.");
       }
       if ("english".equalsIgnoreCase(stopset)) {
         filter = MockTokenFilter.ENGLISH_STOPSET;
@@ -53,8 +51,8 @@ public class MockTokenFilterFactory extends TokenFilterFactory {
       RegExp regex = new RegExp(stopregex);
       filter = new CharacterRunAutomaton(regex.toAutomaton());
     } else {
-      throw new IllegalArgumentException
-          ("Configuration Error: either the 'stopset' or the 'stopregex' parameter must be specified.");
+      throw new IllegalArgumentException(
+          "Configuration Error: either the 'stopset' or the 'stopregex' parameter must be specified.");
     }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

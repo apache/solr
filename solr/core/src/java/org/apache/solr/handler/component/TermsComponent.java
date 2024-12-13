@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -43,6 +42,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermsParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -54,6 +54,7 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.search.PointMerger;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Return TermEnum information, useful for things like auto suggest.
@@ -70,9 +71,7 @@ import org.apache.solr.util.BoundedTreeSet;
  *   &lt;/arr&gt;
  * &lt;/requestHandler&gt;</pre>
  *
- * @see org.apache.solr.common.params.TermsParams
- *      See Lucene's TermEnum class
- *
+ * @see org.apache.solr.common.params.TermsParams See Lucene's TermEnum class
  */
 public class TermsComponent extends SearchComponent {
   public static final int UNLIMITED_MAX_COUNT = -1;
@@ -82,7 +81,8 @@ public class TermsComponent extends SearchComponent {
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
 
-    //the terms parameter is also used by json facet API. So we will get errors if we try to parse as boolean
+    // the terms parameter is also used by json facet API. So we will get errors if we try to parse
+    // as boolean
     if (params.get(TermsParams.TERMS, "false").equals("true")) {
       rb.doTerms = true;
     }
@@ -126,8 +126,9 @@ public class TermsComponent extends SearchComponent {
     String upperStr = params.get(TermsParams.TERMS_UPPER);
     boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
     boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
-    boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(
-        params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT));
+    boolean sort =
+        !TermsParams.TERMS_SORT_INDEX.equals(
+            params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT));
     int freqmin = params.getInt(TermsParams.TERMS_MINCOUNT, 1);
     int _freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT);
     final int freqmax = _freqmax < 0 ? Integer.MAX_VALUE : _freqmax;
@@ -151,11 +152,19 @@ public class TermsComponent extends SearchComponent {
         if (sf != null && sf.getType().isPointField()) {
           // FIXME: terms.ttf=true is not supported for pointFields
           if (lowerStr != null || upperStr != null || prefix != null || regexp != null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                String.format(Locale.ROOT, "The terms component does not support Points-based fields with sorting or with parameters %s,%s,%s,%s ", TermsParams.TERMS_LOWER, TermsParams.TERMS_UPPER, TermsParams.TERMS_PREFIX_STR, TermsParams.TERMS_REGEXP_STR));
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                String.format(
+                    Locale.ROOT,
+                    "The terms component does not support Points-based fields with sorting or with parameters %s,%s,%s,%s ",
+                    TermsParams.TERMS_LOWER,
+                    TermsParams.TERMS_UPPER,
+                    TermsParams.TERMS_PREFIX_STR,
+                    TermsParams.TERMS_REGEXP_STR));
           }
 
-          PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
+          PointMerger.ValueIterator valueIterator =
+              new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
           MutableValue mv = valueIterator.getMutableValue();
           if (sort) {
             BoundedTreeSet<CountPair<MutableValue, Integer>> queue = new BoundedTreeSet<>(limit);
@@ -164,7 +173,9 @@ public class TermsComponent extends SearchComponent {
               long count = valueIterator.getNextCount();
               if (count < 0) break;
               if (count < freqmin || count > freqmax) continue;
-              if (queue.size() < limit || queue.last().val < count || (queue.last().val == count && queue.last().key.compareTo(mv) < 0)) {
+              if (queue.size() < limit
+                  || queue.last().val < count
+                  || (queue.last().val == count && queue.last().key.compareTo(mv) < 0)) {
                 queue.add(new CountPair<>(mv.duplicate(), (int) count));
               }
             }
@@ -174,7 +185,7 @@ public class TermsComponent extends SearchComponent {
             }
             continue;
           } else {
-            /***
+            /*
             // streaming solution that is deferred until writing the response
             // TODO: we can't use the streaming solution until XML writer supports PushWriter!
             termsResult.add(field, (MapWriter) ew -> {
@@ -187,15 +198,17 @@ public class TermsComponent extends SearchComponent {
                 ew.put(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
               }
             });
-             ***/
+            */
 
             int num = 0;
-            for(;;) {
+            for (; ; ) {
               long count = valueIterator.getNextCount();
               if (count < 0) break;
               if (count < freqmin || count > freqmax) continue;
               if (++num > limit) break;
-              fieldTerms.add(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
+              fieldTerms.add(
+                  Utils.OBJECT_TO_STRING.apply(mv.toObject()),
+                  (int) count); // match the numeric type of terms
             }
             continue;
           }
@@ -242,7 +255,8 @@ public class TermsComponent extends SearchComponent {
           termsEnum = null;
         } else {
           term = termsEnum.term();
-          //Only advance the enum if we are excluding the lower bound and the lower Term actually matches
+          // Only advance the enum if we are excluding the lower bound and the lower Term actually
+          // matches
           if (lowerIncl == false && term.equals(lowerBytes)) {
             term = termsEnum.next();
           }
@@ -253,7 +267,8 @@ public class TermsComponent extends SearchComponent {
       }
 
       int i = 0;
-      BoundedTreeSet<TermsResponse.Term> queue = (sort? new BoundedTreeSet<>(limit, new TermCountComparator()): null);
+      BoundedTreeSet<TermsResponse.Term> queue =
+          (sort ? new BoundedTreeSet<>(limit, new TermCountComparator()) : null);
       CharsRefBuilder external = new CharsRefBuilder();
       while (term != null && (i < limit || sort)) {
         boolean externalized = false; // did we fill in "external" yet for this term?
@@ -275,7 +290,7 @@ public class TermsComponent extends SearchComponent {
         if (upperBytes != null) {
           int upperCmp = term.compareTo(upperBytes);
           // if we are past the upper term, or equal to it (when don't include upper) then stop.
-          if (upperCmp>0 || (upperCmp==0 && !upperIncl)) break;
+          if (upperCmp > 0 || (upperCmp == 0 && !upperIncl)) break;
         }
 
         // This is a good term in the range.  Check if mincount/maxcount conditions are satisfied.
@@ -287,10 +302,15 @@ public class TermsComponent extends SearchComponent {
           }
           // add the term to the list
           if (sort) {
-            queue.add(new TermsResponse.Term(external.toString(), docFreq, termsEnum.totalTermFreq()));
+            queue.add(
+                new TermsResponse.Term(external.toString(), docFreq, termsEnum.totalTermFreq()));
           } else {
-            addTermToNamedList(fieldTerms, external.toString(),
-                docFreq, termsEnum.totalTermFreq(), includeTotalTermFreq);
+            addTermToNamedList(
+                fieldTerms,
+                external.toString(),
+                docFreq,
+                termsEnum.totalTermFreq(),
+                includeTotalTermFreq);
             i++;
           }
         }
@@ -303,8 +323,12 @@ public class TermsComponent extends SearchComponent {
           if (i >= limit) {
             break;
           }
-          addTermToNamedList(fieldTerms, item.getTerm(), item.getFrequency(),
-              item.getTotalTermFreq(), includeTotalTermFreq);
+          addTermToNamedList(
+              fieldTerms,
+              item.getTerm(),
+              item.getFrequency(),
+              item.getTotalTermFreq(),
+              includeTotalTermFreq);
           i++;
         }
       }
@@ -312,19 +336,20 @@ public class TermsComponent extends SearchComponent {
   }
 
   int resolveRegexpFlags(SolrParams params) {
-      String[] flagParams = params.getParams(TermsParams.TERMS_REGEXP_FLAG);
-      if (flagParams == null) {
-          return 0;
+    String[] flagParams = params.getParams(TermsParams.TERMS_REGEXP_FLAG);
+    if (flagParams == null) {
+      return 0;
+    }
+    int flags = 0;
+    for (String flagParam : flagParams) {
+      try {
+        flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase(Locale.ROOT)).getValue();
+      } catch (IllegalArgumentException iae) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Unknown terms regex flag '" + flagParam + "'");
       }
-      int flags = 0;
-      for (String flagParam : flagParams) {
-          try {
-            flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase(Locale.ROOT)).getValue();
-          } catch (IllegalArgumentException iae) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown terms regex flag '" + flagParam + "'");
-          }
-      }
-      return flags;
+    }
+    return flags;
   }
 
   @Override
@@ -359,13 +384,16 @@ public class TermsComponent extends SearchComponent {
     if (th != null) {
       for (ShardResponse srsp : sreq.responses) {
         @SuppressWarnings("unchecked")
-        NamedList<NamedList<Object>> terms = (NamedList<NamedList<Object>>) srsp.getSolrResponse().getResponse().get("terms");
+        NamedList<NamedList<Object>> terms =
+            (NamedList<NamedList<Object>>)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "terms", false);
         th.parse(terms);
 
-
         @SuppressWarnings({"unchecked"})
-        NamedList<Number> stats = (NamedList<Number>)srsp.getSolrResponse().getResponse().get("indexstats");
-        if(stats != null) {
+        NamedList<Number> stats =
+            (NamedList<Number>)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "indexstats", true);
+        if (stats != null) {
           th.numDocs += stats.get("numDocs").longValue();
           th.stats = true;
         }
@@ -383,7 +411,7 @@ public class TermsComponent extends SearchComponent {
     NamedList<Object> terms = ti.buildResponse();
 
     rb.rsp.add("terms", terms);
-    if(ti.stats) {
+    if (ti.stats) {
       NamedList<Number> stats = new SimpleOrderedMap<>();
       stats.add("numDocs", ti.numDocs);
       rb.rsp.add("indexstats", stats);
@@ -401,11 +429,12 @@ public class TermsComponent extends SearchComponent {
     // if using index-order, we can send all parameters to all shards
     // since all required data are returned within the first n rows
     String actualSort = sreq.params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT);
-    
-    boolean fast = actualSort.equals(TermsParams.TERMS_SORT_INDEX) &&
-        sreq.params.getLong(TermsParams.TERMS_MINCOUNT, 0) <= 1 &&
-        sreq.params.getLong(TermsParams.TERMS_MAXCOUNT, -1) <=0;
-    
+
+    boolean fast =
+        actualSort.equals(TermsParams.TERMS_SORT_INDEX)
+            && sreq.params.getLong(TermsParams.TERMS_MINCOUNT, 0) <= 1
+            && sreq.params.getLong(TermsParams.TERMS_MAXCOUNT, -1) <= 0;
+
     if (!fast) {
       // remove any limits for shards, we want them to return all possible
       // responses
@@ -427,7 +456,7 @@ public class TermsComponent extends SearchComponent {
     public boolean stats;
 
     public TermsHelper() {
-      fieldmap = new HashMap<>(5);
+      fieldmap = CollectionUtil.newHashMap(5);
     }
 
     public void init(SolrParams params) {
@@ -437,7 +466,7 @@ public class TermsComponent extends SearchComponent {
         for (String field : fields) {
           // TODO: not sure 128 is the best starting size
           // It use it because that is what is used for facets
-          fieldmap.put(field, new HashMap<String, TermsResponse.Term>(128));
+          fieldmap.put(field, CollectionUtil.newHashMap(128));
         }
       }
     }
@@ -480,10 +509,11 @@ public class TermsComponent extends SearchComponent {
       NamedList<Object> response = new SimpleOrderedMap<>();
 
       // determine if we are going index or count sort
-      boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(params.get(TermsParams.TERMS_SORT,
-                                                                     TermsParams.TERMS_SORT_COUNT));
-      if(params.get(TermsParams.TERMS_LIST) != null) {
-        //Always use lexical sort when TERM_LIST is provided
+      boolean sort =
+          !TermsParams.TERMS_SORT_INDEX.equals(
+              params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT));
+      if (params.get(TermsParams.TERMS_LIST) != null) {
+        // Always use lexical sort when TERM_LIST is provided
         sort = false;
       }
 
@@ -514,7 +544,12 @@ public class TermsComponent extends SearchComponent {
         int cnt = 0;
         for (TermsResponse.Term tc : data) {
           if (tc.getFrequency() >= freqmin && tc.getFrequency() <= freqmax) {
-            addTermToNamedList(fieldTerms, tc.getTerm(), tc.getFrequency(), tc.getTotalTermFreq(), includeTotalTermFreq);
+            addTermToNamedList(
+                fieldTerms,
+                tc.getTerm(),
+                tc.getFrequency(),
+                tc.getTotalTermFreq(),
+                includeTotalTermFreq);
             cnt++;
           }
 
@@ -537,7 +572,7 @@ public class TermsComponent extends SearchComponent {
 
     // based on code from facets
     public TermsResponse.Term[] getLexSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[0]);
 
       Arrays.sort(arr, (o1, o2) -> o1.getTerm().compareTo(o2.getTerm()));
 
@@ -546,18 +581,23 @@ public class TermsComponent extends SearchComponent {
 
     // based on code from facets
     public TermsResponse.Term[] getCountSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[0]);
 
       Arrays.sort(arr, new TermCountComparator());
       return arr;
     }
   }
 
-  private static void fetchTerms(SolrIndexSearcher indexSearcher, String[] fields, String termList,
-      boolean includeTotalTermFreq, NamedList<Object> result) throws IOException {
+  private static void fetchTerms(
+      SolrIndexSearcher indexSearcher,
+      String[] fields,
+      String termList,
+      boolean includeTotalTermFreq,
+      NamedList<Object> result)
+      throws IOException {
     List<String> splitTermList = StrUtils.splitSmart(termList, ",", true);
     // Sort the terms once
-    String[] splitTerms = splitTermList.toArray(new String[splitTermList.size()]);
+    String[] splitTerms = splitTermList.toArray(new String[0]);
     // Not a great idea to trim here, but it was in the original implementation
     for (int i = 0; i < splitTerms.length; i++) {
       splitTerms[i] = splitTerms[i].trim();
@@ -578,7 +618,8 @@ public class TermsComponent extends SearchComponent {
         }
       } else {
 
-        // Since splitTerms is already sorted, this array will also be sorted. NOTE: this may not be true, it depends on readableToIndexed.
+        // Since splitTerms is already sorted, this array will also be sorted. NOTE: this may not be
+        // true, it depends on readableToIndexed.
         Term[] terms = new Term[splitTerms.length];
         for (int i = 0; i < splitTerms.length; i++) {
           terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));
@@ -591,7 +632,8 @@ public class TermsComponent extends SearchComponent {
           if (termStates[i] != null) {
             String outTerm = fieldType.indexedToReadable(terms[i].bytes().utf8ToString());
             int docFreq = termStates[i].docFreq();
-            addTermToNamedList(termsMap, outTerm, docFreq, termStates[i].totalTermFreq(), includeTotalTermFreq);
+            addTermToNamedList(
+                termsMap, outTerm, docFreq, termStates[i].totalTermFreq(), includeTotalTermFreq);
           }
         }
       }
@@ -600,8 +642,9 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
-  private static void collectTermStates(IndexReaderContext topReaderContext, TermStates[] contextArray,
-                                        Term[] queryTerms) throws IOException {
+  private static void collectTermStates(
+      IndexReaderContext topReaderContext, TermStates[] contextArray, Term[] queryTerms)
+      throws IOException {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : topReaderContext.leaves()) {
       for (int i = 0; i < queryTerms.length; i++) {
@@ -628,25 +671,27 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
-  /**
-   * Helper method to add particular term to terms response
-   */
-  private static void addTermToNamedList(NamedList<Object> result, String term, long docFreq,
-                                         long totalTermFreq, boolean includeTotalTermFreq) {
+  /** Helper method to add particular term to terms response */
+  private static void addTermToNamedList(
+      NamedList<Object> result,
+      String term,
+      long docFreq,
+      long totalTermFreq,
+      boolean includeTotalTermFreq) {
 
     if (includeTotalTermFreq) {
-        NamedList<Number> termStats = new SimpleOrderedMap<>();
-        termStats.add("df", docFreq);
-        termStats.add("ttf", totalTermFreq);
-        result.add(term, termStats);
-      } else {
-        result.add(term, TermsHelper.num(docFreq));
-      }
+      NamedList<Number> termStats = new SimpleOrderedMap<>();
+      termStats.add("df", docFreq);
+      termStats.add("ttf", totalTermFreq);
+      result.add(term, termStats);
+    } else {
+      result.add(term, TermsHelper.num(docFreq));
+    }
   }
 
   /**
-   * Comparator for {@link org.apache.solr.client.solrj.response.TermsResponse.Term} sorting
-   * This sorts term by frequency in descending order
+   * Comparator for {@link org.apache.solr.client.solrj.response.TermsResponse.Term} sorting This
+   * sorts term by frequency in descending order
    */
   public static class TermCountComparator implements Comparator<TermsResponse.Term> {
 
@@ -679,5 +724,4 @@ public class TermsComponent extends SearchComponent {
   public Category getCategory() {
     return Category.QUERY;
   }
-
 }

@@ -23,12 +23,12 @@ import org.apache.solr.schema.SimilarityFactory;
 /**
  * Factory for {@link BooleanSimilarity}
  *
- * Simple similarity that gives terms a score that is equal to their query
- * boost. This similarity is typically used with disabled norms since neither
- * document statistics nor index statistics are used for scoring.
+ * <p>Simple similarity that gives terms a score that is equal to their query boost. This similarity
+ * is typically used with disabled norms since neither document statistics nor index statistics are
+ * used for scoring.
  */
 public class BooleanSimilarityFactory extends SimilarityFactory {
-  
+
   @Override
   public Similarity getSimilarity() {
     return new BooleanSimilarity();

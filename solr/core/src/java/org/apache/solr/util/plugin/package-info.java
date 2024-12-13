@@ -16,8 +16,9 @@
  */
 
 /**
- * Common APIs related to implementing <a href="https://solr.apache.org/guide/solr-plugins.html">Solr plugins</a>
- * <p>
- * See also: {@link org.apache.solr.util.SolrPluginUtils}.
+ * Common APIs related to implementing <a
+ * href="https://solr.apache.org/guide/solr-plugins.html">Solr plugins</a>
+ *
+ * <p>See also: {@link org.apache.solr.util.SolrPluginUtils}.
  */
 package org.apache.solr.util.plugin;

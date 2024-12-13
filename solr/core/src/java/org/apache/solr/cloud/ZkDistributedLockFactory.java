@@ -35,11 +35,14 @@ abstract class ZkDistributedLockFactory {
 
   protected DistributedLock doCreateLock(boolean isWriteLock, String lockPath) {
     try {
-      // TODO optimize by first attempting to create the ZkDistributedLock without calling makeLockPath() and only call it
-      //  if the lock creation fails. This will be less costly on high contention (and slightly more on low contention)
+      // TODO optimize by first attempting to create the ZkDistributedLock without calling
+      // makeLockPath() and only call it if the lock creation fails. This will be less costly on
+      // high contention (and slightly more on low contention)
       makeLockPath(lockPath);
 
-      return isWriteLock ? new ZkDistributedLock.Write(zkClient, lockPath) : new ZkDistributedLock.Read(zkClient, lockPath);
+      return isWriteLock
+          ? new ZkDistributedLock.Write(zkClient, lockPath)
+          : new ZkDistributedLock.Read(zkClient, lockPath);
     } catch (KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {

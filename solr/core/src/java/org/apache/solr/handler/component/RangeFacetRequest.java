@@ -23,7 +23,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.GroupParams;
@@ -46,8 +45,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Encapsulates a single facet.range request along with all its parameters. This class
- * calculates all the ranges (gaps) required to be counted.
+ * Encapsulates a single facet.range request along with all its parameters. This class calculates
+ * all the ranges (gaps) required to be counted.
  */
 public class RangeFacetRequest extends FacetComponent.FacetBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -64,17 +63,13 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
   protected final boolean groupFacet;
   protected final List<FacetRange> facetRanges;
 
-  /**
-   * The computed start value of this range
-   */
+  /** The computed start value of this range */
   protected final Object startObj;
-  /**
-   * The computed end value of this range taking into account facet.range.hardend
-   */
+
+  /** The computed end value of this range taking into account facet.range.hardend */
   protected final Object endObj;
-  /**
-   * The computed gap between each range
-   */
+
+  /** The computed gap between each range */
   protected final Object gapObj;
 
   public RangeFacetRequest(ResponseBuilder rb, String f) {
@@ -87,30 +82,40 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     SolrParams required = new RequiredSolrParams(params);
 
     String methodStr = params.get(FacetParams.FACET_RANGE_METHOD);
-    FacetParams.FacetRangeMethod method = (methodStr == null ? FacetParams.FacetRangeMethod.getDefault() : FacetParams.FacetRangeMethod.get(methodStr));
+    FacetParams.FacetRangeMethod method =
+        (methodStr == null
+            ? FacetParams.FacetRangeMethod.getDefault()
+            : FacetParams.FacetRangeMethod.get(methodStr));
 
-    if ((schemaField.getType() instanceof DateRangeField) && method.equals(FacetParams.FacetRangeMethod.DV)) {
+    if ((schemaField.getType() instanceof DateRangeField)
+        && method.equals(FacetParams.FacetRangeMethod.DV)) {
       // the user has explicitly selected the FacetRangeMethod.DV method
-      log.warn("Range facet method '{}' is not supported together with field type '{}'. Will use method '{}' instead"
-          , FacetParams.FacetRangeMethod.DV, DateRangeField.class, FacetParams.FacetRangeMethod.FILTER);
+      log.warn(
+          "Range facet method '{}' is not supported together with field type '{}'. Will use method '{}' instead",
+          FacetParams.FacetRangeMethod.DV,
+          DateRangeField.class,
+          FacetParams.FacetRangeMethod.FILTER);
       method = FacetParams.FacetRangeMethod.FILTER;
     }
-    if (method.equals(FacetParams.FacetRangeMethod.DV) && !schemaField.hasDocValues() && (schemaField.getType().isPointField())) {
-      log.warn("Range facet method '{}' is not supported on PointFields without docValues. Will use method '{}' instead"
-          , FacetParams.FacetRangeMethod.DV
-          , FacetParams.FacetRangeMethod.FILTER);
+    if (method.equals(FacetParams.FacetRangeMethod.DV)
+        && !schemaField.hasDocValues()
+        && (schemaField.getType().isPointField())) {
+      log.warn(
+          "Range facet method '{}' is not supported on PointFields without docValues. Will use method '{}' instead",
+          FacetParams.FacetRangeMethod.DV,
+          FacetParams.FacetRangeMethod.FILTER);
       method = FacetParams.FacetRangeMethod.FILTER;
     }
 
     this.start = required.getFieldParam(facetOn, FacetParams.FACET_RANGE_START);
     this.end = required.getFieldParam(facetOn, FacetParams.FACET_RANGE_END);
 
-
     this.gap = required.getFieldParam(facetOn, FacetParams.FACET_RANGE_GAP);
     this.minCount = params.getFieldInt(facetOn, FacetParams.FACET_MINCOUNT, 0);
 
-    this.include = FacetParams.FacetRangeInclude.parseParam
-        (params.getFieldParams(facetOn, FacetParams.FACET_RANGE_INCLUDE));
+    this.include =
+        FacetParams.FacetRangeInclude.parseParam(
+            params.getFieldParams(facetOn, FacetParams.FACET_RANGE_INCLUDE));
 
     this.hardEnd = params.getFieldBool(facetOn, FacetParams.FACET_RANGE_HARD_END, false);
 
@@ -125,8 +130,11 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     this.groupFacet = params.getBool(GroupParams.GROUP_FACET, false);
     if (groupFacet && method.equals(FacetParams.FacetRangeMethod.DV)) {
       // the user has explicitly selected the FacetRangeMethod.DV method
-      log.warn("Range facet method '{}' is not supported together with '{}'. Will use method '{}' instead"
-          , FacetParams.FacetRangeMethod.DV, GroupParams.GROUP_FACET, FacetParams.FacetRangeMethod.FILTER);
+      log.warn(
+          "Range facet method '{}' is not supported together with '{}'. Will use method '{}' instead",
+          FacetParams.FacetRangeMethod.DV,
+          GroupParams.GROUP_FACET,
+          FacetParams.FacetRangeMethod.FILTER);
       method = FacetParams.FacetRangeMethod.FILTER;
     }
 
@@ -140,8 +148,9 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
   }
 
   /**
-   * Creates the right instance of {@link org.apache.solr.handler.component.RangeFacetRequest.RangeEndpointCalculator}
-   * depending on the field type of the schema field
+   * Creates the right instance of {@link
+   * org.apache.solr.handler.component.RangeFacetRequest.RangeEndpointCalculator} depending on the
+   * field type of the schema field
    */
   private RangeEndpointCalculator<? extends Comparable<?>> createCalculator() {
     RangeEndpointCalculator<?> calc;
@@ -165,9 +174,9 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
           calc = new DateRangeEndpointCalculator(this, null);
           break;
         default:
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "Unable to range facet on Trie field of unexpected type:" + this.facetOn);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Unable to range facet on Trie field of unexpected type:" + this.facetOn);
       }
     } else if (ft instanceof DateRangeField) {
       calc = new DateRangeEndpointCalculator(this, null);
@@ -189,16 +198,15 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
           calc = new DateRangeEndpointCalculator(this, null);
           break;
         default:
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "Unable to range facet on Point field of unexpected type:" + this.facetOn);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Unable to range facet on Point field of unexpected type:" + this.facetOn);
       }
     } else if (ft instanceof CurrencyFieldType) {
       calc = new CurrencyRangeEndpointCalculator(this);
     } else {
-      throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST,
-              "Unable to range facet on field:" + schemaField);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on field:" + schemaField);
     }
 
     return calc;
@@ -213,21 +221,22 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
   /**
    * The end of this facet.range as specified by {@link FacetParams#FACET_RANGE_END} parameter
-   * <p>
-   * Note that the actual computed end value can be different depending on the
-   * {@link FacetParams#FACET_RANGE_HARD_END} parameter. See {@link #endObj}
+   *
+   * <p>Note that the actual computed end value can be different depending on the {@link
+   * FacetParams#FACET_RANGE_HARD_END} parameter. See {@link #endObj}
    */
   public String getEnd() {
     return end;
   }
 
   /**
-   * @return an {@link EnumSet} containing all the values specified via
-   * {@link FacetParams#FACET_RANGE_INCLUDE} parameter. Defaults to
-   * {@link org.apache.solr.common.params.FacetParams.FacetRangeInclude#LOWER} if no parameter
-   * is supplied. Includes all values from {@link org.apache.solr.common.params.FacetParams.FacetRangeInclude} enum
-   * if {@link FacetParams#FACET_RANGE_INCLUDE} includes
-   * {@link org.apache.solr.common.params.FacetParams.FacetRangeInclude#ALL}
+   * @return an {@link EnumSet} containing all the values specified via {@link
+   *     FacetParams#FACET_RANGE_INCLUDE} parameter. Defaults to {@link
+   *     org.apache.solr.common.params.FacetParams.FacetRangeInclude#LOWER} if no parameter is
+   *     supplied. Includes all values from {@link
+   *     org.apache.solr.common.params.FacetParams.FacetRangeInclude} enum if {@link
+   *     FacetParams#FACET_RANGE_INCLUDE} includes {@link
+   *     org.apache.solr.common.params.FacetParams.FacetRangeInclude#ALL}
    */
   public EnumSet<FacetParams.FacetRangeInclude> getInclude() {
     return include;
@@ -255,31 +264,33 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
   }
 
   /**
-   * @return an {@link EnumSet} of {@link org.apache.solr.common.params.FacetParams.FacetRangeOther} values
-   * specified by {@link FacetParams#FACET_RANGE_OTHER} parameter
+   * @return an {@link EnumSet} of {@link org.apache.solr.common.params.FacetParams.FacetRangeOther}
+   *     values specified by {@link FacetParams#FACET_RANGE_OTHER} parameter
    */
   public EnumSet<FacetParams.FacetRangeOther> getOthers() {
     return others;
   }
 
   /**
-   * @return the {@link org.apache.solr.common.params.FacetParams.FacetRangeMethod} to be used for computing
-   * ranges determined either by the value of {@link FacetParams#FACET_RANGE_METHOD} parameter
-   * or other internal constraints.
+   * @return the {@link org.apache.solr.common.params.FacetParams.FacetRangeMethod} to be used for
+   *     computing ranges determined either by the value of {@link FacetParams#FACET_RANGE_METHOD}
+   *     parameter or other internal constraints.
    */
   public FacetParams.FacetRangeMethod getMethod() {
     return method;
   }
 
   /**
-   * @return the minimum allowed count for facet ranges as specified by {@link FacetParams#FACET_MINCOUNT}
+   * @return the minimum allowed count for facet ranges as specified by {@link
+   *     FacetParams#FACET_MINCOUNT}
    */
   public int getMinCount() {
     return minCount;
   }
 
   /**
-   * @return the {@link SchemaField} instance representing the field on which ranges have to be calculated
+   * @return the {@link SchemaField} instance representing the field on which ranges have to be
+   *     calculated
    */
   public SchemaField getSchemaField() {
     return schemaField;
@@ -293,8 +304,9 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
   }
 
   /**
-   * @return a {@link List} of {@link org.apache.solr.handler.component.RangeFacetRequest.FacetRange} objects
-   * representing the ranges (gaps) for which range counts are to be calculated.
+   * @return a {@link List} of {@link
+   *     org.apache.solr.handler.component.RangeFacetRequest.FacetRange} objects representing the
+   *     ranges (gaps) for which range counts are to be calculated.
    */
   public List<FacetRange> getFacetRanges() {
     return facetRanges;
@@ -308,19 +320,19 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
   }
 
   /**
-   * The end of this facet.range as calculated using the value of facet.range.end
-   * parameter and facet.range.hardend. This can be different from the
-   * value specified in facet.range.end if facet.range.hardend=true
+   * The end of this facet.range as calculated using the value of facet.range.end parameter and
+   * facet.range.hardend. This can be different from the value specified in facet.range.end if
+   * facet.range.hardend=true
    */
   public Object getEndObj() {
     return endObj;
   }
 
   /**
-   * Represents a range facet response combined from all shards.
-   * Provides helper methods to merge facet_ranges response from a shard.
-   * See {@link #mergeFacetRangesFromShardResponse(LinkedHashMap, SimpleOrderedMap)}
-   * and {@link #mergeContributionFromShard(SimpleOrderedMap)}
+   * Represents a range facet response combined from all shards. Provides helper methods to merge
+   * facet_ranges response from a shard. See {@link
+   * #mergeFacetRangesFromShardResponse(LinkedHashMap, SimpleOrderedMap)} and {@link
+   * #mergeContributionFromShard(SimpleOrderedMap)}
    */
   static class DistribRangeFacet {
     public SimpleOrderedMap<Object> rangeFacet;
@@ -334,11 +346,12 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
      * values for each range.
      *
      * @param rangeCounts a {@link LinkedHashMap} containing the accumulated values for each range
-     *                    keyed by the 'key' of the facet.range. Must not be null.
+     *     keyed by the 'key' of the facet.range. Must not be null.
      * @param shardRanges the facet_ranges response from a shard. Must not be null.
      */
-    public static void mergeFacetRangesFromShardResponse(LinkedHashMap<String, DistribRangeFacet> rangeCounts,
-                                                         SimpleOrderedMap<SimpleOrderedMap<Object>> shardRanges) {
+    public static void mergeFacetRangesFromShardResponse(
+        LinkedHashMap<String, DistribRangeFacet> rangeCounts,
+        SimpleOrderedMap<SimpleOrderedMap<Object>> shardRanges) {
       assert shardRanges != null;
       assert rangeCounts != null;
       for (Map.Entry<String, SimpleOrderedMap<Object>> entry : shardRanges) {
@@ -355,9 +368,9 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     /**
      * Accumulates an individual facet_ranges count from a shard into global counts.
-     * <p>
-     * The implementation below uses the first encountered shard's
-     * facet_ranges as the basis for subsequent shards' data to be merged.
+     *
+     * <p>The implementation below uses the first encountered shard's facet_ranges as the basis for
+     * subsequent shards' data to be merged.
      *
      * @param rangeFromShard the facet_ranges response from a shard
      */
@@ -368,12 +381,10 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       }
 
       @SuppressWarnings("unchecked")
-      NamedList<Integer> shardFieldValues
-          = (NamedList<Integer>) rangeFromShard.get("counts");
+      NamedList<Integer> shardFieldValues = (NamedList<Integer>) rangeFromShard.get("counts");
 
       @SuppressWarnings("unchecked")
-      NamedList<Integer> existFieldValues
-          = (NamedList<Integer>) rangeFacet.get("counts");
+      NamedList<Integer> existFieldValues = (NamedList<Integer>) rangeFacet.get("counts");
 
       for (Map.Entry<String, Integer> existPair : existFieldValues) {
         final String key = existPair.getKey();
@@ -402,9 +413,9 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     /**
      * Removes all counts under the given minCount from the accumulated facet_ranges.
-     * <p>
-     * Note: this method should only be called after all shard responses have been
-     * accumulated using {@link #mergeContributionFromShard(SimpleOrderedMap)}
+     *
+     * <p>Note: this method should only be called after all shard responses have been accumulated
+     * using {@link #mergeContributionFromShard(SimpleOrderedMap)}
      *
      * @param minCount the minimum allowed count for any range
      */
@@ -429,20 +440,17 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
   }
 
   /**
-   * Perhaps someday instead of having a giant "instanceof" case
-   * statement to pick an impl, we can add a "RangeFacetable" marker
-   * interface to FieldTypes and they can return instances of these
-   * directly from some method -- but until then, keep this locked down
-   * and private.
+   * Perhaps someday instead of having a giant "instanceof" case statement to pick an impl, we can
+   * add a "RangeFacetable" marker interface to FieldTypes and they can return instances of these
+   * directly from some method -- but until then, keep this locked down and private.
    */
-  private static abstract class RangeEndpointCalculator<T extends Comparable<T>> {
+  private abstract static class RangeEndpointCalculator<T extends Comparable<T>> {
     protected final RangeFacetRequest rfr;
     protected final SchemaField field;
 
     /**
-     * The end of the facet.range as determined by this calculator.
-     * This can be different from the facet.range.end depending on the
-     * facet.range.hardend parameter
+     * The end of the facet.range as determined by this calculator. This can be different from the
+     * facet.range.end depending on the facet.range.hardend parameter
      */
     protected T computedEnd;
 
@@ -457,23 +465,29 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       this.field = rfr.getSchemaField();
     }
 
-    /** The Computed End point of all ranges, as an Object of type suitable for direct inclusion in the response data */
+    /**
+     * The Computed End point of all ranges, as an Object of type suitable for direct inclusion in
+     * the response data
+     */
     public Object getComputedEnd() {
       assert computed;
       return computedEnd;
     }
 
-    /** The Start point of all ranges, as an Object of type suitable for direct inclusion in the response data */
+    /**
+     * The Start point of all ranges, as an Object of type suitable for direct inclusion in the
+     * response data
+     */
     public Object getStart() {
       assert computed;
       return start;
     }
 
     /**
-     * @return the parsed value of {@link FacetParams#FACET_RANGE_GAP} parameter. This type
-     * of the returned object is the boxed type of the schema field type's primitive counterpart
-     * except in the case of Dates in which case the returned type is just a string (because in
-     * case of dates the gap can either be a date or a DateMath string).
+     * @return the parsed value of {@link FacetParams#FACET_RANGE_GAP} parameter. This type of the
+     *     returned object is the boxed type of the schema field type's primitive counterpart except
+     *     in the case of Dates in which case the returned type is just a string (because in case of
+     *     dates the gap can either be a date or a DateMath string).
      */
     public Object getGap() {
       assert computed;
@@ -481,86 +495,82 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
 
     /**
-     * Formats a Range endpoint for use as a range label name in the response.
-     * Default Impl just uses toString()
+     * Formats a Range endpoint for use as a range label name in the response. Default Impl just
+     * uses toString()
      */
     public String formatValue(final T val) {
       return val.toString();
     }
 
     /**
-     * Parses a String param into an Range endpoint value throwing
-     * a useful exception if not possible
+     * Parses a String param into an Range endpoint value throwing a useful exception if not
+     * possible
      */
     public final T getValue(final String rawval) {
       try {
         return parseVal(rawval);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Can't parse value " + rawval + " for field: " +
-                field.getName(), e);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Can't parse value " + rawval + " for field: " + field.getName(),
+            e);
       }
     }
 
     /**
-     * Parses a String param into an Range endpoint.
-     * Can throw a low level format exception as needed.
+     * Parses a String param into an Range endpoint. Can throw a low level format exception as
+     * needed.
      */
-    protected abstract T parseVal(final String rawval)
-        throws java.text.ParseException;
+    protected abstract T parseVal(final String rawval) throws java.text.ParseException;
 
     /**
-     * Parses a String param into a value that represents the gap and
-     * can be included in the response, throwing
-     * a useful exception if not possible.
-     * <p>
-     * Note: uses Object as the return type instead of T for things like
-     * Date where gap is just a DateMathParser string
+     * Parses a String param into a value that represents the gap and can be included in the
+     * response, throwing a useful exception if not possible.
+     *
+     * <p>Note: uses Object as the return type instead of T for things like Date where gap is just a
+     * DateMathParser string
      */
     protected final Object getGap(final String gap) {
       try {
         return parseGap(gap);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Can't parse gap " + gap + " for field: " +
-                field.getName(), e);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Can't parse gap " + gap + " for field: " + field.getName(),
+            e);
       }
     }
 
     /**
-     * Parses a String param into a value that represents the gap and
-     * can be included in the response.
-     * Can throw a low level format exception as needed.
-     * <p>
-     * Default Impl calls parseVal
+     * Parses a String param into a value that represents the gap and can be included in the
+     * response. Can throw a low level format exception as needed.
+     *
+     * <p>Default Impl calls parseVal
      */
-    protected Object parseGap(final String rawval)
-        throws java.text.ParseException {
+    protected Object parseGap(final String rawval) throws java.text.ParseException {
       return parseVal(rawval);
     }
 
     /**
-     * Adds the String gap param to a low Range endpoint value to determine
-     * the corresponding high Range endpoint value, throwing
-     * a useful exception if not possible.
+     * Adds the String gap param to a low Range endpoint value to determine the corresponding high
+     * Range endpoint value, throwing a useful exception if not possible.
      */
     public final T addGap(T value, String gap) {
       try {
         return parseAndAddGap(value, gap);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Can't add gap " + gap + " to value " + value +
-                " for field: " + field.getName(), e);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Can't add gap " + gap + " to value " + value + " for field: " + field.getName(),
+            e);
       }
     }
 
     /**
-     * Adds the String gap param to a low Range endpoint value to determine
-     * the corrisponding high Range endpoint value.
-     * Can throw a low level format exception as needed.
+     * Adds the String gap param to a low Range endpoint value to determine the corrisponding high
+     * Range endpoint value. Can throw a low level format exception as needed.
      */
-    protected abstract T parseAndAddGap(T value, String gap)
-        throws java.text.ParseException;
+    protected abstract T parseAndAddGap(T value, String gap) throws java.text.ParseException;
 
     public List<FacetRange> computeRanges() {
       List<FacetRange> ranges = new ArrayList<>();
@@ -570,9 +580,9 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       // not final, hardend may change this
       T end = getValue(rfr.getEnd());
       if (end.compareTo(start) < 0) {
-        throw new SolrException
-            (SolrException.ErrorCode.BAD_REQUEST,
-                "range facet 'end' comes before 'start': " + end + " < " + start);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "range facet 'end' comes before 'start': " + end + " < " + start);
       }
 
       final EnumSet<FacetParams.FacetRangeInclude> include = rfr.getInclude();
@@ -589,24 +599,29 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
           }
         }
         if (high.compareTo(low) < 0) {
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "range facet infinite loop (is gap negative? did the math overflow?)");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "range facet infinite loop (is gap negative? did the math overflow?)");
         }
         if (high.compareTo(low) == 0) {
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + rfr.getGap() + " = " + high);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: "
+                  + low
+                  + " + "
+                  + rfr.getGap()
+                  + " = "
+                  + high);
         }
 
         final boolean includeLower =
-            (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
-                (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
-                    0 == low.compareTo(start)));
+            (include.contains(FacetParams.FacetRangeInclude.LOWER)
+                || (include.contains(FacetParams.FacetRangeInclude.EDGE)
+                    && 0 == low.compareTo(start)));
         final boolean includeUpper =
-            (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
-                (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
-                    0 == high.compareTo(end)));
+            (include.contains(FacetParams.FacetRangeInclude.UPPER)
+                || (include.contains(FacetParams.FacetRangeInclude.EDGE)
+                    && 0 == high.compareTo(end)));
 
         final String lowS = formatValue(low);
         final String highS = formatValue(high);
@@ -631,30 +646,50 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
         if (all || rfr.getOthers().contains(FacetParams.FacetRangeOther.BEFORE)) {
           // include upper bound if "outer" or if first gap doesn't already include it
-          ranges.add(new FacetRange(FacetParams.FacetRangeOther.BEFORE,
-              null, startS, false, include.contains(FacetParams.FacetRangeInclude.OUTER) || include.contains(FacetParams.FacetRangeInclude.ALL) ||
-              !(include.contains(FacetParams.FacetRangeInclude.LOWER) || include.contains(FacetParams.FacetRangeInclude.EDGE))));
+          ranges.add(
+              new FacetRange(
+                  FacetParams.FacetRangeOther.BEFORE,
+                  null,
+                  startS,
+                  false,
+                  include.contains(FacetParams.FacetRangeInclude.OUTER)
+                      || include.contains(FacetParams.FacetRangeInclude.ALL)
+                      || !(include.contains(FacetParams.FacetRangeInclude.LOWER)
+                          || include.contains(FacetParams.FacetRangeInclude.EDGE))));
         }
         if (all || rfr.getOthers().contains(FacetParams.FacetRangeOther.AFTER)) {
           // include lower bound if "outer" or if last gap doesn't already include it
-          ranges.add(new FacetRange(FacetParams.FacetRangeOther.AFTER,
-              endS, null, include.contains(FacetParams.FacetRangeInclude.OUTER) || include.contains(FacetParams.FacetRangeInclude.ALL) ||
-              !(include.contains(FacetParams.FacetRangeInclude.UPPER) || include.contains(FacetParams.FacetRangeInclude.EDGE)), false));
+          ranges.add(
+              new FacetRange(
+                  FacetParams.FacetRangeOther.AFTER,
+                  endS,
+                  null,
+                  include.contains(FacetParams.FacetRangeInclude.OUTER)
+                      || include.contains(FacetParams.FacetRangeInclude.ALL)
+                      || !(include.contains(FacetParams.FacetRangeInclude.UPPER)
+                          || include.contains(FacetParams.FacetRangeInclude.EDGE)),
+                  false));
         }
         if (all || rfr.getOthers().contains(FacetParams.FacetRangeOther.BETWEEN)) {
-          ranges.add(new FacetRange(FacetParams.FacetRangeOther.BETWEEN, startS, endS,
-              include.contains(FacetParams.FacetRangeInclude.LOWER) || include.contains(FacetParams.FacetRangeInclude.EDGE) || include.contains(FacetParams.FacetRangeInclude.ALL),
-              include.contains(FacetParams.FacetRangeInclude.UPPER) || include.contains(FacetParams.FacetRangeInclude.EDGE) || include.contains(FacetParams.FacetRangeInclude.ALL)));
+          ranges.add(
+              new FacetRange(
+                  FacetParams.FacetRangeOther.BETWEEN,
+                  startS,
+                  endS,
+                  include.contains(FacetParams.FacetRangeInclude.LOWER)
+                      || include.contains(FacetParams.FacetRangeInclude.EDGE)
+                      || include.contains(FacetParams.FacetRangeInclude.ALL),
+                  include.contains(FacetParams.FacetRangeInclude.UPPER)
+                      || include.contains(FacetParams.FacetRangeInclude.EDGE)
+                      || include.contains(FacetParams.FacetRangeInclude.ALL)));
         }
       }
 
       return ranges;
     }
-
   }
 
-  private static class FloatRangeEndpointCalculator
-      extends RangeEndpointCalculator<Float> {
+  private static class FloatRangeEndpointCalculator extends RangeEndpointCalculator<Float> {
 
     public FloatRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest) {
       super(rangeFacetRequest);
@@ -671,8 +706,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
   }
 
-  private static class DoubleRangeEndpointCalculator
-      extends RangeEndpointCalculator<Double> {
+  private static class DoubleRangeEndpointCalculator extends RangeEndpointCalculator<Double> {
 
     public DoubleRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest) {
       super(rangeFacetRequest);
@@ -689,8 +723,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
   }
 
-  private static class IntegerRangeEndpointCalculator
-      extends RangeEndpointCalculator<Integer> {
+  private static class IntegerRangeEndpointCalculator extends RangeEndpointCalculator<Integer> {
 
     public IntegerRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest) {
       super(rangeFacetRequest);
@@ -707,8 +740,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
   }
 
-  private static class LongRangeEndpointCalculator
-      extends RangeEndpointCalculator<Long> {
+  private static class LongRangeEndpointCalculator extends RangeEndpointCalculator<Long> {
 
     public LongRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest) {
       super(rangeFacetRequest);
@@ -725,13 +757,12 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
   }
 
-  private static class DateRangeEndpointCalculator
-      extends RangeEndpointCalculator<Date> {
-    private static final String TYPE_ERR_MSG = "SchemaField must use field type extending TrieDateField or DateRangeField";
+  private static class DateRangeEndpointCalculator extends RangeEndpointCalculator<Date> {
+    private static final String TYPE_ERR_MSG =
+        "SchemaField must use field type extending TrieDateField or DateRangeField";
     private final Date now;
 
-    public DateRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest,
-                                       final Date now) {
+    public DateRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest, final Date now) {
       super(rangeFacetRequest);
       this.now = now;
       if (!(field.getType() instanceof TrieDateField)
@@ -765,19 +796,19 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
   }
 
   private static class CurrencyRangeEndpointCalculator
-    extends RangeEndpointCalculator<CurrencyValue> {
+      extends RangeEndpointCalculator<CurrencyValue> {
     private String defaultCurrencyCode;
     private ExchangeRateProvider exchangeRateProvider;
+
     public CurrencyRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest) {
       super(rangeFacetRequest);
-      if(!(this.field.getType() instanceof CurrencyFieldType)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                "Cannot perform range faceting over non CurrencyField fields");
+      if (!(this.field.getType() instanceof CurrencyFieldType)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Cannot perform range faceting over non CurrencyField fields");
       }
-      defaultCurrencyCode =
-        ((CurrencyFieldType)this.field.getType()).getDefaultCurrency();
-      exchangeRateProvider =
-        ((CurrencyFieldType)this.field.getType()).getProvider();
+      defaultCurrencyCode = ((CurrencyFieldType) this.field.getType()).getDefaultCurrency();
+      exchangeRateProvider = ((CurrencyFieldType) this.field.getType()).getProvider();
     }
 
     @Override
@@ -790,20 +821,26 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       return val.strValue();
     }
 
-    /** formats the value as a String since {@link CurrencyValue} is not suitable for response writers */
+    /**
+     * formats the value as a String since {@link CurrencyValue} is not suitable for response
+     * writers
+     */
     @Override
     public Object getComputedEnd() {
       assert computed;
       return formatValue(computedEnd);
     }
-    
-    /** formats the value as a String since {@link CurrencyValue} is not suitable for response writers */
+
+    /**
+     * formats the value as a String since {@link CurrencyValue} is not suitable for response
+     * writers
+     */
     @Override
     public Object getStart() {
       assert computed;
       return formatValue(start);
     }
-    
+
     @Override
     protected CurrencyValue parseVal(String rawval) {
       return CurrencyValue.parse(rawval, defaultCurrencyCode);
@@ -811,24 +848,21 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public CurrencyValue parseAndAddGap(CurrencyValue value, String gap) {
-      if(value == null) {
+      if (value == null) {
         throw new NullPointerException("Cannot perform range faceting on null CurrencyValue");
       }
-      CurrencyValue gapCurrencyValue =
-        CurrencyValue.parse(gap, defaultCurrencyCode);
+      CurrencyValue gapCurrencyValue = CurrencyValue.parse(gap, defaultCurrencyCode);
       long gapAmount =
-        CurrencyValue.convertAmount(this.exchangeRateProvider,
-                                    gapCurrencyValue.getCurrencyCode(),
-                                    gapCurrencyValue.getAmount(),
-                                    value.getCurrencyCode());
-      return new CurrencyValue(value.getAmount() + gapAmount,
-                               value.getCurrencyCode());
+          CurrencyValue.convertAmount(
+              this.exchangeRateProvider,
+              gapCurrencyValue.getCurrencyCode(),
+              gapCurrencyValue.getAmount(),
+              value.getCurrencyCode());
+      return new CurrencyValue(value.getAmount() + gapAmount, value.getCurrencyCode());
     }
   }
-  
-  /**
-   * Represents a single facet range (or gap) for which the count is to be calculated
-   */
+
+  /** Represents a single facet range (or gap) for which the count is to be calculated */
   public static class FacetRange {
     public final FacetParams.FacetRangeOther other;
     public final String name;
@@ -837,7 +871,13 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     public final boolean includeLower;
     public final boolean includeUpper;
 
-    private FacetRange(FacetParams.FacetRangeOther other, String name, String lower, String upper, boolean includeLower, boolean includeUpper) {
+    private FacetRange(
+        FacetParams.FacetRangeOther other,
+        String name,
+        String lower,
+        String upper,
+        boolean includeLower,
+        boolean includeUpper) {
       this.other = other;
       this.name = name;
       this.lower = lower;
@@ -847,18 +887,22 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     }
 
     /**
-     * Construct a facet range for a {@link org.apache.solr.common.params.FacetParams.FacetRangeOther} instance
+     * Construct a facet range for a {@link
+     * org.apache.solr.common.params.FacetParams.FacetRangeOther} instance
      */
-    public FacetRange(FacetParams.FacetRangeOther other, String lower, String upper, boolean includeLower, boolean includeUpper) {
+    public FacetRange(
+        FacetParams.FacetRangeOther other,
+        String lower,
+        String upper,
+        boolean includeLower,
+        boolean includeUpper) {
       this(other, other.toString(), lower, upper, includeLower, includeUpper);
     }
 
-    /**
-     * Construct a facet range for the give name
-     */
-    public FacetRange(String name, String lower, String upper, boolean includeLower, boolean includeUpper) {
+    /** Construct a facet range for the give name */
+    public FacetRange(
+        String name, String lower, String upper, boolean includeLower, boolean includeUpper) {
       this(null, name, lower, upper, includeLower, includeUpper);
     }
   }
 }
-

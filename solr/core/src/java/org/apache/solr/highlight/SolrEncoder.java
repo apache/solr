@@ -24,7 +24,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 public interface SolrEncoder extends SolrInfoBean, NamedListInitializedPlugin {
   /**
    * Return an {@link org.apache.lucene.search.highlight.Encoder} appropriate for this field.
-   * 
+   *
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.highlight.Encoder}

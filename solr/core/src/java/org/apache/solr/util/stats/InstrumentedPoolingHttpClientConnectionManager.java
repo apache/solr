@@ -28,11 +28,13 @@ import org.apache.solr.metrics.SolrMetricsContext;
  * Sub-class of PoolingHttpClientConnectionManager which tracks metrics interesting to Solr.
  * Inspired by dropwizard metrics-httpclient library implementation.
  */
-public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpClientConnectionManager implements SolrMetricProducer {
+public class InstrumentedPoolingHttpClientConnectionManager
+    extends PoolingHttpClientConnectionManager implements SolrMetricProducer {
 
   private SolrMetricsContext solrMetricsContext;
 
-  public InstrumentedPoolingHttpClientConnectionManager(Registry<ConnectionSocketFactory> socketFactoryRegistry) {
+  public InstrumentedPoolingHttpClientConnectionManager(
+      Registry<ConnectionSocketFactory> socketFactoryRegistry) {
     super(socketFactoryRegistry);
   }
 
@@ -44,15 +46,21 @@ public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpC
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    solrMetricsContext.gauge(() -> getTotalStats().getAvailable(),
-        true, SolrMetricManager.mkName("availableConnections", scope));
+    solrMetricsContext.gauge(
+        () -> getTotalStats().getAvailable(),
+        true,
+        SolrMetricManager.mkName("availableConnections", scope));
     // this acquires a lock on the connection pool; remove if contention sucks
-    solrMetricsContext.gauge(() -> getTotalStats().getLeased(),
-        true, SolrMetricManager.mkName("leasedConnections", scope));
-    solrMetricsContext.gauge(() -> getTotalStats().getMax(),
-        true, SolrMetricManager.mkName("maxConnections", scope));
-    solrMetricsContext.gauge(() -> getTotalStats().getPending(),
-        true, SolrMetricManager.mkName("pendingConnections", scope));
+    solrMetricsContext.gauge(
+        () -> getTotalStats().getLeased(),
+        true,
+        SolrMetricManager.mkName("leasedConnections", scope));
+    solrMetricsContext.gauge(
+        () -> getTotalStats().getMax(), true, SolrMetricManager.mkName("maxConnections", scope));
+    solrMetricsContext.gauge(
+        () -> getTotalStats().getPending(),
+        true,
+        SolrMetricManager.mkName("pendingConnections", scope));
   }
 
   @Override

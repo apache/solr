@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
@@ -34,21 +33,18 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * The query parser can be used in two modes
- * 1) where text is analysed and generates min hashes as part of normal lucene analysis
- * 2) where text is pre-analysed and hashes are added as string to the index
- *    An analyzer can still be defined to support text based query against the text field
- * <p>
- * Options:
- * sim - required similary - default is 1
- * tp - required true positive rate - default is 1
- * field - when providing text the analyser for this field is used to generate the finger print
- * sep - a separator for provided hashes
- * analyzer_field - the field to use for for analysing suppplied text - if not supplied defaults to field
+ * The query parser can be used in two modes 1) where text is analysed and generates min hashes as
+ * part of normal lucene analysis 2) where text is pre-analysed and hashes are added as string to
+ * the index An analyzer can still be defined to support text based query against the text field
  *
+ * <p>Options: sim - required similary - default is 1 tp - required true positive rate - default is
+ * 1 field - when providing text the analyser for this field is used to generate the finger print
+ * sep - a separator for provided hashes analyzer_field - the field to use for for analysing
+ * suppplied text - if not supplied defaults to field
  */
 public class MinHashQParser extends QParser {
-  public MinHashQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public MinHashQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
 
@@ -60,7 +56,6 @@ public class MinHashQParser extends QParser {
     String field = localParams.get("field", "min_hash");
     String separator = localParams.get("sep", "");
     String analyzerField = localParams.get("analyzer_field", field);
-
 
     ArrayList<BytesRef> hashes = new ArrayList<>();
     if (separator.isEmpty()) {
@@ -74,16 +69,18 @@ public class MinHashQParser extends QParser {
     }
 
     return createFingerPrintQuery(field, hashes, similarity, expectedTruePositive);
-
   }
 
   private void getHashesFromQueryString(String separator, ArrayList<BytesRef> hashes) {
-    Arrays.stream(qstr.split(separator)).forEach(s -> {
-      hashes.add(new BytesRef(s));
-    });
+    Arrays.stream(qstr.split(separator))
+        .forEach(
+            s -> {
+              hashes.add(new BytesRef(s));
+            });
   }
 
-  private void getHashesFromTokenStream(String analyserField, ArrayList<BytesRef> hashes) throws Exception {
+  private void getHashesFromTokenStream(String analyserField, ArrayList<BytesRef> hashes)
+      throws Exception {
     TokenStream ts = getReq().getSchema().getIndexAnalyzer().tokenStream(analyserField, qstr);
     TermToBytesRefAttribute termAttribute = ts.getAttribute(TermToBytesRefAttribute.class);
     ts.reset();
@@ -95,7 +92,8 @@ public class MinHashQParser extends QParser {
     ts.close();
   }
 
-  private Query createFingerPrintQuery(String field, List<BytesRef> minhashes, float similarity, float expectedTruePositive) {
+  private Query createFingerPrintQuery(
+      String field, List<BytesRef> minhashes, float similarity, float expectedTruePositive) {
     int bandSize = 1;
     if (expectedTruePositive < 1) {
       bandSize = computeBandSize(minhashes.size(), similarity, expectedTruePositive);
@@ -112,8 +110,7 @@ public class MinHashQParser extends QParser {
         childBuilder.add(new ConstantScoreQuery(tq), Occur.MUST);
         rowInBand++;
         if (rowInBand == bandSize) {
-          builder.add(new ConstantScoreQuery(childBuilder.build()),
-              Occur.SHOULD);
+          builder.add(new ConstantScoreQuery(childBuilder.build()), Occur.SHOULD);
           childBuilder = new BooleanQuery.Builder();
           rowInBand = 0;
         }
@@ -127,8 +124,7 @@ public class MinHashQParser extends QParser {
         childBuilder.add(new ConstantScoreQuery(tq), Occur.MUST);
         rowInBand++;
         if (rowInBand == bandSize) {
-          builder.add(new ConstantScoreQuery(childBuilder.build()),
-              Occur.SHOULD);
+          builder.add(new ConstantScoreQuery(childBuilder.build()), Occur.SHOULD);
           break;
         }
       }
@@ -138,7 +134,6 @@ public class MinHashQParser extends QParser {
       builder.setMinimumNumberShouldMatch((int) (Math.ceil(minhashes.size() * similarity)));
     }
     return builder.build();
-
   }
 
   static int computeBandSize(int numHash, double similarity, double expectedTruePositive) {

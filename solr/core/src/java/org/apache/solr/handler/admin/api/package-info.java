@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * V2 API implementations for "admin" APIs.
- */
+/** V2 API implementations for "admin" APIs. */
 package org.apache.solr.handler.admin.api;

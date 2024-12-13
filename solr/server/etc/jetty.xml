@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
@@ -30,7 +30,7 @@
   <!-- for all configuration that may be set here.                 -->
   <!-- =========================================================== -->
   <Arg name="threadpool">
-    <New id="threadpool" class="com.codahale.metrics.jetty9.InstrumentedQueuedThreadPool">
+    <New id="threadpool" class="io.dropwizard.metrics.jetty10.InstrumentedQueuedThreadPool">
       <Arg name="registry">
         <Call id="solrJettyMetricRegistry" name="getOrCreate" class="com.codahale.metrics.SharedMetricRegistries">
           <Arg>solr.jetty</Arg>
@@ -47,6 +47,8 @@
     <Set name="detailedDump">false</Set>
   </Get>
 
+  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="removeHandlersForRootLogger"/>
+  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="install"/>
 
   <!-- =========================================================== -->
   <!-- Http Configuration.                                         -->
@@ -74,6 +76,7 @@
     <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
     <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
     <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="false"/></Set>
+    <Set name="relativeRedirectAllowed">true</Set><!-- can remove in Jetty 12, which has this default -->
     <!-- Uncomment to enable handling of X-Forwarded- style headers
     <Call name="addCustomizer">
       <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
@@ -178,7 +181,7 @@
                  </New>
                </Item>
                <Item>
-                 <New id="InstrumentedHandler" class="com.codahale.metrics.jetty9.InstrumentedHandler">
+                 <New id="InstrumentedHandler" class="io.dropwizard.metrics.jetty10.InstrumentedHandler">
                    <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
                    <Set name="handler">
                      <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
@@ -195,7 +198,7 @@
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <Ref id="RewriteHandler"/>
+      <Ref refid="RewriteHandler"/>
     </Set>
 
     <!-- =========================================================== -->

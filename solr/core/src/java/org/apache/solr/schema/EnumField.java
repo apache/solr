@@ -21,15 +21,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.solr.legacy.LegacyFieldType;
-import org.apache.solr.legacy.LegacyIntField;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
-import org.apache.solr.legacy.LegacyNumericType;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
@@ -38,6 +32,11 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.legacy.LegacyFieldType;
+import org.apache.solr.legacy.LegacyIntField;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericType;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
@@ -45,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Field type for support of string values with custom sort order.
+ *
  * @deprecated use {@link EnumFieldType} instead.
  */
 @Deprecated
@@ -52,7 +52,7 @@ public class EnumField extends AbstractEnumField {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final int DEFAULT_PRECISION_STEP = Integer.MAX_VALUE;
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
@@ -63,13 +63,20 @@ public class EnumField extends AbstractEnumField {
   }
 
   @Override
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
+      boolean maxInclusive) {
     Integer minValue = enumMapping.stringValueToIntValue(min);
     Integer maxValue = enumMapping.stringValueToIntValue(max);
 
     if (field.multiValued() && field.hasDocValues() && !field.indexed()) {
       // for the multi-valued dv-case, the default rangeimpl over toInternal is correct
-      return super.getSpecializedRangeQuery(parser, field, minValue.toString(), maxValue.toString(), minInclusive, maxInclusive);
+      return super.getSpecializedRangeQuery(
+          parser, field, minValue.toString(), maxValue.toString(), minInclusive, maxInclusive);
     }
     Query query = null;
     final boolean matchOnly = field.hasDocValues() && !field.indexed();
@@ -88,12 +95,18 @@ public class EnumField extends AbstractEnumField {
           --upperValue;
         }
       }
-      query = new ConstantScoreQuery(NumericDocValuesField.newSlowRangeQuery(field.getName(), lowerValue, upperValue));
+      query =
+          new ConstantScoreQuery(
+              NumericDocValuesField.newSlowRangeQuery(field.getName(), lowerValue, upperValue));
     } else {
-      query = LegacyNumericRangeQuery.newIntRange(field.getName(), DEFAULT_PRECISION_STEP,
-          min == null ? null : minValue,
-          max == null ? null : maxValue,
-          minInclusive, maxInclusive);
+      query =
+          LegacyNumericRangeQuery.newIntRange(
+              field.getName(),
+              DEFAULT_PRECISION_STEP,
+              min == null ? null : minValue,
+              max == null ? null : maxValue,
+              minInclusive,
+              maxInclusive);
     }
 
     return query;
@@ -102,8 +115,7 @@ public class EnumField extends AbstractEnumField {
   @Override
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     final String s = val.toString();
-    if (s == null)
-      return;
+    if (s == null) return;
 
     final Integer intValue = enumMapping.stringValueToIntValue(s);
     LegacyNumericUtils.intToPrefixCoded(intValue, 0, result);
@@ -111,8 +123,7 @@ public class EnumField extends AbstractEnumField {
 
   @Override
   public String indexedToReadable(String indexedForm) {
-    if (indexedForm == null)
-      return null;
+    if (indexedForm == null) return null;
     final BytesRef bytesRef = new BytesRef(indexedForm);
     final Integer intValue = LegacyNumericUtils.prefixCodedToInt(bytesRef);
     return enumMapping.intValueToStringValue(intValue);
@@ -138,8 +149,7 @@ public class EnumField extends AbstractEnumField {
   @Override
   public String storedToIndexed(IndexableField f) {
     final Number val = f.numericValue();
-    if (val == null)
-      return null;
+    if (val == null) return null;
     final BytesRefBuilder bytes = new BytesRefBuilder();
     LegacyNumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
     return bytes.get().utf8ToString();
@@ -152,15 +162,20 @@ public class EnumField extends AbstractEnumField {
     final boolean docValues = field.hasDocValues();
 
     if (!indexed && !stored && !docValues) {
-      if (log.isTraceEnabled())
+      if (log.isTraceEnabled()) {
         log.trace("Ignoring unindexed/unstored field: {}", field);
+      }
       return null;
     }
     final Integer intValue = enumMapping.stringValueToIntValue(value.toString());
     if (intValue == null || intValue.equals(EnumMapping.DEFAULT_VALUE)) {
-      String exceptionMessage = String.format(Locale.ENGLISH, "Unknown value for enum field: %s, value: %s",
-          field.getName(), value.toString());
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  exceptionMessage);
+      String exceptionMessage =
+          String.format(
+              Locale.ENGLISH,
+              "Unknown value for enum field: %s, value: %s",
+              field.getName(),
+              value.toString());
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exceptionMessage);
     }
 
     final LegacyFieldType newType = new LegacyFieldType();

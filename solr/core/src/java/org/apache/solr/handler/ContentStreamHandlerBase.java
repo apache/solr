@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 package org.apache.solr.handler;
+
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -25,12 +29,19 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Shares common code between various handlers that manipulate 
- * {@link org.apache.solr.common.util.ContentStream} objects.
+ * Shares common code between various handlers that manipulate {@link
+ * org.apache.solr.common.util.ContentStream} objects.
  */
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void init(NamedList<?> args) {
@@ -40,14 +51,18 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
     httpCaching = false;
     if (args != null) {
       Object caching = args.get("httpCaching");
-      if(caching!=null) {
+      if (caching != null) {
         httpCaching = Boolean.parseBoolean(caching.toString());
       }
     }
   }
-  
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    if (checkCircuitBreakers(req, rsp)) {
+      return; // Circuit breaker tripped, return immediately
+    }
+
     /*
        We track update requests so that we can preserve consistency by waiting for them to complete
        on a node shutdown and then immediately trigger a leader election without waiting for the core to close.
@@ -57,23 +72,24 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
        other kinds of requests.
     */
     SolrCoreState solrCoreState = req.getCore().getSolrCoreState();
-    if (!solrCoreState.registerInFlightUpdate())  {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Updates are temporarily paused for core: " + req.getCore().getName());
+    if (!solrCoreState.registerInFlightUpdate()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Updates are temporarily paused for core: " + req.getCore().getName());
     }
     try {
       SolrParams params = req.getParams();
-      UpdateRequestProcessorChain processorChain =
-              req.getCore().getUpdateProcessorChain(params);
+      UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(params);
 
       UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
 
       try {
         ContentStreamLoader documentLoader = newLoader(req, processor);
 
-
         Iterable<ContentStream> streams = req.getContentStreams();
         if (streams == null) {
-          if (!RequestHandlerUtils.handleCommit(req, processor, params, false) && !RequestHandlerUtils.handleRollback(req, processor, params, false)) {
+          if (!RequestHandlerUtils.handleCommit(req, processor, params, false)
+              && !RequestHandlerUtils.handleRollback(req, processor, params, false)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
           }
         } else {
@@ -99,5 +115,28 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
     }
   }
 
-  protected abstract ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor);
+  /**
+   * Check if {@link SolrRequestType#UPDATE} circuit breakers are tripped. Override this method in
+   * sub classes that do not want to check circuit breakers.
+   *
+   * @return true if circuit breakers are tripped, false otherwise.
+   */
+  protected boolean checkCircuitBreakers(SolrQueryRequest req, SolrQueryResponse rsp) {
+    if (isInternalShardRequest(req)) {
+      if (log.isTraceEnabled()) {
+        log.trace("Internal request, skipping circuit breaker check");
+      }
+      return false;
+    }
+    CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();
+    if (circuitBreakerRegistry.isEnabled(SolrRequestType.UPDATE)) {
+      List<CircuitBreaker> trippedCircuitBreakers =
+          circuitBreakerRegistry.checkTripped(SolrRequestType.UPDATE);
+      return CircuitBreakerUtils.reportErrorIfBreakersTripped(rsp, trippedCircuitBreakers);
+    }
+    return false;
+  }
+
+  protected abstract ContentStreamLoader newLoader(
+      SolrQueryRequest req, UpdateRequestProcessor processor);
 }

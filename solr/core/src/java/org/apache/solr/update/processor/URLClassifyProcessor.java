@@ -23,7 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Locale;
-
+import java.util.Objects;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -33,24 +33,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>
- * Update processor which examines a URL and outputs to various other fields
- * characteristics of that URL, including length, number of path levels, whether
- * it is a top level URL (levels==0), whether it looks like a landing/index page,
- * a canonical representation of the URL (e.g. stripping index.html), the domain
- * and path parts of the URL etc.
- * </p>
+ * Update processor which examines a URL and outputs to various other fields characteristics of that
+ * URL, including length, number of path levels, whether it is a top level URL (levels==0), whether
+ * it looks like a landing/index page, a canonical representation of the URL (e.g. stripping
+ * index.html), the domain and path parts of the URL etc.
  *
- * <p>
- * This processor is intended used in connection with processing web resources,
- * and helping to produce values which may be used for boosting or filtering later.
- * </p>
+ * <p>This processor is intended used in connection with processing web resources, and helping to
+ * produce values which may be used for boosting or filtering later.
  *
- * <p>
- * In the example configuration below, we construct a custom
- * <code>updateRequestProcessorChain</code> and then instruct the
- * <code>/update</code> requesthandler to use it for every incoming document.
- * </p>
+ * <p>In the example configuration below, we construct a custom <code>updateRequestProcessorChain
+ * </code> and then instruct the <code>/update</code> requesthandler to use it for every incoming
+ * document.
+ *
  * <pre class="prettyprint">
  * &lt;updateRequestProcessorChain name="urlProcessor"&gt;
  *   &lt;processor class="org.apache.solr.update.processor.URLClassifyProcessorFactory"&gt;
@@ -67,25 +61,26 @@ import org.slf4j.LoggerFactory;
  * &lt;/lst&gt;
  * &lt;/requestHandler&gt;
  * </pre>
- * <p>
- * Then, at index time, Solr will look at the <code>id</code> field value and extract
- * it's domain portion into a new <code>hostname</code> field. By default, the
- * following fields will also be added:
- * </p>
+ *
+ * <p>Then, at index time, Solr will look at the <code>id</code> field value and extract it's domain
+ * portion into a new <code>hostname</code> field. By default, the following fields will also be
+ * added:
+ *
  * <ul>
- *  <li>url_length</li>
- *  <li>url_levels</li>
- *  <li>url_toplevel</li>
- *  <li>url_landingpage</li>
+ *   <li>url_length
+ *   <li>url_levels
+ *   <li>url_toplevel
+ *   <li>url_landingpage
  * </ul>
- * <p>
- * For example, adding the following document
+ *
+ * <p>For example, adding the following document
+ *
  * <pre class="prettyprint">
  * { "id":"http://wwww.mydomain.com/subpath/document.html" }
  * </pre>
- * <p>
- * will result in this document in Solr:
- * </p>
+ *
+ * <p>will result in this document in Solr:
+ *
  * <pre class="prettyprint">
  * {
  *  "id":"http://wwww.mydomain.com/subpath/document.html",
@@ -122,26 +117,27 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
   private String domainFieldname = null;
   private String canonicalUrlFieldname = null;
   private static final String[] landingPageSuffixes = {
-      "/",
-      "index.html",
-      "index.htm",
-      "index.phtml",
-      "index.shtml",
-      "index.xml",
-      "index.php",
-      "index.asp",
-      "index.aspx",
-      "welcome.html",
-      "welcome.htm",
-      "welcome.phtml",
-      "welcome.shtml",
-      "welcome.xml",
-      "welcome.php",
-      "welcome.asp",
-      "welcome.aspx"
+    "/",
+    "index.html",
+    "index.htm",
+    "index.phtml",
+    "index.shtml",
+    "index.xml",
+    "index.php",
+    "index.asp",
+    "index.aspx",
+    "welcome.html",
+    "welcome.htm",
+    "welcome.phtml",
+    "welcome.shtml",
+    "welcome.xml",
+    "welcome.php",
+    "welcome.asp",
+    "welcome.aspx"
   };
 
-  public URLClassifyProcessor(SolrParams parameters,
+  public URLClassifyProcessor(
+      SolrParams parameters,
       SolrQueryRequest request,
       SolrQueryResponse response,
       UpdateRequestProcessor nextProcessor) {
@@ -156,8 +152,10 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
       this.urlFieldname = parameters.get(INPUT_FIELD_PARAM, DEFAULT_URL_FIELDNAME);
       this.lengthFieldname = parameters.get(OUTPUT_LENGTH_FIELD_PARAM, DEFAULT_LENGTH_FIELDNAME);
       this.levelsFieldname = parameters.get(OUTPUT_LEVELS_FIELD_PARAM, DEFAULT_LEVELS_FIELDNAME);
-      this.toplevelpageFieldname = parameters.get(OUTPUT_TOPLEVEL_FIELD_PARAM, DEFAULT_TOPLEVEL_FIELDNAME);
-      this.landingpageFieldname = parameters.get(OUTPUT_LANDINGPAGE_FIELD_PARAM, DEFAULT_LANDINGPAGE_FIELDNAME);
+      this.toplevelpageFieldname =
+          parameters.get(OUTPUT_TOPLEVEL_FIELD_PARAM, DEFAULT_TOPLEVEL_FIELDNAME);
+      this.landingpageFieldname =
+          parameters.get(OUTPUT_LANDINGPAGE_FIELD_PARAM, DEFAULT_LANDINGPAGE_FIELDNAME);
       this.domainFieldname = parameters.get(OUTPUT_DOMAIN_FIELD_PARAM);
       this.canonicalUrlFieldname = parameters.get(OUTPUT_CANONICALURL_FIELD_PARAM);
     }
@@ -192,6 +190,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
 
   /**
    * Gets a canonical form of the URL for use as main URL
+   *
    * @param url The input url
    * @return The URL object representing the canonical URL
    */
@@ -199,11 +198,12 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
     // NOTE: Do we want to make sure this URL is normalized? (Christian thinks we should)
     String urlString = url.toString();
     String lps = landingPageSuffix(url);
-    return new URL(urlString.replaceFirst("/" + lps + "$", "/"));
+    return URI.create(urlString.replaceFirst("/" + lps + "$", "/")).toURL();
   }
 
   /**
    * Calculates the length of the URL in characters
+   *
    * @param url The input URL
    * @return the length of the URL
    */
@@ -213,6 +213,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
 
   /**
    * Calculates the number of path levels in the given URL
+   *
    * @param url The input URL
    * @return the number of levels, where a top-level URL is 0
    */
@@ -230,6 +231,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
 
   /**
    * Calculates whether a URL is a top level page
+   *
    * @param url The input URL
    * @return true if page is a top level page
    */
@@ -241,6 +243,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
 
   /**
    * Calculates whether the URL is a landing page or not
+   *
    * @param url The input URL
    * @return true if URL represents a landing page (index page)
    */
@@ -248,7 +251,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
     if (url.getQuery() != null) {
       return false;
     } else {
-      return landingPageSuffix(url) != "";
+      return !Objects.equals(landingPageSuffix(url), "");
     }
   }
 
@@ -266,8 +269,8 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
 
   private String landingPageSuffix(URL url) {
     String path = url.getPath().toLowerCase(Locale.ROOT);
-    for(String suffix : landingPageSuffixes) {
-      if(path.endsWith(suffix)) {
+    for (String suffix : landingPageSuffixes) {
+      if (path.endsWith(suffix)) {
         return suffix;
       }
     }
@@ -275,6 +278,6 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
   }
 
   private String getPathWithoutSuffix(URL url) {
-    return url.getPath().toLowerCase(Locale.ROOT).replaceFirst(landingPageSuffix(url)+"$", "");
+    return url.getPath().toLowerCase(Locale.ROOT).replaceFirst(landingPageSuffix(url) + "$", "");
   }
 }

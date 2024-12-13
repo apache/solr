@@ -16,9 +16,9 @@
   limitations under the License.
   -->
 
-<!-- Use this file for logging exlusively to the console, useful for 
+<!-- Use this file for logging exclusively to the console, useful for
      some development tasks. Should not be used for production -->
-<!-- Default production configuration is asnychronous logging -->
+<!-- Default production configuration is asynchronous logging -->
 <Configuration>
   <Appenders>
     <Console name="STDERR" target="SYSTEM_ERR">
@@ -31,8 +31,11 @@
   </Appenders>
   <Loggers>
     <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
-    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+    <AsyncLogger name="org.apache.zookeeper" level="ERROR"/>
     <AsyncLogger name="org.apache.hadoop" level="WARN"/>
+    <AsyncLogger name="org.eclipse.jetty.deploy" level="warn"/>
+    <AsyncLogger name="org.eclipse.jetty.webapp" level="warn"/>
+    <AsyncLogger name="org.eclipse.jetty.server.session" level="warn"/>
 
     <AsyncRoot level="INFO">
       <AppenderRef ref="STDERR"/>

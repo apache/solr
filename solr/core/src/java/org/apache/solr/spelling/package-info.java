@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * APIs and classes used by the {@link org.apache.solr.handler.component.SpellCheckComponent}
- * <p>
- * See {@link org.apache.lucene.search.spell} and {@link org.apache.lucene.search.suggest} for additional information.
+ *
+ * <p>See {@link org.apache.lucene.search.spell} and {@link org.apache.lucene.search.suggest} for
+ * additional information.
  */
 package org.apache.solr.spelling;
-
-

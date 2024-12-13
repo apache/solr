@@ -18,9 +18,6 @@
 package org.apache.solr.cloud.overseer;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -30,25 +27,20 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
 public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   //
-  // NOTE: This class can only have one test because our test for caching is to nuke the SolrZkClient to
-  // verify that a cached load is going to hit the cache, not try to talk to zk. Any other ZK related test
-  // method in this class will fail if it runs after testReadWriteCached, so don't add one! :)
+  // NOTE: This class can only have one test because our test for caching is to nuke the
+  // SolrZkClient to verify that a cached load is going to hit the cache, not try to talk to zk. Any
+  // other ZK related test method in this class will fail if it runs after testReadWriteCached, so
+  // don't add one! :)
   //
   private String collectionName;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Before
@@ -58,39 +50,40 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
 
     collectionName = "CollectionPropsTest" + System.nanoTime();
 
-    CollectionAdminRequest.Create request = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
+    CollectionAdminRequest.Create request =
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
     CollectionAdminResponse response = request.process(cluster.getSolrClient());
-    assertTrue("Unable to create collection: " + response.toString(), response.isSuccess());
+    assertTrue("Unable to create collection: " + response, response.isSuccess());
   }
 
   @Test
   public void testReadWriteCached() throws InterruptedException, IOException {
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
 
     CollectionProperties collectionProps = new CollectionProperties(zkClient());
 
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
-    checkValue("property1", "value1"); //Should be no cache, so the change should take effect immediately
+    // Should be no cache, so the change should take effect immediately
+    checkValue("property1", "value1");
 
-    zkStateReader.getCollectionProperties(collectionName,9000);
+    zkStateReader.getCollectionProperties(collectionName, 9000);
     zkStateReader.getZkClient().close();
     assertFalse(zkStateReader.isClosed());
-    checkValue("property1", "value1"); //Should be cached, so the change should not try to hit zk
+    checkValue("property1", "value1"); // Should be cached, so the change should not try to hit zk
 
     Thread.sleep(10000); // test the timeout feature
     try {
-      checkValue("property1", "value1"); //Should not be cached anymore
-      fail("cache should have expired, prev line should throw an exception trying to access zookeeper after closed");
+      checkValue("property1", "value1"); // Should not be cached anymore
+      fail(
+          "cache should have expired, prev line should throw an exception trying to access zookeeper after closed");
     } catch (Exception e) {
       // expected, because we killed the client in zkStateReader.
     }
   }
 
-  private void checkValue(String propertyName, String expectedValue) throws InterruptedException {
-    final Object value = cluster.getSolrClient().getZkStateReader().getCollectionProperties(collectionName).get(propertyName);
+  private void checkValue(String propertyName, String expectedValue) {
+    final Object value =
+        cluster.getZkStateReader().getCollectionProperties(collectionName).get(propertyName);
     assertEquals("Unexpected value for collection property: " + propertyName, expectedValue, value);
   }
-
-
-
 }

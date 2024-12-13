@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 import org.apache.lucene.search.Query;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
 
-
 /**
  * Indicate that the implementing class is capable of generating a Query against spatial resources.
- * For example, the LatLonType is capable of creating a query that restricts the document space down
- * to documents that are within a certain distance of a given point on Earth. *
- *
- **/
+ * For example, the {@link LatLonPointSpatialField} is capable of creating a query that restricts
+ * the document space down to documents that are within a certain distance of a given point on
+ * Earth. *
+ */
 public interface SpatialQueryable {
 
   public Query createSpatialQuery(QParser parser, SpatialOptions options);

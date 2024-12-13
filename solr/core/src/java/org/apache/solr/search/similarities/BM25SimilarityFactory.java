@@ -24,17 +24,17 @@ import org.apache.solr.schema.SimilarityFactory;
 /**
  * Factory for BM25Similarity. This is the default similarity since 8.x.
  *
- * <p>
- * Parameters:
+ * <p>Parameters:
+ *
  * <ul>
- *   <li>k1 (float): Controls non-linear term frequency normalization (saturation).
- *                   The default is <code>1.2</code>
- *   <li>b (float): Controls to what degree document length normalizes tf values.
- *                  The default is <code>0.75</code>
- *   <li>discountOverlaps (bool): True if overlap tokens (tokens with a position of increment of zero) are
- *                                discounted from the document's length.
- *                                The default is <code>true</code>
+ *   <li>k1 (float): Controls non-linear term frequency normalization (saturation). The default is
+ *       <code>1.2</code>
+ *   <li>b (float): Controls to what degree document length normalizes tf values. The default is
+ *       <code>0.75</code>
+ *   <li>discountOverlaps (bool): True if overlap tokens (tokens with a position of increment of
+ *       zero) are discounted from the document's length. The default is <code>true</code>
  * </ul>
+ *
  * @lucene.experimental
  * @since 8.0.0
  */

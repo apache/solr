@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Parameter substitution / macro expansion.
- */
+/** Parameter substitution / macro expansion. */
 package org.apache.solr.request.macro;

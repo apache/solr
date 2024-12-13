@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -27,9 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
 
-/**
- * {@link AggValueSource} to compute missing counts for given {@link ValueSource}
- */
+/** {@link AggValueSource} to compute missing counts for given {@link ValueSource} */
 public class MissingAgg extends SimpleAggValueSource {
 
   public MissingAgg(ValueSource vs) {
@@ -37,11 +34,12 @@ public class MissingAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
-      String field = ((FieldNameValueSource)vs).getFieldName();
+      String field = ((FieldNameValueSource) vs).getFieldName();
       SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
 
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
@@ -64,18 +62,18 @@ public class MissingAgg extends SimpleAggValueSource {
     return new FacetModule.FacetLongMerger();
   }
 
-  class MissingSlotAcc extends SlotAcc.LongFuncSlotAcc {
+  static class MissingSlotAcc extends SlotAcc.LongFuncSlotAcc {
 
     public MissingSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
     }
 
     @Override
-    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
+        throws IOException {
       if (!values.exists(doc)) {
         result[slot]++;
       }
     }
   }
-
 }

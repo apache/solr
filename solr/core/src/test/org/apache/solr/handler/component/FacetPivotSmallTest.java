@@ -23,15 +23,14 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 
-/**
- * Single node testing of pivot facets
- */
+/** Single node testing of pivot facets */
 public class FacetPivotSmallTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
+      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     initCore("solrconfig.xml", "schema11.xml");
   }
 
@@ -42,40 +41,45 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  /**
-   * we don't support comma's in the "stats" local param ... yet: SOLR-6663  
-   */
-  public void testStatsTagHasComma() throws Exception {
+  /** we don't support comma's in the "stats" local param ... yet: SOLR-6663 */
+  public void testStatsTagHasComma() {
 
     if (random().nextBoolean()) {
       // behavior should be same either way
       index();
     }
 
-    assertQEx("Can't use multiple tags in stats local param until SOLR-6663 is decided",
-              req("q","*:*", "facet", "true",
-                  "stats", "true",
-                  "stats.field", "{!tag=foo}price_ti",
-                  "stats.field", "{!tag=bar}id",
-                  "facet.pivot", "{!stats=foo,bar}place_t,company_t"),
-              400);
+    assertQEx(
+        "Can't use multiple tags in stats local param until SOLR-6663 is decided",
+        req(
+            "q",
+            "*:*",
+            "facet",
+            "true",
+            "stats",
+            "true",
+            "stats.field",
+            "{!tag=foo}price_ti",
+            "stats.field",
+            "{!tag=bar}id",
+            "facet.pivot",
+            "{!stats=foo,bar}place_t,company_t"),
+        400);
   }
 
-  /**
-   * if bogus stats are requested, the pivots should still work
-   */
-  public void testBogusStatsTag() throws Exception {
+  /** if bogus stats are requested, the pivots should still work */
+  public void testBogusStatsTag() {
     index();
 
-    assertQ(req("q","*:*", "facet", "true",
-                "facet.pivot", "{!stats=bogus}place_t,company_t")
-            // check we still get pivots...
-            , "//arr[@name='place_t,company_t']/lst[str[@name='value'][.='dublin']]"
-            // .. but sanity check we don't have any stats
-            , "count(//arr[@name='place_t,company_t']/lst[str[@name='value'][.='dublin']]/lst[@name='stats'])=0");
+    assertQ(
+        // check we still get pivots...
+        req("q", "*:*", "facet", "true", "facet.pivot", "{!stats=bogus}place_t,company_t"),
+        "//arr[@name='place_t,company_t']/lst[str[@name='value'][.='dublin']]",
+        // .. but sanity check we don't have any stats
+        "count(//arr[@name='place_t,company_t']/lst[str[@name='value'][.='dublin']]/lst[@name='stats'])=0");
   }
 
-  public void testPivotFacetUnsorted() throws Exception {
+  public void testPivotFacetUnsorted() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -84,73 +88,129 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     params.add("facet.pivot", "place_t,company_t");
 
     SolrQueryRequest req = req(params);
-    final String facetPivotPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
-    assertQ(req, facetPivotPrefix + "/str[@name='field'][.='place_t']",
+    final String facetPivotPrefix =
+        "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
+    assertQ(
+        req,
+        facetPivotPrefix + "/str[@name='field'][.='place_t']",
         // dublin
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=4]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=4]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=4]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=4]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
         // london
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=2]",
         // cardiff
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
         // krakow
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=1]",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
 
         // la
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
         // cork
-        facetPivotPrefix + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=1]",
-        facetPivotPrefix + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='rte']",
-        facetPivotPrefix + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=1]"
-    );
+        facetPivotPrefix
+            + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='rte']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=1]");
   }
 
-  public void testPivotFacetStatsUnsortedTagged() throws Exception {
+  public void testPivotFacetStatsUnsortedTagged() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -161,11 +221,19 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     params.add("stats.field", "{!key=avg_price tag=s1}price_ti");
 
     SolrQueryRequest req = req(params);
-    final String statsPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
-    String dublinMicrosoftStats = statsPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[str[@name='value'][.='microsoft']]/lst[@name='stats']/lst[@name='stats_fields']/lst[@name='avg_price']";
-    String cardiffPolecatStats = statsPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[str[@name='value'][.='polecat']]/lst[@name='stats']/lst[@name='stats_fields']/lst[@name='avg_price']";
-    String krakowFujitsuStats = statsPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[str[@name='value'][.='fujitsu']]/lst[@name='stats']/lst[@name='stats_fields']/lst[@name='avg_price']";
-    assertQ(req,
+    final String statsPrefix =
+        "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
+    String dublinMicrosoftStats =
+        statsPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[str[@name='value'][.='microsoft']]/lst[@name='stats']/lst[@name='stats_fields']/lst[@name='avg_price']";
+    String cardiffPolecatStats =
+        statsPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[str[@name='value'][.='polecat']]/lst[@name='stats']/lst[@name='stats_fields']/lst[@name='avg_price']";
+    String krakowFujitsuStats =
+        statsPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[str[@name='value'][.='fujitsu']]/lst[@name='stats']/lst[@name='stats_fields']/lst[@name='avg_price']";
+    assertQ(
+        req,
         dublinMicrosoftStats + "/double[@name='min'][.=15.0]",
         dublinMicrosoftStats + "/double[@name='max'][.=29.0]",
         dublinMicrosoftStats + "/long[@name='count'][.=3]",
@@ -176,7 +244,6 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         dublinMicrosoftStats + "/double[@name='stddev'][.=7.211102550927978]",
         // if new stats are supported, this will break - update test to assert values for each
         "count(" + dublinMicrosoftStats + "/*)=8",
-
         cardiffPolecatStats + "/double[@name='min'][.=15.0]",
         cardiffPolecatStats + "/double[@name='max'][.=39.0]",
         cardiffPolecatStats + "/long[@name='count'][.=2]",
@@ -187,7 +254,6 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         cardiffPolecatStats + "/double[@name='stddev'][.=16.97056274847714]",
         // if new stats are supported, this will break - update test to assert values for each
         "count(" + cardiffPolecatStats + "/*)=8",
-
         krakowFujitsuStats + "/null[@name='min']",
         krakowFujitsuStats + "/null[@name='max']",
         krakowFujitsuStats + "/long[@name='count'][.=0]",
@@ -197,13 +263,10 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         krakowFujitsuStats + "/double[@name='mean'][.='NaN']",
         krakowFujitsuStats + "/double[@name='stddev'][.=0.0]",
         // if new stats are supported, this will break - update test to assert values for each
-        "count(" + krakowFujitsuStats + "/*)=8"
-
-    );
+        "count(" + krakowFujitsuStats + "/*)=8");
   }
 
-
-  public void testPivotFacetSortedCount() throws Exception {
+  public void testPivotFacetSortedCount() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -212,80 +275,134 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     params.add("facet.pivot", "place_t,company_t");
 
     // Test sorting by count
-    //TODO clarify why facet count active by default
-    // The default is count if facet.limit is greater than 0, index otherwise, but facet.limit was not defined
+    // TODO clarify why facet count active by default
+    // The default is count if facet.limit is greater than 0, index otherwise, but facet.limit was
+    // not defined
     params.set(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
-    final String facetPivotPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
+    final String facetPivotPrefix =
+        "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
     SolrQueryRequest req = req(params);
-    assertQ(req, facetPivotPrefix + "/str[@name='field'][.='place_t']",
+    assertQ(
+        req,
+        facetPivotPrefix + "/str[@name='field'][.='place_t']",
         // dublin
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=4]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=4]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=4]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=4]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
         // london
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=2]",
         // cardiff
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cardiff']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
         // krakow
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=1]",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='krakow']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
 
         // la
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='bbc']",
-        facetPivotPrefix + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[5]/str[@name='value'][.='bbc']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='la']]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
         // cork
-        facetPivotPrefix + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=1]",
-        facetPivotPrefix + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='rte']",
-        facetPivotPrefix + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=1]"
-    );
-
-
+        facetPivotPrefix
+            + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=1]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='rte']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=1]");
   }
 
-
-  public void testPivotFacetLimit() throws Exception {
+  public void testPivotFacetLimit() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -296,23 +413,33 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     params.set(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
     params.set(FacetParams.FACET_LIMIT, 2);
 
-    final String facetPivotPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
+    final String facetPivotPrefix =
+        "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
     SolrQueryRequest req = req(params);
-    assertQ(req, facetPivotPrefix + "/str[@name='field'][.='place_t']",
+    assertQ(
+        req,
+        facetPivotPrefix + "/str[@name='field'][.='place_t']",
         // dublin
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=4]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=4]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=4]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=4]",
         // london
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=3]"
-    );
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=3]");
   }
 
-  public void testPivotIndividualFacetLimit() throws Exception {
+  public void testPivotIndividualFacetLimit() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -324,92 +451,148 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     params.set("f.place_t." + FacetParams.FACET_LIMIT, 1);
     params.set("f.company_t." + FacetParams.FACET_LIMIT, 4);
 
-    final String facetPivotPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
+    final String facetPivotPrefix =
+        "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
     SolrQueryRequest req = req(params);
-    assertQ(req, facetPivotPrefix + "/str[@name='field'][.='place_t']",
+    assertQ(
+        req,
+        facetPivotPrefix + "/str[@name='field'][.='place_t']",
         // dublin
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='microsoft']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=4]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=4]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=3]",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
-        facetPivotPrefix + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]"
-    );
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/str[@name='value'][.='microsoft']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[1]/int[@name='count'][.=4]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/str[@name='value'][.='polecat']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=4]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/str[@name='value'][.='null']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[3]/int[@name='count'][.=3]",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/str[@name='value'][.='fujitsu']",
+        facetPivotPrefix
+            + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]");
   }
 
-  public void testPivotFacetMissing() throws Exception {
+  public void testPivotFacetMissing() {
     // Test facet.missing=true with diff sorts
     index();
     indexMissing();
 
-    SolrParams missingA = params("q", "*:*",
-        "rows", "0",
-        "facet", "true",
-        "facet.pivot", "place_t,company_t",
-        // default facet.sort
-        FacetParams.FACET_MISSING, "true");
+    SolrParams missingA =
+        params(
+            "q",
+            "*:*",
+            "rows",
+            "0",
+            "facet",
+            "true",
+            "facet.pivot",
+            "place_t,company_t",
+            // default facet.sort
+            FacetParams.FACET_MISSING,
+            "true");
 
-    final String facetPivotPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
+    final String facetPivotPrefix =
+        "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='place_t,company_t']/lst";
     SolrQueryRequest req = req(missingA);
-    assertQ(req, facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",   // not enough values for pivot
-        facetPivotPrefix + "[7]/null[@name='value'][.='']",   // not the missing place value
-        facetPivotPrefix + "[7]/int[@name='count'][.=2]",       // wrong missing place count
-        facetPivotPrefix + "[7]/arr[@name='pivot'][count(.) > 0]", // not enough sub-pivots for missing place
-        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6]/null[@name='value'][.='']", // not the missing company value
-        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6]/int[@name='count'][.=1]", // wrong missing company count
-        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6][not(arr[@name='pivot'])]" // company shouldn't have sub-pivots
-    );
+    assertQ(
+        req,
+        // not enough values for pivot
+        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",
+        // not the missing place value
+        facetPivotPrefix + "[7]/null[@name='value'][.='']",
+        // wrong missing place count
+        facetPivotPrefix + "[7]/int[@name='count'][.=2]",
+        // not enough sub-pivots for missing place
+        facetPivotPrefix + "[7]/arr[@name='pivot'][count(.) > 0]",
+        // not the missing company value
+        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6]/null[@name='value'][.='']",
+        // wrong missing company count
+        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6]/int[@name='count'][.=1]",
+        // company shouldn't have sub-pivots
+        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6][not(arr[@name='pivot'])]");
 
-    SolrParams missingB = SolrParams.wrapDefaults(missingA,
-        params(FacetParams.FACET_LIMIT, "4",
-            "facet.sort", "index"));
-
+    SolrParams missingB =
+        SolrParams.wrapDefaults(
+            missingA, params(FacetParams.FACET_LIMIT, "4", "facet.sort", "index"));
 
     req = req(missingB);
-    assertQ(req, facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",   // not enough values for pivot
-        facetPivotPrefix + "[5]/null[@name='value'][.='']",   // not the missing place value
-        facetPivotPrefix + "[5]/int[@name='count'][.=2]",       // wrong missing place count
-        facetPivotPrefix + "[5]/arr[@name='pivot'][count(.) > 0]", // not enough sub-pivots for missing place
-        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5]/null[@name='value'][.='']", // not the missing company value
-        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]", // wrong missing company count
-        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5][not(arr[@name='pivot'])]" // company shouldn't have sub-pivots
-    );
+    assertQ(
+        req,
+        // not enough values for pivot
+        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",
+        // not the missing place value
+        facetPivotPrefix + "[5]/null[@name='value'][.='']",
+        // wrong missing place count
+        facetPivotPrefix + "[5]/int[@name='count'][.=2]",
+        // not enough sub-pivots for missing place
+        facetPivotPrefix + "[5]/arr[@name='pivot'][count(.) > 0]",
+        // not the missing company value
+        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5]/null[@name='value'][.='']",
+        // wrong missing company count
+        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        // company shouldn't have sub-pivots
+        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5][not(arr[@name='pivot'])]");
 
-    SolrParams missingC = SolrParams.wrapDefaults(missingA,
-        params(FacetParams.FACET_LIMIT, "0", "facet.sort", "index"));
+    SolrParams missingC =
+        SolrParams.wrapDefaults(
+            missingA, params(FacetParams.FACET_LIMIT, "0", "facet.sort", "index"));
 
-    assertQ(req(missingC), facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",   // not enough values for pivot
-        facetPivotPrefix + "[1]/null[@name='value'][.='']",   // not the missing place value
-        facetPivotPrefix + "[1]/int[@name='count'][.=2]",       // wrong missing place count
-        facetPivotPrefix + "[1]/arr[@name='pivot'][count(.) > 0]", // not enough sub-pivots for missing place
-        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1]/null[@name='value'][.='']", // not the missing company value
-        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1]/int[@name='count'][.=1]", // wrong missing company count
-        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1][not(arr[@name='pivot'])]" // company shouldn't have sub-pivots
-    );
+    assertQ(
+        req(missingC),
+        // not enough values for pivot
+        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",
+        // not the missing place value
+        facetPivotPrefix + "[1]/null[@name='value'][.='']",
+        // wrong missing place count
+        facetPivotPrefix + "[1]/int[@name='count'][.=2]",
+        // not enough sub-pivots for missing place
+        facetPivotPrefix + "[1]/arr[@name='pivot'][count(.) > 0]",
+        // not the missing company value
+        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1]/null[@name='value'][.='']",
+        // wrong missing company count
+        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1]/int[@name='count'][.=1]",
+        // company shouldn't have sub-pivots
+        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1][not(arr[@name='pivot'])]");
   }
 
-  public void testPivotFacetIndexSortMincountAndLimit() throws Exception {
+  public void testPivotFacetIndexSortMincountAndLimit() {
     // sort=index + mincount + limit
     index();
     indexMissing();
 
-    for (SolrParams variableParams : new SolrParams[]{
-        // we should get the same results regardless of overrequest
-        params(),
-        params()}) {
-      SolrParams p = SolrParams.wrapDefaults(params("q", "*:*",
-              "rows", "0",
-              "facet", "true",
-              "facet.pivot", "company_t",
-              "facet.sort", "index",
-              "facet.pivot.mincount", "4",
-              "facet.limit", "4"),
-          variableParams);
-      final String facetPivotPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='company_t']";
+    for (SolrParams variableParams :
+        new SolrParams[] {
+          // we should get the same results regardless of overrequest
+          params(), params()
+        }) {
+      SolrParams p =
+          SolrParams.wrapDefaults(
+              params(
+                  "q",
+                  "*:*",
+                  "rows",
+                  "0",
+                  "facet",
+                  "true",
+                  "facet.pivot",
+                  "company_t",
+                  "facet.sort",
+                  "index",
+                  "facet.pivot.mincount",
+                  "4",
+                  "facet.limit",
+                  "4"),
+              variableParams);
+      final String facetPivotPrefix =
+          "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='company_t']";
       SolrQueryRequest req = req(p);
-      assertQ(req, facetPivotPrefix + "[count(./lst) = 4]",   // not enough values for pivot
+      assertQ(
+          req,
+          facetPivotPrefix + "[count(./lst) = 4]", // not enough values for pivot
           facetPivotPrefix + "/lst[1]/str[@name='value'][.='fujitsu']",
           facetPivotPrefix + "/lst[1]/int[@name='count'][.=4]",
           facetPivotPrefix + "/lst[2]/str[@name='value'][.='microsoft']",
@@ -417,70 +600,93 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
           facetPivotPrefix + "/lst[3]/str[@name='value'][.='null']",
           facetPivotPrefix + "/lst[3]/int[@name='count'][.=6]",
           facetPivotPrefix + "/lst[4]/str[@name='value'][.='polecat']",
-          facetPivotPrefix + "/lst[4]/int[@name='count'][.=6]"
-      );
+          facetPivotPrefix + "/lst[4]/int[@name='count'][.=6]");
     }
   }
 
-  public void testPivotFacetIndexSortMincountLimitAndOffset() throws Exception {
+  public void testPivotFacetIndexSortMincountLimitAndOffset() {
     // sort=index + mincount + limit + offset
     index();
     indexMissing();
 
-    for (SolrParams variableParams : new SolrParams[]{
-        // we should get the same results regardless of overrequest
-        params(),
-        params()}) {
-      SolrParams p = SolrParams.wrapDefaults(params("q", "*:*",
-              "rows", "0",
-              "facet", "true",
-              "facet.pivot", "company_t",
-              "facet.sort", "index",
-              "facet.pivot.mincount", "4",
-              "facet.offset", "1",
-              "facet.limit", "4"),
-          variableParams);
-      final String facetPivotPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='company_t']";
+    for (SolrParams variableParams :
+        new SolrParams[] {
+          // we should get the same results regardless of overrequest
+          params(), params()
+        }) {
+      SolrParams p =
+          SolrParams.wrapDefaults(
+              params(
+                  "q",
+                  "*:*",
+                  "rows",
+                  "0",
+                  "facet",
+                  "true",
+                  "facet.pivot",
+                  "company_t",
+                  "facet.sort",
+                  "index",
+                  "facet.pivot.mincount",
+                  "4",
+                  "facet.offset",
+                  "1",
+                  "facet.limit",
+                  "4"),
+              variableParams);
+      final String facetPivotPrefix =
+          "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='company_t']";
       SolrQueryRequest req = req(p);
-      assertQ(req, facetPivotPrefix + "[count(./lst) = 3]", // asked for 4, but not enough meet the mincount
+      assertQ(
+          req,
+          facetPivotPrefix + "[count(./lst) = 3]", // asked for 4, but not enough meet the mincount
           facetPivotPrefix + "/lst[1]/str[@name='value'][.='microsoft']",
           facetPivotPrefix + "/lst[1]/int[@name='count'][.=5]",
           facetPivotPrefix + "/lst[2]/str[@name='value'][.='null']",
           facetPivotPrefix + "/lst[2]/int[@name='count'][.=6]",
           facetPivotPrefix + "/lst[3]/str[@name='value'][.='polecat']",
-          facetPivotPrefix + "/lst[3]/int[@name='count'][.=6]"
-      );
+          facetPivotPrefix + "/lst[3]/int[@name='count'][.=6]");
     }
   }
 
-
-  public void testPivotFacetIndexSortMincountLimitAndOffsetPermutations() throws Exception {
+  public void testPivotFacetIndexSortMincountLimitAndOffsetPermutations() {
     // sort=index + mincount + limit + offset (more permutations)
     index();
     indexMissing();
 
-    for (SolrParams variableParams : new SolrParams[]{
-        // all of these combinations should result in the same first value
-        params("facet.pivot.mincount", "4",
-            "facet.offset", "2"),
-        params("facet.pivot.mincount", "5",
-            "facet.offset", "1"),
-        params("facet.pivot.mincount", "6",
-            "facet.offset", "0")}) {
-      SolrParams p = SolrParams.wrapDefaults(params("q", "*:*",
-              "rows", "0",
-              "facet", "true",
-              "facet.limit", "1",
-              "facet.sort", "index",
-              "facet.overrequest.ratio", "0",
-              "facet.pivot", "company_t"),
-          variableParams);
-      final String facetPivotPrefix = "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='company_t']";
+    for (SolrParams variableParams :
+        new SolrParams[] {
+          // all of these combinations should result in the same first value
+          params("facet.pivot.mincount", "4", "facet.offset", "2"),
+          params("facet.pivot.mincount", "5", "facet.offset", "1"),
+          params("facet.pivot.mincount", "6", "facet.offset", "0")
+        }) {
+      SolrParams p =
+          SolrParams.wrapDefaults(
+              params(
+                  "q",
+                  "*:*",
+                  "rows",
+                  "0",
+                  "facet",
+                  "true",
+                  "facet.limit",
+                  "1",
+                  "facet.sort",
+                  "index",
+                  "facet.overrequest.ratio",
+                  "0",
+                  "facet.pivot",
+                  "company_t"),
+              variableParams);
+      final String facetPivotPrefix =
+          "//lst[@name='facet_counts']/lst[@name='facet_pivot']/arr[@name='company_t']";
       SolrQueryRequest req = req(p);
-      assertQ(req, facetPivotPrefix + "[count(./lst) = 1]", // asked for 4, but not enough meet the mincount
+      assertQ(
+          req,
+          facetPivotPrefix + "[count(./lst) = 1]", // asked for 4, but not enough meet the mincount
           facetPivotPrefix + "/lst[1]/str[@name='value'][.='null']",
-          facetPivotPrefix + "/lst[1]/int[@name='count'][.=6]"
-      );
+          facetPivotPrefix + "/lst[1]/int[@name='count'][.=6]");
     }
   }
 
@@ -494,29 +700,56 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     // NOTE: we use the literal (4 character) string "null" as a company name
     // to help ensure there isn't any bugs where the literal string is treated as if it
     // were a true NULL value.
-    String[] doc = {"id", "19", "place_t", "cardiff dublin", "company_t", "microsoft polecat", "price_ti", "15"};
+    String[] doc = {
+      "id", "19", "place_t", "cardiff dublin", "company_t", "microsoft polecat", "price_ti", "15"
+    };
     assertU(adoc(doc));
-    String[] doc1 = {"id", "20", "place_t", "dublin", "company_t", "polecat microsoft null", "price_ti", "19"};
+    String[] doc1 = {
+      "id", "20", "place_t", "dublin", "company_t", "polecat microsoft null", "price_ti", "19"
+    };
     assertU(adoc(doc1));
-    String[] doc2 = {"id", "21", "place_t", "london la dublin", "company_t",
-        "microsoft fujitsu null polecat", "price_ti", "29"};
+    String[] doc2 = {
+      "id",
+      "21",
+      "place_t",
+      "london la dublin",
+      "company_t",
+      "microsoft fujitsu null polecat",
+      "price_ti",
+      "29"
+    };
     assertU(adoc(doc2));
-    String[] doc3 = {"id", "22", "place_t", "krakow london cardiff", "company_t",
-        "polecat null bbc", "price_ti", "39"};
+    String[] doc3 = {
+      "id",
+      "22",
+      "place_t",
+      "krakow london cardiff",
+      "company_t",
+      "polecat null bbc",
+      "price_ti",
+      "39"
+    };
     assertU(adoc(doc3));
     String[] doc4 = {"id", "23", "place_t", "london", "company_t", "", "price_ti", "29"};
     assertU(adoc(doc4));
     String[] doc5 = {"id", "24", "place_t", "la", "company_t", ""};
     assertU(adoc(doc5));
-    String[] doc6 = {"id", "25", "company_t", "microsoft polecat null fujitsu null bbc", "price_ti", "59"};
+    String[] doc6 = {
+      "id", "25", "company_t", "microsoft polecat null fujitsu null bbc", "price_ti", "59"
+    };
     assertU(adoc(doc6));
     String[] doc7 = {"id", "26", "place_t", "krakow", "company_t", "null"};
     assertU(adoc(doc7));
-    String[] doc8 = {"id", "27", "place_t", "krakow cardiff dublin london la", "company_t",
-        "null microsoft polecat bbc fujitsu"};
+    String[] doc8 = {
+      "id",
+      "27",
+      "place_t",
+      "krakow cardiff dublin london la",
+      "company_t",
+      "null microsoft polecat bbc fujitsu"
+    };
     assertU(adoc(doc8));
-    String[] doc9 = {"id", "28", "place_t", "cork", "company_t",
-        "fujitsu rte"};
+    String[] doc9 = {"id", "28", "place_t", "cork", "company_t", "fujitsu rte"};
     assertU(adoc(doc9));
     assertU(commit());
   }

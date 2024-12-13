@@ -16,12 +16,11 @@
  */
 package org.apache.solr.update;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-
-import com.google.common.collect.Sets;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -31,35 +30,38 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.CopyField;
+import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
-/**
- * Builds a Lucene {@link Document} from a {@link SolrInputDocument}.
- */
+/** Builds a Lucene {@link Document} from a {@link SolrInputDocument}. */
 public class DocumentBuilder {
 
   // accessible only for tests
-  static int MIN_LENGTH_TO_MOVE_LAST = Integer.getInteger("solr.docBuilder.minLengthToMoveLast", 4*1024); // internal setting
+  static int MIN_LENGTH_TO_MOVE_LAST =
+      Integer.getInteger("solr.docBuilder.minLengthToMoveLast", 4 * 1024); // internal setting
+  static int MAX_VALUES_AS_STRING_LENGTH = 256;
 
   /**
    * Add a field value to a given document.
+   *
    * @param doc Document that the field needs to be added to
    * @param field The schema field object for the field
    * @param val The value for the field to be added
-   * @param forInPlaceUpdate Whether the field is to be added for in-place update. If true,
-   *        only numeric docValues based fields are added to the document. This can be true
-   *        when constructing a Lucene document for writing an in-place update, and we don't need
-   *        presence of non-updatable fields (non NDV) in such a document.
+   * @param forInPlaceUpdate Whether the field is to be added for in-place update. If true, only
+   *     numeric docValues based fields are added to the document. This can be true when
+   *     constructing a Lucene document for writing an in-place update, and we don't need presence
+   *     of non-updatable fields (non NDV) in such a document.
    */
-  private static void addField(Document doc, SchemaField field, Object val,
-      boolean forInPlaceUpdate) {
+  private static void addField(
+      Document doc, SchemaField field, Object val, boolean forInPlaceUpdate) {
     if (val instanceof IndexableField) {
       if (forInPlaceUpdate) {
-        assert val instanceof NumericDocValuesField: "Expected in-place update to be done on"
-            + " NDV fields only.";
+        assert val instanceof NumericDocValuesField
+            : "Expected in-place update to be done on" + " NDV fields only.";
       }
-      doc.add((IndexableField)val);
+      doc.add((IndexableField) val);
       return;
     }
     for (IndexableField f : field.getType().createFields(field, val)) {
@@ -81,13 +83,12 @@ public class DocumentBuilder {
       }
     }
   }
-  
-  private static String getID( SolrInputDocument doc, IndexSchema schema )
-  {
+
+  private static String getID(SolrInputDocument doc, IndexSchema schema) {
     String id = "";
     SchemaField sf = schema.getUniqueKeyField();
-    if( sf != null ) {
-      id = "[doc="+doc.getFieldValue( sf.getName() )+"] ";
+    if (sf != null) {
+      id = "[doc=" + doc.getFieldValue(sf.getName()) + "] ";
     }
     return id;
   }
@@ -95,49 +96,52 @@ public class DocumentBuilder {
   /**
    * @see DocumentBuilder#toDocument(SolrInputDocument, IndexSchema, boolean, boolean)
    */
-  public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
-  {
+  public static Document toDocument(SolrInputDocument doc, IndexSchema schema) {
     return toDocument(doc, schema, false, true);
   }
-  
+
   /**
    * Convert a SolrInputDocument to a lucene Document.
-   * 
-   * This function should go elsewhere.  This builds the Document without an
-   * extra Map&lt;&gt; checking for multiple values.  For more discussion, see:
+   *
+   * <p>This function should go elsewhere. This builds the Document without an extra Map&lt;&gt;
+   * checking for multiple values. For more discussion, see:
    * http://www.nabble.com/Re%3A-svn-commit%3A-r547493---in--lucene-solr-trunk%3A-.--src-java-org-apache-solr-common--src-java-org-apache-solr-schema--src-java-org-apache-solr-update--src-test-org-apache-solr-common--tf3931539.html
-   * 
-   * TODO: /!\ NOTE /!\ This semantics of this function are still in flux.  
-   * Something somewhere needs to be able to fill up a SolrDocument from
-   * a lucene document - this is one place that may happen.  It may also be
-   * moved to an independent function
-   * 
+   *
+   * <p>TODO: /!\ NOTE /!\ This semantics of this function are still in flux. Something somewhere
+   * needs to be able to fill up a SolrDocument from a lucene document - this is one place that may
+   * happen. It may also be moved to an independent function
+   *
    * @since solr 1.3
-   * 
    * @param doc SolrInputDocument from which the document has to be built
    * @param schema Schema instance
-   * @param forInPlaceUpdate Whether the output document would be used for an in-place update or not. When this is true,
-   *        default fields values and copy fields targets are not populated.
-   * @param ignoreNestedDocs if nested child documents should be ignored.  If false then an exception will be thrown.
+   * @param forInPlaceUpdate Whether the output document would be used for an in-place update or
+   *     not. When this is true, default fields values and copy fields targets are not populated.
+   * @param ignoreNestedDocs if nested child documents should be ignored. If false then an exception
+   *     will be thrown.
    * @return Built Lucene document
    */
-  public static Document toDocument(SolrInputDocument doc, IndexSchema schema, boolean forInPlaceUpdate, boolean ignoreNestedDocs) {
+  public static Document toDocument(
+      SolrInputDocument doc,
+      IndexSchema schema,
+      boolean forInPlaceUpdate,
+      boolean ignoreNestedDocs) {
     if (!ignoreNestedDocs && doc.hasChildDocuments()) {
       throw unexpectedNestedDocException(schema, forInPlaceUpdate);
     }
 
     final SchemaField uniqueKeyField = schema.getUniqueKeyField();
     final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
-    
+
     Document out = new Document();
-    Set<String> usedFields = Sets.newHashSet();
-    
+    Set<String> usedFields = new HashSet<>();
+
     // Load fields from SolrDocument to Document
-    for( SolrInputField field : doc ) {
+    for (SolrInputField field : doc) {
 
       // when in-place update, don't process the id & _root_; they won't change
       if (forInPlaceUpdate) {
-        if (field.getName().equals(uniqueKeyFieldName) || field.getName().equals(IndexSchema.ROOT_FIELD_NAME)) {
+        if (field.getName().equals(uniqueKeyFieldName)
+            || field.getName().equals(IndexSchema.ROOT_FIELD_NAME)) {
           continue;
         }
       }
@@ -152,85 +156,119 @@ public class DocumentBuilder {
       String name = field.getName();
       SchemaField sfield = schema.getFieldOrNull(name);
       boolean used = false;
-      
+
       // Make sure it has the correct number
-      if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued field " + 
-              sfield.getName() + ": " +field.getValue() );
+      if (sfield != null
+          && !sfield.multiValued()
+          && field.getValueCount() > 1
+          && !(sfield.getType() instanceof DenseVectorField)) {
+
+        // Ensure we do not flood the logs with extremely long values
+        String fieldValue = field.getValue().toString();
+        if (fieldValue.length() > MAX_VALUES_AS_STRING_LENGTH) {
+          assert fieldValue.endsWith("]");
+          fieldValue = fieldValue.substring(0, MAX_VALUES_AS_STRING_LENGTH - 4) + "...]";
+        }
+
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "ERROR: "
+                + getID(doc, schema)
+                + "multiple values encountered for non multiValued field "
+                + sfield.getName()
+                + ": "
+                + fieldValue);
       }
 
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
-      if( copyFields.size() == 0 ) copyFields = null;
+      if (copyFields.size() == 0) copyFields = null;
 
       // load each field value
       boolean hasField = false;
       try {
-        Iterator<?> it = field.iterator();
-        while (it.hasNext()) {
-          Object v = it.next();
-          if( v == null ) {
-            continue;
+        if (sfield != null && sfield.getType() instanceof DenseVectorField) {
+          Object vectorValue = field.getValue();
+          if (vectorValue != null) {
+            hasField = true;
+            used = addOriginalField(vectorValue, sfield, forInPlaceUpdate, out, usedFields);
+
+            // Check if we should copy this field value to any other fields.
+            // This could happen whether it is explicit or not.
+            if (copyFields != null) {
+              used |=
+                  addCopyFields(
+                      schema,
+                      vectorValue,
+                      sfield.getType(),
+                      copyFields,
+                      forInPlaceUpdate,
+                      uniqueKeyFieldName,
+                      out,
+                      usedFields);
+            }
           }
-          hasField = true;
-          if (sfield != null) {
-            used = true;
-            addField(out, sfield, v, forInPlaceUpdate);
-            // record the field as having a value
-            usedFields.add(sfield.getName());
-          }
-  
-          // Check if we should copy this field value to any other fields.
-          // This could happen whether it is explicit or not.
-          if (copyFields != null) {
-            for (CopyField cf : copyFields) {
-              SchemaField destinationField = cf.getDestination();
+        } else {
+          Iterator<?> it = field.iterator();
+          while (it.hasNext()) {
+            Object v = it.next();
+            if (v == null) {
+              continue;
+            }
+            hasField = true;
+            if (sfield != null) {
+              used = addOriginalField(v, sfield, forInPlaceUpdate, out, usedFields);
+            }
 
-              final boolean destHasValues = usedFields.contains(destinationField.getName());
-
-              // check if the copy field is a multivalued or not
-              if (!destinationField.multiValued() && destHasValues) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "Multiple values encountered for non multiValued copy field " +
-                    destinationField.getName() + ": " + v);
-              }
-
-              used = true;
-
-              // Perhaps trim the length of a copy field
-              Object val = v;
-              if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
-                  val = cf.getLimitedValue(val.toString());
-              }
-
-              // TODO ban copyField populating uniqueKeyField; too problematic to support
-              addField(out, destinationField, val,
-                       destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
-              // record the field as having a value
-              usedFields.add(destinationField.getName());
+            // Check if we should copy this field value to any other fields.
+            // This could happen whether it is explicit or not.
+            if (copyFields != null) {
+              used |=
+                  addCopyFields(
+                      schema,
+                      v,
+                      sfield.getType(),
+                      copyFields,
+                      forInPlaceUpdate,
+                      uniqueKeyFieldName,
+                      out,
+                      usedFields);
             }
           }
         }
+      } catch (SolrException ex) {
+        throw new SolrException(
+            SolrException.ErrorCode.getErrorCode(ex.code()),
+            "ERROR: "
+                + getID(doc, schema)
+                + "Error adding field '"
+                + field.getName()
+                + "'='"
+                + field.getValue()
+                + "' msg="
+                + ex.getMessage(),
+            ex);
+      } catch (Exception ex) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "ERROR: "
+                + getID(doc, schema)
+                + "Error adding field '"
+                + field.getName()
+                + "'='"
+                + field.getValue()
+                + "' msg="
+                + ex.getMessage(),
+            ex);
       }
-      catch( SolrException ex ) {
-        throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()),
-            "ERROR: "+getID(doc, schema)+"Error adding field '" + 
-              field.getName() + "'='" +field.getValue()+"' msg=" + ex.getMessage(), ex );
-      }
-      catch( Exception ex ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"Error adding field '" + 
-              field.getName() + "'='" +field.getValue()+"' msg=" + ex.getMessage(), ex );
-      }
-      
+
       // make sure the field was used somehow...
-      if( !used && hasField ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"unknown field '" +name + "'");
+      if (!used && hasField) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "ERROR: " + getID(doc, schema) + "unknown field '" + name + "'");
       }
     }
-    
-        
+
     // Now validate required fields or add default values
     // fields with default values are defacto 'required'
 
@@ -239,13 +277,12 @@ public class DocumentBuilder {
     // during the full indexing initially.
     if (!forInPlaceUpdate) {
       for (SchemaField field : schema.getRequiredFields()) {
-        if (out.getField(field.getName() ) == null) {
+        if (out.getField(field.getName()) == null) {
           if (field.getDefaultValue() != null) {
             addField(out, field, field.getDefaultValue(), false);
-          } 
-          else {
+          } else {
             String msg = getID(doc, schema) + "missing required field: " + field.getName();
-            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, msg );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
           }
         }
       }
@@ -254,26 +291,102 @@ public class DocumentBuilder {
     if (!forInPlaceUpdate) {
       moveLargestFieldLast(out);
     }
-    
+
     return out;
   }
 
-  private static SolrException unexpectedNestedDocException(IndexSchema schema, boolean forInPlaceUpdate) {
-    if (! schema.isUsableForChildDocs()) {
-      return new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Unable to index docs with children: the schema must " +
-              "include definitions for both a uniqueKey field and the '" + IndexSchema.ROOT_FIELD_NAME +
-              "' field, using the exact same fieldType");
+  private static boolean addOriginalField(
+      Object originalFieldValue,
+      SchemaField sfield,
+      boolean forInPlaceUpdate,
+      Document out,
+      Set<String> usedFields) {
+    addField(out, sfield, originalFieldValue, forInPlaceUpdate);
+    // record the field as having a value
+    usedFields.add(sfield.getName());
+    return true;
+  }
+
+  private static boolean addCopyFields(
+      final IndexSchema schema,
+      final Object originalFieldValue,
+      FieldType originalFieldType,
+      List<CopyField> copyFields,
+      boolean forInPlaceUpdate,
+      String uniqueKeyFieldName,
+      Document out,
+      Set<String> usedFields) {
+    boolean used = false;
+    for (CopyField cf : copyFields) {
+      SchemaField destinationField = cf.getDestination();
+
+      final boolean destHasValues = usedFields.contains(destinationField.getName());
+
+      // Dense Vector Fields can only be copied to same field type
+      if (originalFieldType instanceof DenseVectorField
+          && !(destinationField.getType() instanceof DenseVectorField)) {
+        if (schema.getCopySources(destinationField.getName()).contains("*")) {
+          continue;
+        } else {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "The copy field destination must be a DenseVectorField: "
+                  + destinationField.getName());
+        }
+      }
+
+      // check if the copy field is a multivalued or not
+      if (!destinationField.multiValued() && destHasValues) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Multiple values encountered for non multiValued copy field "
+                + destinationField.getName()
+                + ": "
+                + originalFieldValue);
+      }
+      Object fieldValue = originalFieldValue;
+      // Perhaps trim the length of a copy field
+      if (originalFieldValue instanceof CharSequence && cf.getMaxChars() > 0) {
+        fieldValue = cf.getLimitedValue(originalFieldValue.toString());
+      }
+
+      // TODO ban copyField populating uniqueKeyField; too problematic to support
+      addField(
+          out,
+          destinationField,
+          fieldValue,
+          destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+      // record the field as having a originalFieldValue
+      usedFields.add(destinationField.getName());
+      used = true;
+    }
+    return used;
+  }
+
+  private static SolrException unexpectedNestedDocException(
+      IndexSchema schema, boolean forInPlaceUpdate) {
+    if (!schema.isUsableForChildDocs()) {
+      return new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Unable to index docs with children: the schema must "
+              + "include definitions for both a uniqueKey field and the '"
+              + IndexSchema.ROOT_FIELD_NAME
+              + "' field, using the exact same fieldType");
     } else if (forInPlaceUpdate) {
-      return new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      return new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "Unable to index docs with children: for an in-place update, just provide the doc by itself");
     } else {
-      return new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      return new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
           "A document unexpectedly contained nested child documents");
     }
   }
 
-  /** Move the largest stored field last, because Lucene can avoid loading that one if it's not needed. */
+  /**
+   * Move the largest stored field last, because Lucene can avoid loading that one if it's not
+   * needed.
+   */
   private static void moveLargestFieldLast(Document doc) {
     String largestField = null;
     int largestFieldLen = -1;
@@ -285,7 +398,8 @@ public class DocumentBuilder {
       if (largestIsLast && !field.name().equals(largestField)) {
         largestIsLast = false;
       }
-      if (field.numericValue() != null) { // just ignore these as non-competitive (avoid toString'ing their number)
+      if (field.numericValue() != null) {
+        // just ignore these as non-competitive (avoid toString'ing their number)
         continue;
       }
       String strVal = field.stringValue();
@@ -304,8 +418,10 @@ public class DocumentBuilder {
         }
       }
     }
-    if (!largestIsLast && largestField != null && largestFieldLen > MIN_LENGTH_TO_MOVE_LAST) { // only bother if the value isn't tiny
-      LinkedList<IndexableField> addToEnd = new LinkedList<>();
+    if (!largestIsLast
+        && largestField != null
+        && largestFieldLen > MIN_LENGTH_TO_MOVE_LAST) { // only bother if the value isn't tiny
+      List<IndexableField> addToEnd = new ArrayList<>();
       Iterator<IndexableField> iterator = doc.iterator();
       while (iterator.hasNext()) {
         IndexableField field = iterator.next();

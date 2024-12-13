@@ -17,54 +17,58 @@
 package org.apache.solr.common;
 
 import java.io.InputStream;
-import org.xml.sax.InputSource;
-import org.xml.sax.EntityResolver;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLResolver;
-
-import org.apache.commons.io.input.ClosedInputStream;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 /**
- * This class provides several singletons of entity resolvers used by
- * SAX and StAX in the Java API. This is needed to make secure
- * XML parsers, that don't resolve external entities from untrusted sources.
- * <p>This class also provides static methods to configure SAX and StAX
- * parsers to be safe.
- * <p>Parsers will get an empty, closed stream for every external
- * entity, so they will not fail while parsing (unless the external entity
- * is needed for processing!).
+ * This class provides several singletons of entity resolvers used by SAX and StAX in the Java API.
+ * This is needed to make secure XML parsers, that don't resolve external entities from untrusted
+ * sources.
+ *
+ * <p>This class also provides static methods to configure SAX and StAX parsers to be safe.
+ *
+ * <p>Parsers will get an empty, closed stream for every external entity, so they will not fail
+ * while parsing (unless the external entity is needed for processing!).
  */
 public final class EmptyEntityResolver {
 
-  public static final EntityResolver SAX_INSTANCE = new EntityResolver() {
-    @Override
-    public InputSource resolveEntity(String publicId, String systemId) {
-      return new InputSource(ClosedInputStream.CLOSED_INPUT_STREAM);
-    }
-  };
+  public static final EntityResolver SAX_INSTANCE =
+      new EntityResolver() {
+        @Override
+        public InputSource resolveEntity(String publicId, String systemId) {
+          return new InputSource(InputStream.nullInputStream());
+        }
+      };
 
-  public static final XMLResolver STAX_INSTANCE = new XMLResolver() {
-    @Override
-    public InputStream resolveEntity(String publicId, String systemId, String baseURI, String namespace) {
-      return ClosedInputStream.CLOSED_INPUT_STREAM;
-    }
-  };
-  
+  public static final XMLResolver STAX_INSTANCE =
+      new XMLResolver() {
+        @Override
+        public InputStream resolveEntity(
+            String publicId, String systemId, String baseURI, String namespace) {
+          return InputStream.nullInputStream();
+        }
+      };
+
   // no instance!
   private EmptyEntityResolver() {}
-  
-  private static void trySetSAXFeature(SAXParserFactory saxFactory, String feature, boolean enabled) {
+
+  private static void trySetSAXFeature(
+      SAXParserFactory saxFactory, String feature, boolean enabled) {
     try {
       saxFactory.setFeature(feature, enabled);
     } catch (Exception ex) {
       // ignore
     }
   }
-  
-  /** Configures the given {@link SAXParserFactory} to do secure XML processing of untrusted sources.
+
+  /**
+   * Configures the given {@link SAXParserFactory} to do secure XML processing of untrusted sources.
    * It is required to also set {@link #SAX_INSTANCE} on the created {@link org.xml.sax.XMLReader}.
+   *
    * @see #SAX_INSTANCE
    */
   public static void configureSAXParserFactory(SAXParserFactory saxFactory) {
@@ -73,7 +77,7 @@ public final class EmptyEntityResolver {
     // enable secure processing:
     trySetSAXFeature(saxFactory, XMLConstants.FEATURE_SECURE_PROCESSING, true);
   }
-  
+
   private static void trySetStAXProperty(XMLInputFactory inputFactory, String key, Object value) {
     try {
       inputFactory.setProperty(key, value);
@@ -81,9 +85,10 @@ public final class EmptyEntityResolver {
       // ignore
     }
   }
-  
-  /** Configures the given {@link XMLInputFactory} to not parse external entities.
-   * No further configuration on is needed, all required entity resolvers are configured.
+
+  /**
+   * Configures the given {@link XMLInputFactory} to not parse external entities. No further
+   * configuration on is needed, all required entity resolvers are configured.
    */
   public static void configureXMLInputFactory(XMLInputFactory inputFactory) {
     // don't enable validation of DTDs:
@@ -92,5 +97,4 @@ public final class EmptyEntityResolver {
     trySetStAXProperty(inputFactory, XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
     inputFactory.setXMLResolver(EmptyEntityResolver.STAX_INSTANCE);
   }
-  
 }

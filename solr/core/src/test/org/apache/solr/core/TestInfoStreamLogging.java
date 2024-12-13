@@ -25,9 +25,9 @@ public class TestInfoStreamLogging extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-infostream-logging.xml","schema.xml");
+    initCore("solrconfig-infostream-logging.xml", "schema.xml");
   }
-  
+
   public void testIndexConfig() throws Exception {
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
 

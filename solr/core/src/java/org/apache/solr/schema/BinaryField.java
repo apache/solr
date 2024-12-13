@@ -20,8 +20,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
-
+import java.util.Collections;
+import java.util.List;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -31,8 +34,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-public class BinaryField extends FieldType  {
+public class BinaryField extends FieldType {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -40,12 +42,27 @@ public class BinaryField extends FieldType  {
   public void checkSchemaField(SchemaField field) {
     super.checkSchemaField(field);
     if (field.isLarge()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Field type " + this + " is 'large'; not supported (yet)");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Field type " + this + " is 'large'; not supported (yet)");
+    }
+    if (field.hasDocValues() && field.multiValued()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Field type " + this + " does not support multiple doc values");
     }
   }
 
   private String toBase64String(ByteBuffer buf) {
-    return new String(Base64.getEncoder().encode(ByteBuffer.wrap(buf.array(), buf.arrayOffset() + buf.position(), buf.limit()-buf.position()).array()), StandardCharsets.ISO_8859_1);
+    return new String(
+        Base64.getEncoder()
+            .encode(
+                ByteBuffer.wrap(
+                        buf.array(),
+                        buf.arrayOffset() + buf.position(),
+                        buf.limit() - buf.position())
+                    .array()),
+        StandardCharsets.ISO_8859_1);
   }
 
   @Override
@@ -76,7 +93,7 @@ public class BinaryField extends FieldType  {
   @Override
   public ByteBuffer toObject(IndexableField f) {
     BytesRef bytes = f.binaryValue();
-    return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
+    return ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }
 
   @Override
@@ -86,33 +103,59 @@ public class BinaryField extends FieldType  {
       log.trace("Ignoring unstored binary field: {}", field);
       return null;
     }
+    return new org.apache.lucene.document.StoredField(field.getName(), getBytesRef(val));
+  }
+
+  private static BytesRef getBytesRef(Object val) {
     byte[] buf = null;
     int offset = 0, len = 0;
     if (val instanceof byte[]) {
       buf = (byte[]) val;
       len = buf.length;
-    } else if (val instanceof ByteBuffer && ((ByteBuffer)val).hasArray()) {
-      ByteBuffer byteBuf = (ByteBuffer) val;
+    } else if (val instanceof ByteBuffer byteBuf && byteBuf.hasArray()) {
       buf = byteBuf.array();
       offset = byteBuf.arrayOffset() + byteBuf.position();
       len = byteBuf.limit() - byteBuf.position();
     } else {
       String strVal = val.toString();
-      //the string has to be a base64 encoded string
+      // the string has to be a base64 encoded string
       buf = Base64.getDecoder().decode(strVal);
       offset = 0;
       len = buf.length;
     }
 
-    return new org.apache.lucene.document.StoredField(field.getName(), buf, offset, len);
+    return new BytesRef(buf, offset, len);
+  }
+
+  @Override
+  public List<IndexableField> createFields(SchemaField field, Object val) {
+    IndexableField fval = createField(field, val);
+
+    if (field.hasDocValues() && !field.multiValued()) {
+      IndexableField docval = new BinaryDocValuesField(field.getName(), getBytesRef(val));
+
+      // Only create list if we have 2 values...
+      if (fval != null) {
+        List<IndexableField> fields = new ArrayList<>(2);
+        fields.add(fval);
+        fields.add(docval);
+        return fields;
+      }
+
+      fval = docval;
+    }
+    return Collections.singletonList(fval);
+  }
+
+  @Override
+  protected void checkSupportsDocValues() { // we support DocValues
   }
 
   @Override
   public Object toNativeType(Object val) {
     if (val instanceof byte[]) {
       return ByteBuffer.wrap((byte[]) val);
-    } else if (val instanceof CharSequence) {
-      final CharSequence valAsCharSequence = (CharSequence) val;
+    } else if (val instanceof CharSequence valAsCharSequence) {
       return ByteBuffer.wrap(Base64.getDecoder().decode(valAsCharSequence.toString()));
     }
     return super.toNativeType(val);

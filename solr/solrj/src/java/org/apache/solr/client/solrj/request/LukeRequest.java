@@ -18,55 +18,47 @@ package org.apache.solr.client.solrj.request;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * 
- *
  * @since solr 1.3
  */
-public class LukeRequest extends SolrRequest<LukeResponse> {
+public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
 
   private List<String> fields;
   private int numTerms = -1;
   private boolean showSchema = false;
   private Boolean includeIndexFieldFlags = null;
-  
-  public LukeRequest()
-  {
-    super( METHOD.GET, "/admin/luke" );
+
+  public LukeRequest() {
+    super(METHOD.GET, "/admin/luke");
   }
 
-  public LukeRequest( String path )
-  {
-    super( METHOD.GET, path );
+  public LukeRequest(String path) {
+    super(METHOD.GET, path);
   }
 
-  //---------------------------------------------------------------------------------
-  //---------------------------------------------------------------------------------
-  
-  public void addField( String f )
-  {
-    if( fields == null ) {
+  // ---------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------
+
+  public void addField(String f) {
+    if (fields == null) {
       fields = new ArrayList<>();
     }
-    fields.add( f );
+    fields.add(f);
   }
 
-  public void setFields( List<String> f )
-  {
+  public void setFields(List<String> f) {
     fields = f;
   }
-  
-  //---------------------------------------------------------------------------------
-  //---------------------------------------------------------------------------------
-  
+
+  // ---------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------
+
   public boolean isShowSchema() {
     return showSchema;
   }
@@ -80,30 +72,34 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
   }
 
   /**
-   * the number of terms to return for a given field.  If the number is 0, it will not traverse the terms.  
+   * the number of terms to return for a given field. If the number is 0, it will not traverse the
+   * terms.
    */
   public void setNumTerms(int count) {
     this.numTerms = count;
   }
 
-  //---------------------------------------------------------------------------------
-  //---------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------
 
   /**
    * Choose whether /luke should return the index-flags for each field
    *
-   * Fetching and returning the index-flags for each field in your index has non-zero cost, and can slow down requests to
-   * /luke.  Users who do not care about these values can tell Solr to avoid generating them by setting the
-   * 'includeIndexFieldFlags' flag to false, saving their requests some processing.
+   * <p>Fetching and returning the index-flags for each field in your index has non-zero cost, and
+   * can slow down requests to /luke. Users who do not care about these values can tell Solr to
+   * avoid generating them by setting the 'includeIndexFieldFlags' flag to false, saving their
+   * requests some processing.
    */
   public void setIncludeIndexFieldFlags(boolean shouldInclude) {
     includeIndexFieldFlags = shouldInclude;
   }
 
-  public boolean getIncludeIndexFieldFlags() { return includeIndexFieldFlags; }
+  public boolean getIncludeIndexFieldFlags() {
+    return includeIndexFieldFlags;
+  }
 
-  //---------------------------------------------------------------------------------
-  //---------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------
 
   @Override
   protected LukeResponse createResponse(SolrClient client) {
@@ -113,11 +109,11 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
   @Override
   public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    if( fields != null && fields.size() > 0 ) {
-      params.add( CommonParams.FL, fields.toArray( new String[fields.size()] ) );
+    if (fields != null && fields.size() > 0) {
+      params.add(CommonParams.FL, fields.toArray(new String[0]));
     }
-    if( numTerms >= 0 ) {
-      params.add( "numTerms", numTerms+"" );
+    if (numTerms >= 0) {
+      params.add("numTerms", numTerms + "");
     }
     if (showSchema) {
       params.add("show", "schema");
@@ -133,6 +129,4 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
   public String getRequestType() {
     return SolrRequestType.ADMIN.toString();
   }
-
 }
-

@@ -25,20 +25,20 @@ import org.apache.zookeeper.data.Stat;
 public class MockSolrZkClient extends SolrZkClient {
 
   public MockSolrZkClient() {
-    super();
+    super(new Builder());
   }
-  
+
   @Override
   public Boolean exists(final String path, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    
+
     return false;
   }
-  
+
   @Override
-  public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
+  public byte[] getData(
+      final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
     return null;
   }
-
 }

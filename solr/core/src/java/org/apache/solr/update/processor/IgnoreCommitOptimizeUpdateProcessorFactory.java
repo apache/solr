@@ -20,7 +20,6 @@ import static org.apache.solr.common.SolrException.ErrorCode;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -32,21 +31,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>
  * Gives system administrators a way to ignore explicit commit or optimize requests from clients.
  * The factory can be configured to return a specific HTTP response code, default is 403, and
  * optional response message, such as to warn the client application that its request was ignored.
- * </p>
+ *
  * @since 5.0.0
  */
 public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String DEFAULT_RESPONSE_MSG = "Explicit commit/optimize requests are forbidden!";
-  
+  private static final String DEFAULT_RESPONSE_MSG =
+      "Explicit commit/optimize requests are forbidden!";
+
   protected ErrorCode errorCode;
   protected String responseMsg;
-  protected boolean ignoreOptimizeOnly = false; // default behavior is to ignore commits and optimize
+  protected boolean ignoreOptimizeOnly =
+      false; // default behavior is to ignore commits and optimize
 
   @Override
   public void init(final NamedList<?> args) {
@@ -76,8 +76,11 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
             validCodes.append(code.code);
           }
         }
-        throw new IllegalArgumentException("Configured status code " + statusCode +
-            " not supported! Please choose one of: " + validCodes.toString());
+        throw new IllegalArgumentException(
+            "Configured status code "
+                + statusCode
+                + " not supported! Please choose one of: "
+                + validCodes.toString());
       }
 
       // must always have a response message if sending an error code
@@ -86,10 +89,11 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new IgnoreCommitOptimizeUpdateProcessor(rsp, this, next);
   }
-  
+
   static class IgnoreCommitOptimizeUpdateProcessor extends UpdateRequestProcessor {
 
     private final SolrQueryResponse rsp;
@@ -97,10 +101,10 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
     private final String responseMsg;
     private final boolean ignoreOptimizeOnly;
 
-    IgnoreCommitOptimizeUpdateProcessor(SolrQueryResponse rsp,
-                                        IgnoreCommitOptimizeUpdateProcessorFactory factory,
-                                        UpdateRequestProcessor next)
-    {
+    IgnoreCommitOptimizeUpdateProcessor(
+        SolrQueryResponse rsp,
+        IgnoreCommitOptimizeUpdateProcessorFactory factory,
+        UpdateRequestProcessor next) {
       super(next);
       this.rsp = rsp;
       this.errorCode = factory.errorCode;
@@ -112,7 +116,8 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
     public void processCommit(CommitUpdateCommand cmd) throws IOException {
 
       if (ignoreOptimizeOnly && !cmd.optimize) {
-        // we're setup to only ignore optimize requests so it's OK to pass this commit on down the line
+        // we're setup to only ignore optimize requests so it's OK to pass this commit on down the
+        // line
         if (next != null) next.processCommit(cmd);
         return;
       }
@@ -129,7 +134,8 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
             "{} from client application ignored with error code: {}", cmdType, errorCode.code);
         rsp.setException(new SolrException(errorCode, responseMsg));
       } else {
-        // errorcode is null, treat as a success with an optional message warning the commit request was ignored
+        // errorcode is null, treat as a success with an optional message warning the commit request
+        // was ignored
         IgnoreCommitOptimizeUpdateProcessorFactory.log.info(
             "{} from client application ignored with status code: 200", cmdType);
         if (responseMsg != null) {

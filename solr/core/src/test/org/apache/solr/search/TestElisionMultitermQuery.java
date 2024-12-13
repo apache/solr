@@ -29,13 +29,13 @@ public class TestElisionMultitermQuery extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig-basic.xml", "schema-folding.xml");
-    
+
     assertU(adoc("id", "1", "text_fr", "l'Auberge"));
     assertU(adoc("id", "2", "text_fr", "Auberge"));
     assertU(adoc("id", "3", "text_fr", "other"));
     assertU(commit());
   }
-  
+
   @Test
   public void testElisionMultitermQuery() {
     assertQ(req("q", "text_fr:auberge"), "//result[@numFound='2']");
@@ -47,5 +47,4 @@ public class TestElisionMultitermQuery extends SolrTestCaseJ4 {
     assertQ(req("q", "text_fr:l'aub*"), "//result[@numFound='2']");
     assertQ(req("q", "text_fr:l'Aub*"), "//result[@numFound='2']");
   }
-
 }

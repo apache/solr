@@ -17,17 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
-import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -35,13 +24,20 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.NamedList;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class ZookeeperStatusHandlerFailureTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
     // Kill the ZK
     cluster.getZkServer().shutdown();
   }
@@ -50,24 +46,30 @@ public class ZookeeperStatusHandlerFailureTest extends SolrCloudTestCase {
    Test the monitoring endpoint, when no Zookeeper is answering. There should still be a response
   */
   @Test
-  public void monitorZookeeperAfterZkShutdown() throws IOException, SolrServerException, InterruptedException, ExecutionException, TimeoutException {
+  public void monitorZookeeperAfterZkShutdown()
+      throws IOException,
+          SolrServerException,
+          InterruptedException,
+          ExecutionException,
+          TimeoutException {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
-    GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
-    mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+    GenericSolrRequest mntrReq =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status");
+    mntrReq.setResponseParser(new JsonMapResponseParser());
     NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));
     @SuppressWarnings({"unchecked"})
-    Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");
+    Map<String, Object> zkStatus = (Map<String, Object>) nl.get("zkStatus");
     assertEquals("red", zkStatus.get("status"));
     assertEquals("standalone", zkStatus.get("mode"));
     assertEquals(1L, zkStatus.get("ensembleSize"));
     @SuppressWarnings({"unchecked"})
-    List<Object> detailsList = (List<Object>)zkStatus.get("details");
+    List<Object> detailsList = (List<Object>) zkStatus.get("details");
     assertEquals(1, detailsList.size());
     @SuppressWarnings({"unchecked"})
-    Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
+    Map<String, Object> details = (Map<String, Object>) detailsList.get(0);
     assertEquals(false, details.get("ok"));
     solr.close();
   }

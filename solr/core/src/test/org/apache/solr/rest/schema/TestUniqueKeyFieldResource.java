@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
 public class TestUniqueKeyFieldResource extends SolrRestletTestBase {
 
   @Test
-  public void testGetUniqueKey() throws Exception {
-    assertQ("/schema/uniquekey?indent=on&wt=xml",
-            "count(/response/str[@name='uniqueKey']) = 1",
-            "/response/str[@name='uniqueKey'][.='id']");
+  public void testGetUniqueKey() {
+    assertQ(
+        "/schema/uniquekey?indent=on&wt=xml",
+        "count(/response/str[@name='uniqueKey']) = 1",
+        "/response/str[@name='uniqueKey'][.='id']");
   }
 }
-

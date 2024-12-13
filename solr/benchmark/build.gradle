@@ -16,15 +16,12 @@
  */
 
 plugins {
-  id "io.morethan.jmhreport" version "0.9.0"
-  // id 'com.github.johnrengelman.shadow' version '6.1.0'
+  alias(libs.plugins.morethan.jmhreport)
+  // generally, you use or have the option to use jmh with a 'fat' jar - currently there
+  // are some issues to track down to allow that, but this sets up for it
+  // alias(libs.plugins.johnrengelman.shadow)
+  id 'java-library'
 }
-
-// generally, you use or have the option to use jmh with a 'fat' jar - currently there
-// are some issues to track down to allow that, but this sets up for it
-//apply plugin: 'com.github.johnrengelman.shadow'
-
-apply plugin: 'java-library'
 
 description = 'Solr Benchmark Framework'
 
@@ -45,10 +42,18 @@ task echoCp {
 
 dependencies {
   implementation project(':solr:test-framework')
+  implementation project(':solr:solrj')
+  implementation project(':solr:solrj-streaming')
 
-  implementation 'commons-io:commons-io'
-  implementation "org.quicktheories:quicktheories"
-  implementation 'org.jctools:jctools-core'
-  implementation 'org.openjdk.jmh:jmh-core'
-  annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess'
+  implementation libs.apache.lucene.core
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.commonsio.commonsio
+  implementation libs.dropwizard.metrics.core
+  implementation libs.apache.commons.math3
+  implementation libs.jctools.core
+  implementation libs.quicktheories.quicktheories
+  implementation libs.openjdk.jmh.core
+  implementation libs.slf4j.api
+  runtimeOnly libs.lmax.disruptor
+  annotationProcessor libs.openjdk.jmh.generatorannprocess
 }

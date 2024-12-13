@@ -16,6 +16,10 @@
  */
 package org.apache.solr.core;
 
+import static java.util.Collections.singletonMap;
+
+import java.util.Arrays;
+import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestHandler;
@@ -23,20 +27,16 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-
-import static java.util.Collections.singletonMap;
-
 public class TestInitParams extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-paramset.xml","schema.xml");
+    initCore("solrconfig-paramset.xml", "schema.xml");
   }
-  @Test
-  public void testComponentWithInitParams(){
 
-    for (String s : Arrays.asList("/dump1", "/dump3","/root/dump5" , "/root1/anotherlevel/dump6")) {
+  @Test
+  public void testComponentWithInitParams() {
+
+    for (String s : Arrays.asList("/dump1", "/dump3", "/root/dump5", "/root1/anotherlevel/dump6")) {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
       SolrQueryResponse rsp = new SolrQueryResponse();
       handler.handleRequest(req("initArgs", "true"), rsp);
@@ -51,15 +51,18 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
     InitParams initParams = h.getCore().getSolrConfig().getInitParams().get("a");
 
-    PluginInfo pluginInfo = new PluginInfo("requestHandler",
-        new HashMap<>(),
-        new NamedList<>(singletonMap("defaults", new NamedList<>(singletonMap("a", "A1")))), null);
+    PluginInfo pluginInfo =
+        new PluginInfo(
+            "requestHandler",
+            new HashMap<>(),
+            new NamedList<>(singletonMap("defaults", new NamedList<>(singletonMap("a", "A1")))),
+            null);
     initParams.apply(pluginInfo);
-    assertEquals( "A",initParams.defaults.get("a"));
+    assertEquals("A", initParams.defaults.get("a"));
   }
 
   @Test
-  public void testMultiInitParams(){
+  public void testMultiInitParams() {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump6");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
@@ -71,39 +74,36 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertEquals("B", def.get("b"));
     def = (NamedList<?>) nl.get(PluginInfo.APPENDS);
     assertEquals("C", def.get("c"));
-
   }
 
-
   @Test
-  public void testComponentWithConflictingInitParams(){
+  public void testComponentWithConflictingInitParams() {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump2");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
     NamedList<?> nl = (NamedList<?>) rsp.getValues().get("initArgs");
     NamedList<?> def = (NamedList<?>) nl.get(PluginInfo.DEFAULTS);
-    assertEquals("A1" ,def.get("a"));
+    assertEquals("A1", def.get("a"));
     def = (NamedList<?>) nl.get(PluginInfo.INVARIANTS);
-    assertEquals("B1" ,def.get("b"));
+    assertEquals("B1", def.get("b"));
     def = (NamedList<?>) nl.get(PluginInfo.APPENDS);
-    assertEquals(Arrays.asList("C1","C") ,def.getAll("c"));
+    assertEquals(Arrays.asList("C1", "C"), def.getAll("c"));
   }
 
   public void testNestedRequestHandler() {
     assertNotNull(h.getCore().getRequestHandler("/greedypath"));
     assertNotNull(h.getCore().getRequestHandler("/greedypath/some/path"));
-    assertNotNull( h.getCore().getRequestHandler("/greedypath/some/other/path"));
+    assertNotNull(h.getCore().getRequestHandler("/greedypath/some/other/path"));
     assertNull(h.getCore().getRequestHandler("/greedypath/unknownpath"));
   }
 
-  public void testElevateExample(){
+  public void testElevateExample() {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/elevate");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
     NamedList<?> nl = (NamedList<?>) rsp.getValues().get("initArgs");
     NamedList<?> def = (NamedList<?>) nl.get(PluginInfo.DEFAULTS);
-    assertEquals("text" ,def.get("df"));
-
+    assertEquals("text", def.get("df"));
   }
 
   public void testArbitraryAttributes() {
@@ -114,11 +114,13 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertEquals("server-enabled.txt", nl.get("healthcheckFile"));
   }
 
-  public void testMatchPath(){
-    InitParams initParams = new InitParams(new PluginInfo(InitParams.TYPE, singletonMap("path", "/update/json/docs")));
+  public void testMatchPath() {
+    InitParams initParams =
+        new InitParams(new PluginInfo(InitParams.TYPE, singletonMap("path", "/update/json/docs")));
     assertFalse(initParams.matchPath("/update"));
     assertTrue(initParams.matchPath("/update/json/docs"));
-    initParams = new InitParams(new PluginInfo(InitParams.TYPE, singletonMap("path", "/update/**")));
+    initParams =
+        new InitParams(new PluginInfo(InitParams.TYPE, singletonMap("path", "/update/**")));
     assertTrue(initParams.matchPath("/update/json/docs"));
     assertTrue(initParams.matchPath("/update/json"));
     assertTrue(initParams.matchPath("/update"));
@@ -127,5 +129,4 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertTrue(initParams.matchPath("/update/json"));
     assertTrue(initParams.matchPath("/update"));
   }
-
 }

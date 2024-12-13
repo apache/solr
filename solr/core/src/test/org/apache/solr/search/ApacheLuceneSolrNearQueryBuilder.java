@@ -30,25 +30,27 @@ import org.w3c.dom.Element;
 
 public class ApacheLuceneSolrNearQueryBuilder extends SolrSpanQueryBuilder {
 
-  public ApacheLuceneSolrNearQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, SpanQueryBuilder spanFactory) {
+  public ApacheLuceneSolrNearQueryBuilder(
+      String defaultField, Analyzer analyzer, SolrQueryRequest req, SpanQueryBuilder spanFactory) {
     super(defaultField, analyzer, req, spanFactory);
   }
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     return getSpanQuery(e);
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     final String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-    final SpanQuery[] spanQueries = new SpanQuery[]{
-        new SpanTermQuery(new Term(fieldName, "Apache")),
-        new SpanTermQuery(new Term(fieldName, "Lucene")),
-        new SpanTermQuery(new Term(fieldName, "Solr"))
-    };
+    final SpanQuery[] spanQueries =
+        new SpanQuery[] {
+          new SpanTermQuery(new Term(fieldName, "Apache")),
+          new SpanTermQuery(new Term(fieldName, "Lucene")),
+          new SpanTermQuery(new Term(fieldName, "Solr"))
+        };
     final int slop = 42;
     final boolean inOrder = false;
     return new SpanNearQuery(spanQueries, slop, inOrder);
   }
-
 }

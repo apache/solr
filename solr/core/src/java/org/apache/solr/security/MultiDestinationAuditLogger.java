@@ -16,13 +16,14 @@
  */
 package org.apache.solr.security;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
@@ -30,11 +31,10 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 /**
- * Audit logger that chains other loggers. Lets you configure logging to multiple destinations.
- * The config is simply a list of configs for the sub plugins:
+ * Audit logger that chains other loggers. Lets you configure logging to multiple destinations. The
+ * config is simply a list of configs for the sub plugins:
+ *
  * <pre>
  *   "class" : "solr.MultiDestinationAuditLogger",
  *   "plugins" : [
@@ -44,6 +44,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * </pre>
  *
  * This interface may change in next release and is marked experimental
+ *
  * @since 8.1.0
  * @lucene.experimental
  */
@@ -53,23 +54,26 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   private ResourceLoader loader;
   List<AuditLoggerPlugin> plugins = new ArrayList<>();
   List<String> pluginNames = new ArrayList<>();
-  SolrMetricsContext solrMetricsContext;
 
   /**
-   * Passes the AuditEvent to all sub plugins in parallel. The event should be a {@link AuditEvent} to be able to pull context info.
+   * Passes the AuditEvent to all sub plugins in parallel. The event should be a {@link AuditEvent}
+   * to be able to pull context info.
+   *
    * @param event the audit event
    */
   @Override
   public void audit(AuditEvent event) {
     log.debug("Passing auditEvent to plugins {}", pluginNames);
-    plugins.parallelStream().forEach(plugin -> {
-      if (plugin.shouldLog(event.getEventType()))
-        plugin.doAudit(event);
-    });
+    plugins.parallelStream()
+        .forEach(
+            plugin -> {
+              if (plugin.shouldLog(event.getEventType())) plugin.doAudit(event);
+            });
   }
 
   /**
    * Initialize the plugin from security.json
+   *
    * @param pluginConfig the config for the plugin
    */
   @Override
@@ -80,7 +84,8 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
       log.warn("No plugins configured");
     } else {
       @SuppressWarnings("unchecked")
-      List<Map<String, Object>> pluginList = (List<Map<String, Object>>) pluginConfig.get(PARAM_PLUGINS);
+      List<Map<String, Object>> pluginList =
+          (List<Map<String, Object>>) pluginConfig.get(PARAM_PLUGINS);
       pluginList.forEach(pluginConf -> plugins.add(createPlugin(pluginConf)));
       pluginConfig.remove(PARAM_PLUGINS);
       pluginNames = plugins.stream().map(AuditLoggerPlugin::getName).collect(Collectors.toList());
@@ -107,12 +112,14 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
       log.info("Initializing auditlogger plugin: {}", klas);
       AuditLoggerPlugin p = loader.newInstance(klas, AuditLoggerPlugin.class);
       if (p.getClass().equals(this.getClass())) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot nest MultiDestinationAuditLogger");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Cannot nest MultiDestinationAuditLogger");
       }
       p.init(auditConf);
       return p;
     } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty config when creating audit plugin");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Empty config when creating audit plugin");
     }
   }
 
@@ -120,7 +127,6 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   public void inform(ResourceLoader loader) {
     this.loader = loader;
   }
-
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
@@ -131,12 +137,13 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   @Override
   public void close() throws IOException {
     super.close(); // Waiting for queue to drain before shutting down the loggers
-    plugins.forEach(p -> {
-      try {
-        p.close();
-      } catch (IOException e) {
-        log.error("Exception trying to close {}", p.getName());
-      }
-    });
+    plugins.forEach(
+        p -> {
+          try {
+            p.close();
+          } catch (IOException e) {
+            log.error("Exception trying to close {}", p.getName());
+          }
+        });
   }
 }

@@ -16,34 +16,38 @@
  */
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.Counter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-
-import com.codahale.metrics.Counter;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.core.SolrInfoBean;
 
 public final class SolrMetricTestUtils {
 
-  private static final int                    MAX_ITERATIONS = 100;
-  private static final SolrInfoBean.Category CATEGORIES[]   = SolrInfoBean.Category.values();
+  private static final int MAX_ITERATIONS = 100;
+  private static final SolrInfoBean.Category CATEGORIES[] = SolrInfoBean.Category.values();
 
   public static String getRandomScope(Random random) {
     return getRandomScope(random, random.nextBoolean());
   }
 
   public static String getRandomScope(Random random, boolean shouldDefineScope) {
-    return shouldDefineScope ? TestUtil.randomSimpleString(random, 5, 10) : null; // must be simple string for JMX publishing
+    return shouldDefineScope
+        ? TestUtil.randomSimpleString(random, 5, 10)
+        : null; // must be simple string for JMX publishing
   }
 
   public static SolrInfoBean.Category getRandomCategory(Random random) {
     return getRandomCategory(random, random.nextBoolean());
   }
 
-  public static SolrInfoBean.Category getRandomCategory(Random random, boolean shouldDefineCategory) {
-    return shouldDefineCategory ? CATEGORIES[TestUtil.nextInt(random, 0, CATEGORIES.length - 1)] : null;
+  public static SolrInfoBean.Category getRandomCategory(
+      Random random, boolean shouldDefineCategory) {
+    return shouldDefineCategory
+        ? CATEGORIES[TestUtil.nextInt(random, 0, CATEGORIES.length - 1)]
+        : null;
   }
 
   public static Map<String, Counter> getRandomMetrics(Random random) {
@@ -56,16 +60,19 @@ public final class SolrMetricTestUtils {
 
   public static final String SUFFIX = "_testing";
 
-  public static Map<String, Counter> getRandomMetricsWithReplacements(Random random, Map<String, Counter> existing) {
+  public static Map<String, Counter> getRandomMetricsWithReplacements(
+      Random random, Map<String, Counter> existing) {
     HashMap<String, Counter> metrics = new HashMap<>();
     ArrayList<String> existingKeys = new ArrayList<>(existing.keySet());
 
     int numMetrics = TestUtil.nextInt(random, 1, MAX_ITERATIONS);
     for (int i = 0; i < numMetrics; ++i) {
       boolean shouldReplaceMetric = !existing.isEmpty() && random.nextBoolean();
-      String name = shouldReplaceMetric
-          ? existingKeys.get(TestUtil.nextInt(random, 0, existingKeys.size() - 1))
-          : TestUtil.randomSimpleString(random, 5, 10) + SUFFIX; // must be simple string for JMX publishing
+      String name =
+          shouldReplaceMetric
+              ? existingKeys.get(TestUtil.nextInt(random, 0, existingKeys.size() - 1))
+              : TestUtil.randomSimpleString(random, 5, 10)
+                  + SUFFIX; // must be simple string for JMX publishing
 
       Counter counter = new Counter();
       counter.inc(random.nextLong());
@@ -75,9 +82,11 @@ public final class SolrMetricTestUtils {
     return metrics;
   }
 
-  public static SolrMetricProducer getProducerOf(SolrMetricManager metricManager, SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
+  public static SolrMetricProducer getProducerOf(
+      SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
     return new SolrMetricProducer() {
       SolrMetricsContext solrMetricsContext;
+
       @Override
       public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
         this.solrMetricsContext = parentContext.getChildContext(this);
@@ -99,11 +108,14 @@ public final class SolrMetricTestUtils {
 
       @Override
       public String toString() {
-        return "SolrMetricProducer.of{" +
-            "\ncategory=" + category +
-            "\nscope=" + scope +
-            "\nmetrics=" + metrics +
-            "\n}";
+        return "SolrMetricProducer.of{"
+            + "\ncategory="
+            + category
+            + "\nscope="
+            + scope
+            + "\nmetrics="
+            + metrics
+            + "\n}";
       }
     };
   }

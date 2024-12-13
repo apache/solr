@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -29,19 +27,18 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
-@Slow
 public class TestReplicaProperties extends ReplicaPropertiesBase {
 
   public static final String COLLECTION_NAME = "testcollection";
 
   public TestReplicaProperties() {
-    schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml"; // we need a string id
     sliceCount = 2;
   }
 
@@ -50,16 +47,14 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   public void test() throws Exception {
 
     try (CloudSolrClient client = createCloudClient(null)) {
-      // Mix up a bunch of different combinations of shards and replicas in order to exercise boundary cases.
-      // shards, replicationfactor
-      int shards = random().nextInt(7);
-      if (shards < 2) shards = 2;
-      int rFactor = random().nextInt(4);
-      if (rFactor < 2) rFactor = 2;
-      createCollection(null, COLLECTION_NAME, shards, rFactor, client, null, "conf1");
+      // Mix up a bunch of different combinations of shards and replicas in order to exercise
+      // boundary cases. shards, replicationFactor
+      int shards = random().nextInt(5) + 2;
+      int replicationFactor = random().nextInt(2) + 2;
+      createCollection(null, COLLECTION_NAME, shards, replicationFactor, client, null, "conf1");
     }
 
-    waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
+    waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
     waitForRecoveriesToFinish(COLLECTION_NAME, false);
 
     listCollection();
@@ -78,121 +73,174 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       NamedList<Object> rsp = client.request(request);
       @SuppressWarnings({"unchecked"})
       List<String> collections = (List<String>) rsp.get("collections");
-      assertTrue("control_collection was not found in list", collections.contains("control_collection"));
-      assertTrue(DEFAULT_COLLECTION + " was not found in list", collections.contains(DEFAULT_COLLECTION));
+      assertTrue(
+          "control_collection was not found in list", collections.contains("control_collection"));
+      assertTrue(
+          DEFAULT_COLLECTION + " was not found in list", collections.contains(DEFAULT_COLLECTION));
       assertTrue(COLLECTION_NAME + " was not found in list", collections.contains(COLLECTION_NAME));
     }
   }
-
 
   private void clusterAssignPropertyTest() throws Exception {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
-      try {
-        doPropertyAction(client,
-            "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
-            "property", "preferredLeader");
-      } catch (SolrException se) {
-        assertTrue("Should have seen missing required parameter 'collection' error",
-            se.getMessage().contains("Missing required parameter: collection"));
-      }
+      SolrException se =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  doPropertyAction(
+                      client,
+                      "action",
+                      CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
+                      "property",
+                      "preferredLeader"));
+      assertTrue(
+          "Should have seen missing required parameter 'collection' error",
+          se.getMessage().contains("Missing required parameter: collection"));
 
-      doPropertyAction(client,
-          "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
-          "collection", COLLECTION_NAME,
-          "property", "preferredLeader");
+      doPropertyAction(
+          client,
+          "action",
+          CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
+          "collection",
+          COLLECTION_NAME,
+          "property",
+          "preferredLeader");
 
       verifyUniqueAcrossCollection(client, COLLECTION_NAME, "preferredleader");
 
-      doPropertyAction(client,
-          "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
-          "collection", COLLECTION_NAME,
-          "property", "property.newunique",
-          "shardUnique", "true");
+      doPropertyAction(
+          client,
+          "action",
+          CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
+          "collection",
+          COLLECTION_NAME,
+          "property",
+          "property.newunique",
+          "shardUnique",
+          "true");
       verifyUniqueAcrossCollection(client, COLLECTION_NAME, "property.newunique");
 
-      try {
-        doPropertyAction(client,
-            "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
-            "collection", COLLECTION_NAME,
-            "property", "whatever",
-            "shardUnique", "false");
-        fail("Should have thrown an exception here.");
-      } catch (SolrException se) {
-        assertTrue("Should have gotten a specific error message here",
-            se.getMessage().contains("Balancing properties amongst replicas in a slice requires that the " +
-                "property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
-      }
+      se =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  doPropertyAction(
+                      client,
+                      "action",
+                      CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
+                      "collection",
+                      COLLECTION_NAME,
+                      "property",
+                      "whatever",
+                      "shardUnique",
+                      "false"));
+      assertTrue(
+          "Should have gotten a specific error message here",
+          se.getMessage()
+              .contains(
+                  "Balancing properties amongst replicas in a slice requires that the "
+                      + "property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
+
       // Should be able to set non-unique-per-slice values in several places.
-      Map<String, Slice> slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
+      Map<String, Slice> slices =
+          client.getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
       String c1_s1 = sliceList.get(0);
       List<String> replicasList = new ArrayList<>(slices.get(c1_s1).getReplicasMap().keySet());
       String c1_s1_r1 = replicasList.get(0);
       String c1_s1_r2 = replicasList.get(1);
 
-      addProperty(client,
-          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
-          "collection", COLLECTION_NAME,
-          "shard", c1_s1,
-          "replica", c1_s1_r1,
-          "property", "bogus1",
-          "property.value", "true");
+      ReplicaPropertiesBase.doPropertyAction(
+          client,
+          "action",
+          CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
+          "collection",
+          COLLECTION_NAME,
+          "shard",
+          c1_s1,
+          "replica",
+          c1_s1_r1,
+          "property",
+          "bogus1",
+          "property.value",
+          "true");
 
-      addProperty(client,
-          "action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
-          "collection", COLLECTION_NAME,
-          "shard", c1_s1,
-          "replica", c1_s1_r2,
-          "property", "property.bogus1",
-          "property.value", "whatever");
+      ReplicaPropertiesBase.doPropertyAction(
+          client,
+          "action",
+          CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
+          "collection",
+          COLLECTION_NAME,
+          "shard",
+          c1_s1,
+          "replica",
+          c1_s1_r2,
+          "property",
+          "property.bogus1",
+          "property.value",
+          "whatever");
 
-      try {
-        doPropertyAction(client,
-            "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
-            "collection", COLLECTION_NAME,
-            "property", "bogus1",
-            "shardUnique", "false");
-        fail("Should have thrown parameter error here");
-      } catch (SolrException se) {
-        assertTrue("Should have caught specific exception ",
-            se.getMessage().contains("Balancing properties amongst replicas in a slice requires that the property be " +
-                "pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
-      }
+      se =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  ReplicaPropertiesBase.doPropertyAction(
+                      client,
+                      "action",
+                      CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
+                      "collection",
+                      COLLECTION_NAME,
+                      "property",
+                      "bogus1",
+                      "shardUnique",
+                      "false"));
+      assertTrue(
+          "Should have caught specific exception ",
+          se.getMessage()
+              .contains(
+                  "Balancing properties amongst replicas in a slice requires that the property be "
+                      + "pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
 
       // Should have no effect despite the "shardUnique" param being set.
 
-      doPropertyAction(client,
-          "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
-          "collection", COLLECTION_NAME,
-          "property", "property.bogus1",
-          "shardUnique", "true");
+      doPropertyAction(
+          client,
+          "action",
+          CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
+          "collection",
+          COLLECTION_NAME,
+          "property",
+          "property.bogus1",
+          "shardUnique",
+          "true");
 
-      verifyPropertyVal(client, COLLECTION_NAME,
-          c1_s1_r1, "bogus1", "true");
-      verifyPropertyVal(client, COLLECTION_NAME,
-          c1_s1_r2, "property.bogus1", "whatever");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r1, "bogus1", "true");
+      verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.bogus1", "whatever");
 
-      // At this point we've assigned a preferred leader. Make it happen and check that all the nodes that are
-      // leaders _also_ have the preferredLeader property set.
+      // At this point we've assigned a preferred leader. Make it happen and check that all the
+      // nodes that are leaders _also_ have the preferredLeader property set.
 
-
-      NamedList<Object> res = doPropertyAction(client,
-          "action", CollectionParams.CollectionAction.REBALANCELEADERS.toString(),
-          "collection", COLLECTION_NAME);
+      NamedList<Object> res =
+          doPropertyAction(
+              client,
+              "action",
+              CollectionParams.CollectionAction.REBALANCELEADERS.toString(),
+              "collection",
+              COLLECTION_NAME);
 
       verifyLeaderAssignment(client, COLLECTION_NAME);
-
     }
   }
 
   private void verifyLeaderAssignment(CloudSolrClient client, String collectionName)
-      throws InterruptedException, KeeperException {
+      throws InterruptedException {
     String lastFailMsg = "";
-    for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
+    // Keep trying while Overseer writes the ZK state for up to 30 seconds.
+    for (int idx = 0; idx < 300; ++idx) {
       lastFailMsg = "";
-      ClusterState clusterState = client.getZkStateReader().getClusterState();
+      ClusterState clusterState = client.getClusterState();
       for (Slice slice : clusterState.getCollection(collectionName).getSlices()) {
         boolean foundLeader = false;
         boolean foundPreferred = false;
@@ -200,16 +248,25 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           boolean isLeader = replica.getBool("leader", false);
           boolean isPreferred = replica.getBool("property.preferredleader", false);
           if (isLeader != isPreferred) {
-            lastFailMsg = "Replica should NOT have preferredLeader != leader. Preferred: " + isPreferred +
-                " leader is " + isLeader;
+            lastFailMsg =
+                "Replica should NOT have preferredLeader != leader. Preferred: "
+                    + isPreferred
+                    + " leader is "
+                    + isLeader;
           }
           if (foundLeader && isLeader) {
-            lastFailMsg = "There should only be a single leader in _any_ shard! Replica " + replica.getName() +
-                " is the second leader in slice " + slice.getName();
+            lastFailMsg =
+                "There should only be a single leader in _any_ shard! Replica "
+                    + replica.getName()
+                    + " is the second leader in slice "
+                    + slice.getName();
           }
           if (foundPreferred && isPreferred) {
-            lastFailMsg = "There should only be a single preferredLeader in _any_ shard! Replica " + replica.getName() +
-                " is the second preferredLeader in slice " + slice.getName();
+            lastFailMsg =
+                "There should only be a single preferredLeader in _any_ shard! Replica "
+                    + replica.getName()
+                    + " is the second preferredLeader in slice "
+                    + slice.getName();
           }
           foundLeader = foundLeader ? foundLeader : isLeader;
           foundPreferred = foundPreferred ? foundPreferred : isPreferred;
@@ -220,17 +277,4 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     }
     fail(lastFailMsg);
   }
-
-  private void addProperty(CloudSolrClient client, String... paramsIn) throws IOException, SolrServerException {
-    assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (int idx = 0; idx < paramsIn.length; idx += 2) {
-      params.set(paramsIn[idx], paramsIn[idx + 1]);
-    }
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    client.request(request);
-
-  }
 }
-

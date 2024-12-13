@@ -8,10 +8,56 @@ com.google.common.base.Supplier
 com.google.common.base.Charsets
 
 @defaultMessage Use methods in java.util.Objects instead
-com.google.common.base.Objects#equal(java.lang.Object,java.lang.Object)
-com.google.common.base.Objects#hashCode(java.lang.Object[])
-com.google.common.base.Preconditions#checkNotNull(java.lang.Object)
-com.google.common.base.Preconditions#checkNotNull(java.lang.Object,java.lang.Object)
+com.google.common.base.Objects#equal(**)
+com.google.common.base.Objects#hashCode(**)
+com.google.common.base.Preconditions
 
 @defaultMessage Use methods in java.util.Comparator instead
 com.google.common.collect.Ordering
+
+@defaultMessage Use methods in java.util.Map
+com.google.common.collect.Maps
+com.google.common.collect.ImmutableMap
+com.google.common.collect.ImmutableMap.**
+
+@defaultMessage Use methods in java.util.List
+com.google.common.collect.Lists
+com.google.common.collect.ImmutableList
+
+@defaultMessage Use methods in java.util.Set
+com.google.common.collect.Sets
+com.google.common.collect.ImmutableSet
+com.google.common.collect.ImmutableSortedSet
+
+@defaultMessage Use Java stream methods
+com.google.common.collect.Collections2
+com.google.common.collect.Iterables
+com.google.common.collect.Iterators
+com.google.common.collect.ObjectArrays
+
+@defaultMessage Use Java collections
+com.google.common.collect.**
+
+@defaultMessage Use Java methods
+com.google.common.io.**
+
+@defaultMessage Use org.apache.solr.common.util.StrUtils
+com.google.common.base.Strings
+
+@defaultMessage Use Caffeine cache instead
+com.google.common.cache.**
+
+@defaultMessage Use StringBuilder
+com.google.common.base.MoreObjects#toStringHelper(**)
+
+@defaultMessage Use Objects.requireNonNullElse instead
+com.google.common.base.MoreObjects#firstNonNull(**)
+
+@defaultMessage Use Objects methods instead
+com.google.common.base.MoreObjects
+
+@defaultMessage Use SolrException.getRootCause instead
+com.google.common.base.Throwables#getRootCause(**)
+
+@defaultMessage Don't use Throwables
+com.google.common.base.Throwables

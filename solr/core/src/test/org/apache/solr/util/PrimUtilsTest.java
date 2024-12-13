@@ -16,9 +16,8 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.SolrTestCase;
-
 import java.util.Arrays;
+import org.apache.solr.SolrTestCase;
 
 public class PrimUtilsTest extends SolrTestCase {
 
@@ -28,23 +27,24 @@ public class PrimUtilsTest extends SolrTestCase {
     int[] a = new int[maxSize];
     int[] b = new int[maxSize];
 
-    PrimUtils.IntComparator comparator = new PrimUtils.IntComparator() {
-      @Override
-      public int compare(int a, int b) {
-        return b - a;     // sort in reverse
-      }
-    };
+    PrimUtils.IntComparator comparator =
+        new PrimUtils.IntComparator() {
+          @Override
+          public int compare(int a, int b) {
+            return b - a; // sort in reverse
+          }
+        };
 
-    for (int iter=0; iter<100; iter++) {
-      int start = random().nextInt(maxSize+1);
-      int end = start==maxSize ? maxSize : start + random().nextInt(maxSize-start);
-      for (int i=start; i<end; i++) {
+    for (int iter = 0; iter < 100; iter++) {
+      int start = random().nextInt(maxSize + 1);
+      int end = start == maxSize ? maxSize : start + random().nextInt(maxSize - start);
+      for (int i = start; i < end; i++) {
         a[i] = b[i] = random().nextInt(maxVal);
       }
       PrimUtils.sort(start, end, a, comparator);
       Arrays.sort(b, start, end);
-      for (int i=start; i<end; i++) {
-        assertEquals(a[i], b[end-(i-start+1)]);
+      for (int i = start; i < end; i++) {
+        assertEquals(a[i], b[end - (i - start + 1)]);
       }
     }
   }
@@ -54,15 +54,16 @@ public class PrimUtilsTest extends SolrTestCase {
     long[] a = new long[maxSize];
     long[] discards = new long[maxSize];
 
-    for (int iter=0; iter<100; iter++) {
+    for (int iter = 0; iter < 100; iter++) {
       int discardCount = 0;
       int startSize = random().nextInt(maxSize) + 1;
-      int endSize = startSize==maxSize ? maxSize : startSize + random().nextInt(maxSize-startSize);
-      int adds = random().nextInt(maxSize+1);
+      int endSize =
+          startSize == maxSize ? maxSize : startSize + random().nextInt(maxSize - startSize);
+      int adds = random().nextInt(maxSize + 1);
       // System.out.println("startSize=" + startSize + " endSize=" + endSize + " adds="+adds);
       LongPriorityQueue pq = new LongPriorityQueue(startSize, endSize, Long.MIN_VALUE);
 
-      for (int i=0; i<adds; i++) {
+      for (int i = 0; i < adds; i++) {
         long v = random().nextLong();
         a[i] = v;
         long out = pq.insertWithOverflow(v);
@@ -72,21 +73,20 @@ public class PrimUtilsTest extends SolrTestCase {
           discards[discardCount++] = out;
         }
       }
-      assertEquals(Math.min(adds,endSize), pq.size());
+      assertEquals(Math.min(adds, endSize), pq.size());
       assertEquals(adds, pq.size() + discardCount);
 
       Arrays.sort(a, 0, adds);
       Arrays.sort(discards, 0, discardCount);
-      for (int i=0; i<discardCount; i++) {
+      for (int i = 0; i < discardCount; i++) {
         assertEquals(a[i], discards[i]);
       }
 
-      for (int i=discardCount; i<adds; i++) {
+      for (int i = discardCount; i < adds; i++) {
         assertEquals(a[i], pq.pop());
       }
 
       assertEquals(0, pq.size());
     }
   }
-
 }

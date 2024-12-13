@@ -16,8 +16,5 @@
  */
 package org.apache.solr.schema;
 
-/**
- * Marker interface for float-valued field types.
- */
-public interface FloatValueFieldType extends NumericValueFieldType {
-}
+/** Marker interface for float-valued field types. */
+public interface FloatValueFieldType extends NumericValueFieldType {}

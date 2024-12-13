@@ -18,19 +18,18 @@
 package org.apache.solr.cluster.api;
 
 /** A read only view of a Solr node */
+@Deprecated
 public interface SolrNode {
 
   /** The node name */
   String name();
 
-  /**Base http url for this node
-   *
-   */
+  /** Base http url for this node */
   String baseUrl(ApiType type);
 
   /**
-   * Get all the cores in a given node.
-   * This usually involves a network call. So, it's likely to be expensive
+   * Get all the cores in a given node. This usually involves a network call. So, it's likely to be
+   * expensive
    */
   SimpleMap<ShardReplica> cores();
 }

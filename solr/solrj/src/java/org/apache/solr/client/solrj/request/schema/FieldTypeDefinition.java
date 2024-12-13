@@ -31,8 +31,7 @@ public class FieldTypeDefinition {
 
   private Map<String, Object> similarity;
 
-  public FieldTypeDefinition() {
-  }
+  public FieldTypeDefinition() {}
 
   public Map<String, Object> getAttributes() {
     return attributes;
@@ -82,5 +81,3 @@ public class FieldTypeDefinition {
     this.multiTermAnalyzer = multiTermAnalyzer;
   }
 }
-
-

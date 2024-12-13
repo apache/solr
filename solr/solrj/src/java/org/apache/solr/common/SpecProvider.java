@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,9 +15,11 @@
  * limitations under the License.
  */
 package org.apache.solr.common;
+
 import org.apache.solr.common.util.ValidatingJsonMap;
 
-/**A generic interface for any class that is capable of providing its specification as a json schema
+/**
+ * A generic interface for any class that is capable of providing its specification as a json schema
  */
 public interface SpecProvider {
   ValidatingJsonMap getSpec();

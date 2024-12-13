@@ -16,7 +16,7 @@
 # limitations under the License.
 
 """
-Simple script that queries Github for all open PRs, then finds the ones without
+Simple script that queries GitHub for all open PRs, then finds the ones without
 issue number in title, and the ones where the linked JIRA is already closed
 """
 
@@ -92,24 +92,26 @@ def main():
   out("============================")
   out("Number of open Pull Requests: %s" % open_prs.totalCount)
   result['open_count'] = open_prs.totalCount
+  active_prs = list(filter(lambda x: not x.draft and not x.user.login == 'solrbot', open_prs))
+  out("Number of active non-draft, non-solrbot Pull Requests: %s" % len(active_prs))
 
-  lack_jira = list(filter(lambda x: not re.match(r'.*\b(LUCENE|SOLR)-\d{3,6}\b', x.title), open_prs))
+  lack_jira = list(filter(lambda x: not re.match(r'.*\b(SOLR)-\d{3,6}\b', x.title), active_prs))
   result['no_jira_count'] = len(lack_jira)
   lack_jira_list = []
   for pr in lack_jira:
     lack_jira_list.append({'title': pr.title, 'number': pr.number, 'user': pr.user.login, 'created': pr.created_at.strftime("%Y-%m-%d")})
   result['no_jira'] = lack_jira_list
-  out("\nPRs lacking JIRA reference in title")
+  out("\nActive PRs lacking JIRA reference in title")
   for pr in lack_jira_list:
     out("  #%s: %s %s (%s)" % (pr['number'], pr['created'], pr['title'], pr['user'] ))
 
   out("\nOpen PRs with a resolved JIRA")
-  has_jira = list(filter(lambda x: re.match(r'.*\b(LUCENE|SOLR)-\d{3,6}\b', x.title), open_prs))
+  has_jira = list(filter(lambda x: re.match(r'.*\b(SOLR)-\d{3,6}\b', x.title), open_prs))
 
   issue_ids = []
   issue_to_pr = {}
   for pr in has_jira:
-    jira_issue_str = re.match(r'.*\b((LUCENE|SOLR)-\d{3,6})\b', pr.title).group(1)
+    jira_issue_str = re.match(r'.*\b((SOLR)-\d{3,6})\b', pr.title).group(1)
     issue_ids.append(jira_issue_str)
     issue_to_pr[jira_issue_str] = pr
 

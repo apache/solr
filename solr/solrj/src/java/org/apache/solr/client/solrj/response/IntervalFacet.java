@@ -19,26 +19,21 @@ package org.apache.solr.client.solrj.response;
 import java.util.List;
 
 /**
- * Objects of this class will contain the result of all the intervals defined
- * for a specific field. 
+ * Objects of this class will contain the result of all the intervals defined for a specific field.
  */
 public class IntervalFacet {
- 
-  /**
-   * The field for which interval facets where calculated
-   */
+
+  /** The field for which interval facets where calculated */
   private final String field;
 
-  /**
-   * The list of interval facets calculated for {@link #field}
-   */
+  /** The list of interval facets calculated for {@link #field} */
   private final List<Count> intervals;
-  
+
   IntervalFacet(String field, List<Count> values) {
     this.field = field;
     this.intervals = values;
   }
-  
+
   /**
    * @return The field for which interval facets where calculated
    */
@@ -52,28 +47,24 @@ public class IntervalFacet {
   public List<Count> getIntervals() {
     return intervals;
   }
-  
-  /**
-   * Holds counts for facet intervals defined in a field
-   */
+
+  /** Holds counts for facet intervals defined in a field */
   public static class Count {
     /**
-     * The key of this interval. This is the original 
-     * interval string or the value of the "key" local
-     * param
+     * The key of this interval. This is the original interval string or the value of the "key"
+     * local param
      */
     private final String key;
-    /**
-     * The count of this interval
-     */
+
+    /** The count of this interval */
     private final int count;
-    
+
     Count(String key, int count) {
       super();
       this.key = key;
       this.count = count;
     }
-    
+
     public String getKey() {
       return key;
     }

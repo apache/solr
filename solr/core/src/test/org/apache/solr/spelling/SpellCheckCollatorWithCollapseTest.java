@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class SpellCheckCollatorWithCollapseTest  extends SolrTestCaseJ4 {
+public class SpellCheckCollatorWithCollapseTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-collapseqparser.xml", "schema11.xml");
@@ -38,39 +38,53 @@ public class SpellCheckCollatorWithCollapseTest  extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
   }
-  
+
   @Test
-  public void test() throws Exception {
-    for(int i=0 ; i<200 ; i++) {
-      String[] doc = {"id","" + i, "group_i", "" + (i % 10), "a_s", ((i%2)==0 ? "love" : "peace")};
+  public void test() {
+    for (int i = 0; i < 200; i++) {
+      String[] doc = {
+        "id", "" + i, "group_i", "" + (i % 10), "a_s", ((i % 2) == 0 ? "love" : "peace")
+      };
       assertU(adoc(doc));
-      if(i%5==0) {
+      if (i % 5 == 0) {
         assertU(commit());
       }
     }
     assertU(commit());
 
-    for (SolrParams params : new SolrParams[]{
-        params(CommonParams.FQ, "{!collapse field=group_i}"),
-        params(CommonParams.FQ, "${bleh}", "bleh", "{!collapse field=group_i}"), // substitution
-        params(CommonParams.FQ, "{!tag=collapser}{!collapse field=group_i}"), // with tag & collapse in localparams
-        params(CommonParams.FQ, "{!collapse tag=collapser field=group_i}")
-    }) {
+    for (SolrParams params :
+        new SolrParams[] {
+          params(CommonParams.FQ, "{!collapse field=group_i}"),
+          params(CommonParams.FQ, "${bleh}", "bleh", "{!collapse field=group_i}"), // substitution
+          params(
+              CommonParams.FQ,
+              "{!tag=collapser}{!collapse field=group_i}"), // with tag & collapse in localparams
+          params(CommonParams.FQ, "{!collapse tag=collapser field=group_i}")
+        }) {
       assertQ(
-          req(params,
-              SpellCheckComponent.COMPONENT_NAME, "true",
-          SpellCheckComponent.SPELLCHECK_DICT, "direct",
-          SpellingParams.SPELLCHECK_COUNT, "10",
-          SpellingParams.SPELLCHECK_COLLATE, "true",
-          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "5",
-          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
-          CommonParams.Q, "a_s:lpve",
-          CommonParams.QT, "/spellCheckCompRH_Direct",
-          SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "5",
-          "expand", "true"),
-          "//lst[@name='spellcheck']/lst[@name='collations']/str[@name='collation']='a_s:love'"
-      );
+          req(
+              params,
+              SpellCheckComponent.COMPONENT_NAME,
+              "true",
+              SpellCheckComponent.SPELLCHECK_DICT,
+              "direct",
+              SpellingParams.SPELLCHECK_COUNT,
+              "10",
+              SpellingParams.SPELLCHECK_COLLATE,
+              "true",
+              SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES,
+              "5",
+              SpellingParams.SPELLCHECK_MAX_COLLATIONS,
+              "1",
+              CommonParams.Q,
+              "a_s:lpve",
+              CommonParams.QT,
+              "/spellCheckCompRH_Direct",
+              SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS,
+              "5",
+              "expand",
+              "true"),
+          "//lst[@name='spellcheck']/lst[@name='collations']/str[@name='collation']='a_s:love'");
     }
   }
-
 }

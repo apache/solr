@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * APIs and classes for transforming result grouping results into the appropriate response format
 
+/**
+ * APIs and classes for transforming result grouping results into the appropriate response format
  */
 package org.apache.solr.search.grouping.endresulttransformer;
-

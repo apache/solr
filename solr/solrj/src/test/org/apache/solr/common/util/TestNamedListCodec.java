@@ -16,24 +16,22 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
-import java.util.List;
-import java.util.Random;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-
-public class TestNamedListCodec  extends SolrTestCase {
+public class TestNamedListCodec extends SolrTestCase {
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testSimple() throws Exception{
+  public void testSimple() throws Exception {
 
     NamedList<Object> nl = new NamedList<>();
     Float fval = 10.01f;
@@ -43,60 +41,59 @@ public class TestNamedListCodec  extends SolrTestCase {
     // Set up a simple document
     NamedList<Object> r = new NamedList<>();
 
-
     nl.add("responseHeader", r);
 
-    r.add("status",0);
-    r.add("QTime",63);
+    r.add("status", 0);
+    r.add("QTime", 63);
     NamedList<Object> p = new NamedList<>();
-    r.add("params",p);
-    p.add("rows",10);
-    p.add("start",0);
-    p.add("indent","on");
-    p.add("q","ipod");
+    r.add("params", p);
+    p.add("rows", 10);
+    p.add("start", 0);
+    p.add("indent", "on");
+    p.add("q", "ipod");
 
-
-    SolrDocumentList list =     new SolrDocumentList();
-    nl.add("response", list );
+    SolrDocumentList list = new SolrDocumentList();
+    nl.add("response", list);
     list.setMaxScore(1.0f);
     list.setStart(10);
     list.setNumFound(12);
 
     SolrDocument doc = new SolrDocument();
-    doc.addField( "f", fval );
-    doc.addField( "b", bval );
-    doc.addField( "s", sval );
-    doc.addField( "f", 100 );
+    doc.addField("f", fval);
+    doc.addField("b", bval);
+    doc.addField("s", sval);
+    doc.addField("f", 100);
     list.add(doc);
 
     doc = new SolrDocument();
-    doc.addField( "f", fval );
-    doc.addField( "b", bval );
-    doc.addField( "s", sval );
-    doc.addField( "f", 101 );
+    doc.addField("f", fval);
+    doc.addField("b", bval);
+    doc.addField("s", sval);
+    doc.addField("f", 101);
     list.add(doc);
 
-    nl.add("zzz",doc);
+    nl.add("zzz", doc);
     byte[] arr;
-    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+    try (JavaBinCodec jbc = new JavaBinCodec(null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
       jbc.marshal(nl, baos);
       arr = baos.toByteArray();
     }
-    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
+    try (JavaBinCodec jbc = new JavaBinCodec();
+        ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
       NamedList<?> res = (NamedList<?>) jbc.unmarshal(bais);
       assertEquals(3, res.size());
-      assertEquals( "ipod",((NamedList<?>)((NamedList<?>)res.getVal(0)).get("params")).get("q") );
+      assertEquals("ipod", ((NamedList<?>) ((NamedList<?>) res.getVal(0)).get("params")).get("q"));
       list = (SolrDocumentList) res.getVal(1);
-      assertEquals(12,list.getNumFound() );
-      assertEquals(10,list.getStart() );
-      assertEquals(101, ((List)list.get(1).getFieldValue("f")).get(1));
+      assertEquals(12, list.getNumFound());
+      assertEquals(10, list.getStart());
+      assertEquals(101, ((List) list.get(1).getFieldValue("f")).get(1));
     }
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testIterator() throws Exception{
-    
+  public void testIterator() throws Exception {
+
     NamedList<Object> nl = new NamedList<>();
     Float fval = 10.01f;
     Boolean bval = Boolean.TRUE;
@@ -106,26 +103,28 @@ public class TestNamedListCodec  extends SolrTestCase {
     List<SolrDocument> list = new ArrayList<>();
 
     SolrDocument doc = new SolrDocument();
-    doc.addField( "f", fval );
-    doc.addField( "b", bval );
-    doc.addField( "s", sval );
-    doc.addField( "f", 100 );
+    doc.addField("f", fval);
+    doc.addField("b", bval);
+    doc.addField("s", sval);
+    doc.addField("f", 100);
     list.add(doc);
 
     doc = new SolrDocument();
-    doc.addField( "f", fval );
-    doc.addField( "b", bval );
-    doc.addField( "s", sval );
-    doc.addField( "f", 101 );
+    doc.addField("f", fval);
+    doc.addField("b", bval);
+    doc.addField("s", sval);
+    doc.addField("f", 101);
     list.add(doc);
 
-    nl.add("zzz",list.iterator());
+    nl.add("zzz", list.iterator());
     byte[] arr;
-    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+    try (JavaBinCodec jbc = new JavaBinCodec(null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
       jbc.marshal(nl, baos);
       arr = baos.toByteArray();
     }
-    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
+    try (JavaBinCodec jbc = new JavaBinCodec();
+        ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
       NamedList<?> res = (NamedList<?>) jbc.unmarshal(bais);
       List<?> l = (List<?>) res.get("zzz");
       assertEquals(list.size(), l.size());
@@ -133,7 +132,6 @@ public class TestNamedListCodec  extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIterable() throws Exception {
     NamedList<Object> r = new NamedList<>();
 
@@ -147,72 +145,75 @@ public class TestNamedListCodec  extends SolrTestCase {
     r.add("values", map.values());
     r.add("finally", "the end");
     byte[] arr;
-    try (JavaBinCodec jbc = new JavaBinCodec(null); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-      jbc.marshal(r,baos);
+    try (JavaBinCodec jbc = new JavaBinCodec(null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      jbc.marshal(r, baos);
       arr = baos.toByteArray();
     }
 
-    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
+    try (JavaBinCodec jbc = new JavaBinCodec();
+        ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
       NamedList<?> result = (NamedList<?>) jbc.unmarshal(bais);
-      assertTrue("result is null and it shouldn't be", result != null);
+      assertNotNull("result is null and it shouldn't be", result);
       List<?> keys = (List<?>) result.get("keys");
-      assertTrue("keys is null and it shouldn't be", keys != null);
-      assertTrue("keys Size: " + keys.size() + " is not: " + 3, keys.size() == 3);
+      assertNotNull("keys is null and it shouldn't be", keys);
+      assertEquals("keys Size: " + keys.size() + " is not: " + 3, 3, keys.size());
       String less = (String) result.get("more");
-      assertTrue("less is null and it shouldn't be", less != null);
-      assertTrue(less + " is not equal to " + "less", less.equals("less") == true);
+      assertNotNull("less is null and it shouldn't be", less);
+      assertEquals(less + " is not equal to " + "less", "less", less);
       List<?> values = (List<?>) result.get("values");
-      assertTrue("values is null and it shouldn't be", values != null);
-      assertTrue("values Size: " + values.size() + " is not: " + 3, values.size() == 3);
+      assertNotNull("values is null and it shouldn't be", values);
+      assertEquals("values Size: " + values.size() + " is not: " + 3, 3, values.size());
       String theEnd = (String) result.get("finally");
-      assertTrue("theEnd is null and it shouldn't be", theEnd != null);
-      assertTrue(theEnd + " is not equal to " + "the end", theEnd.equals("the end") == true);
+      assertNotNull("theEnd is null and it shouldn't be", theEnd);
+      assertEquals(theEnd + " is not equal to " + "the end", "the end", theEnd);
     } catch (ClassCastException e) {
-      assertTrue("Received a CCE and we shouldn't have", false);
+      fail("Received a CCE and we shouldn't have");
     }
-
   }
-
 
   int rSz(int orderOfMagnitude) {
     int sz = r.nextInt(orderOfMagnitude);
     switch (sz) {
-      case 0: return r.nextInt(10);
-      case 1: return r.nextInt(100);
-      case 2: return r.nextInt(1000);
-      default: return r.nextInt(10000);
+      case 0:
+        return r.nextInt(10);
+      case 1:
+        return r.nextInt(100);
+      case 2:
+        return r.nextInt(1000);
+      default:
+        return r.nextInt(10000);
     }
   }
 
   public String rStr(int sz) {
     StringBuilder sb = new StringBuilder();
-    for (int i=0; i<sz; i++) {
+    for (int i = 0; i < sz; i++) {
       sb.appendCodePoint(r.nextInt(Character.MIN_HIGH_SURROGATE));
     }
     return sb.toString();
   }
 
-
   public NamedList<Object> rNamedList(int lev) {
-    int sz = lev<= 0 ? 0 : r.nextInt(3);
+    int sz = lev <= 0 ? 0 : r.nextInt(3);
     NamedList<Object> nl = new NamedList<>();
-    for (int i=0; i<sz; i++) {
-      nl.add(rStr(2), makeRandom(lev-1));
+    for (int i = 0; i < sz; i++) {
+      nl.add(rStr(2), makeRandom(lev - 1));
     }
     return nl;
   }
 
   public List<Object> rList(int lev) {
-    int sz = lev<= 0 ? 0 : r.nextInt(3);
+    int sz = lev <= 0 ? 0 : r.nextInt(3);
     ArrayList<Object> lst = new ArrayList<>();
-    for (int i=0; i<sz; i++) {
-      lst.add(makeRandom(lev-1));
+    for (int i = 0; i < sz; i++) {
+      lst.add(makeRandom(lev - 1));
     }
     return lst;
   }
 
   Random r;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -247,7 +248,6 @@ public class TestNamedListCodec  extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRandom() throws Exception {
     // Random r = random;
     // let's keep it deterministic since just the wrong
@@ -257,15 +257,17 @@ public class TestNamedListCodec  extends SolrTestCase {
     NamedList<?> res;
     String cmp;
 
-    for (int i=0; i<10000; i++) { // pump up the iterations for good stress testing
+    for (int i = 0; i < 10000; i++) { // pump up the iterations for good stress testing
       nl = rNamedList(3);
       byte[] arr;
-      try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      try (JavaBinCodec jbc = new JavaBinCodec();
+          ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
         jbc.marshal(nl, baos);
         arr = baos.toByteArray();
       }
       // System.out.println(arr.length);
-      try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
+      try (JavaBinCodec jbc = new JavaBinCodec();
+          ByteArrayInputStream bais = new ByteArrayInputStream(arr)) {
         res = (NamedList<?>) jbc.unmarshal(bais);
         cmp = BaseDistributedSearchTestCase.compare(nl, res, 0, null);
       }

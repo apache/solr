@@ -19,14 +19,11 @@ package org.apache.solr.cloud;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreDescriptor;
 
-/**
- * Used to manage all ZkShardTerms of a collection
- */
+/** Used to manage all ZkShardTerms of a collection */
 class ZkCollectionTerms implements AutoCloseable {
   private final String collection;
   private final Map<String, ZkShardTerms> terms;
@@ -39,16 +36,16 @@ class ZkCollectionTerms implements AutoCloseable {
     assert ObjectReleaseTracker.track(this);
   }
 
-
   public ZkShardTerms getShard(String shardId) {
     synchronized (terms) {
-      if (!terms.containsKey(shardId)) terms.put(shardId, new ZkShardTerms(collection, shardId, zkClient));
+      if (!terms.containsKey(shardId))
+        terms.put(shardId, new ZkShardTerms(collection, shardId, zkClient));
       return terms.get(shardId);
     }
   }
 
   public void register(String shardId, String coreNodeName) {
-    synchronized (terms)  {
+    synchronized (terms) {
       getShard(shardId).registerTerm(coreNodeName);
     }
   }
@@ -61,11 +58,11 @@ class ZkCollectionTerms implements AutoCloseable {
     }
   }
 
+  @Override
   public void close() {
     synchronized (terms) {
       terms.values().forEach(ZkShardTerms::close);
     }
     assert ObjectReleaseTracker.release(this);
   }
-
 }

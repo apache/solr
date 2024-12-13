@@ -18,9 +18,7 @@ package org.apache.solr.cluster.events;
 
 import java.util.Iterator;
 
-/**
- * Event generated when some nodes went up.
- */
+/** Event generated when some nodes went up. */
 public interface NodesUpEvent extends ClusterEvent {
 
   @Override

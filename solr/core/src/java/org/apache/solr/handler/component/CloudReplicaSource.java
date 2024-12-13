@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -44,9 +43,7 @@ import org.apache.solr.security.AllowListUrlChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A replica source for solr cloud mode
- */
+/** A replica source for solr cloud mode */
 class CloudReplicaSource implements ReplicaSource {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -77,8 +74,7 @@ class CloudReplicaSource implements ReplicaSource {
     if (collections != null) {
       // If there were one or more collections specified in the query, split
       // each parameter and store as a separate member of a List.
-      List<String> collectionList = StrUtils.splitSmart(collections, ",",
-          true);
+      List<String> collectionList = StrUtils.splitSmart(collections, ",", true);
       // In turn, retrieve the slices that cover each collection from the
       // cloud state and add them to the Map 'slices'.
       for (String collectionName : collectionList) {
@@ -93,7 +89,7 @@ class CloudReplicaSource implements ReplicaSource {
       addSlices(sliceMap, clusterState, params, builder.collection, shardKeys, false);
     }
 
-    this.slices = sliceMap.keySet().toArray(new String[sliceMap.size()]);
+    this.slices = sliceMap.keySet().toArray(new String[0]);
     this.replicas = newReplicasArray(slices.length);
     for (int i = 0; i < slices.length; i++) {
       String sliceName = slices[i];
@@ -113,7 +109,12 @@ class CloudReplicaSource implements ReplicaSource {
       if (sliceOrUrl.indexOf('/') < 0) {
         // this is a logical shard
         this.slices[i] = sliceOrUrl;
-        replicas[i] = findReplicas(builder, shardsParam, clusterState, clusterState.getCollection(builder.collection).getSlice(sliceOrUrl));
+        replicas[i] =
+            findReplicas(
+                builder,
+                shardsParam,
+                clusterState,
+                clusterState.getCollection(builder.collection).getSlice(sliceOrUrl));
       } else {
         // this has urls
         this.replicas[i] = StrUtils.splitSmart(sliceOrUrl, "|", true);
@@ -128,32 +129,52 @@ class CloudReplicaSource implements ReplicaSource {
     return (List<String>[]) Array.newInstance(List.class, size);
   }
 
-  static void checkUrlsAllowList(AllowListUrlChecker urlChecker, ClusterState clusterState, String shardsParam, List<String> urls) {
+  static void checkUrlsAllowList(
+      AllowListUrlChecker urlChecker,
+      ClusterState clusterState,
+      String shardsParam,
+      List<String> urls) {
     try {
       urlChecker.checkAllowList(urls, clusterState);
     } catch (MalformedURLException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in '" + ShardParams.SHARDS + "' parameter: " + shardsParam, e);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid URL syntax in '" + ShardParams.SHARDS + "' parameter: " + shardsParam,
+          e);
     } catch (SolrException e) {
-      throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
-              "The '" + ShardParams.SHARDS + "' parameter value '" + shardsParam
-                      + "' contained value(s) not allowed: "
-                      + e.getMessage() + ". "
-                      + AllowListUrlChecker.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
+      throw new SolrException(
+          SolrException.ErrorCode.FORBIDDEN,
+          "The '"
+              + ShardParams.SHARDS
+              + "' parameter value '"
+              + shardsParam
+              + "' contained value(s) not allowed: "
+              + e.getMessage()
+              + ". "
+              + AllowListUrlChecker.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
     }
   }
 
-  private List<String> findReplicas(Builder builder, String shardsParam, ClusterState clusterState, Slice slice) {
+  private List<String> findReplicas(
+      Builder builder, String shardsParam, ClusterState clusterState, Slice slice) {
     if (slice == null) {
       // Treat this the same as "all servers down" for a slice, and let things continue
       // if partial results are acceptable
       return Collections.emptyList();
     } else {
-      final Predicate<Replica> isShardLeader = new IsLeaderPredicate(builder.zkStateReader, clusterState, slice.getCollection(), slice.getName());
-      List<Replica> list = slice.getReplicas()
-          .stream()
-          .filter(replica -> replica.isActive(clusterState.getLiveNodes()))
-          .filter(replica -> !builder.onlyNrt || (replica.getType() == Replica.Type.NRT || (replica.getType() == Replica.Type.TLOG && isShardLeader.test(replica))))
-          .collect(Collectors.toList());
+      final Predicate<Replica> isShardLeader =
+          new IsLeaderPredicate(
+              builder.zkStateReader, clusterState, slice.getCollection(), slice.getName());
+      List<Replica> list =
+          slice.getReplicas().stream()
+              .filter(replica -> replica.isActive(clusterState.getLiveNodes()))
+              .filter(
+                  replica ->
+                      !builder.onlyNrt
+                          || (replica.getType() == Replica.Type.NRT
+                              || (replica.getType() == Replica.Type.TLOG
+                                  && isShardLeader.test(replica))))
+              .collect(Collectors.toList());
       builder.replicaListTransformer.transform(list);
       List<String> coreUrls = list.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
       checkUrlsAllowList(builder.urlChecker, clusterState, shardsParam, coreUrls);
@@ -161,7 +182,13 @@ class CloudReplicaSource implements ReplicaSource {
     }
   }
 
-  private void addSlices(Map<String, Slice> target, ClusterState state, SolrParams params, String collectionName, String shardKeys, boolean multiCollection) {
+  private void addSlices(
+      Map<String, Slice> target,
+      ClusterState state,
+      SolrParams params,
+      String collectionName,
+      String shardKeys,
+      boolean multiCollection) {
     DocCollection coll = state.getCollection(collectionName);
     Collection<Slice> slices = coll.getRouter().getSearchSlices(shardKeys, params, coll);
     ClientUtils.addSlices(target, collectionName, slices, multiCollection);
@@ -170,7 +197,8 @@ class CloudReplicaSource implements ReplicaSource {
   @Override
   public List<String> getSliceNames() {
     // This is maybe a bug?
-    return Collections.unmodifiableList(Arrays.asList(slices)); // Do not use List.of because slices could have null
+    // Do not use List.of because slices could have null
+    return Collections.unmodifiableList(Arrays.asList(slices));
   }
 
   @Override
@@ -185,9 +213,11 @@ class CloudReplicaSource implements ReplicaSource {
   }
 
   /**
-   * A predicate to test if a replica is the leader according to {@link ZkStateReader#getLeaderRetry(String, String)}.
-   * <p>
-   * The result of getLeaderRetry is cached in the first call so that subsequent tests are faster and do not block.
+   * A predicate to test if a replica is the leader according to {@link
+   * ZkStateReader#getLeaderRetry(String, String)}.
+   *
+   * <p>The result of getLeaderRetry is cached in the first call so that subsequent tests are faster
+   * and do not block.
    */
   private static class IsLeaderPredicate implements Predicate<Replica> {
     private final ZkStateReader zkStateReader;
@@ -196,7 +226,11 @@ class CloudReplicaSource implements ReplicaSource {
     private final String sliceName;
     private Replica shardLeader = null;
 
-    public IsLeaderPredicate(ZkStateReader zkStateReader, ClusterState clusterState, String collectionName, String sliceName) {
+    public IsLeaderPredicate(
+        ZkStateReader zkStateReader,
+        ClusterState clusterState,
+        String collectionName,
+        String sliceName) {
       this.zkStateReader = zkStateReader;
       this.clusterState = clusterState;
       this.collectionName = collectionName;
@@ -209,13 +243,20 @@ class CloudReplicaSource implements ReplicaSource {
         try {
           shardLeader = zkStateReader.getLeaderRetry(collectionName, sliceName);
         } catch (InterruptedException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-              "Exception finding leader for shard " + sliceName + " in collection "
-                  + collectionName, e);
+          throw new SolrException(
+              SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+              "Exception finding leader for shard "
+                  + sliceName
+                  + " in collection "
+                  + collectionName,
+              e);
         } catch (SolrException e) {
           if (log.isDebugEnabled()) {
-            log.debug("Exception finding leader for shard {} in collection {}. Collection State: {}",
-                sliceName, collectionName, clusterState.getCollectionOrNull(collectionName));
+            log.debug(
+                "Exception finding leader for shard {} in collection {}. Collection State: {}",
+                sliceName,
+                collectionName,
+                clusterState.getCollectionOrNull(collectionName));
           }
           throw e;
         }

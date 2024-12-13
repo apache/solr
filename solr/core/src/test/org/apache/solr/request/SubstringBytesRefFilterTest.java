@@ -18,13 +18,12 @@ package org.apache.solr.request;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 public class SubstringBytesRefFilterTest extends SolrTestCase {
-    
+
   @Test
   public void testSubstringBytesRefFilter() {
     final List<String> substrings = new ArrayList<>(4);
@@ -47,5 +46,4 @@ public class SubstringBytesRefFilterTest extends SolrTestCase {
 
     assertFalse(filter.test(new BytesRef("qux")));
   }
-
-} 
+}

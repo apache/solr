@@ -19,12 +19,8 @@ package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.SolrCollection;
 
-/**
- * Collection modification request.
- */
+/** Collection modification request. */
 public interface ModificationRequest {
-  /**
-   * The {@link SolrCollection} to modify.
-   */
+  /** The {@link SolrCollection} to modify. */
   SolrCollection getCollection();
 }

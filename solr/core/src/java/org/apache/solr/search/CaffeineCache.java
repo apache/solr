@@ -16,6 +16,14 @@
  */
 package org.apache.solr.search;
 
+import com.github.benmanes.caffeine.cache.AsyncCache;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Policy.Eviction;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -25,58 +33,49 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-
-import com.github.benmanes.caffeine.cache.AsyncCache;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Policy.Eviction;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
-import com.google.common.annotations.VisibleForTesting;
-
 /**
- * A SolrCache backed by the Caffeine caching library [1]. By default it uses the Window TinyLFU (W-TinyLFU)
- * eviction policy.
- * <p>This cache supports either maximum size limit (the number of items) or maximum ram bytes limit, but
- * not both. If both values are set then only maxRamMB limit is used and maximum size limit is ignored.</p>
- * <p>
- * W-TinyLFU [2] is a near optimal policy that uses recency and frequency to determine which entry
- * to evict in O(1) time. The estimated frequency is retained in a Count-Min Sketch and entries
- * reside on LRU priority queues [3]. By capturing the historic frequency of an entry, the cache is
- * able to outperform classic policies like LRU and LFU, as well as modern policies like ARC and
- * LIRS. This policy performed particularly well in search workloads.
- * <p>
- * [1] https://github.com/ben-manes/caffeine
- * [2] http://arxiv.org/pdf/1512.00727.pdf
- * [3] http://highscalability.com/blog/2016/1/25/design-of-a-modern-cache.html
+ * A SolrCache backed by the Caffeine caching library [1]. By default it uses the Window TinyLFU
+ * (W-TinyLFU) eviction policy.
+ *
+ * <p>This cache supports either maximum size limit (the number of items) or maximum ram bytes
+ * limit, but not both. If both values are set then only maxRamMB limit is used and maximum size
+ * limit is ignored.
+ *
+ * <p>W-TinyLFU [2] is a near optimal policy that uses recency and frequency to determine which
+ * entry to evict in O(1) time. The estimated frequency is retained in a Count-Min Sketch and
+ * entries reside on LRU priority queues [3]. By capturing the historic frequency of an entry, the
+ * cache is able to outperform classic policies like LRU and LFU, as well as modern policies like
+ * ARC and LIRS. This policy performed particularly well in search workloads.
+ *
+ * <p>[1] https://github.com/ben-manes/caffeine [2] http://arxiv.org/pdf/1512.00727.pdf [3]
+ * http://highscalability.com/blog/2016/1/25/design-of-a-modern-cache.html
  */
-public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V>, Accountable, RemovalListener<K, V> {
+public class CaffeineCache<K, V> extends SolrCacheBase
+    implements SolrCache<K, V>, Accountable, RemovalListener<K, V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(CaffeineCache.class)
-      + RamUsageEstimator.shallowSizeOfInstance(CacheStats.class)
-      + 2 * RamUsageEstimator.shallowSizeOfInstance(LongAdder.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(CaffeineCache.class)
+          + RamUsageEstimator.shallowSizeOfInstance(CacheStats.class)
+          + 2 * RamUsageEstimator.shallowSizeOfInstance(LongAdder.class);
 
-  private static final long RAM_BYTES_PER_FUTURE = RamUsageEstimator.shallowSizeOfInstance(CompletableFuture.class);
+  private static final long RAM_BYTES_PER_FUTURE =
+      RamUsageEstimator.shallowSizeOfInstance(CompletableFuture.class);
 
   private Executor executor;
 
@@ -89,7 +88,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private LongAdder hits;
   private LongAdder inserts;
   private LongAdder lookups;
-  private Cache<K,V> cache;
+  private Cache<K, V> cache;
   private AsyncCache<K, V> asyncCache;
   private long warmupTime;
   private int maxSize;
@@ -99,7 +98,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private boolean cleanupThread;
   private boolean async;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
 
@@ -129,7 +127,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     cleanupThread = Boolean.parseBoolean(args.get(CLEANUP_THREAD_PARAM));
     async = Boolean.parseBoolean(args.getOrDefault(ASYNC_PARAM, "true"));
     if (async) {
-      // We record futures in the map to decrease bucket-lock contention, but need computation handled in same thread
+      // We record futures in the map to decrease bucket-lock contention, but need computation
+      // handled in same thread
       executor = Runnable::run;
     } else if (cleanupThread) {
       executor = ForkJoinPool.commonPool();
@@ -145,25 +144,27 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     lookups = new LongAdder();
 
     initialRamBytes =
-        RamUsageEstimator.shallowSizeOfInstance(cache.getClass()) +
-        RamUsageEstimator.shallowSizeOfInstance(executor.getClass()) +
-        RamUsageEstimator.sizeOfObject(description);
+        RamUsageEstimator.shallowSizeOfInstance(cache.getClass())
+            + RamUsageEstimator.shallowSizeOfInstance(executor.getClass())
+            + RamUsageEstimator.sizeOfObject(description);
 
     return persistence;
   }
 
   private Cache<K, V> buildCache(Cache<K, V> prev) {
-    Caffeine<K, V> builder = Caffeine.newBuilder()
-        .initialCapacity(initialSize)
-        .executor(executor)
-        .removalListener(this)
-        .recordStats();
+    Caffeine<K, V> builder =
+        Caffeine.newBuilder()
+            .initialCapacity(initialSize)
+            .executor(executor)
+            .removalListener(this)
+            .recordStats();
     if (maxIdleTimeSec > 0) {
       builder.expireAfterAccess(Duration.ofSeconds(maxIdleTimeSec));
     }
     if (maxRamBytes != Long.MAX_VALUE) {
       builder.maximumWeight(maxRamBytes);
-      builder.weigher((k, v) -> (int) (RamUsageEstimator.sizeOfObject(k) + RamUsageEstimator.sizeOfObject(v)));
+      builder.weigher(
+          (k, v) -> (int) (RamUsageEstimator.sizeOfObject(k) + RamUsageEstimator.sizeOfObject(v)));
     } else {
       builder.maximumSize(maxSize);
     }
@@ -183,10 +184,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   @Override
   public void onRemoval(K key, V value, RemovalCause cause) {
     ramBytes.add(
-        - (RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(value, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY)
-    );
+        -(RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
+            + RamUsageEstimator.sizeOfObject(value, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
+            + RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY));
+    if (async) {
+      ramBytes.add(-RAM_BYTES_PER_FUTURE);
+    }
   }
 
   @Override
@@ -199,7 +202,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     return cache.getIfPresent(key);
   }
 
-  private V computeAsync(K key, IOFunction<? super K, ? extends V> mappingFunction) throws IOException {
+  private V computeAsync(K key, IOFunction<? super K, ? extends V> mappingFunction)
+      throws IOException {
     CompletableFuture<V> future = new CompletableFuture<>();
     CompletableFuture<V> result = asyncCache.asMap().putIfAbsent(key, future);
     lookups.increment();
@@ -239,26 +243,29 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction) throws IOException {
+  public V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction)
+      throws IOException {
     if (async) {
       return computeAsync(key, mappingFunction);
     }
 
     try {
-      return cache.get(key, k -> {
-        V value;
-        try {
-          value = mappingFunction.apply(k);
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        }
-        if (value == null) {
-          return null;
-        }
-        recordRamBytes(key, null, value);
-        inserts.increment();
-        return value;
-      });
+      return cache.get(
+          key,
+          k -> {
+            V value;
+            try {
+              value = mappingFunction.apply(k);
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+            if (value == null) {
+              return null;
+            }
+            recordRamBytes(key, null, value);
+            inserts.increment();
+            return value;
+          });
     } catch (UncheckedIOException e) {
       throw e.getCause();
     }
@@ -274,30 +281,30 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   /**
    * Update the estimate of used memory
+   *
    * @param key the cache key
    * @param oldValue the old cached value to decrement estimate (can be null)
    * @param newValue the new cached value to increment estimate
    */
   private void recordRamBytes(K key, V oldValue, V newValue) {
-    ramBytes.add(RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+    ramBytes.add(
         RamUsageEstimator.sizeOfObject(newValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
     if (oldValue == null) {
+      ramBytes.add(
+          RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
       ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
       if (async) ramBytes.add(RAM_BYTES_PER_FUTURE);
     } else {
-      ramBytes.add(- RamUsageEstimator.sizeOfObject(oldValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
+      ramBytes.add(
+          -RamUsageEstimator.sizeOfObject(
+              oldValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
     }
   }
 
   @Override
   public V remove(K key) {
-    V existing = cache.asMap().remove(key);
-    if (existing != null) {
-      ramBytes.add(- RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-      ramBytes.add(- RamUsageEstimator.sizeOfObject(existing, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-      ramBytes.add(- RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
-    }
-    return existing;
+    // ramBytes adjustment happens via #onRemoval
+    return cache.asMap().remove(key);
   }
 
   @Override
@@ -317,7 +324,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     cache.invalidateAll();
     cache.cleanUp();
     if (executor instanceof ExecutorService) {
-      ((ExecutorService)executor).shutdownNow();
+      ((ExecutorService) executor).shutdownNow();
     }
     ramBytes.reset();
   }
@@ -372,32 +379,38 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     }
   }
 
+  protected void adjustMetrics(long hitsAdjust, long insertsAdjust, long lookupsAdjust) {
+    hits.add(-hitsAdjust);
+    inserts.add(-insertsAdjust);
+    lookups.add(-lookupsAdjust);
+  }
+
   @Override
-  public void warm(SolrIndexSearcher searcher, SolrCache<K,V> old) {
+  public void warm(SolrIndexSearcher searcher, SolrCache<K, V> old) {
     if (regenerator == null) {
       return;
     }
-    
+
     long warmingStartTime = System.nanoTime();
     Map<K, V> hottest = Collections.emptyMap();
-    CaffeineCache<K,V> other = (CaffeineCache<K,V>)old;
+    CaffeineCache<K, V> other = (CaffeineCache<K, V>) old;
 
     // warm entries
     if (isAutowarmingOn()) {
       int size = autowarm.getWarmCount(other.cache.asMap().size());
-      hottest = other.cache.policy().eviction().map(p -> p.hottest(size)).orElse(Collections.emptyMap());
+      hottest =
+          other.cache.policy().eviction().map(p -> p.hottest(size)).orElse(Collections.emptyMap());
     }
 
     for (Entry<K, V> entry : hottest.entrySet()) {
       try {
-        boolean continueRegen = regenerator.regenerateItem(
-            searcher, this, old, entry.getKey(), entry.getValue());
+        boolean continueRegen =
+            regenerator.regenerateItem(searcher, this, old, entry.getKey(), entry.getValue());
         if (!continueRegen) {
           break;
         }
-      }
-      catch (Exception e) {
-        SolrException.log(log, "Error during auto-warming of key:" + entry.getKey(), e);
+      } catch (Exception e) {
+        log.error("Error during auto-warming of key: {}", entry.getKey(), e);
       }
     }
 
@@ -409,13 +422,18 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     priorHits = oldStats.hitCount() + other.hits.sum() + other.priorHits;
     priorInserts = other.inserts.sum() + other.priorInserts;
     priorLookups = oldStats.requestCount() + other.lookups.sum() + other.priorLookups;
-    warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
+    warmupTime =
+        TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
   }
 
   /** Returns the description of this cache. */
   private String generateDescription(int limit, int initialSize) {
-    return String.format(Locale.ROOT, "Caffeine Cache(maxSize=%d, initialSize=%d%s)",
-        limit, initialSize, isAutowarmingOn() ? (", " + getAutowarmDescription()) : "");
+    return String.format(
+        Locale.ROOT,
+        "Caffeine Cache(maxSize=%d, initialSize=%d%s)",
+        limit,
+        initialSize,
+        isAutowarmingOn() ? (", " + getAutowarmDescription()) : "");
   }
 
   @Override
@@ -432,7 +450,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   @Override
   public String getDescription() {
-     return description;
+    return description;
   }
 
   // for unit tests only
@@ -454,33 +472,35 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    cacheMap = new MetricsMap(map -> {
-      if (cache != null) {
-        CacheStats stats = cache.stats();
-        long hitCount = stats.hitCount() + hits.sum();
-        long insertCount = inserts.sum();
-        long lookupCount = stats.requestCount() + lookups.sum();
+    cacheMap =
+        new MetricsMap(
+            map -> {
+              if (cache != null) {
+                CacheStats stats = cache.stats();
+                long hitCount = stats.hitCount() + hits.sum();
+                long insertCount = inserts.sum();
+                long lookupCount = stats.requestCount() + lookups.sum();
 
-        map.put(LOOKUPS_PARAM, lookupCount);
-        map.put(HITS_PARAM, hitCount);
-        map.put(HIT_RATIO_PARAM, hitRate(hitCount, lookupCount));
-        map.put(INSERTS_PARAM, insertCount);
-        map.put(EVICTIONS_PARAM, stats.evictionCount());
-        map.put(SIZE_PARAM, cache.asMap().size());
-        map.put("warmupTime", warmupTime);
-        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
-        map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
+                map.put(LOOKUPS_PARAM, lookupCount);
+                map.put(HITS_PARAM, hitCount);
+                map.put(HIT_RATIO_PARAM, hitRate(hitCount, lookupCount));
+                map.put(INSERTS_PARAM, insertCount);
+                map.put(EVICTIONS_PARAM, stats.evictionCount());
+                map.put(SIZE_PARAM, cache.asMap().size());
+                map.put("warmupTime", warmupTime);
+                map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+                map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
 
-        CacheStats cumulativeStats = priorStats.plus(stats);
-        long cumLookups = priorLookups + lookupCount;
-        long cumHits = priorHits + hitCount;
-        map.put("cumulative_lookups", cumLookups);
-        map.put("cumulative_hits", cumHits);
-        map.put("cumulative_hitratio", hitRate(cumHits, cumLookups));
-        map.put("cumulative_inserts", priorInserts + insertCount);
-        map.put("cumulative_evictions", cumulativeStats.evictionCount());
-      }
-    });
+                CacheStats cumulativeStats = priorStats.plus(stats);
+                long cumLookups = priorLookups + lookupCount;
+                long cumHits = priorHits + hitCount;
+                map.put("cumulative_lookups", cumLookups);
+                map.put("cumulative_hits", cumHits);
+                map.put("cumulative_hitratio", hitRate(cumHits, cumLookups));
+                map.put("cumulative_inserts", priorInserts + insertCount);
+                map.put("cumulative_evictions", cumulativeStats.evictionCount());
+              }
+            });
     solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 

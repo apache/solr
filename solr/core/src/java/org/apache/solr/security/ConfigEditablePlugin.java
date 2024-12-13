@@ -18,21 +18,16 @@ package org.apache.solr.security;
 
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.util.CommandOperation;
 
-/**An interface to be implemented by a Plugin whose Configuration is runtime editable
- *
- */
+/** An interface to be implemented by a Plugin whose Configuration is runtime editable */
 public interface ConfigEditablePlugin {
 
-
-  /** Operate the commands on the latest conf and return a new conf object
-   * If there are errors in the commands , throw a SolrException. return a null
-   * if no changes are to be made as a result of this edit. It is the responsibility
-   * of the implementation to ensure that the returned config is valid . The framework
-   * does no validation of the data
+  /**
+   * Operate the commands on the latest conf and return a new conf object If there are errors in the
+   * commands , throw a SolrException. return a null if no changes are to be made as a result of
+   * this edit. It is the responsibility of the implementation to ensure that the returned config is
+   * valid . The framework does no validation of the data
    */
-  Map<String,Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands);
-
+  Map<String, Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands);
 }

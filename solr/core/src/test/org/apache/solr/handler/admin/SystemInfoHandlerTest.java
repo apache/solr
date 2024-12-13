@@ -16,38 +16,39 @@
  */
 package org.apache.solr.handler.admin;
 
+import com.codahale.metrics.Gauge;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.Arrays;
-
-import com.codahale.metrics.Gauge;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.stats.MetricUtils;
 
-
 public class SystemInfoHandlerTest extends SolrTestCase {
 
-  public void testMagickGetter() throws Exception {
+  public void testMagickGetter() {
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
 
     // make one directly
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-    info.add( "name", os.getName() );
-    info.add( "version", os.getVersion() );
-    info.add( "arch", os.getArch() );
+    info.add("name", os.getName());
+    info.add("version", os.getVersion());
+    info.add("arch", os.getArch());
 
     // make another using MetricUtils.addMXBeanMetrics()
     SimpleOrderedMap<Object> info2 = new SimpleOrderedMap<>();
-    MetricUtils.addMXBeanMetrics( os, OperatingSystemMXBean.class, null, (k, v) -> {
-      info2.add(k, ((Gauge)v).getValue());
-    } );
+    MetricUtils.addMXBeanMetrics(
+        os,
+        OperatingSystemMXBean.class,
+        null,
+        (k, v) -> {
+          info2.add(k, ((Gauge) v).getValue());
+        });
 
     // make sure they got the same thing
     for (String p : Arrays.asList("name", "version", "arch")) {
       assertEquals(info.get(p), info2.get(p));
     }
   }
-
 }

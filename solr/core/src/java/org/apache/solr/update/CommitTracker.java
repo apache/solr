@@ -17,7 +17,6 @@
 package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,35 +24,34 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.solr.common.SolrException;
+import java.util.function.LongSupplier;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Helper class for tracking autoCommit state.
- * 
- * Note: This is purely an implementation detail of autoCommit and will
- * definitely change in the future, so the interface should not be relied-upon
- * 
- * Note: all access must be synchronized.
- * 
- * Public for tests.
+ *
+ * <p>Note: This is purely an implementation detail of autoCommit and will definitely change in the
+ * future, so the interface should not be relied-upon
+ *
+ * <p>Note: all access must be synchronized.
+ *
+ * <p>Public for tests.
  */
 public final class CommitTracker implements Runnable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   // scheduler delay for maxDoc-triggered autocommits
   public static final int DOC_COMMIT_DELAY_MS = 1;
   // scheduler delay for maxSize-triggered autocommits
   public static final int SIZE_COMMIT_DELAY_MS = 1;
-  
+
   // settings, not final so we can change them in testing
   private int docsUpperBound;
   private long timeUpperBound;
@@ -64,7 +62,7 @@ public final class CommitTracker implements Runnable {
   private final ScheduledExecutorService scheduler =
       Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
   private ScheduledFuture<?> pending;
-  
+
   // state
   private AtomicLong docsSinceCommit = new AtomicLong(0);
   private AtomicInteger autoCommitCount = new AtomicInteger(0);
@@ -76,17 +74,23 @@ public final class CommitTracker implements Runnable {
   private static final boolean WAIT_SEARCHER = true;
 
   private String name;
-  
-  public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, long tLogFileSizeUpperBound,
-                       boolean openSearcher, boolean softCommit) {
+
+  public CommitTracker(
+      String name,
+      SolrCore core,
+      int docsUpperBound,
+      int timeUpperBound,
+      long tLogFileSizeUpperBound,
+      boolean openSearcher,
+      boolean softCommit) {
     this.core = core;
     this.name = name;
     pending = null;
-    
+
     this.docsUpperBound = docsUpperBound;
     this.timeUpperBound = timeUpperBound;
     this.tLogFileSizeUpperBound = tLogFileSizeUpperBound;
-    
+
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
 
@@ -96,7 +100,7 @@ public final class CommitTracker implements Runnable {
   public boolean getOpenSearcher() {
     return openSearcher;
   }
-  
+
   public synchronized void close() {
     if (pending != null) {
       pending.cancel(false);
@@ -104,7 +108,7 @@ public final class CommitTracker implements Runnable {
     }
     scheduler.shutdown();
   }
-  
+
   /** schedule individual commits */
   public void scheduleCommitWithin(long commitMaxTime) {
     _scheduleCommitWithin(commitMaxTime);
@@ -120,7 +124,7 @@ public final class CommitTracker implements Runnable {
       }
     }
   }
-  
+
   private void _scheduleCommitWithinIfNeeded(long commitWithin) {
     long ctime = (commitWithin > 0) ? commitWithin : timeUpperBound;
 
@@ -135,7 +139,8 @@ public final class CommitTracker implements Runnable {
       if (pending != null && pending.getDelay(TimeUnit.MILLISECONDS) <= commitMaxTime) {
         // There is already a pending commit that will happen first, so
         // nothing else to do here.
-        // log.info("###returning since getDelay()=={} less than {}", pending.getDelay(TimeUnit.MILLISECONDS), commitMaxTime);
+        // log.info("###returning since getDelay()=={} less than {}",
+        // pending.getDelay(TimeUnit.MILLISECONDS), commitMaxTime);
 
         return;
       }
@@ -160,21 +165,24 @@ public final class CommitTracker implements Runnable {
       pending = scheduler.schedule(this, commitMaxTime, TimeUnit.MILLISECONDS);
     }
   }
-  
+
   /**
    * Indicate that documents have been added
+   *
    * @param commitWithin amount of time (in ms) within which a commit should be scheduled
    */
   public void addedDocument(int commitWithin) {
-    addedDocument(commitWithin, -1);
+    addedDocument(commitWithin, () -> -1);
   }
 
   /**
    * Indicate that documents have been added
+   *
    * @param commitWithin amount of time (in ms) within which a commit should be scheduled
-   * @param currentTlogSize current tlog size (in bytes). Use -1 if we don't want to check for a max size triggered commit
+   * @param currentTlogSize current tlog size (in bytes). Use -1 if we don't want to check for a max
+   *     size triggered commit
    */
-  public void addedDocument(int commitWithin, long currentTlogSize) {
+  public void addedDocument(int commitWithin, LongSupplier currentTlogSize) {
     // maxDocs-triggered autoCommit
     _scheduleMaxDocsTriggeredCommitIfNeeded();
 
@@ -200,38 +208,38 @@ public final class CommitTracker implements Runnable {
       }
     }
   }
-  
-  /** 
-   * Indicate that documents have been deleted
-   */
-  public void deletedDocument( int commitWithin ) {
+
+  /** Indicate that documents have been deleted */
+  public void deletedDocument(int commitWithin) {
     _scheduleCommitWithinIfNeeded(commitWithin);
   }
 
   /**
-   * If the given current tlog size is greater than the file size upper bound, then schedule a commit
+   * If the given current tlog size is greater than the file size upper bound, then schedule a
+   * commit
+   *
    * @param currentTlogSize current tlog size (in bytes)
    */
-  public void scheduleMaxSizeTriggeredCommitIfNeeded(long currentTlogSize) {
+  public void scheduleMaxSizeTriggeredCommitIfNeeded(LongSupplier currentTlogSize) {
     _scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
   }
 
   /**
-   * If the given current tlog size is greater than the file size upper bound, then schedule a commit
+   * If the given current tlog size is greater than the file size upper bound, then schedule a
+   * commit
+   *
    * @param currentTlogSize current tlog size (in bytes)
    */
-  private void _scheduleMaxSizeTriggeredCommitIfNeeded(long currentTlogSize) {
-    if (tLogFileSizeUpperBound > 0 && currentTlogSize > tLogFileSizeUpperBound) {
+  private void _scheduleMaxSizeTriggeredCommitIfNeeded(LongSupplier currentTlogSize) {
+    if (tLogFileSizeUpperBound > 0 && currentTlogSize.getAsLong() > tLogFileSizeUpperBound) {
       docsSinceCommit.set(0);
       _scheduleCommitWithin(SIZE_COMMIT_DELAY_MS);
     }
   }
 
-  
   /** Inform tracker that a commit has occurred */
-  public void didCommit() {
-  }
-  
+  public void didCommit() {}
+
   /** Inform tracker that a rollback has occurred, cancel any pending commits */
   public void didRollback() {
     synchronized (this) {
@@ -242,13 +250,13 @@ public final class CommitTracker implements Runnable {
       docsSinceCommit.set(0);
     }
   }
-  
-  /** This is the worker part for the ScheduledFuture **/
+
+  /** This is the worker part for the ScheduledFuture * */
   @Override
   public void run() {
     synchronized (this) {
       // log.info("###start commit. pending=null");
-      pending = null;  // allow a new commit to be scheduled
+      pending = null; // allow a new commit to be scheduled
     }
 
     MDCLoggingContext.setCore(core);
@@ -271,28 +279,27 @@ public final class CommitTracker implements Runnable {
 
       core.getUpdateHandler().commit(command);
     } catch (Exception e) {
-      SolrException.log(log, "auto commit error...", e);
+      log.error("auto commit error...", e);
     } finally {
       MDCLoggingContext.clear();
     }
     // log.info("###done committing");
   }
-  
+
   // to facilitate testing: blocks if called during commit
   public int getCommitCount() {
     return autoCommitCount.get();
   }
-  
+
   @Override
   public String toString() {
     if (timeUpperBound > 0 || docsUpperBound > 0 || tLogFileSizeUpperBound > 0) {
-      return (timeUpperBound > 0 ? ("if uncommitted for " + timeUpperBound + "ms; ")
-          : "")
-          + (docsUpperBound > 0 ? ("if " + docsUpperBound + " uncommitted docs; ")
-              : "")
-          + (tLogFileSizeUpperBound > 0 ? String.format(Locale.ROOT, "if tlog file size has exceeded %d bytes",
-          tLogFileSizeUpperBound)
-            : "");
+      return (timeUpperBound > 0 ? ("if uncommitted for " + timeUpperBound + "ms; ") : "")
+          + (docsUpperBound > 0 ? ("if " + docsUpperBound + " uncommitted docs; ") : "")
+          + (tLogFileSizeUpperBound > 0
+              ? String.format(
+                  Locale.ROOT, "if tlog file size has exceeded %d bytes", tLogFileSizeUpperBound)
+              : "");
     } else {
       return "disabled";
     }
@@ -323,7 +330,7 @@ public final class CommitTracker implements Runnable {
   public void setTLogFileSizeUpperBound(int sizeUpperBound) {
     this.tLogFileSizeUpperBound = sizeUpperBound;
   }
-  
+
   // only for testing - not thread safe
   public void setOpenSearcher(boolean openSearcher) {
     this.openSearcher = openSearcher;

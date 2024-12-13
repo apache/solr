@@ -18,7 +18,6 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
-
 import org.apache.solr.common.MapWriter;
 
 // An implementation of MapWriter which is annotated with Jackson annotations
@@ -28,5 +27,4 @@ public interface ReflectMapWriter extends MapWriter {
   default void writeMap(EntryWriter ew) throws IOException {
     Utils.reflectWrite(ew, this);
   }
-
 }

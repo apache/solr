@@ -19,7 +19,6 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 class SortDoc implements Comparable<SortDoc> {
@@ -34,14 +33,12 @@ class SortDoc implements Comparable<SortDoc> {
     this.sortValues = sortValues;
   }
 
-  public SortDoc() {
-
-  }
+  public SortDoc() {}
 
   @Override
   public boolean equals(Object obj) {
     // subclasses are not equal
-    if (!obj.getClass().equals(getClass())) {
+    if (!(obj instanceof SortDoc)) {
       return false;
     }
     return compareTo((SortDoc) obj) == 0;
@@ -124,7 +121,7 @@ class SortDoc implements Comparable<SortDoc> {
         return false;
       }
     }
-    return docId + docBase > sd.docId + sd.docBase; //index order
+    return docId + docBase > sd.docId + sd.docBase; // index order
   }
 
   @Override
@@ -138,6 +135,7 @@ class SortDoc implements Comparable<SortDoc> {
     return (sd.docId + sd.docBase) - (docId + docBase);
   }
 
+  @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
     builder.append(ord).append(':').append(docBase).append(':').append(docId).append("; ");

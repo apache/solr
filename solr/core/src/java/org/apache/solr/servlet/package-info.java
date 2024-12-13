@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Servlet related classes for powering the Solr HTTP API
- */
+
+/** Servlet related classes for powering the Solr HTTP API */
 package org.apache.solr.servlet;
-
-

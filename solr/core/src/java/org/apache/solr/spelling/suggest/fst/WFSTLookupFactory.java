@@ -17,33 +17,32 @@
 package org.apache.solr.spelling.suggest.fst;
 
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.fst.*;
+import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.LookupFactory;
 
 /**
  * Factory for {@link WFSTCompletionLookup}
+ *
  * @lucene.experimental
  */
 public class WFSTLookupFactory extends LookupFactory {
   /**
-   * If <code>true</code>, exact suggestions are returned first, even if they are prefixes
-   * of other strings in the automaton (possibly with larger weights). 
+   * If <code>true</code>, exact suggestions are returned first, even if they are prefixes of other
+   * strings in the automaton (possibly with larger weights).
    */
   public static final String EXACT_MATCH_FIRST = "exactMatchFirst";
-  
-  /**
-   * File name for the automaton.
-   * 
-   */
+
+  /** File name for the automaton. */
   private static final String FILENAME = "wfst.bin";
 
   @Override
   public Lookup create(NamedList<?> params, SolrCore core) {
-    boolean exactMatchFirst = params.get(EXACT_MATCH_FIRST) != null
-    ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
-    : true;
+    boolean exactMatchFirst =
+        params.get(EXACT_MATCH_FIRST) != null
+            ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
+            : true;
 
     return new WFSTCompletionLookup(getTempDir(), "suggester", exactMatchFirst);
   }

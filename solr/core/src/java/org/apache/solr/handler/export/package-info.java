@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Solr's Export Handler Functionality
- */
+/** Solr's Export Handler Functionality */
 package org.apache.solr.handler.export;
-
-

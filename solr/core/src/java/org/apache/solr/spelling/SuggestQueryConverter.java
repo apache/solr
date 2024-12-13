@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-/**
- * Passes the entire query string to the configured analyzer as-is.
- **/
+/** Passes the entire query string to the configured analyzer as-is. */
 public class SuggestQueryConverter extends SpellingQueryConverter {
 
   @Override

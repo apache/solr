@@ -1,0 +1,124 @@
+= User-Managed Distributed Search
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+When using traditional index sharding, you will need to consider how to query your documents.
+
+It is highly recommended that you use xref:cluster-types.adoc#solrcloud-mode[SolrCloud] when needing to scale up or scale out.
+The setup described below is legacy and was used prior to the existence of SolrCloud.
+SolrCloud provides for a truly distributed set of features with support for things like automatic routing, leader election, optimistic concurrency and other sanity checks that are expected out of a distributed system.
+
+Everything on this page is specific to legacy setup of distributed search.
+Users trying out SolrCloud should not follow any of the steps or information below.
+
+Update reorders (i.e., replica A may see update X then Y, and replica B may see update Y then X).
+*deleteByQuery* also handles reorders the same way, to ensure replicas are consistent.
+All replicas of a shard are consistent, even if the updates arrive in a different order on different replicas.
+
+== Distributing Documents across Shards
+
+When not using SolrCloud, it is up to you to get all your documents indexed on each shard of your server farm.
+Solr supports distributed indexing (routing) in its true form only in the SolrCloud mode.
+
+In the legacy distributed mode, Solr does not calculate universal term/doc frequencies.
+For most large-scale implementations, it is not likely to matter that Solr calculates TF/IDF at the shard level.
+However, if your collection is heavily skewed in its distribution across servers, you may find misleading relevancy results in your searches.
+In general, it is probably best to randomly distribute documents to your shards.
+
+== Executing Distributed Searches with the shards Parameter
+
+If a query request includes the `shards` parameter, the Solr server distributes the request across all the shards listed as arguments to the parameter.
+The `shards` parameter uses this syntax:
+
+`host:port/base_url,host:port/base_url*`
+
+For example, the `shards` parameter below causes the search to be distributed across two Solr servers: *solr1* and **solr2**, both of which are running on port 8983:
+
+`\http://localhost:8983/solr/core1/select?shards=solr1:8983/solr/core1,solr2:8983/solr/core1&indent=true&q=ipod+solr`
+
+Rather than require users to include the shards parameter explicitly, it is usually preferred to configure this parameter as a default in the RequestHandler section of `solrconfig.xml`.
+
+[IMPORTANT]
+====
+Do not add the `shards` parameter to the standard request handler; doing so may cause search queries may enter an infinite loop.
+Instead, define a new request handler that uses the `shards` parameter, and pass distributed search requests to that handler.
+====
+
+With Legacy mode, only query requests are distributed.
+This includes requests to the SearchHandler (or any handler extending from `org.apache.solr.handler.component.SearchHandler`) using standard components that support distributed search.
+
+As in SolrCloud mode, when `shards.info=true`, distributed responses will include information about the shard (where each shard represents a logically different index or physical location).
+
+The following components support distributed search:
+
+* The *Query* component, which returns documents matching a query.
+* The *Facet* component, which processes facet.query and facet.field requests where facets are sorted by count (the default).
+* The *Highlighting* component, which enables Solr to include "highlighted" matches in field values.
+* The *Stats* component, which returns simple statistics for numeric fields within the DocSet.
+* The *Debug* component, which helps with debugging.
+
+=== allowUrls Parameter
+
+The nodes allowed in the `shards` parameter is configurable through the `allowUrls` property in `solr.xml`.
+This allow-list is automatically configured for SolrCloud but needs explicit configuration for user-managed clusters.
+Read more details in the section xref:solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory[Configuring the ShardHandlerFactory].
+
+== Limitations to User-Managed Distributed Search
+
+Distributed searching in Solr has the following limitations:
+
+* Each document indexed must have a unique key.
+* If Solr discovers duplicate document IDs, Solr selects the first document and discards subsequent documents.
+* The index for distributed searching may become momentarily out of sync if a commit happens between the first and second phase of the distributed search.
+This might cause a situation where a document that once matched a query and was subsequently changed may no longer match the query but will still be retrieved.
+This situation is expected to be quite rare, however, and is only possible for a single query request.
+* The number of shards is limited by number of characters allowed for GET method's URI; most Web servers generally support at least 4000 characters, but many servers limit URI length to reduce their vulnerability to Denial of Service (DoS) attacks.
+* Shard information can be returned with each document in a distributed search by including `fl=id, [shard]` in the search request.
+This returns the shard URL.
+* In a distributed search, the data directory from the core descriptor overrides any data directory in `solrconfig.xml.`
+* Update commands may be sent to any server with distributed indexing configured correctly.
+Document adds and deletes are forwarded to the appropriate server/shard based on a hash of the unique document id.
+*commit* commands and *deleteByQuery* commands are sent to every server listed in `shards`.
+
+Formerly a limitation was that TF/IDF relevancy computations only used shard-local statistics.
+This is still the case by default.
+If your data isn't randomly distributed, or if you want more exact statistics, then you can configure the xref:solrcloud-distributed-requests.adoc#distributedidf[`ExactStatsCache`].
+
+== Avoiding Distributed Deadlock
+
+Like in SolrCloud mode, inter-shard requests could lead to a distributed deadlock.
+It can be avoided by following the instructions in the section xref:solrcloud-distributed-requests.adoc[].
+
+== Load Balancing Requests
+
+When managing a user-managed Solr cluster, query requests should be load balanced across each of the shard followers.
+This gives you both increased query handling capacity and failover if a server goes down.
+
+Because there is no centralized cluster management in this scenario, none of the leader shards in this configuration know about each other.
+Documents are indexed to each leader, the index is replicated to each follower, and then searches are distributed across the followers, using one follower from each shard.
+
+For high availability you should use a load balancer to set up a virtual IP for each shard's set of followers.
+If you are new to load balancing, HAProxy (http://haproxy.1wt.eu/) is a good open source software load-balancer.
+If a follower server goes down, a good load-balancer will detect the failure using some technique (generally a heartbeat system), and forward all requests to the remaining live followers that served with the failed follower.
+A single virtual IP should then be set up so that requests can hit a single IP, and get load balanced to each of the virtual IPs for the search followers.
+
+With this configuration you will have a fully load balanced, search-side fault-tolerant system.
+Incoming searches will be handed off to one of the functioning followers, then the follower will distribute the search request across a follower for each of the shards in your configuration.
+The follower will issue a request to each of the virtual IPs for each shard, and the load balancer will choose one of the available followers.
+Finally, the results will be combined into a single results set and returned.
+If any of the followers go down, they will be taken out of rotation and the remaining followers will be used.
+If a shard leader goes down, searches can still be served from the followers until you have corrected the problem and put the leader back into production.

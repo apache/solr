@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.DimensionalRoutedAlias.addDimensionIndexIfRequired;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -29,16 +32,12 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.update.AddUpdateCommand;
-
-import static org.apache.solr.client.solrj.request.CollectionAdminRequest.DimensionalRoutedAlias.addDimensionIndexIfRequired;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class DimensionalRoutedAlias extends RoutedAlias {
 
@@ -50,13 +49,14 @@ public class DimensionalRoutedAlias extends RoutedAlias {
   private Set<String> optParams = new HashSet<>();
   private Map<String, String> aliasMetadata;
 
-  private static final Pattern SEP_MATCHER = Pattern.compile("("+
-      Arrays.stream(RoutedAliasTypes.values())
-          .filter(v -> v != RoutedAliasTypes.DIMENSIONAL)
-          .map(RoutedAliasTypes::getSeparatorPrefix)
-          .collect(Collectors.joining("|")) +
-      ")");
-
+  private static final Pattern SEP_MATCHER =
+      Pattern.compile(
+          "("
+              + Arrays.stream(RoutedAliasTypes.values())
+                  .filter(v -> v != RoutedAliasTypes.DIMENSIONAL)
+                  .map(RoutedAliasTypes::getSeparatorPrefix)
+                  .collect(Collectors.joining("|"))
+              + ")");
 
   DimensionalRoutedAlias(List<RoutedAlias> dimensions, String name, Map<String, String> props) {
     this.dimensions = dimensions;
@@ -68,9 +68,13 @@ public class DimensionalRoutedAlias extends RoutedAlias {
     T get();
   }
 
-  static RoutedAlias dimensionForType(Map<String, String> props, RoutedAliasTypes type,
-                                      int index, Deffered<DimensionalRoutedAlias> dra) {
-    // this switch must have a case for every element of the RoutedAliasTypes enum EXCEPT DIMENSIONAL
+  static RoutedAlias dimensionForType(
+      Map<String, String> props,
+      RoutedAliasTypes type,
+      int index,
+      Deffered<DimensionalRoutedAlias> dra) {
+    // this switch must have a case for every element of the RoutedAliasTypes enum EXCEPT
+    // DIMENSIONAL
     switch (type) {
       case TIME:
         return new TimeRoutedAliasDimension(props, index, dra);
@@ -78,12 +82,15 @@ public class DimensionalRoutedAlias extends RoutedAlias {
         return new CategoryRoutedAliasDimension(props, index, dra);
       default:
         // if we got a type not handled by the switch there's been a bogus implementation.
-        throw new SolrException(SERVER_ERROR, "Router " + type + " is not fully implemented. If you see this" +
-            "error in an official release please file a bug report. Available types were:"
-            + Arrays.asList(RoutedAliasTypes.values()));
+        throw new SolrException(
+            SERVER_ERROR,
+            "Router "
+                + type
+                + " is not fully implemented. If you see this"
+                + "error in an official release please file a bug report. Available types were:"
+                + Arrays.asList(RoutedAliasTypes.values()));
     }
   }
-
 
   @Override
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
@@ -98,11 +105,12 @@ public class DimensionalRoutedAlias extends RoutedAlias {
   public String computeInitialCollectionName() {
     StringBuilder sb = new StringBuilder(getAliasName());
     for (RoutedAlias dimension : dimensions) {
-      // N. B. getAliasName is generally safe as a regex because it must conform to collection naming rules
-      // and those rules exclude regex special characters. A malicious request might do something expensive, but
-      // if you have malicious users able to run admin commands and create aliases, it is very likely that you have
-      // much bigger problems than an expensive regex.
-      String routeString = dimension.computeInitialCollectionName().replaceAll(dimension.getAliasName() , "");
+      // N. B. getAliasName is generally safe as a regex because it must conform to collection
+      // naming rules and those rules exclude regex special characters. A malicious request might do
+      // something expensive, but if you have malicious users able to run admin commands and create
+      // aliases, it is very likely that you have much bigger problems than an expensive regex.
+      String routeString =
+          dimension.computeInitialCollectionName().replace(dimension.getAliasName(), "");
       sb.append(routeString);
     }
     return sb.toString();
@@ -125,7 +133,8 @@ public class DimensionalRoutedAlias extends RoutedAlias {
 
   @Override
   public String getRouteField() {
-    throw new UnsupportedOperationException("DRA's route via their dimensions, this method should not be called");
+    throw new UnsupportedOperationException(
+        "DRA's route via their dimensions, this method should not be called");
   }
 
   @Override
@@ -139,7 +148,6 @@ public class DimensionalRoutedAlias extends RoutedAlias {
       dimension.validateRouteValue(cmd);
     }
   }
-
 
   @Override
   public Map<String, String> getAliasMetadata() {
@@ -164,7 +172,6 @@ public class DimensionalRoutedAlias extends RoutedAlias {
       indexParams(optParams, dimensions, RoutedAlias::getOptionalParams);
     }
     return optParams;
-
   }
 
   @Override
@@ -185,7 +192,7 @@ public class DimensionalRoutedAlias extends RoutedAlias {
         max = subCol.getCreationType();
       }
     }
-    return new CandidateCollection(max,destCol.toString(),col2Create.toString());
+    return new CandidateCollection(max, destCol.toString(), col2Create.toString());
   }
 
   @Override
@@ -196,7 +203,6 @@ public class DimensionalRoutedAlias extends RoutedAlias {
     }
     return head.toString();
   }
-
 
   /**
    * Determine the combination of adds/deletes implied by the arrival of a document destined for the
@@ -209,17 +215,17 @@ public class DimensionalRoutedAlias extends RoutedAlias {
   protected List<Action> calculateActions(String targetCol) {
     String[] routeValues = SEP_MATCHER.split(targetCol);
     // remove the alias name to avoid all manner of off by one errors...
-    routeValues = Arrays.copyOfRange(routeValues,1,routeValues.length);
+    routeValues = Arrays.copyOfRange(routeValues, 1, routeValues.length);
     List<List<Action>> dimActs = new ArrayList<>(routeValues.length);
     contextualizeDimensions(routeValues);
     for (int i = 0; i < routeValues.length; i++) {
       String routeValue = routeValues[i];
       RoutedAlias dim = dimensions.get(i);
-      dimActs.add(dim.calculateActions(dim.getAliasName() + getSeparatorPrefix(dim)+ routeValue) );
+      dimActs.add(dim.calculateActions(dim.getAliasName() + getSeparatorPrefix(dim) + routeValue));
     }
-    Set <Action> result = new LinkedHashSet<>();
+    Set<Action> result = new LinkedHashSet<>();
     StringBuilder currentSuffix = new StringBuilder();
-    for (int i = routeValues.length -1; i >=0 ; i--) { // also lowest up to match
+    for (int i = routeValues.length - 1; i >= 0; i--) { // also lowest up to match
       String routeValue = routeValues[i];
       RoutedAlias dim = dimensions.get(i);
       String dimStr = dim.getRoutedAliasType().getSeparatorPrefix() + routeValue;
@@ -227,10 +233,12 @@ public class DimensionalRoutedAlias extends RoutedAlias {
       for (Iterator<Action> iterator = actions.iterator(); iterator.hasNext(); ) {
         Action action = iterator.next();
         iterator.remove();
-        result.add(new Action(action.sourceAlias, action.actionType, action.targetCollection + currentSuffix));
+        result.add(
+            new Action(
+                action.sourceAlias, action.actionType, action.targetCollection + currentSuffix));
       }
       result.addAll(actions);
-      Set <Action> revisedResult = new LinkedHashSet<>();
+      Set<Action> revisedResult = new LinkedHashSet<>();
 
       for (Action action : result) {
         if (action.sourceAlias == dim) {
@@ -238,30 +246,35 @@ public class DimensionalRoutedAlias extends RoutedAlias {
           continue;
         }
         // the rest are from lower dimensions and thus require a prefix.
-        revisedResult.add(new Action(action.sourceAlias, action.actionType,dimStr + action.targetCollection));
+        revisedResult.add(
+            new Action(action.sourceAlias, action.actionType, dimStr + action.targetCollection));
       }
       result = revisedResult;
       currentSuffix.append(dimStr);
     }
-    Set <Action> revisedResult = new LinkedHashSet<>();
+    Set<Action> revisedResult = new LinkedHashSet<>();
     for (Action action : result) {
-      revisedResult.add(new Action(action.sourceAlias, action.actionType,getAliasName() + action.targetCollection));
+      revisedResult.add(
+          new Action(
+              action.sourceAlias, action.actionType, getAliasName() + action.targetCollection));
     }
     return new ArrayList<>(revisedResult);
   }
 
   private void contextualizeDimensions(String[] routeValues) {
     for (RoutedAlias dimension : dimensions) {
-      ((DraContextualized)dimension).setContext(routeValues);
+      ((DraContextualized) dimension).setContext(routeValues);
     }
   }
-
 
   private static String getSeparatorPrefix(RoutedAlias dim) {
     return dim.getRoutedAliasType().getSeparatorPrefix();
   }
 
-  private static void indexParams(Set<String> result, List<RoutedAlias> dimensions, Function<RoutedAlias, Set<String>> supplier) {
+  private static void indexParams(
+      Set<String> result,
+      List<RoutedAlias> dimensions,
+      Function<RoutedAlias, Set<String>> supplier) {
     for (int i = 0; i < dimensions.size(); i++) {
       RoutedAlias dimension = dimensions.get(i);
       Set<String> params = supplier.apply(dimension);
@@ -273,7 +286,12 @@ public class DimensionalRoutedAlias extends RoutedAlias {
 
   private interface DraContextualized {
 
-    static List<String> dimensionCollectionListView(int index, Aliases aliases, Deffered<DimensionalRoutedAlias> dra, String[] context, boolean ordered) {
+    static List<String> dimensionCollectionListView(
+        int index,
+        Aliases aliases,
+        Deffered<DimensionalRoutedAlias> dra,
+        String[] context,
+        boolean ordered) {
       List<String> cols = aliases.getCollectionAliasListMap().get(dra.get().name);
       LinkedHashSet<String> view = new LinkedHashSet<>(cols.size());
       List<RoutedAlias> dimensions = dra.get().dimensions;
@@ -284,18 +302,22 @@ public class DimensionalRoutedAlias extends RoutedAlias {
         }
         String[] split = SEP_MATCHER.split(col);
         if (split.length != dimensions.size() + 1) {
-          throw new IllegalStateException("Dimension Routed Alias collection with wrong number of dimensions. (" +
-              col + ") expecting " + dimensions.stream().map(d ->
-              d.getRoutedAliasType().toString()).collect(Collectors.toList()));
+          throw new IllegalStateException(
+              "Dimension Routed Alias collection with wrong number of dimensions. ("
+                  + col
+                  + ") expecting "
+                  + dimensions.stream()
+                      .map(d -> d.getRoutedAliasType().toString())
+                      .collect(Collectors.toList()));
         }
         boolean matchesAllHigherDims = index == 0;
-        boolean matchesAllLowerDims =  context == null || index == context.length - 1;
+        boolean matchesAllLowerDims = context == null || index == context.length - 1;
         if (context != null) {
           for (int i = 0; i < context.length; i++) {
             if (i == index) {
               continue;
             }
-            String s = split[i+1];
+            String s = split[i + 1];
             String ctx = context[i];
             if (i <= index) {
               matchesAllHigherDims |= s.equals(ctx);
@@ -308,8 +330,9 @@ public class DimensionalRoutedAlias extends RoutedAlias {
           matchesAllLowerDims = true;
         }
         // dimensions with an implicit order need to start from their initial configuration
-        // and count up to maintain order in the alias collection list with respect to that dimension
-        if (matchesAllHigherDims && !ordered || matchesAllHigherDims && matchesAllLowerDims) {
+        // and count up to maintain order in the alias collection list with respect to that
+        // dimension
+        if ((matchesAllHigherDims && !ordered) || (matchesAllHigherDims && matchesAllLowerDims)) {
           view.add("" + getSeparatorPrefix(dimensions.get(index)) + split[index + 1]);
         }
       }
@@ -319,12 +342,15 @@ public class DimensionalRoutedAlias extends RoutedAlias {
     void setContext(String[] context);
   }
 
-  private static class TimeRoutedAliasDimension extends TimeRoutedAlias implements DraContextualized {
+  private static class TimeRoutedAliasDimension extends TimeRoutedAlias
+      implements DraContextualized {
     private final int index;
     private final Deffered<DimensionalRoutedAlias> dra;
     private String[] context;
 
-    TimeRoutedAliasDimension(Map<String, String> props, int index, Deffered<DimensionalRoutedAlias> dra) throws SolrException {
+    TimeRoutedAliasDimension(
+        Map<String, String> props, int index, Deffered<DimensionalRoutedAlias> dra)
+        throws SolrException {
       super("", props);
       this.index = index;
       this.dra = dra;
@@ -341,12 +367,14 @@ public class DimensionalRoutedAlias extends RoutedAlias {
     }
   }
 
-  private static class CategoryRoutedAliasDimension extends CategoryRoutedAlias implements DraContextualized {
+  private static class CategoryRoutedAliasDimension extends CategoryRoutedAlias
+      implements DraContextualized {
     private final int index;
     private final Deffered<DimensionalRoutedAlias> dra;
     private String[] context;
 
-    CategoryRoutedAliasDimension(Map<String, String> props, int index, Deffered<DimensionalRoutedAlias> dra) {
+    CategoryRoutedAliasDimension(
+        Map<String, String> props, int index, Deffered<DimensionalRoutedAlias> dra) {
       super("", props);
       this.index = index;
       this.dra = dra;

@@ -19,7 +19,6 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
@@ -31,21 +30,16 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class HelloStream extends TupleStream implements Expressible{
+public class HelloStream extends TupleStream implements Expressible {
 
   boolean isSentHelloWorld = false;
 
-  public HelloStream() {
-  }
+  public HelloStream() {}
 
-  public HelloStream(StreamExpression expression, StreamFactory factory) throws IOException{
-
-  }
+  public HelloStream(StreamExpression expression, StreamFactory factory) {}
 
   @Override
-  public void setStreamContext(StreamContext context) {
-
-  }
+  public void setStreamContext(StreamContext context) {}
 
   @Override
   public List<TupleStream> children() {
@@ -53,17 +47,13 @@ public class HelloStream extends TupleStream implements Expressible{
   }
 
   @Override
-  public void open() throws IOException {
-
-  }
+  public void open() {}
 
   @Override
-  public void close() throws IOException {
-
-  }
+  public void close() {}
 
   @Override
-  public Tuple read() throws IOException {
+  public Tuple read() {
     if (isSentHelloWorld) {
       return Tuple.EOF();
     } else {
@@ -79,12 +69,11 @@ public class HelloStream extends TupleStream implements Expressible{
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()));
   }
 
   @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
+  public Explanation toExplanation(StreamFactory factory) {
     return new StreamExplanation(getStreamNodeId().toString())
         .withFunctionName("hello")
         .withImplementingClass(this.getClass().getName())

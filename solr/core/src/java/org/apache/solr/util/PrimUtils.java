@@ -15,22 +15,25 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
+
 /** Utilities for primitive Java data types. */
 public class PrimUtils {
 
-  public static abstract class IntComparator {
+  public abstract static class IntComparator {
     public abstract int compare(int a, int b);
+
     public boolean lessThan(int a, int b) {
-      return compare(a,b) < 0;
+      return compare(a, b) < 0;
     }
+
     public boolean equals(int a, int b) {
-      return compare(a,b) == 0;
+      return compare(a, b) == 0;
     }
   }
 
-  /** Sort the integer array from "start" inclusive to "end" exclusive in ascending order,
-   *  using the provided comparator.
-   * TODO: is this an unstable sort?
+  /**
+   * Sort the integer array from "start" inclusive to "end" exclusive in ascending order, using the
+   * provided comparator. TODO: is this an unstable sort?
    */
   public static void sort(int start, int end, int[] array, IntComparator comparator) {
     // This code was copied from Apache Harmony's Arrays.sort(double[]) and modified
@@ -55,10 +58,9 @@ public class PrimUtils {
       int top = end - 1;
       if (length > 40) {
         length >>= 3;
-        bottom = med3(array, bottom, bottom + length, bottom
-            + (length<<1), comparator);
+        bottom = med3(array, bottom, bottom + length, bottom + (length << 1), comparator);
         middle = med3(array, middle - length, middle, middle + length, comparator);
-        top = med3(array, top - (length<<1), top - length, top, comparator);
+        top = med3(array, top - (length << 1), top - length, top, comparator);
       }
       middle = med3(array, bottom, middle, top, comparator);
     }
@@ -116,7 +118,8 @@ public class PrimUtils {
 
   private static int med3(int[] array, int a, int b, int c, IntComparator comparator) {
     int x = array[a], y = array[b], z = array[c];
-    return comparator.lessThan(x, y) ? (comparator.lessThan(y, z) ? b : (comparator.lessThan(x, z) ? c : a))
+    return comparator.lessThan(x, y)
+        ? (comparator.lessThan(y, z) ? b : (comparator.lessThan(x, z) ? c : a))
         : (comparator.lessThan(z, y) ? b : (comparator.lessThan(z, x) ? c : a));
   }
 }

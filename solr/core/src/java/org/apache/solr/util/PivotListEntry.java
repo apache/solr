@@ -16,15 +16,12 @@
  */
 package org.apache.solr.util;
 
+import java.util.Locale;
 import org.apache.solr.common.util.NamedList;
 
-import java.util.Locale;
-
-/**
- * Enum for modeling the elements of a (nested) pivot entry as expressed in a NamedList
- */
+/** Enum for modeling the elements of a (nested) pivot entry as expressed in a NamedList */
 public enum PivotListEntry {
-  
+
   // mandatory entries with exact indexes
   FIELD(0),
   VALUE(1),
@@ -34,25 +31,27 @@ public enum PivotListEntry {
   STATS,
   QUERIES,
   RANGES;
-  
+
   private static final int MIN_INDEX_OF_OPTIONAL = 3;
 
-  /** 
-   * Given a NamedList representing a Pivot Value, this is Minimum Index at 
-   * which this PivotListEntry may exist 
+  /**
+   * Given a NamedList representing a Pivot Value, this is Minimum Index at which this
+   * PivotListEntry may exist
    */
   private final int minIndex;
-  
+
   private PivotListEntry() {
     this.minIndex = MIN_INDEX_OF_OPTIONAL;
   }
+
   private PivotListEntry(int minIndex) {
     assert minIndex < MIN_INDEX_OF_OPTIONAL;
     this.minIndex = minIndex;
   }
-  
+
   /**
    * Case-insensitive lookup of PivotListEntry by name
+   *
    * @see #getName
    */
   public static PivotListEntry get(String name) {
@@ -61,15 +60,16 @@ public enum PivotListEntry {
 
   /**
    * Name of this entry when used in response
+   *
    * @see #get
    */
   public String getName() {
     return name().toLowerCase(Locale.ROOT);
   }
-  
+
   /**
-   * Given a {@link NamedList} representing a Pivot Value, extracts the Object 
-   * which corresponds to this {@link PivotListEntry}, or returns null if not found.
+   * Given a {@link NamedList} representing a Pivot Value, extracts the Object which corresponds to
+   * this {@link PivotListEntry}, or returns null if not found.
    */
   public <T> T extract(NamedList<T> pivotList) {
     if (this.minIndex < MIN_INDEX_OF_OPTIONAL) {
@@ -82,5 +82,4 @@ public enum PivotListEntry {
     // scan starting at the min/optional index
     return pivotList.get(this.getName(), this.minIndex);
   }
-
 }

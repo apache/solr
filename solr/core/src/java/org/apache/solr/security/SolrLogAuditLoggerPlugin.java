@@ -18,14 +18,14 @@ package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Audit logger that writes to the Solr log.
- * This interface may change in next release and is marked experimental
+ * Audit logger that writes to the Solr log. This interface may change in next release and is marked
+ * experimental
+ *
  * @since 8.1.0
  * @lucene.experimental
  */
@@ -34,30 +34,52 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
 
   /**
    * Initialize the plugin from security.json
+   *
    * @param pluginConfig the config for the plugin
    */
   @Override
   public void init(Map<String, Object> pluginConfig) {
     super.init(pluginConfig);
-    setFormatter(event ->
-        new StringBuilder()
-            .append("type=\"").append(event.getEventType().name()).append("\"")
-            .append(" message=\"").append(event.getMessage()).append("\"")
-            .append(" method=\"").append(event.getHttpMethod()).append("\"")
-            .append(" status=\"").append(event.getStatus()).append("\"")
-            .append(" requestType=\"").append(event.getRequestType()).append("\"")
-            .append(" username=\"").append(event.getUsername()).append("\"")
-            .append(" resource=\"").append(event.getResource()).append("\"")
-            .append(" queryString=\"").append(event.getHttpQueryString()).append("\"")
-            .append(" collections=").append(event.getCollections()).toString());
+    setFormatter(
+        event ->
+            "type=\""
+                + event.getEventType().name()
+                + "\""
+                + " message=\""
+                + event.getMessage()
+                + "\""
+                + " method=\""
+                + event.getHttpMethod()
+                + "\""
+                + " status=\""
+                + event.getStatus()
+                + "\""
+                + " requestType=\""
+                + event.getRequestType()
+                + "\""
+                + " username=\""
+                + event.getUsername()
+                + "\""
+                + " resource=\""
+                + event.getResource()
+                + "\""
+                + " queryString=\""
+                + event.getHttpQueryString()
+                + "\""
+                + " collections="
+                + event.getCollections());
     if (pluginConfig.size() > 0) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Plugin config was not fully consumed. Remaining parameters are " + pluginConfig);
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE,
+          "Plugin config was not fully consumed. Remaining parameters are " + pluginConfig);
     }
-    log.debug("Initialized SolrLogAuditLoggerPlugin");  
+    log.debug("Initialized SolrLogAuditLoggerPlugin");
   }
-  
+
   /**
-   * Audit logs an event to Solr log. The event should be a {@link AuditEvent} to be able to pull context info
+   * Audit logs an event to Solr log. The event should be a {@link AuditEvent} to be able to pull
+   * context info
+   *
    * @param event the event to log
    */
   @Override

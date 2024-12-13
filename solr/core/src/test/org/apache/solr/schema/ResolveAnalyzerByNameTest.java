@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -26,11 +25,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * This is a simple test to make sure the schema loads when
- * provided analyzers resolve tokenizer/tokenfilter/charfilter factories by (SPI) name.
- *
+ * This is a simple test to make sure the schema loads when provided analyzers resolve
+ * tokenizer/tokenfilter/charfilter factories by (SPI) name.
  */
-
 public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -39,14 +36,24 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testAnalyzerUsableForQueries() throws Exception {
+    assertQ(req("text2:bogus"), "//*[@numFound='0']");
+  }
+
+  public void testAnalyzerUsableForIndexing() throws Exception {
+    assertU(adoc("text2", "fat cat"));
+    assertU(commit());
+  }
+
+  @Test
   public void testSchemaLoadingSimpleAnalyzer() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-    assertTrue( schema.getFieldTypes().containsKey("text_ws") );
+    assertTrue(schema.getFieldTypes().containsKey("text_ws"));
     @SuppressWarnings({"unchecked"})
     SimpleOrderedMap<Object> analyzerProps =
-        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text_ws")
-        .getNamedPropertyValues(true).get("analyzer");
+        (SimpleOrderedMap<Object>)
+            schema.getFieldTypeByName("text_ws").getNamedPropertyValues(true).get("analyzer");
     checkTokenizerName(analyzerProps, "whitespace");
 
     assertNotNull(schema.getFieldTypeByName("text_ws").getIndexAnalyzer());
@@ -57,21 +64,41 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
   public void testSchemaLoadingComplexAnalyzer() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-    assertTrue( schema.getFieldTypes().containsKey("text") );
+    assertTrue(schema.getFieldTypes().containsKey("text"));
 
     @SuppressWarnings({"unchecked"})
     SimpleOrderedMap<Object> indexAnalyzerProps =
-        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text")
-            .getNamedPropertyValues(true).get("indexAnalyzer");
+        (SimpleOrderedMap<Object>)
+            schema.getFieldTypeByName("text").getNamedPropertyValues(true).get("indexAnalyzer");
     checkTokenizerName(indexAnalyzerProps, "whitespace");
-    checkTokenFilterNames(indexAnalyzerProps, new String[]{"stop", "wordDelimiterGraph", "lowercase", "keywordMarker", "porterStem", "removeDuplicates", "flattenGraph"});
+    checkTokenFilterNames(
+        indexAnalyzerProps,
+        new String[] {
+          "stop",
+          "wordDelimiterGraph",
+          "lowercase",
+          "keywordMarker",
+          "porterStem",
+          "removeDuplicates",
+          "flattenGraph"
+        });
 
     @SuppressWarnings({"unchecked"})
     SimpleOrderedMap<Object> queryAnalyzerProps =
-        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text")
-            .getNamedPropertyValues(true).get("queryAnalyzer");
+        (SimpleOrderedMap<Object>)
+            schema.getFieldTypeByName("text").getNamedPropertyValues(true).get("queryAnalyzer");
     checkTokenizerName(queryAnalyzerProps, "whitespace");
-    checkTokenFilterNames(queryAnalyzerProps, new String[]{"synonymGraph", "stop", "wordDelimiterGraph", "lowercase", "keywordMarker", "porterStem", "removeDuplicates"});
+    checkTokenFilterNames(
+        queryAnalyzerProps,
+        new String[] {
+          "synonymGraph",
+          "stop",
+          "wordDelimiterGraph",
+          "lowercase",
+          "keywordMarker",
+          "porterStem",
+          "removeDuplicates"
+        });
 
     assertNotNull(schema.getFieldTypeByName("text").getIndexAnalyzer());
     assertNotNull(schema.getFieldTypeByName("text").getQueryAnalyzer());
@@ -81,13 +108,16 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
   public void testSchemaLoadingAnalyzerWithCharFilters() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-    assertTrue( schema.getFieldTypes().containsKey("charfilthtmlmap") );
+    assertTrue(schema.getFieldTypes().containsKey("charfilthtmlmap"));
     @SuppressWarnings({"unchecked"})
     SimpleOrderedMap<Object> analyzerProps =
-        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("charfilthtmlmap")
-            .getNamedPropertyValues(true).get("analyzer");
+        (SimpleOrderedMap<Object>)
+            schema
+                .getFieldTypeByName("charfilthtmlmap")
+                .getNamedPropertyValues(true)
+                .get("analyzer");
     checkTokenizerName(analyzerProps, "whitespace");
-    checkCharFilterNames(analyzerProps, new String[]{"htmlStrip", "mapping"});
+    checkCharFilterNames(analyzerProps, new String[] {"htmlStrip", "mapping"});
 
     assertNotNull(schema.getFieldTypeByName("charfilthtmlmap").getIndexAnalyzer());
     assertNotNull(schema.getFieldTypeByName("charfilthtmlmap").getQueryAnalyzer());
@@ -115,14 +145,16 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
 
   private void checkTokenizerName(SimpleOrderedMap<Object> analyzerProps, String name) {
     @SuppressWarnings({"unchecked"})
-    SimpleOrderedMap<Object> tokenizerProps = (SimpleOrderedMap<Object>)analyzerProps.get("tokenizer");
+    SimpleOrderedMap<Object> tokenizerProps =
+        (SimpleOrderedMap<Object>) analyzerProps.get("tokenizer");
     assertNull(tokenizerProps.get("class"));
     assertEquals(name, tokenizerProps.get("name"));
   }
 
   private void checkTokenFilterNames(SimpleOrderedMap<Object> analyzerProps, String[] names) {
     @SuppressWarnings({"unchecked"})
-    List<SimpleOrderedMap<Object>> tokenFilterProps = (List<SimpleOrderedMap<Object>>)analyzerProps.get("filters");
+    List<SimpleOrderedMap<Object>> tokenFilterProps =
+        (List<SimpleOrderedMap<Object>>) analyzerProps.get("filters");
     assertEquals(names.length, tokenFilterProps.size());
     for (int i = 0; i < names.length; i++) {
       assertNull(tokenFilterProps.get(i).get("class"));
@@ -132,7 +164,8 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
 
   private void checkCharFilterNames(SimpleOrderedMap<Object> analyzerProps, String[] names) {
     @SuppressWarnings({"unchecked"})
-    List<SimpleOrderedMap<Object>> charFilterProps = (List<SimpleOrderedMap<Object>>)analyzerProps.get("charFilters");
+    List<SimpleOrderedMap<Object>> charFilterProps =
+        (List<SimpleOrderedMap<Object>>) analyzerProps.get("charFilters");
     assertEquals(names.length, charFilterProps.size());
     for (int i = 0; i < names.length; i++) {
       assertNull(charFilterProps.get(i).get("class"));

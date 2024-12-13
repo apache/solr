@@ -21,7 +21,6 @@ import os
 from enum import Enum
 import time
 import urllib.request, urllib.error, urllib.parse
-import urllib.parse
 
 class Version(object):
   def __init__(self, major, minor, bugfix, prerelease):
@@ -157,7 +156,10 @@ def download(name, urlString, tmpDir, quiet=False, force_clean=True):
 
 
 def attemptDownload(urlString, fileName):
-  fIn = urllib.request.urlopen(urlString)
+  raw_request = urllib.request.Request(urlString)
+  raw_request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0')
+  raw_request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+  fIn = urllib.request.urlopen(raw_request)
   fOut = open(fileName, 'wb')
   success = False
   try:
@@ -176,10 +178,21 @@ def attemptDownload(urlString, fileName):
       os.remove(fileName)
 
 version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
+
+lucene_version_prop_re = re.compile(r'org\.apache\.lucene:\*=(.*?)\n')
+
 def find_current_version():
   script_path = os.path.dirname(os.path.realpath(__file__))
   top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
   return version_prop_re.search(open('%s/build.gradle' % top_level_dir).read()).group(2).strip()
+
+
+def find_current_lucene_version():
+  script_path = os.path.dirname(os.path.realpath(__file__))
+  top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
+  versions_file = open('%s/versions.props' % top_level_dir).read()
+  return lucene_version_prop_re.search(versions_file).group(1).strip()
+
 
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')

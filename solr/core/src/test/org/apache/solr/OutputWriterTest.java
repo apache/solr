@@ -18,7 +18,6 @@ package org.apache.solr;
 
 import java.io.IOException;
 import java.io.Writer;
-
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.request.SolrQueryRequest;
@@ -27,77 +26,70 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Tests the ability to configure multiple query output writers, and select those
- * at query time.
- *
- */
+/** Tests the ability to configure multiple query output writers, and select those at query time. */
 public class OutputWriterTest extends SolrTestCaseJ4 {
 
-    /** The XML string that's output for testing purposes. */
-    public static final String USELESS_OUTPUT = "useless output";
+  /** The XML string that's output for testing purposes. */
+  public static final String USELESS_OUTPUT = "useless output";
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
-      initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
-    }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
+  }
 
+  /**
+   * responseHeader has changed in SOLR-59, check old and new variants, In SOLR-2413, we removed
+   * support for the deprecated versions
+   */
+  @Test
+  public void testSOLR59responseHeaderVersions() {
+    // default version is 2.2, with "new" responseHeader
+    lrf.args.remove(CommonParams.VERSION);
+    lrf.args.put("wt", "standard");
+    assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
+    lrf.args.remove("wt");
+    assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
 
-    /**
-     * responseHeader has changed in SOLR-59, check old and new variants,
-     * In SOLR-2413, we removed support for the deprecated versions
-     */
-    @Test
-    public void testSOLR59responseHeaderVersions() {
-        // default version is 2.2, with "new" responseHeader
-        lrf.args.remove(CommonParams.VERSION);
-        lrf.args.put("wt", "standard");
-        assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
-        lrf.args.remove("wt");
-        assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
+    // and explicit 2.2 works as default
+    // lrf.args.put("version", "2.2");
+    lrf.args.put("wt", "standard");
+    assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
+    lrf.args.remove("wt");
+    assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
+  }
 
-        // and explicit 2.2 works as default
-        //lrf.args.put("version", "2.2");
-        lrf.args.put("wt", "standard");
-        assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
-        lrf.args.remove("wt");
-        assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
-    }
+  @Test
+  public void testUselessWriter() throws Exception {
+    lrf.args.put("wt", "useless");
+    String out = h.query(req("foo"));
+    assertEquals(USELESS_OUTPUT, out);
+  }
 
-    @Test
-    public void testUselessWriter() throws Exception {
-        lrf.args.put("wt", "useless");
-        String out = h.query(req("foo"));
-        assertEquals(USELESS_OUTPUT, out);
-    }
+  public void testLazy() {
+    PluginBag.PluginHolder<QueryResponseWriter> qrw =
+        h.getCore().getResponseWriters().getRegistry().get("useless");
+    assertTrue("Should be a lazy class", qrw instanceof PluginBag.LazyPluginHolder);
 
-    public void testLazy() {
-        PluginBag.PluginHolder<QueryResponseWriter> qrw = h.getCore().getResponseWriters().getRegistry().get("useless");
-        assertTrue("Should be a lazy class", qrw instanceof PluginBag.LazyPluginHolder);
+    qrw = h.getCore().getResponseWriters().getRegistry().get("xml");
+    assertTrue("Should not be a lazy class", qrw.isLoaded());
+    assertSame("Should not be a lazy class", qrw.getClass(), PluginBag.PluginHolder.class);
+  }
 
-        qrw = h.getCore().getResponseWriters().getRegistry().get("xml");
-        assertTrue("Should not be a lazy class", qrw.isLoaded());
-        assertTrue("Should not be a lazy class", qrw.getClass() == PluginBag.PluginHolder.class);
+  ////////////////////////////////////////////////////////////////////////////
+  /** An output writer that doesn't do anything useful. */
+  public static class UselessOutputWriter implements QueryResponseWriter {
 
-    }
+    public UselessOutputWriter() {}
 
-    ////////////////////////////////////////////////////////////////////////////
-    /** An output writer that doesn't do anything useful. */
-
-    public static class UselessOutputWriter implements QueryResponseWriter {
-
-        public UselessOutputWriter() {}
-
-        @Override
-        public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+    @Override
+    public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
         throws IOException {
-            writer.write(USELESS_OUTPUT);
-        }
-
-      @Override
-      public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        return CONTENT_TYPE_TEXT_UTF8;
-      }
-
+      writer.write(USELESS_OUTPUT);
     }
 
+    @Override
+    public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+      return CONTENT_TYPE_TEXT_UTF8;
+    }
+  }
 }

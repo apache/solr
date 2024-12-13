@@ -18,30 +18,27 @@ package org.apache.solr.search.stats;
 
 import org.apache.lucene.search.CollectionStatistics;
 
-/**
- * Modifiable version of {@link CollectionStatistics} useful for
- * aggregation of per-shard stats.
- */
+/** Modifiable version of {@link CollectionStatistics} useful for aggregation of per-shard stats. */
 public class CollectionStats {
   public final String field;
   public long maxDoc;
   public long docCount;
   public long sumTotalTermFreq;
   public long sumDocFreq;
-  
+
   public CollectionStats(String field) {
     this.field = field;
   }
-  
-  public CollectionStats(String field, long maxDoc, long docCount,
-          long sumTotalTermFreq, long sumDocFreq) {
+
+  public CollectionStats(
+      String field, long maxDoc, long docCount, long sumTotalTermFreq, long sumDocFreq) {
     this.field = field;
     this.maxDoc = maxDoc;
     this.docCount = docCount;
     this.sumTotalTermFreq = sumTotalTermFreq;
     this.sumDocFreq = sumDocFreq;
   }
-  
+
   public CollectionStats(CollectionStatistics stats) {
     this.field = stats.field();
     this.maxDoc = stats.maxDoc();
@@ -56,14 +53,15 @@ public class CollectionStats {
     this.sumTotalTermFreq += stats.sumTotalTermFreq;
     this.sumDocFreq += stats.sumDocFreq;
   }
-  
+
   public CollectionStatistics toCollectionStatistics() {
     if (maxDoc == 0 || docCount == 0) {
       return null;
     }
     return new CollectionStatistics(field, maxDoc, docCount, sumTotalTermFreq, sumDocFreq);
   }
-  
+
+  @Override
   public String toString() {
     return StatsUtil.colStatsToString(this);
   }

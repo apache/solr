@@ -19,7 +19,10 @@ package org.apache.solr.servlet.cache;
 import java.util.Locale;
 
 public enum Method {
-  GET, POST, HEAD, OTHER;
+  GET,
+  POST,
+  HEAD,
+  OTHER;
 
   public static Method getMethod(String method) {
     try {

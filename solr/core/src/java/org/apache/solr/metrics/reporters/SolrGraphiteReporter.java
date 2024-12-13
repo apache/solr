@@ -16,21 +16,17 @@
  */
 package org.apache.solr.metrics.reporters;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.graphite.GraphiteSender;
 import com.codahale.metrics.graphite.PickledGraphite;
-
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 
-/**
- * Metrics reporter that wraps {@link com.codahale.metrics.graphite.GraphiteReporter}.
- */
+/** Metrics reporter that wraps {@link com.codahale.metrics.graphite.GraphiteReporter}. */
 public class SolrGraphiteReporter extends FilteringSolrMetricReporter {
 
   private String host = null;
@@ -39,14 +35,14 @@ public class SolrGraphiteReporter extends FilteringSolrMetricReporter {
   private String instancePrefix = null;
   private GraphiteReporter reporter = null;
 
-  private static final ReporterClientCache<GraphiteSender> serviceRegistry = new ReporterClientCache<>();
+  private static final ReporterClientCache<GraphiteSender> serviceRegistry =
+      new ReporterClientCache<>();
 
   /**
    * Create a Graphite reporter for metrics managed in a named registry.
    *
    * @param metricManager metric manager instance that manages the selected registry
-   * @param registryName  registry to use, one of registries managed by
-   *                      {@link SolrMetricManager}
+   * @param registryName registry to use, one of registries managed by {@link SolrMetricManager}
    */
   public SolrGraphiteReporter(SolrMetricManager metricManager, String registryName) {
     super(metricManager, registryName);
@@ -85,11 +81,11 @@ public class SolrGraphiteReporter extends FilteringSolrMetricReporter {
     } else {
       instancePrefix = instancePrefix + "." + registryName;
     }
-    GraphiteReporter.Builder builder = GraphiteReporter
-        .forRegistry(metricManager.registry(registryName))
-        .prefixedWith(instancePrefix)
-        .convertRatesTo(TimeUnit.SECONDS)
-        .convertDurationsTo(TimeUnit.MILLISECONDS);
+    GraphiteReporter.Builder builder =
+        GraphiteReporter.forRegistry(metricManager.registry(registryName))
+            .prefixedWith(instancePrefix)
+            .convertRatesTo(TimeUnit.SECONDS)
+            .convertDurationsTo(TimeUnit.MILLISECONDS);
     final MetricFilter filter = newMetricFilter();
     builder = builder.filter(filter);
     reporter = builder.build(graphite);
@@ -99,13 +95,16 @@ public class SolrGraphiteReporter extends FilteringSolrMetricReporter {
   @Override
   protected void validate() throws IllegalStateException {
     if (host == null) {
-      throw new IllegalStateException("Init argument 'host' must be set to a valid Graphite server name.");
+      throw new IllegalStateException(
+          "Init argument 'host' must be set to a valid Graphite server name.");
     }
     if (port == -1) {
-      throw new IllegalStateException("Init argument 'port' must be set to a valid Graphite server port.");
+      throw new IllegalStateException(
+          "Init argument 'port' must be set to a valid Graphite server port.");
     }
     if (period < 1) {
-      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
+      throw new IllegalStateException(
+          "Init argument 'period' is in time unit 'seconds' and must be at least 1.");
     }
   }
 

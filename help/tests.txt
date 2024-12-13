@@ -68,17 +68,17 @@ Test groups
 -----------
 
 Tests can be filtered by an annotation they're marked with.
-Some test group annotations include: @AwaitsFix, @Nightly, @Slow
+Some test group annotations include: @AwaitsFix, @Nightly, @Monster
 
 This uses filtering infrastructure on the *runner* (randomizedtesting), 
 not gradle's built-in mechanisms (but it can be combined with "--tests").
-For example, run all solr-core tests annotated as @Slow:
+For example, run all solr-core tests annotated as @Nightly:
 
-gradlew -p solr/core test -Ptests.filter=@Slow
+gradlew -p solr/core test -Ptests.filter=@Nightly
 
 Test group filters can be combined into Boolean expressions:
 
-gradlew -p solr/core test "default and not(@awaitsfix or @slow)"
+gradlew -p solr/core test -Ptests.filter="default and not(@awaitsfix)"
 
 
 Reiteration ("beasting")
@@ -90,14 +90,14 @@ within the same JVM; it also works in IDEs):
 gradlew -p solr/core test --tests TestDemo -Ptests.iters=5
 
 Tests tasks will be (by default) re-executed on each invocation because
-we pick a random global tests.seed. If you run the same tests twice
-with the same seed, the test task will be skipped (as it is up-to-date
-with respect to source code):
+we pick a random global tests.seed and because we want them to (force
+the test task to run). If you want to make the 'tests' task obey up-to-date
+gradle rules, fix the seed and turn off up to date trigger:
 
-gradlew -p solr/core test -Ptests.seed=deadbeef
+gradlew -p solr/core test -Ptests.seed=deadbeef -Ptests.neverUpToDate=false
 
-to force re-execution of tests, even for the same master seed, apply
-cleanTest task:
+These properties can be set in your local gradle.properties. To force re-execution 
+of tests, even for the same master seed, apply cleanTest task:
 
 gradlew -p solr/core cleanTest test -Ptests.seed=deadbeef
 

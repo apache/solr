@@ -19,7 +19,7 @@ limitations under the License.
   <div id="ui-block" style="display:none">&nbsp;</div><!-- @todo what is this for? -->
 
   <div class="actions clearfix">
-    <div class="action add" data-rel="add" ng-show="showAdd" style="left:0px">
+    <div class="action add" data-rel="add" ng-show="showAdd" style="left:0px;width:500px">
 
       <form>
 
@@ -34,8 +34,13 @@ limitations under the License.
         <p class="clearfix"><label for="add_numShards">numShards:</label>
           <input type="text" name="numShards" id="add_numShards" ng-model="newCollection.numShards"></p>
 
-        <p class="clearfix"><label for="add_replicationFactor">replicationFactor:</label>
-          <input type="text" name="replicationFactor" id="add_replicationFactor" ng-model="newCollection.replicationFactor"></p>
+        <p class="clearfix replication-factor" ng-disabled="replicaTypesChosen()"><label for="add_replicationFactor">replicationFactor:</label>
+          <input type="text" name="replicationFactor" id="add_replicationFactor"
+            ng-model="newCollection.replicationFactor"
+            ng-disabled="replicaTypesChosen()"
+            class="replication-factor"
+          >
+        </p>
 
         <p class="clearfix"><a ng-click="showAdvanced=!showAdvanced">
           <span id="add_advanced" ng-class="{open: showAdvanced}">Show advanced</span></a></p>
@@ -55,13 +60,33 @@ limitations under the License.
           <p class="clearfix"><label for="add_routerField">router.field:</label>
             <input type="text" name="routerField" id="add_routerField" ng-model="newCollection.routerField"></p>
 
+          <p class="clearfix"><label for="add_createNodeSet">createNodeSet:</label>
+            <select
+              chosen
+              multiple
+              disable-search="true"
+              ng-model="newCollection.createNodeSet"
+              ng-options="node for node in availableNodeSet">
+            </select>
+          </p>
+
+          <p>Replica Types: </p>
+          <p class="clearfix"><Label for="add_nrtReplicas">nrt replicas:</Label>
+            <input type="text" name="nrtReplicas" id="add_nrtReplicas" ng-model="newCollection.nrtReplicas"></p>
+          <p class="clearfix"><Label for="add_tlogReplicas">tlog replicas:</Label>
+            <input type="text" name="tlogReplicas" id="add_tlogReplicas" ng-model="newCollection.tlogReplicas"></p>
+          <p class="clearfix"><Label for="add_pullReplicas">pull replicas:</Label>
+            <input type="text" name="pullReplicas" id="add_pullReplicas" ng-model="newCollection.pullReplicas"></p>
+
         </div>
         <p class="clearfix note error" ng-show="addMessage">
           <span>{{addMessage}}</span>
         </p>
 
         <p class="clearfix buttons">
-          <button type="submit" class="submit" ng-click="addCollection()"><span>Add Collection</span></button>
+          <button type="submit" ng-class="{submit,disabled:!isPermitted(permissions.COLL_EDIT_PERM)}" ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)" ng-click="addCollection()">
+            <span>Add Collection</span>
+          </button>
           <button type="reset" class="reset" ng-click="cancelAddCollection()"><span>Cancel</span></button>
         </p>
 
@@ -87,7 +112,7 @@ limitations under the License.
         </p>
 
         <p class="clearfix buttons">
-          <button class="submit" ng-click="createAlias()"><span>Create Alias</span></button>
+          <button ng-class="{submit,disabled:!isPermitted(permissions.COLL_EDIT_PERM)}" ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)" ng-click="createAlias()"><span>Create Alias</span></button>
           <button type="reset" class="reset" ng-click="cancelCreateAlias()"><span>Cancel</span></button>
         </p>
       </form>
@@ -99,10 +124,11 @@ limitations under the License.
 
     <div id="actions" class="actions clearfix" ng-show="collection">
 
-      <button id="delete-collection" class="warn requires-core" ng-click="showDeleteCollection()" ng-show="collection && collection.type === 'collection'"><span>Delete collection</span></button>
-      <button id="delete-alias" class="action requires-core" ng-click="toggleDeleteAlias()" ng-show="collection && collection.type === 'alias'"><span>Delete alias</span></button>
-      <button id="reload" class="requires-core" ng-click="reloadCollection()" ng-show="collection && collection.type === 'collection'"
-         ng-class="{success: reloadSuccess, warn: reloadFailure}"><span>Reload</span></button>
+      <button id="delete-collection" ng-class="{warn,disabled:!isPermitted(permissions.COLL_EDIT_PERM)}" ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)" ng-click="showDeleteCollection()" ng-show="collection && collection.type === 'collection'"><span>Delete collection</span></button>
+      <button id="delete-alias" ng-class="{action,disabled:!isPermitted(permissions.COLL_EDIT_PERM)}" ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)" ng-click="toggleDeleteAlias()" ng-show="collection && collection.type === 'alias'"><span>Delete alias</span></button>
+      <button id="reload" ng-click="reloadCollection()" ng-show="collection && collection.type === 'collection'"
+              ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)"
+              ng-class="{success: reloadSuccess, warn: reloadFailure, disabled:!isPermitted(permissions.COLL_EDIT_PERM)}"><span>Reload</span></button>
 
       <div class="action delete" ng-show="showDelete">
 
@@ -372,12 +398,12 @@ limitations under the License.
   </div>
 
   <div id="navigation" class="requires-core clearfix">
-    <button id="add" class="action" ng-click="showAddCollection()"><span>Add Collection</span></button>
+    <button id="add" ng-class="{action,disabled:!isPermitted(permissions.COLL_EDIT_PERM)}" ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)" ng-click="showAddCollection()"><span>Add Collection</span></button>
     <ul>
       <li ng-repeat="c in collections" ng-class="{current: collection.name == c.name && collection.type === 'collection'}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
     </ul>
     <hr/>
-    <button id="create-alias" class="action requires-core" ng-click="toggleCreateAlias()" ng-disabled="collections.length == 0"><span>Create Alias</span></button>
+    <button id="create-alias" ng-class="{action,disabled:!isPermitted(permissions.COLL_EDIT_PERM)}" ng-click="toggleCreateAlias()" ng-disabled="collections.length == 0 || !isPermitted(permissions.COLL_EDIT_PERM)"><span>Create Alias</span></button>
     <ul>
       <li ng-repeat="c in aliases" ng-class="{current: collection.name == c.name && collection.type === 'alias'}"><a href="#~collections/alias_{{c.name}}">{{c.name}}</a></li>
     </ul>

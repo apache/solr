@@ -16,7 +16,6 @@
  */
 package org.apache.solr.logging;
 
-
 public class ListenerConfig {
 
   public final int size;
@@ -30,6 +29,6 @@ public class ListenerConfig {
   public ListenerConfig() {
     this(50, null);
   }
-  
+
   // Down the line, settings for solr URL/core to store logging
 }

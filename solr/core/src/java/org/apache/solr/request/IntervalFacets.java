@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -51,44 +50,47 @@ import org.apache.solr.search.SyntaxError;
 
 /**
  * Computes interval facets for docvalues field (single or multivalued).
- * <p>
- * Given a set of intervals for a field and a DocSet, it calculates the number
- * of documents that match each of the intervals provided. The final count for
- * each interval should be exactly the same as the number of results of a range
- * query using the DocSet and the range as filters. This means that the count
- * of {@code facet.query=field:[A TO B]} should be the same as the count of
- * {@code f.field.facet.interval.set=[A,B]}, however, this method will usually
- * be faster in cases where there are a larger number of intervals per field.
- * <p>
- * To use this class, create an instance using
- * {@link #IntervalFacets(SchemaField, SolrIndexSearcher, DocSet, String[], SolrParams)}
- * and then iterate the {@link FacetInterval} using {@link #iterator()}
- * <p>
- * Intervals Format<br>
- * Intervals must begin with either '(' or '[', be followed by the start value,
- * then a comma ',', the end value, and finally ')' or ']'. For example:
+ *
+ * <p>Given a set of intervals for a field and a DocSet, it calculates the number of documents that
+ * match each of the intervals provided. The final count for each interval should be exactly the
+ * same as the number of results of a range query using the DocSet and the range as filters. This
+ * means that the count of {@code facet.query=field:[A TO B]} should be the same as the count of
+ * {@code f.field.facet.interval.set=[A,B]}, however, this method will usually be faster in cases
+ * where there are a larger number of intervals per field.
+ *
+ * <p>To use this class, create an instance using {@link #IntervalFacets(SchemaField,
+ * SolrIndexSearcher, DocSet, String[], SolrParams)} and then iterate the {@link FacetInterval}
+ * using {@link #iterator()}
+ *
+ * <p>Intervals Format<br>
+ * Intervals must begin with either '(' or '[', be followed by the start value, then a comma ',',
+ * the end value, and finally ')' or ']'. For example:
+ *
  * <ul>
- * <li> (1,10) -&gt; will include values greater than 1 and lower than 10
- * <li> [1,10) -&gt; will include values greater or equal to 1 and lower than 10
- * <li> [1,10] -&gt; will include values greater or equal to 1 and lower or equal to 10
+ *   <li>(1,10) -&gt; will include values greater than 1 and lower than 10
+ *   <li>[1,10) -&gt; will include values greater or equal to 1 and lower than 10
+ *   <li>[1,10] -&gt; will include values greater or equal to 1 and lower or equal to 10
  * </ul>
- * The initial and end values can't be empty, if the interval needs to be unbounded,
- * the special character '*' can be used for both, start and end limit. When using
- * '*', '(' and '[', and ')' and ']' will be treated equal. [*,*] will include all
- * documents with a value in the field<p>
- * The interval limits may be strings, there is no need to add quotes, all the text
- * until the comma will be treated as the start limit, and the text after that will be
- * the end limit, for example: [Buenos Aires,New York]. Keep in mind that a string-like
- * comparison will be done to match documents in string intervals (case-sensitive). The
- * comparator can't be changed.
- * Commas, brackets and square brackets can be escaped by using '\' in front of them.
- * Whitespaces before and after the values will be omitted. Start limit can't be grater
- * than the end limit. Equal limits are allowed.<p>
- * As with facet.query, the key used to display the result can be set by using local params
- * syntax, for example:<p>
- * <code>{!key='First Half'}[0,5) </code>
- * <p>
- * To use this class:
+ *
+ * The initial and end values can't be empty, if the interval needs to be unbounded, the special
+ * character '*' can be used for both, start and end limit. When using '*', '(' and '[', and ')' and
+ * ']' will be treated equal. [*,*] will include all documents with a value in the field
+ *
+ * <p>The interval limits may be strings, there is no need to add quotes, all the text until the
+ * comma will be treated as the start limit, and the text after that will be the end limit, for
+ * example: [Buenos Aires,New York]. Keep in mind that a string-like comparison will be done to
+ * match documents in string intervals (case-sensitive). The comparator can't be changed. Commas,
+ * brackets and square brackets can be escaped by using '\' in front of them. Whitespaces before and
+ * after the values will be omitted. Start limit can't be grater than the end limit. Equal limits
+ * are allowed.
+ *
+ * <p>As with facet.query, the key used to display the result can be set by using local params
+ * syntax, for example:
+ *
+ * <p><code>{!key='First Half'}[0,5) </code>
+ *
+ * <p>To use this class:
+ *
  * <pre>
  * IntervalFacets intervalFacets = new IntervalFacets(schemaField, searcher, docs, intervalStrs, params);
  * for (FacetInterval interval : intervalFacets) {
@@ -103,22 +105,31 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   private final FacetInterval[] intervals;
 
   /**
-   * Constructor that accepts un-parsed intervals using "interval faceting" syntax. See {@link IntervalFacets} for syntax.
-   * Intervals don't need to be in order.
+   * Constructor that accepts un-parsed intervals using "interval faceting" syntax. See {@link
+   * IntervalFacets} for syntax. Intervals don't need to be in order.
    */
-  public IntervalFacets(SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, String[] intervals, SolrParams params) throws SyntaxError, IOException {
+  public IntervalFacets(
+      SchemaField schemaField,
+      SolrIndexSearcher searcher,
+      DocSet docs,
+      String[] intervals,
+      SolrParams params)
+      throws SyntaxError, IOException {
     this.schemaField = schemaField;
     this.searcher = searcher;
     this.docs = docs;
     this.intervals = getSortedIntervals(intervals, params);
     doCount();
   }
-  
+
   /**
-   * Constructor that accepts an already constructed array of {@link FacetInterval} objects. This array needs to be sorted
-   * by start value in weakly ascending order. null values are not allowed in the array.
+   * Constructor that accepts an already constructed array of {@link FacetInterval} objects. This
+   * array needs to be sorted by start value in weakly ascending order. null values are not allowed
+   * in the array.
    */
-  public IntervalFacets(SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, FacetInterval[] intervals) throws IOException {
+  public IntervalFacets(
+      SchemaField schemaField, SolrIndexSearcher searcher, DocSet docs, FacetInterval[] intervals)
+      throws IOException {
     this.schemaField = schemaField;
     this.searcher = searcher;
     this.docs = docs;
@@ -126,53 +137,57 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     doCount();
   }
 
-  private FacetInterval[] getSortedIntervals(String[] intervals, SolrParams params) throws SyntaxError {
+  private FacetInterval[] getSortedIntervals(String[] intervals, SolrParams params)
+      throws SyntaxError {
     FacetInterval[] sortedIntervals = new FacetInterval[intervals.length];
     int idx = 0;
     for (String intervalStr : intervals) {
       sortedIntervals[idx++] = new FacetInterval(schemaField, intervalStr, params);
     }
-    
+
     /*
      * This comparator sorts the intervals by start value from lower to greater
      */
-    Arrays.sort(sortedIntervals, new Comparator<FacetInterval>() {
+    Arrays.sort(
+        sortedIntervals,
+        new Comparator<FacetInterval>() {
 
-      @Override
-      public int compare(FacetInterval o1, FacetInterval o2) {
-        assert o1 != null;
-        assert o2 != null;
-        return compareStart(o1, o2);
-      }
-
-      private int compareStart(FacetInterval o1, FacetInterval o2) {
-        if (o1.start == null) {
-          if (o2.start == null) {
-            return 0;
+          @Override
+          public int compare(FacetInterval o1, FacetInterval o2) {
+            assert o1 != null;
+            assert o2 != null;
+            return compareStart(o1, o2);
           }
-          return -1;
-        }
-        if (o2.start == null) {
-          return 1;
-        }
-        int startComparison = o1.start.compareTo(o2.start);
-        if (startComparison == 0) {
-          if (o1.startOpen != o2.startOpen) {
-            if (!o1.startOpen) {
+
+          private int compareStart(FacetInterval o1, FacetInterval o2) {
+            if (o1.start == null) {
+              if (o2.start == null) {
+                return 0;
+              }
               return -1;
-            } else {
+            }
+            if (o2.start == null) {
               return 1;
             }
+            int startComparison = o1.start.compareTo(o2.start);
+            if (startComparison == 0) {
+              if (o1.startOpen != o2.startOpen) {
+                if (!o1.startOpen) {
+                  return -1;
+                } else {
+                  return 1;
+                }
+              }
+            }
+            return startComparison;
           }
-        }
-        return startComparison;
-      }
-    });
+        });
     return sortedIntervals;
   }
 
   private void doCount() throws IOException {
-    if (schemaField.getType().getNumberType() != null && (!schemaField.multiValued() || schemaField.getType().isPointField())) {
+    if (schemaField.getType().getNumberType() != null
+        && (!schemaField.multiValued() || schemaField.getType().isPointField())) {
       if (schemaField.multiValued()) {
         getCountMultiValuedNumeric();
       } else {
@@ -210,21 +225,23 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             break;
           case FLOAT:
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-              @Override
-              public long longValue() throws IOException {
-                return NumericUtils.sortableFloatBits((int)super.longValue());
-              }
-            };
+            longs =
+                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
+                  @Override
+                  public long longValue() throws IOException {
+                    return NumericUtils.sortableFloatBits((int) super.longValue());
+                  }
+                };
             break;
           case DOUBLE:
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-              @Override
-              public long longValue() throws IOException {
-               return NumericUtils.sortableDoubleBits(super.longValue());
-              }
-            };
+            longs =
+                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
+                  @Override
+                  public long longValue() throws IOException {
+                    return NumericUtils.sortableDoubleBits(super.longValue());
+                  }
+                };
             break;
           default:
             throw new AssertionError();
@@ -239,7 +256,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       }
     }
   }
-  
+
   private void getCountMultiValuedNumeric() throws IOException {
     final FieldType ft = schemaField.getType();
     final String fieldName = schemaField.getName();
@@ -274,7 +291,8 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
       LeafReaderContext leaf = leaves.get(subIndex);
-      final DocIdSetIterator disi = docs.iterator(leaf); // solr docsets already exclude any deleted docs
+      // solr docsets already exclude any deleted docs
+      final DocIdSetIterator disi = docs.iterator(leaf);
       if (disi != null) {
         if (schemaField.multiValued()) {
           SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(schemaField.getName());
@@ -303,7 +321,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     // longs should be already positioned to the correct doc
     assert longs.docID() != -1;
     final int docValueCount = longs.docValueCount();
-    assert docValueCount > 0: "Should have at least one value for this document";
+    assert docValueCount > 0 : "Should have at least one value for this document";
     int currentInterval = 0;
     for (int i = 0; i < docValueCount; i++) {
       boolean evaluateNextInterval = true;
@@ -321,8 +339,8 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             break;
           case LOWER_THAN_START:
             /*
-             * None of the next intervals will match this value (all of them have 
-             * higher start value). Move to the next value for this document. 
+             * None of the next intervals will match this value (all of them have
+             * higher start value). Move to the next value for this document.
              */
             evaluateNextInterval = false;
             break;
@@ -333,12 +351,13 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             currentInterval++;
             break;
         }
-        //Maybe return if currentInterval == intervals.length?
+        // Maybe return if currentInterval == intervals.length?
       }
-     }
+    }
   }
 
-  private void accumIntervalsMulti(SortedSetDocValues ssdv, DocIdSetIterator disi) throws IOException {
+  private void accumIntervalsMulti(SortedSetDocValues ssdv, DocIdSetIterator disi)
+      throws IOException {
     // First update the ordinals in the intervals for this segment
     for (FacetInterval interval : intervals) {
       interval.updateContext(ssdv);
@@ -357,27 +376,27 @@ public class IntervalFacets implements Iterable<FacetInterval> {
           while (evaluateNextInterval && currentInterval < intervals.length) {
             IntervalCompareResult result = intervals[currentInterval].includes(currOrd);
             switch (result) {
-            case INCLUDED:
-              /*
-               * Increment the current interval and move to the next one using
-               * the same value
-               */
-              intervals[currentInterval].incCount();
-              currentInterval++;
-              break;
-            case LOWER_THAN_START:
-              /*
-               * None of the next intervals will match this value (all of them have 
-               * higher start value). Move to the next value for this document. 
-               */
-              evaluateNextInterval = false;
-              break;
-            case GREATER_THAN_END:
-              /*
-               * Next interval may match this value
-               */
-              currentInterval++;
-              break;
+              case INCLUDED:
+                /*
+                 * Increment the current interval and move to the next one using
+                 * the same value
+                 */
+                intervals[currentInterval].incCount();
+                currentInterval++;
+                break;
+              case LOWER_THAN_START:
+                /*
+                 * None of the next intervals will match this value (all of them have
+                 * higher start value). Move to the next value for this document.
+                 */
+                evaluateNextInterval = false;
+                break;
+              case GREATER_THAN_END:
+                /*
+                 * Next interval may match this value
+                 */
+                currentInterval++;
+                break;
             }
           }
         }
@@ -413,7 +432,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if (result == IntervalCompareResult.INCLUDED) {
         interval.incCount();
       } else if (result == IntervalCompareResult.LOWER_THAN_START) {
-        // All intervals after this will have equal or grater start value, 
+        // All intervals after this will have equal or grater start value,
         // we can skip them
         break;
       }
@@ -425,93 +444,74 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     INCLUDED,
     GREATER_THAN_END,
   }
-  
-  /**
-   * Helper class to match and count of documents in specified intervals
-   */
+
+  /** Helper class to match and count of documents in specified intervals */
   public static class FacetInterval {
-    
-    /**
-     * Key to represent this interval
-     */
+
+    /** Key to represent this interval */
     private final String key;
 
-    /**
-     * Start value for this interval as indicated in the request
-     */
+    /** Start value for this interval as indicated in the request */
     final BytesRef start;
 
-    /**
-     * End value for this interval as indicated in the request
-     */
+    /** End value for this interval as indicated in the request */
     final BytesRef end;
 
-    /**
-     * Whether or not this interval includes or not the lower limit
-     */
+    /** Whether or not this interval includes or not the lower limit */
     private final boolean startOpen;
 
-    /**
-     * Whether or not this interval includes or not the upper limit
-     */
+    /** Whether or not this interval includes or not the upper limit */
     private final boolean endOpen;
 
     /**
-     * Lower limit to which compare a document value. If the field in which we
-     * are faceting is single value numeric, then this number will be the
-     * {@code long} representation of {@link #start}, and in this case
-     * the limit doesn't need to be updated once it is set (will be set in the
-     * constructor and remain equal for the life of this object). If the field
-     * is multivalued and/or non-numeric, then this number will be the lower limit
-     * ordinal for a value to be included in this interval. In this case,
-     * {@link #startLimit} needs to be set using either {@link #updateContext(SortedDocValues)} or
-     * {@link #updateContext(SortedSetDocValues)} (depending on the field type) for
-     * every segment before calling {@link #includes(long)} for any document in the
-     * segment.
+     * Lower limit to which compare a document value. If the field in which we are faceting is
+     * single value numeric, then this number will be the {@code long} representation of {@link
+     * #start}, and in this case the limit doesn't need to be updated once it is set (will be set in
+     * the constructor and remain equal for the life of this object). If the field is multivalued
+     * and/or non-numeric, then this number will be the lower limit ordinal for a value to be
+     * included in this interval. In this case, {@link #startLimit} needs to be set using either
+     * {@link #updateContext(SortedDocValues)} or {@link #updateContext(SortedSetDocValues)}
+     * (depending on the field type) for every segment before calling {@link #includes(long)} for
+     * any document in the segment.
      */
     private long startLimit;
 
     /**
-     * Upper limit to which compare a document value. If the field in which we
-     * are faceting is single value numeric, then this number will be the
-     * {@code long} representation of {@link #end}, and in this case
-     * the limit doesn't need to be updated once it is set (will be set in the
-     * constructor and remain equal for the life of this object). If the field
-     * is multivalued and/or non-numeric, then this number will be the upper limit
-     * ordinal for a value to be included in this interval. In this case,
-     * {@link #endLimit} needs to be set using either {@link #updateContext(SortedDocValues)} or
-     * {@link #updateContext(SortedSetDocValues)} (depending on the field type) for
-     * every segment before calling {@link #includes(long)} for any document in the
-     * segment.
+     * Upper limit to which compare a document value. If the field in which we are faceting is
+     * single value numeric, then this number will be the {@code long} representation of {@link
+     * #end}, and in this case the limit doesn't need to be updated once it is set (will be set in
+     * the constructor and remain equal for the life of this object). If the field is multivalued
+     * and/or non-numeric, then this number will be the upper limit ordinal for a value to be
+     * included in this interval. In this case, {@link #endLimit} needs to be set using either
+     * {@link #updateContext(SortedDocValues)} or {@link #updateContext(SortedSetDocValues)}
+     * (depending on the field type) for every segment before calling {@link #includes(long)} for
+     * any document in the segment.
      */
     private long endLimit;
 
-    /**
-     * The current count of documents in that match this interval
-     */
+    /** The current count of documents in that match this interval */
     private int count;
-    
-    /**
-     * If this field is set to true, this interval {@code #getCount()} will always return 0.
-     */
+
+    /** If this field is set to true, this interval {@code #getCount()} will always return 0. */
     private boolean includeNoDocs = false;
 
     /**
-     * 
-     * Constructor that accepts un-parsed interval faceting syntax. See {@link IntervalFacets} for details
-     * 
+     * Constructor that accepts un-parsed interval faceting syntax. See {@link IntervalFacets} for
+     * details
+     *
      * @param schemaField schemaField for this range
      * @param intervalStr String the interval. See {@link IntervalFacets} for syntax
      * @param params SolrParams of this request, mostly used to get local params
      */
-    FacetInterval(SchemaField schemaField, String intervalStr, SolrParams params) throws SyntaxError {
+    FacetInterval(SchemaField schemaField, String intervalStr, SolrParams params)
+        throws SyntaxError {
       if (intervalStr == null) throw new SyntaxError("empty facet interval");
       intervalStr = intervalStr.trim();
       if (intervalStr.length() == 0) throw new SyntaxError("empty facet interval");
-      
+
       try {
         SolrParams localParams = QueryParsing.getLocalParams(intervalStr, params);
-        if (localParams != null ) {
+        if (localParams != null) {
           int localParamEndIdx = 2; // omit index of {!
           while (true) {
             localParamEndIdx = intervalStr.indexOf(QueryParsing.LOCALPARAM_END, localParamEndIdx);
@@ -534,7 +534,11 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       } else if (intervalStr.charAt(0) == '[') {
         startOpen = false;
       } else {
-        throw new SyntaxError("Invalid start character " + intervalStr.charAt(0) + " in facet interval " + intervalStr);
+        throw new SyntaxError(
+            "Invalid start character "
+                + intervalStr.charAt(0)
+                + " in facet interval "
+                + intervalStr);
       }
 
       final int lastNdx = intervalStr.length() - 1;
@@ -543,7 +547,11 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       } else if (intervalStr.charAt(lastNdx) == ']') {
         endOpen = false;
       } else {
-        throw new SyntaxError("Invalid end character " + intervalStr.charAt(lastNdx) + " in facet interval " + intervalStr);
+        throw new SyntaxError(
+            "Invalid end character "
+                + intervalStr.charAt(lastNdx)
+                + " in facet interval "
+                + intervalStr);
       }
 
       StringBuilder startStr = new StringBuilder(lastNdx);
@@ -557,19 +565,25 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       try {
         start = getLimitFromString(schemaField, startStr);
       } catch (SyntaxError | SolrException e) {
-        throw new SyntaxError(String.format(Locale.ROOT, "Invalid start interval for key '%s': %s", key, e.getMessage()), e);
+        throw new SyntaxError(
+            String.format(
+                Locale.ROOT, "Invalid start interval for key '%s': %s", key, e.getMessage()),
+            e);
       }
-
 
       StringBuilder endStr = new StringBuilder(lastNdx);
       i = unescape(intervalStr, i, lastNdx, endStr);
       if (i != lastNdx) {
-        throw new SyntaxError("Extra unescaped comma at index " + i + " in interval " + intervalStr);
+        throw new SyntaxError(
+            "Extra unescaped comma at index " + i + " in interval " + intervalStr);
       }
       try {
         end = getLimitFromString(schemaField, endStr);
       } catch (SyntaxError | SolrException e) {
-        throw new SyntaxError(String.format(Locale.ROOT, "Invalid end interval for key '%s': %s", key, e.getMessage()), e);
+        throw new SyntaxError(
+            String.format(
+                Locale.ROOT, "Invalid end interval for key '%s': %s", key, e.getMessage()),
+            e);
       }
       // TODO: what about escaping star (*)?
       // TODO: escaping spaces on ends?
@@ -582,10 +596,9 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     }
 
     /**
-     * 
-     * Constructor that accepts already parsed values of start and end. This constructor
-     * can only be used with numeric field types.
-     * 
+     * Constructor that accepts already parsed values of start and end. This constructor can only be
+     * used with numeric field types.
+     *
      * @param schemaField schemaField for this range
      * @param startStr String representation of the start value of this interval. Can be a "*".
      * @param endStr String representation of the end value of this interval. Can be a "*".
@@ -593,25 +606,30 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      * @param includeUpper Indicates weather this interval should include values equal to end
      * @param key String key of this interval
      */
-    public FacetInterval(SchemaField schemaField, String startStr, String endStr,
-        boolean includeLower, boolean includeUpper, String key) {
-      assert schemaField.getType().getNumberType() != null: "Only numeric fields supported with this constructor";
+    public FacetInterval(
+        SchemaField schemaField,
+        String startStr,
+        String endStr,
+        boolean includeLower,
+        boolean includeUpper,
+        String key) {
+      assert schemaField.getType().getNumberType() != null
+          : "Only numeric fields supported with this constructor";
       this.key = key;
       this.startOpen = !includeLower;
       this.endOpen = !includeUpper;
       this.start = getLimitFromString(schemaField, startStr);
       this.end = getLimitFromString(schemaField, endStr);
-      assert start == null || end == null || start.compareTo(end) < 0: 
-        "Bad start/end limits: " + startStr + "/" + endStr;
+      assert start == null || end == null || start.compareTo(end) < 0
+          : "Bad start/end limits: " + startStr + "/" + endStr;
       setNumericLimits(schemaField);
     }
 
     /**
-     * Set startLimit and endLimit for numeric values. The limits in this case
-     * are going to be the <code>long</code> representation of the original
-     * value. <code>startLimit</code> will be incremented by one in case of the
-     * interval start being exclusive. <code>endLimit</code> will be decremented by
-     * one in case of the interval end being exclusive.
+     * Set startLimit and endLimit for numeric values. The limits in this case are going to be the
+     * <code>long</code> representation of the original value. <code>startLimit</code> will be
+     * incremented by one in case of the interval start being exclusive. <code>endLimit</code> will
+     * be decremented by one in case of the interval end being exclusive.
      */
     private void setNumericLimits(SchemaField schemaField) {
       if (start == null) {
@@ -628,10 +646,14 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             startLimit = ((Integer) schemaField.getType().toObject(schemaField, start)).longValue();
             break;
           case FLOAT:
-            startLimit = NumericUtils.floatToSortableInt((float) schemaField.getType().toObject(schemaField, start));
+            startLimit =
+                NumericUtils.floatToSortableInt(
+                    (float) schemaField.getType().toObject(schemaField, start));
             break;
           case DOUBLE:
-            startLimit = NumericUtils.doubleToSortableLong((double) schemaField.getType().toObject(schemaField, start));
+            startLimit =
+                NumericUtils.doubleToSortableLong(
+                    (double) schemaField.getType().toObject(schemaField, start));
             break;
           default:
             throw new AssertionError();
@@ -648,7 +670,6 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         }
       }
 
-
       if (end == null) {
         endLimit = Long.MAX_VALUE;
       } else {
@@ -663,10 +684,14 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             endLimit = ((Integer) schemaField.getType().toObject(schemaField, end)).longValue();
             break;
           case FLOAT:
-            endLimit = NumericUtils.floatToSortableInt((float) schemaField.getType().toObject(schemaField, end));
+            endLimit =
+                NumericUtils.floatToSortableInt(
+                    (float) schemaField.getType().toObject(schemaField, end));
             break;
           case DOUBLE:
-            endLimit = NumericUtils.doubleToSortableLong((double) schemaField.getType().toObject(schemaField, end));
+            endLimit =
+                NumericUtils.doubleToSortableLong(
+                    (double) schemaField.getType().toObject(schemaField, end));
             break;
           default:
             throw new AssertionError();
@@ -684,29 +709,29 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       }
     }
 
-    private BytesRef getLimitFromString(SchemaField schemaField, StringBuilder builder) throws SyntaxError {
+    private BytesRef getLimitFromString(SchemaField schemaField, StringBuilder builder)
+        throws SyntaxError {
       String value = builder.toString().trim();
       if (value.length() == 0) {
         throw new SyntaxError("Empty interval limit");
       }
       return getLimitFromString(schemaField, value);
     }
-    
+
     private BytesRef getLimitFromString(SchemaField schemaField, String value) {
       if ("*".equals(value)) {
         return null;
       }
       if (schemaField.getType().isPointField()) {
-        return ((PointField)schemaField.getType()).toInternalByteRef(value);
+        return ((PointField) schemaField.getType()).toInternalByteRef(value);
       }
       return new BytesRef(schemaField.getType().toInternal(value));
     }
 
     /**
-     * Update the ordinals based on the current reader. This method
-     * (or {@link #updateContext(SortedSetDocValues)} depending on the
-     * DocValues type) needs to be called for every reader before
-     * {@link #includes(long)} is called on any document of the reader.
+     * Update the ordinals based on the current reader. This method (or {@link
+     * #updateContext(SortedSetDocValues)} depending on the DocValues type) needs to be called for
+     * every reader before {@link #includes(long)} is called on any document of the reader.
      *
      * @param sdv DocValues for the current reader
      */
@@ -728,7 +753,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         } else {
           /*
            * The term exists in this segment, If the interval has start open (the limit is
-           * excluded), then we move one ordinal higher. Then, to be included in the 
+           * excluded), then we move one ordinal higher. Then, to be included in the
            * interval, an ordinal needs to be greater or equal to startLimit
            */
           if (startOpen) {
@@ -746,30 +771,28 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         if (endLimit < 0) {
           /*
            * The term was not found in this segment. We'll use insertion-point -1 as
-           * endLimit. To be included in this interval, ordinals must be lower or 
+           * endLimit. To be included in this interval, ordinals must be lower or
            * equal to endLimit
            */
           endLimit = (endLimit * -1) - 2;
         } else {
           if (endOpen) {
             /*
-             * The term exists in this segment, If the interval has start open (the 
+             * The term exists in this segment, If the interval has start open (the
              * limit is excluded), then we move one ordinal lower. Then, to be
-             * included in the interval, an ordinal needs to be lower or equal to  
+             * included in the interval, an ordinal needs to be lower or equal to
              * endLimit
              */
             endLimit--;
           }
         }
       }
-
     }
 
     /**
-     * Update the ordinals based on the current reader. This method
-     * (or {@link #updateContext(SortedDocValues)} depending on the
-     * DocValues type) needs to be called for every reader before
-     * {@link #includes(long)} is called on any document of the reader.
+     * Update the ordinals based on the current reader. This method (or {@link
+     * #updateContext(SortedDocValues)} depending on the DocValues type) needs to be called for
+     * every reader before {@link #includes(long)} is called on any document of the reader.
      *
      * @param sdv DocValues for the current reader
      */
@@ -791,7 +814,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         } else {
           /*
            * The term exists in this segment, If the interval has start open (the limit is
-           * excluded), then we move one ordinal higher. Then, to be included in the 
+           * excluded), then we move one ordinal higher. Then, to be included in the
            * interval, an ordinal needs to be greater or equal to startLimit
            */
           if (startOpen) {
@@ -809,15 +832,15 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         if (endLimit < 0) {
           /*
            * The term was not found in this segment. We'll use insertion-point -1 as
-           * endLimit. To be included in this interval, ordinals must be lower or 
+           * endLimit. To be included in this interval, ordinals must be lower or
            * equal to endLimit
            */
           endLimit = (endLimit * -1) - 2;
         } else {
           /*
-           * The term exists in this segment, If the interval has start open (the 
+           * The term exists in this segment, If the interval has start open (the
            * limit is excluded), then we move one ordinal lower. Then, to be
-           * included in the interval, an ordinal needs to be lower or equal to  
+           * included in the interval, an ordinal needs to be lower or equal to
            * endLimit
            */
           if (endOpen) {
@@ -828,21 +851,25 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     }
 
     /**
-     * Method to use to check whether a document should be counted for
-     * an interval or not. Before calling this method on a multi-valued
-     * and/or non-numeric field make sure you call {@link #updateContext(SortedDocValues)}
-     * or {@link #updateContext(SortedSetDocValues)} (depending on the DV type). It
-     * is OK to call this method without other previous calls on numeric fields
+     * Method to use to check whether a document should be counted for an interval or not. Before
+     * calling this method on a multi-valued and/or non-numeric field make sure you call {@link
+     * #updateContext(SortedDocValues)} or {@link #updateContext(SortedSetDocValues)} (depending on
+     * the DV type). It is OK to call this method without other previous calls on numeric fields
      * (with {@link NumericDocValues})
      *
-     * @param value For numeric single value fields, this {@code value}
-     *              should be the {@code long} representation of the value of the document
-     *              in the specified field. For multi-valued and/or non-numeric fields, {@code value}
-     *              should be the ordinal of the term in the current segment
-     * @return <ul><li>{@link IntervalCompareResult#INCLUDED} if the value is included in the interval
-     * <li>{@link IntervalCompareResult#GREATER_THAN_END} if the value is greater than {@code endLimit}
-     * <li>{@link IntervalCompareResult#LOWER_THAN_START} if the value is lower than {@code startLimit}
-     * </ul>
+     * @param value For numeric single value fields, this {@code value} should be the {@code long}
+     *     representation of the value of the document in the specified field. For multi-valued
+     *     and/or non-numeric fields, {@code value} should be the ordinal of the term in the current
+     *     segment
+     * @return
+     *     <ul>
+     *       <li>{@link IntervalCompareResult#INCLUDED} if the value is included in the interval
+     *       <li>{@link IntervalCompareResult#GREATER_THAN_END} if the value is greater than {@code
+     *           endLimit}
+     *       <li>{@link IntervalCompareResult#LOWER_THAN_START} if the value is lower than {@code
+     *           startLimit}
+     *     </ul>
+     *
      * @see org.apache.lucene.util.NumericUtils#floatToSortableInt(float)
      * @see org.apache.lucene.util.NumericUtils#doubleToSortableLong(double)
      */
@@ -857,7 +884,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     }
 
     /* Fill in sb with a string from i to the first unescaped comma, or n.
-       Return the index past the unescaped comma, or n if no unescaped comma exists */
+    Return the index past the unescaped comma, or n if no unescaped comma exists */
     private int unescape(String s, int i, int n, StringBuilder sb) throws SyntaxError {
       for (; i < n; ++i) {
         char c = s.charAt(i);
@@ -878,9 +905,18 @@ public class IntervalFacets implements Iterable<FacetInterval> {
 
     @Override
     public String toString() {
-      return this.getClass().getSimpleName() +
-          " [key=" + key + ", start=" + start + ", end=" + end
-          + ", startOpen=" + startOpen + ", endOpen=" + endOpen + "]";
+      return this.getClass().getSimpleName()
+          + " [key="
+          + key
+          + ", start="
+          + start
+          + ", end="
+          + end
+          + ", startOpen="
+          + startOpen
+          + ", endOpen="
+          + endOpen
+          + "]";
     }
 
     /**
@@ -893,9 +929,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       return this.count;
     }
 
-    /**
-     * Increment the number of documents that match this interval
-     */
+    /** Increment the number of documents that match this interval */
     void incCount() {
       this.count++;
     }
@@ -906,15 +940,11 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     public String getKey() {
       return this.key;
     }
-
   }
 
-  /**
-   * Iterate over all the intervals
-   */
+  /** Iterate over all the intervals */
   @Override
   public Iterator<FacetInterval> iterator() {
     return new ArrayList<FacetInterval>(Arrays.asList(intervals)).iterator();
   }
-
 }

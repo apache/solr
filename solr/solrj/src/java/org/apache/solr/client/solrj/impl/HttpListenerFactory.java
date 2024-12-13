@@ -22,21 +22,23 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 
 public interface HttpListenerFactory {
-  abstract class RequestResponseListener implements Request.BeginListener, Response.CompleteListener, Request.QueuedListener {
+  abstract class RequestResponseListener
+      implements Request.BeginListener, Response.CompleteListener, Request.QueuedListener {
 
     /**
-     * Callback method invoked when the request begins being processed in order to be sent.
-     * This is the last opportunity to modify the request.
-     * This method will NOT be ensured to be called on the same thread as the thread calling {@code Http2SolrClient} methods.
+     * Callback method invoked when the request begins being processed in order to be sent. This is
+     * the last opportunity to modify the request. This method will NOT be ensured to be called on
+     * the same thread as the thread calling {@code Http2SolrClient} methods.
      *
      * @param request the request that begins being processed
      */
     @Override
-    public void onBegin(Request request){}
+    public void onBegin(Request request) {}
 
     /**
-     * Callback method invoked when the request is queued, waiting to be sent.
-     * This method will be ensured to be called on the same thread as the thread calling {@code Http2SolrClient} methods.
+     * Callback method invoked when the request is queued, waiting to be sent. This method will be
+     * ensured to be called on the same thread as the thread calling {@code Http2SolrClient}
+     * methods.
      *
      * @param request the request being queued
      */
@@ -49,4 +51,3 @@ public interface HttpListenerFactory {
 
   RequestResponseListener get();
 }
-

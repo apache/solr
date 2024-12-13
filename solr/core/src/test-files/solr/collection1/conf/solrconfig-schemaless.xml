@@ -24,7 +24,7 @@
   <!-- This is intentionally commented out, see SOLR-8131 -->
   <!--<schemaFactory class="ManagedIndexSchemaFactory">-->
     <!--<bool name="mutable">${managed.schema.mutable}</bool>-->
-    <!--<str name="managedSchemaResourceName">managed-schema</str>-->
+    <!--<str name="managedSchemaResourceName">managed-schema.xml</str>-->
   <!--</schemaFactory>-->
 
   <codecFactory class="solr.SchemaCodecFactory"/>
@@ -36,9 +36,9 @@
   </updateHandler>
 
   <requestDispatcher>
-    <requestParsers enableStreamBody="true" />
+    <requestParsers />
   </requestDispatcher>
-  
+
   <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
@@ -70,7 +70,7 @@
         <str>EEE MMM ppd HH:mm:ss [z ]yyyy</str>
       </arr>
     </processor>
-     
+
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
       <str name="defaultFieldType">text</str>
       <lst name="typeMapping">

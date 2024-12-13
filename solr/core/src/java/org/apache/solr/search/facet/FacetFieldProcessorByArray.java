@@ -17,26 +17,26 @@
 
 package org.apache.solr.search.facet;
 
+import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.function.IntFunction;
-
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 
-import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
-
 /**
- * Base class for DV/UIF accumulating counts into an array by ordinal.  It's
- * for {@link org.apache.lucene.index.SortedDocValues} and {@link org.apache.lucene.index.SortedSetDocValues} only.
- * It can handle terms (strings), not numbers directly but those encoded as terms, and is multi-valued capable.
- * By default, this class assumes subclasses can support sweeping collection unless subclasses initialize <code>countAcc</code> directly in their constructors.
- * 
+ * Base class for DV/UIF accumulating counts into an array by ordinal. It's for {@link
+ * org.apache.lucene.index.SortedDocValues} and {@link org.apache.lucene.index.SortedSetDocValues}
+ * only. It can handle terms (strings), not numbers directly but those encoded as terms, and is
+ * multi-valued capable. By default, this class assumes subclasses can support sweeping collection
+ * unless subclasses initialize <code>countAcc</code> directly in their constructors.
+ *
  * @see SweepingCountSlotAcc
  */
 abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
@@ -47,24 +47,23 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   int nDocs;
   int maxSlots;
 
-  int allBucketsSlot = -1;  // slot for the primary Accs (countAcc, collectAcc)
+  int allBucketsSlot = -1; // slot for the primary Accs (countAcc, collectAcc)
 
   FacetFieldProcessorByArray(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
   }
 
-  abstract protected void findStartAndEndOrds() throws IOException;
+  protected abstract void findStartAndEndOrds() throws IOException;
 
-  abstract protected void collectDocs() throws IOException;
+  protected abstract void collectDocs() throws IOException;
 
   /** this BytesRef may be shared across calls and should be deep-cloned if necessary */
-  abstract protected BytesRef lookupOrd(int ord) throws IOException;
-
+  protected abstract BytesRef lookupOrd(int ord) throws IOException;
 
   /**
    * {@inheritDoc}
    *
-   * This impl first initializes <code>countAcc</code> as a {@link SweepingCountSlotAcc} if null.
+   * <p>This impl first initializes <code>countAcc</code> as a {@link SweepingCountSlotAcc} if null.
    */
   @Override
   protected void createAccs(long docCount, int slotCount) throws IOException {
@@ -77,7 +76,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   /**
    * {@inheritDoc}
    *
-   * This impl first initializes <code>countAcc</code> as a {@link SweepingCountSlotAcc} if null.
+   * <p>This impl first initializes <code>countAcc</code> as a {@link SweepingCountSlotAcc} if null.
    */
   @Override
   void createCollectAcc(int numDocs, int numSlots) throws IOException {
@@ -118,12 +117,16 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
     if (refineResult != null) {
       if (freq.allBuckets) {
         // count is irrelevant, but hardcoded in collect(...), so intercept/mask normal counts.
-        // Set here to prevent createAccs(...) from creating a 1-slot countAcc that will fail with AIOOBE
-        // NOTE: because collectAcc will be null, it is fine/irrelevant to set a countAcc that doesn't support sweeping
-        countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
+        // Set here to prevent createAccs(...) from creating a 1-slot countAcc that will fail with
+        // AIOOBE
+        // NOTE: because collectAcc will be null, it is fine/irrelevant to set a countAcc that
+        // doesn't support sweeping
+        countAcc = Constants.DEV_NULL_SLOT_ACC;
         createAccs(nDocs, 1);
         assert collectAcc == null;
-        otherAccs = accs; // accs is created above and set on allBucketsAcc; but during collection, setNextReader is called on otherAccs.
+        // accs is created above and set on allBucketsAcc; but during collection, setNextReader is
+        // called on otherAccs.
+        otherAccs = accs;
         allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0);
         collectDocs();
 
@@ -149,7 +152,9 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
 
     collectDocs();
 
-    return super.findTopSlots(nTerms, nTerms,
+    return super.findTopSlots(
+        nTerms,
+        nTerms,
         slotNum -> { // getBucketValFromSlotNum
           try {
             return (Comparable) sf.getType().toObject(sf, lookupOrd(slotNum + startTermIndex));
@@ -157,28 +162,27 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
             throw new RuntimeException(e);
           }
         },
-        obj -> valueObjToString(obj)
-    );
+        obj -> valueObjToString(obj));
   }
 
   private static String valueObjToString(Object obj) {
-    return (obj instanceof Date) ? ((Date)obj).toInstant().toString() : obj.toString();
+    return (obj instanceof Date) ? ((Date) obj).toInstant().toString() : obj.toString();
   }
 
-                                                           
   /**
    * SlotContext to use during all {@link SlotAcc} collection.
    *
    * @see #lookupOrd
    */
-  public IntFunction<SlotContext> slotContext = (slotNum) -> {
-    try {
-      Object value = sf.getType().toObject(sf, lookupOrd(slotNum + startTermIndex));
-      Query q = makeBucketQuery(valueObjToString(value));
-      assert null != q : "null query for: '" + value + "'";
-      return new SlotContext(q);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  };
+  public IntFunction<SlotContext> slotContext =
+      (slotNum) -> {
+        try {
+          Object value = sf.getType().toObject(sf, lookupOrd(slotNum + startTermIndex));
+          Query q = makeBucketQuery(valueObjToString(value));
+          assert null != q : "null query for: '" + value + "'";
+          return new SlotContext(q);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      };
 }

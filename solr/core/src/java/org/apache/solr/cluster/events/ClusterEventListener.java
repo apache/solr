@@ -21,16 +21,16 @@ import java.io.Closeable;
 /**
  * Components that want to be notified of cluster-wide events should use this.
  *
- * XXX should this work only for ClusterSingleton-s? some types of events may be
- * XXX difficult (or pointless) to propagate to every node.
+ * <p>XXX should this work only for ClusterSingleton-s? some types of events may be XXX difficult
+ * (or pointless) to propagate to every node.
  */
 public interface ClusterEventListener extends Closeable {
 
   /**
-   * Handle the event. Implementations should be non-blocking - if any long
-   * processing is needed it should be performed asynchronously.
+   * Handle the event. Implementations should be non-blocking - if any long processing is needed it
+   * should be performed asynchronously.
+   *
    * @param event cluster event
    */
   void onEvent(ClusterEvent event);
-
 }
