@@ -21,6 +21,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -98,7 +99,7 @@ public class ZkContainer {
           new SolrZkServer(
               stripChroot(zkRun),
               stripChroot(config.getZkHost()),
-              Paths.get(zkDataHome),
+              Path.of(zkDataHome),
               zkConfHome,
               config.getSolrHostPort());
       zkServer.parseConfig();

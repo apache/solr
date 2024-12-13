@@ -195,7 +195,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   }
 
   // Return the file indicated (or the directory listing) from the local file system.
-  private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp) {
     Path admin = getAdminFileFromFileSystem(req, rsp, hiddenFiles);
 
     if (admin == null) { // exception already recorded

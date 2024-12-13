@@ -3203,7 +3203,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * stopwords to ZooKeeper if running in SolrCloud mode.
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  protected RestManager initRestManager() throws SolrException, IOException {
+  protected RestManager initRestManager() throws SolrException {
 
     PluginInfo restManagerPluginInfo = getSolrConfig().getPluginInfo(RestManager.class.getName());
 

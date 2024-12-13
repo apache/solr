@@ -1477,7 +1477,7 @@ public class IndexFetcher {
    * The conf files are copied to the tmp dir to the conf dir. A backup of the old file is
    * maintained
    */
-  private void copyTmpConfFiles2Conf(Path tmpconfDir) throws IOException {
+  private void copyTmpConfFiles2Conf(Path tmpconfDir) {
     boolean status = false;
     Path confPath = solrCore.getResourceLoader().getConfigPath();
     int numTempPathElements = tmpconfDir.getNameCount();

@@ -69,8 +69,7 @@ public abstract class ManagedResourceStorage {
   public static interface StorageIO {
     String getInfo();
 
-    void configure(SolrResourceLoader loader, NamedList<String> initArgs)
-        throws SolrException, IOException;
+    void configure(SolrResourceLoader loader, NamedList<String> initArgs) throws SolrException;
 
     boolean exists(String storedResourceId) throws IOException;
 
@@ -89,8 +88,7 @@ public abstract class ManagedResourceStorage {
    * running in cloud mode as well as initArgs.
    */
   public static StorageIO newStorageIO(
-      String collection, SolrResourceLoader resourceLoader, NamedList<String> initArgs)
-      throws IOException {
+      String collection, SolrResourceLoader resourceLoader, NamedList<String> initArgs) {
     StorageIO storageIO;
 
     SolrZkClient zkClient = null;
@@ -167,7 +165,7 @@ public abstract class ManagedResourceStorage {
 
     @Override
     public void configure(SolrResourceLoader loader, NamedList<String> initArgs)
-        throws SolrException, IOException {
+        throws SolrException {
       String storageDirArg = initArgs.get(STORAGE_DIR_INIT_ARG);
 
       if (storageDirArg == null || storageDirArg.trim().length() == 0)
@@ -175,7 +173,14 @@ public abstract class ManagedResourceStorage {
             "Required configuration parameter '" + STORAGE_DIR_INIT_ARG + "' not provided!");
 
       Path dir = Path.of(storageDirArg);
-      if (Files.isDirectory(dir)) Files.createDirectories(dir);
+      if (Files.isDirectory(dir)) {
+        try {
+          Files.createDirectories(dir);
+        } catch (IOException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "Unable to create storage directory " + dir, e);
+        }
+      }
 
       storageDir = dir.toAbsolutePath().toString();
       log.info("File-based storage initialized to use dir: {}", storageDir);
@@ -206,7 +211,6 @@ public abstract class ManagedResourceStorage {
     // TODO: this interface should probably be changed, this simulates the old behavior,
     // only throw security exception, just return false otherwise
     private boolean deleteIfFile(Path p) {
-      //      File f = p.toFile();
       if (!Files.isRegularFile(p)) {
         return false;
       }

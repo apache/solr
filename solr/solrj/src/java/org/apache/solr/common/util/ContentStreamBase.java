@@ -37,6 +37,7 @@ import java.util.function.Predicate;
 import java.util.zip.GZIPInputStream;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.SolrException;
 
 /**
  * Three concrete implementations for ContentStream - one for File/URL/String
@@ -168,12 +169,17 @@ public abstract class ContentStreamBase implements ContentStream {
   public static class FileStream extends ContentStreamBase {
     private final Path file;
 
-    public FileStream(Path f) throws IOException {
+    public FileStream(Path f) {
       file = f;
 
       contentType = null; // ??
       name = file.getFileName().toString();
-      size = Files.size(file);
+      try {
+        size = Files.size(file);
+      } catch (IOException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unable to read file size " + file, e);
+      }
       sourceInfo = file.toUri().toString();
     }
 

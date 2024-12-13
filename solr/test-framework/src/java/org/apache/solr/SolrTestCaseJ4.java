@@ -2158,7 +2158,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static Path TEST_PATH() {
-    return getFile("solr/collection1");
+    return getFile("solr/collection1").getParent();
   }
 
   public static Path TEST_COLL1_CONF() {

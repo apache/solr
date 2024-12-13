@@ -55,7 +55,7 @@ public class FileUtils {
    * @throws IOException if the file could not be synced
    */
   public static void sync(Path fullFile) throws IOException {
-    if (fullFile == null || !Files.exists(fullFile))
+    if (fullFile == null || Files.notExists(fullFile))
       throw new FileNotFoundException("File does not exist " + fullFile);
 
     boolean success = false;
