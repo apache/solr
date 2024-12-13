@@ -203,7 +203,7 @@ But you will also find an important _warning_ if you look closely at the logs.
 
 <br/>
 
-We do not want **debug symbols** stripped from Java for the best experience.
+Ensuring that **Debug symbols** remain available provides the best experience for optimal profiling accuracy and heap-analysis.
 
 And it also turns out that if we use async-profiler's **alloc** option to sample and create flamegraphs for heap usage, the **debug** symbols
 are _required_.
