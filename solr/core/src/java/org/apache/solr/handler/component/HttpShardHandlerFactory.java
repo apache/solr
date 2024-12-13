@@ -324,8 +324,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   @Override
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
-    System.out.println("IN SET SEC BUILDER");
-    new Exception().printStackTrace(System.out);
     if (clientBuilderPlugin != null) {
       clientBuilderPlugin.setup(httpClientBuilder, defaultClient);
     }
