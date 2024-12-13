@@ -215,6 +215,8 @@ Improvements
 * SOLR-16470: Replication "fetch file" API now has a v2 equivalent, available at `GET /api/cores/coreName/replication/files/fileName`
   (Matthew Biscocho via Jason Gerlowski)
 
+* SOLR-17554: Suppress printing out of password to console when using auth CLI command. (Christos Malliaridis via Eric Pugh)
+
 
 Optimizations
 ---------------------
@@ -239,7 +241,8 @@ Optimizations
 
 * SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
 
-* SOLR-16503: Switched from HTTP1 to HTTP2 in SolrClientCloudManager by replacing CloudLegacySolrClient with CloudHttp2SolrClient. (Sanjay Dutt, David Smiley)
+* SOLR-17592: Switched from HTTP1 to HTTP2 in SolrCloudManager via HttpClient change from Apache to Jetty.
+  (Sanjay Dutt, David Smiley)
 
 * SOLR-17453: Leverage waitForState() instead of busy waiting in CREATE, MIGRATE, REINDEXCOLLECTION, MOVEREPLICA commands, and in some tests. (Pierre Salagnac)
 
@@ -460,7 +463,7 @@ Other Changes
 
 * GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
 
-* SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
+* SOLR-17290: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
 
 * SOLR-16796: Include cyclonedx SBOMs with maven artifacts (Arnout Engelen, Houston Putman, Kevin Risden)
 

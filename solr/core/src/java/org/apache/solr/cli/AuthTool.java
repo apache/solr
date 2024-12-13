@@ -282,10 +282,7 @@ public class AuthTool extends ToolBase {
         updateIncludeFileEnableAuth(includeFile, basicAuthConfFile);
         final String successMessage =
             String.format(
-                Locale.ROOT,
-                "Successfully enabled basic auth with username [%s] and password [%s].",
-                username,
-                password);
+                Locale.ROOT, "Successfully enabled basic auth with username [%s].", username);
         echo(successMessage);
         return;
       case "disable":
