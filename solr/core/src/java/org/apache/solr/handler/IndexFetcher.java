@@ -1204,10 +1204,10 @@ public class IndexFetcher {
   private static Long getUsableSpace(String dir) {
     try {
       Path file = Path.of(dir);
-      if (Files.exists(file)) {
+      if (Files.notExists(file)) {
         file = file.getParent();
         // this is not a disk directory. so just pretend that there is enough space
-        if (Files.exists(file)) {
+        if (Files.notExists(file)) {
           return Long.MAX_VALUE;
         }
       }

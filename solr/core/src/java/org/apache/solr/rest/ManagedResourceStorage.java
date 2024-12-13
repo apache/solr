@@ -173,7 +173,7 @@ public abstract class ManagedResourceStorage {
             "Required configuration parameter '" + STORAGE_DIR_INIT_ARG + "' not provided!");
 
       Path dir = Path.of(storageDirArg);
-      if (Files.isDirectory(dir)) {
+      if (!Files.isDirectory(dir)) {
         try {
           Files.createDirectories(dir);
         } catch (IOException e) {
