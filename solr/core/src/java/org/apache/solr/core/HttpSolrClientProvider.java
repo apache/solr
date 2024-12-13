@@ -37,13 +37,15 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   private final Http2SolrClient httpSolrClient;
 
+  private final Http2SolrClient.Builder httpClientBuilder;
+
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
   HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext parentContext) {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
     initializeMetrics(parentContext);
 
-    Http2SolrClient.Builder httpClientBuilder =
+    this.httpClientBuilder =
         new Http2SolrClient.Builder().withListenerFactory(List.of(trackHttpSolrMetrics));
 
     if (cfg != null) {
@@ -76,7 +78,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
   }
 
   void setSecurityBuilder(HttpClientBuilderPlugin builder) {
-    builder.setup(httpSolrClient);
+    builder.setup(httpClientBuilder, httpSolrClient);
   }
 
   @Override

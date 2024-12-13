@@ -375,7 +375,16 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   @Override
+  public void setup(Http2SolrClient.Builder httpClientBuilder, Http2SolrClient client) {
+    setup(client, httpClientBuilder);
+  }
+
+  @Override
   public void setup(Http2SolrClient client) {
+    setup(client, null);
+  }
+
+  private void setup(Http2SolrClient client, Http2SolrClient.Builder builder) {
     final HttpListenerFactory.RequestResponseListener listener =
         new HttpListenerFactory.RequestResponseListener() {
           private static final String CACHED_REQUEST_USER_KEY = "cachedRequestUser";
@@ -431,7 +440,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
                 (String) request.getAttributes().get(CACHED_REQUEST_USER_KEY));
           }
         };
-    client.addListenerFactory(() -> listener);
+    if(client != null) {
+      client.addListenerFactory(() -> listener);
+    }
+    if(builder != null) {
+      builder.withListenerFactory(List.of(() -> listener));
+    }
   }
 
   @Override
