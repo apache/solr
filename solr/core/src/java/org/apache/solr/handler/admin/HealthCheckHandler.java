@@ -243,9 +243,8 @@ public class HealthCheckHandler extends RequestHandlerBase {
     IndexFetcher indexFetcher = null;
     try {
       // may not be the best way to get leader's replicableCommit
-      NamedList<?> follower =
-          ReplicationHandler.getObjectWithBackwardCompatibility(
-              replicationHandler.getInitArgs(), "follower", "slave");
+      NamedList<?> follower = (NamedList<?>) replicationHandler.getInitArgs().get("follower");
+
       indexFetcher = new IndexFetcher(follower, replicationHandler, core);
 
       NamedList<?> replicableCommitOnLeader = indexFetcher.getLatestVersion();

@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -462,6 +463,31 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     SolrInputDocument mappedIndividual = process(languagePerFieldDoc());
     assertTrue(mappedIndividual.containsKey("text_en"));
     assertTrue(mappedIndividual.containsKey("text2_ru"));
+  }
+
+  @Test
+  public void testAllowlist() throws Exception {
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "name,subject");
+    parameters.add("langid.langField", "language_s");
+    parameters.add("langid.allowlist", "no,en ,, ,sv, sv");
+    liProcessor = createLangIdProcessor(parameters);
+
+    // Make sure that empty language codes have been filtered out and others trimmed.
+    assertEquals(Set.of("no", "en", "sv"), liProcessor.langAllowlist);
+  }
+
+  @Test
+  public void testAllowlistBackwardsCompatabilityWithLegacyAllowlist() throws Exception {
+    // The "legacy allowlist" is "langid.whitelist"
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "name,subject");
+    parameters.add("langid.langField", "language_s");
+    parameters.add("langid.whitelist", "no,en ,, ,sv, sv");
+    liProcessor = createLangIdProcessor(parameters);
+
+    // Make sure that empty language codes have been filtered out and others trimmed.
+    assertEquals(Set.of("no", "en", "sv"), liProcessor.langAllowlist);
   }
 
   // Various utility methods

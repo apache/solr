@@ -92,8 +92,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
             TestReplicationHandler.buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
-
-    System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
 
   @Override
@@ -118,7 +116,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
       followerClient = null;
     }
     System.clearProperty(TEST_URL_ALLOW_LIST);
-    System.clearProperty("solr.indexfetcher.sotimeout");
 
     IndexFetcher.usableDiskSpaceProvider = originalDiskSpaceprovider;
     IndexFetcher.testWait = originalTestWait;

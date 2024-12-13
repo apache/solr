@@ -98,7 +98,7 @@ public class ApiTool extends ToolBase {
       NamedList<Object> response = solrClient.request(req);
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       return arr.toString();
     }
   }

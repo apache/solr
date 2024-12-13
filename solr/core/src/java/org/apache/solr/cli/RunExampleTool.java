@@ -647,10 +647,15 @@ public class RunExampleTool extends ToolBase {
     if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
+    final var syspropArg =
+        ("techproducts".equals(cli.getOptionValue(EXAMPLE_OPTION)))
+            ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
+            : "";
+
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
@@ -661,7 +666,8 @@ public class RunExampleTool extends ToolBase {
             forceArg,
             verboseArg,
             extraArgs,
-            jvmOptsArg);
+            jvmOptsArg,
+            syspropArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
     echo("\nStarting up Solr on port " + port + " using command:");
