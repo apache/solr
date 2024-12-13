@@ -556,7 +556,7 @@ public class MiniClusterState {
         MiniClusterState.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
     if (url != null) {
       try {
-        return new File(url.toURI()).toPath();
+        return Path.of(url.toURI());
       } catch (Exception e) {
         throw new RuntimeException(
             "Resource was found on classpath, but cannot be resolved to a "
@@ -564,13 +564,13 @@ public class MiniClusterState {
                 + name);
       }
     }
-    File file = new File(name);
-    if (file.exists()) {
-      return file.toPath();
+    Path file = Path.of(name);
+    if (Files.exists(file)) {
+      return file;
     } else {
-      file = new File("../../../", name);
-      if (file.exists()) {
-        return file.toPath();
+      file = Path.of("../../../", name);
+      if (Files.exists(file)) {
+        return file;
       }
     }
     throw new RuntimeException(
