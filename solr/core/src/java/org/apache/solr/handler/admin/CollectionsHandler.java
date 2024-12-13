@@ -174,7 +174,7 @@ import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
 import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
-import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CollectionStatus;
 import org.apache.solr.handler.admin.api.CreateAlias;
 import org.apache.solr.handler.admin.api.CreateCollection;
 import org.apache.solr.handler.admin.api.CreateCollectionBackup;
@@ -1360,6 +1360,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateReplica.class,
         AddReplicaProperty.class,
         BalanceShardUnique.class,
+        CollectionStatus.class,
         CreateAlias.class,
         CreateCollection.class,
         CreateCollectionBackup.class,
@@ -1399,7 +1400,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
     return apis;
   }
 

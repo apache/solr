@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -695,6 +696,30 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     rsp = req.process(cluster.getSolrClient());
     assertNotNull(rsp.getResponse().get(collectionNames[1]));
     assertNotNull(rsp.getResponse().get(collectionNames[0]));
+  }
+
+  /**
+   * Unit test for the v2 API: GET /api/collections/$collName
+   *
+   * <p>Uses the OAS-generated SolrRequest/SolrResponse API binding.
+   */
+  @Test
+  public void testV2BasicCollectionStatus() throws Exception {
+    final String simpleCollName = "simpleCollection";
+    CollectionAdminRequest.createCollection(simpleCollName, "conf2", 2, 1, 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(simpleCollName, 2, 6);
+
+    final var simpleResponse =
+        new CollectionsApi.GetCollectionStatus(simpleCollName)
+            .process(cluster.getSolrClient())
+            .getParsed();
+    assertEquals(2, simpleResponse.shards.size());
+    assertEquals(Integer.valueOf(1), simpleResponse.nrtReplicas);
+    assertEquals(Integer.valueOf(1), simpleResponse.replicationFactor);
+    assertEquals(Integer.valueOf(1), simpleResponse.tlogReplicas);
+    assertEquals(Integer.valueOf(1), simpleResponse.pullReplicas);
+    assertEquals("GREEN", simpleResponse.health);
   }
 
   private static final int NUM_DOCS = 10;
