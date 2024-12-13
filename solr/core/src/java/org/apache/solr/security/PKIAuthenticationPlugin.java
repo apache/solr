@@ -440,10 +440,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
                 (String) request.getAttributes().get(CACHED_REQUEST_USER_KEY));
           }
         };
-    if(client != null) {
+    if (client != null) {
       client.addListenerFactory(() -> listener);
     }
-    if(builder != null) {
+    if (builder != null) {
       builder.withListenerFactory(List.of(() -> listener));
     }
   }

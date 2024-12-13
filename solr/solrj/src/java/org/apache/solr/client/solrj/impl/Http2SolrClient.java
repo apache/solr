@@ -571,7 +571,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
    * @param clientFunction a Function that consumes a Http2SolrClient and returns an arbitrary value
    * @return the value returned after invoking 'clientFunction'
    * @param <R> the type returned by the provided function (and by this method)
-   *
    * @lucene.experimental
    */
   public <R> R requestWithBaseUrl(
