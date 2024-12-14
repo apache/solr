@@ -78,7 +78,7 @@ public class RequestUtil {
       for (ContentStream cs : req.getContentStreams()) {
         // if BinaryResponseParser.BINARY_CONTENT_TYPE, let the following fail below - we may have
         // adjusted the content without updating the content type
-        // problem in this case happens in a few tests, one seems to happen with kerberos and remote
+        // problem in this case happens in a few tests including a remote
         // node query (HttpSolrCall's request proxy)
 
         String contentType = cs.getContentType();

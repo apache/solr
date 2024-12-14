@@ -325,7 +325,12 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
         // trivial impl here to keep existing code happy while making the flow clearer. Chain will
         // be called after this method completes. Eventually auth all moves to its own filter
         // (hopefully). Most auth plugins simply return true after calling this anyway, so they
-        // obviously don't care. Kerberos plugins seem to mostly use it to satisfy the api of a
+        // obviously don't care.
+        //
+        // The Hadoop Auth Plugin was removed in SOLR-17540, however leaving the below reference
+        // for future readers, as there may be an option to simplify this logic.
+        //
+        // Kerberos plugins seem to mostly use it to satisfy the api of a
         // wrapped instance of javax.servlet.Filter and neither of those seem to be doing anything
         // fancy with the filter chain, so this would seem to be a hack brought on by the fact that
         // our auth code has been forced to be code within dispatch filter, rather than being a

@@ -203,7 +203,7 @@ IF NOT DEFINED SOLR_AUTH_TYPE (
   IF DEFINED SOLR_AUTHENTICATION_OPTS (
     echo WARNING: SOLR_AUTHENTICATION_OPTS variable configured without associated SOLR_AUTH_TYPE variable
     echo          Please configure SOLR_AUTH_TYPE variable with the authentication type to be used.
-    echo          Currently supported authentication types are [kerberos, basic]
+    echo          Currently supported authentication types are [basic]
   )
 )
 
@@ -211,7 +211,7 @@ IF DEFINED SOLR_AUTH_TYPE (
   IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
     echo WARNING: SOLR_AUTHENTICATION_CLIENT_BUILDER and SOLR_AUTH_TYPE variables are configured together
     echo          Use SOLR_AUTH_TYPE variable to configure authentication type to be used
-    echo          Currently supported authentication types are [kerberos, basic]
+    echo          Currently supported authentication types are [basic]
     echo          The value of SOLR_AUTHENTICATION_CLIENT_BUILDER configuration variable will be ignored
   )
 )
@@ -220,12 +220,8 @@ IF DEFINED SOLR_AUTH_TYPE (
   IF /I "%SOLR_AUTH_TYPE%" == "basic" (
     set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
   ) ELSE (
-    IF /I "%SOLR_AUTH_TYPE%" == "kerberos" (
-      set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
-    ) ELSE (
-      echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
-      goto err
-    )
+    echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
+    goto err
   )
 )
 
