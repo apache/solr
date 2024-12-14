@@ -726,15 +726,37 @@ SHIFT
 goto parse_args
 
 :set_passthru
-set "PASSTHRU=%~1=%~2"
+set "PASSTHRU_KEY=%~1"
+set "PASSTHRU_VALUES="
+
+SHIFT
+:repeat_passthru
+set "arg=%~1"
+if "%arg%"=="" goto end_passthru
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  goto end_passthru
+)
+
+if defined PASSTHRU_VALUES (
+    set "PASSTHRU_VALUES=%PASSTHRU_VALUES%,%arg%"
+) else (
+    set "PASSTHRU_VALUES=%arg%"
+)
+SHIFT
+goto repeat_passthru
+
+:end_passthru
+set "PASSTHRU=%PASSTHRU_KEY%=%PASSTHRU_VALUES%"
+echo "Passing through %PASSTHRU%"
+
 IF NOT "%SOLR_OPTS%"=="" (
   set "SOLR_OPTS=%SOLR_OPTS% %PASSTHRU%"
 ) ELSE (
   set "SOLR_OPTS=%PASSTHRU%"
 )
 set "PASS_TO_RUN_EXAMPLE=%PASSTHRU% !PASS_TO_RUN_EXAMPLE!"
-SHIFT
-SHIFT
+
 goto parse_args
 
 :set_noprompt
