@@ -1527,7 +1527,8 @@ public class ReplicationHandler extends RequestHandlerBase
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
   // in case of TLOG replica, if leaderVersion = zero, don't do commit
-  // otherwise updates from current tlog won't be copied over properly to the new tlog, leading to data
+  // otherwise updates from current tlog won't be copied over properly to the new tlog, leading to
+  // data
   // loss
   // don't commit on leader version zero for PULL replicas as PULL should only get its index
   // state from leader
