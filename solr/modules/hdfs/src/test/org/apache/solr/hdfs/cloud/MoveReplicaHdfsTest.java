@@ -65,8 +65,7 @@ public class MoveReplicaHdfsTest extends AbstractMoveReplicaTestBase {
 
   @Test
   public void testNormalMove() throws Exception {
-    inPlaceMove = false;
-    super.test();
+    super.test(inPlaceMove = false);
   }
 
   @Test
