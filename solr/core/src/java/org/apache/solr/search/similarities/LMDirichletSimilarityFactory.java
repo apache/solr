@@ -53,7 +53,7 @@ public class LMDirichletSimilarityFactory extends SimilarityFactory {
   @Override
   public Similarity getSimilarity() {
 
-    // Default μ is 2000 is Lucene. Unfortunately, there is no constant we can use
+    // Default μ is 2000 in Lucene. Unfortunately, there is no constant we can use
     if (mu == null) {
       mu = 2000f;
     }
