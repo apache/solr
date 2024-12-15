@@ -104,6 +104,7 @@ For more information on these policies, please see {lucene-javadocs}/core/org/ap
 <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
   <int name="maxMergeAtOnce">10</int>
   <int name="segmentsPerTier">10</int>
+  <int name="targetSearchConcurrency">1</int>
   <double name="forceMergeDeletesPctAllowed">10.0</double>
   <double name="deletesPctAllowed">33.0</double>
 </mergePolicyFactory>
