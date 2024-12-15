@@ -50,7 +50,7 @@ public class DOMUtil {
   public static Map<String, String> toMapExcept(ConfigNode node, String... exclusions) {
     Map<String, String> args = new HashMap<>();
     node.attributes()
-        .forEachEntry(
+        .forEach(
             (k, v) -> {
               for (String ex : exclusions) if (ex.equals(k)) return;
               args.put(k, v);

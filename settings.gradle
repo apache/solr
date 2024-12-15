@@ -20,10 +20,12 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    includeBuild("build-tools/build-infra")
 }
 
 plugins {
-    id 'com.gradle.develocity' version '3.17.6'
+    id 'com.gradle.develocity' version '3.18.1'
     id 'com.gradle.common-custom-user-data-gradle-plugin' version '2.0.2'
 }
 
@@ -31,7 +33,7 @@ apply from: file('gradle/develocity.gradle')
 
 rootProject.name = "solr-root"
 
-includeBuild("dev-tools/solr-missing-doclet")
+includeBuild("build-tools/missing-doclet")
 
 include "solr:api"
 include "solr:solrj"
@@ -46,7 +48,6 @@ include "solr:modules:cross-dc"
 include "solr:modules:opentelemetry"
 include "solr:modules:extraction"
 include "solr:modules:gcs-repository"
-include "solr:modules:hadoop-auth"
 include "solr:modules:hdfs"
 include "solr:modules:jwt-auth"
 include "solr:modules:langid"

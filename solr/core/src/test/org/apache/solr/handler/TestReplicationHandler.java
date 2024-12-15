@@ -72,12 +72,12 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,14 +102,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   // index from previous test method
   static int nDocs = 500;
 
-  /* For testing backward compatibility, remove for 10.x */
-  private static boolean useLegacyParams = false;
-
-  @BeforeClass
-  public static void beforeClass() {
-    useLegacyParams = rarely();
-  }
-
   @Override
   @Before
   public void setUp() throws Exception {
@@ -133,8 +125,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
             buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
-
-    System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
 
   public void clearIndexWithReplication() throws Exception {
@@ -167,7 +157,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       followerClient.close();
       followerClient = null;
     }
-    System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
   static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
@@ -315,8 +304,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // check details on the follower a couple of times before & after fetching
     for (int i = 0; i < 3; i++) {
       NamedList<Object> details = getDetails(followerClient);
-      assertNotNull(i + ": " + details);
-      assertNotNull(i + ": " + details.toString(), details.get("follower"));
+      assertNotNull(i + ": " + details, details);
+      assertNotNull(i + ": " + details, details.get("follower"));
 
       if (i > 0) {
         rQuery(i, "*:*", followerClient);
@@ -387,38 +376,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         /* :NOOP: */
       }
       if (repeaterClient != null) repeaterClient.close();
-    }
-  }
-
-  @Test
-  public void testLegacyConfiguration() throws Exception {
-    SolrInstance solrInstance = null;
-    JettySolrRunner instanceJetty = null;
-    SolrClient client = null;
-    try {
-      solrInstance =
-          new SolrInstance(
-              createTempDir("solr-instance").toFile(),
-              "replication-legacy",
-              leaderJetty.getLocalPort());
-      solrInstance.setUp();
-      instanceJetty = createAndStartJetty(solrInstance);
-      client =
-          ReplicationTestHelper.createNewSolrClient(
-              buildUrl(instanceJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
-
-      NamedList<Object> details = getDetails(client);
-
-      assertEquals("repeater isLeader?", "true", details.get("isLeader"));
-      assertEquals("repeater isFollower?", "true", details.get("isFollower"));
-      assertNotNull("repeater has leader section", details.get("leader"));
-      assertNotNull("repeater has follower section", details.get("follower"));
-
-    } finally {
-      if (instanceJetty != null) {
-        instanceJetty.stop();
-      }
-      if (client != null) client.close();
     }
   }
 
@@ -502,7 +459,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     index(followerClient, "id", 555, "name", "name = " + 555);
     followerClient.commit(true, true);
 
-    // this doc is added to follower so it should show an item w/ that result
+    // this doc is added to follower, so it should show an item w/ that result
     assertEquals(1, numFound(rQuery(1, "id:555", followerClient)));
 
     // Let's fetch the index rather than rely on the polling.
@@ -571,7 +528,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     followerJetty.stop();
 
-    // setup an sub directory /foo/ in order to force subdir file replication
+    // set up a subdirectory /foo/ in order to force subdir file replication
     File leaderFooDir = new File(leader.getConfDir() + File.separator + "foo");
     File leaderBarFile = new File(leaderFooDir, "bar.txt");
     assertTrue("could not make dir " + leaderFooDir, leaderFooDir.mkdirs());
@@ -594,7 +551,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerQueryRsp = rQuery(1, "*:*", followerClient);
     assertVersions(leaderClient, followerClient);
     SolrDocument d = ((SolrDocumentList) followerQueryRsp.get("response")).get(0);
-    assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
+    assertEquals("newname = 2000", d.getFieldValue("newname"));
 
     assertTrue(followerFooDir.isDirectory());
     assertTrue(followerBarFile.exists());
@@ -639,8 +596,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // get docs from leader and check if number is equal to leader
     assertEquals(nDocs + 1, numFound(rQuery(nDocs + 1, "*:*", leaderClient)));
 
-    // NOTE: this test is wierd, we want to verify it DOESNT replicate...
-    // for now, add a sleep for this.., but the logic is wierd.
+    // NOTE: this test is weird, we want to verify it DOESN'T replicate...
+    // for now, add a sleep for this... but the logic is weird.
     Thread.sleep(3000);
 
     // get docs from follower and check if number is not equal to leader; polling is disabled
@@ -781,11 +738,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/replication");
     params.set("command", "details");
-    if (useLegacyParams) {
-      params.set("slave", "true");
-    } else {
-      params.set("follower", "true");
-    }
+    params.set("follower", "true");
+
     QueryResponse response = followerClient.query(params);
 
     // details/follower/timesIndexReplicated
@@ -827,9 +781,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, leaderQueryResult.getNumFound());
 
     String urlKey = "leaderUrl";
-    if (useLegacyParams) {
-      urlKey = "masterUrl";
-    }
 
     // index fetch
     String leaderUrl =
@@ -1518,9 +1469,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         Arrays.asList(absFile, "../dir/traversal", "illegal\rfile\nname\t");
     List<String> params =
         Arrays.asList(
-            ReplicationHandler.FILE,
-            ReplicationHandler.CONF_FILE_SHORT,
-            ReplicationHandler.TLOG_FILE);
+            ReplicationAPIBase.FILE,
+            ReplicationAPIBase.CONF_FILE_SHORT,
+            ReplicationAPIBase.TLOG_FILE);
     for (String param : params) {
       for (String filename : illegalFilenames) {
         expectThrows(
@@ -1632,7 +1583,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     index(leaderClient, "id", "1", "name", "foo");
 
-    { // second backup w/uncommited doc
+    { // second backup w/uncommitted doc
       final String backupName = "empty_backup2";
       final GenericSolrRequest req =
           new GenericSolrRequest(
@@ -1667,48 +1618,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         assertEquals(name + " is not empty", 0, reader.numDocs());
       }
     }
-  }
-
-  public void testGetBoolWithBackwardCompatibility() {
-    assertTrue(ReplicationHandler.getBoolWithBackwardCompatibility(params(), "foo", "bar", true));
-    assertFalse(ReplicationHandler.getBoolWithBackwardCompatibility(params(), "foo", "bar", false));
-    assertTrue(
-        ReplicationHandler.getBoolWithBackwardCompatibility(
-            params("foo", "true"), "foo", "bar", false));
-    assertTrue(
-        ReplicationHandler.getBoolWithBackwardCompatibility(
-            params("bar", "true"), "foo", "bar", false));
-    assertTrue(
-        ReplicationHandler.getBoolWithBackwardCompatibility(
-            params("foo", "true", "bar", "false"), "foo", "bar", false));
-  }
-
-  public void testGetObjectWithBackwardCompatibility() {
-    assertEquals(
-        "aaa",
-        ReplicationHandler.getObjectWithBackwardCompatibility(params(), "foo", "bar", "aaa"));
-    assertEquals(
-        "bbb",
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            params("foo", "bbb"), "foo", "bar", "aaa"));
-    assertEquals(
-        "bbb",
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            params("bar", "bbb"), "foo", "bar", "aaa"));
-    assertEquals(
-        "bbb",
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            params("foo", "bbb", "bar", "aaa"), "foo", "bar", "aaa"));
-    assertNull(ReplicationHandler.getObjectWithBackwardCompatibility(params(), "foo", "bar", null));
-  }
-
-  public void testGetObjectWithBackwardCompatibilityFromNL() {
-    NamedList<Object> nl = new NamedList<>();
-    assertNull(ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
-    nl.add("bar", "bbb");
-    assertEquals("bbb", ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
-    nl.add("foo", "aaa");
-    assertEquals("aaa", ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
   }
 
   private static class AddExtraDocs implements Runnable {
@@ -1786,7 +1695,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             return startTime;
           }
         } catch (SolrException e) {
-          // workarround for SOLR-4668
+          // workaround for SOLR-4668
           if (500 != e.code()) {
             throw e;
           } // else server possibly from the core reload in progress...
@@ -1796,7 +1705,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         Thread.sleep(sleepInterval);
       }
       fail("timed out waiting for collection1 startAt time to exceed: " + min);
-      return min; // compilation neccessity
+      return min; // compilation necessity
     }
   }
 

@@ -169,7 +169,7 @@ Let's comment on this config:
 <1> Plugin class
 <2> Make sure to block anyone without a valid token (this is also the default)
 <3> Fetch the user id from another claim than the default `sub`
-<4> Require that the `roles` claim is one of "A" or "B" and that the `dept` claim is "IT"
+<4> Require that the `foo` claim is one of "A" or "B" and that the `dept` claim is "IT"
 <5> Require one of the scopes `solr:read`, `solr:write` or `solr:admin`
 <6> Only accept RSA algorithms for signatures
 <7> Array of issuer configurations

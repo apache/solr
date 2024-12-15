@@ -61,9 +61,8 @@ public class ShardDoc extends FieldDoc {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof ShardDoc)) return false;
+    if (!(o instanceof ShardDoc shardDoc)) return false;
 
-    ShardDoc shardDoc = (ShardDoc) o;
     return Objects.equals(id, shardDoc.id);
   }
 

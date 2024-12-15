@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -34,8 +35,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 
@@ -199,7 +198,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public List<OpResult> multi(Iterable<Op> ops)
+  public List<CuratorTransactionResult> multi(List<SolrZkClient.CuratorOpBuilder> ops)
       throws BadVersionException,
           AlreadyExistsException,
           NoSuchElementException,
@@ -207,7 +206,7 @@ public class ZkDistribStateManager implements DistribStateManager {
           KeeperException,
           InterruptedException {
     try {
-      return zkClient.multi(ops, true);
+      return zkClient.multi(ops);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(ops.toString());
     } catch (KeeperException.NodeExistsException e) {

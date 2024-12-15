@@ -712,8 +712,7 @@ public class SolrPluginUtils {
 
       Query cq = clause.getQuery();
       float boost = fromBoost;
-      while (cq instanceof BoostQuery) {
-        BoostQuery bq = (BoostQuery) cq;
+      while (cq instanceof BoostQuery bq) {
         cq = bq.getQuery();
         boost *= bq.getBoost();
       }

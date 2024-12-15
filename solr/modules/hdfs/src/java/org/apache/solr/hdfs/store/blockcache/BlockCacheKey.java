@@ -64,8 +64,7 @@ public class BlockCacheKey implements Cloneable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof BlockCacheKey)) return false;
-    BlockCacheKey other = (BlockCacheKey) obj;
+    if (!(obj instanceof BlockCacheKey other)) return false;
     return block == other.block && file == other.file && Objects.equals(path, other.path);
   }
 

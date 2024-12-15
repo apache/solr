@@ -316,7 +316,7 @@ public class Overseer implements SolrCloseable {
               // the workQueue is empty now, use stateUpdateQueue as fallback queue
               fallbackQueue = stateUpdateQueue;
               fallbackQueueSize = 0;
-            } catch (AlreadyClosedException e) {
+            } catch (IllegalStateException e) {
               return;
             } catch (KeeperException.SessionExpiredException e) {
               log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
@@ -342,7 +342,7 @@ public class Overseer implements SolrCloseable {
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
-          } catch (AlreadyClosedException e) {
+          } catch (IllegalStateException e) {
 
           } catch (Exception e) {
             log.error("Exception in Overseer main queue loop", e);
@@ -402,7 +402,7 @@ public class Overseer implements SolrCloseable {
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
-          } catch (AlreadyClosedException e) {
+          } catch (IllegalStateException e) {
 
           } catch (Exception e) {
             log.error("Exception in Overseer main queue loop", e);
@@ -414,15 +414,16 @@ public class Overseer implements SolrCloseable {
           log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
         }
         // do this in a separate thread because any wait is interrupted in this main thread
-        new Thread(this::checkIfIamStillLeader, "OverseerExitThread").start();
+        Thread checkLeaderThread = new Thread(this::checkIfIamStillLeader, "OverseerExitThread");
+        checkLeaderThread.setDaemon(true);
+        checkLeaderThread.start();
       }
     }
 
     // Return true whenever the exception thrown by ZkStateWriter is correspond
     // to a invalid state or 'bad' message (in this case, we should remove that message from queue)
     private boolean isBadMessage(Exception e) {
-      if (e instanceof KeeperException) {
-        KeeperException ke = (KeeperException) e;
+      if (e instanceof KeeperException ke) {
         return ke.code() == KeeperException.Code.NONODE
             || ke.code() == KeeperException.Code.NODEEXISTS;
       }
@@ -480,7 +481,7 @@ public class Overseer implements SolrCloseable {
       byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
-      } catch (AlreadyClosedException e) {
+      } catch (IllegalStateException e) {
         return;
       } catch (Exception e) {
         log.warn("Error communicating with ZooKeeper", e);
@@ -634,7 +635,7 @@ public class Overseer implements SolrCloseable {
       } catch (InterruptedException e) {
         success = false;
         Thread.currentThread().interrupt();
-      } catch (AlreadyClosedException e) {
+      } catch (IllegalStateException e) {
         success = false;
       } catch (Exception e) {
         success = false;
@@ -1047,11 +1048,7 @@ public class Overseer implements SolrCloseable {
    */
   ZkDistributedQueue getStateUpdateQueue(Stats zkStats) {
     return new ZkDistributedQueue(
-        reader.getZkClient(),
-        "/overseer/queue",
-        zkStats,
-        STATE_UPDATE_MAX_QUEUE,
-        () -> Overseer.this.isClosed() || zkController.getCoreContainer().isShutDown());
+        reader.getZkClient(), "/overseer/queue", zkStats, STATE_UPDATE_MAX_QUEUE);
   }
 
   /**

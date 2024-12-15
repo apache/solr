@@ -288,8 +288,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
       final Object value = field.getValue();
       if (value instanceof SolrInputDocument) {
         consumer.accept(field.name, (SolrInputDocument) value);
-      } else if (value instanceof Collection) {
-        Collection<?> cVal = (Collection<?>) value;
+      } else if (value instanceof Collection<?> cVal) {
         for (Object v : cVal) {
           if (v instanceof SolrInputDocument) {
             consumer.accept(field.name, (SolrInputDocument) v);

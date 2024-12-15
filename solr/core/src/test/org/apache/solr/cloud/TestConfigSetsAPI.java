@@ -69,7 +69,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
@@ -1395,7 +1394,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     ignoreException("uploaded without any authentication in place");
     Throwable thrown =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               createCollection(
                   "newcollection2",
@@ -1420,48 +1419,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             1,
             cluster.getSolrClient());
     scriptRequest("newcollection2");
-  }
-
-  @Test
-  public void testUploadWithLibDirective() throws Exception {
-    final String untrustedSuffix = "-untrusted";
-    uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null);
-    // try to create a collection with the uploaded configset
-    ignoreException("without any authentication in place");
-    Throwable thrown =
-        expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
-            () -> {
-              createCollection(
-                  "newcollection3",
-                  "with-lib-directive" + untrustedSuffix,
-                  1,
-                  1,
-                  cluster.getSolrClient());
-            });
-    unIgnoreException("without any authentication in place");
-
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
-
-    // Authorization on
-    final String trustedSuffix = "-trusted";
-    uploadConfigSetWithAssertions("with-lib-directive", trustedSuffix, "solr");
-    // try to create a collection with the uploaded configset
-    CollectionAdminResponse resp =
-        createCollection(
-            "newcollection3", "with-lib-directive" + trustedSuffix, 1, 1, cluster.getSolrClient());
-
-    SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
-    cluster.getSolrClient().add("newcollection3", doc);
-    cluster.getSolrClient().commit("newcollection3");
-    assertEquals(
-        "4055",
-        cluster
-            .getSolrClient()
-            .query("newcollection3", params("q", "*:*"))
-            .getResults()
-            .get(0)
-            .get("id"));
   }
 
   @Test

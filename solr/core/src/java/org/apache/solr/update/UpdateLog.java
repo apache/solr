@@ -63,6 +63,7 @@ import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
@@ -390,7 +391,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
     int timeoutMs =
         objToInt(
-            info.initArgs.get("docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
+            info.initArgs.getOrDefault(
+                "docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
             EnvUtils.getPropertyAsLong("solr.update.docLockTimeoutMs", 0L).intValue());
     updateLocks = new UpdateLocks(timeoutMs);
 
@@ -1214,8 +1216,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 lookupVersion);
           }
 
-          if (obj != null && obj instanceof List) {
-            List<?> tmpEntry = (List<?>) obj;
+          if (obj != null && obj instanceof List<?> tmpEntry) {
             if (tmpEntry.size() >= 2
                 &&
                 // why not Objects.equals(lookupVersion, tmpEntry.get())?
@@ -1998,6 +1999,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected RecoveryInfo recoveryInfo;
 
   class LogReplayer implements Runnable {
+    private final SolrParams BASE_REPLAY_PARAMS =
+        new MapSolrParams(
+            Map.of(
+                DISTRIB_UPDATE_PARAM,
+                FROMLEADER.toString(),
+                DistributedUpdateProcessor.LOG_REPLAY,
+                "true"));
+
     private Logger loglog = log; // set to something different?
 
     Deque<TransactionLog> translogs;
@@ -2024,10 +2033,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     @Override
     public void run() {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
-      params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
-      req = new LocalSolrQueryRequest(uhandler.core, params);
+      req = new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
       rsp = new SolrQueryResponse();
       // setting request info will help logging
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -2100,7 +2106,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         ThreadLocal<UpdateRequestProcessor> procThreadLocal =
             ThreadLocal.withInitial(
                 () -> {
-                  var proc = processorChain.createProcessor(req, rsp);
+                  // SolrQueryRequest is not thread-safe, so use a copy when creating URPs
+                  final var localRequest =
+                      new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
+                  var proc = processorChain.createProcessor(localRequest, rsp);
                   procPool.add(proc);
                   return proc;
                 });

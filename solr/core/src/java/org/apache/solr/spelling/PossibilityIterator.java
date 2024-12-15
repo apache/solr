@@ -363,8 +363,7 @@ public class PossibilityIterator implements Iterator<PossibilityIterator.RankedS
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (obj == null) return false;
-      if (!(obj instanceof RankedSpellPossibility)) return false;
-      RankedSpellPossibility other = (RankedSpellPossibility) obj;
+      if (!(obj instanceof RankedSpellPossibility other)) return false;
       return Objects.equals(corrections, other.corrections);
     }
 

@@ -20,10 +20,9 @@ import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
@@ -42,13 +41,10 @@ public class ZkMvTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -78,10 +74,9 @@ public class ZkMvTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
 
-    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
+    try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
       String src = cli.getArgs()[0];
       String dst = cli.getArgs()[1];
