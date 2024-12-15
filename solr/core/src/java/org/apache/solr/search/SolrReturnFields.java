@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -68,6 +69,7 @@ public class SolrReturnFields extends ReturnFields {
   protected DocTransformer transformer;
   protected boolean _wantsScore = false;
   protected boolean _wantsAllFields = false;
+  private boolean _noRows = false;
   protected Map<String, String> renameFields = Collections.emptyMap();
 
   // Only set currently with the SolrDocumentFetcher.solrDoc method. Primarily used
@@ -166,6 +168,12 @@ public class SolrReturnFields extends ReturnFields {
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
     _wantsScore = false;
     _wantsAllFields = false;
+
+    // Optimize the case of rows=0
+    if (req != null && Objects.equals("0", req.getParams().get(CommonParams.ROWS))) {
+      _noRows = true;
+    }
+
     if (fl == null || fl.length == 0 || (fl.length == 1 && fl[0].length() == 0)) {
       _wantsAllFields = true;
       return;
@@ -531,10 +539,18 @@ public class SolrReturnFields extends ReturnFields {
     okFieldNames.add(key);
     // a valid field name
     if (SCORE.equals(field)) {
-      _wantsScore = true;
+      if (_noRows) {
+        reqFieldNames.remove(field);
+        reqFieldNames.remove(key);
+        fields.remove(field);
+        okFieldNames.remove(field);
+        okFieldNames.remove(key);
+      } else {
+        _wantsScore = true;
 
-      String disp = (key == null) ? field : key;
-      augmenters.addTransformer(new ScoreAugmenter(disp));
+        String disp = (key == null) ? field : key;
+        augmenters.addTransformer(new ScoreAugmenter(disp));
+      }
     }
   }
 
