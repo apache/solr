@@ -126,7 +126,6 @@
       "commons-validator:commons-validator:1.7" : "4bf37e93,refs=3",
       "de.l3s.boilerpipe:boilerpipe:1.1.0" : "50a667d1,refs=5",
       "dev.ai4j:openai4j:0.22.0" : "30a6fec5,refs=3",
-      "dev.langchain4j:langchain4j:0.35.0" : "8a8ebb15,refs=5",
       "dev.langchain4j:langchain4j-cohere:0.35.0" : "30a6fec5,refs=3",
       "dev.langchain4j:langchain4j-core:0.35.0" : "8a8ebb15,refs=5",
       "dev.langchain4j:langchain4j-hugging-face:0.35.0" : "30a6fec5,refs=3",
@@ -307,7 +306,7 @@
       "org.apache.lucene:lucene-spatial3d:9.11.1" : "51c1a817,refs=79",
       "org.apache.lucene:lucene-suggest:9.11.1" : "57e9f35b,refs=81",
       "org.apache.lucene:lucene-test-framework:9.11.1" : "64a0cd23,refs=52",
-      "org.apache.opennlp:opennlp-tools:1.9.4" : "32497ffb,refs=23",
+      "org.apache.opennlp:opennlp-tools:1.9.4" : "fbf7fa7b,refs=18",
       "org.apache.pdfbox:fontbox:2.0.26" : "50a667d1,refs=5",
       "org.apache.pdfbox:jbig2-imageio:3.0.4" : "50a667d1,refs=5",
       "org.apache.pdfbox:jempbox:1.8.16" : "50a667d1,refs=5",
@@ -3242,100 +3241,6 @@
       {
         "configuration" : "testRuntimeClasspath",
         "projectPath" : ":solr:modules:opentelemetry"
-      }
-    ],
-    "32497ffb" : [
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:core"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:hdfs"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:llm"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:llm"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:llm"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:llm"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:llm"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:sql"
       }
     ],
     "3a8e89dc" : [
@@ -18664,6 +18569,80 @@
       {
         "configuration" : "testRuntimeClasspath",
         "projectPath" : ":solr:prometheus-exporter"
+      }
+    ],
+    "fbf7fa7b" : [
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:core"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:hdfs"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:sql"
       }
     ],
     "fcb9ccb3" : [
