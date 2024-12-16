@@ -27,10 +27,10 @@ dependencies {
   implementation libs.apache.lucene.core
 
   implementation libs.langchain4j.core
-  implementation libs.langchain4j.cohere
-  implementation libs.langchain4j.hugging.face
-  implementation libs.langchain4j.mistral.ai
-  implementation libs.langchain4j.open.ai
+  runtimeOnly libs.langchain4j.cohere
+  runtimeOnly libs.langchain4j.hugging.face
+  runtimeOnly libs.langchain4j.mistral.ai
+  runtimeOnly libs.langchain4j.open.ai
 
   implementation libs.slf4j.api
 
