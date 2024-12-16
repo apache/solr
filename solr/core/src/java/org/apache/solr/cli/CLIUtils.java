@@ -328,7 +328,7 @@ public final class CLIUtils {
         Map<String, Object> failureStatus =
             (Map<String, Object>) existsCheckResult.get("initFailures");
         String errorMsg = (String) failureStatus.get(coreName);
-        final boolean hasName = coreStatus != null && coreStatus.asMap().containsKey(NAME);
+        final boolean hasName = coreStatus != null && coreStatus.get(NAME) != null;
         exists = hasName || errorMsg != null;
         wait = hasName && errorMsg == null && "true".equals(coreStatus.get("isLoading"));
       } while (wait && System.nanoTime() - startWaitAt < MAX_WAIT_FOR_CORE_LOAD_NANOS);

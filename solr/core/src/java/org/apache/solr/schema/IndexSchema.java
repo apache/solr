@@ -526,7 +526,7 @@ public class IndexSchema {
         log.info("{}", sb);
       }
 
-      version = Float.parseFloat(rootNode.attributes().get("version", "1.0f"));
+      version = Float.parseFloat(rootNode.attributes().getOrDefault("version", "1.0f"));
 
       // load the Field Types
       final FieldTypePluginLoader typeLoader =
