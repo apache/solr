@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// The platform module allows a centralized dependency management and alignment
+// that is inherited by all modules through transitive dependencies (api).
+
 plugins {
     id("java-platform")
 }
