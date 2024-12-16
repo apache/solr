@@ -38,4 +38,9 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
   testImplementation libs.commonsio.commonsio
+  testImplementation libs.langchain4j.cohere
+  testImplementation libs.langchain4j.hugging.face
+  testImplementation libs.langchain4j.mistral.ai
+  testImplementation libs.langchain4j.open.ai
+  
 }
