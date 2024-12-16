@@ -48,6 +48,7 @@ allprojects { prj ->
         errorprone
       }
       dependencies {
+        errorprone platform(project(":platform"))
         errorprone libs.google.errorprone.core
       }
       configurations.annotationProcessor.extendsFrom(configurations.errorprone)
