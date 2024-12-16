@@ -51,11 +51,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,7 +122,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.IndexOutputOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -1514,52 +1511,6 @@ public class IndexFetcher {
     }
   }
 
-  /**
-   * The tlog files are moved from the tmp dir to the tlog dir as an atomic filesystem operation. A
-   * backup of the old directory is maintained. If the directory move fails, it will try to revert
-   * the original tlog directory.
-   */
-  private boolean copyTmpTlogFiles2Tlog(Path tmpTlogDir) {
-    Path tlogDir =
-        FileSystems.getDefault().getPath(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
-    Path backupTlogDir =
-        FileSystems.getDefault()
-            .getPath(
-                tlogDir.getParent().toAbsolutePath().toString(),
-                tmpTlogDir.getFileName().toString());
-
-    try {
-      Files.move(tlogDir, backupTlogDir, StandardCopyOption.ATOMIC_MOVE);
-    } catch (IOException e) {
-      log.error("Unable to rename: {} to: {}", tlogDir, backupTlogDir, e);
-      return false;
-    }
-
-    Path src =
-        FileSystems.getDefault()
-            .getPath(
-                backupTlogDir.toAbsolutePath().toString(), tmpTlogDir.getFileName().toString());
-    try {
-      Files.move(src, tlogDir, StandardCopyOption.ATOMIC_MOVE);
-    } catch (IOException e) {
-      log.error("Unable to rename: {} to: {}", src, tlogDir, e);
-
-      // In case of error, try to revert the original tlog directory
-      try {
-        Files.move(backupTlogDir, tlogDir, StandardCopyOption.ATOMIC_MOVE);
-      } catch (IOException e2) {
-        // bad, we were not able to revert the original tlog directory
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to rename: " + backupTlogDir + " to: " + tlogDir);
-      }
-
-      return false;
-    }
-
-    return true;
-  }
-
   private String getDateAsStr(Date d) {
     return new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(d);
   }
@@ -1602,7 +1553,7 @@ public class IndexFetcher {
     return nameVsFile.isEmpty() ? Collections.emptyList() : nameVsFile.values();
   }
 
-  static boolean delTree(File dir) {
+  static boolean delTree(Path dir) {
     try {
       org.apache.lucene.util.IOUtils.rm(dir);
       return true;
@@ -2038,7 +1989,7 @@ public class IndexFetcher {
     Path file;
 
     LocalFsFile(Path dir, String saveAs) throws IOException {
-      this.file = Path.of(copy2Dir.toString(), saveAs);
+        this.file = dir.resolve(saveAs);
 
       Path parentDir = this.file.getParent();
       if (Files.notExists(parentDir)) {
@@ -2057,7 +2008,7 @@ public class IndexFetcher {
 
     @Override
     public void sync() throws IOException {
-      FileUtils.sync(file);
+      org.apache.lucene.util.IOUtils.fsync(file, false);
     }
 
     @Override

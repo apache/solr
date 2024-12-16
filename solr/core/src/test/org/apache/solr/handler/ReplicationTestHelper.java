@@ -43,7 +43,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,7 @@ public final class ReplicationTestHelper {
       "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    FileUtils.copyFile(
+    Files.copy(
         Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
         Path.of(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();

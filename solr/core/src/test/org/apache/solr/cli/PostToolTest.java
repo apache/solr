@@ -294,6 +294,7 @@ public class PostToolTest extends SolrCloudTestCase {
     postTool.recursive = 0;
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
+    // TODO SOLR-8282 move to PATH
     File dir = getFile("exampledocs").toFile();
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -316,6 +317,7 @@ public class PostToolTest extends SolrCloudTestCase {
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
+    // TODO SOLR-8282 move to PATH
     File dir = getFile("exampledocs").toFile();
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);

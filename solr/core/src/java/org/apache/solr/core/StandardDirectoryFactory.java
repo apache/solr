@@ -77,7 +77,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   public String normalize(String path) throws IOException {
-    return super.normalize(Path.of(path).toAbsolutePath().toString());
+    return super.normalize(Path.of(path).toAbsolutePath().normalize().toString());
   }
 
   @Override

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.File;
+import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -34,14 +34,14 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   @Test
   public void testUpload() throws Exception {
-    final File tmpFile = createTempFile().toFile();
+    final Path tmpFile = createTempFile();
     ConfigSetAdminRequest.Upload upload = new ConfigSetAdminRequest.Upload();
     verifyException(upload, "ConfigSet");
 
     upload.setConfigSetName("name");
     verifyException(upload, "There must be a ContentStream");
 
-    upload.setUploadFile(tmpFile.toPath(), "application/zip");
+    upload.setUploadFile(tmpFile, "application/zip");
 
     assertEquals(1, upload.getContentStreams().size());
     assertEquals(
@@ -52,7 +52,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     assertNull(upload.getParams().get(ConfigSetParams.CLEANUP));
 
     upload
-        .setUploadFile(tmpFile.toPath(), "application/xml")
+        .setUploadFile(tmpFile, "application/xml")
         .setFilePath("solrconfig.xml")
         .setOverwrite(true);
 

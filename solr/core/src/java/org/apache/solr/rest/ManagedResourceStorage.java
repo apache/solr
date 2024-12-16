@@ -188,7 +188,7 @@ public abstract class ManagedResourceStorage {
 
     @Override
     public boolean exists(String storedResourceId) throws IOException {
-      return (Files.exists(Path.of(storageDir, storedResourceId)));
+      return Files.exists(Path.of(storageDir, storedResourceId));
     }
 
     @Override

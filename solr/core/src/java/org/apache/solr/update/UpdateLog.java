@@ -24,7 +24,6 @@ import com.carrotsearch.hppc.LongSet;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -733,12 +732,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public String[] getLogList(Path directory) {
     final String prefix = TLOG_NAME + '.';
-    String[] names = directory.toFile().list((dir, name) -> name.startsWith(prefix));
-    if (names == null) {
-      throw new RuntimeException(new FileNotFoundException(directory.toFile().getAbsolutePath()));
+    try (Stream<Path> files = Files.list(directory)) {
+      return files
+          .map((file) -> file.getFileName().toString())
+          .filter((name) -> name.startsWith(prefix))
+          .sorted()
+          .toArray(String[]::new);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-    Arrays.sort(names);
-    return names;
   }
 
   public long getLastLogId() {

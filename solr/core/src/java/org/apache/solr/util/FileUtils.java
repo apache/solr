@@ -16,37 +16,15 @@
  */
 package org.apache.solr.util;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.FileExistsException;
 
 /** */
 public class FileUtils {
-
-  /**
-   * Resolves a path relative a base directory.
-   *
-   * <p>This method does what "new File(base,path)" <b>Should</b> do, if it wasn't completely lame:
-   * If path is absolute, then a File for that path is returned; if it's not absolute, then a File
-   * is returned using "path" as a child of "base")
-   */
-  public static Path resolvePath(Path base, String path) {
-    Path r = Path.of(path);
-    return r.isAbsolute() ? r : Path.of(base.toString(), path);
-  }
-
-  public static void copyFile(Path src, Path destination) throws IOException {
-    try (FileChannel in = new FileInputStream(src.toFile()).getChannel();
-        FileChannel out = new FileOutputStream(destination.toFile()).getChannel()) {
-      in.transferTo(0, in.size(), out);
-    }
-  }
 
   /**
    * Copied from Lucene's FSDirectory.fsync(String)
