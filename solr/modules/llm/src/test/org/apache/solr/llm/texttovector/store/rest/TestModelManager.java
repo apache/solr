@@ -16,7 +16,6 @@
  */
 package org.apache.solr.llm.texttovector.store.rest;
 
-import dev.langchain4j.model.cohere.CohereEmbeddingModel;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.TestLlmBase;
@@ -60,7 +59,7 @@ public class TestModelManager extends TestLlmBase {
   public void testRestManagerEndpoints() throws Exception {
     assertJQ("/schema/managed", "/responseHeader/status==0");
 
-    final String cohereModelClassName = CohereEmbeddingModel.class.getName();
+    final String cohereModelClassName = "dev.langchain4j.model.cohere.CohereEmbeddingModel";
 
     // Add models
     String model = "{ \"name\":\"testModel1\", \"class\":\"" + cohereModelClassName + "\"}";
