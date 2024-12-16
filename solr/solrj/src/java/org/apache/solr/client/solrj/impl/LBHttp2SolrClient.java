@@ -329,9 +329,8 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
      * Use this Builder to configure an LBHttp2SolrClient. The passed-in Solr Client Builder will be
      * used to generate an internal client per Endpoint.
      *
-     * <p>Implementation Note: LBHttp2SolrClient will temporarily modify the passed-in Builder's
-     * {@link HttpSolrClientBuilderBase#baseSolrUrl} whenever it needs to generate a new Http Solr
-     * Client.
+     * <p>Implementation Note: LBHttp2SolrClient will modify the passed-in Builder's {@link
+     * HttpSolrClientBuilderBase#baseSolrUrl} whenever it needs to generate a new Http Solr Client.
      *
      * @param solrClientBuilder A Builder like {@link Http2SolrClient.Builder} used to generate the
      *     internal clients
