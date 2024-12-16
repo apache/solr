@@ -16,48 +16,13 @@
  */
 package org.apache.solr.util;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.FileExistsException;
 
 /** */
 public class FileUtils {
-
-  /**
-   * Copied from Lucene's FSDirectory.fsync(String)
-   *
-   * @param fullFile the File to be synced to disk
-   * @throws IOException if the file could not be synced
-   */
-  public static void sync(Path fullFile) throws IOException {
-    if (fullFile == null || Files.notExists(fullFile))
-      throw new FileNotFoundException("File does not exist " + fullFile);
-
-    boolean success = false;
-    int retryCount = 0;
-    IOException exc = null;
-    while (!success && retryCount < 5) {
-      retryCount++;
-      try (RandomAccessFile file = new RandomAccessFile(fullFile.toFile(), "rw")) {
-        file.getFD().sync();
-        success = true;
-      } catch (IOException ioe) {
-        if (exc == null) exc = ioe;
-        try {
-          // Pause 5 msec
-          Thread.sleep(5);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
-    if (!success)
-      // Throw original exception
-      throw exc;
-  }
 
   public static boolean fileExists(String filePathString) {
     return Files.exists(Path.of(filePathString));

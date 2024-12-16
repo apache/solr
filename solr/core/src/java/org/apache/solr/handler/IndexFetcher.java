@@ -1989,7 +1989,7 @@ public class IndexFetcher {
     Path file;
 
     LocalFsFile(Path dir, String saveAs) throws IOException {
-        this.file = dir.resolve(saveAs);
+      this.file = dir.resolve(saveAs);
 
       Path parentDir = this.file.getParent();
       if (Files.notExists(parentDir)) {
