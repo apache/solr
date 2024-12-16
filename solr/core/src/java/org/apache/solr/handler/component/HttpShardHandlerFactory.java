@@ -312,7 +312,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
-            .withListenerFactory(List.of(this.httpListenerFactory));
+            .addListenerFactory(this.httpListenerFactory);
     this.defaultClient = httpSolrClientBuilder.build();
 
     this.loadbalancer = new LBHttp2SolrClient.Builder<>(httpSolrClientBuilder).build();

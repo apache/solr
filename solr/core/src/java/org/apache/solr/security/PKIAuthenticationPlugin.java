@@ -444,7 +444,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       client.addListenerFactory(() -> listener);
     }
     if (builder != null) {
-      builder.withListenerFactory(List.of(() -> listener));
+      builder.addListenerFactory(() -> listener);
     }
   }
 

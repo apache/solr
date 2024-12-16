@@ -46,7 +46,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
     initializeMetrics(parentContext);
 
     this.httpClientBuilder =
-        new Http2SolrClient.Builder().withListenerFactory(List.of(trackHttpSolrMetrics));
+        new Http2SolrClient.Builder().addListenerFactory(trackHttpSolrMetrics);
 
     if (cfg != null) {
       httpClientBuilder

@@ -140,8 +140,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-    if (builder.listenerFactory != null) {
-      this.listenerFactory.addAll(builder.listenerFactory);
+    if (builder.listenerFactories != null) {
+      this.listenerFactory.addAll(builder.listenerFactories);
     }
     updateDefaultMimeTypeForParser();
 
@@ -907,7 +907,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
-    private List<HttpListenerFactory> listenerFactory;
+    private List<HttpListenerFactory> listenerFactories = new ArrayList<>(0);
 
     public Builder() {
       super();
@@ -933,8 +933,26 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.baseSolrUrl = baseSolrUrl;
     }
 
-    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
-      this.listenerFactory = listenerFactory;
+    /**
+     * specify a listener factory, which will be appened to any existing values.
+     *
+     * @param listenerFactory a HttpListenerFactory
+     * @return This Builder
+     */
+    public Http2SolrClient.Builder addListenerFactory(HttpListenerFactory listenerFactory) {
+      this.listenerFactories.add(listenerFactory);
+      return this;
+    }
+
+    /**
+     * Specify listener factories, which will replace any existing values.
+     *
+     * @param listenerFactories a list of HttpListenerFactory instances
+     * @return This Builder
+     */
+    public Http2SolrClient.Builder withListenerFactories(List<HttpListenerFactory> listenerFactories) {
+      this.listenerFactories.clear();
+      this.listenerFactories.addAll(listenerFactories);
       return this;
     }
 
@@ -1110,9 +1128,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
       }
-      if (this.listenerFactory == null) {
-        this.listenerFactory = new ArrayList<HttpListenerFactory>();
-        http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
+      if (this.listenerFactories.isEmpty()) {
+        this.listenerFactories.clear();
+        http2SolrClient.listenerFactory.forEach(this.listenerFactories::add);
       }
       if (this.executor == null) {
         this.executor = http2SolrClient.executor;
