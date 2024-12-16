@@ -140,9 +140,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-    if (builder.listenerFactories != null) {
-      this.listenerFactory.addAll(builder.listenerFactories);
-    }
+    this.listenerFactory.addAll(builder.listenerFactories);
     updateDefaultMimeTypeForParser();
 
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
