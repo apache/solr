@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.util.IOUtils;
@@ -45,8 +44,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
     initializeMetrics(parentContext);
 
-    this.httpClientBuilder =
-        new Http2SolrClient.Builder().addListenerFactory(trackHttpSolrMetrics);
+    this.httpClientBuilder = new Http2SolrClient.Builder().addListenerFactory(trackHttpSolrMetrics);
 
     if (cfg != null) {
       httpClientBuilder

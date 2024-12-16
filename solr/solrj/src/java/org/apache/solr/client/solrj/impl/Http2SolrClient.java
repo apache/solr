@@ -948,7 +948,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
      * @param listenerFactories a list of HttpListenerFactory instances
      * @return This Builder
      */
-    public Http2SolrClient.Builder withListenerFactories(List<HttpListenerFactory> listenerFactories) {
+    public Http2SolrClient.Builder withListenerFactories(
+        List<HttpListenerFactory> listenerFactories) {
       this.listenerFactories.clear();
       this.listenerFactories.addAll(listenerFactories);
       return this;
