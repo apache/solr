@@ -1111,11 +1111,10 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     @Override
     protected String buildQueryString(ResultContext resultContext) {
       String propertyClause =
-          String.join(
-              "&property=",
-              Arrays.stream(properties)
-                  .map(p -> URLEncoder.encode(p, StandardCharsets.UTF_8))
-                  .collect(Collectors.toSet()));
+          Arrays.stream(properties)
+              .map(p -> URLEncoder.encode(p, StandardCharsets.UTF_8))
+              .distinct()
+              .collect(Collectors.joining(",", "&property=", ""));
       return String.format(
           Locale.ROOT,
           "wt=json&indent=false&compact=true&group=%s&prefix=%s%s",
