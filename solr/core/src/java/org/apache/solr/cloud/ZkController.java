@@ -868,14 +868,14 @@ public class ZkController implements Closeable {
       if (cloudManager != null) {
         return cloudManager;
       }
-      var httpClientBuilder =
+      var httpSolrClientBuilder =
           new Http2SolrClient.Builder()
               .withHttpClient(cc.getDefaultHttpSolrClient())
               .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
               .withConnectionTimeout(15000, TimeUnit.MILLISECONDS);
       cloudSolrClient =
           new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-              .withInternalClientBuilder(httpClientBuilder)
+              .withInternalClientBuilder(httpSolrClientBuilder)
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
       cloudManager.getClusterStateProvider().connect();

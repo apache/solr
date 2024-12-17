@@ -53,8 +53,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
-    var httpClientBuilder = createOrGetHttpClientBuilder(builder);
-    this.myClient = httpClientBuilder.build();
+    var httpSolrClientBuilder = createOrGetHttpClientBuilder(builder);
+    this.myClient = httpSolrClientBuilder.build();
     this.stateProvider = createClusterStateProvider(builder);
     this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
     this.defaultCollection = builder.defaultCollection;
@@ -72,7 +72,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     // locks.
     this.locks = objectList(builder.parallelCacheRefreshesLocks);
 
-    this.lbClient = new LBHttp2SolrClient.Builder<>(httpClientBuilder).build();
+    this.lbClient = new LBHttp2SolrClient.Builder<>(httpSolrClientBuilder).build();
   }
 
   private Http2SolrClient.Builder createOrGetHttpClientBuilder(Builder builder) {
