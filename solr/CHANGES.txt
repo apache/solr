@@ -140,6 +140,9 @@ Bug Fixes
 
 * SOLR-17586: Print zkcli.sh deprecation msg to stderr, which fixes Solr Operator upload of security.json to zookeeper (Jan Høydahl)
 
+* SOLR-17595: Fix two issues in Solr CLI that prevent Solr from starting with the techproducts example and from
+  correctly parsing arguments on Windows that start with -D and have multiple values separated by "," or spaces. (Christos Malliaridis)
+
 Dependency Upgrades
 ---------------------
 (No changes)

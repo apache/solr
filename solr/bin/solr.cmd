@@ -748,7 +748,6 @@ goto repeat_passthru
 
 :end_passthru
 set "PASSTHRU=%PASSTHRU_KEY%=%PASSTHRU_VALUES%"
-echo "Passing through %PASSTHRU%"
 
 IF NOT "%SOLR_OPTS%"=="" (
   set "SOLR_OPTS=%SOLR_OPTS% %PASSTHRU%"
