@@ -932,7 +932,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     /**
-     * specify a listener factory, which will be appened to any existing values.
+     * specify a listener factory, which will be appended to any existing values.
      *
      * @param listenerFactory a HttpListenerFactory
      * @return This Builder
