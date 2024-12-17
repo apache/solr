@@ -21,16 +21,21 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.CollectionStatusResponse;
 
 /**
  * V2 API definition for fetching collection metadata
  *
  * <p>This API (GET /v2/collections/collectionName) is analogous to the v1
- * /admin/collections?action=CLUSTERSTATUS&amp;collection=collectionName command.
+ * /admin/collections?action=COLSTATUS command.
  */
 @Path("/collections/{collectionName}")
 public interface CollectionStatusApi {
+
+  // TODO Query parameters currently match those offered by the v1
+  // /admin/collections?action=COLSTATUS.  Should param names be updated/clarified?  Are all params
+  // still relevant? ('segments' and 'fieldInfo' seem to do very little)
   @GET
   @Operation(
       summary = "Fetches metadata about the specified collection",
@@ -38,6 +43,15 @@ public interface CollectionStatusApi {
   CollectionStatusResponse getCollectionStatus(
       @Parameter(description = "The name of the collection return metadata for", required = true)
           @PathParam("collectionName")
-          String collectionName)
+          String collectionName,
+      @Parameter(description = "") @QueryParam("coreInfo") Boolean coreInfo,
+      @Parameter(description = "") @QueryParam("segments") Boolean segments,
+      @Parameter(description = "") @QueryParam("fieldInfo") Boolean fieldInfo,
+      @Parameter(description = "") @QueryParam("rawSize") Boolean rawSize,
+      @Parameter(description = "") @QueryParam("rawSizeSummary") Boolean rawSizeSummary,
+      @Parameter(description = "") @QueryParam("rawSizeDetails") Boolean rawSizeDetails,
+      @Parameter(description = "") @QueryParam("rawSizeSamplingPercent")
+          Float rawSizeSamplingPercent,
+      @Parameter(description = "") @QueryParam("sizeInfo") Boolean sizeInfo)
       throws Exception;
 }

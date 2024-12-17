@@ -18,27 +18,22 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.handler.admin.ClusterStatus.INCLUDE_ALL;
 
 import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.CollectionStatusApi;
 import org.apache.solr.client.api.model.CollectionStatusResponse;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.ClusterStatus;
+import org.apache.solr.handler.admin.ColStatus;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
-/**
- * V2 API for displaying basic information about a single collection.
- *
- * <p>This API (GET /v2/collections/collectionName) is analogous to the v1
- * /admin/collections?action=CLUSTERSTATUS&amp;collection=collectionName command.
- */
+/** V2 API implementation for {@link CollectionStatusApi}. */
 public class CollectionStatus extends AdminAPIBase implements CollectionStatusApi {
 
   @Inject
@@ -49,23 +44,46 @@ public class CollectionStatus extends AdminAPIBase implements CollectionStatusAp
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @PermissionName(PermissionNameProvider.Name.COLL_READ_PERM)
   @Override
-  public CollectionStatusResponse getCollectionStatus(String collectionName) throws Exception {
-    recordCollectionForLogAndTracing(null, solrQueryRequest);
+  @PermissionName(PermissionNameProvider.Name.COLL_READ_PERM)
+  public CollectionStatusResponse getCollectionStatus(
+      String collectionName,
+      Boolean coreInfo,
+      Boolean segments,
+      Boolean fieldInfo,
+      Boolean rawSize,
+      Boolean rawSizeSummary,
+      Boolean rawSizeDetails,
+      Float rawSizeSamplingPercent,
+      Boolean sizeInfo)
+      throws Exception {
+    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    // Fetch the NamedList from ClusterStatus...
-    final var nlResponse = new NamedList<>();
     final var params = new ModifiableSolrParams();
-    params.set(INCLUDE_ALL, false);
-    params.set(COLLECTION_PROP, collectionName);
-    // TODO Rework ClusterStatus to avoid the intermediate NL, if all usages can be switched over
-    new ClusterStatus(coreContainer.getZkController().getZkStateReader(), params)
-        .getClusterStatus(nlResponse);
+    params.add(COLLECTION_PROP, collectionName);
+    params.setNonNull(ColStatus.CORE_INFO_PROP, coreInfo);
+    params.setNonNull(ColStatus.SEGMENTS_PROP, segments);
+    params.setNonNull(ColStatus.FIELD_INFO_PROP, fieldInfo);
+    params.setNonNull(ColStatus.RAW_SIZE_PROP, rawSize);
+    params.setNonNull(ColStatus.RAW_SIZE_SUMMARY_PROP, rawSizeSummary);
+    params.setNonNull(ColStatus.RAW_SIZE_DETAILS_PROP, rawSizeDetails);
+    params.setNonNull(ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP, rawSizeSamplingPercent);
+    params.setNonNull(ColStatus.SIZE_INFO_PROP, sizeInfo);
 
-    // ...and convert it to the response type
-    final var collMetadata = nlResponse.findRecursive("cluster", "collections", collectionName);
-    return SolrJacksonMapper.getObjectMapper()
-        .convertValue(collMetadata, CollectionStatusResponse.class);
+    // TODO Push CollectionStatusResponse down into ColStatus and avoid the intermediate NL, if all
+    // usages can be switched over.
+    final var nlResponse = new NamedList<>();
+    new ColStatus(
+            coreContainer.getSolrClientCache(),
+            coreContainer.getZkController().getZkStateReader().getClusterState(),
+            new ZkNodeProps(params))
+        .getColStatus(nlResponse);
+    // collName is prop/key for a nested NL returned by ColStatus - extract the inner NL and
+    // manually add name to resp
+    final var colStatusResponse =
+        SolrJacksonMapper.getObjectMapper()
+            .convertValue(nlResponse.get(collectionName), CollectionStatusResponse.class);
+    colStatusResponse.name = collectionName;
+    return colStatusResponse;
   }
 }

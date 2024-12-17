@@ -714,12 +714,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         new CollectionsApi.GetCollectionStatus(simpleCollName)
             .process(cluster.getSolrClient())
             .getParsed();
+    assertEquals(simpleCollName, simpleResponse.name);
     assertEquals(2, simpleResponse.shards.size());
-    assertEquals(Integer.valueOf(1), simpleResponse.nrtReplicas);
-    assertEquals(Integer.valueOf(1), simpleResponse.replicationFactor);
-    assertEquals(Integer.valueOf(1), simpleResponse.tlogReplicas);
-    assertEquals(Integer.valueOf(1), simpleResponse.pullReplicas);
-    assertEquals("GREEN", simpleResponse.health);
+    assertEquals(Integer.valueOf(2), simpleResponse.activeShards);
+    assertEquals(Integer.valueOf(0), simpleResponse.inactiveShards);
+    assertEquals(Integer.valueOf(1), simpleResponse.properties.nrtReplicas);
+    assertEquals(Integer.valueOf(1), simpleResponse.properties.replicationFactor);
+    assertEquals(Integer.valueOf(1), simpleResponse.properties.pullReplicas);
+    assertEquals(Integer.valueOf(1), simpleResponse.properties.tlogReplicas);
   }
 
   private static final int NUM_DOCS = 10;
