@@ -33,6 +33,7 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
 
   @JsonProperty public Map<String, ShardMetadata> shards;
 
+  // Always present in response
   public static class CollectionMetadata {
     @JsonProperty public String configName;
     @JsonProperty public Integer nrtReplicas;
@@ -42,6 +43,7 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     @JsonProperty public Integer replicationFactor;
   }
 
+  // Always present in response
   public static class ShardMetadata {
     @JsonProperty public String state; // TODO Make this an enum?
     @JsonProperty public String range;
@@ -49,6 +51,7 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     @JsonProperty public LeaderSummary leader;
   }
 
+  // ALways present in response
   public static class ReplicaSummary {
     @JsonProperty public Integer total;
     @JsonProperty public Integer active;
@@ -59,6 +62,7 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     public Integer recoveryFailed;
   }
 
+  // Always present in response unless otherwise specified
   public static class LeaderSummary {
     @JsonProperty public String coreNode;
     @JsonProperty public String core;
@@ -103,12 +107,6 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
 
     // Present with rawSizeSummary=true
     @JsonProperty public Map<String, Object> summary;
-  }
-
-  // Present with rawSizeSummary=true
-  public static class SingleFieldSizeSummary {
-    @JsonProperty Integer totalSize;
-    @JsonProperty Map<String, Integer> perType;
   }
 
   // Present with coreInfo=true || sizeInfo=true unless otherwise specified

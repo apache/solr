@@ -35,7 +35,7 @@ public interface CollectionStatusApi {
 
   // TODO Query parameters currently match those offered by the v1
   // /admin/collections?action=COLSTATUS.  Should param names be updated/clarified?  Are all params
-  // still relevant? ('segments' and 'fieldInfo' seem to do very little)
+  // still relevant? ('segments', 'sizeInfo', and 'fieldInfo' seem to do very little)
   @GET
   @Operation(
       summary = "Fetches metadata about the specified collection",
@@ -44,14 +44,33 @@ public interface CollectionStatusApi {
       @Parameter(description = "The name of the collection return metadata for", required = true)
           @PathParam("collectionName")
           String collectionName,
-      @Parameter(description = "") @QueryParam("coreInfo") Boolean coreInfo,
-      @Parameter(description = "") @QueryParam("segments") Boolean segments,
-      @Parameter(description = "") @QueryParam("fieldInfo") Boolean fieldInfo,
-      @Parameter(description = "") @QueryParam("rawSize") Boolean rawSize,
-      @Parameter(description = "") @QueryParam("rawSizeSummary") Boolean rawSizeSummary,
-      @Parameter(description = "") @QueryParam("rawSizeDetails") Boolean rawSizeDetails,
-      @Parameter(description = "") @QueryParam("rawSizeSamplingPercent")
+      @Parameter(
+              description =
+                  "Boolean flag to include metadata (e.g. index an data directories, IndexWriter configuration, etc.) about the leader cores for each shard")
+          @QueryParam("coreInfo")
+          Boolean coreInfo,
+      @QueryParam("segments") Boolean segments,
+      @QueryParam("fieldInfo") Boolean fieldInfo,
+      @Parameter(
+              description =
+                  "Boolean flag to include simple estimates of the disk size taken up by each field (e.g. \"id\", \"_version_\") and by each index data structure (e.g. 'storedFields', 'docValues_numeric')")
+          @QueryParam("rawSize")
+          Boolean rawSize,
+      @Parameter(
+              description =
+                  "Boolean flag to include more involved estimates of the disk size taken up by index data structures, on a per-field basis (e.g. how much data does the \"id\" field contribute to 'storedField' index files).  More detail than 'rawSize', less detail than 'rawSizeDetails'.")
+          @QueryParam("rawSizeSummary")
+          Boolean rawSizeSummary,
+      @Parameter(
+              description =
+                  "Boolean flag to include detailed statistics about the disk size taken up by various fields and data structures.  More detail than 'rawSize' and 'rawSizeSummary'.")
+          @QueryParam("rawSizeDetails")
+          Boolean rawSizeDetails,
+      @Parameter(
+              description =
+                  "Percentage (between 0 and 100) of data to read when estimating index size and statistics.  Defaults to 5.0 (i.e. 5%).")
+          @QueryParam("rawSizeSamplingPercent")
           Float rawSizeSamplingPercent,
-      @Parameter(description = "") @QueryParam("sizeInfo") Boolean sizeInfo)
+      @QueryParam("sizeInfo") Boolean sizeInfo)
       throws Exception;
 }
