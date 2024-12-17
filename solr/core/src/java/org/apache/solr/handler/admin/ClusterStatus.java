@@ -206,7 +206,7 @@ public class ClusterStatus {
       }
     }
 
-    Iterator<NamedList<Object>> collectionsResponse =
+    Iterator<NamedList<Object>> collectionPropsIt =
         new Iterator<>() {
           final Iterator<DocCollection> it = collectionStream.iterator();
 
@@ -263,7 +263,7 @@ public class ClusterStatus {
           }
         };
 
-    clusterStatus.add("collections", collectionsResponse);
+    clusterStatus.add("collections", collectionPropsIt);
   }
 
   private void addAliasMap(Aliases aliases, NamedList<Object> clusterStatus) {
