@@ -80,12 +80,16 @@ public class ColStatus {
       collections = Collections.singleton(col);
     }
     boolean withFieldInfo = props.getBool(FIELD_INFO_PROP, false);
-    boolean withSegments = props.getBool(SEGMENTS_PROP, false);
     boolean withCoreInfo = props.getBool(CORE_INFO_PROP, false);
     boolean withSizeInfo = props.getBool(SIZE_INFO_PROP, false);
     boolean withRawSizeInfo = props.getBool(RAW_SIZE_PROP, false);
     boolean withRawSizeSummary = props.getBool(RAW_SIZE_SUMMARY_PROP, false);
     boolean withRawSizeDetails = props.getBool(RAW_SIZE_DETAILS_PROP, false);
+    // FieldInfo and SizeInfo imply segments=true, since they add to the data reported about each
+    // segment
+    boolean withSegments = props.getBool(SEGMENTS_PROP, false);
+    withSegments |= withFieldInfo || withSizeInfo;
+
     Object samplingPercentVal = props.get(RAW_SIZE_SAMPLING_PERCENT_PROP);
     Float samplingPercent =
         samplingPercentVal != null ? Float.parseFloat(String.valueOf(samplingPercentVal)) : null;
@@ -94,6 +98,7 @@ public class ColStatus {
     }
     boolean getSegments = false;
     if (withFieldInfo
+        || withSegments
         || withSizeInfo
         || withCoreInfo
         || withRawSizeInfo
