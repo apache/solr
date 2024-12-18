@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
-import java.net.CookieStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -58,36 +57,37 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.Origin.Protocol;
+import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.FormRequestContent;
-import org.eclipse.jetty.client.util.InputStreamRequestContent;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.MultiPartRequestContent;
-import org.eclipse.jetty.client.util.OutputStreamRequestContent;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
@@ -255,7 +255,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setIdleTimeout(idleTimeoutMillis);
 
     if (builder.cookieStore != null) {
-      httpClient.setCookieStore(builder.cookieStore);
+      httpClient.setHttpCookieStore(builder.cookieStore);
     }
 
     this.authenticationStore = new AuthenticationStoreHolder();
@@ -757,7 +757,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
           String[] vals = wparams.getParams(key);
           if (vals != null) {
             for (String val : vals) {
-              content.addFieldPart(key, new StringRequestContent(val), null);
+              content.addPart(
+                  new MultiPart.ContentSourcePart(key, null, null, new StringRequestContent(val)));
             }
           }
         }
@@ -773,11 +774,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
             }
             HttpFields.Mutable fields = HttpFields.build(1);
             fields.add(HttpHeader.CONTENT_TYPE, contentType);
-            content.addFilePart(
-                name,
-                contentStream.getName(),
-                new InputStreamRequestContent(contentStream.getStream()),
-                fields);
+            content.addPart(
+                new MultiPart.ContentSourcePart(
+                    name,
+                    contentStream.getName(),
+                    fields,
+                    new InputStreamRequestContent(contentStream.getStream())));
           }
         }
         req.body(content);
@@ -900,7 +902,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     private HttpClient httpClient;
 
-    protected CookieStore cookieStore;
+    protected HttpCookieStore cookieStore;
 
     private SSLConfig sslConfig;
 
@@ -1003,7 +1005,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return this;
     }
 
-    private CookieStore getDefaultCookieStore() {
+    private HttpCookieStore getDefaultCookieStore() {
       if (Boolean.getBoolean("solr.http.disableCookies")) {
         return new HttpCookieStore.Empty();
       }
@@ -1125,7 +1127,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
      * @param cookieStore The CookieStore to set. {@code null} will set the default.
      * @return this Builder
      */
-    public Builder withCookieStore(CookieStore cookieStore) {
+    public Builder withCookieStore(HttpCookieStore cookieStore) {
       this.cookieStore = cookieStore;
       return this;
     }

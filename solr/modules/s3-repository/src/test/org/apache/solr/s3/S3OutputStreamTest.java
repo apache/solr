@@ -33,6 +33,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
   private static final String BUCKET = S3OutputStreamTest.class.getSimpleName();
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
       S3MockRule.builder().silent().withInitialBuckets(BUCKET).withSecureConnection(false).build();
 

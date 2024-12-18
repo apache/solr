@@ -20,7 +20,9 @@ apply plugin: 'java-library'
 description = 'S3 Repository'
 
 dependencies {
-  api project(':solr:core')
+  api(project(':solr:core')) {
+    exclude group: 'org.ow2.asm', module: '*'
+  }
   implementation project(':solr:solrj')
 
   implementation libs.apache.lucene.core
@@ -34,7 +36,9 @@ dependencies {
   implementation(libs.amazon.awssdk.s3) {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
-  implementation libs.amazon.awssdk.sdkcore
+  implementation(libs.amazon.awssdk.sdkcore){
+    exclude group: 'joda-time', module: 'joda-time'
+  }
   runtimeOnly(libs.amazon.awssdk.sts) {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
@@ -45,7 +49,9 @@ dependencies {
   runtimeOnly libs.fasterxml.woodstox.core
   runtimeOnly libs.codehaus.woodstox.stax2api
 
-  testImplementation project(':solr:test-framework')
+  testImplementation(project(':solr:test-framework')) {
+    exclude group: 'org.ow2.asm', module: '*'
+  }
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
@@ -64,6 +70,11 @@ dependencies {
     exclude group: 'org.apache.commons', module: 'commons-lang3'
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
     exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
+    exclude group: 'jakarta.xml.bind', module: 'jakarta.xml.bind-api'
+    exclude group: 'org.ow2.asm', module: '*'
+    exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
+    exclude group: 'joda-time', module: 'joda-time'
+    exclude group: 'org.eclipse.jetty.ee10', module: '*'
   }
   testImplementation(libs.adobe.testing.s3mock.testsupportcommon) {
     // Don't pull in separate versions of these libs, just use what Solr already has
@@ -76,11 +87,21 @@ dependencies {
     exclude group: 'org.apache.commons', module: 'commons-lang3'
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
     exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
+    exclude group: 'jakarta.xml.bind', module: 'jakarta.xml.bind-api'
+    exclude group: 'org.ow2.asm', module: '*'
+    exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
+    exclude group: 'joda-time', module: 'joda-time'
+    exclude group: 'org.eclipse.jetty.ee10', module: '*'
   }
 
   testImplementation libs.commonsio.commonsio
 
-  testRuntimeOnly libs.eclipse.jetty.webapp
+  testRuntimeOnly(libs.eclipse.jetty.ee10.webapp) {
+    exclude group: 'org.ow2.asm', module: '*'
+  }
+  testRuntimeOnly libs.eclipse.jetty.ee
+  testRuntimeOnly libs.eclipse.jetty.jndi
+  testRuntimeOnly libs.eclipse.jetty.plus
 
   testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
