@@ -441,24 +441,28 @@ public class JavaBinCodec implements PushWriter {
       writeBoolean(((AtomicBoolean) val).get());
       return true;
     }
-    if (val instanceof float[]) {
-      writeFloatArr((float[]) val);
+    if (val instanceof float[] ff) {
+      writeFloatArr(ff);
       return true;
     }
-    if (val instanceof int[]) {
-      writeIntArr((int[]) val);
+    if (val instanceof int[] ii) {
+      writeIntArr(ii);
       return true;
     }
-    if (val instanceof long[]) {
-      writeLongArr((long[]) val);
+    if (val instanceof long[] ll) {
+      writeLongArr(ll);
       return true;
     }
-    if (val instanceof double[]) {
-      writeDoubleArr((double[]) val);
+    if (val instanceof double[] dd) {
+      writeDoubleArr(dd);
       return true;
     }
-    if (val instanceof short[]) {
-      writeShortArr((short[]) val);
+    if (val instanceof short[] ss) {
+      writeShortArr(ss);
+      return true;
+    }
+    if (val instanceof boolean[] bb) {
+      writeBoolArr(bb);
       return true;
     }
     return false;
@@ -509,6 +513,16 @@ public class JavaBinCodec implements PushWriter {
           }
           return v;
         }
+      case BOOL_TRUE:
+      case BOOL_FALSE:
+        {
+          boolean[] v = new boolean[len];
+          for (int i = 0; i < len; i++) {
+            byte b = dis.readByte();
+            v[i] = b == BOOL_FALSE ? false : true;
+          }
+          return v;
+        }
       case BYTE:
         {
           // it should be possible to serialize byte[] in the new format as well
@@ -554,6 +568,13 @@ public class JavaBinCodec implements PushWriter {
     writePrimitiveArrHeader(LONG, vals.length);
     for (long l : vals) {
       daos.writeLong(l);
+    }
+  }
+
+  public void writeBoolArr(boolean[] vals) throws IOException {
+    writePrimitiveArrHeader(BOOL_TRUE, vals.length);
+    for (boolean b : vals) {
+      writeBoolean(b);
     }
   }
 
