@@ -20,7 +20,6 @@ import io.opentelemetry.api.trace.Span;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
@@ -157,10 +156,5 @@ public class DelegatingSolrQueryRequest implements SolrQueryRequest {
   @Override
   public CoreContainer getCoreContainer() {
     return delegate.getCoreContainer();
-  }
-
-  @Override
-  public CloudDescriptor getCloudDescriptor() {
-    return delegate.getCloudDescriptor();
   }
 }

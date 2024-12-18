@@ -25,7 +25,6 @@ import org.apache.solr.servlet.CoordinatorHttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 
 public class CoordinatorV2HttpSolrCall extends V2HttpCall {
-  private String collectionName;
   CoordinatorHttpSolrCall.Factory factory;
 
   public CoordinatorV2HttpSolrCall(
@@ -41,7 +40,6 @@ public class CoordinatorV2HttpSolrCall extends V2HttpCall {
 
   @Override
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
-    this.collectionName = collectionName;
     SolrCore core = super.getCoreByCollection(collectionName, isPreferLeader);
     if (core != null) return core;
     if (!path.endsWith("/select")) return null;
@@ -52,7 +50,7 @@ public class CoordinatorV2HttpSolrCall extends V2HttpCall {
   protected void init() throws Exception {
     super.init();
     if (action == SolrDispatchFilter.Action.PROCESS && core != null) {
-      solrReq = CoordinatorHttpSolrCall.wrappedReq(solrReq, collectionName, this);
+      solrReq = CoordinatorHttpSolrCall.wrappedReq(solrReq, this);
     }
   }
 }

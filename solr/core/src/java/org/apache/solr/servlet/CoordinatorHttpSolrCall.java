@@ -19,19 +19,15 @@ package org.apache.solr.servlet;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.api.CoordinatorV2HttpSolrCall;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SyntheticSolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -151,7 +147,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   protected void init() throws Exception {
     super.init();
     if (action == SolrDispatchFilter.Action.PROCESS && core != null) {
-      solrReq = wrappedReq(solrReq, collectionName, this);
+      solrReq = wrappedReq(solrReq, this);
     }
   }
 
@@ -160,27 +156,12 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     return collectionName;
   }
 
-  public static SolrQueryRequest wrappedReq(
-      SolrQueryRequest delegate, String collectionName, HttpSolrCall httpSolrCall) {
-    Properties p = new Properties();
-    if (collectionName != null) {
-      p.put(CoreDescriptor.CORE_COLLECTION, collectionName);
-    }
-    p.put(CloudDescriptor.REPLICA_TYPE, Replica.Type.PULL.toString());
-    p.put(CoreDescriptor.CORE_SHARD, "_");
+  public static SolrQueryRequest wrappedReq(SolrQueryRequest delegate, HttpSolrCall httpSolrCall) {
 
-    CloudDescriptor cloudDescriptor =
-        new CloudDescriptor(
-            delegate.getCore().getCoreDescriptor(), delegate.getCore().getName(), p);
     return new DelegatingSolrQueryRequest(delegate) {
       @Override
       public HttpSolrCall getHttpSolrCall() {
         return httpSolrCall;
-      }
-
-      @Override
-      public CloudDescriptor getCloudDescriptor() {
-        return cloudDescriptor;
       }
     };
   }
