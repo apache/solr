@@ -152,7 +152,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
@@ -164,7 +164,8 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
+  LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
 
 ==================  9.8.0 ==================
 New Features
@@ -215,6 +216,8 @@ Improvements
 * SOLR-16470: Replication "fetch file" API now has a v2 equivalent, available at `GET /api/cores/coreName/replication/files/fileName`
   (Matthew Biscocho via Jason Gerlowski)
 
+* SOLR-17554: Suppress printing out of password to console when using auth CLI command. (Christos Malliaridis via Eric Pugh)
+
 
 Optimizations
 ---------------------
@@ -239,7 +242,8 @@ Optimizations
 
 * SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
 
-* SOLR-16503: Switched from HTTP1 to HTTP2 in SolrClientCloudManager by replacing CloudLegacySolrClient with CloudHttp2SolrClient. (Sanjay Dutt, David Smiley)
+* SOLR-17592: Switched from HTTP1 to HTTP2 in SolrCloudManager via HttpClient change from Apache to Jetty.
+  (Sanjay Dutt, David Smiley)
 
 * SOLR-17453: Leverage waitForState() instead of busy waiting in CREATE, MIGRATE, REINDEXCOLLECTION, MOVEREPLICA commands, and in some tests. (Pierre Salagnac)
 
@@ -268,6 +272,9 @@ Bug Fixes
 * SOLR-17575: Fixed broken backwards compatibility with the legacy "langid.whitelist" config in Solr Langid. (Jan Høydahl, Alexander Zagniotov)
 
 * SOLR-17574: Fix AllowListUrlChecker when liveNodes changes. Remove ClusterState.getHostAllowList (Bruno Roustant, David Smiley)
+
+* SOLR-17595: Fix two issues in Solr CLI that prevent Solr from starting with the techproducts example and from
+  correctly parsing arguments on Windows that start with -D and have multiple values separated by "," or spaces. (Christos Malliaridis)
 
 Dependency Upgrades
 ---------------------
@@ -299,6 +306,10 @@ led to the suppression of exceptions. (Andrey Bozhko)
 * SOLR-17556: "home" and "data" directories used by Solr examples have been updated to align with documented best practices. (Eric Pugh, Houston Putman)
 
 * SOLR-17577: Remove "solr.indexfetcher.sotimeout" system property that was for optimizing replication tests.  It was disabled, but not removed. (Eric Pugh)
+
+* SOLR-14680: NamedList: deprecating methods: forEachEntry, forEachKey, abortableForEachKey, abortableForEach,
+ asMap (no-arg only), get(key, default).  Added getOrDefault.  Deprecated the SimpleMap interface as well as the
+ entirety of the SolrJ package org.apache.solr.cluster.api, which wasn't used except for SimpleMap.  (David Smiley)
 
 ==================  9.7.1 ==================
 Bug Fixes
@@ -456,7 +467,7 @@ Other Changes
 
 * GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
 
-* SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
+* SOLR-17290: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
 
 * SOLR-16796: Include cyclonedx SBOMs with maven artifacts (Arnout Engelen, Houston Putman, Kevin Risden)
 

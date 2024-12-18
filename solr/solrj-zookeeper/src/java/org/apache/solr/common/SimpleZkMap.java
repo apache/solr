@@ -35,6 +35,7 @@ import org.apache.zookeeper.KeeperException;
  * #abortableForEach(BiFunction)} to traverse DO not use the {@link #size()} method. It always
  * return 0 because it is very expensive to compute that
  */
+@Deprecated
 public class SimpleZkMap implements SimpleMap<Resource> {
   private final ZkStateReader zkStateReader;
   private final String basePath;

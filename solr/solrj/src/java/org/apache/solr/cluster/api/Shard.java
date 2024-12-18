@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.api;
 
 /** A shard of a collection */
+@Deprecated
 public interface Shard {
 
   /** name of the shard */
