@@ -352,7 +352,7 @@ public class StatusTool extends ToolBase {
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
     Map<String, Object> collections =
-        ((NamedList<Object>) json.findRecursive("cluster", "collections")).asMap();
+        (Map<String, Object>) json.findRecursive("cluster", "collections");
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;
