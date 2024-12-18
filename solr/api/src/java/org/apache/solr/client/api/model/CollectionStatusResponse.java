@@ -97,6 +97,18 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
 
     // Present with coreInfo=true || sizeInfo=true unless otherwise specified
     @JsonProperty public SegmentInfo segInfos;
+
+    private Map<String, Object> unknownFields = new HashMap<>();
+
+    @JsonAnyGetter
+    public Map<String, Object> unknownProperties() {
+      return unknownFields;
+    }
+
+    @JsonAnySetter
+    public void setUnknownProperty(String field, Object value) {
+      unknownFields.put(field, value);
+    }
   }
 
   // Present with segments=true || coreInfo=true || sizeInfo=true || fieldInfo=true unless otherwise
@@ -191,10 +203,8 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     @JsonProperty public Integer numSegments;
     @JsonProperty public String segmentsFileName;
     @JsonProperty public Integer totalMaxDoc;
-
-    @JsonProperty
-    public Map<String, String>
-        userData; // Typically keys are 'commitCommandVer' and 'commitTimeMSec'
+    // Typically keys are 'commitCommandVer' and 'commitTimeMSec'
+    @JsonProperty public Map<String, String> userData;
 
     // Present for coreInfo=true only
     @JsonProperty public CoreSummary core;

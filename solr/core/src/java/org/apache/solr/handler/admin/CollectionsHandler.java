@@ -539,11 +539,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP,
                   ColStatus.SIZE_INFO_PROP);
 
-          new ColStatus(
-                  h.coreContainer.getSolrClientCache(),
-                  h.coreContainer.getZkController().getZkStateReader().getClusterState(),
-                  new ZkNodeProps(props))
-              .getColStatus(rsp.getValues());
+          CollectionStatus.populateColStatusData(
+              h.coreContainer, new ZkNodeProps(props), rsp.getValues());
           return null;
         }),
     DELETE_OP(

@@ -60,7 +60,7 @@ public class CollectionStatus extends AdminAPIBase implements CollectionStatusAp
     recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
     final var params = new ModifiableSolrParams();
-    params.add(COLLECTION_PROP, collectionName);
+    params.set(COLLECTION_PROP, collectionName);
     params.setNonNull(ColStatus.CORE_INFO_PROP, coreInfo);
     params.setNonNull(ColStatus.SEGMENTS_PROP, segments);
     params.setNonNull(ColStatus.FIELD_INFO_PROP, fieldInfo);
@@ -70,20 +70,28 @@ public class CollectionStatus extends AdminAPIBase implements CollectionStatusAp
     params.setNonNull(ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP, rawSizeSamplingPercent);
     params.setNonNull(ColStatus.SIZE_INFO_PROP, sizeInfo);
 
-    // TODO Push CollectionStatusResponse down into ColStatus and avoid the intermediate NL, if all
-    // usages can be switched over.
     final var nlResponse = new NamedList<>();
-    new ColStatus(
-            coreContainer.getSolrClientCache(),
-            coreContainer.getZkController().getZkStateReader().getClusterState(),
-            new ZkNodeProps(params))
-        .getColStatus(nlResponse);
-    // collName is prop/key for a nested NL returned by ColStatus - extract the inner NL and
-    // manually add name to resp
+    populateColStatusData(coreContainer, new ZkNodeProps(params), nlResponse);
+
+    // v2 API does not support requesting the status of multiple collections simultaneously as its
+    // counterpart does, and its response looks slightly different as a result.  Primarily, the
+    // v2 response eschews a level of nesting that necessitated by the multi-collection nature of
+    // v1.  These tweaks are made below before returning.
     final var colStatusResponse =
         SolrJacksonMapper.getObjectMapper()
             .convertValue(nlResponse.get(collectionName), CollectionStatusResponse.class);
     colStatusResponse.name = collectionName;
     return colStatusResponse;
+  }
+
+  // TODO Modify ColStatus to produce a CollectionStatusResponse instead of a NL
+  public static void populateColStatusData(
+      CoreContainer coreContainer, ZkNodeProps params, NamedList<Object> colStatusSink) {
+    final var colStatusAssembler =
+        new ColStatus(
+            coreContainer.getSolrClientCache(),
+            coreContainer.getZkController().getZkStateReader().getClusterState(),
+            params);
+    colStatusAssembler.getColStatus(colStatusSink);
   }
 }
