@@ -108,6 +108,20 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     return parentDocument;
   }
 
+  @Test
+  public void testPrimitiveArrays() throws Exception {
+    List<Object> types = new ArrayList<>();
+
+    types.add(new float[] {1.0678f, 4.094565f, 0.000456f});
+    types.add(new double[] {1.0678d, 4.094565d, 0.000456d});
+    types.add(new int[] {145543, 4546354, 9789857});
+    types.add(new long[] {145543L, 4546354L, 9789857L});
+    types.add(new short[] {43, 454, 857});
+    types.add(new boolean[] {true, true, false});
+
+    compareObjects((List<?>) getObject(getBytes(types)), types);
+  }
+
   private List<Object> generateAllDataTypes() {
     List<Object> types = new ArrayList<>();
 
@@ -223,6 +237,23 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       } else if (unmarshalledObj.get(i) instanceof SolrInputField
           && matchObj.get(i) instanceof SolrInputField) {
         assertTrue(assertSolrInputFieldEquals(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof float[] a
+          && matchObj.get(i) instanceof float[] e) {
+        assertArrayEquals(e, a, 0.000000f);
+      } else if (unmarshalledObj.get(i) instanceof double[] a
+          && matchObj.get(i) instanceof double[] e) {
+        assertArrayEquals(e, a, 0.000000d);
+      } else if (unmarshalledObj.get(i) instanceof long[] a
+          && matchObj.get(i) instanceof long[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof int[] a && matchObj.get(i) instanceof int[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof short[] a
+          && matchObj.get(i) instanceof short[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof boolean[] a
+          && matchObj.get(i) instanceof boolean[] e) {
+        assertArrayEquals(e, a);
       } else {
         assertEquals(unmarshalledObj.get(i), matchObj.get(i));
       }
