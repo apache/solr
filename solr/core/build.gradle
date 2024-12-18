@@ -20,6 +20,7 @@ apply plugin: 'java-library'
 description = 'Apache Solr Core'
 
 dependencies {
+  api platform(project(":platform"))
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
