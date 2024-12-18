@@ -822,10 +822,7 @@ IF NOT EXIST "%SOLR_HOME%\" (
   )
 )
 
-IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
-
-@REM This is quite hacky, but examples rely on a different log4j2.xml
-@REM so that we can write logs for examples to %SOLR_HOME%\..\logs
+@REM Handle overriding where logs are written to
 IF [%SOLR_LOGS_DIR%] == [] (
   set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
 ) ELSE (
