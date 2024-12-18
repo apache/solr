@@ -34,8 +34,7 @@ import org.apache.solr.client.api.model.CollectionStatusResponse;
 public interface CollectionStatusApi {
 
   // TODO Query parameters currently match those offered by the v1
-  // /admin/collections?action=COLSTATUS.  Should param names be updated/clarified?  Are all params
-  // still relevant? ('segments', 'sizeInfo', and 'fieldInfo' seem to do very little)
+  // /admin/collections?action=COLSTATUS.  Should param names be updated/clarified?
   @GET
   @Operation(
       summary = "Fetches metadata about the specified collection",
@@ -46,14 +45,22 @@ public interface CollectionStatusApi {
           String collectionName,
       @Parameter(
               description =
-                  "Boolean flag to include metadata (e.g. index an data directories, IndexWriter configuration, etc.) about the leader cores for each shard")
+                  "Boolean flag to include metadata (e.g. index an data directories, IndexWriter configuration, etc.) about each shard leader's core")
           @QueryParam("coreInfo")
           Boolean coreInfo,
-      @QueryParam("segments") Boolean segments,
-      @QueryParam("fieldInfo") Boolean fieldInfo,
       @Parameter(
               description =
-                  "Boolean flag to include simple estimates of the disk size taken up by each field (e.g. \"id\", \"_version_\") and by each index data structure (e.g. 'storedFields', 'docValues_numeric')")
+                  "Boolean flag to include metadata and statistics about the segments used by each shard leader.  Implicitly set to true by 'fieldInfo' and 'sizeInfo'")
+          @QueryParam("segments")
+          Boolean segments,
+      @Parameter(
+              description =
+                  "Boolean flag to include statistics about the indexed fields present on each shard leader. Implicitly sets the 'segments' flag to 'true'")
+          @QueryParam("fieldInfo")
+          Boolean fieldInfo,
+      @Parameter(
+              description =
+                  "Boolean flag to include simple estimates of the disk size taken up by each field (e.g. \"id\", \"_version_\") and by each index data structure (e.g. 'storedFields', 'docValues_numeric').")
           @QueryParam("rawSize")
           Boolean rawSize,
       @Parameter(
@@ -71,6 +78,10 @@ public interface CollectionStatusApi {
                   "Percentage (between 0 and 100) of data to read when estimating index size and statistics.  Defaults to 5.0 (i.e. 5%).")
           @QueryParam("rawSizeSamplingPercent")
           Float rawSizeSamplingPercent,
-      @QueryParam("sizeInfo") Boolean sizeInfo)
+      @Parameter(
+              description =
+                  "Boolean flag to include information about the largest index files for each Lucene segment.  Implicitly sets the 'segment' flag to 'true'")
+          @QueryParam("sizeInfo")
+          Boolean sizeInfo)
       throws Exception;
 }

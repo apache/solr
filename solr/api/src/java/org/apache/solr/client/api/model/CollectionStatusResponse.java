@@ -16,7 +16,10 @@
  */
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +44,18 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     @JsonProperty public Integer tlogReplicas;
     @JsonProperty public Map<String, String> router;
     @JsonProperty public Integer replicationFactor;
+
+    private Map<String, Object> unknownFields = new HashMap<>();
+
+    @JsonAnyGetter
+    public Map<String, Object> unknownProperties() {
+      return unknownFields;
+    }
+
+    @JsonAnySetter
+    public void setUnknownProperty(String field, Object value) {
+      unknownFields.put(field, value);
+    }
   }
 
   // Always present in response
@@ -51,7 +66,7 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     @JsonProperty public LeaderSummary leader;
   }
 
-  // ALways present in response
+  // Always present in response
   public static class ReplicaSummary {
     @JsonProperty public Integer total;
     @JsonProperty public Integer active;
@@ -84,17 +99,77 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     @JsonProperty public SegmentInfo segInfos;
   }
 
-  // Present with coreInfo=true || sizeInfo=true unless otherwise specified
+  // Present with segments=true || coreInfo=true || sizeInfo=true || fieldInfo=true unless otherwise
+  // specified
   public static class SegmentInfo {
-    // Present with coreInfo=true || sizeInfo=true unless otherwise specified
     @JsonProperty public SegmentSummary info;
+
+    // Present with segments=true || sizeInfo=true || fieldInfo=true
+    @JsonProperty public Map<String, SingleSegmentData> segments;
 
     // Present with rawSize=true
     @JsonProperty public RawSize rawSize;
 
-    // Present with fieldInfo=true....this seems pretty useless in isolation?  Is it maybe a bad
-    // param name?
+    // Present only with fieldInfo=true
     @JsonProperty public List<String> fieldInfoLegend;
+  }
+
+  // Present with segment=true || sizeInfo=true
+  public static class SingleSegmentData {
+    @JsonProperty public String name;
+    @JsonProperty public Integer delCount;
+    @JsonProperty public Integer softDelCount;
+    @JsonProperty public Boolean hasFieldUpdates;
+    @JsonProperty public Long sizeInBytes;
+    @JsonProperty public Integer size;
+    // A date string of the form "2024-12-17T17:35:18.275Z"
+    @JsonProperty public String age;
+    @JsonProperty public String source;
+    @JsonProperty public String version;
+    @JsonProperty public Integer createdVersionMajor;
+    @JsonProperty public String minVersion;
+    @JsonProperty public SegmentDiagnosticInfo diagnostics;
+    @JsonProperty public Map<String, Object> attributes;
+
+    // Present only when fieldInfo=true
+    @JsonProperty public Map<String, SegmentSingleFieldInfo> fields;
+
+    // Present only when sizeInfo=true
+    @JsonProperty("largestFiles")
+    public Map<String, String> largestFilesByName;
+  }
+
+  public static class SegmentSingleFieldInfo {
+    @JsonProperty public String flags;
+    @JsonProperty public Integer docCount;
+    @JsonProperty public Integer termCount;
+    @JsonProperty public Integer sumDocFreq;
+    @JsonProperty public Integer sumTotalTermFreq;
+    @JsonProperty public String schemaType;
+    @JsonProperty public Map<String, String> nonCompliant;
+  }
+
+  // Present with segments=true
+  public static class SegmentDiagnosticInfo {
+    @JsonProperty("os.version")
+    public String osVersion;
+
+    @JsonProperty("lucene.version")
+    public String luceneVersion;
+
+    @JsonProperty public String source;
+    @JsonProperty public Long timestamp;
+
+    @JsonProperty("java.runtime.version")
+    public String javaRuntimeVersion;
+
+    @JsonProperty public String os;
+
+    @JsonProperty("java.vendor")
+    public String javaVendor;
+
+    @JsonProperty("os.arch")
+    public String osArchitecture;
   }
 
   // Present with rawSize=true unless otherwise specified
@@ -146,7 +221,7 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     @JsonProperty public String similarity;
     @JsonProperty public String mergeScheduler;
     @JsonProperty public String codec;
-    @JsonProperty public String InfoStream;
+    @JsonProperty public String infoStream;
     @JsonProperty public String mergePolicy;
     @JsonProperty public Boolean readerPooling;
     @JsonProperty public Integer perThreadHardLimitMB;
