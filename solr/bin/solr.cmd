@@ -1034,7 +1034,7 @@ REM Add vector optimizations module
 set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
 
 IF "%GC_LOG_OPTS%"=="" (
-  set GC_LOG_OPTS="-Xlog:gc*"
+  set GC_LOG_OPTS="-Xlog:gc*:file=!SOLR_LOGS_DIR!\solr_gc.log:time,level,tags:filecount=9,filesize=20M"
 )
 
 IF "%verbose%"=="1" (
