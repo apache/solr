@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
@@ -206,64 +208,97 @@ public class ClusterStatus {
       }
     }
 
-    Iterator<NamedList<Object>> collectionPropsIt =
-        new Iterator<>() {
-          final Iterator<DocCollection> it = collectionStream.iterator();
-
-          @Override
-          public boolean hasNext() {
-            return it.hasNext();
-          }
-
-          @Override
-          public NamedList<Object> next() {
-            NamedList<Object> collectionProps = new SimpleOrderedMap<>();
-            DocCollection clusterStateCollection = it.next();
-            Map<String, Object> collectionStatus;
-            String name = clusterStateCollection.getName();
-
-            Set<String> requestedShards = new HashSet<>();
-            if (routeKey != null) {
-              DocRouter router = clusterStateCollection.getRouter();
-              Collection<Slice> slices =
-                  router.getSearchSlices(routeKey, null, clusterStateCollection);
-              for (Slice slice : slices) {
-                requestedShards.add(slice.getName());
-              }
-            }
-            if (shard != null) {
-              String[] paramShards = shard.split(",");
-              requestedShards.addAll(Arrays.asList(paramShards));
-            }
-
-            byte[] bytes = Utils.toJSON(clusterStateCollection);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
-            collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
-
-            collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
-            collectionStatus.put(
-                "creationTimeMillis", clusterStateCollection.getCreationTime().toEpochMilli());
-
-            if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
-              collectionStatus.put("aliases", collectionVsAliases.get(name));
-            }
-            String configName = clusterStateCollection.getConfigName();
-            collectionStatus.put("configName", configName);
-            if (solrParams.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
-              PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
-              collectionStatus.put("PRS", prs);
-            }
-            collectionProps.add(name, collectionStatus);
-
-            // now we need to walk the collectionProps tree to cross-check replica state with live
-            // nodes
-            crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
-            return collectionProps;
+    MapWriter mw =
+        ew -> {
+          SolrCollectionPropsStreamer scps =
+              new SolrCollectionPropsStreamer(
+                  collectionStream.iterator(), collectionVsAliases, routeKey, liveNodes, shard);
+          while (scps.hasNext()) {
+            Map<String, Object> output = (scps.next().asMap());
+            output.forEach(
+                (key, value) -> {
+                  try {
+                    ew.put(key, value);
+                  } catch (IOException e) {
+                    throw new RuntimeException(e);
+                  }
+                });
           }
         };
+    clusterStatus.add("collections", mw);
+  }
 
-    clusterStatus.add("collections", collectionPropsIt);
+  public class SolrCollectionPropsStreamer implements Iterator<NamedList<Object>> {
+
+    final Iterator<DocCollection> it;
+    Map<String, List<String>> collectionVsAliases;
+    String routeKey;
+    List<String> liveNodes;
+    String shard;
+
+    public SolrCollectionPropsStreamer(
+        Iterator<DocCollection> it,
+        Map<String, List<String>> collectionVsAliases,
+        String routeKey,
+        List<String> liveNodes,
+        String shard) {
+      this.it = it;
+      this.collectionVsAliases = collectionVsAliases;
+      this.routeKey = routeKey;
+      this.liveNodes = liveNodes;
+      this.shard = shard;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return it.hasNext();
+    }
+
+    @Override
+    public NamedList<Object> next() {
+      NamedList<Object> collectionProps = new SimpleOrderedMap<>();
+      DocCollection clusterStateCollection = it.next();
+      Map<String, Object> collectionStatus;
+      String name = clusterStateCollection.getName();
+
+      Set<String> requestedShards = new HashSet<>();
+      if (routeKey != null) {
+        DocRouter router = clusterStateCollection.getRouter();
+        Collection<Slice> slices = router.getSearchSlices(routeKey, null, clusterStateCollection);
+        for (Slice slice : slices) {
+          requestedShards.add(slice.getName());
+        }
+      }
+      if (shard != null) {
+        String[] paramShards = shard.split(",");
+        requestedShards.addAll(Arrays.asList(paramShards));
+      }
+
+      byte[] bytes = Utils.toJSON(clusterStateCollection);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
+      collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
+
+      collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
+      collectionStatus.put(
+          "creationTimeMillis", clusterStateCollection.getCreationTime().toEpochMilli());
+
+      if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
+        collectionStatus.put("aliases", collectionVsAliases.get(name));
+      }
+      String configName = clusterStateCollection.getConfigName();
+      collectionStatus.put("configName", configName);
+      if (solrParams.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
+        PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
+        collectionStatus.put("PRS", prs);
+      }
+      collectionProps.add(name, collectionStatus);
+
+      // now we need to walk the collectionProps tree to cross-check replica state with live
+      // nodes
+      crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
+      return collectionProps;
+    }
   }
 
   private void addAliasMap(Aliases aliases, NamedList<Object> clusterStatus) {
