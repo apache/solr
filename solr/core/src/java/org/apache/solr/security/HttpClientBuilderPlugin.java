@@ -34,4 +34,8 @@ public interface HttpClientBuilderPlugin {
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder);
 
   public default void setup(Http2SolrClient client) {}
+
+  public default void setup(Http2SolrClient.Builder httpClientBuilder, Http2SolrClient client) {
+    setup(client);
+  }
 }
