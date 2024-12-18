@@ -98,9 +98,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
 
     solrCluster1 =
-        configureCluster(3)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
-            .configure();
+        configureCluster(3).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
 
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 2);
@@ -108,9 +106,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     solrCluster1.waitForActiveCollection(COLLECTION, 3, 6);
 
     solrCluster2 =
-        configureCluster(3)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
-            .configure();
+        configureCluster(3).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
 
     CollectionAdminRequest.Create create2 =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 3);

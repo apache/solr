@@ -51,8 +51,8 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
     }
   }
 
-  private final Path pluginJarPath = getFile("runtimecode/schema-plugins.jar.bin").toPath();
-  private final Path bogusJarPath = getFile("runtimecode/runtimelibs.jar.bin").toPath();
+  private final Path pluginJarPath = getFile("runtimecode/schema-plugins.jar.bin");
+  private final Path bogusJarPath = getFile("runtimecode/runtimelibs.jar.bin");
 
   private SolrClient client;
 

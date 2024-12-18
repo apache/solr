@@ -51,7 +51,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       is.transferTo(os);
     }
 
-    ContentStreamBase stream = new ContentStreamBase.FileStream(file);
+    ContentStreamBase stream = new ContentStreamBase.FileStream(file.toPath());
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
         InputStreamReader isr =
@@ -75,7 +75,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       is.transferTo(zos);
     }
 
-    ContentStreamBase stream = new ContentStreamBase.FileStream(file);
+    ContentStreamBase stream = new ContentStreamBase.FileStream(file.toPath());
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
         GZIPInputStream zis = new GZIPInputStream(fis);

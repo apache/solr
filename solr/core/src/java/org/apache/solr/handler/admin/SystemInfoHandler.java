@@ -19,13 +19,13 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import com.codahale.metrics.Gauge;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -193,7 +193,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
-    dirs.add("cwd", new File(System.getProperty("user.dir")).getAbsolutePath());
+    dirs.add("cwd", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
     dirs.add("instance", core.getInstancePath().toString());
     try {
       dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));

@@ -18,9 +18,9 @@ package org.apache.solr.client.solrj.request;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -160,7 +160,8 @@ public abstract class ConfigSetAdminRequest<
      *
      * @see #setUploadStream
      */
-    public final Upload setUploadFile(final File file, final String contentType) {
+    public final Upload setUploadFile(final Path file, final String contentType)
+        throws IOException {
       final FileStream fileStream = new FileStream(file);
       fileStream.setContentType(contentType);
       return setUploadStream(fileStream);

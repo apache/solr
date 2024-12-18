@@ -78,7 +78,7 @@ public class TestSolrConfigHandler extends RestTestBase {
    */
   public static ByteBuffer getFileContent(String f, boolean loadFromClassPath) throws IOException {
     ByteBuffer jar;
-    File file = loadFromClassPath ? getFile(f) : new File(f);
+    File file = loadFromClassPath ? getFile(f).toFile() : new File(f);
     try (FileInputStream fis = new FileInputStream(file)) {
       byte[] buf = new byte[fis.available()];
       // TODO: This should check that we read the entire stream

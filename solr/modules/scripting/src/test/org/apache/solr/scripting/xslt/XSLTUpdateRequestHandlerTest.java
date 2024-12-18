@@ -42,7 +42,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").getAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").toAbsolutePath().toString());
   }
 
   @Override
@@ -98,7 +98,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testEntities() throws Exception {
     // use a binary file, so when it's loaded fail with XML error:
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = getFile("mailing_lists.pdf").toUri().toASCIIString();
     String xml =
         "<?xml version=\"1.0\"?>"
             + "<!DOCTYPE foo ["

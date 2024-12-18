@@ -16,8 +16,8 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Path;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -25,10 +25,12 @@ import org.junit.BeforeClass;
 public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
+    Path testHome = createTempDir();
+    PathUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
     initCore(
-        "solrconfig-icucollate.xml", "schema-icucollateoptions.xml", testHome.getAbsolutePath());
+        "solrconfig-icucollate.xml",
+        "schema-icucollateoptions.xml",
+        testHome.toAbsolutePath().toString());
     // add some docs
     assertU(adoc("id", "1", "text", "foo-bar"));
     assertU(adoc("id", "2", "text", "foo bar"));

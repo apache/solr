@@ -83,12 +83,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
     configureCluster(numNodes)
         .addConfig(
             CONFIG,
-            getFile("solrj")
-                .toPath()
-                .resolve("solr")
-                .resolve("configsets")
-                .resolve(CONFIG)
-                .resolve("conf"))
+            getFile("solrj").resolve("solr").resolve("configsets").resolve(CONFIG).resolve("conf"))
         .configure();
 
     // create 2 shard collection with 1 NRT (leader) and 1 PULL replica

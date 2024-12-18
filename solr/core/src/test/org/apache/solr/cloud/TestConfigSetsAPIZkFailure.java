@@ -141,7 +141,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
       throws Exception {
-    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
     tmpConfigDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(configDir, tmpConfigDir);

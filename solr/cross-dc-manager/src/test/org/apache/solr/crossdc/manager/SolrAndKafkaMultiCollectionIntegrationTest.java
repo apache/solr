@@ -117,9 +117,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
 
     solrCluster1 =
-        configureCluster(1)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
-            .configure();
+        configureCluster(1).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
 
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1);
@@ -127,9 +125,7 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
     solrCluster1.waitForActiveCollection(COLLECTION, 1, 1);
 
     solrCluster2 =
-        configureCluster(1)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
-            .configure();
+        configureCluster(1).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
 
     CollectionAdminRequest.Create create2 =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1);

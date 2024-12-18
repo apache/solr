@@ -36,7 +36,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
 
   @Override
   public String getSolrHome() {
-    return getFile("clustering/solr/collection1").getParent();
+    return getFile("clustering/solr/collection1").getParent().toString();
   }
 
   @Before

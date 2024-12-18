@@ -339,6 +339,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
 
   public void cleanupOldIndexDirectories(
       final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {
+
+    // TODO SOLR-8282 move to PATH
     File dataDir = new File(dataDirPath);
     if (!dataDir.isDirectory()) {
       log.debug(

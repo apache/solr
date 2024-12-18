@@ -66,10 +66,10 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
 
     // copy over configuration files
     Files.copy(
-        getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml").toPath(),
+        getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"),
         confDir.resolve("solrconfig.xml"));
     Files.copy(
-        getFile("analysis-extras/solr/collection1/conf/schema-icucollate.xml").toPath(),
+        getFile("analysis-extras/solr/collection1/conf/schema-icucollate.xml"),
         confDir.resolve("schema.xml"));
 
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat

@@ -18,6 +18,7 @@ package org.apache.solr.spelling.suggest.fst;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -78,7 +79,7 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
 
     String indexPath =
         params.get(INDEX_PATH) != null ? params.get(INDEX_PATH).toString() : DEFAULT_INDEX_PATH;
-    if (new File(indexPath).isAbsolute() == false) {
+    if (!Path.of(indexPath).isAbsolute()) {
       indexPath = core.getDataDir() + File.separator + indexPath;
     }
 
@@ -109,7 +110,7 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
 
     try {
       return new BlendedInfixSuggester(
-          FSDirectory.open(new File(indexPath).toPath()),
+          FSDirectory.open(Path.of(indexPath)),
           indexAnalyzer,
           queryAnalyzer,
           minPrefixChars,

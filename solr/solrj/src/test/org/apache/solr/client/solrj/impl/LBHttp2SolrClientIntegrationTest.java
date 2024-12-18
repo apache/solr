@@ -282,13 +282,12 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       dataDir.mkdirs();
       confDir.mkdirs();
 
-      Files.copy(
-          SolrTestCaseJ4.getFile(getSolrXmlFile()).toPath(), homeDir.toPath().resolve("solr.xml"));
+      Files.copy(SolrTestCaseJ4.getFile(getSolrXmlFile()), homeDir.toPath().resolve("solr.xml"));
 
       Path f = confDir.toPath().resolve("solrconfig.xml");
-      Files.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()).toPath(), f);
+      Files.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
       f = confDir.toPath().resolve("schema.xml");
-      Files.copy(SolrTestCaseJ4.getFile(getSchemaFile()).toPath(), f);
+      Files.copy(SolrTestCaseJ4.getFile(getSchemaFile()), f);
       Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
     }
 

@@ -44,7 +44,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
     initCore(
         "solrconfig-script-updateprocessor.xml",
         "schema.xml",
-        getFile("scripting/solr").getAbsolutePath());
+        getFile("scripting/solr").toAbsolutePath().toString());
   }
 
   /**

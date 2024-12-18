@@ -16,9 +16,9 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -76,7 +76,7 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
    * @see #getContentStreams()
    * @see org.apache.solr.common.util.ContentStreamBase.FileStream
    */
-  public void addFile(File file, String contentType) throws IOException {
+  public void addFile(Path file, String contentType) throws IOException {
     ContentStreamBase cs = new ContentStreamBase.FileStream(file);
     cs.setContentType(contentType);
     addContentStream(cs);

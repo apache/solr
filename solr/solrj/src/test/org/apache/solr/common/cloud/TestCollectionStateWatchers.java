@@ -53,7 +53,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   @Before
   public void prepareCluster() throws Exception {
     configureCluster(CLUSTER_SIZE)
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+        .addConfig("config", getFile("solrj/solr/collection1/conf"))
         .configure();
     executor = ExecutorUtil.newMDCAwareCachedThreadPool("backgroundWatchers");
   }

@@ -64,14 +64,11 @@ public class TestCollationField extends SolrTestCaseJ4 {
 
     // copy over configuration files
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig-basic.xml").toPath(),
-        confDir.resolve("solrconfig.xml"));
+        getFile("solr/collection1/conf/solrconfig-basic.xml"), confDir.resolve("solrconfig.xml"));
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml").toPath(),
+        getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml"),
         confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
-    Files.copy(
-        getFile("solr/collection1/conf/schema-collate.xml").toPath(),
-        confDir.resolve("schema.xml"));
+    Files.copy(getFile("solr/collection1/conf/schema-collate.xml"), confDir.resolve("schema.xml"));
 
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator =

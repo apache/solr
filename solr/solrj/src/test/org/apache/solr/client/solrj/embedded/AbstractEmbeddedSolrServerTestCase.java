@@ -47,7 +47,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
 
   @BeforeClass
   public static void setUpHome() throws IOException {
-    CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
+    CONFIG_HOME = getFile("solrj/solr/shared").toAbsolutePath();
     SOLR_HOME = createTempDir("solrHome");
     FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
   }

@@ -30,7 +30,7 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr(SolrTestCaseJ4.getFile("solrj/solr").toPath());
+    solrClientTestRule.startSolr(SolrTestCaseJ4.getFile("solrj/solr"));
 
     SolrTestCaseJ4.newRandomConfig();
     solrClientTestRule.newCollection().withConfigSet("../collection1").create();

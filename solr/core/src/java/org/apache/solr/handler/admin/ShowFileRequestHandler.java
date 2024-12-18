@@ -201,7 +201,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     if (admin == null) { // exception already recorded
       return;
     }
-
+    // TODO SOLR-8282 move to PATH
     File adminFile = admin.toFile();
     // Make sure the file exists, is readable and is not a hidden file
     if (!adminFile.exists()) {
@@ -252,7 +252,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
 
-      ContentStreamBase content = new ContentStreamBase.FileStream(adminFile);
+      ContentStreamBase content = new ContentStreamBase.FileStream(adminFile.toPath());
       content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
 
       rsp.add(RawResponseWriter.CONTENT, content);

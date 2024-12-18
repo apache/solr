@@ -188,7 +188,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
       when(req.getParams()).thenReturn(reqParams);
 
       // POST some sample JSON docs
-      ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next);
+      ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next.toPath());
       stream.setContentType(TestSampleDocumentsLoader.guessContentTypeFromFilename(next.getName()));
       when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -300,7 +300,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
 
     // POST some sample XML docs
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml);
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml.toPath());
     stream.setContentType("application/xml");
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -354,7 +354,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     // POST some sample JSON docs
     File booksJson = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs/books.json");
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson);
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson.toPath());
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 

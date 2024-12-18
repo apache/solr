@@ -83,7 +83,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // TODO: stop using locally defined streams once stream.file and
     // stream.body work everywhere
     List<ContentStream> cs = new ArrayList<>(1);
-    ContentStreamBase f = new ContentStreamBase.FileStream(new File(filename));
+    ContentStreamBase f = new ContentStreamBase.FileStream(Path.of(filename));
     f.setContentType("text/csv");
     cs.add(f);
     req.setContentStreams(cs);
