@@ -17,6 +17,7 @@
 package org.apache.solr.common.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
@@ -208,5 +209,37 @@ public class NamedListTest extends SolrTestCase {
     assertEquals(0, nl.indexOf("key1", 0));
     assertEquals("Val2", nl.get("key2"));
     assertEquals("Val2", m.get("key2"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testFindRecursiveWithMap() {
+
+    // key1 (NamedList)
+    // - key2 (Map)
+    // -- key3 (NamedList)
+    // --- key4 (Map)
+
+    NamedList<Object> nl1 = new NamedList<>();
+    Map<String, Object> map2 = new HashMap<>();
+    NamedList<Object> nl3 = new NamedList<>();
+    Map<String, Object> map4 = new HashMap<>();
+
+    map4.put("key4", "value4");
+    nl3.add("key3", map4);
+    map2.put("key2", nl3);
+    nl1.add("key1", map2);
+
+    Map<String, Object> test1 = (Map<String, Object>) nl1.findRecursive("key1");
+    assertNotNull(test1);
+
+    NamedList<Object> test2 = (NamedList<Object>) nl1.findRecursive("key1", "key2");
+    assertNotNull(test2);
+
+    Map<String, Object> test3 = (Map<String, Object>) nl1.findRecursive("key1", "key2", "key3");
+    assertNotNull(test3);
+
+    String test4 = (String) nl1.findRecursive("key1", "key2", "key3", "key4");
+    assertEquals("value4", test4);
   }
 }

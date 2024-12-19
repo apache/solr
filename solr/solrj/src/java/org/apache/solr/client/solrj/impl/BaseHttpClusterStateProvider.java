@@ -139,11 +139,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       liveNodesTimestamp = System.nanoTime();
     }
 
-    var collectionsNl = (Map<String, Map<String, Object>>) cluster.get("collections");
+    var collectionsMap = (Map<String, Map<String, Object>>) cluster.get("collections");
 
     Map<String, DocCollection> collStateByName =
-        CollectionUtil.newLinkedHashMap(collectionsNl.size());
-    for (Entry<String, Map<String, Object>> entry : collectionsNl.entrySet()) {
+        CollectionUtil.newLinkedHashMap(collectionsMap.size());
+    for (Entry<String, Map<String, Object>> entry : collectionsMap.entrySet()) {
       collStateByName.put(
           entry.getKey(), getDocCollectionFromObjects(entry.getKey(), entry.getValue()));
     }
@@ -184,13 +184,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     SimpleOrderedMap<?> cluster =
         submitClusterStateRequest(client, collection, ClusterStateRequestType.FETCH_COLLECTION);
 
-    var collState = (Map<String, Object>) cluster.findRecursive("collections");
-    var collStateMap = (Map<String, Object>) collState.get(collection);
+    var collState = (Map<String, Object>) cluster.findRecursive("collections", collection);
 
-    if (collStateMap == null) {
+    if (collState == null) {
       throw new NotACollectionException(); // probably an alias
     }
-    return getDocCollectionFromObjects(collection, collStateMap);
+    return getDocCollectionFromObjects(collection, collState);
   }
 
   private SimpleOrderedMap<?> submitClusterStateRequest(
