@@ -143,6 +143,8 @@ Bug Fixes
 * SOLR-17595: Fix two issues in Solr CLI that prevent Solr from starting with the techproducts example and from
   correctly parsing arguments on Windows that start with -D and have multiple values separated by "," or spaces. (Christos Malliaridis)
 
+* SOLR-17306: fix replication problem on follower restart (Martin Anzinger and Peter Kroiss via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
