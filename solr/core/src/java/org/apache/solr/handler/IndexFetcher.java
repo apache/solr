@@ -51,11 +51,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,7 +122,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.IndexOutputOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -418,7 +415,7 @@ public class IndexFetcher {
     Directory indexDir = null;
     String indexDirPath;
     boolean deleteTmpIdxDir = true;
-    File tmpTlogDir = null;
+    Path tmpTlogDir = null;
 
     if (!solrCore.getSolrCoreState().getLastReplicateIndexSuccess()) {
       // if the last replication was not a success, we force a full replication
@@ -799,8 +796,9 @@ public class IndexFetcher {
       Directory tmpIndexDir,
       Directory indexDir,
       boolean deleteTmpIdxDir,
-      File tmpTlogDir,
-      boolean successfulInstall) {
+      Path tmpTlogDir,
+      boolean successfulInstall)
+      throws IOException {
     try {
       if (!successfulInstall) {
         try {
@@ -1068,6 +1066,7 @@ public class IndexFetcher {
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
     Path tmpConfPath =
         solrCore.getResourceLoader().getConfigPath().resolve("conf." + getDateAsStr(new Date()));
+    // TODO SOLR-8282 move to PATH
     File tmpconfDir = tmpConfPath.toFile();
     try {
       boolean status = tmpconfDir.mkdirs();
@@ -1079,7 +1078,8 @@ public class IndexFetcher {
       for (Map<String, Object> file : confFilesToDownload) {
         String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
         localFileFetcher =
-            new LocalFsFileFetcher(tmpconfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
+            new LocalFsFileFetcher(
+                tmpconfDir.toPath(), file, saveAs, CONF_FILE_SHORT, latestGeneration);
         currentFile = file;
         localFileFetcher.fetchFile();
         confFilesDownloaded.add(new HashMap<>(file));
@@ -1089,7 +1089,7 @@ public class IndexFetcher {
       terminateAndWaitFsyncService();
       copyTmpConfFiles2Conf(tmpConfPath);
     } finally {
-      delTree(tmpconfDir);
+      delTree(tmpconfDir.toPath());
     }
   }
 
@@ -1156,6 +1156,7 @@ public class IndexFetcher {
             alwaysDownload);
       }
       if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
+        // TODO SOLR-8282 move to PATH
         File localFile = new File(indexDirPath, filename);
         if (downloadCompleteIndex
             && doDifferentialCopy
@@ -1203,15 +1204,15 @@ public class IndexFetcher {
 
   private static Long getUsableSpace(String dir) {
     try {
-      File file = new File(dir);
-      if (!file.exists()) {
-        file = file.getParentFile();
+      Path file = Path.of(dir);
+      if (Files.notExists(file)) {
+        file = file.getParent();
         // this is not a disk directory. so just pretend that there is enough space
-        if (!file.exists()) {
+        if (Files.notExists(file)) {
           return Long.MAX_VALUE;
         }
       }
-      FileStore fileStore = Files.getFileStore(file.toPath());
+      FileStore fileStore = Files.getFileStore(file);
       return fileStore.getUsableSpace();
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not free disk space", e);
@@ -1490,7 +1491,7 @@ public class IndexFetcher {
             ErrorCode.SERVER_ERROR, "Unable to mkdirs: " + oldPath.getParent(), e);
       }
       if (Files.exists(oldPath)) {
-        File oldFile = oldPath.toFile(); // TODO drop this
+        File oldFile = oldPath.toFile(); // TODO SOLR-8282 move to PATH
         File backupFile =
             new File(oldFile.getPath() + "." + getDateAsStr(new Date(oldFile.lastModified())));
         if (!backupFile.getParentFile().exists()) {
@@ -1514,49 +1515,6 @@ public class IndexFetcher {
             ErrorCode.SERVER_ERROR, "Unable to rename: " + path + " to: " + oldPath, e);
       }
     }
-  }
-
-  /**
-   * The tlog files are moved from the tmp dir to the tlog dir as an atomic filesystem operation. A
-   * backup of the old directory is maintained. If the directory move fails, it will try to revert
-   * the original tlog directory.
-   */
-  private boolean copyTmpTlogFiles2Tlog(File tmpTlogDir) {
-    Path tlogDir =
-        FileSystems.getDefault().getPath(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
-    Path backupTlogDir =
-        FileSystems.getDefault()
-            .getPath(tlogDir.getParent().toAbsolutePath().toString(), tmpTlogDir.getName());
-
-    try {
-      Files.move(tlogDir, backupTlogDir, StandardCopyOption.ATOMIC_MOVE);
-    } catch (IOException e) {
-      log.error("Unable to rename: {} to: {}", tlogDir, backupTlogDir, e);
-      return false;
-    }
-
-    Path src =
-        FileSystems.getDefault()
-            .getPath(backupTlogDir.toAbsolutePath().toString(), tmpTlogDir.getName());
-    try {
-      Files.move(src, tlogDir, StandardCopyOption.ATOMIC_MOVE);
-    } catch (IOException e) {
-      log.error("Unable to rename: {} to: {}", src, tlogDir, e);
-
-      // In case of error, try to revert the original tlog directory
-      try {
-        Files.move(backupTlogDir, tlogDir, StandardCopyOption.ATOMIC_MOVE);
-      } catch (IOException e2) {
-        // bad, we were not able to revert the original tlog directory
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to rename: " + backupTlogDir + " to: " + tlogDir);
-      }
-
-      return false;
-    }
-
-    return true;
   }
 
   private String getDateAsStr(Date d) {
@@ -1601,9 +1559,9 @@ public class IndexFetcher {
     return nameVsFile.isEmpty() ? Collections.emptyList() : nameVsFile.values();
   }
 
-  static boolean delTree(File dir) {
+  static boolean delTree(Path dir) {
     try {
-      org.apache.lucene.util.IOUtils.rm(dir.toPath());
+      org.apache.lucene.util.IOUtils.rm(dir);
       return true;
     } catch (IOException e) {
       log.warn("Unable to delete directory : {}", dir, e);
@@ -2034,28 +1992,29 @@ public class IndexFetcher {
 
     FileChannel fileChannel;
     private FileOutputStream fileOutputStream;
-    File file;
+    Path file;
 
-    LocalFsFile(File dir, String saveAs) throws IOException {
+    LocalFsFile(Path dir, String saveAs) throws IOException {
+      this.file = dir.resolve(saveAs);
 
-      this.file = new File(dir, saveAs);
-
-      File parentDir = this.file.getParentFile();
-      if (!parentDir.exists()) {
-        if (!parentDir.mkdirs()) {
+      Path parentDir = this.file.getParent();
+      if (Files.notExists(parentDir)) {
+        try {
+          Files.createDirectories(parentDir);
+        } catch (Exception e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               "Failed to create (sub)directory for file: " + saveAs);
         }
       }
 
-      this.fileOutputStream = new FileOutputStream(file);
+      this.fileOutputStream = new FileOutputStream(file.toFile());
       this.fileChannel = this.fileOutputStream.getChannel();
     }
 
     @Override
     public void sync() throws IOException {
-      FileUtils.sync(file);
+      org.apache.lucene.util.IOUtils.fsync(file, false);
     }
 
     @Override
@@ -2071,13 +2030,13 @@ public class IndexFetcher {
 
     @Override
     public void delete() throws Exception {
-      Files.delete(file.toPath());
+      Files.delete(file);
     }
   }
 
   protected class LocalFsFileFetcher extends FileFetcher {
     LocalFsFileFetcher(
-        File dir,
+        Path dir,
         Map<String, Object> fileDetails,
         String saveAs,
         String solrParamOutput,

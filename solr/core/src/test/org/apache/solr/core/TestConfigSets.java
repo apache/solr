@@ -91,7 +91,8 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testNonExistentConfigSetThrowsException() {
-    final CoreContainer container = setupContainer(getFile("solr/configsets").getAbsolutePath());
+    final CoreContainer container =
+        setupContainer(getFile("solr/configsets").toAbsolutePath().toString());
     try {
       Exception thrown =
           expectThrows(
@@ -112,7 +113,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     Path testDirectory = createTempDir("core-reload");
     Path configSetsDir = testDirectory.resolve("configsets");
 
-    PathUtils.copyDirectory(getFile("solr/configsets").toPath(), configSetsDir);
+    PathUtils.copyDirectory(getFile("solr/configsets"), configSetsDir);
 
     String csd = configSetsDir.toAbsolutePath().toString();
     System.setProperty("configsets", csd);
@@ -129,7 +130,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
     // Now copy in a config with a /dump handler and reload
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig-withgethandler.xml").toPath(),
+        getFile("solr/collection1/conf/solrconfig-withgethandler.xml"),
         configSetsDir.resolve("configset-2/conf").resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     container.reload("core1");
