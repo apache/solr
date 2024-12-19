@@ -28,6 +28,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -37,6 +39,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.LiveIndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergePolicy.MergeSpecification;
 import org.apache.lucene.index.MergePolicy.OneMerge;
@@ -48,6 +51,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.api.model.ListSegmentsResponse;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -102,6 +106,93 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
   private static final double GB = 1024.0 * 1024.0 * 1024.0;
 
+  private SolrQueryRequest solrQueryRequest;
+
+  /**
+   * Converts Lucene's IndexWriter configuration object into a response type fit for serialization
+   *
+   * <p>Based on {@link LiveIndexWriterConfig#toString()} for legacy reasons.
+   *
+   * @param iwConfig the Lucene configuration object to convert
+   */
+  private ListSegmentsResponse.IndexWriterConfigSummary createConfigFromLuceneObject(LiveIndexWriterConfig iwConfig) {
+    final var iwConfigResponse = new ListSegmentsResponse.IndexWriterConfigSummary();
+    iwConfigResponse.analyzer = iwConfig.getAnalyzer() != null ? iwConfig.getAnalyzer().getClass().getName() : "null";
+    iwConfigResponse.ramBufferSizeMB = iwConfig.getRAMBufferSizeMB();
+    iwConfigResponse.maxBufferedDocs = iwConfig.getMaxBufferedDocs();
+    iwConfigResponse.mergedSegmentWarmer = iwConfig.getMergedSegmentWarmer().toString();
+    iwConfigResponse.delPolicy = iwConfig.getIndexDeletionPolicy().getClass().getName();
+    iwConfigResponse.commit = iwConfig.getIndexCommit() != null ? iwConfig.getIndexCommit().toString() : "null";
+    iwConfigResponse.openMode = iwConfig.getOpenMode().toString();
+    iwConfigResponse.similarity = iwConfig.getSimilarity().getClass().getName();
+    iwConfigResponse.mergeScheduler = iwConfig.getMergeScheduler().toString();
+    iwConfigResponse.codec = iwConfig.getCodec().toString();
+    iwConfigResponse.infoStream = iwConfig.getInfoStream().getClass().getName();
+    iwConfigResponse.mergePolicy = iwConfig.getMergePolicy().toString();
+    iwConfigResponse.readerPooling = iwConfig.getReaderPooling();
+    iwConfigResponse.perThreadHardLimitMB = iwConfig.getRAMPerThreadHardLimitMB();
+    iwConfigResponse.useCompoundFile = iwConfig.getUseCompoundFile();
+    iwConfigResponse.commitOnClose = iwConfig.getCommitOnClose();
+    iwConfigResponse.indexSort = iwConfig.getIndexSort().toString();
+    iwConfigResponse.checkPendingFlushOnUpdate = iwConfig.isCheckPendingFlushOnUpdate();
+    iwConfigResponse.softDeletesField = iwConfig.getSoftDeletesField();
+    iwConfigResponse.maxFullFlushMergeWaitMillis = iwConfig.getMaxFullFlushMergeWaitMillis();
+    iwConfigResponse.leafSorter = iwConfig.getLeafSorter().toString();
+    iwConfigResponse.eventListener = iwConfig.getIndexWriterEventListener().toString();
+    iwConfigResponse.parentField = iwConfig.getParentField();
+    return iwConfigResponse;
+  }
+
+  private ListSegmentsResponse getSegmentsInfo(Boolean coreInfo, Boolean fieldInfo, Boolean rawSize, Boolean rawSizeSummary, Boolean rawSizeDetails, Float rawSizeSamplingPercent, Boolean sizeInfo) throws Exception {
+    boolean withFieldInfo = BooleanUtils.isTrue(fieldInfo);
+    boolean withCoreInfo = BooleanUtils.isTrue(coreInfo);
+    boolean withSizeInfo = BooleanUtils.isTrue(sizeInfo);
+    boolean withRawSizeInfo = BooleanUtils.isTrue(rawSize);
+    boolean withRawSizeSummary = BooleanUtils.isTrue(rawSizeSummary);
+    boolean withRawSizeDetails = BooleanUtils.isTrue(rawSizeDetails);
+    if (withRawSizeSummary || withRawSizeDetails) {
+      withRawSizeInfo = true;
+    }
+    SolrIndexSearcher searcher = solrQueryRequest.getSearcher();
+    SolrCore core = solrQueryRequest.getCore();
+
+    final var response = new ListSegmentsResponse();
+
+    SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
+    response.info = new ListSegmentsResponse.SegmentSummary();
+    Version minVersion = infos.getMinSegmentLuceneVersion();
+    if (minVersion != null) {
+      response.info.minSegmentLuceneVersion = minVersion.toString();
+    }
+    Version commitVersion = infos.getCommitLuceneVersion();
+    if (commitVersion != null) {
+     response.info.commitLuceneVersion = commitVersion.toString();
+    }
+    response.info.numSegments = infos.size();
+    response.info.segmentsFileName = infos.getSegmentsFileName();
+    response.info.totalMaxDoc = infos.totalMaxDoc();
+    response.info.userData = infos.userData;
+
+    if (withCoreInfo) {
+      final var coreSummary = new ListSegmentsResponse.CoreSummary();
+      response.info.core = coreSummary;
+      coreSummary.startTime = core.getStartTimeStamp().getTime() + "(" + core.getStartTimeStamp() + ")";
+      coreSummary.dataDir = core.getDataDir();
+      coreSummary.indexDir = core.getIndexDir();
+      coreSummary.sizeInGB = (double) core.getIndexSize() / GB;
+
+      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
+      if (iwRef != null) {
+        try {
+          IndexWriter iw = iwRef.get();
+          coreSummary.indexWriterConfig = createConfigFromLuceneObject(iw.getConfig());
+        } finally {
+          iwRef.decref();
+        }
+      }
+    }
+  }
+
   private void getSegmentsInfo(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     boolean withFieldInfo = req.getParams().getBool(FIELD_INFO_PARAM, false);
     boolean withCoreInfo = req.getParams().getBool(CORE_INFO_PARAM, false);
@@ -118,51 +209,12 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
     SimpleOrderedMap<Object> segmentInfos = new SimpleOrderedMap<>();
 
-    SolrCore core = req.getCore();
     SimpleOrderedMap<Object> infosInfo = new SimpleOrderedMap<>();
-    Version minVersion = infos.getMinSegmentLuceneVersion();
-    if (minVersion != null) {
-      infosInfo.add("minSegmentLuceneVersion", minVersion.toString());
-    }
-    Version commitVersion = infos.getCommitLuceneVersion();
-    if (commitVersion != null) {
-      infosInfo.add("commitLuceneVersion", commitVersion.toString());
-    }
-    infosInfo.add("numSegments", infos.size());
-    infosInfo.add("segmentsFileName", infos.getSegmentsFileName());
-    infosInfo.add("totalMaxDoc", infos.totalMaxDoc());
-    infosInfo.add("userData", infos.userData);
-    if (withCoreInfo) {
-      SimpleOrderedMap<Object> coreInfo = new SimpleOrderedMap<>();
-      infosInfo.add("core", coreInfo);
-      coreInfo.add(
-          "startTime", core.getStartTimeStamp().getTime() + "(" + core.getStartTimeStamp() + ")");
-      coreInfo.add("dataDir", core.getDataDir());
-      coreInfo.add("indexDir", core.getIndexDir());
-      coreInfo.add("sizeInGB", (double) core.getIndexSize() / GB);
-
-      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
-      if (iwRef != null) {
-        try {
-          IndexWriter iw = iwRef.get();
-          String iwConfigStr = iw.getConfig().toString();
-          SimpleOrderedMap<Object> iwConfig = new SimpleOrderedMap<>();
-          // meh ...
-          String[] lines = iwConfigStr.split("\\n");
-          for (String line : lines) {
-            String[] parts = line.split("=");
-            if (parts.length < 2) {
-              continue;
-            }
-            iwConfig.add(parts[0], parts[1]);
-          }
-          coreInfo.add("indexWriterConfig", iwConfig);
-        } finally {
-          iwRef.decref();
-        }
-      }
-    }
     SimpleOrderedMap<Object> segmentInfo;
+
+
+
+    // TODO JEGERLOW TODO - this is where I'm leaving off between commits
     List<SegmentCommitInfo> sortable = new ArrayList<>(infos.asList());
     // Order by the number of live docs. The display is logarithmic so it is a little jumbled
     // visually

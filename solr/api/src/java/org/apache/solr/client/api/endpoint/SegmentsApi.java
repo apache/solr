@@ -22,6 +22,8 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import java.io.IOException;
+
+import org.apache.solr.client.api.model.ListSegmentsResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
 
@@ -34,13 +36,13 @@ import org.apache.solr.client.api.util.CoreApiParameters;
 @Path("/cores/{coreName}/segments")
 public interface SegmentsApi {
 
-    // TODO Refactor these constants into a nested-interface so they don't clutter up autocomplete or whatever?
-    // TODO - figure out how to model the SegmentsApi response in terms of the objects already in CollectionStatusResponse
+  // TODO Refactor these constants into a nested-interface so they don't clutter up autocomplete or
+  // whatever?
 
   String CORE_INFO_PARAM_DESC =
       "Boolean flag to include metadata (e.g. index an data directories, IndexWriter configuration, etc.) about each shard leader's core";
   String FIELD_INFO_PARAM_DESC =
-          "Boolean flag to include statistics about the indexed fields present on each shard leader.";
+      "Boolean flag to include statistics about the indexed fields present on each shard leader.";
   String RAW_SIZE_PARAM_DESC =
       "Boolean flag to include simple estimates of the disk size taken up by each field (e.g. \"id\", \"_version_\") and by each index data structure (e.g. 'storedFields', 'docValues_numeric').";
   String RAW_SIZE_SUMMARY_DESC =
@@ -57,7 +59,7 @@ public interface SegmentsApi {
   @Operation(
       summary = "Fetches metadata about the segments in use by the specified core",
       tags = {"replication"})
-  SolrJerseyResponse getSegmentData(
+  ListSegmentsResponse listSegments(
       @Parameter(description = CORE_INFO_PARAM_DESC) @QueryParam("coreInfo") Boolean coreInfo,
       @Parameter(description = FIELD_INFO_PARAM_DESC) @QueryParam("fieldInfo") Boolean fieldInfo,
       @Parameter(description = RAW_SIZE_PARAM_DESC) @QueryParam("rawSize") Boolean rawSize,

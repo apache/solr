@@ -24,8 +24,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.CollectionStatusResponse;
 
-import static org.apache.solr.client.api.endpoint.SegmentsApi.RAW_SIZE_SUMMARY_DESC;
-
 /**
  * V2 API definition for fetching collection metadata
  *
@@ -45,17 +43,33 @@ public interface CollectionStatusApi {
       @Parameter(description = "The name of the collection return metadata for", required = true)
           @PathParam("collectionName")
           String collectionName,
-      @Parameter(description = SegmentsApi.CORE_INFO_PARAM_DESC) @QueryParam("coreInfo") Boolean coreInfo,
+      @Parameter(description = SegmentsApi.CORE_INFO_PARAM_DESC) @QueryParam("coreInfo")
+          Boolean coreInfo,
       @Parameter(
               description =
                   "Boolean flag to include metadata and statistics about the segments used by each shard leader.  Implicitly set to true by 'fieldInfo' and 'sizeInfo'")
           @QueryParam("segments")
           Boolean segments,
-      @Parameter(description = SegmentsApi.FIELD_INFO_PARAM_DESC + " Implicitly sets the 'segments' flag to 'true'") @QueryParam("fieldInfo") Boolean fieldInfo,
-      @Parameter(description = SegmentsApi.RAW_SIZE_PARAM_DESC) @QueryParam("rawSize") Boolean rawSize,
-      @Parameter(description = SegmentsApi.RAW_SIZE_SUMMARY_DESC) @QueryParam("rawSizeSummary") Boolean rawSizeSummary,
-      @Parameter(description = SegmentsApi.RAW_SIZE_DETAILS_DESC) @QueryParam("rawSizeDetails") Boolean rawSizeDetails,
-      @Parameter(description = SegmentsApi.RAW_SIZE_SAMPLING_PERCENT_DESC) @QueryParam("rawSizeSamplingPercent") Float rawSizeSamplingPercent,
-      @Parameter(description = SegmentsApi.SIZE_INFO_PARAM_DESC + ". Implicitly sets the 'segment' flag to 'true'") @QueryParam("sizeInfo") Boolean sizeInfo)
+      @Parameter(
+              description =
+                  SegmentsApi.FIELD_INFO_PARAM_DESC
+                      + " Implicitly sets the 'segments' flag to 'true'")
+          @QueryParam("fieldInfo")
+          Boolean fieldInfo,
+      @Parameter(description = SegmentsApi.RAW_SIZE_PARAM_DESC) @QueryParam("rawSize")
+          Boolean rawSize,
+      @Parameter(description = SegmentsApi.RAW_SIZE_SUMMARY_DESC) @QueryParam("rawSizeSummary")
+          Boolean rawSizeSummary,
+      @Parameter(description = SegmentsApi.RAW_SIZE_DETAILS_DESC) @QueryParam("rawSizeDetails")
+          Boolean rawSizeDetails,
+      @Parameter(description = SegmentsApi.RAW_SIZE_SAMPLING_PERCENT_DESC)
+          @QueryParam("rawSizeSamplingPercent")
+          Float rawSizeSamplingPercent,
+      @Parameter(
+              description =
+                  SegmentsApi.SIZE_INFO_PARAM_DESC
+                      + ". Implicitly sets the 'segment' flag to 'true'")
+          @QueryParam("sizeInfo")
+          Boolean sizeInfo)
       throws Exception;
 }

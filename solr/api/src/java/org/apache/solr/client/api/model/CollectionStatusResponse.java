@@ -18,6 +18,9 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.List;
@@ -96,7 +99,8 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     public Boolean forceSetState;
 
     // Present with coreInfo=true || sizeInfo=true unless otherwise specified
-    @JsonProperty public SegmentInfo segInfos;
+    @JsonProperty
+    public SegmentInfo segInfos;
 
     private Map<String, Object> unknownFields = new HashMap<>();
 
@@ -111,139 +115,23 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     }
   }
 
+
   // Present with segments=true || coreInfo=true || sizeInfo=true || fieldInfo=true unless otherwise
   // specified
+
+  /**
+   * Same properties as {@link ListSegmentsResponse}, but uses a different class to avoid inheriting "responseHeader", etc.
+   */
   public static class SegmentInfo {
-    @JsonProperty public SegmentSummary info;
+    @JsonProperty public ListSegmentsResponse.SegmentSummary info;
 
     // Present with segments=true || sizeInfo=true || fieldInfo=true
-    @JsonProperty public Map<String, SingleSegmentData> segments;
+    @JsonProperty public Map<String, ListSegmentsResponse.SingleSegmentData> segments;
 
     // Present with rawSize=true
-    @JsonProperty public RawSize rawSize;
+    @JsonProperty public ListSegmentsResponse.RawSize rawSize;
 
     // Present only with fieldInfo=true
     @JsonProperty public List<String> fieldInfoLegend;
-  }
-
-  // Present with segment=true || sizeInfo=true
-  public static class SingleSegmentData {
-    @JsonProperty public String name;
-    @JsonProperty public Integer delCount;
-    @JsonProperty public Integer softDelCount;
-    @JsonProperty public Boolean hasFieldUpdates;
-    @JsonProperty public Long sizeInBytes;
-    @JsonProperty public Integer size;
-    // A date string of the form "2024-12-17T17:35:18.275Z"
-    @JsonProperty public String age;
-    @JsonProperty public String source;
-    @JsonProperty public String version;
-    @JsonProperty public Integer createdVersionMajor;
-    @JsonProperty public String minVersion;
-    @JsonProperty public SegmentDiagnosticInfo diagnostics;
-    @JsonProperty public Map<String, Object> attributes;
-
-    // Present only when fieldInfo=true
-    @JsonProperty public Map<String, SegmentSingleFieldInfo> fields;
-
-    // Present only when sizeInfo=true
-    @JsonProperty("largestFiles")
-    public Map<String, String> largestFilesByName;
-  }
-
-  public static class SegmentSingleFieldInfo {
-    @JsonProperty public String flags;
-    @JsonProperty public Integer docCount;
-    @JsonProperty public Integer termCount;
-    @JsonProperty public Integer sumDocFreq;
-    @JsonProperty public Integer sumTotalTermFreq;
-    @JsonProperty public String schemaType;
-    @JsonProperty public Map<String, String> nonCompliant;
-  }
-
-  // Present with segments=true
-  public static class SegmentDiagnosticInfo {
-    @JsonProperty("os.version")
-    public String osVersion;
-
-    @JsonProperty("lucene.version")
-    public String luceneVersion;
-
-    @JsonProperty public String source;
-    @JsonProperty public Long timestamp;
-
-    @JsonProperty("java.runtime.version")
-    public String javaRuntimeVersion;
-
-    @JsonProperty public String os;
-
-    @JsonProperty("java.vendor")
-    public String javaVendor;
-
-    @JsonProperty("os.arch")
-    public String osArchitecture;
-  }
-
-  // Present with rawSize=true unless otherwise specified
-  public static class RawSize {
-    @JsonProperty public Map<String, String> fieldsBySize;
-    @JsonProperty public Map<String, String> typesBySize;
-
-    // Present with rawSizeDetails=true
-    @JsonProperty public Object details;
-
-    // Present with rawSizeSummary=true
-    @JsonProperty public Map<String, Object> summary;
-  }
-
-  // Present with coreInfo=true || sizeInfo=true unless otherwise specified
-  public static class SegmentSummary {
-    @JsonProperty public String minSegmentLuceneVersion;
-    @JsonProperty public String commitLuceneVersion;
-    @JsonProperty public Integer numSegments;
-    @JsonProperty public String segmentsFileName;
-    @JsonProperty public Integer totalMaxDoc;
-    // Typically keys are 'commitCommandVer' and 'commitTimeMSec'
-    @JsonProperty public Map<String, String> userData;
-
-    // Present for coreInfo=true only
-    @JsonProperty public CoreSummary core;
-  }
-
-  // Present with coreInfo=true unless otherwise specified
-  public static class CoreSummary {
-    @JsonProperty public String startTime;
-    @JsonProperty public String dataDir;
-    @JsonProperty public String indexDir;
-    @JsonProperty public Double sizeInGB;
-    @JsonProperty public IndexWriterConfigSummary indexWriterConfig;
-  }
-
-  // Present with coreInfo=true unless otherwise specified
-  public static class IndexWriterConfigSummary {
-    @JsonProperty public String analyzer;
-    @JsonProperty public Double ramBufferSizeMB;
-    @JsonProperty public Integer maxBufferedDocs;
-    @JsonProperty public String mergedSegmentWarmer;
-    @JsonProperty public String delPolicy;
-    @JsonProperty public String commit;
-    @JsonProperty public String openMode;
-    @JsonProperty public String similarity;
-    @JsonProperty public String mergeScheduler;
-    @JsonProperty public String codec;
-    @JsonProperty public String infoStream;
-    @JsonProperty public String mergePolicy;
-    @JsonProperty public Boolean readerPooling;
-    @JsonProperty public Integer perThreadHardLimitMB;
-    @JsonProperty public Boolean useCompoundFile;
-    @JsonProperty public Boolean commitOnClose;
-    @JsonProperty public String indexSort;
-    @JsonProperty public Boolean checkPendingFlushOnUpdate;
-    @JsonProperty public String softDeletesField;
-    @JsonProperty public Long maxFullFlushMergeWaitMillis;
-    @JsonProperty public String leafSorter;
-    @JsonProperty public String eventListener;
-    @JsonProperty public String parentField;
-    @JsonProperty public String writer;
   }
 }
