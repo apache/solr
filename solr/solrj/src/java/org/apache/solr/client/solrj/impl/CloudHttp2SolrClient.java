@@ -412,6 +412,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      *
      * @param httpClient http client
      * @return this
+     * 
+     * @deprecated Please use {@link #withInternalClientBuilder(Http2SolrClient.Builder)}
      */
     public Builder withHttpClient(Http2SolrClient httpClient) {
       if (this.internalClientBuilder != null) {
