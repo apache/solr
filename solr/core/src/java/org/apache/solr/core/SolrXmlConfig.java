@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -131,10 +132,10 @@ public class SolrXmlConfig {
     // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
         readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
-            .asMap()
+            .asShallowMap()
             .entrySet()
             .stream()
-            .collect(Collectors.toMap(item -> item.getKey(), item -> item.getValue().toString()));
+            .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
@@ -733,7 +734,7 @@ public class SolrXmlConfig {
     ConfigNode caching = metrics.get("solr/metrics/caching");
     if (caching != null) {
       Object threadsCachingIntervalSeconds =
-          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds", null);
+          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds");
       builder.setCacheConfig(
           new MetricsConfig.CacheConfig(
               threadsCachingIntervalSeconds == null
