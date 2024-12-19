@@ -31,7 +31,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -217,9 +216,8 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
       Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
       throws IOException {
     boolean success = false;
-    try (ChecksumIndexInput is =
-            sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-        IndexOutput os = destDir.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+    try (ChecksumIndexInput is = sourceDir.openChecksumInput(sourceFileName, IOContext.READONCE);
+        IndexOutput os = destDir.createOutput(destFileName, IOContext.READONCE)) {
       os.copyBytes(is, is.length() - CodecUtil.footerLength());
 
       // ensure that index file is not corrupted
@@ -300,8 +298,8 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
       Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
       throws IOException {
     boolean success = false;
-    try (IndexInput is = sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-        IndexOutput os = destDir.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+    try (IndexInput is = sourceDir.openInput(sourceFileName, IOContext.READONCE);
+        IndexOutput os = destDir.createOutput(destFileName, IOContext.READONCE)) {
       os.copyBytes(is, is.length());
       success = true;
     } finally {

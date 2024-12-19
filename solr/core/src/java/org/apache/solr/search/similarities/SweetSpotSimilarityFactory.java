@@ -104,33 +104,44 @@ import org.apache.solr.common.params.SolrParams;
  *     </code> for SVG diagrams showing how the each function behaves with various settings/inputs.
  */
 public class SweetSpotSimilarityFactory extends ClassicSimilarityFactory {
-  private SweetSpotSimilarity sim = null;
+
+  private Integer ln_min;
+  private Integer ln_max;
+  private Float ln_steep;
+
+  private Float hyper_min;
+  private Float hyper_max;
+  private Double hyper_base;
+  private Float hyper_offset;
+
+  private Float baseline_base;
+  private Float baseline_min;
 
   @Override
   public void init(SolrParams params) {
     super.init(params);
 
-    Integer ln_min = params.getInt("lengthNormMin");
-    Integer ln_max = params.getInt("lengthNormMax");
-    Float ln_steep = params.getFloat("lengthNormSteepness");
+    ln_min = params.getInt("lengthNormMin");
+    ln_max = params.getInt("lengthNormMax");
+    ln_steep = params.getFloat("lengthNormSteepness");
     if (!allOrNoneNull(ln_min, ln_max, ln_steep)) {
       throw new SolrException(
           SERVER_ERROR,
           "Overriding default lengthNorm settings requires all to be specified: lengthNormMin, lengthNormMax, lengthNormSteepness");
     }
 
-    Float hyper_min = params.getFloat("hyperbolicTfMin");
-    Float hyper_max = params.getFloat("hyperbolicTfMax");
-    Double hyper_base = params.getDouble("hyperbolicTfBase");
-    Float hyper_offset = params.getFloat("hyperbolicTfOffset");
+    hyper_min = params.getFloat("hyperbolicTfMin");
+    hyper_max = params.getFloat("hyperbolicTfMax");
+    hyper_base = params.getDouble("hyperbolicTfBase");
+    hyper_offset = params.getFloat("hyperbolicTfOffset");
     if (!allOrNoneNull(hyper_min, hyper_max, hyper_base, hyper_offset)) {
       throw new SolrException(
           SERVER_ERROR,
           "Overriding default hyperbolicTf settings requires all to be specified: hyperbolicTfMin, hyperbolicTfMax, hyperbolicTfBase, hyperbolicTfOffset");
     }
 
-    Float baseline_base = params.getFloat("baselineTfBase");
-    Float baseline_min = params.getFloat("baselineTfMin");
+    baseline_base = params.getFloat("baselineTfBase");
+    baseline_min = params.getFloat("baselineTfMin");
     if (!allOrNoneNull(baseline_min, baseline_base)) {
       throw new SolrException(
           SERVER_ERROR,
@@ -142,13 +153,19 @@ public class SweetSpotSimilarityFactory extends ClassicSimilarityFactory {
       throw new SolrException(
           SERVER_ERROR, "Can not mix hyperbolicTf settings with baselineTf settings");
     }
+  }
 
+  @Override
+  public Similarity getSimilarity() {
     // pick Similarity impl based on whether hyper tf settings are set
-    sim = (null != hyper_min) ? new HyperbolicSweetSpotSimilarity() : new SweetSpotSimilarity();
+    SweetSpotSimilarity sim =
+        (null != hyper_min)
+            ? new HyperbolicSweetSpotSimilarity(discountOverlaps)
+            : new SweetSpotSimilarity(discountOverlaps);
 
     if (null != ln_min) {
       // overlaps already handled by super factory
-      sim.setLengthNormFactors(ln_min, ln_max, ln_steep, this.discountOverlaps);
+      sim.setLengthNormFactors(ln_min, ln_max, ln_steep);
     }
 
     if (null != hyper_min) {
@@ -158,11 +175,7 @@ public class SweetSpotSimilarityFactory extends ClassicSimilarityFactory {
     if (null != baseline_min) {
       sim.setBaselineTfFactors(baseline_base, baseline_min);
     }
-  }
 
-  @Override
-  public Similarity getSimilarity() {
-    assert sim != null : "SweetSpotSimilarityFactory was not initialized";
     return sim;
   }
 
@@ -181,6 +194,11 @@ public class SweetSpotSimilarityFactory extends ClassicSimilarityFactory {
   }
 
   private static final class HyperbolicSweetSpotSimilarity extends SweetSpotSimilarity {
+
+    private HyperbolicSweetSpotSimilarity(boolean discountOverlaps) {
+      super(discountOverlaps);
+    }
+
     @Override
     public float tf(float freq) {
       return hyperbolicTf(freq);
