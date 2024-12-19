@@ -103,6 +103,7 @@ public class JavaBinCodec implements PushWriter {
       MAP_ENTRY = 19,
       UUID = 20, // This is reserved to be used only in LogCodec
       // types that combine tag + length (or other info) in a single byte
+      PRIMITIVE_ARR = 21,
       TAG_AND_LEN = (byte) (1 << 5),
       STR = (byte) (1 << 5),
       SINT = (byte) (2 << 5),
@@ -348,6 +349,8 @@ public class JavaBinCodec implements PushWriter {
         return readMapEntry(dis);
       case MAP_ENTRY_ITER:
         return readMapIter(dis);
+      case PRIMITIVE_ARR:
+        return readPrimitiveArray(dis);
     }
 
     throw new RuntimeException("Unknown type " + tagByte);
@@ -438,7 +441,148 @@ public class JavaBinCodec implements PushWriter {
       writeBoolean(((AtomicBoolean) val).get());
       return true;
     }
+    if (val instanceof float[] ff) {
+      writeFloatArr(ff);
+      return true;
+    }
+    if (val instanceof int[] ii) {
+      writeIntArr(ii);
+      return true;
+    }
+    if (val instanceof long[] ll) {
+      writeLongArr(ll);
+      return true;
+    }
+    if (val instanceof double[] dd) {
+      writeDoubleArr(dd);
+      return true;
+    }
+    if (val instanceof short[] ss) {
+      writeShortArr(ss);
+      return true;
+    }
+    if (val instanceof boolean[] bb) {
+      writeBoolArr(bb);
+      return true;
+    }
     return false;
+  }
+
+  public Object readPrimitiveArray(DataInputInputStream dis) throws IOException {
+    tagByte = dis.readByte();
+    int len = readVInt(dis);
+    switch (tagByte) {
+      case FLOAT:
+        {
+          float[] v = new float[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readFloat();
+          }
+          return v;
+        }
+      case INT:
+        {
+          int[] v = new int[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readInt();
+          }
+          return v;
+        }
+
+      case LONG:
+        {
+          long[] v = new long[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readLong();
+          }
+          return v;
+        }
+      case DOUBLE:
+        {
+          double[] v = new double[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readDouble();
+          }
+          return v;
+        }
+      case SHORT:
+        {
+          short[] v = new short[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readShort();
+          }
+          return v;
+        }
+      case BOOL_TRUE:
+      case BOOL_FALSE:
+        {
+          boolean[] v = new boolean[len];
+          for (int i = 0; i < len; i++) {
+            byte b = dis.readByte();
+            v[i] = b == BOOL_FALSE ? false : true;
+          }
+          return v;
+        }
+      case BYTE:
+        {
+          // it should be possible to serialize byte[] in the new format as well
+          byte[] v = new byte[len];
+          dis.readFully(v);
+          return v;
+        }
+      default:
+        {
+          throw new RuntimeException("Invalid type : " + tagByte);
+        }
+    }
+  }
+
+  public void writePrimitiveArrHeader(byte tag, int len) throws IOException {
+    writeTag(PRIMITIVE_ARR);
+    writeTag(tag);
+    writeVInt(len, daos);
+  }
+
+  public void writeFloatArr(float[] vals) throws IOException {
+    writePrimitiveArrHeader(FLOAT, vals.length);
+    for (float f : vals) {
+      daos.writeFloat(f);
+    }
+  }
+
+  public void writeIntArr(int[] vals) throws IOException {
+    writePrimitiveArrHeader(INT, vals.length);
+    for (int i : vals) {
+      daos.writeInt(i);
+    }
+  }
+
+  public void writeDoubleArr(double[] vals) throws IOException {
+    writePrimitiveArrHeader(DOUBLE, vals.length);
+    for (double d : vals) {
+      daos.writeDouble(d);
+    }
+  }
+
+  public void writeLongArr(long[] vals) throws IOException {
+    writePrimitiveArrHeader(LONG, vals.length);
+    for (long l : vals) {
+      daos.writeLong(l);
+    }
+  }
+
+  public void writeBoolArr(boolean[] vals) throws IOException {
+    writePrimitiveArrHeader(BOOL_TRUE, vals.length);
+    for (boolean b : vals) {
+      writeBoolean(b);
+    }
+  }
+
+  public void writeShortArr(short[] vals) throws IOException {
+    writePrimitiveArrHeader(SHORT, vals.length);
+    for (short l : vals) {
+      daos.writeShort(l);
+    }
   }
 
   public class BinEntryWriter implements MapWriter.EntryWriter {
