@@ -273,6 +273,9 @@ Bug Fixes
 
 * SOLR-17574: Fix AllowListUrlChecker when liveNodes changes. Remove ClusterState.getHostAllowList (Bruno Roustant, David Smiley)
 
+* SOLR-17595: Fix two issues in Solr CLI that prevent Solr from starting with the techproducts example and from
+  correctly parsing arguments on Windows that start with -D and have multiple values separated by "," or spaces. (Christos Malliaridis)
+
 Dependency Upgrades
 ---------------------
 (No changes)
