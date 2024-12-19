@@ -35,6 +35,7 @@ import java.util.zip.ZipInputStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
@@ -280,15 +281,11 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
         helper.addSchemaObject(configSet, Collections.singletonMap("add-field", addField));
     assertEquals("title", addedFieldName);
 
-    Map<String, Object> analysis =
+    NamedList<Object> analysis =
         helper.analyzeField(configSet, "title", "The Pillars of the Earth");
 
-    Map<String, Object> title =
-        (Map<String, Object>) ((Map<String, Object>) analysis.get("field_names")).get("title");
-    assertNotNull(title);
-    List<Object> index = (List<Object>) title.get("index");
-    assertNotNull(index);
-    assertFalse(index.isEmpty());
+    var indexNl = (NamedList<Object>) analysis.findRecursive("field_names", "title", "index");
+    assertTrue(indexNl.size() > 0);
   }
 
   @Test
