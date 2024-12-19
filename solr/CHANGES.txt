@@ -108,7 +108,8 @@ Deprecation Removals
 
 * SOLR-17541: Removed `CloudHttp2SolrClient.Builder#withHttpClient` in favor of `CloudHttp2SolrClient.Builder#withInternalClientBuilder`.
   The constructor on `LBHttp2SolrClient.Builder` that took an instance of `HttpSolrClientBase` is updated to instead take an instance of
-  `HttpSolrClientBuilderBase`. (James Dyer)
+  `HttpSolrClientBuilderBase`.  Renamed `LBHttp2SolrClient.Builder#withListenerFactory` to `LBHttp2SolrClient.Builder#withListenerFactories`
+  (James Dyer)
 
 Dependency Upgrades
 ---------------------
@@ -157,7 +158,9 @@ New Features
 Improvements
 ---------------------
 * SOLR-17541: Deprecate `CloudHttp2SolrClient.Builder#withHttpClient` in favor of
-  `CloudHttp2SolrClient.Builder#withInternalClientBuilder` (James Dyer)
+  `CloudHttp2SolrClient.Builder#withInternalClientBuilder`.
+   Deprecate `LBHttp2SolrClient.Builder#withListenerFactory` in favor of
+   `LBHttp2SolrClient.Builder#withListenerFactories` (James Dyer)
 
 Optimizations
 ---------------------
