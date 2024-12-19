@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -73,8 +74,9 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     String watchID = tq.createResponseNode();
     String requestId2 = "baz";
 
+    // append async then submit
     tq.createRequestNode(
-        Utils.toJSON(props.append(ew -> ew.put(CommonAdminParams.ASYNC, requestId2))), watchID);
+        Utils.toJSON(new ZkNodeProps(props).plus(CommonAdminParams.ASYNC, requestId2)), watchID);
 
     // Set a SolrResponse as the response node by removing the QueueEvent, as done in
     // OverseerTaskProcessor
