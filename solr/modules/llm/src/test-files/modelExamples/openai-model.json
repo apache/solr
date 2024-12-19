@@ -1,0 +1,13 @@
+{
+  "class": "dev.langchain4j.model.openai.OpenAiEmbeddingModel",
+  "name": "openai-1",
+  "params": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "apiKey-openAI",
+    "modelName": "text-embedding-3-small",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
