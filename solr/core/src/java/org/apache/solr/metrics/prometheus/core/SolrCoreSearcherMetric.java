@@ -43,7 +43,7 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
     if (!(dropwizardMetric instanceof Counter)) {
-      labels.put("type", parsedMetric[3]);
+      labels.put("type", parsedMetric[2]);
     }
     return this;
   }

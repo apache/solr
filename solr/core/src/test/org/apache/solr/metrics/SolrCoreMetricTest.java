@@ -26,11 +26,13 @@ import org.junit.Test;
 public class SolrCoreMetricTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testStandaloneDefaultLabels() throws InterruptedException {
-    String expectedCoreName = "test";
-    String expectedMetricName = "core_test.test_core_metric";
+  public void testStandaloneDefaultLabels() {
+    String dropwizardMetricName = "core_Core_Name.test_core_metric";
+
+    String expectedCoreName = "Core_Name";
+    String expectedMetricName = "test_core_metric";
     Labels expectedLabels = Labels.of("core", expectedCoreName);
-    TestSolrCoreMetric testSolrCoreMetric = new TestSolrCoreMetric(null, expectedMetricName);
+    TestSolrCoreMetric testSolrCoreMetric = new TestSolrCoreMetric(null, dropwizardMetricName);
 
     assertEquals(expectedCoreName, testSolrCoreMetric.coreName);
     assertEquals(expectedMetricName, testSolrCoreMetric.metricName);
@@ -38,10 +40,12 @@ public class SolrCoreMetricTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCloudDefaultLabels() throws InterruptedException {
-    String expectedCoreName = "core_test_core_shard1_replica_n1";
-    String expectedMetricName = "core_test_core_shard1_replica_n1.test_core_metric";
-    String expectedCollectionName = "test_core";
+  public void testCloudDefaultLabels() {
+    String dropwizardMetricName = "core_Collection_Name_shard1_replica_n1.test_core_metric";
+
+    String expectedCoreName = "core_Collection_Name_shard1_replica_n1";
+    String expectedMetricName = "test_core_metric";
+    String expectedCollectionName = "Collection_Name";
     String expectedShardName = "shard1";
     String expectedReplicaName = "replica_n1";
 
@@ -55,7 +59,7 @@ public class SolrCoreMetricTest extends SolrTestCaseJ4 {
             expectedShardName,
             "replica",
             expectedReplicaName);
-    TestSolrCoreMetric testSolrCoreMetric = new TestSolrCoreMetric(null, expectedMetricName);
+    TestSolrCoreMetric testSolrCoreMetric = new TestSolrCoreMetric(null, dropwizardMetricName);
 
     assertEquals(expectedCoreName, testSolrCoreMetric.coreName);
     assertEquals(expectedMetricName, testSolrCoreMetric.metricName);

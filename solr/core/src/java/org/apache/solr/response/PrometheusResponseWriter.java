@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
@@ -113,8 +114,10 @@ public class PrometheusResponseWriter extends RawResponseWriter {
             Metric dropwizardMetric = dropwizardMetrics.get(metricName);
             formatter.exportDropwizardMetric(dropwizardMetric, metricName);
           } catch (Exception e) {
-            // Do not fail entirely for metrics exporting. Log and try to export next metric
-            log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error occurred exporting Dropwizard Metric to Prometheus",
+                e);
           }
         });
 

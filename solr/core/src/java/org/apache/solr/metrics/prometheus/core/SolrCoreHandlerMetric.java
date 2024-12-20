@@ -45,9 +45,9 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
   @Override
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
-    labels.put("category", parsedMetric[1]);
-    labels.put("handler", parsedMetric[2]);
-    labels.put("type", parsedMetric[3]);
+    labels.put("category", parsedMetric[0]);
+    labels.put("handler", parsedMetric[1]);
+    labels.put("type", parsedMetric[2]);
     return this;
   }
 

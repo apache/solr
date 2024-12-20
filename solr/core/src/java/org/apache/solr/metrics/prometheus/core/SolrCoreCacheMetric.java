@@ -37,7 +37,7 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Gauge) {
-      labels.put("cacheType", parsedMetric[3]);
+      labels.put("cacheType", parsedMetric[2]);
     }
     return this;
   }

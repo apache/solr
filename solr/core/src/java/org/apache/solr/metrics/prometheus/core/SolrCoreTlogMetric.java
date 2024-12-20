@@ -37,7 +37,7 @@ public class SolrCoreTlogMetric extends SolrCoreMetric {
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Meter) {
-      labels.put("item", parsedMetric[2]);
+      labels.put("item", parsedMetric[1]);
     }
     return this;
   }

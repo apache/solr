@@ -150,18 +150,18 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
     String metricName = "core_test-core_shard2_replica_t123.TEST./foobar/endpoint";
     Matcher m = CLOUD_CORE_PATTERN.matcher(metricName);
     assertTrue(m.find());
-    assertEquals("core_test-core_shard2_replica_t123", m.group(1));
-    assertEquals("test-core", m.group(2));
-    assertEquals("shard2", m.group(3));
-    assertEquals("replica_t123", m.group(4));
+    assertEquals("core_test-core_shard2_replica_t123", m.group("core"));
+    assertEquals("test-core", m.group("collection"));
+    assertEquals("shard2", m.group("shard"));
+    assertEquals("replica_t123", m.group("replica"));
 
     metricName = "core_foo_bar_shard24_replica_p8.QUERY.random.metric-name";
     m = CLOUD_CORE_PATTERN.matcher(metricName);
     assertTrue(m.matches());
-    assertEquals("core_foo_bar_shard24_replica_p8", m.group(1));
-    assertEquals("foo_bar", m.group(2));
-    assertEquals("shard24", m.group(3));
-    assertEquals("replica_p8", m.group(4));
+    assertEquals("core_foo_bar_shard24_replica_p8", m.group("core"));
+    assertEquals("foo_bar", m.group("collection"));
+    assertEquals("shard24", m.group("shard"));
+    assertEquals("replica_p8", m.group("replica"));
   }
 
   @Test

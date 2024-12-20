@@ -26,7 +26,6 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -197,9 +196,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       // Merge all core registries into a single registry and
       // append the core name to the metric to avoid duplicate metrics name
       if (registryName.startsWith("solr.core")) {
-        mergedCoreRegistries.registerAll(
-            Arrays.stream(registryName.split("\\.")).skip(1).collect(Collectors.joining("_")),
-            dropwizardRegistry);
+        mergedCoreRegistries.registerAll(getCoreNameFromRegistry(registryName), dropwizardRegistry);
         continue;
       }
 
@@ -550,6 +547,11 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
           e);
     }
     return metricTypes;
+  }
+
+  private String getCoreNameFromRegistry(String registryName) {
+    String coreName = registryName.substring(registryName.indexOf('.') + 1);
+    return coreName.replaceAll("\\.", "_");
   }
 
   @Override

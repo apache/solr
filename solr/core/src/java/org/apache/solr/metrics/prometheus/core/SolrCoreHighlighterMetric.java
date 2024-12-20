@@ -37,8 +37,8 @@ public class SolrCoreHighlighterMetric extends SolrCoreMetric {
   @Override
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
-    labels.put("type", parsedMetric[2]);
-    labels.put("item", parsedMetric[3]);
+    labels.put("type", parsedMetric[1]);
+    labels.put("item", parsedMetric[2]);
     return this;
   }
 
