@@ -35,7 +35,10 @@ bats-tests:
 docker:
   - changed-files:
       - any-glob-to-any-file:
-        - solr/docker/**
+        - 'solr/bin/**'
+        - 'solr/prometheus-exporter/bin/**'
+        - 'solr/docker/**'
+        - 'solr/packaging/**'
 
 # Add 'tool:build' label for changes to gradle build files
 tool:build:
@@ -69,7 +72,10 @@ jetty-server:
 start-scripts:
   - changed-files:
       - any-glob-to-any-file:
-          - solr/bin/**
+          - 'solr/bin/**'
+          - 'solr/packaging/**'
+          - 'solr/core/src/java/org/apache/solr/cli/**'
+          - 'solr/prometheus-exporter/**'
 
 # Add 'configs' label
 configs:
