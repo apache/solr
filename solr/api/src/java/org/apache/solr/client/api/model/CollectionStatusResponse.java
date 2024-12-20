@@ -23,7 +23,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Response of the CollectionStatusApi.getCollectionStatus() API */
+/**
+ * Response of the CollectionStatusApi.getCollectionStatus() API
+ *
+ * <p>Note that the corresponding v1 API has a slightly different response format. Users should not
+ * attempt to convert a v1 response into this type.
+ */
 public class CollectionStatusResponse extends SolrJerseyResponse {
 
   @JsonProperty public String name;

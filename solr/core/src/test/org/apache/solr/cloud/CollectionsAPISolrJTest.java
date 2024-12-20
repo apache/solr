@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -45,6 +46,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -602,6 +604,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     client.commit(collectionName);
   }
 
+  private void assertRspPathNull(SolrResponse rsp, String... pathSegments) {
+    assertNull(Utils.getObjectByPath(rsp.getResponse(), false, Arrays.asList(pathSegments)));
+  }
+
+  private void assertRspPathNotNull(SolrResponse rsp, String... pathSegments) {
+    assertNotNull(Utils.getObjectByPath(rsp.getResponse(), false, Arrays.asList(pathSegments)));
+  }
+
   @Test
   @SuppressWarnings("unchecked")
   public void testColStatus() throws Exception {
@@ -637,33 +647,21 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
     assertNotNull(rsp.getResponse().get(collectionName));
-    assertNotNull(
-        rsp.getResponse()
-            .findRecursive(
-                collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0"));
+    assertRspPathNotNull(
+        rsp, collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0");
     // Ensure field, size, etc. information isn't returned if only segment data was requested
-    assertNull(
-        rsp.getResponse()
-            .findRecursive(
-                collectionName,
-                "shards",
-                "shard1",
-                "leader",
-                "segInfos",
-                "segments",
-                "_0",
-                "fields"));
-    assertNull(
-        rsp.getResponse()
-            .findRecursive(
-                collectionName,
-                "shards",
-                "shard1",
-                "leader",
-                "segInfos",
-                "segments",
-                "_0",
-                "largestFiles"));
+    assertRspPathNull(
+        rsp, collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0", "fields");
+    assertRspPathNull(
+        rsp,
+        collectionName,
+        "shards",
+        "shard1",
+        "leader",
+        "segInfos",
+        "segments",
+        "_0",
+        "largestFiles");
 
     // Returns segment metadata and file-size info iff requested
     // (Note that 'sizeInfo=true' should implicitly enable segments=true)
@@ -671,34 +669,22 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     req.setWithSizeInfo(true);
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
-    assertNotNull(rsp.getResponse().get(collectionName));
-    assertNotNull(
-        rsp.getResponse()
-            .findRecursive(
-                collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0"));
-    assertNotNull(
-        rsp.getResponse()
-            .findRecursive(
-                collectionName,
-                "shards",
-                "shard1",
-                "leader",
-                "segInfos",
-                "segments",
-                "_0",
-                "largestFiles"));
+    assertRspPathNotNull(rsp, collectionName);
+    assertRspPathNotNull(
+        rsp, collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0");
+    assertRspPathNotNull(
+        rsp,
+        collectionName,
+        "shards",
+        "shard1",
+        "leader",
+        "segInfos",
+        "segments",
+        "_0",
+        "largestFiles");
     // Ensure field, etc. information isn't returned if only segment+size data was requested
-    assertNull(
-        rsp.getResponse()
-            .findRecursive(
-                collectionName,
-                "shards",
-                "shard1",
-                "leader",
-                "segInfos",
-                "segments",
-                "_0",
-                "fields"));
+    assertRspPathNull(
+        rsp, collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0", "fields");
 
     // Set all flags and ensure everything is returned as expected
     req = CollectionAdminRequest.collectionStatus(collectionName);
@@ -714,14 +700,21 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
     assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
     @SuppressWarnings({"unchecked"})
-    NamedList<Object> segInfos =
-        (NamedList<Object>)
-            rsp.getResponse()
-                .findRecursive(collectionName, "shards", "shard1", "leader", "segInfos");
-    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
-    assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
+    final var segInfos =
+        (Map<String, Object>)
+            Utils.getObjectByPath(
+                rsp.getResponse(),
+                false,
+                List.of(collectionName, "shards", "shard1", "leader", "segInfos"));
     assertNotNull(
-        Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
+        Utils.toJSONString(rsp),
+        Utils.getObjectByPath(segInfos, false, List.of("info", "core", "startTime")));
+    assertNotNull(
+        Utils.toJSONString(rsp),
+        Utils.getObjectByPath(segInfos, false, List.of("fieldInfoLegend")));
+    assertNotNull(
+        Utils.toJSONString(rsp),
+        Utils.getObjectByPath(segInfos, false, List.of("segments", "_0", "fields", "id", "flags")));
 
     // test for replicas not active - SOLR-13882
     DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
@@ -736,7 +729,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     Number down =
         (Number)
-            rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
+            Utils.getObjectByPath(
+                rsp.getResponse(),
+                false,
+                List.of(collectionName, "shards", "shard1", "replicas", "down"));
     assertTrue(
         "should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
 
@@ -751,10 +747,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     req = CollectionAdminRequest.collectionStatus(implicitColl);
     rsp = req.process(cluster.getSolrClient());
     assertNotNull(rsp.getResponse().get(implicitColl));
-    assertNotNull(
-        rsp.toString(), rsp.getResponse().findRecursive(implicitColl, "shards", "shardA"));
-    assertNotNull(
-        rsp.toString(), rsp.getResponse().findRecursive(implicitColl, "shards", "shardB"));
+    assertRspPathNotNull(rsp, implicitColl, "shards", "shardA");
+    assertRspPathNotNull(rsp, implicitColl, "shards", "shardB");
   }
 
   @Test

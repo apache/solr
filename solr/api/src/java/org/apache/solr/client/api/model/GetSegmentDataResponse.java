@@ -18,6 +18,7 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.HashMap;
@@ -63,7 +64,11 @@ public class GetSegmentDataResponse extends SolrJerseyResponse {
     @JsonProperty public Boolean hasFieldUpdates;
     @JsonProperty public Long sizeInBytes;
     @JsonProperty public Integer size;
-    @JsonProperty public Date age;
+
+    @JsonProperty
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "YYYY-MM-DD'T'hh:mm:ss.S'Z'")
+    public Date age;
+
     @JsonProperty public String source;
     @JsonProperty public String version;
     @JsonProperty public Integer createdVersionMajor;

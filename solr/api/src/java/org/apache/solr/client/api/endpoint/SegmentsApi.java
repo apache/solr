@@ -52,7 +52,7 @@ public interface SegmentsApi {
   @CoreApiParameters
   @Operation(
       summary = "Fetches metadata about the segments in use by the specified core",
-      tags = {"replication"})
+      tags = {"segments"})
   GetSegmentDataResponse getSegmentData(
       @Parameter(description = CORE_INFO_PARAM_DESC) @QueryParam("coreInfo") Boolean coreInfo,
       @Parameter(description = FIELD_INFO_PARAM_DESC) @QueryParam("fieldInfo") Boolean fieldInfo,
