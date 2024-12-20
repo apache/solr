@@ -16,15 +16,22 @@
  */
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Response for {@link org.apache.solr.client.api.endpoint.SegmentsApi#listSegments(Boolean, Boolean, Boolean, Boolean, Boolean, Float, Boolean)} API
+ * Response for {@link org.apache.solr.client.api.endpoint.SegmentsApi#getSegmentData(Boolean,
+ * Boolean, Boolean, Boolean, Boolean, Float, Boolean)} API
  */
-public class ListSegmentsResponse extends SolrJerseyResponse {
+public class GetSegmentDataResponse extends SolrJerseyResponse {
   @JsonProperty public SegmentSummary info;
+
+  @JsonProperty public Map<String, Object> runningMerges;
 
   @JsonProperty public Map<String, SingleSegmentData> segments;
 
@@ -56,14 +63,16 @@ public class ListSegmentsResponse extends SolrJerseyResponse {
     @JsonProperty public Boolean hasFieldUpdates;
     @JsonProperty public Long sizeInBytes;
     @JsonProperty public Integer size;
-    // A date string of the form "2024-12-17T17:35:18.275Z"
-    @JsonProperty public String age;
+    @JsonProperty public Date age;
     @JsonProperty public String source;
     @JsonProperty public String version;
     @JsonProperty public Integer createdVersionMajor;
     @JsonProperty public String minVersion;
     @JsonProperty public SegmentDiagnosticInfo diagnostics;
-    @JsonProperty public Map<String, Object> attributes;
+    @JsonProperty public Map<String, String> attributes;
+    // Only present when index-sorting is in use
+    @JsonProperty public String sort;
+    @JsonProperty public Boolean mergeCandidate;
 
     // Present only when fieldInfo=true
     @JsonProperty public Map<String, SegmentSingleFieldInfo> fields;
@@ -77,9 +86,9 @@ public class ListSegmentsResponse extends SolrJerseyResponse {
   public static class SegmentSingleFieldInfo {
     @JsonProperty public String flags;
     @JsonProperty public Integer docCount;
-    @JsonProperty public Integer termCount;
-    @JsonProperty public Integer sumDocFreq;
-    @JsonProperty public Integer sumTotalTermFreq;
+    @JsonProperty public Long termCount;
+    @JsonProperty public Long sumDocFreq;
+    @JsonProperty public Long sumTotalTermFreq;
     @JsonProperty public String schemaType;
     @JsonProperty public Map<String, String> nonCompliant;
   }
@@ -105,6 +114,18 @@ public class ListSegmentsResponse extends SolrJerseyResponse {
 
     @JsonProperty("os.arch")
     public String osArchitecture;
+
+    private Map<String, Object> additionalDiagnostics = new HashMap<>();
+
+    @JsonAnyGetter
+    public Map<String, Object> getAdditionalDiagnostics() {
+      return additionalDiagnostics;
+    }
+
+    @JsonAnySetter
+    public void getAdditionalDiagnostics(String field, Object value) {
+      additionalDiagnostics.put(field, value);
+    }
   }
 
   // Present with coreInfo=true unless otherwise specified
@@ -118,9 +139,7 @@ public class ListSegmentsResponse extends SolrJerseyResponse {
 
   // Present with coreInfo=true unless otherwise specified
 
-  /**
-   * A serializable representation of Lucene's "LiveIndexWriterConfig"
-   */
+  /** A serializable representation of Lucene's "LiveIndexWriterConfig" */
   public static class IndexWriterConfigSummary {
     @JsonProperty public String analyzer;
     @JsonProperty public Double ramBufferSizeMB;

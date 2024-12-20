@@ -21,10 +21,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
-import java.io.IOException;
-
-import org.apache.solr.client.api.model.ListSegmentsResponse;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.GetSegmentDataResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
 
 /**
@@ -35,9 +32,6 @@ import org.apache.solr.client.api.util.CoreApiParameters;
  */
 @Path("/cores/{coreName}/segments")
 public interface SegmentsApi {
-
-  // TODO Refactor these constants into a nested-interface so they don't clutter up autocomplete or
-  // whatever?
 
   String CORE_INFO_PARAM_DESC =
       "Boolean flag to include metadata (e.g. index an data directories, IndexWriter configuration, etc.) about each shard leader's core";
@@ -59,7 +53,7 @@ public interface SegmentsApi {
   @Operation(
       summary = "Fetches metadata about the segments in use by the specified core",
       tags = {"replication"})
-  ListSegmentsResponse listSegments(
+  GetSegmentDataResponse getSegmentData(
       @Parameter(description = CORE_INFO_PARAM_DESC) @QueryParam("coreInfo") Boolean coreInfo,
       @Parameter(description = FIELD_INFO_PARAM_DESC) @QueryParam("fieldInfo") Boolean fieldInfo,
       @Parameter(description = RAW_SIZE_PARAM_DESC) @QueryParam("rawSize") Boolean rawSize,
@@ -70,5 +64,5 @@ public interface SegmentsApi {
       @Parameter(description = RAW_SIZE_SAMPLING_PERCENT_DESC) @QueryParam("rawSizeSamplingPercent")
           Float rawSizeSamplingPercent,
       @Parameter(description = SIZE_INFO_PARAM_DESC) @QueryParam("sizeInfo") Boolean sizeInfo)
-      throws IOException;
+      throws Exception;
 }

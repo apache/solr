@@ -18,9 +18,6 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.List;
@@ -99,8 +96,7 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     public Boolean forceSetState;
 
     // Present with coreInfo=true || sizeInfo=true unless otherwise specified
-    @JsonProperty
-    public SegmentInfo segInfos;
+    @JsonProperty public SegmentInfo segInfos;
 
     private Map<String, Object> unknownFields = new HashMap<>();
 
@@ -115,21 +111,23 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
     }
   }
 
-
   // Present with segments=true || coreInfo=true || sizeInfo=true || fieldInfo=true unless otherwise
   // specified
 
   /**
-   * Same properties as {@link ListSegmentsResponse}, but uses a different class to avoid inheriting "responseHeader", etc.
+   * Same properties as {@link GetSegmentDataResponse}, but uses a different class to avoid
+   * inheriting "responseHeader", etc.
    */
   public static class SegmentInfo {
-    @JsonProperty public ListSegmentsResponse.SegmentSummary info;
+    @JsonProperty public GetSegmentDataResponse.SegmentSummary info;
+
+    @JsonProperty public Map<String, Object> runningMerges;
 
     // Present with segments=true || sizeInfo=true || fieldInfo=true
-    @JsonProperty public Map<String, ListSegmentsResponse.SingleSegmentData> segments;
+    @JsonProperty public Map<String, GetSegmentDataResponse.SingleSegmentData> segments;
 
     // Present with rawSize=true
-    @JsonProperty public ListSegmentsResponse.RawSize rawSize;
+    @JsonProperty public GetSegmentDataResponse.RawSize rawSize;
 
     // Present only with fieldInfo=true
     @JsonProperty public List<String> fieldInfoLegend;
