@@ -99,7 +99,6 @@ allprojects { prj ->
           "**.SuppressForbidden"
       ]
 
-      doFirst dynamicSignatures.curry(configurations.toolsCompileClasspath, "lucene")
       inputs.dir(file(resources))
     }
 
@@ -111,18 +110,6 @@ allprojects { prj ->
       forbiddenApisMain.bundledSignatures -= [
           'jdk-system-out'
       ]
-    }
-
-    // Configure solr-specific rules.
-    if (prj.path.startsWith(":solr")) {
-      forbiddenApisMain {
-        doFirst dynamicSignatures.curry(configurations.compileClasspath, "solr")
-        signaturesFiles += files(file("${resources}/java.solr.txt"))
-      }
-
-      forbiddenApisTest {
-        doFirst dynamicSignatures.curry(configurations.testCompileClasspath, "solr")
-      }
     }
 
     // Disable checks on JMH generated files.
