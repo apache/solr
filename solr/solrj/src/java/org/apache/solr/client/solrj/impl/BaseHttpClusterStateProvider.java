@@ -184,12 +184,13 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     SimpleOrderedMap<?> cluster =
         submitClusterStateRequest(client, collection, ClusterStateRequestType.FETCH_COLLECTION);
 
-    var collState = (Map<String, Object>) cluster.findRecursive("collections", collection);
+    var collState = (Map<String, Object>) cluster.findRecursive("collections");
+    var collStateMap = (Map<String, Object>) collState.get(collection);
 
-    if (collState == null) {
+    if (collStateMap == null) {
       throw new NotACollectionException(); // probably an alias
     }
-    return getDocCollectionFromObjects(collection, collState);
+    return getDocCollectionFromObjects(collection, collStateMap);
   }
 
   private SimpleOrderedMap<?> submitClusterStateRequest(

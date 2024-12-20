@@ -18,12 +18,10 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -183,10 +181,12 @@ public class ClusterStatus {
     String routeKey = solrParams.get(ShardParams._ROUTE_);
     String shard = solrParams.get(ZkStateReader.SHARD_ID_PROP);
 
-    Set<String> requestedShards = new HashSet<>();
+    Set<String> requestedShards;
     if (shard != null) {
       String[] paramShards = shard.split(",");
-      requestedShards.addAll(Arrays.asList(paramShards));
+      requestedShards = Set.of(paramShards);
+    } else {
+      requestedShards = Set.of();
     }
 
     Stream<DocCollection> collectionStream;
@@ -216,28 +216,21 @@ public class ClusterStatus {
 
     MapWriter collectionPropsWriter =
         ew -> {
-          Iterator<Map<String, Object>> it =
-              collectionStream
-                  .map(
-                      (collectionState) ->
-                          collectionPropsResponse(
-                              collectionState,
-                              collectionVsAliases,
-                              routeKey,
-                              liveNodes,
-                              requestedShards))
-                  .iterator();
-          while (it.hasNext()) {
-            Map<String, Object> props = it.next();
-            props.forEach(
-                (key, value) -> {
-                  try {
-                    ew.put(key, value);
-                  } catch (IOException e) {
-                    throw new RuntimeException(e);
-                  }
-                });
-          }
+          collectionStream.forEach(
+              (collectionState) -> {
+                try {
+                  ew.put(
+                      collectionState.getName(),
+                      buildResponseForCollection(
+                          collectionState,
+                          collectionVsAliases,
+                          routeKey,
+                          liveNodes,
+                          requestedShards));
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
         };
     clusterStatus.add("collections", collectionPropsWriter);
   }
@@ -295,22 +288,19 @@ public class ClusterStatus {
   @SuppressWarnings("unchecked")
   protected void crossCheckReplicaStateWithLiveNodes(
       List<String> liveNodes, Map<String, Object> collectionProps) {
-    for (Map.Entry<String, Object> next : collectionProps.entrySet()) {
-      Map<String, Object> collMap = (Map<String, Object>) next.getValue();
-      Map<String, Object> shards = (Map<String, Object>) collMap.get("shards");
-      for (Object nextShard : shards.values()) {
-        Map<String, Object> shardMap = (Map<String, Object>) nextShard;
-        Map<String, Object> replicas = (Map<String, Object>) shardMap.get("replicas");
-        for (Object nextReplica : replicas.values()) {
-          Map<String, Object> replicaMap = (Map<String, Object>) nextReplica;
-          if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP))
-              != Replica.State.DOWN) {
-            // not down, so verify the node is live
-            String node_name = (String) replicaMap.get(ZkStateReader.NODE_NAME_PROP);
-            if (!liveNodes.contains(node_name)) {
-              // node is not live, so this replica is actually down
-              replicaMap.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
-            }
+    Map<String, Object> shards = (Map<String, Object>) collectionProps.get("shards");
+    for (Object nextShard : shards.values()) {
+      Map<String, Object> shardMap = (Map<String, Object>) nextShard;
+      Map<String, Object> replicas = (Map<String, Object>) shardMap.get("replicas");
+      for (Object nextReplica : replicas.values()) {
+        Map<String, Object> replicaMap = (Map<String, Object>) nextReplica;
+        if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP))
+            != Replica.State.DOWN) {
+          // not down, so verify the node is live
+          String node_name = (String) replicaMap.get(ZkStateReader.NODE_NAME_PROP);
+          if (!liveNodes.contains(node_name)) {
+            // node is not live, so this replica is actually down
+            replicaMap.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
           }
         }
       }
@@ -356,28 +346,28 @@ public class ClusterStatus {
     return collection;
   }
 
-  private Map<String, Object> collectionPropsResponse(
+  private Map<String, Object> buildResponseForCollection(
       DocCollection clusterStateCollection,
       Map<String, List<String>> collectionVsAliases,
       String routeKey,
       List<String> liveNodes,
       Set<String> requestedShards) {
-    Map<String, Object> collectionProps = new HashMap<>();
     Map<String, Object> collectionStatus;
+    Set<String> shards = new HashSet<>(requestedShards);
     String name = clusterStateCollection.getName();
 
     if (routeKey != null) {
       DocRouter router = clusterStateCollection.getRouter();
       Collection<Slice> slices = router.getSearchSlices(routeKey, null, clusterStateCollection);
       for (Slice slice : slices) {
-        requestedShards.add(slice.getName());
+        shards.add(slice.getName());
       }
     }
 
     byte[] bytes = Utils.toJSON(clusterStateCollection);
     @SuppressWarnings("unchecked")
     Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
-    collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
+    collectionStatus = getCollectionStatus(docCollection, name, shards);
 
     collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
     collectionStatus.put(
@@ -392,11 +382,10 @@ public class ClusterStatus {
       PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
       collectionStatus.put("PRS", prs);
     }
-    collectionProps.put(name, collectionStatus);
 
-    // now we need to walk the collectionProps tree to cross-check replica state with live
-    // nodes
-    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
-    return collectionProps;
+    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
+    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionStatus);
+
+    return collectionStatus;
   }
 }

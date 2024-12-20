@@ -319,7 +319,7 @@ public class NamedList<T>
   /**
    * Recursively parses the NamedList structure to arrive at a specific element. As you descend the
    * NamedList tree, the last element can be any type, including NamedList, but the previous
-   * elements MUST be NamedList or Map objects themselves. A null value is returned if the indicated
+   * elements MUST be NamedList objects themselves. A null value is returned if the indicated
    * hierarchy doesn't exist, but NamedList allows null values so that could be the actual value at
    * the end of the path.
    *
@@ -348,9 +348,9 @@ public class NamedList<T>
        * it to this list. Then we retrieve the first key from this list and
        * assign it to value.
        *
-       * On the next loop, we check whether the retrieved value is a NamedList or Map.
-       * If it is, then we drop to that NamedList/Map, grab the value of the
-       * next key, and start the loop over. If it is not a NamedList/Map, then we
+       * On the next loop, we check whether the retrieved value is a NamedList.
+       * If it is, then we drop to that NamedList, grab the value of the
+       * next key, and start the loop over. If it is not a NamedList, then we
        * assign the value to null and break out of the loop.
        *
        * Assigning the value to null and then breaking out of the loop seems
@@ -363,8 +363,6 @@ public class NamedList<T>
       } else {
         if (value instanceof NamedList) {
           currentList = (NamedList<?>) value;
-        } else if (value instanceof Map) {
-          currentList = new NamedList<>((Map<String, Object>) value);
         } else {
           value = null;
           break;
