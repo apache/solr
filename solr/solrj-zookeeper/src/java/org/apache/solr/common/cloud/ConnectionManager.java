@@ -179,7 +179,7 @@ public class ConnectionManager implements Watcher {
           connectionStrategy.reconnect(
               zkServerAddress,
               client.getZkClientTimeout(),
-              this,
+              client.wrapWatcher(this),
               new ZkClientConnectionStrategy.ZkUpdate() {
                 @Override
                 public void update(ZooKeeper keeper) {
