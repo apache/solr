@@ -13,6 +13,8 @@ New Features
 
 * SOLR-17150: Implement `memAllowed` parameter to limit per-thread memory allocations during request processing. (Andrzej Bialecki, Gus Heck)
 
+* SOLR-17525: Added knn_text_to_vector query parser to encode text to vector at query time through external LLM services. (Alessandro Benedetti)
+
 Improvements
 ---------------------
 * SOLR-17158: Users using query limits (timeAllowed, cpuTimeAllowed) for whom partial results are uninteresting

@@ -21,6 +21,7 @@ commons-cli:commons-cli=1.9.0
 commons-codec:commons-codec=1.17.1
 commons-collections:commons-collections=3.2.2
 commons-io:commons-io=2.15.1
+dev.langchain4j:langchain4j-*=0.35.0
 io.dropwizard.metrics:*=4.2.26
 io.grpc:grpc-*=1.65.1
 io.jaegertracing:*=1.8.1
