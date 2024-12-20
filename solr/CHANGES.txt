@@ -141,6 +141,8 @@ Other Changes
 
 * SOLR-17568: SolrCloud no longer reroutes/proxies a core request to another node if not found locally. (David Smiley)
 
+* SOLR-17548: Switch all public Java APIs from File to Path. (Matthew Biscocho via Eric Pugh)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -166,8 +168,6 @@ Other Changes
 ---------------------
 * SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
   LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
-
-* SOLR-17548: Switch all public Java APIs from File to Path. (Matthew Biscocho via Eric Pugh)
 
 ==================  9.8.0 ==================
 New Features
