@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,10 +31,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -181,13 +178,7 @@ public class ClusterStatus {
     String routeKey = solrParams.get(ShardParams._ROUTE_);
     String shard = solrParams.get(ZkStateReader.SHARD_ID_PROP);
 
-    Set<String> requestedShards;
-    if (shard != null) {
-      String[] paramShards = shard.split(",");
-      requestedShards = Set.of(paramShards);
-    } else {
-      requestedShards = Set.of();
-    }
+    Set<String> requestedShards = (shard != null) ? Set.of(shard.split(",")) : null;
 
     Stream<DocCollection> collectionStream;
     if (collection == null) {
@@ -218,18 +209,14 @@ public class ClusterStatus {
         ew -> {
           collectionStream.forEach(
               (collectionState) -> {
-                try {
-                  ew.put(
-                      collectionState.getName(),
-                      buildResponseForCollection(
-                          collectionState,
-                          collectionVsAliases,
-                          routeKey,
-                          liveNodes,
-                          requestedShards));
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
+                ew.putNoEx(
+                    collectionState.getName(),
+                    buildResponseForCollection(
+                        collectionState,
+                        collectionVsAliases,
+                        routeKey,
+                        liveNodes,
+                        requestedShards));
               });
         };
     clusterStatus.add("collections", collectionPropsWriter);
@@ -288,12 +275,12 @@ public class ClusterStatus {
   @SuppressWarnings("unchecked")
   protected void crossCheckReplicaStateWithLiveNodes(
       List<String> liveNodes, Map<String, Object> collectionProps) {
-    Map<String, Object> shards = (Map<String, Object>) collectionProps.get("shards");
+    var shards = (Map<String, Object>) collectionProps.get("shards");
     for (Object nextShard : shards.values()) {
-      Map<String, Object> shardMap = (Map<String, Object>) nextShard;
-      Map<String, Object> replicas = (Map<String, Object>) shardMap.get("replicas");
+      var shardMap = (Map<String, Object>) nextShard;
+      var replicas = (Map<String, Object>) shardMap.get("replicas");
       for (Object nextReplica : replicas.values()) {
-        Map<String, Object> replicaMap = (Map<String, Object>) nextReplica;
+        var replicaMap = (Map<String, Object>) nextReplica;
         if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP))
             != Replica.State.DOWN) {
           // not down, so verify the node is live
@@ -353,16 +340,16 @@ public class ClusterStatus {
       List<String> liveNodes,
       Set<String> requestedShards) {
     Map<String, Object> collectionStatus;
-    Set<String> shards = new HashSet<>(requestedShards);
+    Set<String> shards = new HashSet<>();
     String name = clusterStateCollection.getName();
 
-    if (routeKey != null) {
-      DocRouter router = clusterStateCollection.getRouter();
-      Collection<Slice> slices = router.getSearchSlices(routeKey, null, clusterStateCollection);
-      for (Slice slice : slices) {
-        shards.add(slice.getName());
-      }
-    }
+    if (routeKey != null)
+      clusterStateCollection
+          .getRouter()
+          .getSearchSlices(routeKey, null, clusterStateCollection)
+          .forEach((slice) -> shards.add(slice.getName()));
+
+    if (requestedShards != null) shards.addAll(requestedShards);
 
     byte[] bytes = Utils.toJSON(clusterStateCollection);
     @SuppressWarnings("unchecked")
