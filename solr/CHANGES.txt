@@ -148,6 +148,9 @@ Bug Fixes
 
 * SOLR-17306: fix replication problem on follower restart (Martin Anzinger and Peter Kroiss via Eric Pugh)
 
+* SOLR-17405: Fix race condition where Zookeeper session could be re-established by multiple threads concurrently in
+ case of frequent session expirations. (Pierre Salagnac)
+
 Dependency Upgrades
 ---------------------
 (No changes)
