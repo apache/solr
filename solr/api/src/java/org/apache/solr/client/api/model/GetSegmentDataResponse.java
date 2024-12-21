@@ -65,6 +65,7 @@ public class GetSegmentDataResponse extends SolrJerseyResponse {
     @JsonProperty public Long sizeInBytes;
     @JsonProperty public Integer size;
 
+    // TODO - consider 'Instant' once SOLR-17608 is finished
     @JsonProperty
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "YYYY-MM-DD'T'hh:mm:ss.S'Z'")
     public Date age;
@@ -107,6 +108,7 @@ public class GetSegmentDataResponse extends SolrJerseyResponse {
     public String luceneVersion;
 
     @JsonProperty public String source;
+    // TODO - consider 'Instant' once SOLR-17608 is finished
     @JsonProperty public Long timestamp;
 
     @JsonProperty("java.runtime.version")

@@ -33,6 +33,7 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
 
   @JsonProperty public String name;
   @JsonProperty public Integer znodeVersion;
+  // TODO - consider 'Instant' once SOLR-17608 is finished
   @JsonProperty public Long creationTimeMillis;
   @JsonProperty public CollectionMetadata properties;
   @JsonProperty public Integer activeShards;
