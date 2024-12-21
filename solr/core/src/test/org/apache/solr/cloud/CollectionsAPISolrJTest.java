@@ -21,6 +21,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.NUM_SHARDS_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -29,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -39,11 +43,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -569,14 +576,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     fail("Timed out waiting for cluster property value");
   }
 
-  @Test
-  public void testColStatus() throws Exception {
-    String collectionName = getSaferTestName();
-    CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
-        .process(cluster.getSolrClient());
-
-    cluster.waitForActiveCollection(collectionName, 2, 4);
-
+  private void indexSomeDocs(String collectionName) throws SolrServerException, IOException {
     SolrClient client = cluster.getSolrClient();
     byte[] binData = collectionName.getBytes(StandardCharsets.UTF_8);
     // index some docs
@@ -602,13 +602,97 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       client.add(collectionName, doc);
     }
     client.commit(collectionName);
+  }
 
+  private void assertRspPathNull(SolrResponse rsp, String... pathSegments) {
+    assertNull(Utils.getObjectByPath(rsp.getResponse(), false, Arrays.asList(pathSegments)));
+  }
+
+  private void assertRspPathNotNull(SolrResponse rsp, String... pathSegments) {
+    assertNotNull(Utils.getObjectByPath(rsp.getResponse(), false, Arrays.asList(pathSegments)));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testColStatus() throws Exception {
+    String collectionName = getSaferTestName();
+    CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
+        .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName, 2, 4);
+    indexSomeDocs(collectionName);
+
+    // Returns basic info if no additional flags are set
     CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(collectionName);
+    CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+    assertNotNull(rsp.getResponse().get(collectionName));
+    assertNotNull(rsp.getResponse().findRecursive(collectionName, "properties"));
+    final var collPropMap =
+        (Map<String, Object>) rsp.getResponse().findRecursive(collectionName, "properties");
+    assertEquals("conf2", collPropMap.get("configName"));
+    assertEquals(2L, collPropMap.get("nrtReplicas"));
+    assertEquals("0", collPropMap.get("tlogReplicas"));
+    assertEquals("0", collPropMap.get("pullReplicas"));
+    assertEquals(
+        2, ((NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards")).size());
+    assertNotNull(rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader"));
+    // Ensure more advanced info is not returned
+    assertNull(
+        rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos"));
+
+    // Returns segment metadata iff requested
+    req = CollectionAdminRequest.collectionStatus(collectionName);
+    req.setWithSegments(true);
+    rsp = req.process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+    assertNotNull(rsp.getResponse().get(collectionName));
+    assertRspPathNotNull(
+        rsp, collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0");
+    // Ensure field, size, etc. information isn't returned if only segment data was requested
+    assertRspPathNull(
+        rsp, collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0", "fields");
+    assertRspPathNull(
+        rsp,
+        collectionName,
+        "shards",
+        "shard1",
+        "leader",
+        "segInfos",
+        "segments",
+        "_0",
+        "largestFiles");
+
+    // Returns segment metadata and file-size info iff requested
+    // (Note that 'sizeInfo=true' should implicitly enable segments=true)
+    req = CollectionAdminRequest.collectionStatus(collectionName);
+    req.setWithSizeInfo(true);
+    rsp = req.process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+    assertRspPathNotNull(rsp, collectionName);
+    assertRspPathNotNull(
+        rsp, collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0");
+    assertRspPathNotNull(
+        rsp,
+        collectionName,
+        "shards",
+        "shard1",
+        "leader",
+        "segInfos",
+        "segments",
+        "_0",
+        "largestFiles");
+    // Ensure field, etc. information isn't returned if only segment+size data was requested
+    assertRspPathNull(
+        rsp, collectionName, "shards", "shard1", "leader", "segInfos", "segments", "_0", "fields");
+
+    // Set all flags and ensure everything is returned as expected
+    req = CollectionAdminRequest.collectionStatus(collectionName);
+    req.setWithSegments(true);
     req.setWithFieldInfo(true);
     req.setWithCoreInfo(true);
-    req.setWithSegments(true);
     req.setWithSizeInfo(true);
-    CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
+    rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
     @SuppressWarnings({"unchecked"})
     List<Object> nonCompliant =
@@ -616,14 +700,22 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
     assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
     @SuppressWarnings({"unchecked"})
-    NamedList<Object> segInfos =
-        (NamedList<Object>)
-            rsp.getResponse()
-                .findRecursive(collectionName, "shards", "shard1", "leader", "segInfos");
-    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
-    assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
+    final var segInfos =
+        (Map<String, Object>)
+            Utils.getObjectByPath(
+                rsp.getResponse(),
+                false,
+                List.of(collectionName, "shards", "shard1", "leader", "segInfos"));
     assertNotNull(
-        Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
+        Utils.toJSONString(rsp),
+        Utils.getObjectByPath(segInfos, false, List.of("info", "core", "startTime")));
+    assertNotNull(
+        Utils.toJSONString(rsp),
+        Utils.getObjectByPath(segInfos, false, List.of("fieldInfoLegend")));
+    assertNotNull(
+        Utils.toJSONString(rsp),
+        Utils.getObjectByPath(segInfos, false, List.of("segments", "_0", "fields", "id", "flags")));
+
     // test for replicas not active - SOLR-13882
     DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
     Replica firstReplica = coll.getSlice("shard1").getReplicas().iterator().next();
@@ -637,7 +729,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     Number down =
         (Number)
-            rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
+            Utils.getObjectByPath(
+                rsp.getResponse(),
+                false,
+                List.of(collectionName, "shards", "shard1", "replicas", "down"));
     assertTrue(
         "should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
 
@@ -652,10 +747,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     req = CollectionAdminRequest.collectionStatus(implicitColl);
     rsp = req.process(cluster.getSolrClient());
     assertNotNull(rsp.getResponse().get(implicitColl));
-    assertNotNull(
-        rsp.toString(), rsp.getResponse().findRecursive(implicitColl, "shards", "shardA"));
-    assertNotNull(
-        rsp.toString(), rsp.getResponse().findRecursive(implicitColl, "shards", "shardB"));
+    assertRspPathNotNull(rsp, implicitColl, "shards", "shardA");
+    assertRspPathNotNull(rsp, implicitColl, "shards", "shardB");
   }
 
   @Test
@@ -695,6 +788,69 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     rsp = req.process(cluster.getSolrClient());
     assertNotNull(rsp.getResponse().get(collectionNames[1]));
     assertNotNull(rsp.getResponse().get(collectionNames[0]));
+  }
+
+  /**
+   * Unit test for the v2 API: GET /api/collections/$collName
+   *
+   * <p>Uses the OAS-generated SolrRequest/SolrResponse API binding.
+   */
+  @Test
+  public void testV2BasicCollectionStatus() throws Exception {
+    final String simpleCollName = "simpleCollection";
+    CollectionAdminRequest.createCollection(simpleCollName, "conf2", 2, 1, 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(simpleCollName, 2, 6);
+    indexSomeDocs(simpleCollName);
+
+    final var simpleResponse =
+        new CollectionsApi.GetCollectionStatus(simpleCollName)
+            .process(cluster.getSolrClient())
+            .getParsed();
+    assertEquals(simpleCollName, simpleResponse.name);
+    assertEquals(2, simpleResponse.shards.size());
+    assertEquals(Integer.valueOf(2), simpleResponse.activeShards);
+    assertEquals(Integer.valueOf(0), simpleResponse.inactiveShards);
+    assertEquals(Integer.valueOf(1), simpleResponse.properties.nrtReplicas);
+    assertEquals(Integer.valueOf(1), simpleResponse.properties.replicationFactor);
+    assertEquals(Integer.valueOf(1), simpleResponse.properties.pullReplicas);
+    assertEquals(Integer.valueOf(1), simpleResponse.properties.tlogReplicas);
+    assertNotNull(simpleResponse.shards.get("shard1").leader);
+    assertNull(simpleResponse.shards.get("shard1").leader.segInfos);
+
+    // Ensure segment data present when request sets 'segments=true' flag
+    final var segmentDataRequest = new CollectionsApi.GetCollectionStatus(simpleCollName);
+    segmentDataRequest.setSegments(true);
+    final var segmentDataResponse = segmentDataRequest.process(cluster.getSolrClient()).getParsed();
+    var segmentData = segmentDataResponse.shards.get("shard1").leader.segInfos;
+    assertNotNull(segmentData);
+    assertTrue(segmentData.info.numSegments > 0); // Expect at least one segment
+    assertEquals(segmentData.info.numSegments.intValue(), segmentData.segments.size());
+    assertEquals(Version.LATEST.toString(), segmentData.info.commitLuceneVersion);
+    // Ensure field, size, etc. data not provided
+    assertNull(segmentData.segments.get("_0").fields);
+    assertNull(segmentData.segments.get("_0").largestFilesByName);
+
+    // Ensure file-size data present when request sets sizeInfo flag
+    final var segmentFileSizeRequest = new CollectionsApi.GetCollectionStatus(simpleCollName);
+    segmentFileSizeRequest.setSizeInfo(true);
+    final var segmentFileSizeResponse =
+        segmentFileSizeRequest.process(cluster.getSolrClient()).getParsed();
+    segmentData = segmentFileSizeResponse.shards.get("shard1").leader.segInfos;
+    assertNotNull(segmentData);
+    final var largeFileList = segmentData.segments.get("_0").largestFilesByName;
+    assertNotNull(largeFileList);
+    // Hard to assert what the largest index files should be, but:
+    //   - there should be at least 1 entry and...
+    //   - all keys/values should be non-empty
+    assertTrue(largeFileList.size() > 0);
+    largeFileList.forEach(
+        (fileName, size) -> {
+          assertThat(fileName, is(not(emptyString())));
+          assertThat(size, is(not(emptyString())));
+        });
+    // Ensure field, etc. data not provided
+    assertNull(segmentData.segments.get("_0").fields);
   }
 
   private static final int NUM_DOCS = 10;
