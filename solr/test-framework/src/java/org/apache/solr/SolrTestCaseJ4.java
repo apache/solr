@@ -775,10 +775,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
     h =
         new TestHarness(
-            coreName,
-            initAndGetDataDir().getAbsolutePath(),
-            solrConfig,
-            getSchemaFile());
+            coreName, initAndGetDataDir().getAbsolutePath(), solrConfig, getSchemaFile());
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
   }
 
