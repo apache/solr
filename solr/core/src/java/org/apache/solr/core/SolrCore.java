@@ -3349,7 +3349,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           // external ulogDir, we have to remove it explicitly
           try {
             Path tlogPath =
-                UpdateLog.ulogToTlogDir(cd.getName(), ulogDirPath, instanceDir, dataDir.toString());
+                UpdateLog.ulogToTlogDir(cd.getName(), ulogDirPath, instanceDir, dataDir);
             PathUtils.deleteDirectory(tlogPath);
           } catch (IOException e) {
             log.error(
