@@ -187,18 +187,6 @@
 #SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 #SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
-# Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
-# enables usage of credential store.
-# Credential provider should store the following keys:
-# * solr.jetty.keystore.password
-# * solr.jetty.truststore.password
-# Set the two below if you want to set specific store passwords for HTTP client
-# * javax.net.ssl.keyStorePassword
-# * javax.net.ssl.trustStorePassword
-# More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
-#SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-#SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
-
 # Settings for authentication
 # Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 #SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
@@ -256,7 +244,7 @@
 # Runs solr in java security manager sandbox. This can protect against some attacks.
 # Runtime properties are passed to the security policy file (server/etc/security.policy)
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
-# This is experimental! It may not work at all with Hadoop/HDFS features.
+# This is experimental!
 #SOLR_SECURITY_MANAGER_ENABLED=true
 # This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
 # change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
