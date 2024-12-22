@@ -45,7 +45,6 @@ import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
-import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -357,7 +356,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
           if (core != null) {
             info.add(NAME, core.getName());
             info.add("instanceDir", core.getInstancePath().toString());
-            info.add("dataDir", normalizePath(core.getDataDir()));
+            info.add("dataDir", Path.of(core.getDataDir()).toString());
             info.add("config", core.getConfigResource());
             info.add("schema", core.getSchemaResource());
             info.add("startTime", core.getStartTimeStamp());

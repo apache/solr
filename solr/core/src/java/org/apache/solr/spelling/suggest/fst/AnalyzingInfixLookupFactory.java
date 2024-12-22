@@ -16,7 +16,6 @@
  */
 package org.apache.solr.spelling.suggest.fst;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -89,7 +88,7 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
     String indexPath =
         params.get(INDEX_PATH) != null ? params.get(INDEX_PATH).toString() : DEFAULT_INDEX_PATH;
     if (!Path.of(indexPath).isAbsolute()) {
-      indexPath = core.getDataDir() + File.separator + indexPath;
+      indexPath = Path.of(core.getDataDir(), indexPath).toString();
     }
 
     int minPrefixChars =

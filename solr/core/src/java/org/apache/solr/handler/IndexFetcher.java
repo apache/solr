@@ -37,7 +37,6 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.GENERATION;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -1061,25 +1060,23 @@ public class IndexFetcher {
   }
 
   private void downloadConfFiles(
-      List<Map<String, Object>> confFilesToDownload, long latestGeneration) throws Exception {
+      List<Map<String, Object>> confFilesToDownload, long latestGeneration) {
     log.info("Starting download of configuration files from leader: {}", confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
-    Path tmpConfPath =
+    Path tmpconfDir =
         solrCore.getResourceLoader().getConfigPath().resolve("conf." + getDateAsStr(new Date()));
-    // TODO SOLR-8282 move to PATH
-    File tmpconfDir = tmpConfPath.toFile();
     try {
-      boolean status = tmpconfDir.mkdirs();
-      if (!status) {
+      try {
+        Files.createDirectories(tmpconfDir);
+      } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
-            "Failed to create temporary config folder: " + tmpconfDir.getName());
+            "Failed to create temporary config folder: " + tmpconfDir.getFileName());
       }
       for (Map<String, Object> file : confFilesToDownload) {
         String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
         localFileFetcher =
-            new LocalFsFileFetcher(
-                tmpconfDir.toPath(), file, saveAs, CONF_FILE_SHORT, latestGeneration);
+            new LocalFsFileFetcher(tmpconfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
         currentFile = file;
         localFileFetcher.fetchFile();
         confFilesDownloaded.add(new HashMap<>(file));
@@ -1087,9 +1084,13 @@ public class IndexFetcher {
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
       terminateAndWaitFsyncService();
-      copyTmpConfFiles2Conf(tmpConfPath);
+      copyTmpConfFiles2Conf(tmpconfDir);
+
+    } catch (Exception e) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Failed to download configuration files from leader", e);
     } finally {
-      delTree(tmpconfDir.toPath());
+      delTree(tmpconfDir);
     }
   }
 
@@ -1156,23 +1157,22 @@ public class IndexFetcher {
             alwaysDownload);
       }
       if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
-        // TODO SOLR-8282 move to PATH
-        File localFile = new File(indexDirPath, filename);
+        Path localFile = Path.of(indexDirPath, filename);
         if (downloadCompleteIndex
             && doDifferentialCopy
             && compareResult.equal
             && compareResult.checkSummed
-            && localFile.exists()) {
+            && Files.exists(localFile)) {
           if (log.isInfoEnabled()) {
             log.info(
                 "Don't need to download this file. Local file's path is: {}, checksum is: {}",
-                localFile.getAbsolutePath(),
+                localFile.toAbsolutePath(),
                 file.get(CHECKSUM));
           }
           // A hard link here should survive the eventual directory move, and should be more space
           // efficient as compared to a file copy. TODO: Maybe we could do a move safely here?
-          Files.createLink(Path.of(tmpIndexDirPath, filename), localFile.toPath());
-          bytesSkippedCopying += localFile.length();
+          Files.createLink(Path.of(tmpIndexDirPath, filename), localFile);
+          bytesSkippedCopying += Files.size(localFile);
         } else {
           dirFileFetcher =
               new DirectoryFileFetcher(
@@ -1484,6 +1484,7 @@ public class IndexFetcher {
     int numTempPathElements = tmpconfDir.getNameCount();
     for (Path path : makeTmpConfDirFileList(tmpconfDir)) {
       Path oldPath = confPath.resolve(path.subpath(numTempPathElements, path.getNameCount()));
+
       try {
         Files.createDirectories(oldPath.getParent());
       } catch (IOException e) {
@@ -1491,21 +1492,19 @@ public class IndexFetcher {
             ErrorCode.SERVER_ERROR, "Unable to mkdirs: " + oldPath.getParent(), e);
       }
       if (Files.exists(oldPath)) {
-        File oldFile = oldPath.toFile(); // TODO SOLR-8282 move to PATH
-        File backupFile =
-            new File(oldFile.getPath() + "." + getDateAsStr(new Date(oldFile.lastModified())));
-        if (!backupFile.getParentFile().exists()) {
-          status = backupFile.getParentFile().mkdirs();
-          if (!status) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR, "Unable to mkdirs: " + backupFile.getParentFile());
+        try {
+          Path backupFile =
+              Path.of(
+                  oldPath
+                      + "."
+                      + getDateAsStr(new Date(Files.getLastModifiedTime(oldPath).toMillis())));
+          if (!Files.exists(backupFile.getParent())) {
+            Files.createDirectories(backupFile.getParent());
           }
-        }
-        status = oldFile.renameTo(backupFile);
-        if (!status) {
+          Files.move(oldPath, backupFile);
+        } catch (Exception e) {
           throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Unable to rename: " + oldFile + " to: " + backupFile);
+              SolrException.ErrorCode.SERVER_ERROR, "Unable to backup old file: " + oldPath, e);
         }
       }
       try {

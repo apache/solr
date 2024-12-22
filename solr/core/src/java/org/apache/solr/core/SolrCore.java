@@ -22,7 +22,6 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +32,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1354,16 +1354,26 @@ public class SolrCore implements SolrInfoBean, Closeable {
           Category.CORE.toString());
     }
 
-    // TODO SOLR-8282 move to PATH
     // initialize disk total / free metrics
-    Path dataDirPath = Paths.get(dataDir);
-    File dataDirFile = dataDirPath.toFile();
+    Path dataDirFile = Paths.get(dataDir);
+    long totalSpace;
+    long useableSpace;
+
+    try {
+      totalSpace = Files.getFileStore(dataDirFile).getTotalSpace();
+      useableSpace = Files.getFileStore(dataDirFile).getUsableSpace();
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Metrics initialization failed to retrieve files total/usable space",
+          e);
+    }
+
+    parentContext.gauge(() -> totalSpace, true, "totalSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(() -> useableSpace, true, "usableSpace", Category.CORE.toString(), "fs");
+
     parentContext.gauge(
-        () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
-    parentContext.gauge(
-        () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
-    parentContext.gauge(
-        () -> dataDirPath.toAbsolutePath().toString(),
+        () -> dataDirFile.toAbsolutePath().toString(),
         true,
         "path",
         Category.CORE.toString(),

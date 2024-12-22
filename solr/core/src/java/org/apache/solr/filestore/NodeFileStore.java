@@ -72,7 +72,7 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
   //  it up into multiple distinct APIs
   @Override
   @PermissionName(FILESTORE_READ_PERM)
-  public SolrJerseyResponse getFile(String path, Boolean sync, String getFrom, Boolean meta) {
+  public SolrJerseyResponse getFile(String path, Boolean sync, String getFrom, Boolean meta) throws IOException {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
 
     if (Boolean.TRUE.equals(sync)) {

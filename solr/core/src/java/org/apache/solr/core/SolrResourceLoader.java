@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +33,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -353,12 +353,14 @@ public class SolrResourceLoader
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-    if (resource.trim().startsWith("\\\\")) { // Always disallow UNC paths
-      throw new SolrResourceNotFoundException("Resource '" + resource + "' could not be loaded.");
+    String pathResource = Paths.get(resource).normalize().toString();
+    if (pathResource.trim().startsWith("\\\\")) { // Always disallow UNC paths
+      throw new SolrResourceNotFoundException(
+          "Resource '" + pathResource + "' could not be loaded.");
     }
     Path instanceDir = getInstancePath().normalize();
-    Path inInstanceDir = getInstancePath().resolve(resource).normalize();
-    Path inConfigDir = instanceDir.resolve("conf").resolve(resource).normalize();
+    Path inInstanceDir = getInstancePath().resolve(pathResource).normalize();
+    Path inConfigDir = instanceDir.resolve("conf").resolve(pathResource).normalize();
     if (allowUnsafeResourceloading || inInstanceDir.startsWith(instanceDir)) {
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
@@ -373,17 +375,17 @@ public class SolrResourceLoader
 
     // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
     // We need a ClassLoader-compatible (forward-slashes) path here!
-    InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+    InputStream is = classLoader.getResourceAsStream(pathResource);
 
     // This is a hack just for tests (it is not done in ZKResourceLoader)!
     // TODO can we nuke this?
     if (is == null && System.getProperty("jetty.testMode") != null) {
-      is = classLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
+      is = classLoader.getResourceAsStream(Path.of("conf").resolve(pathResource).toString());
     }
 
     if (is == null) {
       throw new SolrResourceNotFoundException(
-          "Can't find resource '" + resource + "' in classpath or '" + instanceDir + "'");
+          "Can't find resource '" + pathResource + "' in classpath or '" + instanceDir + "'");
     }
     return is;
   }
@@ -404,8 +406,7 @@ public class SolrResourceLoader
         return inInstanceDir.normalize().toString();
     }
 
-    try (InputStream is =
-        classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+    try (InputStream is = classLoader.getResourceAsStream(Path.of(resource).toString())) {
       if (is != null) return "classpath:" + resource;
     } catch (IOException e) {
       // ignore

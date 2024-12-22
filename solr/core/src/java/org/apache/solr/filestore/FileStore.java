@@ -44,7 +44,7 @@ public interface FileStore {
   /** Fetch a resource from another node internal API */
   boolean fetch(String path, String from);
 
-  List<FileDetails> list(String path, Predicate<String> predicate);
+  List<FileDetails> list(String path, Predicate<String> predicate) throws IOException;
 
   /** Sync a local file to all nodes. All the nodes are asked to pull the file from this node */
   void syncToAllNodes(String path) throws IOException;

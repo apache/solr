@@ -16,13 +16,13 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -64,7 +64,7 @@ public class CoreDescriptor {
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE =
-      "conf" + File.separator + "solrcore.properties";
+      Paths.get("conf", "solrcore.properties").toString();
 
   /**
    * Whether this core was configured using a configSet that was trusted. This helps in avoiding the
@@ -96,7 +96,7 @@ public class CoreDescriptor {
           CORE_CONFIG, "solrconfig.xml",
           CORE_SCHEMA, "schema.xml",
           CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
-          CORE_DATADIR, "data" + File.separator,
+          CORE_DATADIR, Paths.get("data/").toString(),
           CORE_TRANSIENT, "false",
           CORE_LOADONSTARTUP, "true");
 
@@ -240,7 +240,8 @@ public class CoreDescriptor {
    * <p>File paths are taken as read from the core's instance directory if they are not absolute.
    */
   protected void loadExtraProperties() {
-    String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
+    String filename =
+        coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE.toString());
     Path propertiesFile = instanceDir.resolve(filename);
     if (Files.exists(propertiesFile)) {
       try (Reader r = Files.newBufferedReader(propertiesFile, StandardCharsets.UTF_8)) {
