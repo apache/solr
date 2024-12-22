@@ -75,6 +75,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -244,7 +245,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   @SuppressWarnings("JdkObsolete")
   protected LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
-  protected Path[] tlogFiles;
+  // Needs to be String because hdfs.Path is incompatible with nio.Path
+  protected String[] tlogFiles;
   protected Path tlogDir;
   protected Closeable releaseTlogDir;
   protected Collection<String> globalStrings;
@@ -347,7 +349,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public static Path ulogToTlogDir(
-      String coreName, Path ulogDirPath, Path instancePath, Path coreDataDir) {
+      String coreName, Path ulogDirPath, Path instancePath, String coreDataDir) {
     boolean unscopedDataDir =
         !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataDir);
 
@@ -358,7 +360,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       if (tlog.equals(instancePath)) {
         throw new IllegalArgumentException(
             "tlog path " + tlog + " conflicts with instance path " + instancePath);
-      } else if (tlog.normalize().equals(coreDataDir.normalize())) {
+      } else if (SolrPaths.normalizeDir(tlog.toString()).equals(coreDataDir)) {
+        // NOTE: use string comparison above because `coreDataDir` might not be parseable
+        // as a valid Path (e.g., it might be an hdfs Path).
         throw new IllegalArgumentException(
             "tlog path " + tlog + " conflicts with core data dir " + coreDataDir);
       }
@@ -439,8 +443,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // `init(UpdateHandler, SolrCore` is never actually called concurrently in application code
       // (`TestHdfsUpdateLog.testFSThreadSafety()`, introduced by SOLR-7113, seems to be the only
       // place that requires true thread safety from this method?).
-      // NOTE: TestHdfsUpdateLog was removed in SOLR-17609 so there is a opportunity for clean up
-      // here.
       if (debug) {
         log.debug(
             "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
@@ -552,7 +554,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     assert (instancePath = Path.of(instancePath.toUri())).getClass()
         == (dataDirPath = Path.of(dataDirPath.toUri())).getClass();
 
-    tlogDir = ulogToTlogDir(core.getName(), dataDirPath, instancePath, Path.of(core.getDataDir()));
+    tlogDir = ulogToTlogDir(core.getName(), dataDirPath, instancePath, core.getDataDir());
 
     maybeClearLog(core);
 
@@ -601,7 +603,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       existOldBufferLog = false;
     }
     TransactionLog oldLog = null;
-    for (Path oldLogName : tlogFiles) {
+    for (String oldLogName : tlogFiles) {
       Path path = tlogDir.resolve(oldLogName);
       try {
         oldLog = newTransactionLog(path, null, true);
@@ -728,14 +730,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return (cmd.getFlags() & UpdateCommand.REPLAY) != 0 && state == State.REPLAYING;
   }
 
-  public Path[] getLogList(Path directory) {
+  public String[] getLogList(Path directory) {
     final String prefix = TLOG_NAME + '.';
     try (Stream<Path> files = Files.list(directory)) {
       return files
           .map((file) -> file.getFileName().toString())
           .filter((name) -> name.startsWith(prefix))
           .sorted()
-          .toArray(Path[]::new);
+          .toArray(String[]::new);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -744,8 +746,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public long getLastLogId() {
     if (id != -1) return id;
     if (tlogFiles.length == 0) return -1;
-    Path last = tlogFiles[tlogFiles.length - 1];
-    return Long.parseLong(last.toString().substring(TLOG_NAME.length() + 1));
+    String last = tlogFiles[tlogFiles.length - 1];
+    return Long.parseLong(last.substring(TLOG_NAME.length() + 1));
   }
 
   public void add(AddUpdateCommand cmd) {
