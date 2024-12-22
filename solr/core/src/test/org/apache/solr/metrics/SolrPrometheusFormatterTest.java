@@ -16,8 +16,8 @@
  */
 package org.apache.solr.metrics;
 
-import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.CLOUD_CORE_PATTERN;
-import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.STANDALONE_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.core.SolrCoreMetric.CLOUD_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.core.SolrCoreMetric.STANDALONE_CORE_PATTERN;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;

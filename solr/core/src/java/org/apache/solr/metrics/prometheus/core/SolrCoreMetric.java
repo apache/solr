@@ -16,32 +16,37 @@
  */
 package org.apache.solr.metrics.prometheus.core;
 
-import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.CLOUD_CORE_PATTERN;
-import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.STANDALONE_CORE_PATTERN;
-
 import com.codahale.metrics.Metric;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 
 /** Base class is a wrapper to export a solr.core {@link com.codahale.metrics.Metric} */
 public abstract class SolrCoreMetric extends SolrMetric {
 
+  public static Pattern CLOUD_CORE_PATTERN =
+      Pattern.compile(
+          "(?<core>^core_(?<collection>.*)_(?<shard>shard[0-9]+)_(?<replica>replica_.[0-9]+)).(.*)$");
+  public static Pattern STANDALONE_CORE_PATTERN = Pattern.compile("^core_(?<core>.*?)\\.(.*)$");
+
   public String coreName;
 
   public SolrCoreMetric(Metric dropwizardMetric, String metricName) {
+    // Remove Core Name prefix from metric as it is no longer needed for tag parsing from this point
     super(dropwizardMetric, metricName.substring(metricName.indexOf(".") + 1));
     Matcher cloudPattern = CLOUD_CORE_PATTERN.matcher(metricName);
     Matcher standalonePattern = STANDALONE_CORE_PATTERN.matcher(metricName);
     if (cloudPattern.find()) {
       coreName = cloudPattern.group("core");
-      labels.put("core", cloudPattern.group("core"));
-      labels.put("collection", cloudPattern.group("collection"));
-      labels.put("shard", cloudPattern.group("shard"));
-      labels.put("replica", cloudPattern.group("replica"));
+      cloudPattern
+          .namedGroups()
+          .forEach((key, value) -> labels.put(key, cloudPattern.group(value)));
     } else if (standalonePattern.find()) {
       coreName = standalonePattern.group("core");
-      labels.put("core", standalonePattern.group("core"));
+      standalonePattern
+          .namedGroups()
+          .forEach((key, value) -> labels.put(key, standalonePattern.group(value)));
     } else {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

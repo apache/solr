@@ -551,7 +551,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   private String getCoreNameFromRegistry(String registryName) {
     String coreName = registryName.substring(registryName.indexOf('.') + 1);
-    return coreName.replaceAll("\\.", "_");
+    return coreName.replace(".", "_");
   }
 
   @Override
