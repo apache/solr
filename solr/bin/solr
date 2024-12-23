@@ -1053,7 +1053,7 @@ fi
 
 # Establish default GC logging opts if no env var set
 if [ -z "${GC_LOG_OPTS}" ]; then
-  GC_LOG_OPTS=("-Xlog:gc*:file=$SOLR_LOGS_DIR\solr_gc.log:time,level,tags:filecount=9,filesize=20M")
+  GC_LOG_OPTS=("-Xlog:gc*:file=$SOLR_LOGS_DIR/solr_gc.log:time,level,tags:filecount=9,filesize=20M")
 fi
 
 if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
