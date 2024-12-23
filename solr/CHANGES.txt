@@ -50,12 +50,13 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
-
 * SOLR-17620: SolrCloud "live_node" now has metadata: version of Solr, roles (Yuntong Qu, David Smiley)
 
 * SOLR-17879: A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing
   Solr node in a SolrCloud cluster (as reported by info in "live_node").  (David Smiley)
+
+* SOLR-17541: Deprecate `CloudHttp2SolrClient.Builder#withHttpClient` in favor of `CloudHttp2SolrClient.Builder#withInternalClientBuilder`.
+  Deprecate `LBHttp2SolrClient.Builder#withListenerFactory` in favor of `LBHttp2SolrClient.Builder#withListenerFactories`. (James Dyer)
 
 ==================  9.9.1 ==================
 Bug Fixes
