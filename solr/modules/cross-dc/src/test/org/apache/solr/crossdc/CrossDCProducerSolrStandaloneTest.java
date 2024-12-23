@@ -120,12 +120,12 @@ public class CrossDCProducerSolrStandaloneTest extends SolrTestCaseJ4 {
     Files.createFile(coreDirectory.resolve("core.properties"));
 
     // Copy "schema.xml" from the source location to the "conf" subdirectory
-    File sourceSchemaFile = getFile(Path.of(sourceLocation, "schema.xml").toString());
+    File sourceSchemaFile = getFile(Path.of(sourceLocation, "schema.xml").toString()).toFile();
     Path targetSchemaPath = subHome.resolve("schema.xml");
     Files.copy(sourceSchemaFile.toPath(), targetSchemaPath, StandardCopyOption.REPLACE_EXISTING);
 
     // Copy solr config file from the source location to the "conf" subdirectory
-    File sourceConfigFile = getFile(Path.of(sourceLocation, solrConfigName).toString());
+    File sourceConfigFile = getFile(Path.of(sourceLocation, solrConfigName).toString()).toFile();
     Path targetConfigPath = subHome.resolve("solrconfig.xml");
     Files.copy(sourceConfigFile.toPath(), targetConfigPath, StandardCopyOption.REPLACE_EXISTING);
   }

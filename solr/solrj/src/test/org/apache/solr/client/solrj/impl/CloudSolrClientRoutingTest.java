@@ -42,7 +42,7 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     //    configset("cloud-minimal");
     configureCluster(1)
-        .addConfig("conf", getFile("solrj/solr/configsets/streaming/conf").toPath())
+        .addConfig("conf", getFile("solrj/solr/configsets/streaming/conf"))
         .configure();
 
     CollectionAdminRequest.Create create =

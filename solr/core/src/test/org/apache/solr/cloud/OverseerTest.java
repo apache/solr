@@ -1945,17 +1945,16 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   private SolrCloudManager getCloudDataProvider(ZkStateReader zkStateReader) {
-    var httpSolrClient =
+    var httpSolrClientBuilder =
         new Http2SolrClient.Builder()
             .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .build();
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS);
     var cloudSolrClient =
         new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-            .withHttpClient(httpSolrClient)
+            .withInternalClientBuilder(httpSolrClientBuilder)
             .build();
     solrClients.add(cloudSolrClient);
-    solrClients.add(httpSolrClient);
+    solrClients.add(httpSolrClientBuilder.build());
     SolrClientCloudManager sccm = new SolrClientCloudManager(cloudSolrClient, null);
     sccm.getClusterStateProvider().connect();
     return sccm;

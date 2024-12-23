@@ -49,7 +49,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static Path getSolrHome() {
-    return SolrTestCaseJ4.getFile("solrj/solr/multicore").toPath();
+    return SolrTestCaseJ4.getFile("solrj/solr/multicore");
   }
 
   protected void setupCoreContainer() {
