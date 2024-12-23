@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -58,7 +57,10 @@ public class VersionedFile {
 
           try (Stream<Path> files = Files.list(dir)) {
             fileList =
-                files.filter((file) -> file.getFileName().toString().startsWith(prefix)).toList();
+                files
+                    .filter((file) -> file.getFileName().toString().startsWith(prefix))
+                    .sorted()
+                    .toList();
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
