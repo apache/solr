@@ -231,13 +231,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     // Show a directory listing
     if (Files.isDirectory(adminFile)) {
       // it's really a directory, just go for it.
-      int basePath = (int) (Files.size(adminFile.toAbsolutePath()) + 1);
       NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<>();
       try (Stream<Path> directoryFiles = Files.list(adminFile)) {
         directoryFiles.forEach(
             (f) -> {
-              String path = f.toAbsolutePath().toString().substring(basePath);
-              path = path.replace('\\', '/'); // normalize slashes
+              String path = f.getFileName().toString();
 
               if (isHiddenFile(
                   req, rsp, f.getFileName().toString().replace('\\', '/'), false, hiddenFiles)) {

@@ -1362,15 +1362,18 @@ public class SolrCore implements SolrInfoBean, Closeable {
     try {
       totalSpace = Files.getFileStore(dataDirFile).getTotalSpace();
       useableSpace = Files.getFileStore(dataDirFile).getUsableSpace();
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Metrics initialization failed to retrieve files total/usable space",
-          e);
+    } catch (Exception e) {
+      // TODO Metrics used to default to 0 with java.io.File even if directory didn't exist
+      // Should throw an exception and initialize data directory before metrics
+      totalSpace = 0L;
+      useableSpace = 0L;
     }
 
-    parentContext.gauge(() -> totalSpace, true, "totalSpace", Category.CORE.toString(), "fs");
-    parentContext.gauge(() -> useableSpace, true, "usableSpace", Category.CORE.toString(), "fs");
+    final long finalTotalSpace = totalSpace;
+    final long finalUsableSpace = useableSpace;
+    parentContext.gauge(() -> finalTotalSpace, true, "totalSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(
+        () -> finalUsableSpace, true, "usableSpace", Category.CORE.toString(), "fs");
 
     parentContext.gauge(
         () -> dataDirFile.toAbsolutePath().toString(),

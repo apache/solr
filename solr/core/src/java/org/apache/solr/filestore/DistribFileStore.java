@@ -87,7 +87,12 @@ public class DistribFileStore implements FileStore {
   private static Path _getRealPath(String path, Path solrHome) {
     Path dir = Path.of(path);
     SolrPaths.assertNotUnc(dir);
+
+    while (path.startsWith("/")) {
+      path = path.substring(1);
+    }
     var finalPath = getFileStoreDirPath(solrHome).resolve(path);
+
     // Guard against path traversal by asserting final path is sub path of filestore
     if (!finalPath.normalize().startsWith(getFileStoreDirPath(solrHome).normalize())) {
       throw new SolrException(BAD_REQUEST, "Illegal path " + path);
