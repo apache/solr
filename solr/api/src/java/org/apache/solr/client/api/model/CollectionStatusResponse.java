@@ -18,7 +18,9 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +35,12 @@ public class CollectionStatusResponse extends SolrJerseyResponse {
 
   @JsonProperty public String name;
   @JsonProperty public Integer znodeVersion;
+
   // TODO - consider 'Instant' once SOLR-17608 is finished
-  @JsonProperty public Long creationTimeMillis;
+  @JsonProperty
+  @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+  public Date creationTimeMillis;
+
   @JsonProperty public CollectionMetadata properties;
   @JsonProperty public Integer activeShards;
   @JsonProperty public Integer inactiveShards;

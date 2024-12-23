@@ -108,8 +108,11 @@ public class GetSegmentDataResponse extends SolrJerseyResponse {
     public String luceneVersion;
 
     @JsonProperty public String source;
+
     // TODO - consider 'Instant' once SOLR-17608 is finished
-    @JsonProperty public Long timestamp;
+    @JsonProperty
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    public Date timestamp;
 
     @JsonProperty("java.runtime.version")
     public String javaRuntimeVersion;
