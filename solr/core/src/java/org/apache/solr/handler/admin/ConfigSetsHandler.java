@@ -28,8 +28,7 @@ import java.util.Map;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
+import org.apache.solr.client.api.model.CloneConfigsetRequestBody;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -41,8 +40,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.handler.configsets.CreateConfigSetAPI;
-import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
+import org.apache.solr.handler.configsets.CloneConfigSet;
+import org.apache.solr.handler.configsets.DeleteConfigSet;
 import org.apache.solr.handler.configsets.ListConfigSets;
 import org.apache.solr.handler.configsets.UploadConfigSetAPI;
 import org.apache.solr.handler.configsets.UploadConfigSetFileAPI;
@@ -96,17 +95,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     switch (action) {
       case DELETE:
-        final DeleteConfigSetAPI deleteConfigSetAPI = new DeleteConfigSetAPI(coreContainer);
-        final SolrQueryRequest v2DeleteReq =
-            new DelegatingSolrQueryRequest(req) {
-              @Override
-              public Map<String, String> getPathTemplateValues() {
-                return Map.of(
-                    DeleteConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER,
-                    req.getParams().required().get(NAME));
-              }
-            };
-        deleteConfigSetAPI.deleteConfigSet(v2DeleteReq, rsp);
+        final DeleteConfigSet deleteConfigSetAPI = new DeleteConfigSet(coreContainer, req, rsp);
+        final var deleteResponse =
+            deleteConfigSetAPI.deleteConfigSet(req.getParams().required().get(NAME));
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteResponse);
         break;
       case UPLOAD:
         final SolrQueryRequest v2UploadReq =
@@ -153,12 +145,12 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         }
 
         // Map v1 parameters into v2 format and process request
-        final CreateConfigPayload createPayload = new CreateConfigPayload();
-        createPayload.name = newConfigSetName;
+        final var requestBody = new CloneConfigsetRequestBody();
+        requestBody.name = newConfigSetName;
         if (req.getParams().get(ConfigSetCmds.BASE_CONFIGSET) != null) {
-          createPayload.baseConfigSet = req.getParams().get(ConfigSetCmds.BASE_CONFIGSET);
+          requestBody.baseConfigSet = req.getParams().get(ConfigSetCmds.BASE_CONFIGSET);
         }
-        createPayload.properties = new HashMap<>();
+        requestBody.properties = new HashMap<>();
         req.getParams().stream()
             .filter(entry -> entry.getKey().startsWith(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX))
             .forEach(
@@ -167,10 +159,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
                       entry.getKey().substring(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX.length());
                   final Object value =
                       (entry.getValue().length == 1) ? entry.getValue()[0] : entry.getValue();
-                  createPayload.properties.put(newKey, value);
+                  requestBody.properties.put(newKey, value);
                 });
-        final CreateConfigSetAPI createConfigSetAPI = new CreateConfigSetAPI(coreContainer);
-        createConfigSetAPI.create(new PayloadObj<>("create", null, createPayload, req, rsp));
+        final CloneConfigSet createConfigSetAPI = new CloneConfigSet(coreContainer, req, rsp);
+        final var createResponse = createConfigSetAPI.cloneExistingConfigSet(requestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, createResponse);
         break;
       default:
         throw new IllegalStateException("Unexpected ConfigSetAction detected: " + action);
@@ -208,8 +201,6 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new CreateConfigSetAPI(coreContainer)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteConfigSetAPI(coreContainer)));
     apis.addAll(AnnotatedApi.getApis(new UploadConfigSetAPI(coreContainer)));
     apis.addAll(AnnotatedApi.getApis(new UploadConfigSetFileAPI(coreContainer)));
 
@@ -218,7 +209,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(ListConfigSets.class);
+    return List.of(ListConfigSets.class, CloneConfigSet.class, DeleteConfigSet.class);
   }
 
   @Override
