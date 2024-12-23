@@ -1104,9 +1104,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
 
-      // initialize core metrics
-      initializeMetrics(solrMetricsContext, null);
-
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
 
@@ -1123,6 +1120,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       this.snapshotMgr = initSnapshotMetaDataManager();
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
+
+      // initialize core metrics
+      initializeMetrics(solrMetricsContext, null);
 
       this.codec = initCodec(solrConfig, this.schema);
       initIndex(prev != null, reload);

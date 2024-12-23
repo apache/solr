@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -64,7 +63,7 @@ public class CoreDescriptor {
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE =
-      Paths.get("conf", "solrcore.properties").toString();
+      Path.of("conf/solrcore.properties").toString();
 
   /**
    * Whether this core was configured using a configSet that was trusted. This helps in avoiding the
@@ -96,7 +95,7 @@ public class CoreDescriptor {
           CORE_CONFIG, "solrconfig.xml",
           CORE_SCHEMA, "schema.xml",
           CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
-          CORE_DATADIR, Paths.get("data/").toString(),
+          CORE_DATADIR, Path.of("data/").toString(),
           CORE_TRANSIENT, "false",
           CORE_LOADONSTARTUP, "true");
 
