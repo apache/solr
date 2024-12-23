@@ -114,7 +114,7 @@ public class HttpShardHandler extends ShardHandler {
   protected AtomicInteger pending;
 
   private final Map<String, List<String>> shardToURLs;
-  protected LBHttp2SolrClient<Http2SolrClient.Builder> lbClient;
+  protected LBHttp2SolrClient<Http2SolrClient> lbClient;
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;
