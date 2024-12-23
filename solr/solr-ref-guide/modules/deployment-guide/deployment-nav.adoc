@@ -28,7 +28,6 @@
 ** xref:backup-restore.adoc[]
 ** xref:solr-in-docker.adoc[]
 *** xref:docker-faq.adoc[]
-** xref:solr-on-hdfs.adoc[]
 
 * Scaling Solr
 ** xref:cluster-types.adoc[]

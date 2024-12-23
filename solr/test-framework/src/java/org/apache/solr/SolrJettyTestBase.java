@@ -52,8 +52,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     Properties nodeProps = new Properties();
     if (configFile != null) nodeProps.setProperty("solrconfig", configFile);
     if (schemaFile != null) nodeProps.setProperty("schema", schemaFile);
-    if (System.getProperty("solr.data.dir") == null
-        && System.getProperty("solr.hdfs.home") == null) {
+    if (System.getProperty("solr.data.dir") == null) {
       nodeProps.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
 
