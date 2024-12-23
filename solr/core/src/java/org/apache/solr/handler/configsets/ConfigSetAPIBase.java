@@ -79,6 +79,12 @@ public class ConfigSetAPIBase extends JerseyResource {
     this.configSetService = coreContainer.getConfigSetService();
   }
 
+  // TODO Delete once the 'Upload' APIs have been converted
+  public ConfigSetAPIBase(
+          CoreContainer coreContainer) {
+    this(coreContainer, null, null);
+  }
+
   protected void runConfigSetCommand(
       SolrQueryResponse rsp,
       ConfigSetParams.ConfigSetAction action,
