@@ -66,7 +66,6 @@ bouncycastle = "1.78.1"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
 carrot2-core = "4.5.1"
-carrotsearch-dependencychecks = "0.0.9"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.1"
 # @keep for version alignment
@@ -183,7 +182,6 @@ xerial-snappy = "1.1.10.5"
 
 [plugins]
 benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
-carrotsearch-dependencychecks = { id = "com.carrotsearch.gradle.dependencychecks", version.ref = "carrotsearch-dependencychecks" }
 cutterslade-analyze = { id = "ca.cutterslade.analyze", version.ref = "cutterslade-analyze" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 littlerobots-versioncatalogupdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "littlerobots-versioncatalogupdate" }
