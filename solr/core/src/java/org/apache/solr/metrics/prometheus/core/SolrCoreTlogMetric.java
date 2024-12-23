@@ -24,9 +24,8 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 public class SolrCoreTlogMetric extends SolrCoreMetric {
   public static final String CORE_TLOG_METRICS = "solr_metrics_core_tlog";
 
-  public SolrCoreTlogMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrCoreTlogMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   /*

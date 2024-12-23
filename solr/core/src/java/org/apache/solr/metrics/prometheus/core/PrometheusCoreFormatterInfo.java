@@ -16,8 +16,6 @@
  */
 package org.apache.solr.metrics.prometheus.core;
 
-import java.util.regex.Pattern;
-
 public interface PrometheusCoreFormatterInfo {
   /** Category of prefix Solr Core dropwizard handler metric names */
   enum CoreCategory {
@@ -32,6 +30,4 @@ public interface PrometheusCoreFormatterInfo {
     INDEX,
     CORE
   }
-
-  Pattern CLOUD_CORE_PATTERN = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_.[0-9]+)$");
 }

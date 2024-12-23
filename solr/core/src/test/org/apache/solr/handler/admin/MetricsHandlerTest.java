@@ -725,8 +725,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusFormatter formatter =
-        (SolrPrometheusFormatter) values.get("solr.core.collection1");
+    SolrPrometheusFormatter formatter = (SolrPrometheusFormatter) values.get("solr.core");
     assertNotNull(formatter);
     MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);
@@ -1009,8 +1008,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusFormatter formatter =
-        (SolrPrometheusFormatter) values.get("solr.core.collection1");
+    SolrPrometheusFormatter formatter = (SolrPrometheusFormatter) values.get("solr.core");
     assertNotNull(formatter);
     MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);
