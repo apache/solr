@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -118,30 +117,28 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
   private LBClientHolder client(LBSolrClient.Endpoint... baseSolrEndpoints) {
     if (random().nextBoolean()) {
-      var delegateClient =
+      var delegateClientBuilder =
           new Http2SolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
-              .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
-              .build();
+              .withIdleTimeout(2000, TimeUnit.MILLISECONDS);
       var lbClient =
-          new LBHttp2SolrClient.Builder<>(delegateClient, baseSolrEndpoints)
+          new LBHttp2SolrClient.Builder<>(delegateClientBuilder, baseSolrEndpoints)
               .withDefaultCollection(solr[0].getDefaultCollection())
               .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
               .build();
-      return new LBClientHolder(lbClient, delegateClient);
+      return new LBClientHolder(lbClient, delegateClientBuilder);
     } else {
-      var delegateClient =
+      var delegateClientBuilder =
           new HttpJdkSolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
               .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
-              .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT)
-              .build();
+              .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
       var lbClient =
-          new LBHttp2SolrClient.Builder<>(delegateClient, baseSolrEndpoints)
+          new LBHttp2SolrClient.Builder<>(delegateClientBuilder, baseSolrEndpoints)
               .withDefaultCollection(solr[0].getDefaultCollection())
               .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
               .build();
-      return new LBClientHolder(lbClient, delegateClient);
+      return new LBClientHolder(lbClient, delegateClientBuilder);
     }
   }
 
@@ -317,9 +314,9 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
   private static class LBClientHolder implements AutoCloseable {
 
     final LBHttp2SolrClient<?> lbClient;
-    final HttpSolrClientBase delegate;
+    final HttpSolrClientBuilderBase<?, ?> delegate;
 
-    LBClientHolder(LBHttp2SolrClient<?> lbClient, HttpSolrClientBase delegate) {
+    LBClientHolder(LBHttp2SolrClient<?> lbClient, HttpSolrClientBuilderBase<?, ?> delegate) {
       this.lbClient = lbClient;
       this.delegate = delegate;
     }
@@ -327,11 +324,6 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
     @Override
     public void close() {
       lbClient.close();
-      try {
-        delegate.close();
-      } catch (IOException ioe) {
-        throw new UncheckedIOException(ioe);
-      }
     }
   }
 }
