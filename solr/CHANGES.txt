@@ -11,10 +11,7 @@ New Features
 
 Improvements
 ---------------------
-* SOLR-17541: Deprecate `CloudHttp2SolrClient.Builder#withHttpClient` in favor of
-  `CloudHttp2SolrClient.Builder#withInternalClientBuilder`.
-   Deprecate `LBHttp2SolrClient.Builder#withListenerFactory` in favor of
-   `LBHttp2SolrClient.Builder#withListenerFactories` (James Dyer)
+(No changes)
 
 Optimizations
 ---------------------

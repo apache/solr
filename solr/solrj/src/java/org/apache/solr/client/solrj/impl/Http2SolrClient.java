@@ -1018,26 +1018,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.baseSolrUrl = baseSolrUrl;
     }
 
-    /**
-     * Specify listener factories, which will replace any existing values.
-     *
-     * @param listenerFactories a list of HttpListenerFactory instances
-     * @return This Builder
-     */
-    public Http2SolrClient.Builder withListenerFactories(
-        List<HttpListenerFactory> listenerFactories) {
-      this.listenerFactory = listenerFactories;
-      return this;
-    }
-
-    /**
-     * Specify listener factories, which will replace any existing values.
-     *
-     * @param listenerFactory a list of HttpListenerFactory instances
-     * @return This Builder
-     * @deprecated Please use {@link #withListenerFactories(List)}
-     */
-    @Deprecated(since = "9.9")
     public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
       this.listenerFactory = listenerFactory;
       return this;
