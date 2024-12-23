@@ -90,10 +90,9 @@ public class AggregateMetric implements Metric {
     }
     Double res = null;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
-      Number n = (Number) u.value;
       if (res == null) {
         res = n.doubleValue();
         continue;
@@ -114,10 +113,9 @@ public class AggregateMetric implements Metric {
     }
     Double res = null;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
-      Number n = (Number) u.value;
       if (res == null) {
         res = n.doubleValue();
         continue;
@@ -138,10 +136,9 @@ public class AggregateMetric implements Metric {
     }
     double total = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
-      Number n = (Number) u.value;
       total += n.doubleValue();
     }
     return total / values.size();
@@ -156,11 +153,10 @@ public class AggregateMetric implements Metric {
     double sum = 0;
     int count = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
       count++;
-      Number n = (Number) u.value;
       final double diff = n.doubleValue() - mean;
       sum += diff * diff;
     }
@@ -177,10 +173,9 @@ public class AggregateMetric implements Metric {
     }
     double res = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
-      Number n = (Number) u.value;
       res += n.doubleValue();
     }
     return res;

@@ -173,8 +173,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
           "Timeout occurred while waiting response from server at: " + pReq.url, e);
     } catch (SolrException se) {
       throw se;
-    } catch (RuntimeException re) {
-      throw new SolrServerException(re);
+    } catch (RuntimeException e) {
+      throw new SolrServerException(e);
     } finally {
       if (pReq.contentWritingFuture != null) {
         pReq.contentWritingFuture.cancel(true);

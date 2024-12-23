@@ -76,6 +76,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
+    waitForState("creating", collection, activeClusterShape(1, 1));
 
     File jsonDoc = File.createTempFile("temp", ".json");
 
@@ -281,20 +282,21 @@ public class PostToolTest extends SolrCloudTestCase {
   @Test
   public void testGuessType() {
     File f = new File("foo.doc");
-    assertEquals("application/msword", PostTool.guessType(f));
+    assertEquals("application/msword", PostTool.guessType(f.toPath()));
     f = new File("foobar");
-    assertEquals("application/octet-stream", PostTool.guessType(f));
+    assertEquals("application/octet-stream", PostTool.guessType(f.toPath()));
     f = new File("foo.json");
-    assertEquals("application/json", PostTool.guessType(f));
+    assertEquals("application/json", PostTool.guessType(f.toPath()));
   }
 
   @Test
-  public void testDoFilesMode() {
+  public void testDoFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
-    File dir = getFile("exampledocs");
+    // TODO SOLR-8282 move to PATH
+    File dir = getFile("exampledocs").toFile();
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
   }
@@ -303,7 +305,7 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testDetectingIfRecursionPossibleInFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
-    File dir = getFile("exampledocs");
+    File dir = getFile("exampledocs").toFile();
     File doc = File.createTempFile("temp", ".json");
     assertTrue(postTool.recursionPossible(new String[] {dir.toString()}));
     assertFalse(postTool.recursionPossible(new String[] {doc.toString()}));
@@ -311,12 +313,13 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testRecursionAppliesToFilesMode() {
+  public void testRecursionAppliesToFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
-    File dir = getFile("exampledocs");
+    // TODO SOLR-8282 move to PATH
+    File dir = getFile("exampledocs").toFile();
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
   }

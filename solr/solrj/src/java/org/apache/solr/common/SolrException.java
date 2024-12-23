@@ -157,8 +157,7 @@ public class SolrException extends RuntimeException {
    *     no-op.
    */
   public static SolrException wrapLuceneTragicExceptionIfNecessary(Exception e) {
-    if (e instanceof SolrException) {
-      final SolrException solrException = (SolrException) e;
+    if (e instanceof SolrException solrException) {
       assert solrException.code() >= 500 && solrException.code() < 600;
       return solrException;
     }

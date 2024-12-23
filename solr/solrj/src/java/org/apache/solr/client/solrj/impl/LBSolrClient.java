@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
@@ -60,9 +61,17 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.URLUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 public abstract class LBSolrClient extends SolrClient {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected static final String UPDATE_LIVE_SERVER_MESSAGE = "Updated alive server list";
+
+  private static final String UPDATE_LIVE_SERVER_LOG = UPDATE_LIVE_SERVER_MESSAGE + ": {}";
 
   // defaults
   protected static final Set<Integer> RETRY_CODES =
@@ -173,8 +182,7 @@ public abstract class LBSolrClient extends SolrClient {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof Endpoint)) return false;
-      final Endpoint rhs = (Endpoint) obj;
+      if (!(obj instanceof Endpoint rhs)) return false;
 
       return Objects.equals(baseUrl, rhs.baseUrl) && Objects.equals(core, rhs.core);
     }
@@ -306,9 +314,12 @@ public abstract class LBSolrClient extends SolrClient {
         suffix = ":" + zombieServers.keySet();
       }
       // Skipping check time exceeded for the first request
-      if (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      // Ugly string based hack but no live servers message here is VERY misleading :(
+      if ((previousEx != null && previousEx.getMessage().contains("Limits exceeded!"))
+          || (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime))) {
         throw new SolrServerException(
-            "Time allowed to handle this request exceeded" + suffix, previousEx);
+            "The processing limits for to this request were exceeded, see cause for details",
+            previousEx);
       }
       if (endpoint == null) {
         throw new SolrServerException(
@@ -410,6 +421,9 @@ public abstract class LBSolrClient extends SolrClient {
   protected void updateAliveList() {
     synchronized (aliveServers) {
       aliveServerList = aliveServers.values().toArray(new EndpointWrapper[0]);
+      if (log.isDebugEnabled()) {
+        log.debug(UPDATE_LIVE_SERVER_LOG, Arrays.toString(aliveServerList));
+      }
     }
   }
 
@@ -483,24 +497,7 @@ public abstract class LBSolrClient extends SolrClient {
   private NamedList<Object> doRequest(Endpoint endpoint, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
     final var solrClient = getClient(endpoint);
-    return doRequest(solrClient, endpoint.getBaseUrl(), endpoint.getCore(), solrRequest);
-  }
-
-  // TODO SOLR-17541 should remove the need for the special-casing below; remove as a part of that
-  // ticket.
-  private NamedList<Object> doRequest(
-      SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
-      throws SolrServerException, IOException {
-    // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
-    // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
-    // the appropriate URL is provided.
-    if (solrClient instanceof Http2SolrClient) {
-      final var httpSolrClient = (Http2SolrClient) solrClient;
-      return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
-    }
-
-    // Assume provided client already uses 'baseUrl'
-    return solrClient.request(solrRequest, collection);
+    return solrClient.request(solrRequest, endpoint.getCore());
   }
 
   protected Exception doRequest(
@@ -610,12 +607,7 @@ public abstract class LBSolrClient extends SolrClient {
       // First the one on the endpoint, then the default collection
       final String effectiveCollection =
           Objects.requireNonNullElse(zombieEndpoint.getCore(), getDefaultCollection());
-      final var responseRaw =
-          doRequest(
-              getClient(zombieEndpoint),
-              zombieEndpoint.getBaseUrl(),
-              effectiveCollection,
-              queryRequest);
+      final var responseRaw = getClient(zombieEndpoint).request(queryRequest, effectiveCollection);
       QueryResponse resp = new QueryResponse();
       resp.setResponse(responseRaw);
 
@@ -719,7 +711,7 @@ public abstract class LBSolrClient extends SolrClient {
         // Choose the endpoint's core/collection over any specified by the user
         final var effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
-        return doRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
+        return getClient(endpoint).request(request, effectiveCollection);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
         throw e;
@@ -727,11 +719,20 @@ public abstract class LBSolrClient extends SolrClient {
         if (e.getRootCause() instanceof IOException) {
           ex = e;
           moveAliveToDead(wrapper);
-          if (justFailed == null) justFailed = new HashMap<>();
+          if (justFailed == null) {
+            justFailed = new HashMap<>();
+          }
           justFailed.put(endpoint.getUrl(), wrapper);
         } else {
           throw e;
         }
+      } catch (IOException e) {
+        ex = e;
+        moveAliveToDead(wrapper);
+        if (justFailed == null) {
+          justFailed = new HashMap<>();
+        }
+        justFailed.put(endpoint.getUrl(), wrapper);
       } catch (Exception e) {
         throw new SolrServerException(e);
       }
@@ -751,8 +752,7 @@ public abstract class LBSolrClient extends SolrClient {
         ++numServersTried;
         final String effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
-        NamedList<Object> rsp =
-            doRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
+        NamedList<Object> rsp = getClient(endpoint).request(request, effectiveCollection);
         // remove from zombie list *before* adding to the alive list to avoid a race that could lose
         // a server
         zombieServers.remove(endpoint.getUrl());

@@ -526,7 +526,7 @@ public class IndexSchema {
         log.info("{}", sb);
       }
 
-      version = Float.parseFloat(rootNode.attributes().get("version", "1.0f"));
+      version = Float.parseFloat(rootNode.attributes().getOrDefault("version", "1.0f"));
 
       // load the Field Types
       final FieldTypePluginLoader typeLoader =
@@ -2017,8 +2017,7 @@ public class IndexSchema {
       informResourceLoaderAwareObjectsInChain((TokenizerChain) queryAnalyzer);
 
     // if fieldType is a TextField, it might have a multi-term analyzer
-    if (fieldType instanceof TextField) {
-      TextField textFieldType = (TextField) fieldType;
+    if (fieldType instanceof TextField textFieldType) {
       Analyzer multiTermAnalyzer = textFieldType.getMultiTermAnalyzer();
       if (multiTermAnalyzer != null
           && multiTermAnalyzer != indexAnalyzer

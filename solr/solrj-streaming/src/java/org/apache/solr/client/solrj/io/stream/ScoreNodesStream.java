@@ -109,8 +109,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
   private void init(TupleStream tupleStream, String termFreq) throws IOException {
     this.stream = tupleStream;
     this.termFreq = termFreq;
-    if (stream instanceof FacetStream) {
-      FacetStream facetStream = (FacetStream) stream;
+    if (stream instanceof FacetStream facetStream) {
 
       if (facetStream.getBuckets().length != 1) {
         throw new IOException(

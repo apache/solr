@@ -59,7 +59,7 @@ public class ClientUtilsTest extends SolrTestCase {
     // Simple case, non-collection request
     {
       final var request = new HealthCheckRequest();
-      final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
+      final var url = ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", null);
       assertEquals("http://localhost:8983/solr/admin/info/health", url);
     }
 
@@ -67,24 +67,15 @@ public class ClientUtilsTest extends SolrTestCase {
     {
       final var request = new QueryRequest();
       final var url =
-          ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", "someColl");
+          ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", "someColl");
       assertEquals("http://localhost:8983/solr/someColl/select", url);
-    }
-
-    // Uses SolrRequest.getBasePath() to override baseUrl
-    {
-      final var request = new HealthCheckRequest();
-      request.setBasePath("http://alternate-url:7574/solr");
-      final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
-      assertEquals("http://alternate-url:7574/solr/admin/info/health", url);
     }
 
     // Ignores collection when not needed (i.e. obeys SolrRequest.requiresCollection)
     {
       final var request = new HealthCheckRequest();
       final var url =
-          ClientUtils.buildRequestUrl(
-              request, rw, "http://localhost:8983/solr", "unneededCollection");
+          ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", "unneededCollection");
       assertEquals("http://localhost:8983/solr/admin/info/health", url);
     }
   }

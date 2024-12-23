@@ -31,16 +31,17 @@ import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 public class Helpers {
 
   public static MetricsConfiguration loadConfiguration(String pathRsrc) throws Exception {
-    return MetricsConfiguration.from(SolrTestCaseJ4.getFile(pathRsrc).getPath());
+    return MetricsConfiguration.from(SolrTestCaseJ4.getFile(pathRsrc).toString());
   }
 
   public static void indexAllDocs(SolrClient client) throws IOException, SolrServerException {
-    File exampleDocsDir = new File(SolrTestCaseJ4.getFile("exampledocs").getAbsolutePath());
+    File exampleDocsDir =
+        new File(SolrTestCaseJ4.getFile("exampledocs").toAbsolutePath().toString());
     File[] xmlFiles =
         Objects.requireNonNull(exampleDocsDir.listFiles((dir, name) -> name.endsWith(".xml")));
     for (File xml : xmlFiles) {
       ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
-      req.addFile(xml, "application/xml");
+      req.addFile(xml.toPath(), "application/xml");
       client.request(req, PrometheusExporterTestBase.COLLECTION);
     }
     client.commit(PrometheusExporterTestBase.COLLECTION);

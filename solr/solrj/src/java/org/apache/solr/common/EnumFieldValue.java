@@ -42,9 +42,8 @@ public final class EnumFieldValue implements Serializable, Comparable<EnumFieldV
   @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
-    if (!(obj instanceof EnumFieldValue)) return false;
+    if (!(obj instanceof EnumFieldValue otherEnumFieldValue)) return false;
 
-    EnumFieldValue otherEnumFieldValue = (EnumFieldValue) obj;
     return equalsIntegers(intValue, otherEnumFieldValue.intValue)
         && equalStrings(stringValue, otherEnumFieldValue.stringValue);
   }

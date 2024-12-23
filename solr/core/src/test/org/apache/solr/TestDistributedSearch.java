@@ -1139,8 +1139,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
               "stat should be a Number: " + s + " -> " + svals.get(s).getClass(),
               svals.get(s) instanceof Number);
           // some loose assertions since we're iterating over various stats
-          if (svals.get(s) instanceof Double) {
-            Double val = (Double) svals.get(s);
+          if (svals.get(s) instanceof Double val) {
             assertFalse("stat shouldn't be NaN: " + s, val.isNaN());
             assertFalse("stat shouldn't be Inf: " + s, val.isInfinite());
             assertNotEquals("stat shouldn't be 0: " + s, 0.0D, val, 0.0);

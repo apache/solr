@@ -58,7 +58,7 @@ public class ZkRmTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
 
     String target = cli.getArgs()[0];
     boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
@@ -71,7 +71,7 @@ public class ZkRmTool extends ToolBase {
       throw new SolrServerException("You may not remove the root ZK node ('/')!");
     }
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
+    try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       if (!recursive && zkClient.getChildren(znode, null, true).size() != 0) {
         throw new SolrServerException(
             "ZooKeeper node " + znode + " has children and recursive has NOT been specified.");

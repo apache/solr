@@ -57,9 +57,6 @@ public class DeleteTool extends ToolBase {
   private static final Option DELETE_CONFIG_OPTION =
       Option.builder()
           .longOpt("delete-config")
-          .hasArg()
-          .argName("true|false")
-          .type(Boolean.class)
           .desc(
               "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
           .build();
@@ -86,10 +83,8 @@ public class DeleteTool extends ToolBase {
 
   @Override
   public String getHeader() {
-    return "Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
-        + " mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
-        + " delete the configuration directory from Zookeeper so long as it is not being used by another collection.\n"
-        + " You can override this behavior by passing --delete-config false when running this command.\n"
+    return "Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode. "
+        + "Deleting a collection does not delete it's configuration unless you pass in the --delete-config flag.\n"
         + "\n"
         + "List of options:";
   }
@@ -106,8 +101,8 @@ public class DeleteTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
-      if (SolrCLI.isCloudMode(solrClient)) {
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
+      if (CLIUtils.isCloudMode(solrClient)) {
         deleteCollection(cli);
       } else {
         deleteCore(cli, solrClient);
@@ -124,8 +119,8 @@ public class DeleteTool extends ToolBase {
             .withOptionalBasicAuthCredentials(
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
-    String zkHost = SolrCLI.getZkHost(cli);
-    try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
+    String zkHost = CLIUtils.getZkHost(cli);
+    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
       cloudSolrClient.connect();
       deleteCollection(cloudSolrClient, cli);
@@ -148,7 +143,7 @@ public class DeleteTool extends ToolBase {
 
     String configName =
         zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
-    boolean deleteConfig = Boolean.parseBoolean(cli.getOptionValue(DELETE_CONFIG_OPTION, "true"));
+    boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
 
     if (deleteConfig && configName != null) {
       if (cli.hasOption(FORCE_OPTION)) {
@@ -216,7 +211,7 @@ public class DeleteTool extends ToolBase {
     if (isVerbose() && response != null) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       echo(arr.toString());
       echo("\n");
     }

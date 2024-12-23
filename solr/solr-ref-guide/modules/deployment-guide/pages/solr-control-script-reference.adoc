@@ -794,10 +794,10 @@ The `delete` command detects the mode that Solr is running in and then deletes t
 
 `bin/solr delete --help`
 
-If you're deleting a collection in SolrCloud mode, the default behavior is to also delete the configuration directory from Zookeeper so long as it is not being used by another collection.
+If you're deleting a collection in SolrCloud mode, the default behavior is to leave the configuration directory in Zookeeper. If you want to delete the configuration then you need to pass in `--delete-config` as well.
 
-For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
-If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You can override this behavior by passing `--delete-config false` when running this command.atom
+For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts --delete-config` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
+If not, then the `/configs/contacts` directory is removed from ZooKeeper.
 
 ==== Delete Collection or Core Parameters
 
@@ -816,14 +816,14 @@ Name of the collection or core to delete.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: none
 |===
 +
-Whether or not the configuration directory should also be deleted from ZooKeeper.
+Specify the configuration directory should also be deleted from ZooKeeper.
 +
-If the configuration directory is being used by another collection, then it will not be deleted even if you pass `--delete-config` as `true`.
+If the configuration directory is being used by another collection, then it will not be deleted.
 +
-*Example*: `bin/solr delete --delete-config false`
+*Example*: `bin/solr delete --delete-config`
 
 `-f` or `--force`::
 +
@@ -870,7 +870,6 @@ The `bin/solr` script allows enabling or disabling Authentication, allowing you 
 Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.
 
 For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
-For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.
 
 
 === Enabling Basic Authentication
@@ -900,7 +899,6 @@ Here are some example usages:
 ----
 Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
        solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
-       solr auth enable --type kerberos --config <kerberos configs> [--update-include-file-only <true|false>] [-v]
        solr auth disable [--update-include-file-only <true|false>] [-v]
 ----
 

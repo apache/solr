@@ -48,9 +48,21 @@ import {{import}};
 {{#operation}}
 {{#bodyParam}}
 {{#vars}}
+
+{{! Catches all model types used "directly" (i.e. not in a container) in request/response classes. }}
 {{#isModel}}
 import {{modelPackage}}.{{dataType}};
 {{/isModel}}
+
+{{! Catches all model types used in a List<Foo>, Map<Bar>, or other container in request/response classes. }}
+{{#isContainer}}
+{{#items}}
+{{#isModel}}
+import {{modelPackage}}.{{dataType}};
+{{/isModel}}
+{{/items}}
+{{/isContainer}}
+
 {{/vars}}
 {{/bodyParam}}
 {{/operation}}
@@ -121,11 +133,30 @@ public class {{classname}} {
                 {{/requiredParams}}
                 {{#bodyParam}}
                 {{^vendorExtensions.x-genericEntity}}
+                {{#isMap}}
+                    this.requestBody = new HashMap<>();
+                {{/isMap}}
+                {{#isArray}}
+                    this.requestBody = new ArrayList<>();
+                {{/isArray}}
+                {{^isMap}}
+                {{^isArray}}
                     this.requestBody = new {{{dataType}}}();
+                {{/isArray}}
+                {{/isMap}}
                     addHeader("Content-type", "application/json");
                 {{/vendorExtensions.x-genericEntity}}
                 {{/bodyParam}}
             }
+
+            {{! If the request body is a list, provide methods to add to it}}
+            {{#bodyParam}}
+            {{#isArray}}
+            public void add{{items.dataType}}({{items.dataType}} entry) {
+                this.requestBody.add(entry);
+            }
+            {{/isArray}}
+            {{/bodyParam}}
 
             {{#optionalParams}}
             {{^isBodyParam}}

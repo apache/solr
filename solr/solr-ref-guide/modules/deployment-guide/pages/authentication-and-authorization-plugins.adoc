@@ -1,9 +1,7 @@
 = Configuring Authentication and Authorization
 :page-children: basic-authentication-plugin, \
-    kerberos-authentication-plugin,  \
     jwt-authentication-plugin, \
     cert-authentication-plugin, \
-    hadoop-authentication-plugin, \
     rule-based-authorization-plugin
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -87,10 +85,10 @@ Create the file `security.json` with the contents:
 
 [source,json]
 ----
-{"authentication": {"class": "solr.KerberosPlugin"}}
+{"authentication": {"class": "solr.BasicAuthPlugin"}}
 ----
 
-Note that this example defines the `KerberosPlugin` for authentication.
+Note that this example defines the `BasicAuthPlugin` for authentication.
 You will want to modify this section as appropriate for the plugin you are using.
 
 Then use the `bin/solr zk` command to upload the file:
@@ -129,7 +127,7 @@ A custom plugin can be implemented by extending the AuthenticationPlugin class.
 
 An authentication plugin consists of two parts:
 
-. Server-side component, which intercepts and authenticates incoming requests to Solr using a mechanism defined in the plugin, such as Kerberos, Basic Auth or others.
+. Server-side component, which intercepts and authenticates incoming requests to Solr using a mechanism defined in the plugin, such as Basic Auth.
 . Client-side component, i.e., an extension of `HttpClientConfigurer`, which enables a SolrJ client to make requests to a secure Solr instance using the authentication mechanism which the server understands.
 
 === Enabling an Authentication Plugin

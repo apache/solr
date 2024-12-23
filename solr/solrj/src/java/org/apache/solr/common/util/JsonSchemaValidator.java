@@ -339,8 +339,7 @@ class OneOfValidator extends Validator<List<String>> {
 
   @Override
   boolean validate(Object o, List<String> errs) {
-    if (o instanceof Map) {
-      Map<?, ?> map = (Map<?, ?>) o;
+    if (o instanceof Map<?, ?> map) {
       for (Object key : map.keySet()) {
         if (oneOfProps.contains(key.toString())) return true;
       }
