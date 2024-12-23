@@ -44,7 +44,6 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("configset-1")
