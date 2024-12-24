@@ -627,7 +627,10 @@ public class DistribFileStore implements FileStore {
               try {
                 result.put(keyFile.getFileName().toString(), Files.readAllBytes(keyFile));
               } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "Unable to read all bytes file: " + keyFile.getFileName(),
+                    e);
               }
             }
           });

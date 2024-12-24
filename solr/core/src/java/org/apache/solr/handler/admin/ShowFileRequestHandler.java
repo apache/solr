@@ -237,8 +237,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
             (f) -> {
               String path = f.getFileName().toString();
 
-              if (isHiddenFile(
-                  req, rsp, f.getFileName().toString().replace('\\', '/'), false, hiddenFiles)) {
+              if (isHiddenFile(req, rsp, f.getFileName().toString(), false, hiddenFiles)) {
                 return;
               }
 

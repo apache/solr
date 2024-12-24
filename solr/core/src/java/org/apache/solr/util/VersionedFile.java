@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.solr.common.SolrException;
 
 /**
  * @since solr 1.3
@@ -40,7 +41,6 @@ public class VersionedFile {
    */
   public static InputStream getLatestFile(String dirName, String fileName)
       throws FileNotFoundException {
-    // TODO SOLR-8282 move to PATH
     Collection<Path> oldFiles = null;
     final String prefix = fileName + '.';
     Path f = Path.of(dirName, fileName);
@@ -62,7 +62,8 @@ public class VersionedFile {
                     .sorted()
                     .toList();
           } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Unable to list files in " + dir, e);
           }
 
           f = Path.of(dir.toString(), fileList.getLast().getFileName().toString());

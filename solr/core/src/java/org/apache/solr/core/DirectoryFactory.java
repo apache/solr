@@ -20,13 +20,11 @@ import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.StreamSupport;
+import java.util.stream.Stream;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -340,7 +338,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
       final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload)
       throws IOException {
 
-    // TODO SOLR-8282 move to PATH
     Path dataDirFile = Path.of(dataDirPath);
     if (!Files.isDirectory(dataDirFile)) {
       log.debug(
@@ -350,55 +347,54 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
     }
 
     final Path currentIndexDir = Path.of(currentIndexDirPath);
-    try (DirectoryStream<Path> oldIndexDirs =
-        Files.newDirectoryStream(
-            dataDirFile,
-            file -> {
-              String fileName = file.getFileName().toString();
-              return Files.isDirectory(file)
-                  && !file.equals(currentIndexDir)
-                  && (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
-            })) {
-
-      List<Path> dirsList =
-          StreamSupport.stream(oldIndexDirs.spliterator(), false)
-              .sorted(Comparator.comparing(Path::toString))
+    List<Path> dirsList;
+    try (Stream<Path> oldIndexDirs = Files.list(dataDirFile)) {
+      dirsList =
+          oldIndexDirs
+              .filter(
+                  (file) -> {
+                    String fileName = file.getFileName().toString();
+                    return Files.isDirectory(file)
+                        && !file.equals(currentIndexDir)
+                        && (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
+                  })
+              .sorted()
               .toList();
-
-      if (dirsList.isEmpty()) {
-        return; // nothing to do (no log message needed)
-      }
-
-      int i = 0;
-      if (afterCoreReload) {
-        log.info("Will not remove most recent old directory after reload {}", dirsList.get(0));
-        i = 1;
-      }
-
-      log.info(
-          "Found {} old index directories to clean-up under {} afterReload={}",
-          dirsList.size() - i,
-          dataDirPath,
-          afterCoreReload);
-
-      dirsList.stream()
-          .skip(i)
-          .forEach(
-              (entry) -> {
-                String dirToRmPath = entry.toAbsolutePath().toString();
-                try {
-                  if (deleteOldIndexDirectory(dirToRmPath)) {
-                    log.info("Deleted old index directory: {}", dirToRmPath);
-                  } else {
-                    log.warn("Delete old index directory {} failed.", dirToRmPath);
-                  }
-                } catch (IOException ioExc) {
-                  log.error(
-                      "Failed to delete old directory {} due to: ", entry.toAbsolutePath(), ioExc);
-                }
-              });
     }
     ;
+
+    if (dirsList.isEmpty()) {
+      return; // nothing to do (no log message needed)
+    }
+
+    int i = 0;
+    if (afterCoreReload) {
+      log.info("Will not remove most recent old directory after reload {}", dirsList.getFirst());
+      i = 1;
+    }
+
+    log.info(
+        "Found {} old index directories to clean-up under {} afterReload={}",
+        dirsList.size() - i,
+        dataDirPath,
+        afterCoreReload);
+
+    dirsList.stream()
+        .skip(i)
+        .forEach(
+            (entry) -> {
+              String dirToRmPath = entry.toAbsolutePath().toString();
+              try {
+                if (deleteOldIndexDirectory(dirToRmPath)) {
+                  log.info("Deleted old index directory: {}", dirToRmPath);
+                } else {
+                  log.warn("Delete old index directory {} failed.", dirToRmPath);
+                }
+              } catch (IOException ioExc) {
+                log.error(
+                    "Failed to delete old directory {} due to: ", entry.toAbsolutePath(), ioExc);
+              }
+            });
   }
 
   // Extension point to allow subclasses to infuse additional code when deleting old index
