@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -138,16 +139,13 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       this.liveNodes = Set.copyOf(liveNodesList);
       liveNodesTimestamp = System.nanoTime();
     }
-
-    var collectionsMap = (Map<String, Map<String, Object>>) cluster.get("collections");
-
+    var collectionsNl = (NamedList<Map<String, Object>>) cluster.get("collections");
     Map<String, DocCollection> collStateByName =
-        CollectionUtil.newLinkedHashMap(collectionsMap.size());
-    for (Entry<String, Map<String, Object>> entry : collectionsMap.entrySet()) {
+        CollectionUtil.newLinkedHashMap(collectionsNl.size());
+    for (Entry<String, Map<String, Object>> entry : collectionsNl) {
       collStateByName.put(
           entry.getKey(), getDocCollectionFromObjects(entry.getKey(), entry.getValue()));
     }
-
     return new ClusterState(this.liveNodes, collStateByName);
   }
 
@@ -184,9 +182,9 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     SimpleOrderedMap<?> cluster =
         submitClusterStateRequest(client, collection, ClusterStateRequestType.FETCH_COLLECTION);
 
-    var collState = (Map<String, Object>) cluster.findRecursive("collections");
-    var collStateMap = (Map<String, Object>) collState.get(collection);
-
+    var collStateMap =
+        (Map<String, Object>)
+            cluster.findRecursive("collections", collection); // SOLRJ IS ALWAYS JAVABIN
     if (collStateMap == null) {
       throw new NotACollectionException(); // probably an alias
     }

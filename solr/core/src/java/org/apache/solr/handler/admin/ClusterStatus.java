@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -205,21 +206,35 @@ public class ClusterStatus {
       }
     }
 
-    MapWriter collectionPropsWriter =
-        ew -> {
-          collectionStream.forEach(
-              (collectionState) -> {
-                ew.putNoEx(
-                    collectionState.getName(),
-                    buildResponseForCollection(
-                        collectionState,
-                        collectionVsAliases,
-                        routeKey,
-                        liveNodes,
-                        requestedShards));
-              });
-        };
-    clusterStatus.add("collections", collectionPropsWriter);
+    // Because of back-compat for SolrJ, create the whole response into a NamedList
+    // Otherwise stream with MapWriter to save memory
+    if (CommonParams.JAVABIN.equals(solrParams.get(CommonParams.WT))) {
+      NamedList<Object> collectionProps = new SimpleOrderedMap<>();
+      collectionStream.forEach(
+          collectionState -> {
+            collectionProps.add(
+                collectionState.getName(),
+                buildResponseForCollection(
+                    collectionState, collectionVsAliases, routeKey, liveNodes, requestedShards));
+          });
+      clusterStatus.add("collections", collectionProps);
+    } else {
+      MapWriter collectionPropsWriter =
+          ew -> {
+            collectionStream.forEach(
+                (collectionState) -> {
+                  ew.putNoEx(
+                      collectionState.getName(),
+                      buildResponseForCollection(
+                          collectionState,
+                          collectionVsAliases,
+                          routeKey,
+                          liveNodes,
+                          requestedShards));
+                });
+          };
+      clusterStatus.add("collections", collectionPropsWriter);
+    }
   }
 
   private void addAliasMap(Aliases aliases, NamedList<Object> clusterStatus) {

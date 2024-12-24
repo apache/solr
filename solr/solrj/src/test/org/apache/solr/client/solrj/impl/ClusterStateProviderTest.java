@@ -145,7 +145,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     NamedList<Object> response = clusterStatusResponse.getResponse();
 
     NamedList<Object> cluster = (NamedList<Object>) response.get("cluster");
-    Map<String, Object> collections = (Map<String, Object>) cluster.get("collections");
+    NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
     Map<String, Object> collection = (Map<String, Object>) collections.get(collectionName);
     return Instant.ofEpochMilli((long) collection.get("creationTimeMillis"));
   }
