@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core.backup;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -24,6 +23,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -343,7 +343,7 @@ public class BackupManager {
     // getAllConfigFiles always separates file paths with '/'
     for (String filePath : filePaths) {
       // Replace '/' to ensure that propre file is resolved for writing.
-      URI uri = repository.resolve(dir, filePath.replace('/', File.separatorChar));
+      URI uri = repository.resolve(dir, Path.of(filePath).toString());
       // checking for '/' is correct for a directory since ConfigSetService#getAllConfigFiles
       // always separates file paths with '/'
       if (!filePath.endsWith("/")) {

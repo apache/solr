@@ -25,7 +25,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.Ticker;
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -317,13 +316,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
 
     return coreParams;
-  }
-
-  protected static String normalizePath(String path) {
-    if (path == null) return null;
-    path = path.replace('/', File.separatorChar);
-    path = path.replace('\\', File.separatorChar);
-    return path;
   }
 
   public static ModifiableSolrParams params(String... params) {
