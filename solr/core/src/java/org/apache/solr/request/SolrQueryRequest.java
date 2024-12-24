@@ -21,7 +21,6 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -184,10 +183,6 @@ public interface SolrQueryRequest extends AutoCloseable {
   default CoreContainer getCoreContainer() {
     SolrCore core = getCore();
     return core == null ? null : core.getCoreContainer();
-  }
-
-  default CloudDescriptor getCloudDescriptor() {
-    return getCore().getCoreDescriptor().getCloudDescriptor();
   }
 
   /** The writer to use for this request, considering {@link CommonParams#WT}. Never null. */
