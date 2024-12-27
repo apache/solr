@@ -11,7 +11,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
+  specific collections or cores.  Collection information can be fetched by a call to `GET /api/collections/collectionName`, and core
+  information with a call to `GET /api/cores/coreName/segments`. (Jason Gerlowski)
 
 Optimizations
 ---------------------

@@ -63,9 +63,9 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
 
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
-    final String mediaType =
-        V2ApiUtils.getMediaTypeFromWtParam(
-            solrQueryRequest.getParams(), MediaType.APPLICATION_JSON);
+    // TODO Is it valid for SQRequest to be null?
+    final var params = (solrQueryRequest != null) ? solrQueryRequest.getParams() : null;
+    final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(params, MediaType.APPLICATION_JSON);
     if (mediaType != null) {
       responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
     }

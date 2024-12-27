@@ -1050,11 +1050,9 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=techpro
 V2 API::
 +
 ====
-The closest V2 API is this one, but doesn't support all the features of the V1 equivalent.
-
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts_v2
+curl -X GET "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
 ----
 ====
 ======
@@ -1072,7 +1070,8 @@ Such incompatibilities may result from incompatible schema changes or after migr
 |===
 +
 Collection name.
-If missing then it means all collections.
+Provided as a query-parameter in v1 requests, and as a path-parameter in v2.
+If missing then information is returned about all collections (supported by v1 requests only).
 
 `coreInfo`::
 +
