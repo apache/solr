@@ -352,7 +352,9 @@ public class RunExampleTool extends ToolBase {
               collectionName,
               "--type",
               "application/xml",
-              exampledocsDir.toAbsolutePath() + "/*.xml"
+              "--filetypes",
+              "xml",
+              exampledocsDir.toAbsolutePath().toString()
             };
         PostTool postTool = new PostTool();
         CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);

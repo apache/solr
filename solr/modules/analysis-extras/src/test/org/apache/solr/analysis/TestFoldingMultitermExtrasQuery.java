@@ -16,8 +16,8 @@
  */
 package org.apache.solr.analysis;
 
-import java.io.File;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Path;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,9 +32,12 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
-    initCore("solrconfig-icucollate.xml", "schema-folding-extra.xml", testHome.getAbsolutePath());
+    Path testHome = createTempDir();
+    PathUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
+    initCore(
+        "solrconfig-icucollate.xml",
+        "schema-folding-extra.xml",
+        testHome.toAbsolutePath().toString());
 
     int idx = 1;
     // ICUFoldingFilterFactory
