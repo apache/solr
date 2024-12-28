@@ -100,7 +100,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
 
-  private static final String USER_AGENT =
+  static final String USER_AGENT =
       "Solr["
           + MethodHandles.lookup().lookupClass().getName()
           + "] "
