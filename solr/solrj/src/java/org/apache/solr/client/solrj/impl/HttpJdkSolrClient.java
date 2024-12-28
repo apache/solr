@@ -73,7 +73,10 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
-      "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] 1.0";
+      "Solr["
+          + MethodHandles.lookup().lookupClass().getName()
+          + "] "
+          + MethodHandles.lookup().lookupClass().getPackage().getSpecificationVersion();
 
   protected HttpClient httpClient;
 
