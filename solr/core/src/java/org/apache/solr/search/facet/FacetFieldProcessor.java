@@ -895,8 +895,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * @see SweepingCountSlotAcc
    */
   protected boolean registerSweepingAccIfSupportedByCollectAcc() {
-    if (countAcc instanceof SweepingCountSlotAcc && collectAcc instanceof SweepableSlotAcc) {
-      final SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
+    if (countAcc instanceof SweepingCountSlotAcc sweepingCountAcc
+        && collectAcc instanceof SweepableSlotAcc) {
       collectAcc = ((SweepableSlotAcc<?>) collectAcc).registerSweepingAccs(sweepingCountAcc);
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;

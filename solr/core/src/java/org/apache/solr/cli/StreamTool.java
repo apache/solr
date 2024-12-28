@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -77,12 +78,12 @@ public class StreamTool extends ToolBase {
   @Override
   public String getUsage() {
     // Specify that the last argument is the streaming expression
-    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-e <ENVIRONMENT>] [-f\n"
+    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [--execution <ENVIRONMENT>] [--fields\n"
         + "       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>\n";
   }
 
   private static final Option EXECUTION_OPTION =
-      Option.builder("e")
+      Option.builder()
           .longOpt("execution")
           .hasArg()
           .argName("ENVIRONMENT")
@@ -100,7 +101,7 @@ public class StreamTool extends ToolBase {
           .build();
 
   private static final Option FIELDS_OPTION =
-      Option.builder("f")
+      Option.builder()
           .longOpt("fields")
           .argName("FIELDS")
           .hasArg()
@@ -217,8 +218,7 @@ public class StreamTool extends ToolBase {
 
               Object o = tuple.get(outputHeaders[i]);
               if (o != null) {
-                if (o instanceof List) {
-                  List outfields = (List) o;
+                if (o instanceof List outfields) {
                   outLine.append(listToString(outfields, arrayDelimiter));
                 } else {
                   outLine.append(o);
@@ -230,11 +230,7 @@ public class StreamTool extends ToolBase {
         }
       }
     } finally {
-
-      if (pushBackStream != null) {
-        pushBackStream.close();
-      }
-
+      pushBackStream.close();
       solrClientCache.close();
     }
 
@@ -253,12 +249,12 @@ public class StreamTool extends ToolBase {
    *     locally.
    */
   private PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
 
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    solrClientCache.getCloudSolrClient(zkHost);
     solrClientCache.setBasicAuthCredentials(
         cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    solrClientCache.getCloudSolrClient(zkHost);
 
     TupleStream stream;
     PushBackStream pushBackStream;
@@ -278,7 +274,7 @@ public class StreamTool extends ToolBase {
 
     Lang.register(streamFactory);
 
-    stream = StreamTool.constructStream(streamFactory, streamExpression);
+    stream = streamFactory.constructStream(streamExpression);
 
     pushBackStream = new PushBackStream(stream);
 
@@ -306,12 +302,12 @@ public class StreamTool extends ToolBase {
    */
   private PushBackStream doRemoteMode(CommandLine cli, String expr) throws Exception {
 
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-    if (!cli.hasOption("name")) {
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
+    if (!cli.hasOption(COLLECTION_OPTION)) {
       throw new IllegalStateException(
-          "You must provide --name COLLECTION with --worker solr parameter.");
+          "You must provide --name COLLECTION with --execution remote parameter.");
     }
-    String collection = cli.getOptionValue("name");
+    String collection = cli.getOptionValue(COLLECTION_OPTION);
 
     if (expr.toLowerCase(Locale.ROOT).contains("stdin(")) {
       throw new IllegalStateException(
@@ -372,11 +368,10 @@ public class StreamTool extends ToolBase {
       }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Tuple read() throws IOException {
       String line = reader.readLine();
-      HashMap map = new HashMap();
+      Map<String, ?> map = new HashMap<>();
       Tuple tuple = new Tuple(map);
       if (line != null) {
         tuple.put("line", line);
@@ -436,11 +431,15 @@ public class StreamTool extends ToolBase {
 
     @Override
     public void setStreamContext(StreamContext context) {
-      // LocalCatStream has no Solr core to pull from the context
+      // LocalCatStream inherently has no Solr core to pull from the context
     }
 
     @Override
-    protected List<CrawlFile> validateAndSetFilepathsInSandbox(String commaDelimitedFilepaths) {
+    protected List<CrawlFile> validateAndSetFilepathsInSandbox() {
+      // The nature of LocalCatStream is that we are not limited to the sandboxed "userfiles"
+      // directory
+      // the way the CatStream does.
+
       final List<CrawlFile> crawlSeeds = new ArrayList<>();
       for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
         Path crawlRootPath = Paths.get(crawlRootStr).normalize();
@@ -484,11 +483,6 @@ public class StreamTool extends ToolBase {
     return buf.toString();
   }
 
-  private static TupleStream constructStream(
-      StreamFactory streamFactory, StreamExpression streamExpression) throws IOException {
-    return streamFactory.constructStream(streamExpression);
-  }
-
   static String readExpression(LineNumberReader bufferedReader, String[] args) throws IOException {
 
     StringBuilder exprBuff = new StringBuilder();
@@ -500,17 +494,17 @@ public class StreamTool extends ToolBase {
         break;
       }
 
-      if (line.indexOf("/*") == 0) {
+      if (line.trim().indexOf("/*") == 0) {
         comment = true;
         continue;
       }
 
-      if (line.indexOf("*/") == 0) {
+      if (line.trim().contains("*/")) {
         comment = false;
         continue;
       }
 
-      if (comment || line.startsWith("#") || line.startsWith("//")) {
+      if (comment || line.trim().startsWith("#") || line.trim().startsWith("//")) {
         continue;
       }
 

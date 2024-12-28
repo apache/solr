@@ -254,9 +254,8 @@ public class SolrMessageProcessor extends MessageProcessor
    * @param request The SolrRequest to be cleaned up for submitting locally.
    */
   private void prepareIfUpdateRequest(SolrRequest<?> request) {
-    if (request instanceof UpdateRequest) {
+    if (request instanceof UpdateRequest updateRequest) {
       // Remove versions from add requests
-      UpdateRequest updateRequest = (UpdateRequest) request;
 
       List<SolrInputDocument> documents = updateRequest.getDocuments();
       if (log.isTraceEnabled()) {
@@ -318,8 +317,7 @@ public class SolrMessageProcessor extends MessageProcessor
    * @param mirroredSolrRequest MirroredSolrRequest object that is being processed.
    */
   void preventCircularMirroring(MirroredSolrRequest<?> mirroredSolrRequest) {
-    if (mirroredSolrRequest.getSolrRequest() instanceof UpdateRequest) {
-      UpdateRequest updateRequest = (UpdateRequest) mirroredSolrRequest.getSolrRequest();
+    if (mirroredSolrRequest.getSolrRequest() instanceof UpdateRequest updateRequest) {
       ModifiableSolrParams params = updateRequest.getParams();
       String shouldMirror = (params == null ? null : params.get(CrossDcConstants.SHOULD_MIRROR));
       if (shouldMirror == null) {

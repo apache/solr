@@ -29,7 +29,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.handler.admin.ZookeeperReadAPI;
+import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -39,7 +39,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class MediaTypeOverridingFilter implements ContainerResponseFilter {
 
   private static final List<Class<? extends JerseyResource>> EXEMPTED_RESOURCES =
-      List.of(ZookeeperReadAPI.class);
+      List.of(ZookeeperRead.class);
 
   @Context private ResourceInfo resourceInfo;
 
@@ -63,9 +63,9 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
 
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
-    final String mediaType =
-        V2ApiUtils.getMediaTypeFromWtParam(
-            solrQueryRequest.getParams(), MediaType.APPLICATION_JSON);
+    // TODO Is it valid for SQRequest to be null?
+    final var params = (solrQueryRequest != null) ? solrQueryRequest.getParams() : null;
+    final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(params, MediaType.APPLICATION_JSON);
     if (mediaType != null) {
       responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
     }

@@ -102,9 +102,7 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     Properties props = new Properties();
 
     solrCluster1 =
-        configureCluster(1)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
-            .configure();
+        configureCluster(1).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
 
     props.setProperty(KafkaCrossDcConf.TOPIC_NAME, TOPIC2);
     props.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaCluster.bootstrapServers());
@@ -123,9 +121,7 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
     solrCluster1.waitForActiveCollection(COLLECTION, 1, 1);
 
     solrCluster2 =
-        configureCluster(1)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
-            .configure();
+        configureCluster(1).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
 
     CollectionAdminRequest.Create create2 =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1);

@@ -193,8 +193,7 @@ public class GetSchemaField extends JerseyResource implements GetSchemaApi.Field
     String camelCaseRealName = IndexSchema.nameMapping.get(realName);
     Map<String, Object> propertyValues = indexSchema.getNamedPropertyValues(realName, params);
     Object o = propertyValues.get(camelCaseRealName);
-    if (o instanceof List) {
-      List<?> list = (List<?>) o;
+    if (o instanceof List<?> list) {
       for (Object obj : list) {
         if (obj instanceof SimpleOrderedMap) {
           SimpleOrderedMap<Object> fieldInfo = (SimpleOrderedMap<Object>) obj;
@@ -216,8 +215,7 @@ public class GetSchemaField extends JerseyResource implements GetSchemaApi.Field
    * the response
    */
   private void insertPackageInfo(Object o) {
-    if (o instanceof List) {
-      List<?> l = (List<?>) o;
+    if (o instanceof List<?> l) {
       for (Object o1 : l) {
         if (o1 instanceof NamedList || o1 instanceof List) insertPackageInfo(o1);
       }
@@ -230,8 +228,7 @@ public class GetSchemaField extends JerseyResource implements GetSchemaApi.Field
             if (v instanceof NamedList || v instanceof List) insertPackageInfo(v);
           });
       Object v = nl.get("class");
-      if (v instanceof String) {
-        String klas = (String) v;
+      if (v instanceof String klas) {
         PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
         if (parsedClassName.pkg != null) {
           SolrClassLoader solrClassLoader = indexSchema.getSolrClassLoader();

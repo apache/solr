@@ -50,8 +50,7 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
               field.omitTermFreqAndPositions());
 
           // 1.4: autoGeneratePhraseQueries default changed to false
-          if (field.getType() instanceof TextField) {
-            TextField ft = (TextField) field.getType();
+          if (field.getType() instanceof TextField ft) {
             assertEquals(
                 f + " field's autoPhrase is wrong for ver=" + ver,
                 (v < 1.4F),

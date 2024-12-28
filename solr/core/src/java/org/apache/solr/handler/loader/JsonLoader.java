@@ -92,8 +92,7 @@ public class JsonLoader extends ContentStreamLoader {
     SolrInputDocument result = new SolrInputDocument();
     for (Map.Entry<String, Object> e : m.entrySet()) {
       if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
-        if (e.getValue() instanceof List) {
-          List<?> value = (List<?>) e.getValue();
+        if (e.getValue() instanceof List<?> value) {
           for (Object o : value) {
             if (o instanceof Map) {
               // retain the value as a list, even if the list contains a single value.
@@ -114,8 +113,7 @@ public class JsonLoader extends ContentStreamLoader {
   }
 
   private static boolean mapEntryIsChildDoc(Object val) {
-    if (val instanceof List) {
-      List<?> listVal = (List<?>) val;
+    if (val instanceof List<?> listVal) {
       if (listVal.size() == 0) return false;
       return listVal.get(0) instanceof Map;
     }
@@ -297,9 +295,8 @@ public class JsonLoader extends ContentStreamLoader {
     private Map<String, Object> getDocMap(
         Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
       Map<String, Object> result = mapUniqueKeyOnly ? record : new LinkedHashMap<>(record);
-      if (srcField != null && parser instanceof RecordingJSONParser) {
+      if (srcField != null && parser instanceof RecordingJSONParser rjp) {
         // if srcFIeld specified extract it out first
-        RecordingJSONParser rjp = (RecordingJSONParser) parser;
         result.put(srcField, rjp.getBuf());
         rjp.resetBuf();
       }

@@ -419,8 +419,7 @@ class CSVWriter extends TabularResponseWriter {
 
       } else {
         // normalize to first value
-        if (val instanceof Collection) {
-          Collection<?> values = (Collection<?>) val;
+        if (val instanceof Collection<?> values) {
           val = values.iterator().next();
         }
         // if field is polyfield, use the multi-valued printer to apply appropriate escaping

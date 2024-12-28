@@ -26,6 +26,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +43,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,9 +54,9 @@ public final class ReplicationTestHelper {
       "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        new File(instance.getHomeDir(), "solr.xml"));
+    Files.copy(
+        Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
+        Path.of(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
@@ -96,9 +96,9 @@ public final class ReplicationTestHelper {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time
    * "TEST_PORT" is found.
    */
-  private static void copyFile(File src, File dst, Integer port, boolean internalCompression)
+  private static void copyFile(Path src, File dst, Integer port, boolean internalCompression)
       throws IOException {
-    try (BufferedReader in = Files.newBufferedReader(src.toPath(), StandardCharsets.UTF_8);
+    try (BufferedReader in = Files.newBufferedReader(src, StandardCharsets.UTF_8);
         Writer out = Files.newBufferedWriter(dst.toPath(), StandardCharsets.UTF_8)) {
       for (String line = in.readLine(); null != line; line = in.readLine()) {
         if (null != port) {

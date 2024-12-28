@@ -118,9 +118,7 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
       return -1.0;
     }
 
-    if (metric instanceof Gauge) {
-      @SuppressWarnings({"rawtypes"})
-      Gauge gauge = (Gauge) metric;
+    if (metric instanceof Gauge<?> gauge) {
       // unwrap if needed
       if (gauge instanceof SolrMetricManager.GaugeWrapper) {
         gauge = ((SolrMetricManager.GaugeWrapper) gauge).getGauge();

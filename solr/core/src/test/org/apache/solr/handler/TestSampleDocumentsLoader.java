@@ -109,12 +109,12 @@ public class TestSampleDocumentsLoader extends SolrTestCase {
     return "application/octet-stream";
   }
 
-  protected ContentStream getContentStream(File file) {
+  protected ContentStream getContentStream(File file) throws IOException {
     return getContentStream(file, guessContentTypeFromFilename(file.getName()));
   }
 
-  protected ContentStream getContentStream(File file, String contentType) {
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(file);
+  protected ContentStream getContentStream(File file, String contentType) throws IOException {
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(file.toPath());
     stream.setContentType(contentType);
     return stream;
   }

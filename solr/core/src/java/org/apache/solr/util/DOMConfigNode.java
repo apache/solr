@@ -18,14 +18,11 @@
 package org.apache.solr.util;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.common.util.WrappedSimpleMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -33,7 +30,7 @@ import org.w3c.dom.NodeList;
 public class DOMConfigNode implements ConfigNode {
 
   private final Node node;
-  SimpleMap<String> attrs;
+  Map<String, String> attrs;
 
   @Override
   public String name() {
@@ -50,10 +47,10 @@ public class DOMConfigNode implements ConfigNode {
   }
 
   @Override
-  public SimpleMap<String> attributes() {
+  public Map<String, String> attributes() {
     if (attrs != null) return attrs;
     Map<String, String> attrs = DOMUtil.toMap(node.getAttributes());
-    return this.attrs = attrs.size() == 0 ? EMPTY : new WrappedSimpleMap<>(attrs);
+    return this.attrs = attrs.isEmpty() ? Map.of() : attrs;
   }
 
   @Override
@@ -85,6 +82,4 @@ public class DOMConfigNode implements ConfigNode {
       if (Boolean.FALSE.equals(toContinue)) break;
     }
   }
-
-  private static final SimpleMap<String> EMPTY = new WrappedSimpleMap<>(Collections.emptyMap());
 }

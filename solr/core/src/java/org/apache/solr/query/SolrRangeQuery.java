@@ -115,10 +115,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     if (this == obj) {
       return true;
     }
-    if (!(obj instanceof SolrRangeQuery)) {
+    if (!(obj instanceof SolrRangeQuery other)) {
       return false;
     }
-    SolrRangeQuery other = (SolrRangeQuery) obj;
 
     return (this.flags == other.flags)
         && (this.field.equals(other.field))

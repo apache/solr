@@ -48,7 +48,6 @@ asciidoc:
 
     dep-version-commons-codec: '${dep_version_commons_codec}'
     dep-version-dropwizard: '${dep_version_dropwizard}'
-    dep-version-hadoop: '${dep_version_hadoop}'
     dep-version-log4j: '${dep_version_log4j}'
     dep-version-opennlp: '${dep_version_opennlp}'
     dep-version-tika: '${dep_version_tika}'
