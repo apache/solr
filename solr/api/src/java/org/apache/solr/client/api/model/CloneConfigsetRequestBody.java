@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.ConfigsetsApi;
 
-/** Request body for {@link ConfigsetsApi.Clone#cloneExistingConfigSet(CloneConfigsetRequestBody)} */
+/**
+ * Request body for {@link ConfigsetsApi.Clone#cloneExistingConfigSet(CloneConfigsetRequestBody)}
+ */
 public class CloneConfigsetRequestBody {
   public static final String DEFAULT_CONFIGSET = "_default";
 

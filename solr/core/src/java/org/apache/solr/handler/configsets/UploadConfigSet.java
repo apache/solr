@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,9 @@
  */
 package org.apache.solr.handler.configsets;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -27,46 +27,47 @@ import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.apache.solr.api.EndPoint;
+import org.apache.solr.client.api.endpoint.ConfigsetsApi;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ConfigSetParams;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.FileTypeMagicUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * V2 API for uploading a new configset (or overwriting an existing one).
- *
- * <p>This API (PUT /v2/cluster/configs/configsetName) is analogous to the v1
- * /admin/configs?action=UPLOAD command.
- */
-public class UploadConfigSetAPI extends ConfigSetAPIBase {
-
-  public static final String CONFIGSET_NAME_PLACEHOLDER = "name";
+public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Upload {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public UploadConfigSetAPI(CoreContainer coreContainer) {
-    super(coreContainer);
+  @Inject
+  public UploadConfigSet(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @EndPoint(method = PUT, path = "/cluster/configs/{name}", permission = CONFIG_EDIT_PERM)
-  public void uploadConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  @Override
+  @PermissionName(CONFIG_EDIT_PERM)
+  public SolrJerseyResponse uploadConfigSet(
+      String configSetName, Boolean overwrite, Boolean cleanup, InputStream requestBody)
+      throws IOException {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureConfigSetUploadEnabled();
 
-    final String configSetName = req.getPathTemplateValues().get("name");
     boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
     boolean requestIsTrusted =
-        isTrusted(req.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
+        isTrusted(solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
     // Get upload parameters
-    boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, true);
-    boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
-    final InputStream inputStream = ensureNonEmptyInputStream(req);
+    if (overwrite == null) overwrite = true;
+    if (cleanup == null) cleanup = false;
 
-    if (overwritesExisting && !allowOverwrite) {
+    if (overwritesExisting && !overwrite) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The configuration " + configSetName + " already exists");
@@ -84,7 +85,7 @@ public class UploadConfigSetAPI extends ConfigSetAPIBase {
     // singleFilePath is not passed.
     createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
 
-    try (ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8)) {
+    try (ZipInputStream zis = new ZipInputStream(requestBody, StandardCharsets.UTF_8)) {
       boolean hasEntry = false;
       ZipEntry zipEntry;
       while ((zipEntry = zis.getNextEntry()) != null) {
@@ -111,6 +112,60 @@ public class UploadConfigSetAPI extends ConfigSetAPIBase {
         && !configSetService.isConfigSetTrusted(configSetName)) {
       configSetService.setConfigSetTrust(configSetName, true);
     }
+    return response;
+  }
+
+  @Override
+  @PermissionName(CONFIG_EDIT_PERM)
+  public SolrJerseyResponse uploadConfigSetFile(
+      String configSetName,
+      String filePath,
+      Boolean overwrite,
+      Boolean cleanup,
+      InputStream requestBody)
+      throws IOException {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    ensureConfigSetUploadEnabled();
+
+    boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
+    boolean requestIsTrusted =
+        isTrusted(solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
+
+    // Get upload parameters
+
+    String singleFilePath = filePath != null ? filePath : "";
+    if (overwrite == null) overwrite = true;
+    if (cleanup == null) cleanup = false;
+
+    String fixedSingleFilePath = singleFilePath;
+    if (fixedSingleFilePath.charAt(0) == '/') {
+      fixedSingleFilePath = fixedSingleFilePath.substring(1);
+    }
+    byte[] data = requestBody.readAllBytes();
+    if (fixedSingleFilePath.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The file path provided for upload, '" + singleFilePath + "', is not valid.");
+    } else if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fixedSingleFilePath)
+        || FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The file type provided for upload, '"
+              + singleFilePath
+              + "', is forbidden for use in configSets.");
+    } else if (cleanup) {
+      // Cleanup is not allowed while using singleFilePath upload
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "ConfigSet uploads do not allow cleanup=true when file path is used.");
+    } else {
+      // Create a node for the configuration in config
+      // For creating the baseNode, the cleanup parameter is only allowed to be true when
+      // singleFilePath is not passed.
+      createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
+      configSetService.uploadFileToConfig(configSetName, fixedSingleFilePath, data, overwrite);
+    }
+    return response;
   }
 
   private void deleteUnusedFiles(

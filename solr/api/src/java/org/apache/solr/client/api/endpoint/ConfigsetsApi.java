@@ -20,8 +20,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import java.io.IOException;
+import java.io.InputStream;
 import org.apache.solr.client.api.model.CloneConfigsetRequestBody;
 import org.apache.solr.client.api.model.ListConfigsetsResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -58,11 +62,38 @@ public interface ConfigsetsApi {
    *
    * <p>Equivalent to the existing v1 API /admin/configs?action=DELETE
    */
-  @Path("/configsets/{configsetName}")
+  @Path("/configsets/{configSetName}")
   interface Delete {
     @DELETE
     @Operation(summary = "Delete an existing configset.", tags = "configsets")
-    SolrJerseyResponse deleteConfigSet(@PathParam("configsetName") String configSetName)
+    SolrJerseyResponse deleteConfigSet(@PathParam("configSetName") String configSetName)
         throws Exception;
+  }
+
+  /**
+   * V2 API definitions for uploading a configset, in whole or part.
+   *
+   * <p>Equivalent to the existing v1 API /admin/configs?action=UPLOAD
+   */
+  @Path("/configsets/{configSetName}")
+  interface Upload {
+    @PUT
+    @Operation(summary = "Create a new configset.", tags = "configsets")
+    SolrJerseyResponse uploadConfigSet(
+        @PathParam("configSetName") String configSetName,
+        @QueryParam("overwrite") Boolean overwrite,
+        @QueryParam("cleanup") Boolean cleanup,
+        InputStream requestBody)
+        throws IOException;
+
+    @PUT
+    @Path("{filePath}")
+    SolrJerseyResponse uploadConfigSetFile(
+        @PathParam("configSetName") String configSetName,
+        @PathParam("filePath") String filePath,
+        @QueryParam("overwrite") Boolean overwrite,
+        @QueryParam("cleanup") Boolean cleanup,
+        InputStream requestBody)
+        throws IOException;
   }
 }

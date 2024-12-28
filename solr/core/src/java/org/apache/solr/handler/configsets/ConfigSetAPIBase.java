@@ -79,12 +79,6 @@ public class ConfigSetAPIBase extends JerseyResource {
     this.configSetService = coreContainer.getConfigSetService();
   }
 
-  // TODO Delete once the 'Upload' APIs have been converted
-  public ConfigSetAPIBase(
-          CoreContainer coreContainer) {
-    this(coreContainer, null, null);
-  }
-
   protected void runConfigSetCommand(
       SolrQueryResponse rsp,
       ConfigSetParams.ConfigSetAction action,
@@ -111,7 +105,7 @@ public class ConfigSetAPIBase extends JerseyResource {
     }
   }
 
-  protected InputStream ensureNonEmptyInputStream(SolrQueryRequest req) throws IOException {
+  public static InputStream ensureNonEmptyInputStream(SolrQueryRequest req) throws IOException {
     Iterator<ContentStream> contentStreamsIterator = req.getContentStreams().iterator();
 
     if (!contentStreamsIterator.hasNext()) {
