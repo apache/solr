@@ -72,6 +72,7 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
 
   void writeMap(EntryWriter ew) throws IOException;
 
+  @Deprecated
   default MapWriter append(MapWriter another) {
     MapWriter m = this;
     return ew -> {
