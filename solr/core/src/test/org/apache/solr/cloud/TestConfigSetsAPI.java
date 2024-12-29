@@ -1594,11 +1594,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
       final ByteBuffer sampleConfigFile =
           TestSolrConfigHandler.getFileContent(file.getAbsolutePath(), false);
+      if (uploadPath != null && !uploadPath.startsWith("/")) {
+        uploadPath = "/" + uploadPath;
+      }
       final String uriEnding =
           "/configsets/"
               + configSetName
               + suffix
-              /*    + "/" */
               + uploadPath
               + (!overwrite ? "?overwrite=false" : "")
               + (cleanup ? "?cleanup=true" : "");

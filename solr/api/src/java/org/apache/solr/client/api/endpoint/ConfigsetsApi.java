@@ -17,6 +17,7 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -83,17 +84,17 @@ public interface ConfigsetsApi {
         @PathParam("configSetName") String configSetName,
         @QueryParam("overwrite") Boolean overwrite,
         @QueryParam("cleanup") Boolean cleanup,
-        InputStream requestBody)
+        @RequestBody(required = true) InputStream requestBody)
         throws IOException;
 
     @PUT
-    @Path("{filePath}")
+    @Path("{filePath:.+}")
     SolrJerseyResponse uploadConfigSetFile(
         @PathParam("configSetName") String configSetName,
         @PathParam("filePath") String filePath,
         @QueryParam("overwrite") Boolean overwrite,
         @QueryParam("cleanup") Boolean cleanup,
-        InputStream requestBody)
+        @RequestBody(required = true) InputStream requestBody)
         throws IOException;
   }
 }
