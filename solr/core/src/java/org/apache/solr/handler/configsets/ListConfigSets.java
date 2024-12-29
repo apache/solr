@@ -30,7 +30,7 @@ import org.apache.solr.jersey.PermissionName;
 /**
  * V2 API implementation for listing all available configsets.
  *
- * <p>This API (GET /v2/cluster/configs) is analogous to the v1 /admin/configs?action=LIST command.
+ * <p>This API (GET /v2/configsets) is analogous to the v1 /admin/configs?action=LIST command.
  */
 public class ListConfigSets extends JerseyResource implements ConfigsetsApi.List {
 
