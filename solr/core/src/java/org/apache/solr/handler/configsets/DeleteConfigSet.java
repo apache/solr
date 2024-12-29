@@ -32,7 +32,7 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 API implementation for {@link ConfigsetsApi.Delete} */
+/** V2 API implementation for ConfigsetsApi.Delete */
 public class DeleteConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Delete {
 
   @Inject
