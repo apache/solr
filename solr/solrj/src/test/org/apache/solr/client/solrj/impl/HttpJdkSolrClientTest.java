@@ -478,19 +478,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
-  @Test
-  public void testMaybeTryHeadRequestIsFalseWhenHttpStatusCodeIsNot200() throws Exception {
-    String url = getCoreUrl();
-    try (HttpJdkSolrClient client = builder(url).build()) {
-      // valid request: returns 200 (OK)
-      assertTrue(client.maybeTryHeadRequest(url + "/update"));
-    }
-    try (HttpJdkSolrClient client = builder(url).build()) {
-      // invalid request: returns 404 (Not Found) in this case
-      assertFalse(client.maybeTryHeadRequest(url + "/undefined-request-handler"));
-    }
-  }
-
   /**
    * This is not required for any test, but there appears to be a bug in the JDK client where it
    * does not release all threads if the client has not performed any queries, even after a forced

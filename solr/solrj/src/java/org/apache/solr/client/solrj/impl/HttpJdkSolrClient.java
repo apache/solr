@@ -384,11 +384,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
             .header("Content-Type", ClientUtils.TEXT_JSON);
     decorateRequest(headReqB, new QueryRequest());
     try {
-      headSucceeded =
-          200
-              == httpClient
-                  .send(headReqB.build(), HttpResponse.BodyHandlers.discarding())
-                  .statusCode();
+      httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());
+      headSucceeded = true;
     } catch (IOException ioe) {
       log.warn("Could not issue HEAD request to {} ", url, ioe);
       headSucceeded = false;
