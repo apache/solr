@@ -478,6 +478,17 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
+  @Test
+  public void testMaybeTryHeadRequestHasContentType() throws Exception {
+    DebugServlet.clear();
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (HttpJdkSolrClient client = builder(url).build()) {
+      assertTrue(client.maybeTryHeadRequest(url));
+    }
+    assertEquals("head", DebugServlet.lastMethod);
+    assertTrue(DebugServlet.headers.containsKey("content-type"));
+  }
+
   /**
    * This is not required for any test, but there appears to be a bug in the JDK client where it
    * does not release all threads if the client has not performed any queries, even after a forced
