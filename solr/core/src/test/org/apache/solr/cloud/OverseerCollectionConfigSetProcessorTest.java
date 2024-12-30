@@ -118,6 +118,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static DistributedMap runningMapMock;
   private static DistributedMap completedMapMock;
   private static DistributedMap failureMapMock;
+  private static DistributedMap asyncIdMapMock;
   private static HttpShardHandlerFactory shardHandlerFactoryMock;
   private static HttpShardHandler shardHandlerMock;
   private static ZkStateReader zkStateReaderMock;
@@ -159,6 +160,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         Overseer overseer,
         DistributedMap completedMap,
         DistributedMap failureMap,
+        DistributedMap asyncIdMap,
         SolrMetricsContext solrMetricsContext) {
       super(
           zkStateReader,
@@ -172,6 +174,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           runningMap,
           completedMap,
           failureMap,
+          asyncIdMap,
           solrMetricsContext);
     }
 
@@ -190,6 +193,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     runningMapMock = mock(DistributedMap.class);
     completedMapMock = mock(DistributedMap.class);
     failureMapMock = mock(DistributedMap.class);
+    asyncIdMapMock = mock(DistributedMap.class);
     shardHandlerFactoryMock = mock(HttpShardHandlerFactory.class);
     shardHandlerMock = mock(HttpShardHandler.class);
     zkStateReaderMock = mock(ZkStateReader.class);
@@ -968,6 +972,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             overseerMock,
             completedMapMock,
             failureMapMock,
+            asyncIdMapMock,
             solrMetricsContextMock);
 
     if (log.isInfoEnabled()) {
