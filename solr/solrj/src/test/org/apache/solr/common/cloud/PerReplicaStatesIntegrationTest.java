@@ -268,7 +268,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               5,
               TimeUnit.SECONDS,
               (liveNodes, collectionState) ->
-                  "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
+                  Boolean.FALSE.equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
       CollectionAdminRequest.modifyCollection(
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "true"))
           .process(cluster.getSolrClient());

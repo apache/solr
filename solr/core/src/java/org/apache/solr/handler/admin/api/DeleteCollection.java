@@ -26,7 +26,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.client.api.endpoint.DeleteCollectionApi;
+import org.apache.solr.client.api.endpoint.CollectionApis;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -43,7 +43,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * <p>This API (DELETE /v2/collections/collectionName) is equivalent to the v1
  * /admin/collections?action=DELETE command.
  */
-public class DeleteCollection extends AdminAPIBase implements DeleteCollectionApi {
+public class DeleteCollection extends AdminAPIBase implements CollectionApis.Delete {
 
   @Inject
   public DeleteCollection(

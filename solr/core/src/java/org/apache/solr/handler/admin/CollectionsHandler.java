@@ -100,7 +100,6 @@ import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.common.util.StrUtils.formatString;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -130,7 +129,6 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
@@ -143,7 +141,6 @@ import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetComma
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
@@ -1029,29 +1026,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     MODIFYCOLLECTION_OP(
         MODIFYCOLLECTION,
         (req, rsp, h) -> {
-          Map<String, Object> m =
-              copy(req.getParams(), null, CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES);
-          copyPropertiesWithPrefix(req.getParams(), m, PROPERTY_PREFIX);
-          if (m.isEmpty()) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                formatString(
-                    "no supported values provided {0}",
-                    CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
-          }
-          copy(req.getParams().required(), m, COLLECTION_PROP);
-          for (Map.Entry<String, Object> entry : m.entrySet()) {
-            String prop = entry.getKey();
-            if ("".equals(entry.getValue())) {
-              // set to an empty string is equivalent to removing the property, see SOLR-12507
-              entry.setValue(null);
-            }
-            DocCollection.verifyProp(m, prop);
-          }
-          if (m.get(REPLICATION_FACTOR) != null) {
-            m.put(Replica.Type.defaultType().numReplicasPropertyName, m.get(REPLICATION_FACTOR));
-          }
-          return m;
+          final var modifyCollApi = new ModifyCollectionAPI(h.coreContainer, req, rsp);
+          final String collName = req.getParams().required().get(COLLECTION);
+          final var modifyReqBody = ModifyCollectionAPI.createV2RequestBody(req.getParams());
+          final var modifyResponse = modifyCollApi.modifyCollection(collName, modifyReqBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, modifyResponse);
+          return null;
         }),
     BACKUP_OP(
         BACKUP,
@@ -1372,6 +1352,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         InstallShardData.class,
         ListCollections.class,
         ListCollectionBackups.class,
+        ModifyCollectionAPI.class,
         ReloadCollectionAPI.class,
         RenameCollection.class,
         ReplaceNode.class,
@@ -1394,7 +1375,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
     return apis;

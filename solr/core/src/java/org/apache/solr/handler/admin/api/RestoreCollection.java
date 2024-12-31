@@ -131,19 +131,7 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
             remoteMessage,
             CollectionParams.CollectionAction.RESTORE,
             DEFAULT_COLLECTION_OP_TIMEOUT);
-
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-      return response;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+    processRemoteResponse(response, remoteResponse, requestBody.async);
     return response;
   }
 

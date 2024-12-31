@@ -14,21 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.api.endpoint;
+package org.apache.solr.client.api.model;
 
-import io.swagger.v3.oas.annotations.Operation;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import org.apache.solr.client.api.model.CreateCollectionRequestBody;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
+import java.util.Set;
 
-/** V2 API definition for creating a SolrCloud collection */
-@Path("/collections")
-public interface CreateCollectionApi {
-  @POST
-  @Operation(
-      summary = "Creates a new SolrCloud collection.",
-      tags = {"collections"})
-  SubResponseAccumulatingJerseyResponse createCollection(CreateCollectionRequestBody requestBody)
-      throws Exception;
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class ModifyCollectionRequestBody {
+  @JsonProperty public Integer replicationFactor;
+
+  @JsonProperty public Boolean readOnly;
+
+  @JsonProperty public String config;
+
+  @JsonProperty public Boolean perReplicaState;
+
+  @JsonProperty public Map<String, String> properties;
+
+  @JsonProperty public String async;
+
+  // Maintained to support the v1 capability of "unsetting" properties by including them as
+  // empty-string
+  @JsonIgnore public Set<String> unset;
 }
