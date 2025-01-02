@@ -15,22 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.solr;
+package org.apache.solr.util;
 
 import java.util.Map;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+/**
+ * @see LogLevel
+ * @see LogLevelTestRule
+ */
 @SuppressForbidden(reason = "We need to use log4J2 classes to access the log levels")
 @LogLevel(
     "org.apache.solr.bogus_logger.ClassLogLevel=error;org.apache.solr.bogus_logger.MethodLogLevel=warn")
-public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
+public class TestLogLevelAnnotations extends SolrTestCase {
 
   private static final String bogus_logger_prefix = "org.apache.solr.bogus_logger";
 
@@ -42,12 +46,12 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
    * the test.
    *
    * <p>We also don't want to initialize this in a <code>@BeforeClass</code> method because that
-   * will run <em>after</em> the <code>@BeforeClass</code> logic of our super class {@link
-   * SolrTestCaseJ4} where the <code>@LogLevel</code> annotation on this class will be parsed and
-   * evaluated -- modifying the log4j run time configuration. The <code>@LogLevel</code>
-   * configuration of this class <em>should</em> not affect the "root" Logger, but setting this in
-   * static class initialization protect us (as best we can) against the possibility that it
-   * <em>might</em> due to an unforseen (future) bug.
+   * will run <em>after</em> the <code>@BeforeClass</code> or {@code @ClassRule} logic of our super
+   * class where the <code>@LogLevel</code> annotation on this class will be parsed and evaluated --
+   * modifying the log4j run time configuration. The <code>@LogLevel</code> configuration of this
+   * class <em>should</em> not affect the "root" Logger, but setting this in static class
+   * initialization protect us (as best we can) against the possibility that it <em>might</em> due
+   * to an unforseen (future) bug.
    *
    * @see #checkLogLevelsBeforeClass
    */
@@ -93,9 +97,8 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
    * Check that the expected log level <em>configurations</em> have been reset after the test
    *
    * <p><b>NOTE:</b> We only validate <code>@LogLevel</code> modifications made at the {@link
-   * #testMethodLogLevels} level, not at the 'class' level, because of the lifecycle of junit
-   * methods: This <code>@AfterClass</code> will run before the <code>SolrTestCaseJ4#@AfterClass
-   * </code> method where the 'class' <code>@LogLevel</code> modifications will be reset.
+   * #testMethodLogLevels} level, not at the 'class' level, because the lifecycle of junit methods
+   * that activate this logic prevent us from doing so.
    *
    * @see #checkLogLevelsBeforeClass
    * @see #testWhiteBoxMethods
