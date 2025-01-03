@@ -26,6 +26,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -34,15 +35,20 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ClusterStateProviderTest extends SolrCloudTestCase {
 
+  private static JettySolrRunner jettyNode1;
+  private static JettySolrRunner jettyNode2;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
+    configureCluster(2)
         .addConfig(
             "conf",
             getFile("solrj")
@@ -51,6 +57,19 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                 .resolve("streaming")
                 .resolve("conf"))
         .configure();
+    jettyNode1 = cluster.getJettySolrRunner(0);
+    jettyNode2 = cluster.getJettySolrRunner(1);
+  }
+
+  @After
+  public void cleanup() throws Exception {
+    if (!jettyNode1.isRunning()) {
+      cluster.startJettySolrRunner(jettyNode1);
+    }
+    if (!jettyNode2.isRunning()) {
+      cluster.startJettySolrRunner(jettyNode2);
+    }
+    waitForCSPCacheTimeout();
   }
 
   @ParametersFactory
@@ -59,10 +78,13 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
         new String[] {"http2ClusterStateProvider"}, new String[] {"zkClientClusterStateProvider"});
   }
 
-  private static ClusterStateProvider http2ClusterStateProvider() {
+  private static Http2ClusterStateProvider http2ClusterStateProvider() {
     try {
       return new Http2ClusterStateProvider(
-          List.of(cluster.getJettySolrRunner(0).getBaseUrl().toString()), null);
+          List.of(
+              cluster.getJettySolrRunner(0).getBaseUrl().toString(),
+              cluster.getJettySolrRunner(1).getBaseUrl().toString()),
+          null);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -160,7 +182,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
 
     try (var cspZk = zkClientClusterStateProvider();
         var cspHttp = http2ClusterStateProvider()) {
-
       assertThat(cspZk.getClusterProperties(), Matchers.hasEntry("ext.foo", "bar"));
       assertThat(
           cspZk.getClusterProperties().entrySet(),
@@ -181,6 +202,104 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
 
       assertThat(
           clusterStateZk.getCollection("col2"), equalTo(clusterStateHttp.getCollection("col2")));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
+  }
+
+  @Test
+  public void testClusterStateProviderDownedLiveNodes() {
+    try (var cspZk = zkClientClusterStateProvider();
+        var cspHttp = http2ClusterStateProvider()) {
+      Set<String> expectedLiveNodes = cspZk.getClusterState().getLiveNodes();
+      Set<String> actualLiveNodes = cspHttp.getLiveNodes();
+      assertEquals(2, actualLiveNodes.size());
+      assertEquals(expectedLiveNodes, actualLiveNodes);
+
+      cluster.stopJettySolrRunner(jettyNode1);
+      waitForCSPCacheTimeout();
+
+      expectedLiveNodes = cspZk.getClusterState().getLiveNodes();
+      actualLiveNodes = cspHttp.getLiveNodes();
+      assertEquals(1, actualLiveNodes.size());
+      assertEquals(expectedLiveNodes, actualLiveNodes);
+
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  public void testClusterStateProviderDownedKnownHosts() {
+
+    try (var cspHttp = http2ClusterStateProvider()) {
+
+      String jettyNode1Url = normalizeJettyUrl(jettyNode1.getBaseUrl().toString());
+      String jettyNode2Url = normalizeJettyUrl(jettyNode2.getBaseUrl().toString());
+      Set<String> expectedKnownNodes = Set.of(jettyNode1Url, jettyNode2Url);
+      Set<String> actualKnownNodes = cspHttp.getKnownNodes();
+
+      assertEquals(2, actualKnownNodes.size());
+      assertEquals(expectedKnownNodes, actualKnownNodes);
+
+      cluster.stopJettySolrRunner(jettyNode1);
+      waitForCSPCacheTimeout();
+
+      // Known hosts should never remove the initial set of live nodes
+      actualKnownNodes = cspHttp.getKnownNodes();
+      assertEquals(2, actualKnownNodes.size());
+      assertEquals(expectedKnownNodes, actualKnownNodes);
+
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  public void testClusterStateProviderKnownHostsWithNewHost() {
+
+    try (var cspHttp = http2ClusterStateProvider()) {
+
+      var jettyNode3 = cluster.startJettySolrRunner();
+      String jettyNode1Url = normalizeJettyUrl(jettyNode1.getBaseUrl().toString());
+      String jettyNode2Url = normalizeJettyUrl(jettyNode2.getBaseUrl().toString());
+      String jettyNode3Url = normalizeJettyUrl(jettyNode3.getBaseUrl().toString());
+      Set<String> expectedKnownNodes = Set.of(jettyNode1Url, jettyNode2Url, jettyNode3Url);
+
+      waitForCSPCacheTimeout();
+
+      Set<String> actualKnownNodes = cspHttp.getKnownNodes();
+      assertEquals(3, actualKnownNodes.size());
+      assertEquals(expectedKnownNodes, actualKnownNodes);
+
+      cluster.stopJettySolrRunner(jettyNode1);
+      waitForCSPCacheTimeout();
+
+      // Known hosts should never remove the initial set of live nodes
+      actualKnownNodes = cspHttp.getKnownNodes();
+      assertEquals(3, actualKnownNodes.size());
+      assertEquals(expectedKnownNodes, actualKnownNodes);
+
+      cluster.stopJettySolrRunner(jettyNode3);
+      expectedKnownNodes = Set.of(jettyNode1Url, jettyNode2Url);
+      waitForCSPCacheTimeout();
+
+      // New nodes are removable from known hosts
+      actualKnownNodes = cspHttp.getKnownNodes();
+      assertEquals(2, actualKnownNodes.size());
+      assertEquals(expectedKnownNodes, actualKnownNodes);
+
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void waitForCSPCacheTimeout() throws InterruptedException {
+    Thread.sleep(6000);
+  }
+
+  /** Jetty URL to Cluster State Node String http://127.0.0.1:12345/solr to 127.0.0.1:12345_solr */
+  private String normalizeJettyUrl(String jettyUrl) {
+    return jettyUrl.substring(jettyUrl.lastIndexOf("//") + 2).replace("/", "_");
   }
 }
