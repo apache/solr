@@ -17,7 +17,6 @@
 
 package org.apache.solr.core;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,9 +42,7 @@ public final class SolrPaths {
 
   /** Ensures a directory name always ends with a '/'. */
   public static String normalizeDir(String path) {
-    return (path != null && (!(path.endsWith("/") || path.endsWith("\\"))))
-        ? path + File.separator
-        : path;
+    return (path != null && (!(path.endsWith("/") || path.endsWith("\\")))) ? path + "/" : path;
   }
 
   /**

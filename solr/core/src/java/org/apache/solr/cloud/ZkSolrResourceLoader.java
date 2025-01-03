@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -121,7 +120,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
     try {
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      is = classLoader.getResourceAsStream(Path.of(resource).toString());
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }
