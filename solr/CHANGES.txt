@@ -34,10 +34,6 @@ Improvements
 
 * SOLR-17516: `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. (James Dyer)
 
-* SOLR-17541: `LBHttp2SolrClient` now maintains a separate internal/delegate client per Solr Base URL.  Both `LBHttp2SolrClient` and `CloudHttp2SolrClient`
-  always create and manage these internal clients.  The ability for callers to provide a pre-built client is removed.  Callers may specify the internal client
-  details by providing an instance of either `Http2SolrClient.Builder` or `HttpJdkSolrClient.Builder`. (James Dyer)
-
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -106,11 +102,6 @@ Deprecation Removals
 
 * SOLR-17540: Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. (Eric Pugh)
 
-* SOLR-17541: Removed `CloudHttp2SolrClient.Builder#withHttpClient` in favor of `CloudHttp2SolrClient.Builder#withInternalClientBuilder`.
-  The constructor on `LBHttp2SolrClient.Builder` that took an instance of `HttpSolrClientBase` is updated to instead take an instance of
-  `HttpSolrClientBuilderBase`.  Renamed `LBHttp2SolrClient.Builder#withListenerFactory` to `LBHttp2SolrClient.Builder#withListenerFactories`
-  (James Dyer)
-
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -159,10 +150,9 @@ New Features
 
 Improvements
 ---------------------
-* SOLR-17541: Deprecate `CloudHttp2SolrClient.Builder#withHttpClient` in favor of
-  `CloudHttp2SolrClient.Builder#withInternalClientBuilder`.
-   Deprecate `LBHttp2SolrClient.Builder#withListenerFactory` in favor of
-   `LBHttp2SolrClient.Builder#withListenerFactories` (James Dyer)
+* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
+  specific collections or cores.  Collection information can be fetched by a call to `GET /api/collections/collectionName`, and core
+  information with a call to `GET /api/cores/coreName/segments`. (Jason Gerlowski)
 
 Optimizations
 ---------------------

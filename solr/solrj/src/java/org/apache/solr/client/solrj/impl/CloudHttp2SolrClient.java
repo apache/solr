@@ -40,8 +40,9 @@ import org.apache.solr.common.SolrException;
 public class CloudHttp2SolrClient extends CloudSolrClient {
 
   private final ClusterStateProvider stateProvider;
-  private final LBHttp2SolrClient<Http2SolrClient.Builder> lbClient;
+  private final LBHttp2SolrClient<Http2SolrClient> lbClient;
   private final Http2SolrClient myClient;
+  private final boolean clientIsInternal;
 
   /**
    * Create a new client object that connects to Zookeeper and is always aware of the SolrCloud
@@ -53,8 +54,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
-    var httpSolrClientBuilder = createOrGetHttpClientBuilder(builder);
-    this.myClient = httpSolrClientBuilder.build();
+    this.clientIsInternal = builder.httpClient == null;
+    this.myClient = createOrGetHttpClientFromBuilder(builder);
     this.stateProvider = createClusterStateProvider(builder);
     this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
     this.defaultCollection = builder.defaultCollection;
@@ -72,14 +73,16 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     // locks.
     this.locks = objectList(builder.parallelCacheRefreshesLocks);
 
-    this.lbClient = new LBHttp2SolrClient.Builder<>(httpSolrClientBuilder).build();
+    this.lbClient = new LBHttp2SolrClient.Builder<Http2SolrClient>(myClient).build();
   }
 
-  private Http2SolrClient.Builder createOrGetHttpClientBuilder(Builder builder) {
-    if (builder.internalClientBuilder != null) {
-      return builder.internalClientBuilder;
+  private Http2SolrClient createOrGetHttpClientFromBuilder(Builder builder) {
+    if (builder.httpClient != null) {
+      return builder.httpClient;
+    } else if (builder.internalClientBuilder != null) {
+      return builder.internalClientBuilder.build();
     } else {
-      return new Http2SolrClient.Builder();
+      return new Http2SolrClient.Builder().build();
     }
   }
 
@@ -126,7 +129,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
   private void closeMyClientIfNeeded() {
     try {
-      if (myClient != null) {
+      if (clientIsInternal && myClient != null) {
         myClient.close();
       }
     } catch (Exception e) {
@@ -145,7 +148,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   }
 
   @Override
-  public LBHttp2SolrClient<Http2SolrClient.Builder> getLbClient() {
+  public LBHttp2SolrClient<Http2SolrClient> getLbClient() {
     return lbClient;
   }
 
@@ -168,6 +171,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
     protected String zkChroot;
+    protected Http2SolrClient httpClient;
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
@@ -401,6 +405,23 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
+     * Set the internal http client.
+     *
+     * <p>Note: closing the httpClient instance is at the responsibility of the caller.
+     *
+     * @param httpClient http client
+     * @return this
+     */
+    public Builder withHttpClient(Http2SolrClient httpClient) {
+      if (this.internalClientBuilder != null) {
+        throw new IllegalStateException(
+            "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
+      }
+      this.httpClient = httpClient;
+      return this;
+    }
+
+    /**
      * If provided, the CloudHttp2SolrClient will build it's internal Http2SolrClient using this
      * builder (instead of the empty default one). Providing this builder allows users to configure
      * the internal clients (authentication, timeouts, etc.).
@@ -409,6 +430,10 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * @return this
      */
     public Builder withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
+      if (this.httpClient != null) {
+        throw new IllegalStateException(
+            "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
+      }
       this.internalClientBuilder = internalClientBuilder;
       return this;
     }
