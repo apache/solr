@@ -915,10 +915,8 @@ public class SimpleFacets {
                   result.add(key, getTermCounts(facetValue, parsed));
                 }
                 return result;
-              } catch (SolrException se) {
+              } catch (SolrException | ExitableDirectoryReader.ExitingReaderException se) {
                 throw se;
-              } catch (ExitableDirectoryReader.ExitingReaderException timeout) {
-                throw timeout;
               } catch (Exception e) {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, "Exception during facet.field: " + facetValue, e);
