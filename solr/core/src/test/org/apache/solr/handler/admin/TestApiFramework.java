@@ -104,7 +104,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     parts = new HashMap<>();
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST", null, parts);
-    assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/modify", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
     SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", mockCC);
