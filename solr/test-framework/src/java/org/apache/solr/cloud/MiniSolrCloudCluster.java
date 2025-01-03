@@ -530,14 +530,14 @@ public class MiniSolrCloudCluster {
   }
 
   /**
-   * Add a previously stopped node back to the cluster
+   * Add a previously stopped node back to the cluster and reuse its port
    *
    * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
    * @return the started node
    * @throws Exception on error
    */
   public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
-    jetty.start(false);
+    jetty.start();
     if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
   }
