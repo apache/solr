@@ -157,8 +157,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
 
   @SuppressWarnings("unchecked")
   protected List<SolrInputDocument> loadJsonLines(
-          ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad)
-      throws IOException {
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     List<Map<String, Object>> docs = new ArrayList<>();
     try (Reader r = stream.getReader()) {
       BufferedReader br = new BufferedReader(r);
@@ -182,8 +181,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
 
   @SuppressWarnings("unchecked")
   protected List<SolrInputDocument> loadJsonDocs(
-          ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad)
-      throws IOException {
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     Object json;
     try (Reader r = stream.getReader()) {
       json = ObjectBuilder.getVal(new JSONParser(r));
@@ -231,8 +229,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   }
 
   protected List<SolrInputDocument> loadXmlDocs(
-          ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad)
-      throws IOException {
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     String xmlString = new String(readAllBytes(stream), StandardCharsets.UTF_8).trim();
     List<SolrInputDocument> docs;
     if (xmlString.contains("<add>") && xmlString.contains("<doc>")) {

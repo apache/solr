@@ -519,7 +519,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String mutableId = checkMutable(configSet, req);
 
-    // verify the configSet we're going to apply changes to hasn't been changed since being loaded for
+    // verify the configSet we're going to apply changes to hasn't been changed since being loaded
+    // for
     // editing by the schema designer
     SchemaDesignerSettings settings = settingsDAO.getSettings(mutableId);
     final Optional<Integer> publishedVersion = settings.getPublishedVersion();

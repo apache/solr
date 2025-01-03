@@ -222,10 +222,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     return mapByField;
   }
 
-  protected String guessFieldType(
-          final List<Object> sampleValues,
-          boolean isMV,
-          Locale locale) {
+  protected String guessFieldType(final List<Object> sampleValues, boolean isMV, Locale locale) {
     String type = null;
 
     // flatten values to a single stream for easier analysis; also remove nulls

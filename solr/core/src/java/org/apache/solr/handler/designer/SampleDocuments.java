@@ -17,8 +17,6 @@
 
 package org.apache.solr.handler.designer;
 
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
