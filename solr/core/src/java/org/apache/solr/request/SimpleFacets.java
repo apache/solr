@@ -873,10 +873,10 @@ public class SimpleFacets {
    */
   public NamedList<Object> getFacetFieldCounts() throws IOException, SyntaxError {
 
-    NamedList<Object> res = new SimpleOrderedMap<>();
     String[] facetFs = global.getParams(FacetParams.FACET_FIELD);
+
     if (null == facetFs) {
-      return res;
+      return NamedList.emptyNamedList();
     }
 
     // Passing a negative number for FACET_THREADS implies an unlimited number of threads is
@@ -891,6 +891,7 @@ public class SimpleFacets {
       fdebugParent.putInfoItem("maxThreads", maxThreads);
     }
 
+    NamedList<Object> res;
     try {
       // Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
@@ -914,10 +915,8 @@ public class SimpleFacets {
                   result.add(key, getTermCounts(facetValue, parsed));
                 }
                 return result;
-              } catch (SolrException se) {
+              } catch (SolrException | ExitableDirectoryReader.ExitingReaderException se) {
                 throw se;
-              } catch (ExitableDirectoryReader.ExitingReaderException timeout) {
-                throw timeout;
               } catch (Exception e) {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, "Exception during facet.field: " + facetValue, e);
@@ -932,6 +931,7 @@ public class SimpleFacets {
         futures.add(runnableFuture);
       } // facetFs loop
 
+      res = new SimpleOrderedMap<>();
       // Loop over futures to get the values. The order is the same as facetFs but shouldn't matter.
       for (Future<NamedList<?>> future : futures) {
         res.addAll(future.get());

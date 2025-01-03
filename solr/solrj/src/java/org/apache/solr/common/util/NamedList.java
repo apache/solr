@@ -63,6 +63,7 @@ import org.apache.solr.common.params.SolrParams;
 public class NamedList<T>
     implements Cloneable, Serializable, Iterable<Map.Entry<String, T>>, MapWriter, SimpleMap<T> {
 
+  private static final NamedList<Object> emptyNamedList = new NamedList(0);
   private static final long serialVersionUID = 1957981902839867821L;
   protected final List<Object> nvPairs;
 
@@ -860,5 +861,9 @@ public class NamedList<T>
   @Override
   public void forEachEntry(BiConsumer<String, ? super T> fun) {
     forEach(fun);
+  }
+
+  public static NamedList<Object> emptyNamedList() {
+    return emptyNamedList;
   }
 }
