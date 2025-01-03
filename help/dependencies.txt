@@ -109,7 +109,7 @@ catalog.
 The locking will fail if multiple versions of the same dependency are found.
 This may be the case if libraries have a used library as transitive
 dependency with a different version. If that is the case, you have to add
-a constraint to the modules in gradle/dependencies.gradle with a reason
+a constraint to the modules in gradle/validation/dependencies.gradle with a reason
 why the constraint is applied. The below example adds a constraint for
 "foo.bar:baz" with the given version from the version catalog, enforcing
 the version to all transitive dependencies as well:

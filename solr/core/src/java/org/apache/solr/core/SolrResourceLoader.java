@@ -107,10 +107,7 @@ public class SolrResourceLoader
     "security.",
     "handler.admin.",
     "security.jwt.",
-    "security.hadoop.",
     "handler.sql.",
-    "hdfs.",
-    "hdfs.update.",
     "crossdc.handler.",
     "crossdc.update.processor."
   };

@@ -65,10 +65,6 @@ configure(allprojects) { prj ->
               "src/java/org/apache/solr/parser/Token.java",
               "src/java/org/apache/solr/parser/TokenMgrError.java"
             break
-          case ":solr:modules:hdfs":
-            // Exclude Hadoop copied files to make upgrades easier
-            targetExclude "src/**/org/apache/hadoop/**"
-            break
           case ":solr:solr-ref-guide":
             // Apply to all example Java sources in the ref-guide
             target "modules/**/examples/*.java"
