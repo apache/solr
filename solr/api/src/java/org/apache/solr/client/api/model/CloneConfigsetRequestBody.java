@@ -14,19 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.request.beans;
+package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
 
-public class CreateConfigPayload implements ReflectMapWriter {
-  public static final String DEFAULT_CONFIGSET =
-      "_default"; // TODO Better location for this in SolrJ?
+/** Request body for ConfigsetsApi.Clone */
+public class CloneConfigsetRequestBody {
+  public static final String DEFAULT_CONFIGSET = "_default";
 
   @JsonProperty(required = true)
   public String name;
 
-  @JsonProperty public String baseConfigSet = DEFAULT_CONFIGSET;
+  @JsonProperty(defaultValue = DEFAULT_CONFIGSET)
+  public String baseConfigSet;
+
   @JsonProperty public Map<String, Object> properties;
 }

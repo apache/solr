@@ -30,7 +30,7 @@ public class XSLTOutputWriterTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").getAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").toAbsolutePath().toString());
   }
 
   @Test

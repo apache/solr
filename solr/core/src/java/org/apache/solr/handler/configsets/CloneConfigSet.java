@@ -17,54 +17,55 @@
 
 package org.apache.solr.handler.configsets;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DISABLE_CREATE_AUTH_CHECKS;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
+import org.apache.solr.client.api.endpoint.ConfigsetsApi;
+import org.apache.solr.client.api.model.CloneConfigsetRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
-/**
- * V2 API for creating a new configset as a copy of an existing one.
- *
- * <p>This API (POST /v2/cluster/configs {"create": {...}}) is analogous to the v1
- * /admin/configs?action=CREATE command.
- */
-@EndPoint(method = POST, path = "/cluster/configs", permission = CONFIG_EDIT_PERM)
-public class CreateConfigSetAPI extends ConfigSetAPIBase {
+/** V2 API implementation for ConfigsetsApi.Clone */
+public class CloneConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Clone {
 
-  public CreateConfigSetAPI(CoreContainer coreContainer) {
-    super(coreContainer);
+  @Inject
+  public CloneConfigSet(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @Command(name = "create")
-  public void create(PayloadObj<CreateConfigPayload> obj) throws Exception {
-    final CreateConfigPayload createConfigPayload = obj.get();
-    if (configSetService.checkConfigExists(createConfigPayload.name)) {
+  @Override
+  @PermissionName(CONFIG_EDIT_PERM)
+  public SolrJerseyResponse cloneExistingConfigSet(CloneConfigsetRequestBody requestBody)
+      throws Exception {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    if (configSetService.checkConfigExists(requestBody.name)) {
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "ConfigSet already exists: " + createConfigPayload.name);
+          SolrException.ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + requestBody.name);
     }
 
     // is there a base config that already exists
-    if (!configSetService.checkConfigExists(createConfigPayload.baseConfigSet)) {
+    if (!configSetService.checkConfigExists(requestBody.baseConfigSet)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Base ConfigSet does not exist: " + createConfigPayload.baseConfigSet);
+          "Base ConfigSet does not exist: " + requestBody.baseConfigSet);
     }
 
     if (!DISABLE_CREATE_AUTH_CHECKS
-        && !isTrusted(obj.getRequest().getUserPrincipal(), coreContainer.getAuthenticationPlugin())
-        && configSetService.isConfigSetTrusted(createConfigPayload.baseConfigSet)) {
+        && !isTrusted(solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin())
+        && configSetService.isConfigSetTrusted(requestBody.baseConfigSet)) {
       throw new SolrException(
           SolrException.ErrorCode.UNAUTHORIZED,
           "Can't create a configset with an unauthenticated request from a trusted "
@@ -72,16 +73,17 @@ public class CreateConfigSetAPI extends ConfigSetAPIBase {
     }
 
     final Map<String, Object> configsetCommandMsg = new HashMap<>();
-    configsetCommandMsg.put(NAME, createConfigPayload.name);
-    configsetCommandMsg.put(ConfigSetCmds.BASE_CONFIGSET, createConfigPayload.baseConfigSet);
-    if (createConfigPayload.properties != null) {
-      for (Map.Entry<String, Object> e : createConfigPayload.properties.entrySet()) {
+    configsetCommandMsg.put(NAME, requestBody.name);
+    configsetCommandMsg.put(ConfigSetCmds.BASE_CONFIGSET, requestBody.baseConfigSet);
+    if (requestBody.properties != null) {
+      for (Map.Entry<String, Object> e : requestBody.properties.entrySet()) {
         configsetCommandMsg.put(
             ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX + e.getKey(), e.getValue());
       }
     }
 
     runConfigSetCommand(
-        obj.getResponse(), ConfigSetParams.ConfigSetAction.CREATE, configsetCommandMsg);
+        solrQueryResponse, ConfigSetParams.ConfigSetAction.CREATE, configsetCommandMsg);
+    return response;
   }
 }

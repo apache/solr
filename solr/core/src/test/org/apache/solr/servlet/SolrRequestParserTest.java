@@ -162,7 +162,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings({"try"})
   public void testStreamFile() throws Exception {
-    Path file = getFile("README").toPath();
+    Path file = getFile("README");
 
     byte[] bytes = Files.readAllBytes(file);
 

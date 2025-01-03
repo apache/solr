@@ -14,19 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.api.endpoint;
 
-import io.swagger.v3.oas.annotations.Operation;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import org.apache.solr.client.api.model.ListConfigsetsResponse;
-
-/** V2 API definition for listing configsets. */
-@Path("/cluster/configs")
-public interface ListConfigsetsApi {
-  @GET
-  @Operation(
-      summary = "List the configsets available to Solr.",
-      tags = {"configsets"})
-  ListConfigsetsResponse listConfigSet() throws Exception;
-}
+/** Contains model store related classes. */
+package org.apache.solr.llm.texttovector.store;

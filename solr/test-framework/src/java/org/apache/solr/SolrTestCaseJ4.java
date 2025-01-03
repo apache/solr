@@ -2127,16 +2127,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Gets a resource from the context classloader as {@link File}. This method should only be used,
+   * Gets a resource from the context classloader as {@link Path}. This method should only be used,
    * if a real file is needed. To get a stream, code should prefer {@link Class#getResourceAsStream}
    * using {@code this.getClass()}.
    */
-  public static File getFile(String name) {
+  public static Path getFile(String name) {
     final URL url =
         SolrTestCaseJ4.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
     if (url != null) {
       try {
-        return new File(url.toURI());
+        return Path.of(url.toURI());
       } catch (Exception e) {
         throw new RuntimeException(
             "Resource was found on classpath, but cannot be resolved to a "
@@ -2144,8 +2144,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
                 + name);
       }
     }
-    final File file = new File(name);
-    if (file.exists()) {
+    final Path file = Path.of(name);
+    if (Files.exists(file)) {
       return file;
     }
     throw new RuntimeException(
@@ -2154,11 +2154,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static String TEST_HOME() {
-    return getFile("solr/collection1").getParent();
+    return getFile("solr/collection1").getParent().toString();
   }
 
   public static Path TEST_PATH() {
-    return getFile("solr/collection1").getParentFile().toPath();
+    return getFile("solr/collection1").getParent();
   }
 
   public static Path TEST_COLL1_CONF() {
