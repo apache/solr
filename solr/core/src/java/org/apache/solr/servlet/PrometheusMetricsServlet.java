@@ -835,21 +835,19 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     */
 
     AggregateMetricsApiCaller() {
-      super("solr.node", buildPrefix(), buildProperty());
+      super(
+          "solr.node",
+          buildPrefix(),
+          Arrays.stream(CoreMetric.values())
+              .filter(m -> m.property != null)
+              .map(m -> m.property)
+              .distinct()
+              .toArray(String[]::new));
     }
 
     private static String buildPrefix() {
       return String.join(
           ",", Arrays.stream(CoreMetric.values()).map(m -> m.key).toArray(String[]::new));
-    }
-
-    private static String buildProperty() {
-      return String.join(
-          ",",
-          Arrays.stream(CoreMetric.values())
-              .filter(m -> m.property != null)
-              .map(m -> m.property)
-              .collect(Collectors.toSet()));
     }
 
     @Override
@@ -1112,9 +1110,9 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     protected String buildQueryString(ResultContext resultContext) {
       String propertyClause =
           Arrays.stream(properties)
-              .map(p -> URLEncoder.encode(p, StandardCharsets.UTF_8))
               .distinct()
-              .collect(Collectors.joining(",", "&property=", ""));
+              .map(p -> "&property=" + URLEncoder.encode(p, StandardCharsets.UTF_8))
+              .collect(Collectors.joining());
       return String.format(
           Locale.ROOT,
           "wt=json&indent=false&compact=true&group=%s&prefix=%s%s",
