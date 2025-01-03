@@ -37,7 +37,7 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 ### `versions.lock` update
 
 ```
-gradlew --write-locks
+gradlew :writeLocks
 ```
 
 ### `solr/licenses` update
