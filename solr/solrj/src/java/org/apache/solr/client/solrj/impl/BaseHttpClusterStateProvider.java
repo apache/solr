@@ -54,7 +54,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private String urlScheme;
   private Set<String> initialNodes;
   volatile Set<String> liveNodes;
-  volatile Set<String> knownNodes; // Live nodes + initial nodes
+  volatile Set<String> knownNodes;
   long liveNodesTimestamp = 0;
   volatile Map<String, List<String>> aliases;
   volatile Map<String, Map<String, String>> aliasProperties;
@@ -69,7 +69,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       try (SolrClient initialClient = getSolrClient(solrUrl)) {
         this.liveNodes = fetchLiveNodes(initialClient);
         this.initialNodes = Set.copyOf(liveNodes);
-        updateKnownNodes();
+        setKnownNodes();
         liveNodesTimestamp = System.nanoTime();
         break;
       } catch (SolrServerException | IOException e) {
@@ -142,7 +142,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     List<String> liveNodesList = (List<String>) cluster.get("live_nodes");
     if (liveNodesList != null) {
       this.liveNodes = Set.copyOf(liveNodesList);
-      updateKnownNodes();
+      setKnownNodes();
       liveNodesTimestamp = System.nanoTime();
     }
 
@@ -236,7 +236,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
         try (SolrClient client = getSolrClient(baseUrl)) {
           this.liveNodes = fetchLiveNodes(client);
-          updateKnownNodes();
+          setKnownNodes();
           liveNodesTimestamp = System.nanoTime();
           return this.liveNodes;
         } catch (Exception e) {
@@ -427,7 +427,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
    * Known nodes should always have the latest set of live nodes but never remove initial set of
    * live nodes
    */
-  private void updateKnownNodes() {
+  private void setKnownNodes() {
     Set<String> knownNodes = new HashSet<>(this.liveNodes);
     knownNodes.addAll(this.initialNodes);
     this.knownNodes = Set.copyOf(knownNodes);
