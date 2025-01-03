@@ -140,7 +140,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-    this.listenerFactory.addAll(builder.listenerFactories);
+    if (builder.listenerFactory != null) {
+      this.listenerFactory.addAll(builder.listenerFactory);
+    }
     updateDefaultMimeTypeForParser();
 
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
@@ -569,7 +571,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
    * @param clientFunction a Function that consumes a Http2SolrClient and returns an arbitrary value
    * @return the value returned after invoking 'clientFunction'
    * @param <R> the type returned by the provided function (and by this method)
-   * @lucene.experimental
    */
   public <R> R requestWithBaseUrl(
       String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
@@ -905,7 +906,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
-    private List<HttpListenerFactory> listenerFactories = new ArrayList<>(0);
+    private List<HttpListenerFactory> listenerFactory;
 
     public Builder() {
       super();
@@ -931,27 +932,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.baseSolrUrl = baseSolrUrl;
     }
 
-    /**
-     * specify a listener factory, which will be appended to any existing values.
-     *
-     * @param listenerFactory a HttpListenerFactory
-     * @return This Builder
-     */
-    public Http2SolrClient.Builder addListenerFactory(HttpListenerFactory listenerFactory) {
-      this.listenerFactories.add(listenerFactory);
-      return this;
-    }
-
-    /**
-     * Specify listener factories, which will replace any existing values.
-     *
-     * @param listenerFactories a list of HttpListenerFactory instances
-     * @return This Builder
-     */
-    public Http2SolrClient.Builder withListenerFactories(
-        List<HttpListenerFactory> listenerFactories) {
-      this.listenerFactories.clear();
-      this.listenerFactories.addAll(listenerFactories);
+    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
+      this.listenerFactory = listenerFactory;
       return this;
     }
 
@@ -1127,9 +1109,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
       }
-      if (this.listenerFactories.isEmpty()) {
-        this.listenerFactories.clear();
-        http2SolrClient.listenerFactory.forEach(this.listenerFactories::add);
+      if (this.listenerFactory == null) {
+        this.listenerFactory = new ArrayList<HttpListenerFactory>();
+        http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
       }
       if (this.executor == null) {
         this.executor = http2SolrClient.executor;

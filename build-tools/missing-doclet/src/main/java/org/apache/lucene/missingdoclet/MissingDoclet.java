@@ -438,13 +438,6 @@ public class MissingDoclet extends StandardDoclet {
     fullMessage.append("): ");
     fullMessage.append(message);
 
-    if (Runtime.version().feature() == 11 && element.getKind() == ElementKind.PACKAGE) {
-      // Avoid JDK 11 bug:
-      // https://issues.apache.org/jira/browse/LUCENE-9747
-      // https://bugs.openjdk.java.net/browse/JDK-8224082
-      reporter.print(Diagnostic.Kind.ERROR, fullMessage.toString());
-    } else {
-      reporter.print(Diagnostic.Kind.ERROR, element, fullMessage.toString());
-    }
+    reporter.print(Diagnostic.Kind.ERROR, element, fullMessage.toString());
   }
 }
