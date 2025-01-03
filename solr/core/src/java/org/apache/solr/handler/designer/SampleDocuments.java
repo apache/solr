@@ -42,15 +42,6 @@ public class SampleDocuments {
     return fileSource != null ? fileSource : "paste";
   }
 
-  private boolean isTextContentType() {
-    if (contentType == null) {
-      return false;
-    }
-    return contentType.contains(JSON_MIME)
-        || contentType.startsWith("text/")
-        || contentType.contains("application/xml");
-  }
-
   public List<SolrInputDocument> appendDocs(
       String idFieldName, List<SolrInputDocument> add, int maxDocsToLoad) {
     if (add != null && !add.isEmpty()) {
@@ -65,7 +56,7 @@ public class SampleDocuments {
                   doc -> {
                     Object id = doc.getFieldValue(idFieldName);
                     return id != null
-                        && !ids.contains(id); // doc has ID and it's not already in the set
+                        && !ids.contains(id); // doc has ID, and it's not already in the set
                   })
               .collect(Collectors.toList());
       parsed.addAll(toAdd);
