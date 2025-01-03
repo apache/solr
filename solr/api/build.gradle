@@ -58,6 +58,7 @@ resolve {
 }
 
 dependencies {
+    api platform(project(":platform"))
     runtimeOnly libs.slf4j.api
     
     implementation libs.jakarta.ws.rsapi
