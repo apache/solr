@@ -202,13 +202,11 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
 
       assertThat(
           clusterStateZk.getCollection("col2"), equalTo(clusterStateHttp.getCollection("col2")));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
     }
   }
 
   @Test
-  public void testClusterStateProviderDownedLiveNodes() {
+  public void testClusterStateProviderDownedLiveNodes() throws Exception {
     try (var cspZk = zkClientClusterStateProvider();
         var cspHttp = http2ClusterStateProvider()) {
       Set<String> expectedLiveNodes = cspZk.getClusterState().getLiveNodes();
@@ -224,13 +222,20 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       assertEquals(1, actualLiveNodes.size());
       assertEquals(expectedLiveNodes, actualLiveNodes);
 
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+      cluster.startJettySolrRunner(jettyNode1);
+      cluster.stopJettySolrRunner(jettyNode2);
+      waitForCSPCacheTimeout();
+
+      // Should still be reachable because known hosts doesn't remove initial nodes
+      expectedLiveNodes = cspZk.getClusterState().getLiveNodes();
+      actualLiveNodes = cspHttp.getLiveNodes();
+      assertEquals(1, actualLiveNodes.size());
+      assertEquals(expectedLiveNodes, actualLiveNodes);
     }
   }
 
   @Test
-  public void testClusterStateProviderDownedKnownHosts() {
+  public void testClusterStateProviderDownedKnownHosts() throws Exception {
 
     try (var cspHttp = http2ClusterStateProvider()) {
 
@@ -249,14 +254,11 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       actualKnownNodes = cspHttp.getKnownNodes();
       assertEquals(2, actualKnownNodes.size());
       assertEquals(expectedKnownNodes, actualKnownNodes);
-
-    } catch (Exception e) {
-      throw new RuntimeException(e);
     }
   }
 
   @Test
-  public void testClusterStateProviderKnownHostsWithNewHost() {
+  public void testClusterStateProviderKnownHostsWithNewHost() throws Exception {
 
     try (var cspHttp = http2ClusterStateProvider()) {
 
@@ -265,7 +267,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       String jettyNode2Url = normalizeJettyUrl(jettyNode2.getBaseUrl().toString());
       String jettyNode3Url = normalizeJettyUrl(jettyNode3.getBaseUrl().toString());
       Set<String> expectedKnownNodes = Set.of(jettyNode1Url, jettyNode2Url, jettyNode3Url);
-
       waitForCSPCacheTimeout();
 
       Set<String> actualKnownNodes = cspHttp.getKnownNodes();
@@ -275,7 +276,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jettyNode1);
       waitForCSPCacheTimeout();
 
-      // Known hosts should never remove the initial set of live nodes
       actualKnownNodes = cspHttp.getKnownNodes();
       assertEquals(3, actualKnownNodes.size());
       assertEquals(expectedKnownNodes, actualKnownNodes);
@@ -288,9 +288,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       actualKnownNodes = cspHttp.getKnownNodes();
       assertEquals(2, actualKnownNodes.size());
       assertEquals(expectedKnownNodes, actualKnownNodes);
-
-    } catch (Exception e) {
-      throw new RuntimeException(e);
     }
   }
 
