@@ -40,7 +40,6 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -337,7 +336,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       SolrResourceLoader resourceLoader)
       throws IOException, URISyntaxException {
     try (BackupRepository repo = repoFactory.newInstance(resourceLoader, repoName);
-        Directory directory = new NIOFSDirectory(dir.toPath())) {
+        Directory directory = newFSDirectory(dir.toPath())) {
       URI destinationDir = repo.resolve(getBaseUri(), "destination-folder");
       repo.copyIndexFileFrom(directory, fileName, destinationDir, fileName);
     }
@@ -352,8 +351,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       SolrResourceLoader resourceLoader)
       throws IOException {
     try (BackupRepository repo = repoFactory.newInstance(resourceLoader, repoName);
-        Directory sourceDirectory = new NIOFSDirectory(sourceDir.toPath());
-        Directory destinationDirectory = new NIOFSDirectory(destinationDir.toPath())) {
+        Directory sourceDirectory = newFSDirectory(sourceDir.toPath());
+        Directory destinationDirectory = newFSDirectory(destinationDir.toPath())) {
       repo.copyIndexFileFrom(sourceDirectory, fileName, destinationDirectory, fileName);
     }
   }

@@ -27,7 +27,7 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 
 ## Build
 
-### `versions.props` update
+### `gradle/libs.versions.toml` update
 
 ```
 - org.apache.lucene:*=9.3.0
@@ -37,7 +37,7 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 ### `versions.lock` update
 
 ```
-gradlew --write-locks
+gradlew :writeLocks
 ```
 
 ### `solr/licenses` update
