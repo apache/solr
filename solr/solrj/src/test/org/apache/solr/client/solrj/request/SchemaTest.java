@@ -112,7 +112,8 @@ public class SchemaTest extends RestTestBase {
   public void init() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(
-        new File(getFile("solrj/solr/collection1").getParent()), tmpSolrHome.getAbsoluteFile());
+        new File(getFile("solrj/solr/collection1").getParent().toString()),
+        tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 

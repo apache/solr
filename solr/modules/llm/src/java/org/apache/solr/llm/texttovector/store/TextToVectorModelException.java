@@ -14,20 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.llm.texttovector.store;
 
-// Disable assertions for HashMap due to: LUCENE-8991 / JDK-8205399
-def vmName = System.getProperty("java.vm.name")
-def spec = System.getProperty("java.specification.version")
-if (vmName =~ /(?i)(hotspot|openjdk|jrockit)/ &&
-    spec =~ /^(1\.8|9|10|11)$/ &&
-    !Boolean.parseBoolean(propertyOrDefault('tests.asserts.hashmap', 'false'))) {
-  logger.info("Enabling HashMap assertions.")
-  allprojects {
-    plugins.withType(JavaPlugin) {
-      tasks.withType(Test) { task ->
-        jvmArgs("-da:java.util.HashMap")
-      }
-    }
+public class TextToVectorModelException extends RuntimeException {
+
+  private static final long serialVersionUID = 1L;
+
+  public TextToVectorModelException(String message) {
+    super(message);
+  }
+
+  public TextToVectorModelException(String message, Exception cause) {
+    super(message, cause);
   }
 }
-

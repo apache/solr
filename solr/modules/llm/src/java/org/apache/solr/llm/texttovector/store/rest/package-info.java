@@ -15,18 +15,5 @@
  * limitations under the License.
  */
 
-configure(rootProject) {
-  task ensureJdkSupported() {
-    doFirst {
-      if (System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("mac") && rootProject.runtimeJavaVersion == JavaVersion.VERSION_20) {
-        throw new GradleException("Tests cannot be run with JDK20 on Mac; see SOLR-16733 for more details.")
-      }
-    }
-  }
-
-  allprojects {
-    tasks.withType(Test) {
-        dependsOn ":ensureJdkSupported"
-    }
-  }
-}
+/** Contains the {@link org.apache.solr.rest.ManagedResource} that encapsulate the model stores. */
+package org.apache.solr.llm.texttovector.store.rest;

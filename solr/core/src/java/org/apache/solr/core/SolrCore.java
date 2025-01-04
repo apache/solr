@@ -1354,6 +1354,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           Category.CORE.toString());
     }
 
+    // TODO SOLR-8282 move to PATH
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();

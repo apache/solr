@@ -69,7 +69,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
     AbstractS3ClientTest.setS3ConfFile();
 
     configureCluster(1) // nodes
-        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)
