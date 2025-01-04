@@ -176,7 +176,8 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       DistribFileStore.deleteZKFileEntry(
           cluster.getZkClient(), "/package/mypkg/v1.0/runtimelibs.jar");
       JettySolrRunner j = cluster.getRandomJetty(random());
-      String path = j.getBaseURLV2() + "/cluster/files" + "/package/mypkg/v1.0/runtimelibs.jar";
+      String path =
+          j.getBaseURLV2() + "/cluster/filestore/files" + "/package/mypkg/v1.0/runtimelibs.jar";
       HttpDelete del = new HttpDelete(path);
       try (HttpSolrClient cl = (HttpSolrClient) j.newClient()) {
         Utils.executeHttpMethod(cl.getHttpClient(), path, Utils.JSONCONSUMER, del);
@@ -333,7 +334,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static NavigableObject postFile(
       SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
-    String resource = "/cluster/files" + name;
+    String resource = "/cluster/filestore/files" + name;
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("sig", sig);
     V2Response rsp =

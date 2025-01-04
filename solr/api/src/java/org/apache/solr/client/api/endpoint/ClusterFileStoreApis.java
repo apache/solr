@@ -33,7 +33,7 @@ import java.util.List;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 
-@Path("/cluster")
+@Path("/cluster/filestore")
 public interface ClusterFileStoreApis {
   // TODO Better understand the purpose of the 'sig' parameter and improve docs here.
   @PUT
