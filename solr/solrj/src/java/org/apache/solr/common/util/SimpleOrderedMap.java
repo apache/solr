@@ -34,6 +34,8 @@ import java.util.Map;
  * serialized. It aims to minimize overhead and to be efficient at adding new elements.
  */
 public class SimpleOrderedMap<T> extends NamedList<T> {
+ 
+  private static final SimpleOrderedMap<Object> emptySimpleOrderedMap = new SimpleOrderedMap<>(0);
   /** Creates an empty instance */
   public SimpleOrderedMap() {
     super();
@@ -66,5 +68,9 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
     ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
     return new SimpleOrderedMap<>(newList);
+  }
+  
+  public static SimpleOrderedMap<Object> emptySimpleOrderedMap() {
+    return emptySimpleOrderedMap;
   }
 }

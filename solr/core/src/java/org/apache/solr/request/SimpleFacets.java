@@ -871,12 +871,12 @@ public class SimpleFacets {
    * @see #getFieldMissingCount
    * @see #getFacetTermEnumCounts
    */
-  public NamedList<Object> getFacetFieldCounts() throws IOException, SyntaxError {
+  public SimpleOrderedMap<Object> getFacetFieldCounts() throws IOException, SyntaxError {
 
     String[] facetFs = global.getParams(FacetParams.FACET_FIELD);
 
     if (null == facetFs) {
-      return NamedList.emptyNamedList();
+      return  SimpleOrderedMap.emptySimpleOrderedMap();
     }
 
     // Passing a negative number for FACET_THREADS implies an unlimited number of threads is
@@ -891,7 +891,7 @@ public class SimpleFacets {
       fdebugParent.putInfoItem("maxThreads", maxThreads);
     }
 
-    NamedList<Object> res;
+    SimpleOrderedMap<Object> res;
     try {
       // Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
