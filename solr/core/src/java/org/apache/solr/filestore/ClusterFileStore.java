@@ -24,12 +24,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ClusterFileStoreApis;
+import org.apache.solr.client.api.model.FileStoreDirectoryListingResponse;
+import org.apache.solr.client.api.model.FileStoreEntryMetadata;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.common.SolrException;
@@ -139,6 +143,62 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     }
 
     return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
+  public FileStoreDirectoryListingResponse getMetadata(String path) {
+    return getMetadata(path, fileStore);
+  }
+
+  public static FileStoreDirectoryListingResponse getMetadata(String path, FileStore fileStore) {
+    final var dirListingResponse = new FileStoreDirectoryListingResponse();
+    if (path == null) {
+      path = "";
+    }
+
+    FileStore.FileType type = fileStore.getType(path, true);
+    switch (type) {
+      case NOFILE:
+        dirListingResponse.files = Collections.singletonMap(path, null);
+      case METADATA:
+      case FILE:
+        int idx = path.lastIndexOf('/');
+        String fileName = path.substring(idx + 1);
+        String parentPath = path.substring(0, path.lastIndexOf('/'));
+        List<FileStore.FileDetails> l = fileStore.list(parentPath, s -> s.equals(fileName));
+
+        dirListingResponse.files =
+            Collections.singletonMap(path, l.isEmpty() ? null : convertToResponse(l.get(0)));
+      case DIRECTORY:
+        final var directoryContents =
+            fileStore.list(path, null).stream()
+                .map(details -> convertToResponse(details))
+                .collect(Collectors.toList());
+        dirListingResponse.files = Collections.singletonMap(path, directoryContents);
+    }
+
+    return dirListingResponse;
+  }
+
+  // TODO Modify the filestore implementation itself to return this object, so conversion isn't
+  // needed.
+  private static FileStoreEntryMetadata convertToResponse(FileStore.FileDetails details) {
+    final var entryMetadata = new FileStoreEntryMetadata();
+
+    entryMetadata.name = details.getSimpleName();
+    if (details.isDir()) {
+      entryMetadata.dir = true;
+      return entryMetadata;
+    }
+
+    entryMetadata.size = details.size();
+    entryMetadata.timestamp = details.getTimeStamp();
+    if (details.getMetaData() != null) {
+      details.getMetaData().toMap(entryMetadata.unknownProperties());
+    }
+
+    return entryMetadata;
   }
 
   private void doLocalDelete(String filePath) {

@@ -17,6 +17,7 @@
 package org.apache.solr.client.api.endpoint;
 
 import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
+import static org.apache.solr.client.api.util.Constants.OMIT_FROM_CODEGEN_PROPERTY;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,12 +25,14 @@ import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import java.io.InputStream;
 import java.util.List;
+import org.apache.solr.client.api.model.FileStoreDirectoryListingResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 
@@ -55,6 +58,16 @@ public interface ClusterFileStoreApis {
                     })
               })
           InputStream requestBody);
+
+  @GET
+  @Operation(
+      summary = "Retrieve metadata about a file or directory in the filestore.",
+      tags = {"file-store"})
+  @Path("/metadata{path:.+}")
+  FileStoreDirectoryListingResponse getMetadata(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("path")
+          String path);
 
   @DELETE
   @Operation(
