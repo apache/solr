@@ -45,7 +45,7 @@ apache-poi = "5.2.2"
 apache-rat = "0.15"
 apache-tika = "1.28.5"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.2"
+apache-zookeeper = "3.9.3"
 # @keep for version alignment
 apiguardian = "1.1.2"
 aqute-bnd = "6.4.1"
