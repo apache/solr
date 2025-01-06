@@ -77,5 +77,27 @@ teardown() {
   run diff <(jq -c . ${BATS_TEST_TMPDIR}/output.jsonl | sort) <(jq -c . ${BATS_TEST_TMPDIR}/COLL_NAME.jsonl | sort)
   assert_success
   assert_output ""
+}
+
+@test "roundtrip export and import using .javabin and curl command" {
+  run solr start -e techproducts
+  run solr export --format javabin --fields id,name,manu,manu_id_s,cat,features,price,popularity,inStock,store,manufacturedate_dt,payloads --solr-url http://localhost:${SOLR_PORT} --name techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/output"
+  run solr export --fields id,name,manu,manu_id_s,cat,features,price,popularity,inStock,store,manufacturedate_dt,payloads --solr-url "http://localhost:${SOLR_PORT}" --name techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/output"
+
+  assert [ -e ${BATS_TEST_TMPDIR}/output.javabin ]
   
+  run solr create -c COLL_NAME -d sample_techproducts_configs
+  
+  run curl "http://localhost:${SOLR_PORT}/solr/COLL_NAME/update?commit=true" -H 'Content-type:application/javabin' --data-binary "@${BATS_TEST_TMPDIR}/output.javabin"
+
+  assert_output --partial '"status":0'
+  run curl "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*"
+  assert_output --partial '"numFound":32'
+  
+  # We compare the success of the round trip of javabin formatted data using json formatted exports to leverage `diff` command.
+  run solr export --fields id,name,manu,manu_id_s,cat,features,price,popularity,inStock,store,manufacturedate_dt,payloads --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/COLL_NAME"
+
+  run diff <(jq -S . ${BATS_TEST_TMPDIR}/output.json) <(jq -S . ${BATS_TEST_TMPDIR}/COLL_NAME.json)
+  assert_success
+  assert_output ""
 }
