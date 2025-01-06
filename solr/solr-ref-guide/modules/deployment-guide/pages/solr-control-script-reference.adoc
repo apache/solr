@@ -1703,7 +1703,8 @@ The default is `\*:*` which will export all documents.
 |===
 +
 Comma separated list of fields to be exported.
-By default all fields are fetched.
+By default all fields are fetched.   
+If your schema uses `copyFields` and you are reindex the data, then you probably want to specify exactly which fields are being exported to simplify the import process.
 
 `--limit <number of documents>`::
 +
