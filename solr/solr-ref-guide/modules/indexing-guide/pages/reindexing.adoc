@@ -177,7 +177,7 @@ There are a number of third party tools that do this, see https://solr.cool/ for
 
 You can see some examples of this in our automated BATS tests: https://github.com/apache/solr/blob/main/solr/packaging/test/test_roundtrip_export_import.bats
 
-Learn more about xref:deployment-guide:solr-control-script-reference.adoc#exporting-and-importing[Exporting and Importing].
+See the reference guide for xref:deployment-guide:solr-control-script-reference.adoc#exporting-and-importing[Exporting and Importing].
 
 == Changes that Do Not Require Reindex
 
