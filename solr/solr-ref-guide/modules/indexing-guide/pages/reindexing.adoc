@@ -165,6 +165,20 @@ Once the alias is in place and you are satisfied you no longer need the old data
 One advantage of this option is that you can switch back to the old collection if you discover problems our testing did not uncover.
 Of course this option can require more resources until the old collection can be deleted.
 
+=== Exporting/Importing Data from Solr
+
+Sometimes you don't want to run your full ETL pipeline to reindex into another collection, you just want to take the data in your existing collection, export it, and then import it back.
+
+There are a number of third party tools that do this, see https://solr.cool/ for more information.   However, if you want to use what ships with Solr then we have some options:
+
+1. Use `bin/solr export` with the JSON output format (`.json`), and the `bin/solr post` tool to post that data back.
+1. Use `bin/solr export` with the JSON with Lines format (`.jsonl`), and use `curl` to post that data back to Solr via the Json Update Request Handler.
+1. Use `bin/solr export` with Solr's Java binary format (`.javabin`), and use `curl` to post that data back to Solr via the default Update Request Handler.
+
+You can see some examples of this in our automated BATS tests: https://github.com/apache/solr/blob/main/solr/packaging/test/test_roundtrip_export_import.bats
+
+Learn more about xref:deployment-guide:solr-control-script-reference.adoc#exporting-and-importing[Exporting and Importing].
+
 == Changes that Do Not Require Reindex
 
 The types of changes that do not require or strongly indicate reindexing are changes that do not impact the index.
