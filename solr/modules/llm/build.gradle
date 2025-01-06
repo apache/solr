@@ -39,3 +39,9 @@ dependencies {
   testImplementation 'junit:junit'
   testImplementation 'commons-io:commons-io'
 }
+
+// langchain4j has reflection issues, and requires the following permissions
+// https://docs.gradle.org/current/userguide/upgrading_version_7.html#removes_implicit_add_opens_for_test_workers
+tasks.withType(Test).configureEach {
+  jvmArgs(["--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"])
+}
