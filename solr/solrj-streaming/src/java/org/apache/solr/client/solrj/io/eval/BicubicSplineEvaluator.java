@@ -36,7 +36,7 @@ public class BicubicSplineEvaluator extends RecursiveObjectEvaluator implements 
 
     if (objects.length != 3) {
       throw new IOException(
-          "The bicubicSpline function requires three paremeters," + objects.length + " found.");
+          "The bicubicSpline function requires three parameters," + objects.length + " found.");
     }
 
     Object first = objects[0];
@@ -47,7 +47,7 @@ public class BicubicSplineEvaluator extends RecursiveObjectEvaluator implements 
     double[] y = null;
     double[][] grid = null;
 
-    if (first instanceof List && second instanceof List && third instanceof Matrix) {
+    if (first instanceof List && second instanceof List && third instanceof Matrix matrix) {
       @SuppressWarnings({"unchecked"})
       List<Number> xlist = (List<Number>) first;
       x = new double[xlist.size()];
@@ -64,7 +64,6 @@ public class BicubicSplineEvaluator extends RecursiveObjectEvaluator implements 
         y[i] = ylist.get(i).doubleValue();
       }
 
-      Matrix matrix = (Matrix) third;
       grid = matrix.getData();
 
       PiecewiseBicubicSplineInterpolator interpolator = new PiecewiseBicubicSplineInterpolator();

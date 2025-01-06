@@ -23,7 +23,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CollectionParams.ACTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
@@ -43,7 +42,6 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -272,26 +270,6 @@ public class ClusterAPI {
       RoleInfo info = obj.get();
       Map<String, Object> m = info.toMap(new HashMap<>());
       m.put("action", REMOVEROLE.toString());
-      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
-    }
-
-    @Command(name = "set-obj-property")
-    public void setObjProperty(PayloadObj<ClusterPropPayload> obj) {
-      // Not using the object directly here because the API differentiate between {name:null} and {}
-      Map<String, Object> m = obj.getDataMap();
-      ClusterProperties clusterProperties =
-          new ClusterProperties(getCoreContainer().getZkController().getZkClient());
-      try {
-        clusterProperties.setClusterProperties(m);
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
-      }
-    }
-
-    @Command(name = "set-property")
-    public void setProperty(PayloadObj<Map<String, String>> obj) throws Exception {
-      Map<String, Object> m = obj.getDataMap();
-      m.put("action", CLUSTERPROP.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 

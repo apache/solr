@@ -20,8 +20,9 @@ import static org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat.MODE_
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene99.Lucene99Codec.Mode;
+import org.apache.lucene.codecs.lucene912.Lucene912Codec.Mode;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
@@ -238,7 +239,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
         config.get("codecFactory").attr("class"));
     assertTrue(
         "Unexpected configuration of codec factory for this test. Expecting empty element",
-        config.get("codecFactory").getAll(null, (String) null).isEmpty());
+        config.get("codecFactory").getAll(null, Set.of()).isEmpty());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();

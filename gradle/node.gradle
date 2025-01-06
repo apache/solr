@@ -16,7 +16,7 @@
  */
 
 configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(":solr:webapp")]) {
-    apply plugin: "com.github.node-gradle.node"
+    apply plugin: libs.plugins.nodegradle.node.get().pluginId
 
     def npmRegistry = "${ -> propertyOrEnvOrDefault("solr.npm.registry", "SOLR_NPM_REGISTRY", '') }"
     if (!npmRegistry.isEmpty()) {
@@ -34,14 +34,14 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
         }
     }
 
-    ext {
+    project.ext {
         rootNodeDir = "$rootDir/.gradle/node"
         nodeProjectDir = file("$rootNodeDir/$project.name")
     }
 
     node {
         download = true
-        version = "16.20.2" // LTS
+        version = libs.versions.nodejs.get()
 
         def nodeDistUrl = "${ -> propertyOrEnvOrDefault("solr.node.distUrl", "SOLR_NODE_DIST_URL", '') }"
         if (!nodeDistUrl.isEmpty()) {

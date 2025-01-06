@@ -56,7 +56,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
         .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .allowMultiPartPost(random().nextBoolean())
         .withRequestWriter(cborRequestWriter())
-        .withResponseParser(cborResponseparser())
+        .withResponseParser(cborResponseParser())
         .build();
   }
 
@@ -199,7 +199,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @Override
   @Ignore
-  public void testChildDoctransformer() {
+  public void testChildDocTransformer() {
     /*Ignore*/
   }
 
@@ -245,8 +245,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
       @Override
       public ContentWriter getContentWriter(SolrRequest<?> request) {
-        if (request instanceof UpdateRequest) {
-          UpdateRequest updateRequest = (UpdateRequest) request;
+        if (request instanceof UpdateRequest updateRequest) {
           List<SolrInputDocument> docs = updateRequest.getDocuments();
           if (docs == null || docs.isEmpty()) return super.getContentWriter(request);
           return new ContentWriter() {
@@ -278,22 +277,10 @@ public class SolrExampleCborTest extends SolrExampleTests {
       public String getUpdateContentType() {
         return "application/cbor";
       }
-
-      @Override
-      public String getPath(SolrRequest<?> req) {
-        if (req instanceof UpdateRequest) {
-          UpdateRequest updateRequest = (UpdateRequest) req;
-          List<SolrInputDocument> docs = updateRequest.getDocuments();
-          if (docs == null || docs.isEmpty()) return super.getPath(req);
-          return "/update/cbor";
-        } else {
-          return super.getPath(req);
-        }
-      }
     };
   }
 
-  private static ResponseParser cborResponseparser() {
+  private static ResponseParser cborResponseParser() {
     return new ResponseParser() {
 
       @Override
@@ -310,8 +297,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
           NamedList nl = new NamedList();
           m.forEach(
               (k, v) -> {
-                if (v instanceof Map) {
-                  Map map = (Map) v;
+                if (v instanceof Map map) {
                   if ("response".equals(k)) {
                     v = convertResponse((Map) v);
                   } else {

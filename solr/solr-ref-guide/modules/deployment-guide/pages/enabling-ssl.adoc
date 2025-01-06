@@ -132,9 +132,11 @@ They are mutually exclusive and Jetty will select one of them which may not be w
 
 When you start Solr, the `bin/solr` script includes these settings and will pass them as system properties to the JVM.
 
+If you are using SolrCloud, you need to <<Configure ZooKeeper>> before starting Solr.
+
 If you are running Solr in a user-managed cluster or single-node installation, you can skip to <<Start User-Managed Cluster or Single-Node Solr>>.
 
-If you are using SolrCloud, however, you need to <<Configure ZooKeeper>> before starting Solr.
+
 
 === Password Distribution via Hadoop Credential Store
 
@@ -225,7 +227,7 @@ This section assumes you have created and started an external ZooKeeper.
 See xref:zookeeper-ensemble.adoc[] for more information.
 
 The `urlScheme` cluster-wide property needs to be set to `https` before any Solr node starts up.
-The examples below use the `zkcli` tool that comes with Solr to do this.
+The examples below use the `bin/solr` tool that comes with Solr to do this.
 
 [tabs#zkclusterprops]
 ======
@@ -234,7 +236,7 @@ The examples below use the `zkcli` tool that comes with Solr to do this.
 ====
 [source,terminal]
 ----
-$ bin/solr cluster --property urlSchema --value https -z server1:2181,server2:2181,server3:2181
+$ bin/solr cluster --property urlSchema --value https --zk-host server1:2181,server2:2181,server3:2181
 ----
 ====
 
@@ -243,12 +245,12 @@ Windows::
 ====
 [source,powershell]
 ----
-C:\> bin/solr.cmd --property urlSchema --value https -z server1:2181,server2:2181,server3:2181
+C:\> bin/solr.cmd --property urlSchema --value https --zk-host server1:2181,server2:2181,server3:2181
 ----
 ====
 ======
 
-Be sure to use the correct `zkhost` value for your system.
+Be sure to use the correct `--zk-host` value for your system.
 If you have set up your ZooKeeper ensemble to use a xref:taking-solr-to-production.adoc#zookeeper-chroot[chroot for Solr], make sure to include it in the `zkHost` string, e.g., `--zk-host server1:2181,server2:2181,server3:2181/solr`.
 
 === Update Cluster Properties for Existing Collections
@@ -267,6 +269,37 @@ This command only needs to be run on one node of the cluster, the change will ap
 Once this and all other steps are complete, you can go ahead and start Solr.
 
 == Starting Solr After Enabling SSL
+
+=== Start SolrCloud
+
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from all of the `bin/solr`/`bin\solr.cmd` commands below.
+
+Start each Solr node with the Solr control script as shown in the examples below.
+Customize the values for the parameters shown as necessary and add any used in your system.
+
+If you created the SSL key without all DNS names or IP addresses on which Solr nodes run, you can tell Solr to skip hostname verification for inter-node communications by setting the `-Dsolr.ssl.checkPeerName=false` system property.
+
+[tabs#cloud]
+======
+*nix::
++
+====
+[source,terminal]
+----
+$ bin/solr start --solr-home cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
+----
+====
+
+Windows::
++
+====
+[source,powershell]
+----
+C:\> bin\solr.cmd --solr-home cloud\node1 -z server1:2181,server2:2181,server3:2181
+
+----
+====
+======
 
 === Start User-Managed Cluster or Single-Node Solr
 
@@ -290,37 +323,6 @@ Windows::
 [source,powershell]
 ----
 C:\> bin\solr.cmd -p 8984
-----
-====
-======
-
-=== Start SolrCloud
-
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from all of the `bin/solr`/`bin\solr.cmd` commands below.
-
-Start each Solr node with the Solr control script as shown in the examples below.
-Customize the values for the parameters shown as necessary and add any used in your system.
-
-If you created the SSL key without all DNS names or IP addresses on which Solr nodes run, you can tell Solr to skip hostname verification for inter-node communications by setting the `-Dsolr.ssl.checkPeerName=false` system property.
-
-[tabs#cloud]
-======
-*nix::
-+
-====
-[source,terminal]
-----
-$ bin/solr start --cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
-----
-====
-
-Windows::
-+
-====
-[source,powershell]
-----
-C:\> bin\solr.cmd --cloud -s cloud\node1 -z server1:2181,server2:2181,server3:2181
-
 ----
 ====
 ======
@@ -437,7 +439,7 @@ Use `bin/solr post` to index some example documents to the SolrCloud collection 
 
 [source,console]
 ----
-$ bin/solr post --solr-update-url https://localhost:8984/solr/mycollection/update example/exampledocs/*.xml
+$ bin/solr post --solr-url https://localhost:8984 --name mycollection example/exampledocs/*.xml
 ----
 
 === Query Using curl

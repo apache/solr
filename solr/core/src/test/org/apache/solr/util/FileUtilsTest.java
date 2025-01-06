@@ -17,15 +17,56 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.nio.file.Path;
 import org.apache.solr.SolrTestCase;
+import org.junit.Test;
 
 public class FileUtilsTest extends SolrTestCase {
 
-  public void testResolve() {
-    String cwd = new File(".").getAbsolutePath();
-    assertEquals(new File("conf/data"), FileUtils.resolvePath(new File("conf"), "data"));
-    assertEquals(
-        new File(cwd + "/conf/data"), FileUtils.resolvePath(new File(cwd + "/conf"), "data"));
-    assertEquals(new File(cwd + "/data"), FileUtils.resolvePath(new File("conf"), cwd + "/data"));
+  @Test
+  public void testDetectsPathEscape() {
+    final var parent = Path.of(".");
+
+    // Allows simple child
+    assertTrue(FileUtils.isPathAChildOfParent(parent, parent.resolve("child")));
+
+    // Allows "./" prefixed child
+    assertTrue(FileUtils.isPathAChildOfParent(parent, parent.resolve(buildPath(".", "child"))));
+
+    // Allows nested child
+    assertTrue(
+        FileUtils.isPathAChildOfParent(parent, parent.resolve(buildPath("nested", "child"))));
+
+    // Allows backtracking, provided it stays "under" parent
+    assertTrue(
+        FileUtils.isPathAChildOfParent(
+            parent, parent.resolve(buildPath("child1", "..", "child2"))));
+    assertTrue(
+        FileUtils.isPathAChildOfParent(
+            parent, parent.resolve(buildPath("child", "grandchild1", "..", "grandchild2"))));
+
+    // Prevents identical path
+    assertFalse(FileUtils.isPathAChildOfParent(parent, parent));
+
+    // Detects sibling of parent
+    assertFalse(FileUtils.isPathAChildOfParent(parent, parent.resolve(buildPath("..", "sibling"))));
+
+    // Detects "grandparent" of parent
+    assertFalse(FileUtils.isPathAChildOfParent(parent, parent.resolve("..")));
+
+    // Detects many-layered backtracking
+    assertFalse(
+        FileUtils.isPathAChildOfParent(parent, parent.resolve(buildPath("..", "..", "..", ".."))));
+  }
+
+  private static String buildPath(String... pathSegments) {
+    final var sb = new StringBuilder();
+    for (int i = 0; i < pathSegments.length; i++) {
+      sb.append(pathSegments[i]);
+      if (i < pathSegments.length - 1) {
+        sb.append(File.separator);
+      }
+    }
+    return sb.toString();
   }
 }

@@ -105,8 +105,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (o instanceof TestRankQuery) {
-        TestRankQuery trq = (TestRankQuery) o;
+      if (o instanceof TestRankQuery trq) {
 
         return (trq.q.equals(q) && trq.collector == collector);
       }

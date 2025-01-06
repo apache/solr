@@ -54,7 +54,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   @Before
   public void prepareCluster() throws Exception {
     configureCluster(CLUSTER_SIZE)
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+        .addConfig("config", getFile("solrj/solr/collection1/conf"))
         .configure();
     executor = ExecutorUtil.newMDCAwareCachedThreadPool("backgroundWatchers");
   }
@@ -180,7 +180,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCanWaitForNonexistantCollection() throws Exception {
+  public void testCanWaitForNonexistentCollection() throws Exception {
 
     Future<Boolean> future =
         waitInBackground("delayed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, Objects::nonNull);

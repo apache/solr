@@ -225,9 +225,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     // calculate segment-local counts
     int doc;
-    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
-      FieldCacheImpl.SortedDocValuesImpl.Iter fc =
-          (FieldCacheImpl.SortedDocValuesImpl.Iter) singleDv;
+    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter fc) {
       while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         final int segOrd = fc.getOrd(doc);
         if (segOrd >= 0) {
@@ -340,10 +338,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       throws IOException {
     final SegCountGlobal segCounter = getSegCountGlobal(disi, singleDv);
     int doc;
-    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
+    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter fc) {
 
-      FieldCacheImpl.SortedDocValuesImpl.Iter fc =
-          (FieldCacheImpl.SortedDocValuesImpl.Iter) singleDv;
       while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         int segOrd = fc.getOrd(doc);
         if (segOrd < 0) continue;

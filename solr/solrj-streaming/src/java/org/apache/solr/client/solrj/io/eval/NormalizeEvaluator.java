@@ -55,8 +55,7 @@ public class NormalizeEvaluator extends RecursiveObjectEvaluator implements OneV
                           .toArray()))
           .boxed()
           .collect(Collectors.toList());
-    } else if (value instanceof Matrix) {
-      Matrix matrix = (Matrix) value;
+    } else if (value instanceof Matrix matrix) {
       double[][] data = matrix.getData();
       double[][] standardized = new double[data.length][];
       for (int i = 0; i < data.length; i++) {

@@ -1311,9 +1311,8 @@ public abstract class FieldType extends FieldProperties {
   protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
     SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<>();
 
-    if (analyzer instanceof TokenizerChain) {
+    if (analyzer instanceof TokenizerChain tokenizerChain) {
       Map<String, String> factoryArgs;
-      TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
       CharFilterFactory[] charFilterFactories = tokenizerChain.getCharFilterFactories();
       if (0 < charFilterFactories.length) {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();

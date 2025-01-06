@@ -41,9 +41,9 @@ public class ExecutorUtilTest extends SolrTestCase {
 
   /**
    * The maximum amount of time we're willing to let the test wait for any type of blocking action,
-   * no matter ow slow our CPU is. Any thing that exceeds this time is presumably a bug
+   * no matter ow slow our CPU is. Anything that exceeds this time is presumably a bug
    */
-  private static final long MAX_SANE_WAIT_DURRATION_MS = 2_000;
+  private static final long MAX_SANE_WAIT_DURATION_MS = 2_000;
 
   /** Test that if there is a non interruptable thread that awaitTermination eventually returns. */
   @Test
@@ -74,7 +74,7 @@ public class ExecutorUtilTest extends SolrTestCase {
 
       // Worker should finish if we let it
       w.tellWorkerToFinish();
-      assertTrue(f.get(MAX_SANE_WAIT_DURRATION_MS, TimeUnit.MILLISECONDS));
+      assertTrue(f.get(MAX_SANE_WAIT_DURATION_MS, TimeUnit.MILLISECONDS));
     } finally {
       w.tellWorkerToFinish();
       ExecutorUtil.shutdownNowAndAwaitTermination(executorService);
@@ -99,10 +99,10 @@ public class ExecutorUtilTest extends SolrTestCase {
       ExecutorUtil.awaitTermination(
           executorService, MAX_AWAIT_TERMINATION_ARG_MS, TimeUnit.MILLISECONDS);
 
-      // Worker should finish on it's own after the interupt
+      // Worker should finish on its own after the interupt
       assertTrue(
           "Worker not interupted in a sane amount of time", w.awaitWorkerInteruptedAtLeastOnce());
-      assertFalse(f.get(MAX_SANE_WAIT_DURRATION_MS, TimeUnit.MILLISECONDS));
+      assertFalse(f.get(MAX_SANE_WAIT_DURATION_MS, TimeUnit.MILLISECONDS));
       assertTrue("test sanity check: WTF? how did we get here?", w.getNumberOfInterupts() > 0);
 
     } finally {
@@ -163,7 +163,7 @@ public class ExecutorUtilTest extends SolrTestCase {
   }
 
   private static final class Worker implements Callable<Boolean> {
-    // how we communiate out to our caller
+    // how we communicate out to our caller
     private final CountDownLatch taskStartedLatch = new CountDownLatch(1);
     private final CountDownLatch gotFirstInteruptLatch = new CountDownLatch(1);
     private final AtomicInteger interruptCount = new AtomicInteger(0);
@@ -178,12 +178,12 @@ public class ExecutorUtilTest extends SolrTestCase {
 
     /** Returns false if worker doesn't start in a sane amount of time */
     public boolean awaitWorkerStart() throws InterruptedException {
-      return taskStartedLatch.await(MAX_SANE_WAIT_DURRATION_MS, TimeUnit.MILLISECONDS);
+      return taskStartedLatch.await(MAX_SANE_WAIT_DURATION_MS, TimeUnit.MILLISECONDS);
     }
 
-    /** Returns false if worker didn't recieve interupt in a sane amount of time */
+    /** Returns false if worker didn't receive interupt in a sane amount of time */
     public boolean awaitWorkerInteruptedAtLeastOnce() throws InterruptedException {
-      return gotFirstInteruptLatch.await(MAX_SANE_WAIT_DURRATION_MS, TimeUnit.MILLISECONDS);
+      return gotFirstInteruptLatch.await(MAX_SANE_WAIT_DURATION_MS, TimeUnit.MILLISECONDS);
     }
 
     public int getNumberOfInterupts() {
@@ -196,15 +196,15 @@ public class ExecutorUtilTest extends SolrTestCase {
 
     @Override
     public Boolean call() {
-      // aboslute last resort timeout to prevent infinite while loop
+      // absolute last resort timeout to prevent infinite while loop
       final TimeOut threadTimeout =
-          new TimeOut(MAX_SANE_WAIT_DURRATION_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+          new TimeOut(MAX_SANE_WAIT_DURATION_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
 
       while (!threadTimeout.hasTimedOut()) {
         try {
 
           // this must be inside the try block, so we'll still catch the InterruptedException if our
-          // caller shutsdown & awaits termination before we get a chance to start await'ing...
+          // caller shuts down & awaits termination before we get a chance to start awaiting...
           taskStartedLatch.countDown();
 
           if (allowedToFinishLatch.await(

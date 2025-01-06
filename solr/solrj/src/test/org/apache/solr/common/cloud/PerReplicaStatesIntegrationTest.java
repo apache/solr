@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
         + "org.apache.solr.common.cloud=INFO;"
         + "org.apache.solr.cloud.api.collections=INFO;"
         + "org.apache.solr.cloud.overseer=INFO")
+@SolrCloudTestCase.NoPrs
 public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -64,7 +65,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
             .addConfig(
                 "conf",
                 getFile("solrj")
-                    .toPath()
                     .resolve("solr")
                     .resolve("configsets")
                     .resolve("streaming")
@@ -132,7 +132,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
             .addConfig(
                 "conf",
                 getFile("solrj")
-                    .toPath()
                     .resolve("solr")
                     .resolve("configsets")
                     .resolve("streaming")
@@ -163,7 +162,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           PerReplicaStatesOps.fetch(collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
       assertEquals(2, prs.states.size());
       c = cluster.getZkStateReader().getCollection(testCollection);
-      prs.states.forEachEntry((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
+      prs.states.forEach((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
 
       String replicaName = null;
       for (Replica r : c.getSlice("shard1").getReplicas()) {
@@ -225,7 +224,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
         prs =
             PerReplicaStatesOps.fetch(
                 collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
-        prs.states.forEachEntry((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
+        prs.states.forEach((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
       }
 
     } finally {
@@ -241,7 +240,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
             .addConfig(
                 "conf",
                 getFile("solrj")
-                    .toPath()
                     .resolve("solr")
                     .resolve("configsets")
                     .resolve("streaming")
@@ -285,7 +283,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
                 PerReplicaStates prs2 =
                     PerReplicaStatesOps.fetch(
                         DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
-                prs2.states.forEachEntry(
+                prs2.states.forEach(
                     (r, newState) -> {
                       if (newState.getDuplicate() != null) anyFail.set(true);
                     });
@@ -306,7 +304,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
             .addConfig(
                 "conf",
                 getFile("solrj")
-                    .toPath()
                     .resolve("solr")
                     .resolve("configsets")
                     .resolve("streaming")

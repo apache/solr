@@ -54,10 +54,8 @@ The authentication plugins that ship with Solr are:
 [width=100%,cols="1,1",frame=none,grid=none,stripes=none]
 |===
 | xref:basic-authentication-plugin.adoc[]
-| xref:kerberos-authentication-plugin.adoc[]
 | xref:jwt-authentication-plugin.adoc[]
 | xref:cert-authentication-plugin.adoc[]
-| xref:hadoop-authentication-plugin.adoc[]
 |
 |===
 // end::list-of-authentication-plugins[]

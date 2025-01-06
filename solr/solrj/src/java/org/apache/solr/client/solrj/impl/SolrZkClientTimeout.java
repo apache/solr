@@ -18,6 +18,8 @@ package org.apache.solr.client.solrj.impl;
 
 public class SolrZkClientTimeout {
   public static final int DEFAULT_ZK_CLIENT_TIMEOUT = Integer.getInteger("zkClientTimeout", 30000);
+  // Make this overridable for tests. A lot take 15 seconds to timeout because of this.
+  // or CURATOR-720
   public static final int DEFAULT_ZK_CONNECT_TIMEOUT =
       Integer.getInteger("zkConnectTimeout", 15000);
 

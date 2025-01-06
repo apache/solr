@@ -16,8 +16,9 @@
 Welcome to the Apache Solr project!
 -----------------------------------
 
-Solr is the popular, blazing fast open source search platform for all your
-enterprise, e-commerce, and analytics needs, built on Apache Lucene.
+Solr is the blazing-fast, open source, multi-modal search platform built
+on Apache Lucene. It powers full-text, vector, and geospatial search at
+many of the world's largest organizations.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
@@ -61,6 +62,10 @@ server/
 
 bin/
    Scripts to startup, manage and interact with Solr instances.
+
+cross-dc-manager/
+  (Not included in the "slim" release)
+  A standalone application, included under `bin/`, that manages Cross-Datacenter indexing across SolrClouds.
 
 example/
   Contains example documents and an alternative Solr home

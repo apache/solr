@@ -85,7 +85,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         int childNum = 0;
         boolean isSingleVal = !(field.getValue() instanceof Collection);
         for (Object val : field) {
-          if (!(val instanceof SolrInputDocument)) {
+          if (!(val instanceof SolrInputDocument cDoc)) {
             // either all collection items are child docs or none are.
             break;
           }
@@ -101,7 +101,6 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
                     + "' , which is reserved for the nested URP");
           }
           final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
-          SolrInputDocument cDoc = (SolrInputDocument) val;
           if (!cDoc.containsKey(uniqueKeyFieldName)) {
             String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
             cDoc.setField(

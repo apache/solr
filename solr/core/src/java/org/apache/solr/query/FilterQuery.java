@@ -85,8 +85,7 @@ public class FilterQuery extends ExtendedQueryBase {
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof FilterQuery)) return false;
-    FilterQuery fq = (FilterQuery) obj;
+    if (!(obj instanceof FilterQuery fq)) return false;
     return this.q.equals(fq.q);
   }
 
@@ -119,13 +118,12 @@ public class FilterQuery extends ExtendedQueryBase {
       throws IOException {
     // SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
 
-    if (!(searcher instanceof SolrIndexSearcher)) {
+    if (!(searcher instanceof SolrIndexSearcher solrSearcher)) {
       // delete-by-query won't have SolrIndexSearcher
       // note: CSQ has some optimizations so we wrap it even though unnecessary given 0 boost
       return new ConstantScoreQuery(q).createWeight(searcher, scoreMode, 0f);
     }
 
-    SolrIndexSearcher solrSearcher = (SolrIndexSearcher) searcher;
     DocSet docs = solrSearcher.getDocSet(q);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 

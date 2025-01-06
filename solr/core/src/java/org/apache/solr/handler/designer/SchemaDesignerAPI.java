@@ -241,9 +241,10 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
           "File '" + file + "' not found in configSet: " + configSet);
     }
 
-    byte[] data =
-        DefaultSampleDocumentsLoader.streamAsBytes(
-            extractSingleContentStream(req, true).getStream());
+    byte[] data;
+    try (InputStream in = extractSingleContentStream(req, true).getStream()) {
+      data = in.readAllBytes();
+    }
     Exception updateFileError = null;
     boolean requestIsTrusted =
         ConfigSetAPIBase.isTrusted(req.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
@@ -253,7 +254,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       try {
         InMemoryResourceLoader loader =
             new InMemoryResourceLoader(coreContainer, mutableId, SOLR_CONFIG_XML, data);
-        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, requestIsTrusted, null);
+        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, null);
       } catch (Exception exc) {
         updateFileError = exc;
       }

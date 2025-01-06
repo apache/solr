@@ -1265,7 +1265,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .get(0)
             .request(
                 new StreamingUpdateRequest(
-                        "/update", getFile("books_numeric_ids.csv").toPath(), "application/csv")
+                        "/update", getFile("books_numeric_ids.csv"), "application/csv")
                     .setCommitWithin(900000)
                     .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
 
