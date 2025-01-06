@@ -1,0 +1,88 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # 1. Security updates (daily, no PR limit)
+  # This configuration is used for security-critical dependency updates.
+  - package-ecosystem: "gradle"
+    directory: "/"
+    # Security updates should not specify a target-branch
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[SECURITY]"
+    labels:
+      - "dependencies"
+      - "cat:security"
+    # Setting limit to 0 disables version-updates
+    open-pull-requests-limit: 0
+    groups:
+      # Group calcite dependencies together in same PR
+      calcite:
+        patterns:
+          - "org.apache.calcite*"
+      # Group httpcomponents dependencies together in same PR
+      httpcomponents:
+        patterns:
+          - "org.apache.httpcomponents*"
+
+  # 2. Non-security updates (bi-weekly, max 100 PRs)
+  # This configuration is used for regular dependency updates.
+  - package-ecosystem: "gradle"
+    directory: "/"
+    # Add target-branch as a workaround to allow two configurations of
+    # the same package-ecosystem, directory and branch
+    # target-branch can therefore be removed after https://github.com/dependabot/dependabot-core/issues/1778
+    target-branch: main
+    schedule:
+      interval: "weekly"
+      day:
+        - "tuesday"
+        - "friday"
+    commit-message:
+      prefix: "[DEPENDENCY]"
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 10
+    groups:
+      # Group calcite dependencies together in same PR
+      calcite:
+        patterns:
+          - "org.apache.calcite*"
+      # Group httpcomponents dependencies together in same PR
+      httpcomponents:
+        patterns:
+          - "org.apache.httpcomponents*"
+    ignore:
+      # Ignore noisy dependencies in weekly checks
+      #- dependency-name: "software.amazon.awssdk*"
+      #- dependency-name: "com.google.cloud*"
+      # Ignore major version upgrades for Jetty (requires manual update)
+      - dependency-name: "org.eclipse.jetty*"
+        update-types: ["version-update:semver-major"]
+
+  # TODO Enable noisy updates once three configurations can be provided,
+  #      that is, when https://github.com/dependabot/dependabot-core/issues/1778 is fixed
+
+  # 3. Noisy non-security updates (monthly, max 100 PRs)
+  # This configuration is used for all dependencies with very frequent updates.
+  #- package-ecosystem: "gradle"
+  #  directory: "/"
+  #  # Add target-branch as a workaround to allow two configurations of
+  #  # the same package-ecosystem, directory and branch
+  #  # target-branch can therefore be removed after https://github.com/dependabot/dependabot-core/issues/1778
+  #  target-branch: main
+  #  schedule:
+  #    interval: "monthly"
+  #  commit-message:
+  #    prefix: "[DEPENDENCY]"
+  #  labels:
+  #    - "dependencies"
+  #  open-pull-requests-limit: 5
+  #  allow:
+  #    #  Dependencies added here have to be ignored in 2. configuration
+  #    - dependency-name: "software.amazon.awssdk*"
+  #    - dependency-name: "com.google.cloud*"
