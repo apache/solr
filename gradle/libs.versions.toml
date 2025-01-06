@@ -32,7 +32,7 @@ apache-commons-math3 = "3.6.1"
 # @keep for version alignment
 apache-commons-text = "1.12.0"
 apache-curator = "5.7.1"
-apache-hadoop = "3.4.0"
+apache-hadoop = "3.4.1"
 apache-hadoop-thirdparty = "1.2.0"
 apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
