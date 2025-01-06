@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
+import org.apache.solr.client.api.model.RestoreCollectionRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -46,15 +47,15 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit tests for {@link RestoreCollectionAPI} */
+/** Unit tests for {@link RestoreCollection} */
 public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
-  private static RestoreCollectionAPI restoreCollectionAPI;
+  private static RestoreCollection restoreCollectionAPI;
 
   @BeforeClass
   public static void setUpApi() {
     restoreCollectionAPI =
-        new RestoreCollectionAPI(
+        new RestoreCollection(
             new CoreContainer(
                 new NodeConfig.NodeConfigBuilder("testnode", createTempDir()).build()),
             new LocalSolrQueryRequest(null, new NamedList<>()),
@@ -63,7 +64,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfBackupNameMissing() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollection";
     final SolrException thrown =
         expectThrows(
@@ -92,7 +93,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
     // No 'collection' set on the requestBody
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     final SolrException thrown =
         expectThrows(
             SolrException.class,
@@ -106,7 +107,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfProvidedCollectionNameIsInvalid() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "invalid$collection@name";
     final SolrException thrown =
         expectThrows(
@@ -122,7 +123,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreatesValidRemoteMessageForExistingCollectionRestore() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollectionName";
     requestBody.location = "/some/location/path";
     requestBody.backupId = 123;
@@ -145,7 +146,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreatesValidRemoteMessageForNewCollectionRestore() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollectionName";
     requestBody.location = "/some/location/path";
     requestBody.backupId = 123;
@@ -197,8 +198,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     v1Params.add("createNodeSet", "node1,node2");
     v1Params.add("createNodeSet.shuffle", "false");
 
-    final var requestBody =
-        RestoreCollectionAPI.RestoreCollectionRequestBody.fromV1Params(v1Params);
+    final var requestBody = RestoreCollection.createRequestBodyFromV1Params(v1Params);
 
     assertEquals("someCollectionName", requestBody.collection);
     assertEquals("/some/location/str", requestBody.location);

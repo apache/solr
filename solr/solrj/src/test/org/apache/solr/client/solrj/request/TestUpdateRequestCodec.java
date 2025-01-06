@@ -110,6 +110,9 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     assertEquals("b", updateUnmarshalled.getParams().get("a"));
   }
 
+  // Allow method reference to return a reference to a functional interface (Iterable<String>),
+  // rather than a reference to a List<String> object
+  @SuppressWarnings("UnnecessaryMethodReference")
   @Test
   public void testIterable() throws IOException {
     final List<String> values = new ArrayList<>();

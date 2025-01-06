@@ -119,10 +119,13 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
+import org.apache.solr.client.api.model.ListCollectionSnapshotsResponse;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
+import org.apache.solr.client.api.model.SetClusterPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
@@ -140,7 +143,6 @@ import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetComma
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -170,9 +172,10 @@ import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
+import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
-import org.apache.solr.handler.admin.api.CollectionStatusAPI;
-import org.apache.solr.handler.admin.api.CreateAliasAPI;
+import org.apache.solr.handler.admin.api.CollectionStatus;
+import org.apache.solr.handler.admin.api.CreateAlias;
 import org.apache.solr.handler.admin.api.CreateCollection;
 import org.apache.solr.handler.admin.api.CreateCollectionBackup;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshot;
@@ -190,7 +193,7 @@ import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
-import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
+import org.apache.solr.handler.admin.api.ListCollectionSnapshots;
 import org.apache.solr.handler.admin.api.ListCollections;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.MigrateReplicas;
@@ -200,7 +203,7 @@ import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNode;
-import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
+import org.apache.solr.handler.admin.api.RestoreCollection;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -536,11 +539,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP,
                   ColStatus.SIZE_INFO_PROP);
 
-          new ColStatus(
-                  h.coreContainer.getSolrClientCache(),
-                  h.coreContainer.getZkController().getZkStateReader().getClusterState(),
-                  new ZkNodeProps(props))
-              .getColStatus(rsp.getValues());
+          CollectionStatus.populateColStatusData(
+              h.coreContainer, new ZkNodeProps(props), rsp.getValues());
           return null;
         }),
     DELETE_OP(
@@ -614,10 +614,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATEALIAS_OP(
         CREATEALIAS,
         (req, rsp, h) -> {
-          final CreateAliasAPI.CreateAliasRequestBody reqBody =
-              CreateAliasAPI.createFromSolrParams(req.getParams());
+          final CreateAliasRequestBody reqBody = CreateAlias.createFromSolrParams(req.getParams());
           final SolrJerseyResponse response =
-              new CreateAliasAPI(h.coreContainer, req, rsp).createAlias(reqBody);
+              new CreateAlias(h.coreContainer, req, rsp).createAlias(reqBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -770,11 +769,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CLUSTERPROP_OP(
         CLUSTERPROP,
         (req, rsp, h) -> {
+          ClusterProperty clusterProperty = new ClusterProperty(req.getCoreContainer(), req, rsp);
+          SetClusterPropertyRequestBody setClusterPropertyRequestBody =
+              new SetClusterPropertyRequestBody();
           String name = req.getParams().required().get(NAME);
-          String val = req.getParams().get(VALUE_LONG);
-          ClusterProperties cp =
-              new ClusterProperties(h.coreContainer.getZkController().getZkClient());
-          cp.setClusterProperty(name, val);
+          setClusterPropertyRequestBody.value = req.getParams().get(VALUE_LONG);
+          clusterProperty.createOrUpdateClusterProperty(name, setClusterPropertyRequestBody);
           return null;
         }),
     COLLECTIONPROP_OP(
@@ -1063,7 +1063,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     RESTORE_OP(
         RESTORE,
         (req, rsp, h) -> {
-          final var response = RestoreCollectionAPI.invokeFromV1Params(req, rsp, h.coreContainer);
+          final var response = RestoreCollection.invokeFromV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1148,15 +1148,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           req.getParams().required().check(COLLECTION_PROP);
 
-          final ListCollectionSnapshotsAPI listCollectionSnapshotsAPI =
-              new ListCollectionSnapshotsAPI(h.coreContainer, req, rsp);
+          final ListCollectionSnapshots listCollectionSnapshotsAPI =
+              new ListCollectionSnapshots(h.coreContainer, req, rsp);
 
-          final ListCollectionSnapshotsAPI.ListSnapshotsResponse response =
+          final ListCollectionSnapshotsResponse response =
               listCollectionSnapshotsAPI.listSnapshots(req.getParams().get(COLLECTION_PROP));
 
           NamedList<Object> snapshots = new NamedList<>();
-          for (CollectionSnapshotMetaData meta : response.snapshots.values()) {
-            snapshots.add(meta.getName(), meta.toNamedList());
+          for (Object meta : response.snapshots.values()) {
+            final var metaTyped = (CollectionSnapshotMetaData) meta;
+            snapshots.add(metaTyped.getName(), metaTyped.toNamedList());
           }
 
           rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
@@ -1356,7 +1357,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateReplica.class,
         AddReplicaProperty.class,
         BalanceShardUnique.class,
-        CreateAliasAPI.class,
+        CollectionStatus.class,
+        CreateAlias.class,
         CreateCollection.class,
         CreateCollectionBackup.class,
         CreateShard.class,
@@ -1375,15 +1377,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ReplaceNode.class,
         MigrateReplicas.class,
         BalanceReplicas.class,
-        RestoreCollectionAPI.class,
+        RestoreCollection.class,
         SyncShard.class,
         CollectionProperty.class,
         DeleteNode.class,
         ListAliases.class,
         AliasProperty.class,
-        ListCollectionSnapshotsAPI.class,
+        ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
-        DeleteCollectionSnapshot.class);
+        DeleteCollectionSnapshot.class,
+        ClusterProperty.class);
   }
 
   @Override
@@ -1394,7 +1397,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
     return apis;
   }
 

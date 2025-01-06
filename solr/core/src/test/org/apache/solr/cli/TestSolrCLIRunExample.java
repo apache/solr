@@ -115,11 +115,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       if (exe.endsWith("solr")) {
         String[] args = cmd.getArguments();
         if ("start".equals(args[0])) {
-          if (!hasFlag("--cloud", args) && !hasFlag("-c", args)) {
+          if (hasFlag("--user-managed", args)) {
             return startStandaloneSolr(args);
           }
 
-          String solrHomeDir = getArg("-s", args);
+          String solrHomeDir = getArg("--solr-home", args);
           int port = Integer.parseInt(getArg("-p", args));
           String solrxml =
               Files.readString(
@@ -226,7 +226,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       int port = Integer.parseInt(getArg("-p", args));
 
-      File solrHomeDir = new File(getArg("-s", args));
+      File solrHomeDir = new File(getArg("--solr-home", args));
 
       System.setProperty("host", "localhost");
       System.setProperty("jetty.port", String.valueOf(port));
@@ -336,9 +336,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   protected void testExample(String exampleName) throws Exception {
+    // Occasionally we want to test in User Managed mode, not the default SolrCloud mode.
+    String testStandaloneMode = LuceneTestCase.rarely() ? "--user-managed" : "";
     File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
-    if (!solrHomeDir.isDirectory())
+    if (!solrHomeDir.isDirectory()) {
       fail(solrHomeDir.getAbsolutePath() + " not found and is required to run this test!");
+    }
 
     Path tmpDir = createTempDir();
     File solrExampleDir = tmpDir.toFile();
@@ -355,10 +358,15 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       String[] toolArgs =
           new String[] {
-            "-e", exampleName,
-            "--server-dir", solrServerDir.getAbsolutePath(),
-            "--example-dir", solrExampleDir.getAbsolutePath(),
-            "-p", String.valueOf(bindPort)
+            "-e",
+            exampleName,
+            "--server-dir",
+            solrServerDir.getAbsolutePath(),
+            "--example-dir",
+            solrExampleDir.getAbsolutePath(),
+            "-p",
+            String.valueOf(bindPort),
+            testStandaloneMode
           };
 
       // capture tool output to stdout
@@ -394,15 +402,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       // dump all the output written by the SolrCLI commands to stdout
       // System.out.println("\n\n"+toolOutput+"\n\n");
-
-      File exampleSolrHomeDir = new File(solrExampleDir, exampleName + "/solr");
-      assertTrue(
-          exampleSolrHomeDir.getAbsolutePath()
-              + " not found! run "
-              + exampleName
-              + " example failed; output: "
-              + toolOutput,
-          exampleSolrHomeDir.isDirectory());
 
       if ("techproducts".equals(exampleName)) {
         try (SolrClient solrClient =
@@ -498,7 +497,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // verify Solr is running on the expected port and verify the collection exists
     String solrUrl = "http://localhost:" + bindPort + "/solr";
-    if (!SolrCLI.safeCheckCollectionExists(solrUrl, collectionName, null)) {
+    if (!CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
           "After running Solr cloud example, test collection '"
               + collectionName
@@ -584,7 +583,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "--server-dir", solrServerDir.getAbsolutePath(),
           "--example-dir", solrExampleDir.getAbsolutePath(),
           "-p", String.valueOf(bindPort),
-          "-script", toExecute.getAbsolutePath()
+          "--script", toExecute.getAbsolutePath()
         };
 
     // capture tool output to stdout

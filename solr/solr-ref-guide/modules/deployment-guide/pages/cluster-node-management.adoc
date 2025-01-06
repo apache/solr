@@ -246,36 +246,40 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 V2 API::
 +
 ====
+To create or update a cluster property:
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/json' -d '
+curl -X PUT http://localhost:8983/api/cluster/properties/urlScheme -H 'Content-Type: application/json' -d '
   {
-    "set-property": {
-      "name": "urlScheme",
-      "val": "https"
-    }
+    "value": "https"
   }
 '
+----
+
+To delete an existing cluster property:
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/cluster/properties/urlScheme
 ----
 ====
 ======
 
 === CLUSTERPROP Parameters
 
-`name`::
+`name` (v1)::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-The name of the property.
+The name of the property.  Appears in the path of v2 requests.
 Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.
 
-`val`::
+`val` (v1), `value` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -329,19 +333,17 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '
+curl -X PUT -H 'Content-type:application/json' --data-binary '
 {
-  "set-obj-property": {
-    "defaults" : {
-      "collection": {
-        "numShards": 2,
-        "nrtReplicas": 1,
-        "tlogReplicas": 1,
-        "pullReplicas": 1
-      }
+  "defaults" : {
+    "collection": {
+      "numShards": 2,
+      "nrtReplicas": 1,
+      "tlogReplicas": 1,
+      "pullReplicas": 1
     }
   }
-}' http://localhost:8983/api/cluster
+}' http://localhost:8983/api/cluster/properties
 ----
 ====
 ======
@@ -350,26 +352,30 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '
+curl -X PUT -H 'Content-type:application/json' --data-binary '
 {
-  "set-obj-property": {
-    "defaults" : {
-      "collection": {
-        "nrtReplicas": null
-      }
+  "defaults" : {
+    "collection": {
+      "nrtReplicas": null
     }
   }
-}' http://localhost:8983/api/cluster
+}' http://localhost:8983/api/cluster/properties
 ----
 
 *Unset all values in `defaults`*
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '
-{ "set-obj-property" : {
-    "defaults" : null
-}' http://localhost:8983/api/cluster
+curl -X PUT -H 'Content-type:application/json' --data-binary '
+{
+  "defaults" : null
+}' http://localhost:8983/api/cluster/properties
 ----
+or
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/cluster/properties/defaults
+----
+
 
 === Default Shard Preferences
 
@@ -379,16 +385,102 @@ Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_P
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '
+curl -X PUT -H 'Content-type:application/json' --data-binary '
 {
-  "set-property" : {
-    "name" : "defaultShardPreferences",
-    "val" : "node.sysprop:sysprop.rack"
-  }
-}' http://localhost:8983/api/cluster
+  "value" : "node.sysprop:sysprop.rack"
+}' http://localhost:8983/api/cluster/properties/defaultShardPreferences
 ----
 
 At this point, if you run a query on a node having e.g., `rack=rack1`, Solr will try to hit only replicas from `rack1`.
+
+
+=== List Cluster Properties
+
+[tabs#setobjproperty-request]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+
+====
+V2 API::
++
+====
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster/properties
+----
+====
+======
+
+*Input*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster/properties
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 2
+  },
+  "clusterProperties": [
+    "urlScheme",
+    "defaultShardPreferences"
+  ]
+}
+----
+
+
+=== Fetch Cluster Property
+
+[tabs#setobjproperty-request]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+
+====
+V2 API::
++
+====
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster/properties/urlScheme
+----
+====
+======
+
+*Input*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster/properties/urlScheme
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 2
+  },
+  "clusterProperty": {
+    "name": "urlScheme",
+    "value": "https"
+  }
+}
+----
+
 
 [[balancereplicas]]
 == Balance Replicas

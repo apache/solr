@@ -112,8 +112,7 @@ public class BinaryField extends FieldType {
     if (val instanceof byte[]) {
       buf = (byte[]) val;
       len = buf.length;
-    } else if (val instanceof ByteBuffer && ((ByteBuffer) val).hasArray()) {
-      ByteBuffer byteBuf = (ByteBuffer) val;
+    } else if (val instanceof ByteBuffer byteBuf && byteBuf.hasArray()) {
       buf = byteBuf.array();
       offset = byteBuf.arrayOffset() + byteBuf.position();
       len = byteBuf.limit() - byteBuf.position();
@@ -156,8 +155,7 @@ public class BinaryField extends FieldType {
   public Object toNativeType(Object val) {
     if (val instanceof byte[]) {
       return ByteBuffer.wrap((byte[]) val);
-    } else if (val instanceof CharSequence) {
-      final CharSequence valAsCharSequence = (CharSequence) val;
+    } else if (val instanceof CharSequence valAsCharSequence) {
       return ByteBuffer.wrap(Base64.getDecoder().decode(valAsCharSequence.toString()));
     }
     return super.toNativeType(val);

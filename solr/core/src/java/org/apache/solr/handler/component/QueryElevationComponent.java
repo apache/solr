@@ -1117,10 +1117,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof ElevatingQuery)) {
+      if (!(o instanceof ElevatingQuery eq)) {
         return false;
       }
-      ElevatingQuery eq = (ElevatingQuery) o;
       return queryString.equals(eq.queryString) && subsetMatch == eq.subsetMatch;
     }
 

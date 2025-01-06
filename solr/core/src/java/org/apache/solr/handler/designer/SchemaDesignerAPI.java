@@ -254,7 +254,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       try {
         InMemoryResourceLoader loader =
             new InMemoryResourceLoader(coreContainer, mutableId, SOLR_CONFIG_XML, data);
-        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, requestIsTrusted, null);
+        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, null);
       } catch (Exception exc) {
         updateFileError = exc;
       }

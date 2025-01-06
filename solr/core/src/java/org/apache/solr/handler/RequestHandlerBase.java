@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -46,6 +47,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CpuAllowedLimit;
 import org.apache.solr.search.QueryLimits;
+import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -235,10 +237,13 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      if (rsp.isPartialResults()) {
+
+      if (!haveCompleteResults(rsp.getResponseHeader())) {
         metrics.numTimeouts.mark();
         rsp.setHttpCaching(false);
       }
+    } catch (QueryLimitsExceededException e) {
+      rsp.setPartialResults(req);
     } catch (Exception e) {
       Exception normalized = normalizeReceivedException(req, e);
       processErrorMetricsOnException(normalized, metrics);
@@ -280,8 +285,7 @@ public abstract class RequestHandlerBase
 
   public static void processErrorMetricsOnException(Exception e, HandlerMetrics metrics) {
     boolean isClientError = false;
-    if (e instanceof SolrException) {
-      final SolrException se = (SolrException) e;
+    if (e instanceof SolrException se) {
       if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
         return;
       } else if (se.code() >= 400 && se.code() < 500) {

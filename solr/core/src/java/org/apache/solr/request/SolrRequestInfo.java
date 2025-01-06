@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.http.HttpServletRequest;
@@ -64,6 +65,14 @@ public class SolrRequestInfo {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     if (stack.isEmpty()) return null;
     return stack.peek();
+  }
+
+  public static Optional<SolrRequestInfo> getReqInfo() {
+    return Optional.ofNullable(getRequestInfo());
+  }
+
+  public static Optional<SolrQueryRequest> getRequest() {
+    return getReqInfo().map(i -> i.req);
   }
 
   /**
@@ -244,10 +253,12 @@ public class SolrRequestInfo {
    */
   public QueryLimits getLimits() {
     // make sure the ThreadCpuTime is always initialized
-    return req == null || rsp == null
-        ? QueryLimits.NONE
-        : (QueryLimits)
-            req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req, rsp));
+    return req == null || rsp == null ? QueryLimits.NONE : getQueryLimits(req, rsp);
+  }
+
+  public static QueryLimits getQueryLimits(SolrQueryRequest request, SolrQueryResponse response) {
+    return (QueryLimits)
+        request.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(request, response));
   }
 
   public SolrDispatchFilter.Action getAction() {

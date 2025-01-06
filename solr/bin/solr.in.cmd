@@ -49,15 +49,8 @@ REM set GC_TUNE=-XX:+ExplicitGCInvokesConcurrent
 REM set GC_TUNE=-XX:SurvivorRatio=4
 REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
 REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8
-REM set GC_TUNE=%GC_TUNE% -XX:+UseConcMarkSweepGC
-REM set GC_TUNE=%GC_TUNE% -XX:ConcGCThreads=4
 REM set GC_TUNE=%GC_TUNE% -XX:ParallelGCThreads=4
-REM set GC_TUNE=%GC_TUNE% -XX:+CMSScavengeBeforeRemark
 REM set GC_TUNE=%GC_TUNE% -XX:PretenureSizeThreshold=64m
-REM set GC_TUNE=%GC_TUNE% -XX:+UseCMSInitiatingOccupancyOnly
-REM set GC_TUNE=%GC_TUNE% -XX:CMSInitiatingOccupancyFraction=50
-REM set GC_TUNE=%GC_TUNE% -XX:CMSMaxAbortablePrecleanTime=6000
-REM set GC_TUNE=%GC_TUNE% -XX:+CMSParallelRemarkEnabled
 REM set GC_TUNE=%GC_TUNE% -XX:+ParallelRefProcEnabled      etc.
 
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
@@ -97,7 +90,7 @@ REM set RMI_PORT=18983
 
 REM Anything you add to the SOLR_OPTS variable will be included in the java
 REM start command line as-is, in ADDITION to other options. If you specify the
-REM -a option on start script, those options will be appended as well. Examples:
+REM --jvm-opts option on start script, those options will be appended as well. Examples:
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
 

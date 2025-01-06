@@ -17,7 +17,7 @@
 package org.apache.solr.handler.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import jakarta.ws.rs.core.MediaType;
 import org.apache.solr.SolrTestCaseJ4;

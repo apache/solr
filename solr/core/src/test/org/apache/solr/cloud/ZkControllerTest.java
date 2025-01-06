@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
@@ -165,8 +166,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
 
       try {
         CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
-        zkController =
-            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
+        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig);
       } catch (IllegalArgumentException e) {
         fail("ZkController did not normalize host name correctly");
       } finally {
@@ -232,8 +232,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
                     Boolean.getBoolean("solr.distributedCollectionConfigSetExecution"))
                 .build();
         zkController =
-            new ZkController(
-                cc, cluster.getZkServer().getZkAddress(), TIMEOUT, cloudConfig, () -> null);
+            new ZkController(cc, cluster.getZkServer().getZkAddress(), TIMEOUT, cloudConfig);
         zkControllerRef.set(zkController);
 
         zkController
@@ -398,7 +397,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
         try {
           CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
           try (ZkController zkController =
-              new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null)) {
+              new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig)) {
             final Path dir = createTempDir();
             final String configsetName = "testconfigset";
             try (ZkSolrResourceLoader loader =
@@ -466,7 +465,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
       CountDownLatch done = new CountDownLatch(nThreads);
       AtomicReference<Exception> exception = new AtomicReference<>();
       for (int i = 0; i < nThreads; i++) {
-        svc.submit(
+        svc.execute(
             () -> {
               int index = idx.getAndIncrement();
               latch.countDown();
@@ -477,8 +476,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
                         cc,
                         server.getZkAddress(),
                         TIMEOUT,
-                        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983 + index).build(),
-                        () -> null);
+                        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983 + index).build());
               } catch (Exception e) {
                 exception.compareAndSet(null, e);
               } finally {
@@ -514,6 +512,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
   private static class MockCoreContainer extends CoreContainer {
     UpdateShardHandler updateShardHandler =
         new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+    Http2SolrClient solrClient;
 
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
@@ -522,6 +521,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
       this.shardHandlerFactory = httpShardHandlerFactory;
       this.coreAdminHandler = new CoreAdminHandler();
       this.metricManager = mock(SolrMetricManager.class);
+      this.solrClient = new Http2SolrClient.Builder().build();
     }
 
     @Override
@@ -535,7 +535,13 @@ public class ZkControllerTest extends SolrCloudTestCase {
     @Override
     public void shutdown() {
       updateShardHandler.close();
+      solrClient.close();
       super.shutdown();
+    }
+
+    @Override
+    public Http2SolrClient getDefaultHttpSolrClient() {
+      return solrClient;
     }
 
     @Override

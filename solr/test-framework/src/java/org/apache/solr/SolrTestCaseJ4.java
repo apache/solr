@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -94,7 +93,6 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.TestConnectionStrategy;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -284,10 +282,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.retries.on.forward", "1");
     System.setProperty("solr.retries.to.followers", "1");
 
-    System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
-    System.setProperty("solr.zookeeper.connectionStrategy", TestConnectionStrategy.class.getName());
     System.setProperty("enable.update.log", Boolean.toString(usually()));
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
@@ -295,7 +291,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
 
-    System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -335,7 +330,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } finally {
       TestInjection.reset();
       initCoreDataDir = null;
-      System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
       System.clearProperty("tests.shardhandler.randomSeed");
@@ -344,7 +338,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty(URL_SCHEME);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
-      System.clearProperty(ZK_WHITELIST_PROPERTY);
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
 
@@ -1769,16 +1762,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof Doc)) return false;
-      Doc other = (Doc) o;
+      if (!(o instanceof Doc other)) return false;
       return this == other || Objects.equals(id, other.id);
     }
 
     @Override
     @SuppressWarnings({"unchecked"})
     public int compareTo(Object o) {
-      if (!(o instanceof Doc)) return this.getClass().hashCode() - o.getClass().hashCode();
-      Doc other = (Doc) o;
+      if (!(o instanceof Doc other)) return this.getClass().hashCode() - o.getClass().hashCode();
       return this.id.compareTo(other.id);
     }
 
@@ -2136,16 +2127,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Gets a resource from the context classloader as {@link File}. This method should only be used,
+   * Gets a resource from the context classloader as {@link Path}. This method should only be used,
    * if a real file is needed. To get a stream, code should prefer {@link Class#getResourceAsStream}
    * using {@code this.getClass()}.
    */
-  public static File getFile(String name) {
+  public static Path getFile(String name) {
     final URL url =
         SolrTestCaseJ4.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
     if (url != null) {
       try {
-        return new File(url.toURI());
+        return Path.of(url.toURI());
       } catch (Exception e) {
         throw new RuntimeException(
             "Resource was found on classpath, but cannot be resolved to a "
@@ -2153,20 +2144,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
                 + name);
       }
     }
-    final File file = new File(name);
-    if (file.exists()) {
+    final Path file = Path.of(name);
+    if (Files.exists(file)) {
       return file;
     }
     throw new RuntimeException(
-        "Cannot find resource in classpath or in file-system (relative to CWD): " + name);
+        "Cannot find resource in classpath or in file-system (relative to CWD): "
+            + new File(name).getAbsolutePath());
   }
 
   public static String TEST_HOME() {
-    return getFile("solr/collection1").getParent();
+    return getFile("solr/collection1").getParent().toString();
   }
 
   public static Path TEST_PATH() {
-    return getFile("solr/collection1").getParentFile().toPath();
+    return getFile("solr/collection1").getParent();
   }
 
   public static Path TEST_COLL1_CONF() {
@@ -2353,16 +2345,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public boolean compareSolrDocument(Object expected, Object actual) {
 
-    if (!(expected instanceof SolrDocument) || !(actual instanceof SolrDocument)) {
+    if (!(expected instanceof SolrDocument solrDocument1)
+        || !(actual instanceof SolrDocument solrDocument2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrDocument solrDocument1 = (SolrDocument) expected;
-    SolrDocument solrDocument2 = (SolrDocument) actual;
 
     if (solrDocument1.getFieldNames().size() != solrDocument2.getFieldNames().size()) {
       return false;
@@ -2404,16 +2394,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public boolean compareSolrDocumentList(Object expected, Object actual) {
-    if (!(expected instanceof SolrDocumentList) || !(actual instanceof SolrDocumentList)) {
+    if (!(expected instanceof SolrDocumentList list1)
+        || !(actual instanceof SolrDocumentList list2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrDocumentList list1 = (SolrDocumentList) expected;
-    SolrDocumentList list2 = (SolrDocumentList) actual;
 
     if (list1.getMaxScore() == null) {
       if (list2.getMaxScore() != null) {
@@ -2438,16 +2426,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public boolean compareSolrInputDocument(Object expected, Object actual) {
 
-    if (!(expected instanceof SolrInputDocument) || !(actual instanceof SolrInputDocument)) {
+    if (!(expected instanceof SolrInputDocument sdoc1)
+        || !(actual instanceof SolrInputDocument sdoc2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrInputDocument sdoc1 = (SolrInputDocument) expected;
-    SolrInputDocument sdoc2 = (SolrInputDocument) actual;
 
     if (sdoc1.getFieldNames().size() != sdoc2.getFieldNames().size()) {
       return false;
@@ -2513,16 +2499,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
-    if (!(expected instanceof SolrInputField) || !(actual instanceof SolrInputField)) {
+    if (!(expected instanceof SolrInputField sif1) || !(actual instanceof SolrInputField sif2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrInputField sif1 = (SolrInputField) expected;
-    SolrInputField sif2 = (SolrInputField) actual;
 
     if (!sif1.getName().equals(sif2.getName())) {
       return false;
@@ -2947,8 +2930,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   private static boolean isChildDoc(Object o) {
-    if (o instanceof Collection) {
-      Collection<?> col = (Collection<?>) o;
+    if (o instanceof Collection<?> col) {
       if (col.size() == 0) {
         return false;
       }

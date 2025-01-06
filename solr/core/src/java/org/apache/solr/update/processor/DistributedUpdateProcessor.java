@@ -692,8 +692,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     NamedList<Object> rsp;
     try {
-      ur.setBasePath(leaderUrl);
-      rsp = updateShardHandler.getUpdateOnlyHttpClient().request(ur);
+      rsp =
+          updateShardHandler
+              .getUpdateOnlyHttpClient()
+              .requestWithBaseUrl(leaderUrl, null, ur)
+              .getResponse();
     } catch (SolrServerException e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
@@ -1226,8 +1229,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a merged copy of the metadata from all wrapped exceptions
       NamedList<String> metadata = new NamedList<>();
       for (SolrError error : errors) {
-        if (error.e instanceof SolrException) {
-          SolrException e = (SolrException) error.e;
+        if (error.e instanceof SolrException e) {
           NamedList<String> eMeta = e.getMetadata();
           if (null != eMeta) {
             metadata.addAll(eMeta);

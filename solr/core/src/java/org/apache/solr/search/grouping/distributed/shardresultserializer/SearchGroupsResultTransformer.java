@@ -57,8 +57,7 @@ public class SearchGroupsResultTransformer
     final NamedList<NamedList<Object>> result = new NamedList<>(data.size());
     for (Command<?> command : data) {
       final NamedList<Object> commandResult = new NamedList<>(2);
-      if (command instanceof SearchGroupsFieldCommand) {
-        SearchGroupsFieldCommand fieldCommand = (SearchGroupsFieldCommand) command;
+      if (command instanceof SearchGroupsFieldCommand fieldCommand) {
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
         if (searchGroups != null) {

@@ -91,7 +91,7 @@ public class OriginalScoreFeature extends Feature {
       return new OriginalScoreScorer(this, originalScorer);
     }
 
-    public class OriginalScoreScorer extends FilterFeatureScorer {
+    public static class OriginalScoreScorer extends FilterFeatureScorer {
 
       public OriginalScoreScorer(FeatureWeight weight, Scorer originalScorer) {
         super(weight, originalScorer);

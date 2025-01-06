@@ -956,10 +956,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
   @Override
   protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    if (httpContext instanceof HttpClientContext) {
-      HttpClientContext httpClientContext = (HttpClientContext) httpContext;
-      if (httpClientContext.getUserToken() instanceof JWTPrincipal) {
-        JWTPrincipal jwtPrincipal = (JWTPrincipal) httpClientContext.getUserToken();
+    if (httpContext instanceof HttpClientContext httpClientContext) {
+      if (httpClientContext.getUserToken() instanceof JWTPrincipal jwtPrincipal) {
         httpRequest.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
         return true;
       }
@@ -970,8 +968,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   @Override
   protected boolean interceptInternodeRequest(Request request) {
     Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
-    if (userToken instanceof JWTPrincipal) {
-      JWTPrincipal jwtPrincipal = (JWTPrincipal) userToken;
+    if (userToken instanceof JWTPrincipal jwtPrincipal) {
       request.headers(h -> h.put(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken()));
       return true;
     }

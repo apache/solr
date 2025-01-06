@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.common.cloud.OnDisconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -263,7 +265,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(500));
 
     // If someone adds a new matching element while we're waiting, we should return immediately.
-    executor.submit(
+    executor.execute(
         () -> {
           try {
             Thread.sleep(500);
@@ -289,18 +291,25 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   private void forceSessionExpire() throws InterruptedException, TimeoutException {
-    long sessionId = zkClient.getZooKeeper().getSessionId();
+    final CountDownLatch hasDisconnected = new CountDownLatch(1);
+    zkClient
+        .getCuratorFramework()
+        .getConnectionStateListenable()
+        .addListener(
+            (OnDisconnect)
+                ((sessionExpired) -> {
+                  if (sessionExpired) {
+                    hasDisconnected.countDown();
+                  }
+                }));
+    long sessionId = zkClient.getZkSessionId();
     zkServer.expire(sessionId);
-    zkClient.getConnectionManager().waitForDisconnected(10000);
-    zkClient.getConnectionManager().waitForConnected(10000);
-    for (int i = 0; i < 100; ++i) {
-      if (zkClient.isConnected()) {
-        break;
-      }
-      Thread.sleep(50);
-    }
+    hasDisconnected.await(10, TimeUnit.SECONDS);
+    assertEquals(
+        "ZK Client did not disconnect after session expiration", 0, hasDisconnected.getCount());
+    zkClient.getCuratorFramework().blockUntilConnected(10, TimeUnit.SECONDS);
     assertTrue(zkClient.isConnected());
-    assertNotEquals(sessionId, zkClient.getZooKeeper().getSessionId());
+    assertNotEquals(sessionId, zkClient.getZkSessionId());
   }
 
   protected ZkDistributedQueue makeDistributedQueue(String dqZNode) throws Exception {
