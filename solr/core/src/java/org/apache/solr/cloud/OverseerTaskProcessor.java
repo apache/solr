@@ -16,11 +16,13 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.getCollectionAction;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import com.codahale.metrics.Timer;
 import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,11 +41,13 @@ import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
@@ -339,7 +343,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               workQueue.remove(head);
               continue;
             }
-            OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
+            OverseerMessageHandler messageHandler =
+                selector.selectOverseerMessageHandler(message, this);
             OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, batchSessionId);
             if (lock == null) {
               if (log.isDebugEnabled()) {
@@ -519,11 +524,13 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   }
 
   private void markTaskAsRunning(QueueEvent head, String asyncId)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     runningZKTasks.add(head.getId());
     runningTasks.add(head.getId());
 
-    if (asyncId != null) runningMap.put(asyncId, null);
+    if (asyncId != null) {
+      runningMap.put(asyncId, OverseerAsyncIdSerializer.serialize(head.getId()));
+    }
   }
 
   protected class Runner implements Runnable {
@@ -693,6 +700,54 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     return myId;
   }
 
+  public boolean isAsyncTaskInProgress(String asyncId)
+      throws KeeperException, InterruptedException {
+    // Check if the task is currently running or still in the work queue
+    return runningMap.contains(asyncId);
+  }
+
+  public boolean isAsyncTaskInSubmitted(String asyncId)
+      throws KeeperException, InterruptedException {
+    return workQueue.containsTaskWithRequestId(ASYNC, asyncId);
+  }
+
+  public boolean removeSubmittedTask(String asyncId) throws KeeperException, InterruptedException {
+    // Remove the task from the work queue if it hasn't started yet
+    if (workQueue.containsTaskWithRequestId(ASYNC, asyncId)) {
+      workQueue.removeTaskWithRequestId(ASYNC, asyncId);
+
+      // we are going to need to change it
+      blockedTasks.clear();
+
+      return true;
+    }
+    return false;
+  }
+
+  public boolean cancelInProgressAsyncTask(String asyncId)
+      throws KeeperException, InterruptedException, IOException {
+    String workQueueZkId = OverseerAsyncIdSerializer.deserialize(runningMap.get(asyncId));
+    QueueEvent taskData = workQueue.get(workQueueZkId);
+    final ZkNodeProps message = ZkNodeProps.load(taskData.getBytes());
+
+    String operation = message.getStr(Overseer.QUEUE_OPERATION);
+    CollectionParams.CollectionAction action = getCollectionAction(operation);
+    CollectionsHandler.CollectionOperation collectionOperationToCancel =
+        CollectionsHandler.CollectionOperation.get(action);
+    boolean isInProgressCancelable = collectionOperationToCancel.isInProgressCancelable();
+
+    if (isInProgressCancelable) {
+      if (runningMap.contains(asyncId)) {
+        runningMap.remove(asyncId);
+        runningTasks.remove(workQueueZkId);
+        workQueue.removeTaskWithRequestId(ASYNC, asyncId);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /**
    * An interface to determine which {@link OverseerMessageHandler} handles a given message. This
    * could be a single OverseerMessageHandler for the case where a single type of message is handled
@@ -700,6 +755,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
    * contents of the message.
    */
   public interface OverseerMessageHandlerSelector extends Closeable {
-    OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message);
+    OverseerMessageHandler selectOverseerMessageHandler(
+        ZkNodeProps message, OverseerTaskProcessor overseerTaskProcessor);
   }
 }
