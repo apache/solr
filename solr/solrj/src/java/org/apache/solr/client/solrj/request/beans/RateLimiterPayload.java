@@ -23,7 +23,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
 
 /** POJO for Rate Limiter Metadata Configuration */
 public class RateLimiterPayload implements ReflectMapWriter {
-  @JsonProperty public Boolean enabled;
+  @JsonProperty public Boolean enabled = false;
 
   @JsonProperty public Integer guaranteedSlots;
 
@@ -33,7 +33,7 @@ public class RateLimiterPayload implements ReflectMapWriter {
 
   @JsonProperty public Integer slotAcquisitionTimeoutInMS;
 
-  @JsonProperty public Boolean priorityBasedEnabled;
+  @JsonProperty public Boolean priorityBasedEnabled = false;
 
   @JsonProperty public String nodesEnabled;
 

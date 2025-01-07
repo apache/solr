@@ -19,11 +19,13 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import static org.apache.solr.servlet.PriorityBasedRateLimiter.SOLR_REQUEST_PRIORITY_PARAM;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,13 +49,16 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RateLimiterConfig;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.eclipse.jetty.server.Request;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -812,5 +817,25 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     rateLimiter = rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
     assertTrue(rateLimiter.getRateLimiterConfig().isEnabled);
+  }
+
+  @Test
+  public void testNoPriorityRateLimiterOnNode() throws Exception {
+    Map<String, Object> properties = new HashMap<>();
+    Map<String, Object> rateLimiterProps = new HashMap<>();
+    rateLimiterProps.put("enabled", false);
+    rateLimiterProps.put("guaranteedSlots", 1);
+    rateLimiterProps.put("allowedRequests", 1);
+    rateLimiterProps.put("slotBorrowingEnabled", false);
+    rateLimiterProps.put("slotAcquisitionTimeoutInMS", 100);
+    // rateLimiterProps.put("priorityBasedEnabled", false);
+    rateLimiterProps.put("nodesEnabled", "localhost");
+    properties.put("rate-limiters", rateLimiterProps);
+
+    ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+    byte[] configInput = Utils.toJSON(properties.get(RL_CONFIG_KEY));
+    RateLimiterPayload rateLimiterMeta = mapper.readValue(configInput, RateLimiterPayload.class);
+
+    assertFalse(rateLimiterMeta.priorityBasedEnabled);
   }
 }
