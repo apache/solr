@@ -47,6 +47,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ALIASPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CANCEL;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.COLLECTIONPROP;
@@ -170,6 +171,7 @@ import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
+import org.apache.solr.handler.admin.api.CancelCollectionsApiCall;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
@@ -1055,8 +1057,33 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }),
     BACKUP_OP(
         BACKUP,
+        new CollectionOp() {
+          @Override
+          public Map<String, Object> execute(
+              SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
+            final var response =
+                CreateCollectionBackup.invokeFromV1Params(req, rsp, h.coreContainer);
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+            return null;
+          }
+
+          @Override
+          public boolean isInProgressCancelable() {
+            return true;
+          }
+        }),
+    CANCEL_OP(
+        CANCEL,
         (req, rsp, h) -> {
-          final var response = CreateCollectionBackup.invokeFromV1Params(req, rsp, h.coreContainer);
+          log.info("WTF");
+
+          final CancelCollectionsApiCall cancelCollectionsApiCall =
+              new CancelCollectionsApiCall(h.coreContainer, req, rsp);
+          req.getParams().required().check(REQUESTID);
+
+          final var response =
+              cancelCollectionsApiCall.cancelCollectionApiCall(
+                  req.getParams().get(REQUESTID), req.getParams().get(ASYNC));
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1244,6 +1271,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     public static CollectionOperation get(CollectionAction action) {
+      log.info("action:{}", action);
       for (CollectionOperation op : values()) {
         if (op.action == action) return op;
       }
@@ -1254,6 +1282,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     public Map<String, Object> execute(
         SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
       return fun.execute(req, rsp, h);
+    }
+
+    @Override
+    public boolean isInProgressCancelable() {
+      return fun.isInProgressCancelable();
     }
   }
 
@@ -1343,6 +1376,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   interface CollectionOp {
     Map<String, Object> execute(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h)
         throws Exception;
+
+    // allowed to be in-progress canceled
+    default boolean isInProgressCancelable() {
+      return false;
+    }
   }
 
   @Override
@@ -1376,6 +1414,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         MigrateReplicas.class,
         BalanceReplicas.class,
         RestoreCollectionAPI.class,
+        CancelCollectionsApiCall.class,
         SyncShard.class,
         CollectionProperty.class,
         DeleteNode.class,
