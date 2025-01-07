@@ -38,6 +38,9 @@ Other Changes
 * SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
   LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
 
+* GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
+  for encapsulation and reuse. (David Smiley)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
