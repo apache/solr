@@ -1073,7 +1073,7 @@ public class Overseer implements SolrCloseable {
     return new ZkDistributedQueue(zkClient, "/overseer/queue-work", zkStats);
   }
 
-  /* Internal map for failed tasks, not to be used outside of the Overseer */
+  /* Internal map for running tasks, not to be used outside of the Overseer */
   static DistributedMap getRunningMap(final SolrZkClient zkClient) {
     return new DistributedMap(zkClient, "/overseer/collection-map-running");
   }

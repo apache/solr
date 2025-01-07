@@ -141,7 +141,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return new OverseerSolrResponse(results);
   }
 
-  private CollectionAction getCollectionAction(String operation) {
+  public static CollectionAction getCollectionAction(String operation) {
     CollectionAction action = CollectionAction.get(operation);
     if (action == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
@@ -204,10 +204,5 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
-  }
-
-  @Override
-  public boolean isClosed() {
-    return isClosed;
   }
 }
