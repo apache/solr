@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FilterCollector;
@@ -29,11 +31,16 @@ import org.apache.lucene.search.LeafCollector;
  */
 public class EarlyTerminatingCollector extends FilterCollector {
 
+  private final int chunkSize = 100; // Check across threads only at a chunk size
+
   private final int maxDocsToCollect;
 
   private int numCollected = 0;
   private int prevReaderCumulativeSize = 0;
   private int currentReaderSize = 0;
+  private final AtomicInteger pendingDocsToCollect;
+  private boolean terminatedEarly = false;
+
 
   /**
    * Wraps a {@link Collector}, throwing {@link EarlyTerminatingCollectorException} once the
@@ -43,13 +50,14 @@ public class EarlyTerminatingCollector extends FilterCollector {
    * @param maxDocsToCollect - the maximum number of documents to Collect
    */
   public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect) {
-    super(delegate);
-    assert 0 < maxDocsToCollect;
-    assert null != delegate;
-
-    this.maxDocsToCollect = maxDocsToCollect;
+    this(delegate,maxDocsToCollect, new AtomicInteger(maxDocsToCollect));
   }
 
+  public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect,AtomicInteger docsToCollect) {
+    super(delegate);
+    this.maxDocsToCollect = maxDocsToCollect;
+    this.pendingDocsToCollect = docsToCollect;
+  }
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     prevReaderCumulativeSize += currentReaderSize; // not current any more
@@ -61,11 +69,22 @@ public class EarlyTerminatingCollector extends FilterCollector {
       public void collect(int doc) throws IOException {
         super.collect(doc);
         numCollected++;
-        if (maxDocsToCollect <= numCollected) {
-          throw new EarlyTerminatingCollectorException(
-              numCollected, prevReaderCumulativeSize + (doc + 1));
+        terminatedEarly = maxDocsToCollect <= numCollected;
+        if (numCollected % chunkSize == 0) {
+          terminatedEarly = pendingDocsToCollect.addAndGet(-1 * chunkSize) < 0;
+        }
+        if (terminatedEarly) {
+          throw new EarlyTerminatingCollectorException(maxDocsToCollect,
+            prevReaderCumulativeSize + (doc + 1));
         }
       }
     };
+  }
+  public boolean isTerminatedEarly() {
+    return terminatedEarly;
+  }
+
+  public Collector getDelegate() {
+    return super.in;
   }
 }

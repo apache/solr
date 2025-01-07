@@ -407,6 +407,17 @@ public class QueryComponent extends SearchComponent {
         params.getBool(
             CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT));
 
+    // max hits per shard
+    final Integer maxHits = params.getInt(CommonParams.MAX_HITS_PER_SHARD);
+
+    if (maxHits != null) {
+      int hitsPerShard = Math.max(maxHits, cmd.getLen());
+      if (cmd.getMinExactCount() < Integer.MAX_VALUE) {
+        hitsPerShard = Math.max(cmd.getMinExactCount(), hitsPerShard);
+      }
+      cmd.setMaxHits(hitsPerShard);
+    }
+
     //
     // grouping / field collapsing
     //

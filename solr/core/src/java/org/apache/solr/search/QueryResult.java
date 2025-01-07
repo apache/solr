@@ -22,6 +22,7 @@ public class QueryResult {
   // Object for back compatibility so that we render true not "true" in json
   private Object partialResults;
   private Boolean segmentTerminatedEarly;
+  private Boolean terminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
 
@@ -84,5 +85,13 @@ public class QueryResult {
 
   public CursorMark getNextCursorMark() {
     return nextCursorMark;
+  }
+
+  public Boolean getTerminatedEarly() {
+    return terminatedEarly;
+  }
+
+  public void setTerminatedEarly(boolean terminatedEarly) {
+    this.terminatedEarly = terminatedEarly;
   }
 }

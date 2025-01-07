@@ -90,12 +90,16 @@ public class MultiThreadedSearcher {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
-    SolrMultiCollectorManager manager = new SolrMultiCollectorManager(colls);
+    final SolrMultiCollectorManager manager = new SolrMultiCollectorManager(cmd, colls);
+    boolean isTerminatedEarly = false;
     Object[] ret;
     try {
       ret = searcher.search(query, manager);
     } catch (Exception ex) {
-      if (ex instanceof RuntimeException
+      if (ex instanceof EarlyTerminatingCollectorException) {
+        ret = manager.reduce();
+        isTerminatedEarly = true;
+      } else if (ex instanceof RuntimeException
           && ex.getCause() != null
           && ex.getCause() instanceof ExecutionException
           && ex.getCause().getCause() != null
@@ -108,7 +112,7 @@ public class MultiThreadedSearcher {
 
     ScoreMode scoreMode = SolrMultiCollectorManager.scoreMode(firstCollectors);
 
-    return new SearchResult(scoreMode, ret);
+    return new SearchResult(scoreMode, ret, isTerminatedEarly);
   }
 
   static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd) {
@@ -190,10 +194,16 @@ public class MultiThreadedSearcher {
   static class SearchResult {
     final ScoreMode scoreMode;
     private final Object[] result;
+    final boolean isTerminatedEarly;
+
 
     public SearchResult(ScoreMode scoreMode, Object[] result) {
+      this(scoreMode, result, false);
+    }
+    public SearchResult(ScoreMode scoreMode, Object[] result,boolean isTerminatedEarly) {
       this.scoreMode = scoreMode;
       this.result = result;
+      this.isTerminatedEarly = isTerminatedEarly;
     }
 
     public TopDocsResult getTopDocsResult() {
@@ -255,7 +265,13 @@ public class MultiThreadedSearcher {
       for (Iterator var4 = collectors.iterator();
           var4.hasNext();
           maxScore = Math.max(maxScore, collector.getMaxScore())) {
-        collector = (MaxScoreCollector) var4.next();
+        Collector next = (Collector) var4.next();
+        if (next instanceof EarlyTerminatingCollector) {
+          EarlyTerminatingCollector earlyTerminatingCollector = (EarlyTerminatingCollector) next;
+          next = earlyTerminatingCollector.getDelegate();
+        }
+        collector = (MaxScoreCollector) next;
+
       }
 
       return new MaxScoreResult(maxScore);
@@ -324,6 +340,10 @@ public class MultiThreadedSearcher {
       Collector collector;
       for (Object o : collectors) {
         collector = (Collector) o;
+        if (collector instanceof EarlyTerminatingCollector) {
+          EarlyTerminatingCollector earlyTerminatingCollector = (EarlyTerminatingCollector) collector;
+          collector = earlyTerminatingCollector.getDelegate();
+        }
         if (collector instanceof TopDocsCollector) {
           TopDocs td = ((TopDocsCollector) collector).topDocs(0, len);
           assert td != null : Arrays.asList(topDocs);
