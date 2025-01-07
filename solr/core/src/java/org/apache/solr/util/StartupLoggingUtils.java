@@ -43,6 +43,8 @@ public final class StartupLoggingUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
 
+  private static final String INITIAL_ROOT_LOG_LEVEL = getLogLevelString();
+
   /** Checks whether mandatory log dir is given */
   public static void checkLogDir() {
     if (EnvUtils.getProperty("solr.log.dir") == null) {
@@ -151,6 +153,11 @@ public final class StartupLoggingUtils {
     }
     flushAllLoggers();
     LogManager.shutdown(true);
+
+    // re-instate original log level.
+    if (!INITIAL_ROOT_LOG_LEVEL.equals(getLogLevelString())) {
+      changeLogLevel(INITIAL_ROOT_LOG_LEVEL);
+    }
   }
 
   /**
