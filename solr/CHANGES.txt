@@ -27,7 +27,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* PR#2680: Improve reliablity of NpmTasks finding needed files/commands.  (Tyler Bertrand via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
