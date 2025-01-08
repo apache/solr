@@ -66,12 +66,8 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
 
     if (Boolean.TRUE.equals(sync)) {
-      try {
-        fileStore.syncToAllNodes(path);
-        return response;
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error getting file ", e);
-      }
+      ClusterFileStore.syncToAllNodes(fileStore, path);
+      return response;
     }
 
     if (path == null) {
@@ -79,19 +75,8 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
     }
     final var pathCopy = path;
     if (getFrom != null) {
-      coreContainer
-          .getUpdateShardHandler()
-          .getUpdateExecutor()
-          .submit(
-              () -> {
-                log.debug("Downloading file {}", pathCopy);
-                try {
-                  fileStore.fetch(pathCopy, getFrom);
-                } catch (Exception e) {
-                  log.error("Failed to download file: {}", pathCopy, e);
-                }
-                log.info("downloaded file: {}", pathCopy);
-              });
+
+      ClusterFileStore.pullFileFromNode(coreContainer, fileStore, pathCopy, getFrom);
       return response;
     }
 

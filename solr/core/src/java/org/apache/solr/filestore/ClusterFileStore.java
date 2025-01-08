@@ -297,6 +297,48 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     return response;
   }
 
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+  public SolrJerseyResponse executeFileStoreCommand(String path, String getFrom, Boolean sync) {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+
+    if (Boolean.TRUE.equals(sync)) {
+      syncToAllNodes(fileStore, path);
+    } else if (getFrom != null) {
+      if (path == null) {
+        path = "";
+      }
+      pullFileFromNode(coreContainer, fileStore, path, getFrom);
+    }
+
+    return response;
+  }
+
+  public static void syncToAllNodes(FileStore fileStore, String path) {
+    try {
+      fileStore.syncToAllNodes(path);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error getting file ", e);
+    }
+  }
+
+  public static void pullFileFromNode(
+      CoreContainer coreContainer, FileStore fileStore, String path, String getFrom) {
+    coreContainer
+        .getUpdateShardHandler()
+        .getUpdateExecutor()
+        .submit(
+            () -> {
+              log.debug("Downloading file {}", path);
+              try {
+                fileStore.fetch(path, getFrom);
+              } catch (Exception e) {
+                log.error("Failed to download file: {}", path, e);
+              }
+              log.info("downloaded file: {}", path);
+            });
+  }
+
   private List<String> readSignatures(List<String> signatures, byte[] buf)
       throws SolrException, IOException {
     if (signatures == null || signatures.isEmpty()) return null;
