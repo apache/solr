@@ -18,6 +18,8 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
+import static org.apache.solr.response.RawResponseWriter.CONTENT;
 
 import jakarta.inject.Inject;
 import java.io.IOException;
@@ -37,8 +39,12 @@ import org.apache.solr.client.api.model.FileStoreEntryMetadata;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.request.SolrQueryRequest;
@@ -147,10 +153,44 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   @Override
   @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
+  public SolrJerseyResponse getFile(String path) {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    attachFileToResponse(path, fileStore, req, rsp);
+    return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
   public FileStoreDirectoryListingResponse getMetadata(String path) {
     return getMetadata(path, fileStore);
   }
 
+  public static void attachFileToResponse(
+      String path, FileStore fileStore, SolrQueryRequest req, SolrQueryResponse rsp) {
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.add(CommonParams.WT, FILE_STREAM);
+    req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
+    rsp.add(
+        CONTENT,
+        (SolrCore.RawWriter)
+            os ->
+                fileStore.get(
+                    path,
+                    it -> {
+                      try {
+                        InputStream inputStream = it.getInputStream();
+                        if (inputStream != null) {
+                          inputStream.transferTo(os);
+                        }
+                      } catch (IOException e) {
+                        throw new SolrException(
+                            SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + path);
+                      }
+                    },
+                    false));
+  }
+
+  @SuppressWarnings("fallthrough")
   public static FileStoreDirectoryListingResponse getMetadata(String path, FileStore fileStore) {
     final var dirListingResponse = new FileStoreDirectoryListingResponse();
     if (path == null) {
@@ -161,6 +201,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     switch (type) {
       case NOFILE:
         dirListingResponse.files = Collections.singletonMap(path, null);
+        break;
       case METADATA:
       case FILE:
         int idx = path.lastIndexOf('/');
@@ -170,12 +211,14 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
         dirListingResponse.files =
             Collections.singletonMap(path, l.isEmpty() ? null : convertToResponse(l.get(0)));
+        break;
       case DIRECTORY:
         final var directoryContents =
             fileStore.list(path, null).stream()
                 .map(details -> convertToResponse(details))
                 .collect(Collectors.toList());
         dirListingResponse.files = Collections.singletonMap(path, directoryContents);
+        break;
     }
 
     return dirListingResponse;

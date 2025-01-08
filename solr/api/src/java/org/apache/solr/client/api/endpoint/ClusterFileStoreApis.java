@@ -69,6 +69,27 @@ public interface ClusterFileStoreApis {
           @PathParam("path")
           String path);
 
+  @GET
+  @Operation(
+      summary = "Retrieve raw contents of a file in the filestore.",
+      tags = {"file-store"},
+      // The response of this v2 API is highly variable based on the parameters specified.  It can
+      // return raw (potentially binary) file data, a JSON-ified representation of that file data,
+      // metadata regarding one or multiple file store entries, etc.  This variability can be
+      // handled on the Jersey server side, but would be prohibitively difficult to accommodate in
+      // our code-generation templates.  Ideally, cosmetic improvements (e.g. splitting it up into
+      // multiple endpoints) will make this unnecessary in the future.  But for now, the extension
+      // property below ensures that this endpoint is ignored entirely when doing code generation.
+      extensions = {
+        @Extension(
+            properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
+      })
+  @Path("/files{filePath:.+}")
+  SolrJerseyResponse getFile(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("filePath")
+          String path);
+
   @DELETE
   @Operation(
       summary = "Delete a file or directory from the filestore.",

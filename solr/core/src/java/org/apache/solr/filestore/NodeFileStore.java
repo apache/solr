@@ -17,8 +17,6 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
-import static org.apache.solr.response.RawResponseWriter.CONTENT;
 import static org.apache.solr.security.PermissionNameProvider.Name.FILESTORE_READ_PERM;
 
 import jakarta.inject.Inject;
@@ -31,10 +29,7 @@ import org.apache.solr.client.api.model.FileStoreJsonFileResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -133,28 +128,7 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
             SolrException.ErrorCode.SERVER_ERROR, "Error getting file from path " + path);
       }
     } else {
-      ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add(CommonParams.WT, FILE_STREAM);
-      req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
-      rsp.add(
-          CONTENT,
-          (SolrCore.RawWriter)
-              os ->
-                  fileStore.get(
-                      pathCopy,
-                      it -> {
-                        try {
-                          InputStream inputStream = it.getInputStream();
-                          if (inputStream != null) {
-                            inputStream.transferTo(os);
-                          }
-                        } catch (IOException e) {
-                          throw new SolrException(
-                              SolrException.ErrorCode.SERVER_ERROR,
-                              "Error reading file " + pathCopy);
-                        }
-                      },
-                      false));
+      ClusterFileStore.attachFileToResponse(pathCopy, fileStore, req, rsp);
     }
     return response;
   }
