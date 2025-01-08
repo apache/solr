@@ -166,7 +166,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
 
 Dependency Upgrades
 ---------------------
