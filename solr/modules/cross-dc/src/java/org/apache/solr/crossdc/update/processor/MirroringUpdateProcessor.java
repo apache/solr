@@ -26,11 +26,10 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -206,17 +205,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
         && !cmd.isDeleteById()
         && !"*:*".equals(cmd.query)) {
 
-      CloudDescriptor cloudDesc = cmd.getReq().getCore().getCoreDescriptor().getCloudDescriptor();
-      String collection = cloudDesc.getCollectionName();
-
-      HttpClient httpClient =
-          cmd.getReq().getCore().getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-
-      try (HttpSolrClient client =
-          new HttpSolrClient.Builder(
-                  cmd.getReq().getCore().getCoreContainer().getZkController().getBaseUrl())
-              .withHttpClient(httpClient)
-              .build()) {
+      try (var client = new EmbeddedSolrServer(cmd.getReq().getCore())) {
 
         String uniqueField = cmd.getReq().getSchema().getUniqueKeyField().getName();
 
@@ -233,7 +222,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
         boolean done = false;
         while (!done) {
           q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-          QueryResponse rsp = client.query(collection, q);
+          QueryResponse rsp = client.query(q);
           String nextCursorMark = rsp.getNextCursorMark();
 
           if (log.isDebugEnabled()) {
@@ -246,7 +235,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
             cnt++;
           }
 
-          processDBQResults(client, collection, uniqueField, rsp);
+          processDBQResults(client, uniqueField, rsp);
           if (cursorMark.equals(nextCursorMark)) {
             done = true;
           }
@@ -310,8 +299,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private static void processDBQResults(
-      SolrClient client, String collection, String uniqueField, QueryResponse rsp)
+  private static void processDBQResults(SolrClient client, String uniqueField, QueryResponse rsp)
       throws SolrServerException, IOException {
     SolrDocumentList results = rsp.getResults();
     List<String> ids = new ArrayList<>(results.size());
@@ -321,7 +309,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
           ids.add(id);
         });
     if (!ids.isEmpty()) {
-      client.deleteById(collection, ids);
+      client.deleteById(ids);
     }
   }
 
