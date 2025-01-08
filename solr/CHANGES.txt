@@ -168,6 +168,8 @@ Bug Fixes
 ---------------------
 * PR#2680: Improve reliablity of NpmTasks finding needed files/commands.  (Tyler Bertrand via Eric Pugh)
 
+* SOLR-17599: CrossDC should not use the MirroringUpdateHandler when replaying updates from the transaction log or when doing PeerSync. (Mark Miller)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
