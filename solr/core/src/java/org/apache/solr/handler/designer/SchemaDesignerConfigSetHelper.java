@@ -61,6 +61,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
@@ -118,19 +119,20 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   @SuppressWarnings("unchecked")
-  NamedList<Object> analyzeField(String configSet, String fieldName, String fieldText)
+  Map<String, Object> analyzeField(String configSet, String fieldName, String fieldText)
       throws IOException {
     final String mutableId = getMutableId(configSet);
     var solrParams = new ModifiableSolrParams();
-    solrParams.add("analysis.showmatch", "true");
-    solrParams.add("analysis.fieldname", fieldName);
-    solrParams.add("analysis.fieldvalue", "POST");
+    solrParams.set("analysis.showmatch", true);
+    solrParams.set("analysis.fieldname", fieldName);
+    solrParams.set("analysis.fieldvalue", "POST");
     var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/analysis/field", solrParams);
     request.withContent(fieldText.getBytes(StandardCharsets.UTF_8), "text/plain");
     request.setRequiresCollection(true);
+    request.setResponseParser(new JsonMapResponseParser());
     try {
       var resp = request.process(cloudClient(), mutableId).getResponse();
-      return (NamedList<Object>) resp.get("analysis");
+      return (Map<String, Object>) resp.get("analysis");
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
