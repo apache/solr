@@ -36,7 +36,6 @@ dependencies {
   implementation libs.apache.kafka.clients
   implementation libs.google.guava
   implementation libs.dropwizard.metrics.core
-  implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.zookeeper.zookeeper
   implementation libs.apache.zookeeper.jute
 
@@ -55,13 +54,14 @@ dependencies {
 }
 
 // Make sure that the cloud-minimal.zip artifact is up-to-date with cloud-minimal/conf
-// We keep this checked into github, so that the unit tests can be run in intelliJ without gradle
+// We keep this checked into source control, so that the unit tests can be run in intelliJ without
+// gradle
 task zipCloudConfigSet(type: Zip) {
   from "${projectDir}/src/test-files/configs/cloud-minimal/conf/"
   getArchiveFileName().set("cloud-minimal.zip")
   setDestinationDirectory(file("${projectDir.toString()}/src/test-files/configs"))
 
-  // Make the zip reproducable
+  // Make the zip reproducible
   includeEmptyDirs = false
   preserveFileTimestamps = false
   reproducibleFileOrder = true
