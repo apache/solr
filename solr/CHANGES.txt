@@ -7,6 +7,9 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.8.1 ==================
 Bug Fixes
 ---------------------
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
+
 * SOLR-17637: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
   This can cause the HttpShardHandler to indefinitely wait on a completed response that will never come. (Houston Putman)
 
