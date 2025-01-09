@@ -28,13 +28,9 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
  */
 public class SolrPrometheusCoreFormatter extends SolrPrometheusFormatter
     implements PrometheusCoreFormatterInfo {
-  public final String coreName;
-  public final boolean cloudMode;
 
-  public SolrPrometheusCoreFormatter(String coreName, boolean cloudMode) {
+  public SolrPrometheusCoreFormatter() {
     super();
-    this.coreName = coreName;
-    this.cloudMode = cloudMode;
   }
 
   @Override
@@ -45,7 +41,7 @@ public class SolrPrometheusCoreFormatter extends SolrPrometheusFormatter
 
   @Override
   public SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
-    String metricCategory = metricName.split("\\.", 2)[0];
+    String metricCategory = metricName.split("\\.", 3)[1];
     if (!Enums.getIfPresent(PrometheusCoreFormatterInfo.CoreCategory.class, metricCategory)
         .isPresent()) {
       return new SolrNoOpMetric();
@@ -55,17 +51,17 @@ public class SolrPrometheusCoreFormatter extends SolrPrometheusFormatter
       case QUERY:
       case UPDATE:
       case REPLICATION:
-        return new SolrCoreHandlerMetric(dropwizardMetric, coreName, metricName, cloudMode);
+        return new SolrCoreHandlerMetric(dropwizardMetric, metricName);
       case TLOG:
-        return new SolrCoreTlogMetric(dropwizardMetric, coreName, metricName, cloudMode);
+        return new SolrCoreTlogMetric(dropwizardMetric, metricName);
       case CACHE:
-        return new SolrCoreCacheMetric(dropwizardMetric, coreName, metricName, cloudMode);
+        return new SolrCoreCacheMetric(dropwizardMetric, metricName);
       case SEARCHER:
-        return new SolrCoreSearcherMetric(dropwizardMetric, coreName, metricName, cloudMode);
+        return new SolrCoreSearcherMetric(dropwizardMetric, metricName);
       case HIGHLIGHTER:
-        return new SolrCoreHighlighterMetric(dropwizardMetric, coreName, metricName, cloudMode);
+        return new SolrCoreHighlighterMetric(dropwizardMetric, metricName);
       case INDEX:
-        return new SolrCoreIndexMetric(dropwizardMetric, coreName, metricName, cloudMode);
+        return new SolrCoreIndexMetric(dropwizardMetric, metricName);
       case CORE:
       default:
         return new SolrNoOpMetric();
