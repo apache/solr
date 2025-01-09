@@ -27,7 +27,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-* PR#2680: Improve reliablity of NpmTasks finding needed files/commands.  (Tyler Bertrand via Eric Pugh)
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
 
 Dependency Upgrades
 ---------------------
@@ -40,6 +41,8 @@ Other Changes
 
 * GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
   for encapsulation and reuse. (David Smiley)
+
+* GITHUB#2680: Improve reliablity of NpmTasks finding needed files/commands.  (Tyler Bertrand via Eric Pugh)
 
 ==================  9.8.0 ==================
 New Features
