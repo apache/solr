@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +35,7 @@ import java.util.Map;
  */
 public class SimpleOrderedMap<T> extends NamedList<T> {
  
-  private static final SimpleOrderedMap<Object> emptySimpleOrderedMap = new SimpleOrderedMap<>(Collections.emptyList());
+  private static final SimpleOrderedMap<Object> EMPTY = new SimpleOrderedMap<>(List.of());
   /** Creates an empty instance */
   public SimpleOrderedMap() {
     super();
@@ -70,8 +69,12 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
     newList.addAll(nvPairs);
     return new SimpleOrderedMap<>(newList);
   }
-  
-  public static SimpleOrderedMap<Object> emptySimpleOrderedMap() {
-    return emptySimpleOrderedMap;
+
+  /**
+   * Returns a shared, empty, and immutable instance of SimpleOrderedMap.
+   * @return empty SimpleOrderedMap (immutable) 
+   */
+  public static SimpleOrderedMap<Object> empty() {
+    return EMPTY;
   }
 }
