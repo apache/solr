@@ -266,8 +266,7 @@ public class MultiThreadedSearcher {
           var4.hasNext();
           maxScore = Math.max(maxScore, collector.getMaxScore())) {
         Collector next = (Collector) var4.next();
-        if (next instanceof EarlyTerminatingCollector) {
-          EarlyTerminatingCollector earlyTerminatingCollector = (EarlyTerminatingCollector) next;
+        if (next instanceof final EarlyTerminatingCollector earlyTerminatingCollector) {
           next = earlyTerminatingCollector.getDelegate();
         }
         collector = (MaxScoreCollector) next;
@@ -339,9 +338,7 @@ public class MultiThreadedSearcher {
       Collector collector;
       for (Object o : collectors) {
         collector = (Collector) o;
-        if (collector instanceof EarlyTerminatingCollector) {
-          EarlyTerminatingCollector earlyTerminatingCollector =
-              (EarlyTerminatingCollector) collector;
+        if (collector instanceof final EarlyTerminatingCollector earlyTerminatingCollector) {
           collector = earlyTerminatingCollector.getDelegate();
         }
         if (collector instanceof TopDocsCollector) {
