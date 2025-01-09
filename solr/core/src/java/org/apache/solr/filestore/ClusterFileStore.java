@@ -162,7 +162,11 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   @Override
   @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
   public FileStoreDirectoryListingResponse getMetadata(String path) {
-    return getMetadata(path, fileStore);
+    if (path == null) {
+      path = "";
+    }
+    FileStore.FileType type = fileStore.getType(path, false);
+    return getMetadata(type, path, fileStore);
   }
 
   public static void attachFileToResponse(
@@ -191,13 +195,13 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   }
 
   @SuppressWarnings("fallthrough")
-  public static FileStoreDirectoryListingResponse getMetadata(String path, FileStore fileStore) {
+  public static FileStoreDirectoryListingResponse getMetadata(
+      FileStore.FileType type, String path, FileStore fileStore) {
     final var dirListingResponse = new FileStoreDirectoryListingResponse();
     if (path == null) {
       path = "";
     }
 
-    FileStore.FileType type = fileStore.getType(path, true);
     switch (type) {
       case NOFILE:
         dirListingResponse.files = Collections.singletonMap(path, null);

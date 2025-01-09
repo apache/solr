@@ -75,7 +75,6 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
     }
     final var pathCopy = path;
     if (getFrom != null) {
-
       ClusterFileStore.pullFileFromNode(coreContainer, fileStore, pathCopy, getFrom);
       return response;
     }
@@ -84,7 +83,7 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
     if (type == FileStore.FileType.NOFILE
         || type == FileStore.FileType.DIRECTORY
         || (type == FileStore.FileType.FILE && Boolean.TRUE.equals(meta))) {
-      return ClusterFileStore.getMetadata(path, fileStore);
+      return ClusterFileStore.getMetadata(type, path, fileStore);
     }
 
     // User wants to get the "raw" file
