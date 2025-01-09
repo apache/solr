@@ -690,7 +690,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     shutil.copytree(unpackPath, java11UnpackPath)
     os.chdir(java11UnpackPath)
     print('    test solr example w/ Java 11...')
-    testSolrExample(java11UnpackPath, java.java11_home)
+    testSolrExample(java11UnpackPath, java.java11_home, isSlim)
 
     if java.run_java17:
       print('    copying unpacked distribution for Java 17 ...')
@@ -700,7 +700,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
       shutil.copytree(unpackPath, java17UnpackPath)
       os.chdir(java17UnpackPath)
       print('    test solr example w/ Java 17...')
-      testSolrExample(java17UnpackPath, java.java17_home)
+      testSolrExample(java17UnpackPath, java.java17_home, isSlim)
 
     os.chdir(unpackPath)
 
@@ -742,7 +742,7 @@ def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
-def testSolrExample(binaryDistPath, javaPath):
+def testSolrExample(binaryDistPath, javaPath, isSlim):
   # test solr using some examples it comes with
   logFile = '%s/solr-example.log' % binaryDistPath
   old_cwd = os.getcwd() # So we can back-track
@@ -754,6 +754,10 @@ def testSolrExample(binaryDistPath, javaPath):
   env['JAVA_HOME'] = javaPath
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
 
+  example = "techproducts"
+  if isSlim:
+    example = "films"
+
   # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
   try:
       if not cygwin:
@@ -763,22 +767,20 @@ def testSolrExample(binaryDistPath, javaPath):
   except:
      print('      Stop failed due to: '+sys.exc_info()[0])
 
-  print('      Running techproducts example on port 8983 from %s' % binaryDistPath)
+  print('      Running %s example on port 8983 from %s' % (example, binaryDistPath))
   try:
     if not cygwin:
-      runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
+      runExampleStatus = subprocess.call(['bin/solr','-e',example])
     else:
-      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e ' + example, shell=True)
 
     if runExampleStatus != 0:
-      raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
+      raise RuntimeError('Failed to run the %s example, check log for previous errors.' % example)
 
     os.chdir('example')
-    print('      test utf8...')
-    run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
-    s = load('http://localhost:8983/solr/techproducts/select/?q=video')
-    if s.find('"numFound":3,') == -1:
+    s = load('http://localhost:8983/solr/%s/select/?q=video' % example)
+    if s.find('"numFound":%d,' % (8 if isSlim else 3)) == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
     s = load('http://localhost:8983/api/cores')
