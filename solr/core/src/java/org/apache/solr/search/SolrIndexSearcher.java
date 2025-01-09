@@ -1983,7 +1983,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;
-        if(searchResult.isTerminatedEarly){
+        if (searchResult.isTerminatedEarly) {
           qr.setTerminatedEarly(true);
           qr.setPartialResults(Boolean.TRUE);
         }

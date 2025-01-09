@@ -463,9 +463,7 @@ public class ResponseBuilder {
     final Boolean terminatedEarly = result.getTerminatedEarly();
     if (terminatedEarly != null) {
       rsp.getResponseHeader()
-        .add(
-          SolrQueryResponse.RESPONSE_HEADER_TERMINATED_EARLY_KEY,
-          terminatedEarly);
+          .add(SolrQueryResponse.RESPONSE_HEADER_TERMINATED_EARLY_KEY, terminatedEarly);
     }
     if (null != cursorMark) {
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
@@ -36,18 +35,18 @@ import org.apache.lucene.search.ScoreMode;
  * MultiCollector} acts for {@link Collector}.
  */
 public class SolrMultiCollectorManager
-  implements CollectorManager<SolrMultiCollectorManager.Collectors, Object[]> {
+    implements CollectorManager<SolrMultiCollectorManager.Collectors, Object[]> {
 
   private final CollectorManager<Collector, ?>[] collectorManagers;
   private AtomicInteger maxHits = null;
   private int maxDocsToCollect;
   private final List<Collectors> reducableCollectors = new ArrayList<>();
 
-
   @SafeVarargs
   @SuppressWarnings({"varargs", "unchecked"})
-  public SolrMultiCollectorManager(QueryCommand queryCommand,
-    final CollectorManager<? extends Collector, ?>... collectorManagers) {
+  public SolrMultiCollectorManager(
+      QueryCommand queryCommand,
+      final CollectorManager<? extends Collector, ?>... collectorManagers) {
     if (collectorManagers.length < 1) {
       throw new IllegalArgumentException("There must be at least one collector");
     }
@@ -91,13 +90,12 @@ public class SolrMultiCollectorManager
     }
     return results;
   }
+
   public Object[] reduce() throws IOException {
     return reduce(reducableCollectors);
   }
 
-  /**
-   * Wraps multiple collectors for processing
-   */
+  /** Wraps multiple collectors for processing */
   class Collectors implements Collector {
 
     private final Collector[] collectors;
@@ -115,7 +113,7 @@ public class SolrMultiCollectorManager
 
     @Override
     public final LeafCollector getLeafCollector(final LeafReaderContext context)
-      throws IOException {
+        throws IOException {
       return new LeafCollectors(context, scoreMode() == ScoreMode.TOP_SCORES);
     }
 
@@ -135,7 +133,7 @@ public class SolrMultiCollectorManager
       private final boolean skipNonCompetitiveScores;
 
       private LeafCollectors(final LeafReaderContext context, boolean skipNonCompetitiveScores)
-        throws IOException {
+          throws IOException {
         this.skipNonCompetitiveScores = skipNonCompetitiveScores;
         leafCollectors = new LeafCollector[collectors.length];
         for (int i = 0; i < collectors.length; i++) {
@@ -153,14 +151,14 @@ public class SolrMultiCollectorManager
           }
         } else {
           FilterScorable fScorer =
-            new FilterScorable(scorer) {
-              @Override
-              public void setMinCompetitiveScore(float minScore) throws IOException {
-                // Ignore calls to setMinCompetitiveScore so that if we wrap two
-                // collectors and one of them wants to skip low-scoring hits, then
-                // the other collector still sees all hits.
-              }
-            };
+              new FilterScorable(scorer) {
+                @Override
+                public void setMinCompetitiveScore(float minScore) throws IOException {
+                  // Ignore calls to setMinCompetitiveScore so that if we wrap two
+                  // collectors and one of them wants to skip low-scoring hits, then
+                  // the other collector still sees all hits.
+                }
+              };
           for (LeafCollector leafCollector : leafCollectors) {
             if (leafCollector != null) {
               leafCollector.setScorer(fScorer);

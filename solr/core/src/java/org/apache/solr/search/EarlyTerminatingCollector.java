@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FilterCollector;
@@ -41,7 +40,6 @@ public class EarlyTerminatingCollector extends FilterCollector {
   private final AtomicInteger pendingDocsToCollect;
   private boolean terminatedEarly = false;
 
-
   /**
    * Wraps a {@link Collector}, throwing {@link EarlyTerminatingCollectorException} once the
    * specified maximum is reached.
@@ -50,14 +48,16 @@ public class EarlyTerminatingCollector extends FilterCollector {
    * @param maxDocsToCollect - the maximum number of documents to Collect
    */
   public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect) {
-    this(delegate,maxDocsToCollect, new AtomicInteger(maxDocsToCollect));
+    this(delegate, maxDocsToCollect, new AtomicInteger(maxDocsToCollect));
   }
 
-  public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect,AtomicInteger docsToCollect) {
+  public EarlyTerminatingCollector(
+      Collector delegate, int maxDocsToCollect, AtomicInteger docsToCollect) {
     super(delegate);
     this.maxDocsToCollect = maxDocsToCollect;
     this.pendingDocsToCollect = docsToCollect;
   }
+
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     prevReaderCumulativeSize += currentReaderSize; // not current any more
@@ -74,12 +74,13 @@ public class EarlyTerminatingCollector extends FilterCollector {
           terminatedEarly = pendingDocsToCollect.addAndGet(-1 * chunkSize) < 0;
         }
         if (terminatedEarly) {
-          throw new EarlyTerminatingCollectorException(maxDocsToCollect,
-            prevReaderCumulativeSize + (doc + 1));
+          throw new EarlyTerminatingCollectorException(
+              maxDocsToCollect, prevReaderCumulativeSize + (doc + 1));
         }
       }
     };
   }
+
   public boolean isTerminatedEarly() {
     return terminatedEarly;
   }

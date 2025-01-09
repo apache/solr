@@ -196,11 +196,11 @@ public class MultiThreadedSearcher {
     private final Object[] result;
     final boolean isTerminatedEarly;
 
-
     public SearchResult(ScoreMode scoreMode, Object[] result) {
       this(scoreMode, result, false);
     }
-    public SearchResult(ScoreMode scoreMode, Object[] result,boolean isTerminatedEarly) {
+
+    public SearchResult(ScoreMode scoreMode, Object[] result, boolean isTerminatedEarly) {
       this.scoreMode = scoreMode;
       this.result = result;
       this.isTerminatedEarly = isTerminatedEarly;
@@ -271,7 +271,6 @@ public class MultiThreadedSearcher {
           next = earlyTerminatingCollector.getDelegate();
         }
         collector = (MaxScoreCollector) next;
-
       }
 
       return new MaxScoreResult(maxScore);
@@ -341,7 +340,8 @@ public class MultiThreadedSearcher {
       for (Object o : collectors) {
         collector = (Collector) o;
         if (collector instanceof EarlyTerminatingCollector) {
-          EarlyTerminatingCollector earlyTerminatingCollector = (EarlyTerminatingCollector) collector;
+          EarlyTerminatingCollector earlyTerminatingCollector =
+              (EarlyTerminatingCollector) collector;
           collector = earlyTerminatingCollector.getDelegate();
         }
         if (collector instanceof TopDocsCollector) {
