@@ -43,7 +43,7 @@ apache-lucene = "9.12.1"
 apache-opennlp = "1.9.4"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
-apache-tika = "1.28.5"
+apache-tika = "3.0.0"
 apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.2"
 # @keep for version alignment
