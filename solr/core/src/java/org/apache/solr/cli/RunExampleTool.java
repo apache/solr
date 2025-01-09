@@ -382,7 +382,8 @@ public class RunExampleTool extends ToolBase {
                 + "        }\n"
                 + "      }");
 
-        echo("Adding name, initial_release_date, and film_vector fields to films schema");
+        echo(
+            "Adding name, genre, directed_by, initial_release_date, and film_vector fields to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
@@ -391,6 +392,18 @@ public class RunExampleTool extends ToolBase {
                 + "          \"name\":\"name\",\n"
                 + "          \"type\":\"text_general\",\n"
                 + "          \"multiValued\":false,\n"
+                + "          \"stored\":true\n"
+                + "        },\n"
+                + "        \"add-field\" : {\n"
+                + "          \"name\":\"genre\",\n"
+                + "          \"type\":\"text_general\",\n"
+                + "          \"multiValued\":true,\n"
+                + "          \"stored\":true\n"
+                + "        },\n"
+                + "        \"add-field\" : {\n"
+                + "          \"name\":\"directed_by\",\n"
+                + "          \"type\":\"text_general\",\n"
+                + "          \"multiValued\":true,\n"
                 + "          \"stored\":true\n"
                 + "        },\n"
                 + "        \"add-field\" : {\n"
@@ -403,6 +416,18 @@ public class RunExampleTool extends ToolBase {
                 + "          \"type\":\"knn_vector_10\",\n"
                 + "          \"indexed\":true\n"
                 + "          \"stored\":true\n"
+                + "        },\n"
+                + "        \"add-copy-field\" : {\n"
+                + "          \"source\":\"genre\",\n"
+                + "          \"dest\":\"_text_\"\n"
+                + "        },\n"
+                + "        \"add-copy-field\" : {\n"
+                + "          \"source\":\"name\",\n"
+                + "          \"dest\":\"_text_\"\n"
+                + "        },\n"
+                + "        \"add-copy-field\" : {\n"
+                + "          \"source\":\"directed_by\",\n"
+                + "          \"dest\":\"_text_\"\n"
                 + "        }\n"
                 + "      }");
 
