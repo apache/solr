@@ -427,7 +427,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     final var req = new QueryRequest(params("q", "*:*"));
     req.setResponseParser(new InputStreamResponseParser("xml"));
     final var rsp = req.process(client);
-    Object stream = rsp.getResponse().get("stream");
+    Object stream = rsp.getResponse().get(InputStreamResponseParser.STREAM_KEY);
     assertNotNull(stream);
     assertThat(stream, instanceOf(InputStream.class));
     InputStream is = (InputStream) stream;
