@@ -441,28 +441,28 @@ public class JavaBinCodec implements PushWriter {
       writeBoolean(((AtomicBoolean) val).get());
       return true;
     }
-    if (val instanceof float[] ff) {
-      writeFloatArr(ff);
+    if (val instanceof float[]) {
+      writeFloatArr((float[]) val);
       return true;
     }
-    if (val instanceof int[] ii) {
-      writeIntArr(ii);
+    if (val instanceof int[]) {
+      writeIntArr((int[]) val);
       return true;
     }
-    if (val instanceof long[] ll) {
-      writeLongArr(ll);
+    if (val instanceof long[]) {
+      writeLongArr((long[]) val);
       return true;
     }
-    if (val instanceof double[] dd) {
-      writeDoubleArr(dd);
+    if (val instanceof double[]) {
+      writeDoubleArr((double[]) val);
       return true;
     }
-    if (val instanceof short[] ss) {
-      writeShortArr(ss);
+    if (val instanceof short[]) {
+      writeShortArr((short[]) val);
       return true;
     }
-    if (val instanceof boolean[] bb) {
-      writeBoolArr(bb);
+    if (val instanceof boolean[]) {
+      writeBoolArr((boolean[]) val);
       return true;
     }
     return false;

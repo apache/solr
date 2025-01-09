@@ -239,23 +239,20 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       } else if (unmarshalledObj.get(i) instanceof SolrInputField
           && matchObj.get(i) instanceof SolrInputField) {
         assertTrue(assertSolrInputFieldEquals(unmarshalledObj.get(i), matchObj.get(i)));
-      } else if (unmarshalledObj.get(i) instanceof float[] a
-          && matchObj.get(i) instanceof float[] e) {
-        assertArrayEquals(e, a, 0.000000f);
-      } else if (unmarshalledObj.get(i) instanceof double[] a
-          && matchObj.get(i) instanceof double[] e) {
-        assertArrayEquals(e, a, 0.000000d);
-      } else if (unmarshalledObj.get(i) instanceof long[] a
-          && matchObj.get(i) instanceof long[] e) {
-        assertArrayEquals(e, a);
-      } else if (unmarshalledObj.get(i) instanceof int[] a && matchObj.get(i) instanceof int[] e) {
-        assertArrayEquals(e, a);
-      } else if (unmarshalledObj.get(i) instanceof short[] a
-          && matchObj.get(i) instanceof short[] e) {
-        assertArrayEquals(e, a);
-      } else if (unmarshalledObj.get(i) instanceof boolean[] a
-          && matchObj.get(i) instanceof boolean[] e) {
-        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof float[] && matchObj.get(i) instanceof float[]) {
+        assertArrayEquals((float[]) matchObj.get(i), (float[]) unmarshalledObj.get(i), 0.000000f);
+      } else if (unmarshalledObj.get(i) instanceof double[]
+          && matchObj.get(i) instanceof double[]) {
+        assertArrayEquals((double[]) matchObj.get(i), (double[]) unmarshalledObj.get(i), 0.000000d);
+      } else if (unmarshalledObj.get(i) instanceof long[] && matchObj.get(i) instanceof long[]) {
+        assertArrayEquals((long[]) matchObj.get(i), (long[]) unmarshalledObj.get(i));
+      } else if (unmarshalledObj.get(i) instanceof int[] && matchObj.get(i) instanceof int[]) {
+        assertArrayEquals((int[]) matchObj.get(i), (int[]) unmarshalledObj.get(i));
+      } else if (unmarshalledObj.get(i) instanceof short[] && matchObj.get(i) instanceof short[]) {
+        assertArrayEquals((short[]) matchObj.get(i), (short[]) unmarshalledObj.get(i));
+      } else if (unmarshalledObj.get(i) instanceof boolean[]
+          && matchObj.get(i) instanceof boolean[]) {
+        assertArrayEquals((boolean[]) matchObj.get(i), (boolean[]) unmarshalledObj.get(i));
       } else {
         assertEquals(unmarshalledObj.get(i), matchObj.get(i));
       }
