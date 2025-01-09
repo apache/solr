@@ -17,6 +17,7 @@
 package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Metric;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
@@ -29,7 +30,8 @@ public abstract class SolrCoreMetric extends SolrMetric {
       Pattern.compile(
           "(?<core>^core_(?<collection>.*)_(?<shard>shard[0-9]+)_(?<replica>replica_.[0-9]+)).(.*)$");
   public static Pattern STANDALONE_CORE_PATTERN = Pattern.compile("^core_(?<core>.*?)\\.(.*)$");
-
+  public static List<String> CLOUD_LABEL_KEYS = List.of("core", "collection", "shard", "replica");
+  public static List<String> STANDALONE_LABEL_KEYS = List.of("core");
   public String coreName;
 
   public SolrCoreMetric(Metric dropwizardMetric, String metricName) {
@@ -39,14 +41,16 @@ public abstract class SolrCoreMetric extends SolrMetric {
     Matcher standalonePattern = STANDALONE_CORE_PATTERN.matcher(metricName);
     if (cloudPattern.find()) {
       coreName = cloudPattern.group("core");
-      cloudPattern
-          .namedGroups()
-          .forEach((key, value) -> labels.put(key, cloudPattern.group(value)));
+      CLOUD_LABEL_KEYS.forEach(
+          (key) -> {
+            labels.put(key, cloudPattern.group(key));
+          });
     } else if (standalonePattern.find()) {
       coreName = standalonePattern.group("core");
-      standalonePattern
-          .namedGroups()
-          .forEach((key, value) -> labels.put(key, standalonePattern.group(value)));
+      STANDALONE_LABEL_KEYS.forEach(
+          (key) -> {
+            labels.put(key, standalonePattern.group(key));
+          });
     } else {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
