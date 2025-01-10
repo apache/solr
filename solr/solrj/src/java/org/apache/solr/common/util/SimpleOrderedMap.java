@@ -72,39 +72,20 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
 
   /**
    * Returns a shared, empty, and immutable instance of SimpleOrderedMap.
-   * @return empty SimpleOrderedMap (immutable) 
+   * @return Empty SimpleOrderedMap (immutable) 
    */
   public static SimpleOrderedMap<Object> of() {
     return EMPTY;
   }
 
   /**
-   * Returns an immutable instance of SimpleOrderedMap with a single element.
-   * @return List containing the elements
+   * Returns an immutable instance of SimpleOrderedMap with a single key-value pair.
+   * @return SimpleOrderedMap containing one key-value pair
    */
-  public static SimpleOrderedMap<Object> of(Object o1) {
-    return new SimpleOrderedMap<>(List.of(o1));
-  }
-  
-  /**
-   * Returns an immutable instance of SimpleOrderedMap with two elements.
-   * @return List containing the elements
-   */
-  public static SimpleOrderedMap<Object> of(Object o1, Object o2) {
-    return new SimpleOrderedMap<>(List.of(o1,o2));
-  }
-  
-  /**
-   * Returns an immutable instance of SimpleOrderedMap with an arbitrary number of elements. 
-   * @return List containing the elements
-   */
-  public static SimpleOrderedMap<Object> of(Object... elements) {
-	  return switch (elements.length) {
-		  case 0 -> of();
-		  case 1 -> of(elements[0]);
-		  case 2 -> of(elements[0], elements[1]);
-		  default -> new SimpleOrderedMap<>(List.of(elements));
-	  };
+
+  public static <T> SimpleOrderedMap<T> of(String name, T val)
+  {
+    return new SimpleOrderedMap<>(List.of(name, val));   
   }
   
 }
