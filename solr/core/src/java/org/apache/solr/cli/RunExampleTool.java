@@ -143,7 +143,7 @@ public class RunExampleTool extends ToolBase {
                 "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
             .build(),
         Option.builder()
-            .longOpt("solr-home-dir")
+            .longOpt("solr-home")
             .hasArg()
             .argName("SOLR_HOME_DIR")
             .required(false)
@@ -239,8 +239,8 @@ public class RunExampleTool extends ToolBase {
               + exampleDir.getAbsolutePath()
               + " is not a directory!");
 
-    if (cli.hasOption("solr-home-dir")) {
-      solrHomeDir = new File(cli.getOptionValue("solr-home-dir"));
+    if (cli.hasOption("solr-home")) {
+      solrHomeDir = new File(cli.getOptionValue("solr-home"));
     } else {
       String solrHomeProp = EnvUtils.getProperty("solr.home");
       if (solrHomeProp != null && !solrHomeProp.isEmpty()) {
@@ -254,7 +254,7 @@ public class RunExampleTool extends ToolBase {
     }
     if (!solrHomeDir.isDirectory())
       throw new IllegalArgumentException(
-          "Value of --solr-home-dir option is invalid! "
+          "Value of --solr-home option is invalid! "
               + solrHomeDir.getAbsolutePath()
               + " is not a directory!");
 
@@ -552,7 +552,7 @@ public class RunExampleTool extends ToolBase {
     }
 
     // setup a unique solr.solr.home directory for each node
-    File node1Dir = setupExampleDir(serverDir, solrHomeDir, "node1");
+    File node1Dir = setupSolrHomeDir(serverDir, solrHomeDir, "node1");
     for (int n = 2; n <= numNodes; n++) {
       File nodeNDir = new File(solrHomeDir, "node" + n);
       if (!nodeNDir.isDirectory()) {
@@ -674,7 +674,7 @@ public class RunExampleTool extends ToolBase {
     String callScript = (!isWindows && cwd.equals(binDir.getParentFile())) ? "bin/solr" : script;
 
     String cwdPath = cwd.getAbsolutePath();
-    String solrHome = solrHomeDir.getAbsolutePath();
+    String solrHome = solrHomeDir.toPath().toAbsolutePath().toRealPath().toString();
 
     // don't display a huge path for solr home if it is relative to the cwd
     if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
@@ -688,11 +688,12 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d --solr-home \"%s\" --server-dir \"%s\" %s %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
             solrHome,
+            serverDir.getAbsolutePath(),
             hostArg,
             zkHostArg,
             memArg,
@@ -954,7 +955,7 @@ public class RunExampleTool extends ToolBase {
     return nodeStatus;
   }
 
-  protected File setupExampleDir(File serverDir, File solrHomeParentDir, String dirName)
+  protected File setupSolrHomeDir(File serverDir, File solrHomeParentDir, String dirName)
       throws IOException {
     File solrXml = new File(serverDir, "solr/solr.xml");
     if (!solrXml.isFile())
