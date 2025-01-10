@@ -39,7 +39,6 @@ import java.util.Optional;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -318,19 +317,16 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
-  @LuceneTestCase.Nightly
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
   }
 
   @Test
-  @LuceneTestCase.Nightly
   public void testSchemalessExample() throws Exception {
     testExample("schemaless");
   }
 
   @Test
-  @LuceneTestCase.Nightly
   public void testFilmsExample() throws Exception {
     testExample("films");
   }
@@ -357,7 +353,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           new String[] {
             "-e", exampleName,
             "--server-dir", solrServerDir.getAbsolutePath(),
-            "--example-dir", solrExampleDir.getAbsolutePath(),
+            "--solr-home-dir", solrExampleDir.getAbsolutePath(),
             "-p", String.valueOf(bindPort)
           };
 
@@ -413,13 +409,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             numFound = solrClient.query(query).getResults().getNumFound();
           }
           assertEquals(
-              "expected 32 docs in the "
+              "expected 31 docs in the "
                   + exampleName
                   + " example but found "
                   + numFound
                   + ", output: "
                   + toolOutput,
-              32,
+              31,
               numFound);
         }
       }
