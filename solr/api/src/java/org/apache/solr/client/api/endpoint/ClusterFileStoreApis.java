@@ -17,7 +17,7 @@
 package org.apache.solr.client.api.endpoint;
 
 import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
-import static org.apache.solr.client.api.util.Constants.OMIT_FROM_CODEGEN_PROPERTY;
+import static org.apache.solr.client.api.util.Constants.RAW_OUTPUT_PROPERTY;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -74,16 +74,8 @@ public interface ClusterFileStoreApis {
   @Operation(
       summary = "Retrieve raw contents of a file in the filestore.",
       tags = {"file-store"},
-      // The response of this v2 API is highly variable based on the parameters specified.  It can
-      // return raw (potentially binary) file data, a JSON-ified representation of that file data,
-      // metadata regarding one or multiple file store entries, etc.  This variability can be
-      // handled on the Jersey server side, but would be prohibitively difficult to accommodate in
-      // our code-generation templates.  Ideally, cosmetic improvements (e.g. splitting it up into
-      // multiple endpoints) will make this unnecessary in the future.  But for now, the extension
-      // property below ensures that this endpoint is ignored entirely when doing code generation.
       extensions = {
-        @Extension(
-            properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
+        @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})
       })
   @Path("/files{filePath:.+}")
   SolrJerseyResponse getFile(

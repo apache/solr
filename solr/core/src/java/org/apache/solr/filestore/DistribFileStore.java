@@ -48,6 +48,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
@@ -181,34 +182,36 @@ public class DistribFileStore implements FileStore {
       ByteBuffer metadata = null;
       Map<?, ?> m = null;
       try {
-        metadata =
-            Utils.executeGET(
-                coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-                baseUrl + "/node/files" + getMetaPath(),
-                Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+        final var metadataRequest = new FileStoreApi.GetFile(getMetaPath());
+        final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
+        final var response = metadataRequest.process(client);
+        metadata = Utils.newBytesConsumer((int)MAX_PKG_SIZE).accept(response.getResponseStreamIfSuccessful());
         m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
-      } catch (SolrException e) {
+      } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       }
 
+      ByteBuffer filedata = null;
       try {
-        ByteBuffer filedata =
-            Utils.executeGET(
-                coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-                baseUrl + "/node/files" + path,
-                Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+        final var fileRequest = new FileStoreApi.GetFile(path);
+        final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
+        final var fileResponse = fileRequest.process(client);
+        filedata = Utils.newBytesConsumer((int)MAX_PKG_SIZE).accept(fileResponse.getResponseStreamIfSuccessful());
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
+      }
+
+      try {
         filedata.mark();
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
         String expected = (String) m.get("sha512");
         if (!sha512.equals(expected)) {
           throw new SolrException(
-              SERVER_ERROR, "sha512 mismatch downloading : " + path + " from node : " + fromNode);
+                  SERVER_ERROR, "sha512 mismatch downloading : " + path + " from node : " + fromNode);
         }
         filedata.reset();
         persistToFile(filedata, metadata);
         return true;
-      } catch (SolrException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
       } catch (IOException ioe) {
         throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
       }
@@ -221,16 +224,10 @@ public class DistribFileStore implements FileStore {
         try {
           String baseUrl =
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
-          String reqUrl = baseUrl + "/node/files" + path + "?meta=true&wt=javabin&omitHeader=true";
-          boolean nodeHasBlob = false;
-          Object nl =
-              Utils.executeGET(
-                  coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-                  reqUrl,
-                  Utils.JAVABINCONSUMER);
-          if (Utils.getObjectByPath(nl, false, Arrays.asList("files", path)) != null) {
-            nodeHasBlob = true;
-          }
+          final var metadataRequest = new FileStoreApi.GetMetadata(path);
+          final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
+          final var metadataResponse = metadataRequest.process(client).getParsed();
+          boolean nodeHasBlob = metadataResponse.files != null && metadataResponse.files.containsKey(path);
 
           if (nodeHasBlob) {
             boolean success = fetchFileFromNodeAndPersist(liveNode);

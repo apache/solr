@@ -52,7 +52,7 @@ public class InputStreamResponse extends SimpleSolrResponse {
   }
 
   public int getHttpStatus() {
-    return (int) getResponse().get("responseCode");
+    return (int) getResponse().get("responseStatus");
   }
 
   /**
