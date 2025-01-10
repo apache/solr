@@ -427,12 +427,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   public Set<String> getNodeNamesFromSolrUrls(List<String> urls)
       throws URISyntaxException, MalformedURLException {
-    Set<String> set = new HashSet<>();
+    Set<String> urlSet = new HashSet<>();
     for (String url : urls) {
-      String nodeNameFromSolrUrl = getNodeNameFromSolrUrl(url);
-      set.add(nodeNameFromSolrUrl);
+      urlSet.add(getNodeNameFromSolrUrl(url));
     }
-    return Collections.unmodifiableSet(set);
+    return Collections.unmodifiableSet(urlSet);
   }
 
   /** URL to cluster state node name (http://127.0.0.1:12345/solr to 127.0.0.1:12345_solr) */
