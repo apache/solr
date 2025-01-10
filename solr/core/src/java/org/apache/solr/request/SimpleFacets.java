@@ -876,7 +876,7 @@ public class SimpleFacets {
     String[] facetFs = global.getParams(FacetParams.FACET_FIELD);
 
     if (null == facetFs) {
-      return  SimpleOrderedMap.empty();
+      return  SimpleOrderedMap.of();
     }
 
     // Passing a negative number for FACET_THREADS implies an unlimited number of threads is
