@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -185,7 +184,9 @@ public class DistribFileStore implements FileStore {
         final var metadataRequest = new FileStoreApi.GetFile(getMetaPath());
         final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
         final var response = metadataRequest.process(client);
-        metadata = Utils.newBytesConsumer((int)MAX_PKG_SIZE).accept(response.getResponseStreamIfSuccessful());
+        metadata =
+            Utils.newBytesConsumer((int) MAX_PKG_SIZE)
+                .accept(response.getResponseStreamIfSuccessful());
         m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
@@ -196,7 +197,9 @@ public class DistribFileStore implements FileStore {
         final var fileRequest = new FileStoreApi.GetFile(path);
         final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
         final var fileResponse = fileRequest.process(client);
-        filedata = Utils.newBytesConsumer((int)MAX_PKG_SIZE).accept(fileResponse.getResponseStreamIfSuccessful());
+        filedata =
+            Utils.newBytesConsumer((int) MAX_PKG_SIZE)
+                .accept(fileResponse.getResponseStreamIfSuccessful());
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
       }
@@ -207,7 +210,7 @@ public class DistribFileStore implements FileStore {
         String expected = (String) m.get("sha512");
         if (!sha512.equals(expected)) {
           throw new SolrException(
-                  SERVER_ERROR, "sha512 mismatch downloading : " + path + " from node : " + fromNode);
+              SERVER_ERROR, "sha512 mismatch downloading : " + path + " from node : " + fromNode);
         }
         filedata.reset();
         persistToFile(filedata, metadata);
@@ -227,7 +230,8 @@ public class DistribFileStore implements FileStore {
           final var metadataRequest = new FileStoreApi.GetMetadata(path);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
           final var metadataResponse = metadataRequest.process(client).getParsed();
-          boolean nodeHasBlob = metadataResponse.files != null && metadataResponse.files.containsKey(path);
+          boolean nodeHasBlob =
+              metadataResponse.files != null && metadataResponse.files.containsKey(path);
 
           if (nodeHasBlob) {
             boolean success = fetchFileFromNodeAndPersist(liveNode);
@@ -345,12 +349,13 @@ public class DistribFileStore implements FileStore {
       for (String node : nodes) {
         String baseUrl =
             coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-        String url = baseUrl + "/node/files" + info.path + "?getFrom=";
+
+        String nodeToFetchFrom;
         if (i < FETCHFROM_SRC) {
           // this is to protect very large clusters from overwhelming a single node
           // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
           // it's there in  the memory now. So , it must be served fast
-          url += myNodeName;
+          nodeToFetchFrom = myNodeName;
         } else {
           if (i == FETCHFROM_SRC) {
             // This is just an optimization
@@ -364,11 +369,17 @@ public class DistribFileStore implements FileStore {
           // trying to avoid the thundering herd problem when there are a very large no:of nodes
           // others should try to fetch it from any node where it is available. By now,
           // almost FETCHFROM_SRC other nodes may have it
-          url += "*";
+          nodeToFetchFrom = "*";
         }
         try {
+          // TODO This request succeeds but quietly doesn't pass the 'getFrom' parameter due to some
+          // logic in HttpSolrClient that whitelists the query params sent through on POST and PUT
+          // requests.  I've never really understood this logic well, does it still need to exist?
+          final var pullFileRequest = new FileStoreApi.ExecuteFileStoreCommand(info.path);
+          pullFileRequest.setGetFrom(nodeToFetchFrom);
+          final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
           // fire and forget
-          Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
+          pullFileRequest.process(client);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception
