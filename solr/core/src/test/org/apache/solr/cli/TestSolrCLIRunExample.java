@@ -120,9 +120,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
           String solrHomeDir = getArg("--solr-home", args);
           int port = Integer.parseInt(getArg("-p", args));
-          String solrxml =
-              Files.readString(
-                  Paths.get(solrHomeDir).resolve("solr.xml"), Charset.defaultCharset());
+          Path solrXmlPath = Paths.get(solrHomeDir).resolve("solr.xml");
+          if (!Files.exists(solrXmlPath)) {
+            String solrServerDir = getArg("--server-dir", args);
+            solrXmlPath = Paths.get(solrServerDir).resolve("solr").resolve("solr.xml");
+          }
+          String solrxml = Files.readString(solrXmlPath, Charset.defaultCharset());
 
           JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
           try {
@@ -332,13 +335,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   protected void testExample(String exampleName) throws Exception {
-    File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
-    if (!solrHomeDir.isDirectory())
-      fail(solrHomeDir.getAbsolutePath() + " not found and is required to run this test!");
+    File defaultSolrHomeDir = new File(ExternalPaths.SERVER_HOME);
+    if (!defaultSolrHomeDir.isDirectory())
+      fail(defaultSolrHomeDir.getAbsolutePath() + " not found and is required to run this test!");
 
     Path tmpDir = createTempDir();
-    File solrExampleDir = tmpDir.toFile();
-    File solrServerDir = solrHomeDir.getParentFile();
+    File testSolrHomeDir = tmpDir.toFile();
+    File solrServerDir = defaultSolrHomeDir.getParentFile();
 
     for (int pass = 0; pass < 2; pass++) {
       // need a port to start the example server on
@@ -353,7 +356,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           new String[] {
             "-e", exampleName,
             "--server-dir", solrServerDir.getAbsolutePath(),
-            "--solr-home-dir", solrExampleDir.getAbsolutePath(),
+            "--solr-home", testSolrHomeDir.getAbsolutePath(),
             "-p", String.valueOf(bindPort)
           };
 

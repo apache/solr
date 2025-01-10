@@ -761,6 +761,7 @@ if [ $# -gt 0 ]; then
             fi
 
             SOLR_HOME="$2"
+            PASS_TO_RUN_EXAMPLE+=("--solr-home" "$SOLR_HOME")
             shift 2
         ;;
         -t|--data-home|-data.home)
@@ -778,6 +779,14 @@ if [ $# -gt 0 ]; then
         -f|--foreground|-foreground)
             FG="true"
             shift
+        ;;
+        --example-dir)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Example directory is required when using the $1 option!"
+              exit 1
+            fi
+            PASS_TO_RUN_EXAMPLE+=("--example-dir" "$2")
+            shift 2
         ;;
         --host|-host)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
