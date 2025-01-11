@@ -399,6 +399,22 @@ For example, setting `cpuAllowed=500` gives a limit of at most 500 ms of CPU tim
 
 All other considerations regarding partial results listed for the `timeAllowed` parameter apply here, too.
 
+
+== maxHits Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
+
+This parameter specifies the max number of hits a searcher will iterate through before early terminating the search.
+The count is per shard and across all threads involved in case of multi-threaded search. This parameter works
+in conjunction with other parameters that could early terminate a search, ex: _timeAllowed_ etc. In case the search
+was early terminated due to it exceeding maxHits a _terminatedEarly_ header in the response will be set along with
+_partialResults_ to indicate the same
+Note : the hits counted will need not be exactly equal to the maxHits provided, however it will be within range of this value.
+
+
 == memAllowed Parameter
 
 This parameter specifies the amount of memory (a float value, in MiB) allowed for a search thread to allocate
