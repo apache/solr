@@ -34,8 +34,9 @@ import java.util.Map;
  * serialized. It aims to minimize overhead and to be efficient at adding new elements.
  */
 public class SimpleOrderedMap<T> extends NamedList<T> {
- 
+
   private static final SimpleOrderedMap<Object> EMPTY = new SimpleOrderedMap<>(List.of());
+
   /** Creates an empty instance */
   public SimpleOrderedMap() {
     super();
@@ -72,7 +73,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
 
   /**
    * Returns a shared, empty, and immutable instance of SimpleOrderedMap.
-   * @return Empty SimpleOrderedMap (immutable) 
+   *
+   * @return Empty SimpleOrderedMap (immutable)
    */
   public static SimpleOrderedMap<Object> of() {
     return EMPTY;
@@ -80,12 +82,10 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
 
   /**
    * Returns an immutable instance of SimpleOrderedMap with a single key-value pair.
+   *
    * @return SimpleOrderedMap containing one key-value pair
    */
-
-  public static <T> SimpleOrderedMap<T> of(String name, T val)
-  {
-    return new SimpleOrderedMap<>(List.of(name, val));   
+  public static <T> SimpleOrderedMap<T> of(String name, T val) {
+    return new SimpleOrderedMap<>(List.of(name, val));
   }
-  
 }
