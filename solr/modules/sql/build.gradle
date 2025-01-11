@@ -20,6 +20,7 @@ apply plugin: 'java-library'
 description = 'SQL Module'
 
 dependencies {
+  implementation platform(project(':platform'))
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-streaming')
