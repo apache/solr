@@ -22,7 +22,6 @@ import filecmp
 import hashlib
 import http.client
 import os
-import platform
 import re
 import shutil
 import subprocess
@@ -35,6 +34,8 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import namedtuple
+
+import platform
 import scriptutil
 
 # This tool expects to find /solr off the base URL.  You
@@ -626,7 +627,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
   if isSrc:
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
-    expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
+    expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'settings.gradle.lockfile']
     expected_src_solr_files = ['build.gradle']
     expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'cross-dc-manager', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)

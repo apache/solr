@@ -43,7 +43,7 @@ allprojects { prj ->
       tasks.withType(JavaCompile) { task -> task.dependsOn ":errorProneSkipped" }
 
       // Error prone plugin adds error prone to test classpath. We need to add it here too
-      // (manually) so that versions.lock is consistent with or without error prone.
+      // (manually) so that lockfiles are consistent with or without error prone.
       configurations {
         errorprone
       }

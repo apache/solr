@@ -130,7 +130,7 @@ If you want to upgrade Lucene to a newer build proceed like the following:
 - Edit ./gradle/globals.gradle and change jenkins build number, too
   (this directs the repository to the one created by latest build):
     def lucenePrereleaseBuild = 'X'
-- Run: gradlew writeLocks (as described before)
+- Run: gradlew resolveAndLockAll (as described before)
 
 
 Lucene local dependency substitution

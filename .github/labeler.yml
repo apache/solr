@@ -2,10 +2,11 @@
 dependencies:
   - changed-files:
       - any-glob-to-any-file:
-        - gradle/libs.versions.toml # Solr 10+
-        - versions.props # Solr < v10
-        - versions.lock
-        - solr/licenses/**
+        - "gradle/libs.versions.toml" # Solr 10+
+        - "**/*.lockfile"
+        - "versions.props" # Solr < v10
+        - "versions.lock"
+        - "solr/licenses/**"
 
 # Add 'documentation' label to any changes within ref-guide or dev-docs
 documentation:

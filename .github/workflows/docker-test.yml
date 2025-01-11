@@ -42,7 +42,7 @@ jobs:
       with:
         path: |
           ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-docker-${{ hashFiles('versions.lock') }}
+        key: ${{ runner.os }}-gradle-docker-${{ hashFiles('**/*.lockfile') }}
         restore-keys: |
           ${{ runner.os }}-gradle-docker-
           ${{ runner.os }}-gradle-
