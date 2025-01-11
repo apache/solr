@@ -323,7 +323,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     assertU(commit());
 
     assertJQ(
-        req("q", "id:myid*", "fl", "*"),
+        req("q", "id:myid*", "fl", "*", "sort", "id asc"),
         "/response/docs==["
             + "{'id':'myid1','test_is_dvo':[101,102,103]},"
             + "{'id':'myid2','test_is_dvo':[201,202]},"

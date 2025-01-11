@@ -146,7 +146,9 @@ Other Changes
 ==================  9.9.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
+  fetching and computing it on the fly.  To avoid a backwards compatibilty concern, this won't work
+  for wt=javabin.  (Matthew Biscocho, David Smiley)
 
 Improvements
 ---------------------
@@ -164,16 +166,22 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
 
 Dependency Upgrades
 ---------------------
-(No changes)
+* SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
 
 Other Changes
 ---------------------
 * SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
   LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
+
+* GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
+  for encapsulation and reuse. (David Smiley)
+
+* GITHUB#2680: Improve reliablity of NpmTasks finding needed files/commands.  (Tyler Bertrand via Eric Pugh)
 
 ==================  9.8.0 ==================
 New Features
