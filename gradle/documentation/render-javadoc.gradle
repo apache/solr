@@ -197,7 +197,7 @@ configure(subprojects) {
       }.findAll {
         // Do not depend on disabled tasks or tasks that do not exist
         // :platform module does not have a renderJavaDoc and therefore task is null
-        it != null && it.enabled == true
+        it?.enabled == true
       }
     }
   }
