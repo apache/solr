@@ -20,10 +20,17 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
+import org.junit.BeforeClass;
 
-public class TimeOutTest extends SolrTestCase {
+public class TimeOutTest extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void setUpOnce() {
+    assumeWorkingMockito();
+  }
+
   public void testHasTimedOut() {
     TimeSource mockTimeSource = mock(TimeSource.class);
     when(mockTimeSource.getTimeNs()).thenReturn(Long.valueOf(10)).thenReturn(Long.valueOf(50));
