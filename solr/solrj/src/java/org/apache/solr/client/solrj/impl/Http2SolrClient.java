@@ -784,7 +784,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
     } else {
       // application/x-www-form-urlencoded
-      Fields fields = new Fields();
+      Fields fields = new Fields(true);
       Iterator<String> iter = wparams.getParameterNamesIterator();
       while (iter.hasNext()) {
         String key = iter.next();
