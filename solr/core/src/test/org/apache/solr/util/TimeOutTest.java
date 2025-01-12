@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,34 +32,35 @@ public class TimeOutTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setUpOnce() {
     assumeWorkingMockito();
+  }
+
+  @Before
+  public void timeSourceMock() {
     mockTimeSource = mock(TimeSource.class);
+    when(mockTimeSource.getTimeNs()).thenReturn(Long.valueOf(10)).thenReturn(Long.valueOf(50));
   }
 
   @Test
   public void testHasTimedOut() {
-    when(mockTimeSource.getTimeNs()).thenReturn(Long.valueOf(10)).thenReturn(Long.valueOf(50));
     TimeOut timeOut = new TimeOut(20, NANOSECONDS, mockTimeSource);
     assertTrue(timeOut.hasTimedOut());
   }
 
   @Test
   public void testHasNotTimedOut() {
-    when(mockTimeSource.getTimeNs()).thenReturn(Long.valueOf(10)).thenReturn(Long.valueOf(11));
-    TimeOut timeOut = new TimeOut(20, NANOSECONDS, mockTimeSource);
+    TimeOut timeOut = new TimeOut(100, NANOSECONDS, mockTimeSource);
     assertFalse(timeOut.hasTimedOut());
   }
 
   @Test
   public void testTimeLeft() {
-    when(mockTimeSource.getTimeNs()).thenReturn(Long.valueOf(10)).thenReturn(Long.valueOf(15));
-    TimeOut timeOut = new TimeOut(90, NANOSECONDS, mockTimeSource);
-    assertEquals(timeOut.timeLeft(NANOSECONDS), 85);
+    TimeOut timeOut = new TimeOut(240, NANOSECONDS, mockTimeSource);
+    assertEquals(timeOut.timeLeft(NANOSECONDS), 200);
   }
 
   @Test
   public void testTimeElapsed() {
-    when(mockTimeSource.getTimeNs()).thenReturn(Long.valueOf(10)).thenReturn(Long.valueOf(25));
-    TimeOut timeOut = new TimeOut(70, NANOSECONDS, mockTimeSource);
-    assertEquals(timeOut.timeElapsed(NANOSECONDS), 15);
+    TimeOut timeOut = new TimeOut(100, NANOSECONDS, mockTimeSource);
+    assertEquals(timeOut.timeElapsed(NANOSECONDS), 40);
   }
 }
