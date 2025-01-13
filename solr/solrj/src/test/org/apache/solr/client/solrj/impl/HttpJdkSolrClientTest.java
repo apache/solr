@@ -506,7 +506,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       assertTrue(client.maybeTryHeadRequest(url));
 
       // if https, the client won't attempt a HEAD request
-      if(client.headRequested) {
+      if (client.headRequested) {
         assertEquals("head", DebugServlet.lastMethod);
         assertTrue(DebugServlet.headers.containsKey("content-type"));
       }
