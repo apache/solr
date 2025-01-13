@@ -215,13 +215,12 @@ public class CoreContainerProvider implements ServletContextListener {
       }
 
       // Do initial logs for experimental Lucene classes.
-      // TODO: Use "MethodHandles.lookup().ensureClassInitialized()" instead of "Class.forName()"
-      //   once JDK 15+ is mandatory
+      final var lookup = MethodHandles.lookup();
       Stream.of(MMapDirectory.class, VectorUtil.class)
           .forEach(
               cls -> {
                 try {
-                  Class.forName(cls.getName());
+                  lookup.ensureInitialized(cls);
                 } catch (ReflectiveOperationException re) {
                   throw new SolrException(
                       ErrorCode.SERVER_ERROR, "Could not load Lucene class: " + cls.getName());

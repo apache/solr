@@ -19,7 +19,6 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
@@ -31,6 +30,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -236,7 +236,7 @@ public class SolrRequestParsers {
             "Remote Streaming is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
       }
       for (final String file : strs) {
-        ContentStreamBase stream = new ContentStreamBase.FileStream(new File(file));
+        ContentStreamBase stream = new ContentStreamBase.FileStream(Path.of(file));
         if (contentType != null) {
           stream.setContentType(contentType);
         }

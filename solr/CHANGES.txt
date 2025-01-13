@@ -141,14 +141,24 @@ Other Changes
 
 * SOLR-17568: SolrCloud no longer reroutes/proxies a core request to another node if not found locally. (David Smiley)
 
+* SOLR-17548: Switch all public Java APIs from File to Path. (Matthew Biscocho via Eric Pugh)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
+  fetching and computing it on the fly.  To avoid a backwards compatibilty concern, this won't work
+  for wt=javabin.  (Matthew Biscocho, David Smiley)
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
+  specific collections or cores.  Collection information can be fetched by a call to `GET /api/collections/collectionName`, and core
+  information with a call to `GET /api/cores/coreName/segments`. (Jason Gerlowski)
+
+* SOLR-16396: All v2 configset APIs have been moved to the slightly different path: `/api/configsets`, to better align with the design of
+  other v2 APIs.  SolrJ now offers (experimental) SolrRequest implementations for all v2 configset APIs in
+  `org.apache.solr.client.solrj.request.ConfigsetsApi`. (Jason Gerlowski)
 
 Optimizations
 ---------------------
@@ -156,15 +166,22 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
 
 Dependency Upgrades
 ---------------------
-(No changes)
+* SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
+  LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
+
+* GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
+  for encapsulation and reuse. (David Smiley)
+
+* GITHUB#2680: Improve reliablity of NpmTasks finding needed files/commands.  (Tyler Bertrand via Eric Pugh)
 
 ==================  9.8.0 ==================
 New Features
@@ -174,6 +191,8 @@ New Features
   This feature closes SIP-13: Cross Data Center Replication. (Mark Miller, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
 
 * SOLR-17150: Implement `memAllowed` parameter to limit per-thread memory allocations during request processing. (Andrzej Bialecki, Gus Heck)
+
+* SOLR-17525: Added knn_text_to_vector query parser to encode text to vector at query time through external LLM services. (Alessandro Benedetti)
 
 Improvements
 ---------------------
@@ -271,6 +290,11 @@ Bug Fixes
 * SOLR-17575: Fixed broken backwards compatibility with the legacy "langid.whitelist" config in Solr Langid. (Jan Høydahl, Alexander Zagniotov)
 
 * SOLR-17574: Fix AllowListUrlChecker when liveNodes changes. Remove ClusterState.getHostAllowList (Bruno Roustant, David Smiley)
+
+* SOLR-17595: Fix two issues in Solr CLI that prevent Solr from starting with the techproducts example and from
+  correctly parsing arguments on Windows that start with -D and have multiple values separated by "," or spaces. (Christos Malliaridis)
+
+* SOLR-17306: fix replication problem on follower restart (Martin Anzinger and Peter Kroiss via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
