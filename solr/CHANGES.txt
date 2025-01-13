@@ -46,6 +46,8 @@ Other Changes
 
 * SOLR-16503: Most remaining usages of Apache HttpClient in Solr switched to Jetty HttpClient (HTTP 2). (Sanjay Dutt, David Smiley)
 
+* SOLR-17589: Prevent error log entry on solr server due to initial HEAD request from HttpJdkSolrClient. (Paul Blanchaert via James Dyer)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------

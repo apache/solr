@@ -402,7 +402,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
     HttpRequest.Builder headReqB =
         HttpRequest.newBuilder(uriNoQueryParams)
-            .method("HEAD", HttpRequest.BodyPublishers.noBody());
+            .method("HEAD", HttpRequest.BodyPublishers.noBody())
+            .header("Content-Type", ClientUtils.TEXT_JSON);
     decorateRequest(headReqB, new QueryRequest());
     try {
       httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());
