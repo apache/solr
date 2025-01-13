@@ -44,7 +44,8 @@ allprojects {
           // Test forks
           [propName: 'tests.jvms',
            value: { -> ((int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))) },
-           description: "Number of forked test JVMs"],
+           description: "Number of forked test JVMs",
+           includeInReproLine: false],
           [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
           // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
           [propName: 'tests.jvmargs',
@@ -99,7 +100,7 @@ allprojects {
 
       maxParallelForks = resolvedTestOption("tests.jvms") as Integer
       if (verboseMode && maxParallelForks != 1) {
-        logger.lifecycle("tests.jvm forced to 1 in verbose mode.")
+        logger.lifecycle("tests.jvms forced to 1 in verbose mode.")
         maxParallelForks = 1
       }
 
