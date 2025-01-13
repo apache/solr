@@ -18,11 +18,7 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 
-/**
- * A lambda intended for invoking SolrClient operations
- *
- * @lucene.experimental
- */
+/** A lambda intended for invoking SolrClient operations */
 @FunctionalInterface
 public interface SolrClientFunction<C extends SolrClient, R> {
   R apply(C c) throws IOException, SolrServerException;

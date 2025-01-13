@@ -344,8 +344,8 @@ public class GCSBackupRepository extends AbstractBackupRepository {
     final BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, blobName).build();
     try (IndexInput input =
         shouldVerifyChecksum
-            ? sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)
-            : sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+            ? sourceDir.openChecksumInput(sourceFileName, IOContext.READONCE)
+            : sourceDir.openInput(sourceFileName, IOContext.READONCE)) {
       if (input.length() <= CodecUtil.footerLength()) {
         throw new CorruptIndexException("file is too small:" + input.length(), input);
       }
