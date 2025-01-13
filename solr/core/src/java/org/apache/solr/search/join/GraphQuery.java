@@ -28,8 +28,8 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -40,8 +40,8 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
@@ -256,7 +256,7 @@ public class GraphQuery extends Query {
       BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
       Query edgeQuery =
           collectSchemaField.hasDocValues()
-              ? new DocValuesFieldExistsQuery(field)
+              ? new FieldExistsQuery(field)
               : new WildcardQuery(new Term(field, "*"));
       leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
       DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
@@ -272,7 +272,7 @@ public class GraphQuery extends Query {
         termBytesHash.get(i, ref);
         terms.add(ref);
       }
-      final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
+      final Automaton a = Automata.makeStringUnion(terms);
       return a;
     }
 

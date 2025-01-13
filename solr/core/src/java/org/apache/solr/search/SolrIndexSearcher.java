@@ -219,7 +219,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Create an {@link ExecutorService} to be used by the Lucene {@link IndexSearcher#getExecutor()}.
+   * Create an {@link ExecutorService} to be used by the Lucene {@link IndexSearcher#getTaskExecutor()}.
    * Shared across the whole node because it's a machine CPU resource.
    */
   public static ExecutorService initCollectorExecutor(NodeConfig cfg) {
@@ -1390,7 +1390,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       for (int subindex = 0; subindex < numSubs; subindex++) {
         MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
         if (sub.postingsEnum == null) continue;
-        int base = sub.slice.start;
+        int base = sub.slice.start();
         int docid;
 
         if (largestPossible > docs.length) {
@@ -1800,7 +1800,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
       return TotalHits.Relation.EQUAL_TO;
     } else {
-      return topDocs.totalHits.relation;
+      return topDocs.totalHits.relation();
     }
   }
 
@@ -2405,10 +2405,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ids[i] = scoreDoc.doc;
     }
 
-    assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+    assert topDocs.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
     qr.getDocListAndSet().docList =
         new DocSlice(
-            0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, topDocs.totalHits.relation);
+            0, nDocsReturned, ids, null, topDocs.totalHits.value(), 0.0f, topDocs.totalHits.relation());
     populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
   }
 

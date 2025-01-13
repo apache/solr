@@ -330,7 +330,7 @@ class JoinQuery extends Query {
             for (int subindex = 0; subindex < numSubs; subindex++) {
               MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
               if (sub.postingsEnum == null) continue;
-              int base = sub.slice.start;
+              int base = sub.slice.start();
               int docid;
               while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 if (fastForRandomSet.get(docid + base)) {
@@ -407,7 +407,7 @@ class JoinQuery extends Query {
                 for (int subindex = 0; subindex < numSubs; subindex++) {
                   MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
                   if (sub.postingsEnum == null) continue;
-                  int base = sub.slice.start;
+                  int base = sub.slice.start();
                   int docid;
                   while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                     resultListDocs++;

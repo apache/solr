@@ -522,7 +522,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               new FieldInfo(
                   fieldInfo.name,
                   fieldInfo.number,
-                  fieldInfo.hasVectors(),
+                  fieldInfo.hasTermVectors(),
                   fieldInfo.hasNorms(),
                   fieldInfo.hasPayloads(),
                   fieldInfo.getIndexOptions(),

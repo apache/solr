@@ -371,7 +371,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if (doc == ssdv.docID()) {
         long currOrd;
         int currentInterval = 0;
-        while ((currOrd = ssdv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        while ((currOrd = ssdv.nextOrd()) != SortedSetDocValues.NO_MORE_DOCS) {
           boolean evaluateNextInterval = true;
           while (evaluateNextInterval && currentInterval < intervals.length) {
             IntervalCompareResult result = intervals[currentInterval].includes(currOrd);

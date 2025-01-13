@@ -799,7 +799,7 @@ public class DocTermOrds implements Accountable {
     public long nextOrd() {
       while (bufferUpto == bufferLength) {
         if (bufferLength < buffer.length) {
-          return NO_MORE_ORDS;
+          return NO_MORE_DOCS;
         } else {
           bufferLength = read(buffer);
           bufferUpto = 0;

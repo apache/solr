@@ -34,8 +34,6 @@ import org.slf4j.LoggerFactory;
  * <p>Can set the following parameters:
  *
  * <ul>
- *   <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}
- *   <li>preload -- See {@link MMapDirectory#setPreload(boolean)}
  *   <li>maxChunkSize -- The Max chunk size. See {@link MMapDirectory#MMapDirectory(Path,
  *       LockFactory, long)}
  * </ul>

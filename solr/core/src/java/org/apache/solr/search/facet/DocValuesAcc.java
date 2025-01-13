@@ -376,7 +376,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     @Override
     protected void collectValues(int doc, int slot) throws IOException {
       long ord;
-      while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+      while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_DOCS) {
         BytesRef term = values.lookupOrd(ord);
         Object obj = sf.getType().toObject(sf, term);
         double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();

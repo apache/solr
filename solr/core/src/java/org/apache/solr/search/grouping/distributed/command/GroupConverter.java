@@ -150,22 +150,22 @@ class GroupConverter {
     for (int i = 0; i < values.groups.length; i++) {
       GroupDocs<MutableValue> original = values.groups[i];
       final BytesRef groupValue;
-      if (original.groupValue.exists) {
+      if (original.groupValue().exists) {
         BytesRefBuilder binary = new BytesRefBuilder();
         fieldType.readableToIndexed(
-            Utils.OBJECT_TO_STRING.apply(original.groupValue.toObject()), binary);
+            Utils.OBJECT_TO_STRING.apply(original.groupValue().toObject()), binary);
         groupValue = binary.get();
       } else {
         groupValue = null;
       }
       groupDocs[i] =
           new GroupDocs<>(
-              original.score,
-              original.maxScore,
-              original.totalHits,
-              original.scoreDocs,
+              original.score(),
+              original.maxScore(),
+              original.totalHits(),
+              original.scoreDocs(),
               groupValue,
-              original.groupSortValues);
+              original.groupSortValues());
     }
 
     return new TopGroups<>(

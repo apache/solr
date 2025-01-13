@@ -63,7 +63,7 @@ public class NumericHidingLeafReader extends FilterLeafReader {
             new FieldInfo(
                 fi.name,
                 fi.number,
-                fi.hasVectors(),
+                fi.hasTermVectors(),
                 fi.omitsNorms(),
                 fi.hasPayloads(),
                 fi.getIndexOptions(),

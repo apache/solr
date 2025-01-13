@@ -102,7 +102,7 @@ public class CountValsAgg extends SimpleAggValueSource {
 
     @Override
     protected void collectValues(int doc, int slot) throws IOException {
-      while (values.nextOrd() != SortedSetDocValues.NO_MORE_ORDS) {
+      while (values.nextOrd() != SortedSetDocValues.NO_MORE_DOCS) {
         result[slot]++;
       }
     }

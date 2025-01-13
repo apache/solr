@@ -778,13 +778,13 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             docs[i] = scoreDoc.doc;
             scores[i] = scoreDoc.score;
           }
-          assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+          assert topDocs.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
           return new DocSlice(
               0,
               docs.length,
               docs,
               scores,
-              topDocs.totalHits.value,
+              topDocs.totalHits.value(),
               Float.NaN,
               TotalHits.Relation.EQUAL_TO);
         }

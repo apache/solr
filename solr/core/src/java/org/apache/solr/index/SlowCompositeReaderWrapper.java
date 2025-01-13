@@ -101,7 +101,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     } else {
       Version minVersion = Version.LATEST;
       for (LeafReaderContext leafReaderContext : reader.leaves()) {
-        Version leafVersion = leafReaderContext.reader().getMetaData().getMinVersion();
+        Version leafVersion = leafReaderContext.reader().getMetaData().minVersion();
         if (leafVersion == null) {
           minVersion = null;
           break;
@@ -112,9 +112,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       LeafMetaData leafMetaData = reader.leaves().get(0).reader().getMetaData();
       metaData =
           new LeafMetaData(
-              leafMetaData.getCreatedVersionMajor(),
+              leafMetaData.createdVersionMajor(),
               minVersion,
-              leafMetaData.getSort(),
+              leafMetaData.sort(),
               leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
