@@ -36,7 +36,6 @@ dependencies {
   implementation 'org.apache.kafka:kafka-clients'
   implementation 'com.google.guava:guava'
   implementation 'io.dropwizard.metrics:metrics-core'
-  implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.zookeeper:zookeeper'
   implementation 'org.apache.zookeeper:zookeeper-jute'
 
