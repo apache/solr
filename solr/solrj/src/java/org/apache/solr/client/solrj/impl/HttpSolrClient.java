@@ -70,6 +70,7 @@ import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -101,10 +102,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
 
   static final String USER_AGENT =
-      "Solr["
-          + MethodHandles.lookup().lookupClass().getName()
-          + "] "
-          + MethodHandles.lookup().lookupClass().getPackage().getSpecificationVersion();
+      "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
   static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
 
