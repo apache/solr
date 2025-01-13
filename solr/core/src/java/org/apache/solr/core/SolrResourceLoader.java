@@ -108,6 +108,7 @@ public class SolrResourceLoader
     "handler.admin.",
     "security.jwt.",
     "security.hadoop.",
+    "security.cert.",
     "handler.sql.",
     "hdfs.",
     "hdfs.update.",
