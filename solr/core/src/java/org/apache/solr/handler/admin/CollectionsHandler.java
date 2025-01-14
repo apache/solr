@@ -1075,8 +1075,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CANCEL_OP(
         CANCEL,
         (req, rsp, h) -> {
-          log.info("WTF");
-
           final CancelCollectionsApiCall cancelCollectionsApiCall =
               new CancelCollectionsApiCall(h.coreContainer, req, rsp);
           req.getParams().required().check(REQUESTID);
