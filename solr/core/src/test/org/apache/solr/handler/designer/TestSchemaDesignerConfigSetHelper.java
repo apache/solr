@@ -253,11 +253,11 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     doc.setField("pages", 809);
     doc.setField("published_year", 1989);
 
-    helper.postDataToBlobStore(
+    helper.storeSampleDocs(
         configSet + "_sample",
         SchemaDesignerConfigSetHelper.readAllBytes(() -> toJavabin(List.of(doc))));
 
-    List<SolrInputDocument> docs = helper.getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = helper.retrieveSampleDocs(configSet);
     assertTrue(docs != null && docs.size() == 1);
     assertEquals("1", docs.get(0).getFieldValue("id"));
   }

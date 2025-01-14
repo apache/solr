@@ -477,7 +477,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   protected void validateMultiValuedChange(String configSet, SchemaField field, Boolean multiValued)
       throws IOException {
-    List<SolrInputDocument> docs = getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = retrieveSampleDocs(configSet);
     if (!docs.isEmpty()) {
       boolean isMV = schemaSuggester.isMultiValued(field.getName(), docs);
       if (isMV && !multiValued) {
@@ -497,7 +497,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           SolrException.ErrorCode.BAD_REQUEST,
           "Cannot change type of the _version_ field; it must be a plong.");
     }
-    List<SolrInputDocument> docs = getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = retrieveSampleDocs(configSet);
     if (!docs.isEmpty()) {
       schemaSuggester.validateTypeChange(field, toType, docs);
     }
@@ -516,7 +516,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   List<SolrInputDocument> docs = null;
 
   @SuppressWarnings("unchecked")
-  List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
+  List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
 
     String path =
         "blob" + "/" + configSet
@@ -546,7 +546,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs)
       throws IOException, SolrServerException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
-    postDataToBlobStore(configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
+    storeSampleDocs(configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
   }
 
   /** Gets the stream, reads all the bytes, closes the stream. */
@@ -556,7 +556,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     }
   }
 
-  protected void postDataToBlobStore(String blobName, byte[] bytes)
+  protected void storeSampleDocs(String blobName, byte[] bytes)
       throws IOException, SolrServerException {
     String filePath = "blob" + "/" + blobName;
 
