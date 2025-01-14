@@ -118,7 +118,7 @@ class ValidateLogCallsTask extends DefaultTask {
 
     if (hasPlus) {
       cause = "hasPlus: " + hasPlus
-      violation = level != "error"
+      violation = true
     }
     if (violation == false) {
       def m = stripped =~ "\\(.*?\\)"
