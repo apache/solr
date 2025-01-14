@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
@@ -54,7 +55,7 @@ public class InputStreamResponseTest extends SolrTestCase {
 
     assertEquals(200, inputStreamResponse.getHttpStatus());
     try (final var is = inputStreamResponse.getResponseStream()) {
-      final var streamVal = new String(is.readAllBytes());
+      final var streamVal = new String(is.readAllBytes(), StandardCharsets.UTF_8);
       assertEquals("hello", streamVal);
     }
   }
