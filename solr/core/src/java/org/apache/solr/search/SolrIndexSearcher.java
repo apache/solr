@@ -44,18 +44,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.ExitableDirectoryReader;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiPostingsEnum;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
@@ -77,7 +66,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
@@ -300,9 +288,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     final long timeAllowed = cmd.getTimeAllowed();
     if (timeAllowed > 0) {
-      collector =
-          new TimeLimitingCollector(
-              collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed);
+      setTimeout(new QueryTimeoutImpl(timeAllowed));
     }
 
     if (postFilter != null) {
