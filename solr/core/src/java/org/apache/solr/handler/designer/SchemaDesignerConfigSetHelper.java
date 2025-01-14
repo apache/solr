@@ -542,7 +542,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
               },
               true);
     } catch (java.io.FileNotFoundException e) {
-      log.warn("File at path " + path + " not found.", e);
+      log.warn("File at path {} not found.", path);
     }
 
     return docs != null ? docs : Collections.emptyList();
