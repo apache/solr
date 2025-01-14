@@ -108,14 +108,13 @@ public interface ConfigNode {
   }
 
   /**
-   * Like {@link #attr(String)} but throws an error (incorporating {@code missing_err}) if not
-   * found.
+   * Like {@link #attr(String)} but throws an error (incorporating {@code missingErr}) if not found.
    */
-  default String attrRequired(String name, String missing_err) {
-    assert missing_err != null;
+  default String attrRequired(String name, String missingErr) {
+    assert missingErr != null;
     String attr = attr(name);
     if (attr == null) {
-      throw new RuntimeException(missing_err + ": missing mandatory attribute '" + name + "'");
+      throw new RuntimeException(missingErr + ": missing mandatory attribute '" + name + "'");
     }
     return attr;
   }
