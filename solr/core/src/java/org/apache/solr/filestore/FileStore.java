@@ -76,7 +76,7 @@ public interface FileStore {
     final MetaData meta;
     final String path;
 
-    FileEntry(ByteBuffer buf, MetaData meta, String path) {
+    public FileEntry(ByteBuffer buf, MetaData meta, String path) {
       this.buf = buf;
       this.meta = meta;
       this.path = path;

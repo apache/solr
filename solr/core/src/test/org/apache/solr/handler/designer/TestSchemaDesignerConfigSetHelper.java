@@ -254,7 +254,6 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     doc.setField("published_year", 1989);
 
     helper.postDataToBlobStore(
-        cluster.getSolrClient(),
         configSet + "_sample",
         SchemaDesignerConfigSetHelper.readAllBytes(() -> toJavabin(List.of(doc))));
 

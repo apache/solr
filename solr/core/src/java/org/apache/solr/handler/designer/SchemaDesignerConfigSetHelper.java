@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -59,7 +60,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -90,6 +90,9 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.filestore.ClusterFileStore;
+import org.apache.solr.filestore.FileStore;
+import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.FieldType;
@@ -501,6 +504,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   void deleteStoredSampleDocs(String configSet) {
+
     try {
       cloudClient().deleteByQuery(BLOB_STORE_ID, "id:" + configSet + "_sample/*", 10);
     } catch (IOException | SolrServerException | SolrException exc) {
@@ -509,47 +513,40 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     }
   }
 
+  List<SolrInputDocument> docs = null;
+
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
-    List<SolrInputDocument> docs = null;
 
-    final URI uri;
-    try {
-      uri =
-          collectionApiEndpoint(BLOB_STORE_ID, "blob", configSet + "_sample")
-              .setParameter(CommonParams.WT, "filestream")
-              .build();
-    } catch (URISyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
+    String path =
+        "blob" + "/" + configSet
+            + "_sample"; //  needs to be made unique to support multiple uploads.  Maybe hash the
+    // docs?
 
-    HttpGet httpGet = new HttpGet(uri);
-    try {
-      HttpResponse entity =
-          ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
-      int statusCode = entity.getStatusLine().getStatusCode();
-      if (statusCode == HttpStatus.SC_OK) {
-        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
-        if (bytes.length > 0) {
-          docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
-        }
-      } else if (statusCode != HttpStatus.SC_NOT_FOUND) {
-        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
-        throw new IOException(
-            "Failed to lookup stored docs for "
-                + configSet
-                + " due to: "
-                + new String(bytes, StandardCharsets.UTF_8));
-      } // else not found is ok
-    } finally {
-      httpGet.releaseConnection();
-    }
+    cc.getFileStore()
+        .get(
+            path,
+            entry -> {
+              try (InputStream is =
+                  entry.getInputStream()) { // Assuming there's a getInputStream() method
+                byte[] bytes = is.readAllBytes();
+                if (bytes.length > 0) {
+                  docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
+                }
+                // Do something with content...
+              } catch (IOException e) {
+                log.error("Error reading file content", e);
+              }
+            },
+            false);
+
     return docs != null ? docs : Collections.emptyList();
   }
 
-  void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
+  void storeSampleDocs(final String configSet, List<SolrInputDocument> docs)
+      throws IOException, SolrServerException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
-    postDataToBlobStore(cloudClient(), configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
+    postDataToBlobStore(configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
   }
 
   /** Gets the stream, reads all the bytes, closes the stream. */
@@ -559,29 +556,13 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     }
   }
 
-  protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
-      throws IOException {
-    final URI uri;
-    try {
-      uri = collectionApiEndpoint(BLOB_STORE_ID, "blob", blobName).build();
-    } catch (URISyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
+  protected void postDataToBlobStore(String blobName, byte[] bytes)
+      throws IOException, SolrServerException {
+    String filePath = "blob" + "/" + blobName;
 
-    HttpPost httpPost = new HttpPost(uri);
-    try {
-      httpPost.setHeader("Content-Type", "application/octet-stream");
-      httpPost.setEntity(new ByteArrayEntity(bytes));
-      HttpResponse resp = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpPost);
-      int statusCode = resp.getStatusLine().getStatusCode();
-      if (statusCode != HttpStatus.SC_OK) {
-        throw new SolrException(
-            SolrException.ErrorCode.getErrorCode(statusCode),
-            EntityUtils.toString(resp.getEntity(), StandardCharsets.UTF_8));
-      }
-    } finally {
-      httpPost.releaseConnection();
-    }
+    FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);
+
+    cc.getFileStore().put(new FileStore.FileEntry(ByteBuffer.wrap(bytes), meta, filePath));
   }
 
   private String getBaseUrl(final String collection) {
