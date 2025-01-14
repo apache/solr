@@ -42,7 +42,12 @@ public interface FileStore {
    */
   void put(FileEntry fileEntry) throws IOException;
 
-  /** read file content from a given path */
+  /**
+   * Read file content from a given path.
+   *
+   * <p>TODO: Is fetchMissing actually used? I don't see it being used, but the IDE doesn't flag it
+   * not being used!
+   */
   void get(String path, Consumer<FileEntry> consumer, boolean fetchMissing) throws IOException;
 
   /** Fetch a resource from another node internal API */
