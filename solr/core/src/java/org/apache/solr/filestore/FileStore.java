@@ -29,7 +29,11 @@ import java.util.function.Predicate;
 import org.apache.solr.filestore.FileStoreAPI.MetaData;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
-/** The interface to be implemented by any package store provider * @lucene.experimental */
+/**
+ * The interface to be implemented by any package store provider
+ *
+ * @lucene.experimental
+ */
 public interface FileStore {
 
   /**
@@ -59,7 +63,7 @@ public interface FileStore {
   Map<String, byte[]> getKeys() throws IOException;
 
   /**
-   * Refresh the files in a path. May be this node does not have all files
+   * Refresh the files in a path. Maybe this node does not have all files?
    *
    * @param path the path to be refreshed.
    */
@@ -71,7 +75,7 @@ public interface FileStore {
   /** Delete file from local file system */
   void deleteLocal(String path);
 
-  public class FileEntry {
+  class FileEntry {
     final ByteBuffer buf;
     final MetaData meta;
     final String path;
