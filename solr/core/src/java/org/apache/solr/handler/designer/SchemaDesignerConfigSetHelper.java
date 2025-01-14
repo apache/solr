@@ -91,6 +91,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.ClusterFileStore;
+import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStore;
 import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -504,16 +505,17 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   void deleteStoredSampleDocs(String configSet) {
-
-    try {
-      cloudClient().deleteByQuery(BLOB_STORE_ID, "id:" + configSet + "_sample/*", 10);
-    } catch (IOException | SolrServerException | SolrException exc) {
-      final String excStr = exc.toString();
-      log.warn("Failed to delete sample docs from blob store for {} due to: {}", configSet, excStr);
-    }
+    String path =
+        "blob" + "/" + configSet
+            + "_sample"; //  needs to be made unique to support multiple uploads.  Maybe hash the
+    // docs?
+    // why do I have to do this in two stages?
+    DistribFileStore.deleteZKFileEntry(cc.getZkController().getZkClient(), path);
+    cc.getFileStore().delete(path);
   }
 
-  List<SolrInputDocument> docs = null;
+  // I don't like this guy just hanging out here to support retrieveSampleDocs.
+  List<SolrInputDocument> docs = Collections.emptyList();
 
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
@@ -523,28 +525,30 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
             + "_sample"; //  needs to be made unique to support multiple uploads.  Maybe hash the
     // docs?
 
-    cc.getFileStore()
-        .get(
-            path,
-            entry -> {
-              try (InputStream is =
-                  entry.getInputStream()) { // Assuming there's a getInputStream() method
-                byte[] bytes = is.readAllBytes();
-                if (bytes.length > 0) {
-                  docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
+    try {
+      cc.getFileStore()
+          .get(
+              path,
+              entry -> {
+                try (InputStream is = entry.getInputStream()) {
+                  byte[] bytes = is.readAllBytes();
+                  if (bytes.length > 0) {
+                    docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
+                  }
+                  // Do something with content...
+                } catch (IOException e) {
+                  log.error("Error reading file content", e);
                 }
-                // Do something with content...
-              } catch (IOException e) {
-                log.error("Error reading file content", e);
-              }
-            },
-            false);
+              },
+              true);
+    } catch (java.io.FileNotFoundException e) {
+      log.warn("File at path " + path + " not found.", e);
+    }
 
     return docs != null ? docs : Collections.emptyList();
   }
 
-  void storeSampleDocs(final String configSet, List<SolrInputDocument> docs)
-      throws IOException, SolrServerException {
+  void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
     storeSampleDocs(configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
   }
@@ -556,8 +560,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     }
   }
 
-  protected void storeSampleDocs(String blobName, byte[] bytes)
-      throws IOException, SolrServerException {
+  protected void storeSampleDocs(String blobName, byte[] bytes) throws IOException {
     String filePath = "blob" + "/" + blobName;
 
     FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);

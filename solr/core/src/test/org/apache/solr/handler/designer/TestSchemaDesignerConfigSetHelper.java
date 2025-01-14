@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.filestore.FileStore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -260,6 +261,19 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     List<SolrInputDocument> docs = helper.retrieveSampleDocs(configSet);
     assertTrue(docs != null && docs.size() == 1);
     assertEquals("1", docs.get(0).getFieldValue("id"));
+
+    helper.deleteStoredSampleDocs(configSet);
+
+    FileStore.FileType type = cc.getFileStore().getType("blob/" + configSet + "_sample", true);
+    assertEquals(FileStore.FileType.NOFILE, type);
+  }
+
+  @Test
+  public void testRetrieveNonExistentDocsReturnsEmptyDocList() throws Exception {
+    String configSet = "testRetrieveNonExistentDocsReturnsEmptyDocList";
+    List<SolrInputDocument> docs = helper.retrieveSampleDocs(configSet);
+    assertNotNull(docs);
+    assertTrue(docs.isEmpty());
   }
 
   @Test
