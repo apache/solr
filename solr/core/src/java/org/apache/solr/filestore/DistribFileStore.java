@@ -426,7 +426,7 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing)
+  public void get(String path, Consumer<FileEntry> consumer, boolean fetchMissing)
       throws IOException {
     File file = getRealpath(path).toFile();
     String simpleName = file.getName();

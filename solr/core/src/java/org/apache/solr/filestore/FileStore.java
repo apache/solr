@@ -43,7 +43,7 @@ public interface FileStore {
   void put(FileEntry fileEntry) throws IOException;
 
   /** read file content from a given path */
-  void get(String path, Consumer<FileEntry> filecontent, boolean getMissing) throws IOException;
+  void get(String path, Consumer<FileEntry> consumer, boolean fetchMissing) throws IOException;
 
   /** Fetch a resource from another node internal API */
   boolean fetch(String path, String from);
