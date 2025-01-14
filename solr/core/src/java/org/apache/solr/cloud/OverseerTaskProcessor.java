@@ -716,7 +716,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     if (workQueue.containsTaskWithRequestId(ASYNC, asyncId)) {
       workQueue.removeTaskWithRequestId(ASYNC, asyncId);
 
-      // we are going to need to change it
+      // clear blockedTasks in case submitted task is in blocked tasks
       blockedTasks.clear();
 
       return true;
