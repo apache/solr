@@ -51,7 +51,6 @@ public class OverseerCancelMessageHandler implements OverseerMessageHandler, Sol
 
   public static final String CANCEL_PREFIX = "cancel";
 
-  private final Set<String> onGoingCancelAsyncIds;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -80,7 +79,6 @@ public class OverseerCancelMessageHandler implements OverseerMessageHandler, Sol
     this.overseer = overseer;
     this.cloudManager = overseer.getSolrCloudManager();
     this.isClosed = false;
-    this.onGoingCancelAsyncIds = new HashSet<>();
     this.cancelInProgressSet = new HashSet<>();
   }
 
@@ -156,14 +154,6 @@ public class OverseerCancelMessageHandler implements OverseerMessageHandler, Sol
   private OverseerSolrResponse handleTaskCancellation(
       String targetAsyncId, NamedList<Object> results)
       throws InterruptedException, KeeperException, IOException {
-    if (!true) {
-      results =
-          buildResponse(
-              targetAsyncId,
-              "not_cancelable",
-              "Operation does not support cancellation while in progress.");
-      return new OverseerSolrResponse(results);
-    }
 
     // Attempt to cancel the in-progress task
     boolean cancelled = overseerTaskProcessor.cancelInProgressAsyncTask(targetAsyncId);
