@@ -188,7 +188,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     public void setCost(int cost) {}
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Query rewrite(IndexSearcher searcher) throws IOException {
       return this;
     }
 

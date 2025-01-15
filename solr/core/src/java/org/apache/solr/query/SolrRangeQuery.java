@@ -141,7 +141,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
+  public Query rewrite(IndexSearcher searcher) throws IOException {
     return this;
   }
 

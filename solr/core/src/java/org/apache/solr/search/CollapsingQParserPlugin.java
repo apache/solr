@@ -572,7 +572,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return score;
     }
 
-    @Override
     public int docID() {
       return docId;
     }

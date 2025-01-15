@@ -1755,7 +1755,6 @@ public class QueryComponent extends SearchComponent {
       this.score = score;
     }
 
-    @Override
     public int docID() {
       return docid;
     }
