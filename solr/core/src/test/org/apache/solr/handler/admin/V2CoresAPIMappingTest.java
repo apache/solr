@@ -97,7 +97,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals(Boolean.TRUE, createRequestBody.isTransient);
     assertEquals(Boolean.TRUE, createRequestBody.newCollection);
     assertEquals("someNodeName", createRequestBody.coreNodeName);
-    assertEquals("someAsyncId", createRequestBody.async);
     assertEquals(2, createRequestBody.roles.size());
     assertEquals("role1", createRequestBody.roles.get(0));
     assertEquals("role2", createRequestBody.roles.get(1));
@@ -109,6 +108,9 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals(2, createRequestBody.collectionProperties.size());
     assertEquals("abcVal", createRequestBody.collectionProperties.get("abc"));
     assertEquals("xyzVal", createRequestBody.collectionProperties.get("xyz"));
+
+    // V1 codepath handles the async/taskId differently, and it's not passed down the v2 code
+    assertEquals(null, createRequestBody.async);
   }
 
   @Test

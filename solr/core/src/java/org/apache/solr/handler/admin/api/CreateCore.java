@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.cloud.ZkController.COLLECTION_PARAM_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.ROLES;
 import static org.apache.solr.handler.admin.CoreAdminHandler.paramToProp;
@@ -164,6 +165,7 @@ public class CreateCore extends CoreAdminAPIBase implements CoreApis.Create {
   public static CreateCoreParams createRequestBodyFromV1Params(SolrParams solrParams) {
     final var v1ParamMap = solrParams.toMap(new HashMap<>());
     v1ParamMap.remove(ACTION);
+    v1ParamMap.remove(ASYNC);
 
     final var coreProperties = new HashMap<String, String>();
     final var collectionProperties = new HashMap<String, String>();
