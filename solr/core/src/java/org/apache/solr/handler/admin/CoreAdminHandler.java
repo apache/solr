@@ -71,7 +71,7 @@ import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
 import org.apache.solr.handler.admin.api.RestoreCore;
-import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
+import org.apache.solr.handler.admin.api.CoreStatusAPI;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
@@ -350,7 +350,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new AllCoresStatusAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SingleCoreStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
@@ -368,6 +367,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         CoreSnapshot.class,
+        CoreStatusAPI.class,
         InstallCoreData.class,
         CreateCore.class,
         CreateCoreBackup.class,

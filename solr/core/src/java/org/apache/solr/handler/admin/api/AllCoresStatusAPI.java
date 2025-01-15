@@ -33,7 +33,7 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API (GET /v2/cores is analogous to the v1 /admin/cores?action=status command.
  *
- * @see SingleCoreStatusAPI
+ * @see CoreStatusAPI
  */
 public class AllCoresStatusAPI {
 

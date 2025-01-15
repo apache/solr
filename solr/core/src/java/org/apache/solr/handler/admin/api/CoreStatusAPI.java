@@ -24,8 +24,13 @@ import static org.apache.solr.common.params.CoreAdminParams.CORE;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
+import jakarta.inject.Inject;
 import org.apache.solr.api.EndPoint;
+import org.apache.solr.client.api.endpoint.CoreApis;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -37,20 +42,26 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * @see AllCoresStatusAPI
  */
-public class SingleCoreStatusAPI {
+public class CoreStatusAPI extends CoreAdminAPIBase implements CoreApis.GetStatus {
 
-  private final CoreAdminHandler coreAdminHandler;
-
-  public SingleCoreStatusAPI(CoreAdminHandler coreAdminHandler) {
-    this.coreAdminHandler = coreAdminHandler;
+  @Inject
+  public CoreStatusAPI(
+          CoreContainer coreContainer,
+          CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker,
+          SolrQueryRequest solrQueryRequest,
+          SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
   }
 
-  @EndPoint(
-      path = {"/cores/{core}"},
-      method = GET,
-      permission = CORE_READ_PERM)
-  public void getStatusOfSingleCore(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req = wrapParams(req, ACTION, STATUS, CORE, req.getPathTemplateValues().get(CORE));
-    coreAdminHandler.handleRequestBody(req, rsp);
+  @Override
+  @PermissionName(CORE_READ_PERM)
+  public SolrJerseyResponse getAllCoreStatus(Boolean indexInfo) {
+    return null;
+  }
+
+  @Override
+  @PermissionName(CORE_READ_PERM)
+  public SolrJerseyResponse getCoreStatus(String coreName, Boolean indexInfo) {
+    return null;
   }
 }

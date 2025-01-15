@@ -17,10 +17,14 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.CreateCoreParams;
 import org.apache.solr.client.api.model.CreateCoreResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 public interface CoreApis {
 
@@ -30,5 +34,18 @@ public interface CoreApis {
     @POST
     @Operation(summary = "Create a new core on the receiving Solr node.", tags = "cores")
     CreateCoreResponse createCore(CreateCoreParams requestBody) throws Exception;
+  }
+
+  @Path("/cores")
+  interface GetStatus {
+
+    @GET
+    @Operation(summary = "Fetch status info for all cores hosted on this node.", tags = "cores")
+    SolrJerseyResponse getAllCoreStatus(@QueryParam("indexInfo") Boolean indexInfo);
+
+    @GET
+    @Operation(summary = "Fetch status info for the core hosted on this node with the specified name.", tags = "cores")
+    @Path("/{coreName}")
+    SolrJerseyResponse getCoreStatus(@PathParam("coreName") String coreName, @QueryParam("indexInfo") Boolean indexInfo);
   }
 }

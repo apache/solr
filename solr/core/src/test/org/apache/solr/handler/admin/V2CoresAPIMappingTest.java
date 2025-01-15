@@ -28,7 +28,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCore;
-import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
+import org.apache.solr.handler.admin.api.CoreStatusAPI;
 import org.junit.Test;
 
 /**
@@ -44,7 +44,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new SingleCoreStatusAPI(handler));
     apiBag.registerObject(new AllCoresStatusAPI(handler));
   }
 
@@ -57,6 +56,7 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   public boolean isCoreSpecific() {
     return false;
   }
+
 
   @Test
   public void testCreateCoreRequestBodyMappingAllParams() throws Exception {
@@ -113,6 +113,7 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals(null, createRequestBody.async);
   }
 
+  // TODO NOCOMMIT - following 2 tests will need attended to if they're still relevant
   @Test
   public void testSpecificCoreStatusApiAllParams() throws Exception {
     final SolrParams v1Params =
