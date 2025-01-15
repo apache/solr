@@ -847,7 +847,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       bytesRefs[++index] = term.toBytesRef();
     }
 
-    return new TermInSetQuery(fname, bytesRefs);
+    return new TermInSetQuery(fname, Arrays.asList(bytesRefs));
   }
 
   private Query getPointGroupQuery(SchemaField sf, int size, LongHashSet groupSet) {
@@ -889,7 +889,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       IntObjectCursor<BytesRef> cursor = it.next();
       bytesRefs[++index] = cursor.value;
     }
-    return new TermInSetQuery(fname, bytesRefs);
+    return new TermInSetQuery(fname, Arrays.asList(bytesRefs));
   }
 
   ////////////////////////////////////////////
