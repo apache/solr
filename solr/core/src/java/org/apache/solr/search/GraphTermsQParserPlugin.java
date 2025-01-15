@@ -39,19 +39,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -253,7 +241,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
           Terms terms = reader.terms(field);
           if (terms == null) {
@@ -274,7 +262,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           }
           DocIdSet docIdSet = builder.build();
           DocIdSetIterator disi = docIdSet.iterator();
-          return disi == null ? null : new ConstantScoreScorer(this, score(), scoreMode, disi);
+          return disi == null ? null : new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
         }
 
         @Override
@@ -593,7 +581,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
       DocSet docs;
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         if (docs == null) {
           docs = getDocSet(searcher);
         }
@@ -603,7 +591,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
         if (readerSetIterator == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+        return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, readerSetIterator));
       }
 
       @Override

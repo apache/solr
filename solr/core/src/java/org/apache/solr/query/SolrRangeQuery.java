@@ -30,23 +30,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BulkScorer;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Matches;
-import org.apache.lucene.search.MatchesUtils;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
@@ -521,7 +505,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       return segStates[context.ord] = new SegState(segSet);
     }
 
-    private Scorer scorer(DocIdSet set) throws IOException {
+    private ScorerSupplier scorerSupplier(DocIdSet set) throws IOException {
       if (set == null) {
         return null;
       }
@@ -529,7 +513,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (disi == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), scoreMode, disi);
+      return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
     }
 
     @Override
@@ -547,12 +531,12 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       final SegState weightOrBitSet = getSegState(context);
       if (weightOrBitSet.weight != null) {
-        return weightOrBitSet.weight.scorer(context);
+        return new DefaultScorerSupplier(weightOrBitSet.weight.scorer(context));
       } else {
-        return scorer(weightOrBitSet.set);
+        return scorerSupplier(weightOrBitSet.set);
       }
     }
 

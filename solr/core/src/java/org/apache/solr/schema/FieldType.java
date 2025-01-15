@@ -482,8 +482,7 @@ public abstract class FieldType extends FieldProperties {
     if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
-    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr), sf.getType().getRewriteMethod(parser, sf));
     QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(parser, query, termStr);
     return query;
   }

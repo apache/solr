@@ -23,20 +23,8 @@ import java.util.Objects;
 import java.util.TreeSet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.FieldExistsQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
@@ -277,14 +265,14 @@ public class GraphQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       if (resultSet == null) {
         resultSet = getDocSet();
       }
       DocIdSetIterator disi = resultSet.iterator(context);
       // create a scrorer on the result set, if results from right query are empty, use empty
       // iterator.
-      return new GraphScorer(this, disi == null ? DocIdSetIterator.empty() : disi, 1);
+      return new DefaultScorerSupplier(new GraphScorer(this, disi == null ? DocIdSetIterator.empty() : disi, 1));
     }
 
     @Override
@@ -300,7 +288,7 @@ public class GraphQuery extends Query {
 
     // graph query scorer constructor with iterator
     public GraphScorer(Weight w, DocIdSetIterator iter, float score) throws IOException {
-      super(w);
+      super();
       this.iter = iter == null ? DocIdSet.EMPTY.iterator() : iter;
       this.score = score;
     }

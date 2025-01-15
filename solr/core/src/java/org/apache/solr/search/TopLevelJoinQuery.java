@@ -23,16 +23,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.solr.common.SolrException;
@@ -87,7 +78,7 @@ public class TopLevelJoinQuery extends JoinQuery {
       final boolean toMultivalued = toSearcher.getSchema().getFieldOrNull(toField).multiValued();
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           if (toBitsetBounds.lower == BitsetBounds.NO_MATCHES) {
             return null;
           }
@@ -101,8 +92,7 @@ public class TopLevelJoinQuery extends JoinQuery {
           }
 
           final int docBase = context.docBase;
-          return new ConstantScoreScorer(
-              this,
+          return new DefaultScorerSupplier(new ConstantScoreScorer(
               this.score(),
               scoreMode,
               new TwoPhaseIterator(toApproximation) {
@@ -126,7 +116,7 @@ public class TopLevelJoinQuery extends JoinQuery {
                 public float matchCost() {
                   return 10.0F;
                 }
-              });
+              }));
         }
 
         @Override
@@ -142,7 +132,7 @@ public class TopLevelJoinQuery extends JoinQuery {
   private Weight createNoMatchesWeight(float boost) {
     return new ConstantScoreWeight(this, boost) {
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         return null;
       }
 

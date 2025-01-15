@@ -56,6 +56,7 @@ import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.RegExp;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
@@ -598,10 +599,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @return new RegexpQuery instance
    */
   protected Query newRegexpQuery(Term regexp) {
-    RegexpQuery query = new RegexpQuery(regexp);
     SchemaField sf = schema.getField(regexp.field());
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
-    return query;
+    return new RegexpQuery(regexp, RegExp.ALL, 0, RegexpQuery.DEFAULT_PROVIDER, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT, sf.getType().getRewriteMethod(parser, sf));
   }
 
   @Override
@@ -681,10 +680,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @return new WildcardQuery instance
    */
   protected Query newWildcardQuery(Term t) {
-    WildcardQuery query = new WildcardQuery(t);
     SchemaField sf = schema.getField(t.field());
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
-    return query;
+    return new WildcardQuery(t, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT, sf.getType().getRewriteMethod(parser, sf));
   }
 
   /**
@@ -1293,7 +1290,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (factory != null) {
       Term term = new Term(field, termStr);
       // fsa representing the query
-      Automaton automaton = WildcardQuery.toAutomaton(term);
+      Automaton automaton = WildcardQuery.toAutomaton(term, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
       // TODO: we should likely use the automaton to calculate shouldReverse, too.
       if (factory.shouldReverse(termStr)) {
         automaton = Operations.concatenate(automaton, Automata.makeChar(factory.getMarkerChar()));

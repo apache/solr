@@ -275,9 +275,6 @@ public class SolrDocumentFetcher {
     }
   }
 
-  /**
-   * @see SolrIndexSearcher#doc(int)
-   */
   public Document doc(int docId) throws IOException {
     return doc(docId, (Set<String>) null);
   }
@@ -287,8 +284,6 @@ public class SolrDocumentFetcher {
    *
    * <p><b>NOTE</b>: the document will have all fields accessible, but if a field filter is
    * provided, only the provided fields will be loaded (the remainder will be available lazily).
-   *
-   * @see SolrIndexSearcher#doc(int, Set)
    */
   public Document doc(int i, Set<String> fields) throws IOException {
     Document d;

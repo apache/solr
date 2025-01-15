@@ -23,15 +23,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 
 /** RangeFilter over a ValueSource. */
 public class ValueSourceRangeFilter extends Query {
@@ -99,7 +91,7 @@ public class ValueSourceRangeFilter extends Query {
       FunctionValues functionValues = valueSource.getValues(vsContext, context);
       ValueSourceScorer scorer =
           functionValues.getRangeScorer(
-              this, context, lowerVal, upperVal, includeLower, includeUpper);
+              context, lowerVal, upperVal, includeLower, includeUpper);
       if (scorer.matches(doc)) {
         scorer.iterator().advance(doc);
         return Explanation.match(
@@ -111,12 +103,12 @@ public class ValueSourceRangeFilter extends Query {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       ValueSourceScorer scorer =
           valueSource
               .getValues(vsContext, context)
-              .getRangeScorer(this, context, lowerVal, upperVal, includeLower, includeUpper);
-      return new ConstantScoreScorer(this, score(), scoreMode, scorer.iterator());
+              .getRangeScorer(context, lowerVal, upperVal, includeLower, includeUpper);
+      return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, scorer.iterator()));
     }
 
     @Override
