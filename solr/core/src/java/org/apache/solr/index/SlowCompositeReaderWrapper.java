@@ -313,12 +313,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  @Deprecated
-  public Fields getTermVectors(int docID) throws IOException {
-    return in.getTermVectors(docID);
-  }
-
-  @Override
   public TermVectors termVectors() throws IOException {
     ensureOpen();
     return in.termVectors();
