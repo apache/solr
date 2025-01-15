@@ -104,8 +104,8 @@ public class FilterQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    Query newQ = q.rewrite(reader);
+  public Query rewrite(IndexSearcher searcher) throws IOException {
+    Query newQ = q.rewrite(searcher);
     if (!newQ.equals(q)) {
       return new FilterQuery(newQ);
     } else {

@@ -27,26 +27,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.AutomatonQuery;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermInSetQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.search.*;
+import org.apache.lucene.util.*;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.solr.common.SolrException;
@@ -82,7 +64,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     termsFilter {
       @Override
       Query makeFilter(String fname, BytesRef[] bytesRefs) {
-        return new TermInSetQuery(fname, bytesRefs); // constant scores
+        return new TermInSetQuery(fname, Arrays.asList(bytesRefs)); // constant scores
       }
     },
     booleanQuery {
@@ -198,7 +180,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     private boolean matchesAtLeastOneTerm = false;
 
     public TopLevelDocValuesTermsQuery(String field, BytesRef... terms) {
-      super(MultiTermQuery.DOC_VALUES_REWRITE, field, terms);
+      super(MultiTermQuery.DOC_VALUES_REWRITE, field, Arrays.asList(terms));
       this.fieldName = field;
     }
 
@@ -215,7 +197,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       topLevelDocValues =
           DocValues.getSortedSet(((SolrIndexSearcher) searcher).getSlowAtomicReader(), fieldName);
       topLevelTermOrdinals = new LongBitSet(topLevelDocValues.getValueCount());
-      PrefixCodedTerms.TermIterator iterator = getTermData().iterator();
+      BytesRefIterator iterator = getBytesRefIterator();
 
       long lastTermOrdFound = 0;
       for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
@@ -229,7 +211,7 @@ public class TermsQParserPlugin extends QParserPlugin {
 
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           if (!matchesAtLeastOneTerm) {
             return null;
           }
@@ -240,8 +222,7 @@ public class TermsQParserPlugin extends QParserPlugin {
           }
 
           final int docBase = context.docBase;
-          return new ConstantScoreScorer(
-              this,
+          return new DefaultScorerSupplier(new ConstantScoreScorer(
               this.score(),
               scoreMode,
               new TwoPhaseIterator(segmentDocValues) {
@@ -263,7 +244,7 @@ public class TermsQParserPlugin extends QParserPlugin {
                 public float matchCost() {
                   return 10.0F;
                 }
-              });
+              }));
         }
 
         @Override
