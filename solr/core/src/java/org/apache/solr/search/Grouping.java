@@ -31,20 +31,8 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.CachingCollector;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.MultiCollector;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.TimeLimitingCollector;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
@@ -905,11 +893,11 @@ public class Grouping {
       Collector subCollector;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         subCollector =
-            topCollector = TopScoreDocCollector.create(groupDocsToCollect, Integer.MAX_VALUE);
+            topCollector = new TopScoreDocCollectorManager(groupDocsToCollect, Integer.MAX_VALUE).newCollector();
       } else {
         topCollector =
-            TopFieldCollector.create(
-                searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE);
+            new TopFieldCollectorManager(
+                searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE).newCollector();
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();
           subCollector = MultiCollector.wrap(topCollector, maxScoreCollector);

@@ -161,7 +161,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
       subCollector =
           topDocsCollector = new TopScoreDocCollectorManager(docsToCollect, Integer.MAX_VALUE).newCollector();
     } else {
-      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, Integer.MAX_VALUE);
+      topDocsCollector = new TopFieldCollectorManager(sort, docsToCollect, Integer.MAX_VALUE).newCollector();
       if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         subCollector = MultiCollector.wrap(topDocsCollector, maxScoreCollector);
