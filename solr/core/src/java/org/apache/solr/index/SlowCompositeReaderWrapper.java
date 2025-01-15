@@ -337,13 +337,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  @Deprecated
-  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
-    ensureOpen();
-    in.document(docID, visitor);
-  }
-
-  @Override
   public Bits getLiveDocs() {
     ensureOpen();
     return MultiBits.getLiveDocs(in); // TODO cache?

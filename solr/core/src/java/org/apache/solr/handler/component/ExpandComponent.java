@@ -37,24 +37,7 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorable;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermInSetQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -825,7 +808,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if (limit == 0) {
         collector = new TotalHitCountCollector();
       } else if (sort == null) {
-        collector = TopScoreDocCollector.create(limit, Integer.MAX_VALUE);
+        collector = new TopScoreDocCollectorManager(limit, Integer.MAX_VALUE).newCollector();
       } else {
         collector = TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
       }
