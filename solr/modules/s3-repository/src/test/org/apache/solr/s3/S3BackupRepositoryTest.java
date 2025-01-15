@@ -33,7 +33,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
@@ -187,8 +186,9 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
         CodecUtil.writeFooter(indexOutput);
       }
 
-      Directory sourceDir = new NIOFSDirectory(tmp.toPath());
-      repo.copyIndexFileFrom(sourceDir, "from-file", new URI("s3://to-folder"), "to-file");
+      try (Directory sourceDir = newFSDirectory(tmp.toPath())) {
+        repo.copyIndexFileFrom(sourceDir, "from-file", new URI("s3://to-folder"), "to-file");
+      }
 
       // Sanity check: we do have different files
       File actualSource = new File(tmp, "from-file");
@@ -208,12 +208,13 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
       // Local folder for destination
       File tmp = temporaryFolder.newFolder();
-      Directory destDir = new NIOFSDirectory(tmp.toPath());
 
       // Directly create a file on S3
       pushObject("from-file", content);
 
-      repo.copyIndexFileTo(new URI("s3:///"), "from-file", destDir, "to-file");
+      try (Directory destDir = newFSDirectory(tmp.toPath())) {
+        repo.copyIndexFileTo(new URI("s3:///"), "from-file", destDir, "to-file");
+      }
 
       // Sanity check: we do have different files
       File actualSource = pullObject("from-file");

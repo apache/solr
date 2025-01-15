@@ -195,9 +195,8 @@ POSTing file sample.html (text/html) to [base]/extract
 POSTing file sd500.xml (application/xml) to [base]
 POSTing file solr-word.pdf (application/pdf) to [base]/extract
 POSTing file solr.xml (application/xml) to [base]
-POSTing file utf8-example.xml (application/xml) to [base]
 POSTing file vidcard.xml (application/xml) to [base]
-20 files indexed.
+19 files indexed.
 COMMITting Solr index changes to http://localhost:8983/solr/techproducts/update...
 Time spent: 0:00:00.822
 ----
