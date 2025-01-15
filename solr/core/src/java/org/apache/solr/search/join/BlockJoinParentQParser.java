@@ -20,14 +20,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
@@ -155,13 +148,13 @@ public class BlockJoinParentQParser extends FiltersQParser {
         throws IOException {
       return new ConstantScoreWeight(BitSetProducerQuery.this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           BitSet bitSet = bitSetProducer.getBitSet(context);
           if (bitSet == null) {
             return null;
           }
           DocIdSetIterator disi = new BitSetIterator(bitSet, bitSet.approximateCardinality());
-          return new ConstantScoreScorer(this, boost, scoreMode, disi);
+          return new DefaultScorerSupplier(new ConstantScoreScorer(boost, scoreMode, disi));
         }
 
         @Override

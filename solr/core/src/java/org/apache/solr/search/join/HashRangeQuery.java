@@ -24,16 +24,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.search.SolrCache;
@@ -64,7 +55,7 @@ public class HashRangeQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         SortedDocValues docValues = context.reader().getSortedDocValues(field);
         int[] cache = getCache(context);
 
@@ -82,7 +73,7 @@ public class HashRangeQuery extends Query {
               }
             };
 
-        return new ConstantScoreScorer(this, boost, scoreMode, iterator);
+        return new DefaultScorerSupplier(new ConstantScoreScorer(boost, scoreMode, iterator));
       }
 
       private int[] getCache(LeafReaderContext context) throws IOException {
