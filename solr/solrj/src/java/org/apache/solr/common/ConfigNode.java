@@ -22,15 +22,15 @@ import static org.apache.solr.common.ConfigNode.Helpers._int;
 import static org.apache.solr.common.ConfigNode.Helpers._txt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A generic interface that represents a config file, mostly XML Please note that this is an
@@ -39,15 +39,28 @@ import java.util.function.Supplier;
 public interface ConfigNode {
   ThreadLocal<Function<String, String>> SUBSTITUTES = new ThreadLocal<>();
 
-  /** Name of the tag */
+  /** Name of the tag/element. */
   String name();
 
-  /** Attributes */
+  /** Attributes of this node. Immutable shared instance. Not null. */
   Map<String, String> attributes();
+
+  /** Mutable copy of {@link #attributes()}, excluding {@code exclusions} keys. */
+  default Map<String, String> attributesExcept(String... exclusions) {
+    assert exclusions.length < 5 : "non-performant exclusion list";
+    final var attributes = attributes();
+    Map<String, String> args = CollectionUtil.newHashMap(attributes.size());
+    attributes.forEach(
+        (k, v) -> {
+          for (String ex : exclusions) if (ex.equals(k)) return;
+          args.put(k, v);
+        });
+    return args;
+  }
 
   /** Child by name */
   default ConfigNode child(String name) {
-    return child(null, name);
+    return child(name, null);
   }
 
   /**
@@ -55,23 +68,24 @@ public interface ConfigNode {
    * first element. This never returns a null.
    */
   default ConfigNode get(String name) {
-    ConfigNode child = child(null, name);
+    ConfigNode child = child(name, null);
     return child == null ? EMPTY : child;
   }
 
   default ConfigNode get(String name, Predicate<ConfigNode> test) {
-    List<ConfigNode> children = getAll(test, name);
+    List<ConfigNode> children = getAll(Set.of(name), test);
     if (children.isEmpty()) return EMPTY;
     return children.get(0);
   }
 
+  // @VisibleForTesting  Helps writing tests
   default ConfigNode get(String name, int idx) {
-    List<ConfigNode> children = getAll(null, name);
+    List<ConfigNode> children = getAll(name);
     if (idx < children.size()) return children.get(idx);
     return EMPTY;
   }
 
-  default ConfigNode child(String name, Supplier<RuntimeException> err) {
+  default ConfigNode childRequired(String name, Supplier<RuntimeException> err) {
     ConfigNode n = child(name);
     if (n == null) throw err.get();
     return n;
@@ -93,9 +107,15 @@ public interface ConfigNode {
     return attributes().get(name);
   }
 
-  default String requiredStrAttr(String name, Supplier<RuntimeException> err) {
+  /**
+   * Like {@link #attr(String)} but throws an error (incorporating {@code missingErr}) if not found.
+   */
+  default String attrRequired(String name, String missingErr) {
+    assert missingErr != null;
     String attr = attr(name);
-    if (attr == null && err != null) throw err.get();
+    if (attr == null) {
+      throw new RuntimeException(missingErr + ": missing mandatory attribute '" + name + "'");
+    }
     return attr;
   }
 
@@ -117,8 +137,8 @@ public interface ConfigNode {
     return _double(txt(), def);
   }
 
-  /** Iterate through child nodes with the name and return the first child that matches */
-  default ConfigNode child(Predicate<ConfigNode> test, String name) {
+  /** Iterate through child nodes with the tag/element name and return the first matching */
+  default ConfigNode child(String name, Predicate<ConfigNode> test) {
     ConfigNode[] result = new ConfigNode[1];
     forEachChild(
         it -> {
@@ -135,34 +155,24 @@ public interface ConfigNode {
   /**
    * Iterate through child nodes with the names and return all the matching children
    *
-   * @param nodeNames names of tags to be returned
-   * @param test check for the nodes to be returned
+   * @param names names of tags/elements to be returned. Null means all nodes.
+   * @param test check for the nodes to be returned. Null means all nodes.
    */
-  default List<ConfigNode> getAll(Predicate<ConfigNode> test, String... nodeNames) {
-    return getAll(
-        test, nodeNames == null ? Collections.emptySet() : new HashSet<>(Arrays.asList(nodeNames)));
-  }
-
-  /**
-   * Iterate through child nodes with the names and return all the matching children
-   *
-   * @param matchNames names of tags to be returned
-   * @param test check for the nodes to be returned
-   */
-  default List<ConfigNode> getAll(Predicate<ConfigNode> test, Set<String> matchNames) {
+  default List<ConfigNode> getAll(Set<String> names, Predicate<ConfigNode> test) {
+    assert names == null || !names.isEmpty() : "Intended to pass null?";
     List<ConfigNode> result = new ArrayList<>();
     forEachChild(
         it -> {
-          if (matchNames != null && !matchNames.isEmpty() && !matchNames.contains(it.name()))
-            return Boolean.TRUE;
-          if (test == null || test.test(it)) result.add(it);
+          if ((names == null || names.contains(it.name())) && (test == null || test.test(it)))
+            result.add(it);
           return Boolean.TRUE;
         });
     return result;
   }
 
+  /** A list of all child nodes with the tag/element name. */
   default List<ConfigNode> getAll(String name) {
-    return getAll(null, Collections.singleton(name));
+    return getAll(Set.of(name), null);
   }
 
   default boolean exists() {
@@ -179,6 +189,35 @@ public interface ConfigNode {
    * @param fun consume the node and return true to continue or false to abort
    */
   void forEachChild(Function<ConfigNode, Boolean> fun);
+
+  default NamedList<Object> childNodesToNamedList() {
+    NamedList<Object> result = new NamedList<>();
+    forEachChild(
+        it -> {
+          String tag = it.name();
+          String varName = it.attributes().get("name");
+          if (DOMUtil.NL_TAGS.contains(tag)) {
+            result.add(varName, DOMUtil.parseVal(tag, varName, it.txt()));
+          }
+          if ("lst".equals(tag)) {
+            result.add(varName, it.childNodesToNamedList());
+          } else if ("arr".equals(tag)) {
+            List<Object> l = new ArrayList<>();
+            result.add(varName, l);
+            it.forEachChild(
+                n -> {
+                  if (DOMUtil.NL_TAGS.contains(n.name())) {
+                    l.add(DOMUtil.parseVal(n.name(), null, n.txt()));
+                  } else if ("lst".equals(n.name())) {
+                    l.add(n.childNodesToNamedList());
+                  }
+                  return Boolean.TRUE;
+                });
+          }
+          return Boolean.TRUE;
+        });
+    return result;
+  }
 
   /** An empty node object. usually returned when the node is absent */
   ConfigNode EMPTY =
