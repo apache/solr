@@ -306,8 +306,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     try {
       super.search(query, collector);
-    } catch (TimeLimitingCollector.TimeExceededException
-        | ExitableDirectoryReader.ExitingReaderException
+    } catch (ExitableDirectoryReader.ExitingReaderException
         | CancellableCollector.QueryCancelledException x) {
       log.warn("Query: [{}]; ", query, x);
       qr.setPartialResults(true);
@@ -759,7 +758,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return qr;
   }
 
-  @Override
+
+
+  /*@Override
+  TBD . This is overridden to exit the query when limits are reached
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
@@ -782,18 +784,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }.searchWithTimeout();
     }
-  }
+  }*/
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
    *
    * @see SolrDocumentFetcher
    */
-  @Override
+ /* @Override
   @Deprecated
   public Document doc(int docId) throws IOException {
     return doc(docId, (Set<String>) null);
-  }
+  }*/
+
 
   /**
    * Visit a document's fields using a {@link StoredFieldVisitor}. This method does not currently
@@ -802,11 +805,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see IndexReader#document(int, StoredFieldVisitor)
    * @see SolrDocumentFetcher
    */
-  @Override
+  /*@Override
   @Deprecated
   public final void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     getDocFetcher().doc(docId, visitor);
-  }
+  }*/
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
@@ -816,11 +819,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *
    * @see SolrDocumentFetcher
    */
+/*
   @Override
   @Deprecated
   public final Document doc(int i, Set<String> fields) throws IOException {
     return getDocFetcher().doc(i, fields);
   }
+*/
 
   /** expert: internal API, subject to change */
   public SolrCache<String, UnInvertedField> getFieldValueCache() {
