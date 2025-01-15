@@ -68,7 +68,6 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Cache;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -532,9 +531,9 @@ public class IndexSchema {
       final FieldTypePluginLoader typeLoader =
           new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      List<ConfigNode> fTypes = rootNode.getAll(null, FIELDTYPE_KEYS);
+      List<ConfigNode> fTypes = rootNode.getAll(FIELDTYPE_KEYS, null);
       ConfigNode types = rootNode.child(TYPES);
-      if (types != null) fTypes.addAll(types.getAll(null, FIELDTYPE_KEYS));
+      if (types != null) fTypes.addAll(types.getAll(FIELDTYPE_KEYS, null));
       typeLoader.load(solrClassLoader, fTypes);
 
       // load the fields
@@ -574,7 +573,7 @@ public class IndexSchema {
       }
 
       node =
-          rootNode.child(it -> it.attributes().get("defaultOperator") != null, "solrQueryParser");
+          rootNode.child("solrQueryParser", it -> it.attributes().get("defaultOperator") != null);
       if (node != null) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
@@ -697,17 +696,17 @@ public class IndexSchema {
 
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    List<ConfigNode> nodes = n.getAll(null, FIELD_KEYS);
+    List<ConfigNode> nodes = n.getAll(FIELD_KEYS, null);
     ConfigNode child = n.child(FIELDS);
     if (child != null) {
       nodes = new ArrayList<>(nodes);
-      nodes.addAll(child.getAll(null, FIELD_KEYS));
+      nodes.addAll(child.getAll(FIELD_KEYS, null));
     }
 
     for (ConfigNode node : nodes) {
-      String name = DOMUtil.getAttr(node, NAME, "field definition");
+      String name = node.attrRequired(NAME, "field definition");
       log.trace("reading field def {}", name);
-      String type = DOMUtil.getAttr(node, TYPE, "field " + name);
+      String type = node.attrRequired(TYPE, "field " + name);
 
       FieldType ft = fieldTypes.get(type);
       if (ft == null) {
@@ -716,7 +715,7 @@ public class IndexSchema {
             "Unknown " + FIELD_TYPE + " '" + type + "' specified on field " + name);
       }
 
-      Map<String, String> args = DOMUtil.toMapExcept(node, NAME, TYPE);
+      Map<String, String> args = node.attributesExcept(NAME, TYPE);
       if (null != args.get(REQUIRED)) {
         explicitRequiredProp.put(name, Boolean.valueOf(args.get(REQUIRED)));
       }
@@ -793,9 +792,9 @@ public class IndexSchema {
     }
     for (ConfigNode node : nodes) {
 
-      String source = DOMUtil.getAttr(node, SOURCE, COPY_FIELD + " definition");
-      String dest = DOMUtil.getAttr(node, DESTINATION, COPY_FIELD + " definition");
-      String maxChars = DOMUtil.getAttr(node, MAX_CHARS, null);
+      String source = node.attrRequired(SOURCE, COPY_FIELD + " definition");
+      String dest = node.attrRequired(DESTINATION, COPY_FIELD + " definition");
+      String maxChars = node.attr(MAX_CHARS);
 
       int maxCharsInt = CopyField.UNLIMITED;
       if (maxChars != null) {
@@ -1089,7 +1088,7 @@ public class IndexSchema {
       final Object obj = loader.newInstance(classArg, Object.class, "search.similarities.");
       if (obj instanceof SimilarityFactory) {
         // configure a factory, get a similarity back
-        final NamedList<Object> namedList = DOMUtil.childNodesToNamedList(node);
+        final NamedList<Object> namedList = node.childNodesToNamedList();
         namedList.add(SimilarityFactory.CLASS_NAME, classArg);
         SolrParams params = namedList.toSolrParams();
         similarityFactory = (SimilarityFactory) obj;

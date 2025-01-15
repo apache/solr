@@ -243,7 +243,7 @@ public class SolrConfig implements MapSerializable {
       getRequestParams();
       initLibs(loader, isConfigsetTrusted);
       String val =
-          root.child(
+          root.childRequired(
                   IndexSchema.LUCENE_MATCH_VERSION_PARAM,
                   () -> new RuntimeException("Missing: " + IndexSchema.LUCENE_MATCH_VERSION_PARAM))
               .txt();
@@ -532,7 +532,7 @@ public class SolrConfig implements MapSerializable {
     final Function<SolrConfig, List<ConfigNode>> configReader;
 
     private SolrPluginInfo(Class<?> clz, String tag, PluginOpts... opts) {
-      this(solrConfig -> solrConfig.root.getAll(null, tag), clz, tag, opts);
+      this(solrConfig -> solrConfig.root.getAll(tag), clz, tag, opts);
     }
 
     private SolrPluginInfo(

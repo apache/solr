@@ -30,7 +30,11 @@ import org.w3c.dom.NodeList;
 public class DOMConfigNode implements ConfigNode {
 
   private final Node node;
-  Map<String, String> attrs;
+  private Map<String, String> attrs; // lazy populated
+
+  public DOMConfigNode(Node node) {
+    this.node = node;
+  }
 
   @Override
   public String name() {
@@ -40,10 +44,6 @@ public class DOMConfigNode implements ConfigNode {
   @Override
   public String txt() {
     return DOMUtil.getText(node);
-  }
-
-  public DOMConfigNode(Node node) {
-    this.node = node;
   }
 
   @Override
