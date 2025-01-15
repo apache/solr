@@ -89,7 +89,7 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
       waitForState(
           "Expected shard " + sliceName + " to be in state " + Slice.State.INACTIVE,
           collectionName,
-          (n, c) -> c.getSlice(sliceName).getState() == Slice.State.INACTIVE);
+          c -> c.getSlice(sliceName).getState() == Slice.State.INACTIVE);
 
       final long ttlStart = timeSource.getTimeNs();
 
@@ -216,7 +216,7 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
                 waitForState(
                     "Expected shard " + s + " to be in state " + Slice.State.INACTIVE,
                     collection.getName(),
-                    (n, c) -> c.getSlice(s.getName()).getState() == Slice.State.INACTIVE);
+                    c -> c.getSlice(s.getName()).getState() == Slice.State.INACTIVE);
               } catch (Exception e) {
                 throw new RuntimeException(e);
               }

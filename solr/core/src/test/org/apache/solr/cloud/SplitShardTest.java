@@ -357,14 +357,10 @@ public class SplitShardTest extends SolrCloudTestCase {
     NamedList<Object> response = splitShard.process(cluster.getSolrClient()).getResponse();
     assertNotNull(response.get("success"));
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            COLL,
-            10,
-            TimeUnit.SECONDS,
-            (liveNodes, collectionState) ->
-                testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")));
+    waitForState(
+        "Waiting for sub-shards",
+        COLL,
+        collectionState -> testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")));
 
     JettySolrRunner randomJetty = cluster.getRandomJetty(random());
     splitShard =

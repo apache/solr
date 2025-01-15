@@ -187,6 +187,9 @@ Other Changes
 
 * SOLR-17589: Prevent error log entry on solr server due to initial HEAD request from HttpJdkSolrClient. (Paul Blanchaert via James Dyer)
 
+* SOLR-17581: Introduce new test variant of waitForState(), that does not wait on live node changes when we're only
+ interested in the collection state. (Pierre Salagnac)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------

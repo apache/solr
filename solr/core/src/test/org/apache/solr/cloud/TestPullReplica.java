@@ -27,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.http.HttpResponse;
@@ -753,7 +754,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState(
         "Waiting for collection " + collection + " to be deleted",
         collection,
-        (n, c) -> c == null,
+        Objects::isNull,
         10,
         TimeUnit.SECONDS);
   }
