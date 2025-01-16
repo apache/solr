@@ -120,6 +120,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
     try {
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
+      // Use Path to normalize path separator
       is = classLoader.getResourceAsStream(Path.of(resource).toString());
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);

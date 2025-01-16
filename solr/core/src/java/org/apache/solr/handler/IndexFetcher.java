@@ -1063,20 +1063,20 @@ public class IndexFetcher {
       List<Map<String, Object>> confFilesToDownload, long latestGeneration) {
     log.info("Starting download of configuration files from leader: {}", confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
-    Path tmpconfDir =
+    Path tmpConfDir =
         solrCore.getResourceLoader().getConfigPath().resolve("conf." + getDateAsStr(new Date()));
     try {
       try {
-        Files.createDirectories(tmpconfDir);
+        Files.createDirectories(tmpConfDir);
       } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
-            "Failed to create temporary config folder: " + tmpconfDir.getFileName());
+            "Failed to create temporary config folder: " + tmpConfDir.getFileName());
       }
       for (Map<String, Object> file : confFilesToDownload) {
         String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
         localFileFetcher =
-            new LocalFsFileFetcher(tmpconfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
+            new LocalFsFileFetcher(tmpConfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
         currentFile = file;
         localFileFetcher.fetchFile();
         confFilesDownloaded.add(new HashMap<>(file));
@@ -1084,13 +1084,13 @@ public class IndexFetcher {
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
       terminateAndWaitFsyncService();
-      copyTmpConfFiles2Conf(tmpconfDir);
+      copyTmpConfFiles2Conf(tmpConfDir);
 
     } catch (Exception e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Failed to download configuration files from leader", e);
     } finally {
-      delTree(tmpconfDir);
+      delTree(tmpConfDir);
     }
   }
 
@@ -1498,9 +1498,7 @@ public class IndexFetcher {
                   oldPath
                       + "."
                       + getDateAsStr(new Date(Files.getLastModifiedTime(oldPath).toMillis())));
-          if (!Files.exists(backupFile.getParent())) {
-            Files.createDirectories(backupFile.getParent());
-          }
+          Files.createDirectories(backupFile.getParent());
           Files.move(oldPath, backupFile);
         } catch (Exception e) {
           throw new SolrException(

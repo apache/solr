@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -42,7 +43,9 @@ public final class SolrPaths {
 
   /** Ensures a directory name always ends with a '/'. */
   public static String normalizeDir(String path) {
-    return (path != null && (!(path.endsWith("/") || path.endsWith("\\")))) ? path + "/" : path;
+    return (path != null && (!(path.endsWith("/") || path.endsWith("\\"))))
+        ? path + FileSystems.getDefault().getSeparator()
+        : path;
   }
 
   /**
@@ -91,7 +94,7 @@ public final class SolrPaths {
 
   /** Asserts that a path is not a Windows UNC path */
   public static void assertNotUnc(Path pathToAssert) {
-    if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
+    if (OS.isFamilyWindows() || pathToAssert.toString().startsWith("\\\\")) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Path " + pathToAssert + " disallowed. UNC paths not supported.");

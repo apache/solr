@@ -62,8 +62,7 @@ public class CoreDescriptor {
   public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
-  public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE =
-      Path.of("conf/solrcore.properties").toString();
+  public static final Path DEFAULT_EXTERNAL_PROPERTIES_FILE = Path.of("conf/solrcore.properties");
 
   /**
    * Whether this core was configured using a configSet that was trusted. This helps in avoiding the
@@ -95,7 +94,7 @@ public class CoreDescriptor {
           CORE_CONFIG, "solrconfig.xml",
           CORE_SCHEMA, "schema.xml",
           CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
-          CORE_DATADIR, Path.of("data/").toString(),
+          CORE_DATADIR, Path.of("data").toString(),
           CORE_TRANSIENT, "false",
           CORE_LOADONSTARTUP, "true");
 

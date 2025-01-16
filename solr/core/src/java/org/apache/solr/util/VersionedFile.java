@@ -73,6 +73,7 @@ public class VersionedFile {
           }
         }
 
+        // TODO SOLR-8282 Move to Files.newInputStream
         is = new FileInputStream(f.toString());
       } catch (Exception e) {
         // swallow exception for now

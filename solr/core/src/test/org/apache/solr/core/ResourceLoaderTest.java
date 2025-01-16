@@ -81,10 +81,9 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
       // UNC paths
       assertTrue(
           assertThrows(
-                  SolrResourceNotFoundException.class,
-                  () -> loader.openResource("\\\\192.168.10.10\\foo").close())
+                  SolrException.class, () -> loader.openResource("\\\\192.168.10.10\\foo").close())
               .getMessage()
-              .contains("Resource '\\\\192.168.10.10\\foo' could not be loaded."));
+              .contains("Path \\\\192.168.10.10\\foo disallowed. UNC paths not supported."));
       assertNull(loader.resourceLocation("\\\\192.168.10.10\\foo"));
     }
 
@@ -97,10 +96,9 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
       // UNC paths never allowed
       assertTrue(
           assertThrows(
-                  SolrResourceNotFoundException.class,
-                  () -> loader.openResource("\\\\192.168.10.10\\foo").close())
+                  SolrException.class, () -> loader.openResource("\\\\192.168.10.10\\foo").close())
               .getMessage()
-              .contains("Resource '\\\\192.168.10.10\\foo' could not be loaded."));
+              .contains("Path \\\\192.168.10.10\\foo disallowed. UNC paths not supported."));
       assertNull(loader.resourceLocation("\\\\192.168.10.10\\foo"));
     }
   }

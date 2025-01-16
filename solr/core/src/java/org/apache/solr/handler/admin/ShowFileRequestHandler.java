@@ -196,12 +196,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
   // Return the file indicated (or the directory listing) from the local file system.
   private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    Path admin = getAdminFileFromFileSystem(req, rsp, hiddenFiles);
+    Path adminFile = getAdminFileFromFileSystem(req, rsp, hiddenFiles);
 
-    if (admin == null) { // exception already recorded
+    if (adminFile == null) { // exception already recorded
       return;
     }
-    Path adminFile = admin;
     // Make sure the file exists, is readable and is not a hidden file
     if (!Files.exists(adminFile)) {
       log.error("Can not find: {} [{}]", adminFile.getFileName(), adminFile.toAbsolutePath());
@@ -235,18 +234,15 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       try (Stream<Path> directoryFiles = Files.list(adminFile)) {
         directoryFiles.forEach(
             (f) -> {
-              String path = f.getFileName().toString();
-
               if (isHiddenFile(req, rsp, f.getFileName().toString(), false, hiddenFiles)) {
                 return;
               }
-
+              String path = f.getFileName().toString();
               SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<>();
               files.add(path, fileInfo);
               if (Files.isDirectory(f)) {
                 fileInfo.add("directory", true);
               } else {
-                // TODO? content type
                 try {
                   fileInfo.add("size", Files.size(f));
                   fileInfo.add("modified", new Date(Files.getLastModifiedTime(f).toMillis()));
@@ -412,6 +408,10 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
   public final Set<String> getHiddenFiles() {
     return hiddenFiles;
+  }
+
+  public static String toForwardSlashPathString(String path) {
+    return path.replace('\\', '/');
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

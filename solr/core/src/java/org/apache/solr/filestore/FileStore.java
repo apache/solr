@@ -44,13 +44,13 @@ public interface FileStore {
   /** Fetch a resource from another node internal API */
   boolean fetch(String path, String from);
 
-  List<FileDetails> list(String path, Predicate<String> predicate) throws IOException;
+  List<FileDetails> list(String path, Predicate<String> predicate);
 
   /** Sync a local file to all nodes. All the nodes are asked to pull the file from this node */
   void syncToAllNodes(String path) throws IOException;
 
   /** get the real path on filesystem */
-  Path getRealpath(String path);
+  Path getRealPath(String path);
 
   /** The type of the resource */
   FileType getType(String path, boolean fetchMissing);

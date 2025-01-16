@@ -32,7 +32,6 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1104,6 +1103,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
 
+      // initialize core metrics
+      initializeMetrics(solrMetricsContext, null);
+
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
 
@@ -1120,9 +1122,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       this.snapshotMgr = initSnapshotMetaDataManager();
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
-
-      // initialize core metrics
-      initializeMetrics(solrMetricsContext, null);
 
       this.codec = initCodec(solrConfig, this.schema);
       initIndex(prev != null, reload);
@@ -1356,24 +1355,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     // initialize disk total / free metrics
     Path dataDirFile = Paths.get(dataDir);
-    long totalSpace;
-    long useableSpace;
 
-    try {
-      totalSpace = Files.getFileStore(dataDirFile).getTotalSpace();
-      useableSpace = Files.getFileStore(dataDirFile).getUsableSpace();
-    } catch (Exception e) {
-      // TODO Metrics used to default to 0 with java.io.File even if directory didn't exist
-      // Should throw an exception and initialize data directory before metrics
-      totalSpace = 0L;
-      useableSpace = 0L;
-    }
-
-    final long finalTotalSpace = totalSpace;
-    final long finalUsableSpace = useableSpace;
-    parentContext.gauge(() -> finalTotalSpace, true, "totalSpace", Category.CORE.toString(), "fs");
-    parentContext.gauge(
-        () -> finalUsableSpace, true, "usableSpace", Category.CORE.toString(), "fs");
+    // Do not pre-compute the data directory total/usable space on initialization. Calculated when
+    // metric is fetched
+    // TODO Move metrics initialization calls to after the data directory is created to fetch true
+    // directory space on initialization
+    parentContext.gauge(() -> 0L, true, "totalSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(() -> 0L, true, "usableSpace", Category.CORE.toString(), "fs");
 
     parentContext.gauge(
         () -> dataDirFile.toAbsolutePath().toString(),

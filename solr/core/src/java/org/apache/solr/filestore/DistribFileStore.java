@@ -80,7 +80,7 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public Path getRealpath(String path) {
+  public Path getRealPath(String path) {
     return _getRealPath(path, solrHome);
   }
 
@@ -88,6 +88,7 @@ public class DistribFileStore implements FileStore {
     Path dir = Path.of(path);
     SolrPaths.assertNotUnc(dir);
 
+    // Strip the path of from being absolute to become relative to resolve with SolrHome
     while (path.startsWith("/")) {
       path = path.substring(1);
     }
@@ -111,7 +112,7 @@ public class DistribFileStore implements FileStore {
 
     ByteBuffer getFileData(boolean validate) throws IOException {
       if (fileData == null) {
-        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealpath(path)));
+        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealPath(path)));
       }
       return fileData;
     }
@@ -136,7 +137,7 @@ public class DistribFileStore implements FileStore {
     }
 
     public boolean exists(boolean validateContent, boolean fetchMissing) throws IOException {
-      Path file = getRealpath(path);
+      Path file = getRealPath(path);
       if (!Files.exists(file)) {
         if (fetchMissing) {
           return fetchFromAnyNode();
@@ -166,7 +167,7 @@ public class DistribFileStore implements FileStore {
 
     private void deleteFile() {
       try {
-        IOUtils.deleteFilesIfExist(getRealpath(path), getRealpath(getMetaPath()));
+        IOUtils.deleteFilesIfExist(getRealPath(path), getRealPath(getMetaPath()));
       } catch (IOException e) {
         log.error("Unable to delete files: {}", path);
       }
@@ -245,12 +246,12 @@ public class DistribFileStore implements FileStore {
     }
 
     public Path realPath() {
-      return getRealpath(path);
+      return getRealPath(path);
     }
 
     @SuppressWarnings("unchecked")
     MetaData readMetaData() throws IOException {
-      Path file = getRealpath(getMetaPath());
+      Path file = getRealPath(getMetaPath());
       if (Files.exists(file)) {
         try (InputStream fis = new FileInputStream(file.toString())) {
           return new MetaData((Map<String, Object>) Utils.fromJSON(fis));
@@ -428,9 +429,10 @@ public class DistribFileStore implements FileStore {
   @Override
   public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing)
       throws IOException {
-    Path file = getRealpath(path);
+    Path file = getRealPath(path);
     String simpleName = file.getFileName().toString();
     if (isMetaDataFile(simpleName)) {
+      // TODO SOLR-8282 Move to Files.newInputStream
       try (InputStream is = new FileInputStream(file.toString())) {
         consumer.accept(
             new FileEntry(null, null, path) {
@@ -458,8 +460,8 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public List<FileDetails> list(String path, Predicate<String> predicate) throws IOException {
-    Path file = getRealpath(path);
+  public List<FileDetails> list(String path, Predicate<String> predicate) {
+    Path file = getRealPath(path);
     List<FileDetails> fileDetails = new ArrayList<>();
     FileType type = getType(path, false);
     if (type == FileType.DIRECTORY) {
@@ -473,6 +475,8 @@ public class DistribFileStore implements FileStore {
                 }
               }
             });
+      } catch (IOException e) {
+        throw new SolrException(SERVER_ERROR, "Error listing files from provided path " + path, e);
       }
     } else if (type == FileType.FILE) {
       fileDetails.add(new FileInfo(path).getDetails());
@@ -550,10 +554,10 @@ public class DistribFileStore implements FileStore {
 
   @Override
   public FileType getType(String path, boolean fetchMissing) {
-    Path file = getRealpath(path);
+    Path file = getRealPath(path);
     if (!Files.exists(file) && fetchMissing) {
       if (fetch(path, null)) {
-        file = getRealpath(path);
+        file = getRealPath(path);
       }
     }
     return _getFileType(file);

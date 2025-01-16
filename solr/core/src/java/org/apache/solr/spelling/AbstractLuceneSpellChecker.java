@@ -70,7 +70,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   protected Dictionary dictionary;
 
   public static final int DEFAULT_SUGGESTION_COUNT = 5;
-  protected String indexDir;
+  protected Path indexDir;
   protected float accuracy = 0.5f;
   public static final String FIELD = "field";
 
@@ -79,13 +79,16 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   @Override
   public String init(NamedList<?> config, SolrCore core) {
     super.init(config, core);
-    indexDir = (String) config.get(INDEX_DIR);
+    String indexPath = (String) config.get(INDEX_DIR);
+    indexDir = (indexPath != null) ? Path.of(indexPath) : null;
+
     // If indexDir is relative then create index inside core.getDataDir()
     if (indexDir != null) {
-      if (!Path.of(indexDir).isAbsolute()) {
-        indexDir = Path.of(core.getDataDir(), indexDir).toString();
+      if (!indexDir.isAbsolute()) {
+        indexDir = Path.of(core.getDataDir(), indexDir.toString());
       }
     }
+
     sourceLocation = (String) config.get(LOCATION);
     String compClass = (String) config.get(COMPARATOR_CLASS);
     Comparator<SuggestWord> comp = null;
@@ -234,7 +237,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       // files can't be opened.  It would be better for SpellChecker to hold a single IW instance,
       // and close it on close, but Solr never seems to close its spell checkers.  Wrapping as
       // FilterDirectory prevents IndexWriter from catching the pending deletions:
-      index = new FilterDirectory(FSDirectory.open(Path.of(indexDir))) {};
+      index = new FilterDirectory(FSDirectory.open(indexDir)) {};
     } else {
       index = new ByteBuffersDirectory();
     }
@@ -267,7 +270,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   /*
    * @return the Index directory
    * */
-  public String getIndexDir() {
+  public Path getIndexDir() {
     return indexDir;
   }
 

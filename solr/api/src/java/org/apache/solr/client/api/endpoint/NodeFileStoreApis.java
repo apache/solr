@@ -26,7 +26,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-import java.io.IOException;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /**
@@ -64,6 +63,5 @@ public interface NodeFileStoreApis {
           String getFrom,
       @Parameter(description = "Indicates that (only) file metadata should be fetched")
           @QueryParam("meta")
-          Boolean meta)
-      throws IOException;
+          Boolean meta);
 }

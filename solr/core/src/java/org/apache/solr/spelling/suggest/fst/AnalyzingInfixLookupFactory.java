@@ -85,10 +85,12 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
 
     // optional parameters
 
-    String indexPath =
-        params.get(INDEX_PATH) != null ? params.get(INDEX_PATH).toString() : DEFAULT_INDEX_PATH;
-    if (!Path.of(indexPath).isAbsolute()) {
-      indexPath = Path.of(core.getDataDir(), indexPath).toString();
+    Path indexPath =
+        params.get(INDEX_PATH) != null
+            ? Path.of(params.get(INDEX_PATH).toString())
+            : Path.of(DEFAULT_INDEX_PATH);
+    if (!indexPath.isAbsolute()) {
+      indexPath = Path.of(core.getDataDir(), indexPath.toString());
     }
 
     int minPrefixChars =
@@ -108,7 +110,7 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
 
     try {
       return new AnalyzingInfixSuggester(
-          FSDirectory.open(Path.of(indexPath)),
+          FSDirectory.open(indexPath),
           indexAnalyzer,
           queryAnalyzer,
           minPrefixChars,

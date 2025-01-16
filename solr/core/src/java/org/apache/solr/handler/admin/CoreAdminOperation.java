@@ -356,7 +356,9 @@ public enum CoreAdminOperation implements CoreAdminOp {
           if (core != null) {
             info.add(NAME, core.getName());
             info.add("instanceDir", core.getInstancePath().toString());
+
             info.add("dataDir", Path.of(core.getDataDir()).toString());
+
             info.add("config", core.getConfigResource());
             info.add("schema", core.getSchemaResource());
             info.add("startTime", core.getStartTimeStamp());
