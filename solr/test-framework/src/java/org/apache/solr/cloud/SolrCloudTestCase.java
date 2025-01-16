@@ -167,7 +167,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected static void waitForState(
       String message, String collection, CollectionStatePredicate predicate) {
-    waitForState(message, collection, predicate, DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+    waitForState(message, collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, predicate);
   }
 
   /**
@@ -180,9 +180,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static void waitForState(
       String message,
       String collection,
-      CollectionStatePredicate predicate,
       int timeout,
-      TimeUnit timeUnit) {
+      TimeUnit timeUnit,
+      CollectionStatePredicate predicate) {
     log.info("waitForState ({}): {}", collection, message);
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
@@ -217,7 +217,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected static void waitForState(
       String message, String collection, Predicate<DocCollection> predicate) {
-    waitForState(message, collection, predicate, DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+    waitForState(message, collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, predicate);
   }
 
   /**
@@ -230,9 +230,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static void waitForState(
       String message,
       String collection,
-      Predicate<DocCollection> predicate,
       int timeout,
-      TimeUnit timeUnit) {
+      TimeUnit timeUnit,
+      Predicate<DocCollection> predicate) {
     log.info("waitForState ({}): {}", collection, message);
     AtomicReference<DocCollection> state = new AtomicReference<>();
     try {

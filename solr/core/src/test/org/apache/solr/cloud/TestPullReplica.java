@@ -754,9 +754,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState(
         "Waiting for collection " + collection + " to be deleted",
         collection,
-        Objects::isNull,
         10,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        Objects::isNull);
   }
 
   private DocCollection assertNumberOfReplicas(

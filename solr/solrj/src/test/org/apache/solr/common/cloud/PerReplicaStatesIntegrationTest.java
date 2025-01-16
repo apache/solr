@@ -262,15 +262,18 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       waitForState(
           "Waiting for PRS property",
           COLL,
-          collectionState -> "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)),
           5,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          collectionState ->
+              "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
       CollectionAdminRequest.modifyCollection(
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "true"))
           .process(cluster.getSolrClient());
       waitForState(
           "Waiting for PRS property",
           COLL,
+          5,
+          TimeUnit.SECONDS,
           collectionState -> {
             AtomicBoolean anyFail = new AtomicBoolean(false);
             PerReplicaStates prs2 =
@@ -281,9 +284,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
                   if (newState.getDuplicate() != null) anyFail.set(true);
                 });
             return !anyFail.get();
-          },
-          5,
-          TimeUnit.SECONDS);
+          });
 
     } finally {
       cluster.shutdown();

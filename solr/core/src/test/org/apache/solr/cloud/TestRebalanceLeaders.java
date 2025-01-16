@@ -179,6 +179,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       waitForState(
           "Check property is uniquely distributed in slice: " + prop,
           COLLECTION_NAME,
+          timeoutMs,
+          TimeUnit.MILLISECONDS,
           c -> {
             forceUpdateCollectionStatus();
             Slice modSlice = c.getSlice(slice.getName());
@@ -194,9 +196,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
                     .count();
 
             return count == 1 && rightRep;
-          },
-          timeoutMs,
-          TimeUnit.MILLISECONDS);
+          });
     }
   }
 
@@ -338,6 +338,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     waitForState(
         "Check property is distributed evenly: " + prop,
         COLLECTION_NAME,
+        timeoutMs,
+        TimeUnit.MILLISECONDS,
         docCollection -> {
           int maxPropCount = 0;
           int minPropCount = Integer.MAX_VALUE;
@@ -352,9 +354,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
             minPropCount = Math.min(minPropCount, repCount);
           }
           return Math.abs(maxPropCount - minPropCount) < 2;
-        },
-        timeoutMs,
-        TimeUnit.MILLISECONDS);
+        });
   }
 
   // Used when we concentrate the leader on a few nodes.
@@ -372,6 +372,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     waitForState(
         message,
         COLLECTION_NAME,
+        timeoutMs,
+        TimeUnit.MILLISECONDS,
         docCollection -> {
           for (Map.Entry<String, String> ent : expectedShardReplicaMap.entrySet()) {
             Replica rep = docCollection.getSlice(ent.getKey()).getReplica(ent.getValue());
@@ -380,9 +382,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
             }
           }
           return true;
-        },
-        timeoutMs,
-        TimeUnit.MILLISECONDS);
+        });
   }
 
   // Just check that the property is distributed as expectecd. This does _not_ rebalance the leaders
@@ -583,6 +583,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     waitForState(
         "Waiting for all replicas to become inactive",
         COLLECTION_NAME,
+        timeoutMs,
+        TimeUnit.MILLISECONDS,
         (liveNodes, docCollection) -> {
           boolean expectedInactive = true;
 
@@ -598,9 +600,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
             }
           }
           return expectedInactive;
-        },
-        timeoutMs,
-        TimeUnit.MILLISECONDS);
+        });
   }
 
   // We need to wait around until all replicas are active before expecting rebalancing or
@@ -609,6 +609,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     waitForState(
         "Waiting for all replicas to become active",
         COLLECTION_NAME,
+        timeoutMs,
+        TimeUnit.MILLISECONDS,
         (liveNodes, docCollection) -> {
           boolean allActive = true;
           for (Slice slice : docCollection.getSlices()) {
@@ -619,9 +621,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
             }
           }
           return allActive;
-        },
-        timeoutMs,
-        TimeUnit.MILLISECONDS);
+        });
   }
 
   // use a simple heuristic to put as many replicas with the property on as few nodes as possible.
@@ -664,6 +664,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     waitForState(
         "Waiting to have exactly one replica with " + prop + "set per shard",
         COLLECTION_NAME,
+        timeoutMs,
+        TimeUnit.MILLISECONDS,
         docCollection -> {
           for (Slice slice : docCollection.getSlices()) {
             int propCount = 0;
@@ -677,8 +679,6 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
             }
           }
           return true;
-        },
-        timeoutMs,
-        TimeUnit.MILLISECONDS);
+        });
   }
 }

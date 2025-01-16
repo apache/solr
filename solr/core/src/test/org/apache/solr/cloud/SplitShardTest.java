@@ -359,10 +359,10 @@ public class SplitShardTest extends SolrCloudTestCase {
 
     waitForState(
         "Waiting for sub-shards",
-        COLL,
-        collectionState -> testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")),
-        10,
-        TimeUnit.SECONDS);
+        COLL,10,
+            TimeUnit.SECONDS,
+        collectionState -> testColl(jetty, collectionState, List.of("shard1_0", "shard1_1"))
+        );
 
     JettySolrRunner randomJetty = cluster.getRandomJetty(random());
     splitShard =
@@ -375,9 +375,9 @@ public class SplitShardTest extends SolrCloudTestCase {
     waitForState(
         "Waiting for sub-shards",
         COLL,
-        collectionState -> testColl(randomJetty, collectionState, List.of("shard2_0", "shard2_1")),
         10,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        collectionState -> testColl(randomJetty, collectionState, List.of("shard2_0", "shard2_1")));
   }
 
   private boolean testColl(

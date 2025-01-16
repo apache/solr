@@ -64,9 +64,9 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
       waitForState(
           "Waiting for inactive shard to be deleted",
           collectionName,
-          clusterShape(0, 0),
           5,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          clusterShape(0, 0));
     } finally {
       removePlugin();
     }
@@ -96,9 +96,9 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
       waitForState(
           "Waiting for InactiveShardRemover to delete inactive shard",
           collectionName,
-          clusterShape(0, 0),
           ttlSeconds + 5,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          clusterShape(0, 0));
 
       final long ttlEnd = timeSource.getTimeNs();
       final long ttlPeriodSeconds = TimeUnit.NANOSECONDS.toSeconds(ttlEnd - ttlStart);
