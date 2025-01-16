@@ -169,6 +169,10 @@ Bug Fixes
 * SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
   (Matthew Biscocho via David Smiley)
 
+* SOLR-17221: If multiple query param keys are sent that only vary by case, they were wrongly merged when
+  doing distributed search (sharded collections). This could likely occur for fielded parameters such as
+  f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
