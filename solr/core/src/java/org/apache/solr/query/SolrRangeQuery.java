@@ -505,6 +505,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       return segStates[context.ord] = new SegState(segSet);
     }
 
+
     private ScorerSupplier scorerSupplier(DocIdSet set) throws IOException {
       if (set == null) {
         return null;
@@ -516,7 +517,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
     }
 
-    @Override
+    //TBD already implements a scorerSupplier() . So this need not be overridden
+
+ /*   @Override
     public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
       final SegState weightOrBitSet = getSegState(context);
       if (weightOrBitSet.weight != null) {
@@ -528,7 +531,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         }
         return new DefaultBulkScorer(scorer);
       }
-    }
+    }*/
 
     @Override
     public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {

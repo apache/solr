@@ -26,6 +26,7 @@ import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesSkipper;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -118,6 +119,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
               leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
+  }
+
+  @Override
+  public DocValuesSkipper getDocValuesSkipper(String field) throws IOException {
+    //TODO implement skipping
+    return null;
   }
 
   @Override

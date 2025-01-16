@@ -21,8 +21,10 @@ import static org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat.MODE_
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+
+//TBD which codec to fall back to
+import org.apache.lucene.backward_codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene912.Lucene912Codec.Mode;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
@@ -225,7 +227,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertEquals(
         "Default Solr compression mode changed. Is this expected?",
         SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE,
-        Mode.valueOf("BEST_SPEED"));
+        Lucene90Codec.Mode.valueOf("BEST_SPEED"));
 
     String previousCoreName = h.coreName;
     String newCoreName = "core_with_default_compression";

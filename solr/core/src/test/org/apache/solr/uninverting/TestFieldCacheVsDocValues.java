@@ -16,7 +16,7 @@
  */
 package org.apache.solr.uninverting;
 
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
+import static org.apache.lucene.sandbox.facet.iterators.OrdinalIterator.NO_MORE_ORDS;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.util.ArrayList;
