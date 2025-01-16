@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MMapDirectory;
@@ -64,7 +65,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
       throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
-    mapDirectory.setPreload(preload);
+    mapDirectory.setPreload((s, ioContext) -> preload);
     return mapDirectory;
   }
 }

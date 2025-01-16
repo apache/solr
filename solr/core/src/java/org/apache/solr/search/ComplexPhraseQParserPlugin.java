@@ -128,7 +128,8 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
               try {
                 org.apache.lucene.search.Query wildcardQuery =
                     reverseAwareParser.getWildcardQuery(t.field(), t.text());
-                setRewriteMethod(wildcardQuery);
+                //TBD . We may not need this as the constructor is invoked with the rewite method
+//                setRewriteMethod(wildcardQuery);
                 return wildcardQuery;
               } catch (SyntaxError e) {
                 throw new RuntimeException(e);
@@ -143,14 +144,14 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
               return query;
             }
 
-            private Query setRewriteMethod(org.apache.lucene.search.Query query) {
+          /*  private Query setRewriteMethod(org.apache.lucene.search.Query query) {
               if (query instanceof MultiTermQuery) {
                 ((MultiTermQuery) query)
                     .setRewriteMethod(
                         org.apache.lucene.search.MultiTermQuery.SCORING_BOOLEAN_REWRITE);
               }
               return query;
-            }
+            }*/
 
             @Override
             protected Query newRangeQuery(
