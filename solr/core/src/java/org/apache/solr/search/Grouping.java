@@ -26,13 +26,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
@@ -93,7 +91,6 @@ public class Grouping {
   private int maxMatches; // max number of matches from any grouping command
   private float maxScore = Float.NaN; // max score seen in any doclist
   private boolean signalCacheWarning = false;
-  private TimeLimitingCollector timeLimitingCollector;
 
   // output if one of the grouping commands should be used as the main result.
   public DocList mainResult;
@@ -425,32 +422,7 @@ public class Grouping {
    */
   private void searchWithTimeLimiter(final Query filterQuery, Collector collector)
       throws IOException {
-    if (cmd.getTimeAllowed() > 0) {
-      if (timeLimitingCollector == null) {
-        timeLimitingCollector =
-            new TimeLimitingCollector(
-                collector, TimeLimitingCollector.getGlobalCounter(), cmd.getTimeAllowed());
-      } else {
-        /*
-         * This is so the same timer can be used for grouping's multiple phases.
-         * We don't want to create a new TimeLimitingCollector for each phase because that would
-         * reset the timer for each phase.  If time runs out during the first phase, the
-         * second phase should timeout quickly.
-         */
-        timeLimitingCollector.setCollector(collector);
-      }
-      collector = timeLimitingCollector;
-    }
-    try {
-      searcher.search(QueryUtils.combineQueryAndFilter(query, filterQuery), collector);
-    } catch (TimeLimitingCollector.TimeExceededException
-        | ExitableDirectoryReader.ExitingReaderException x) {
-      // INFO log the (possibly quite long) query object separately
-      log.info("Query: {}; ", query);
-      // to make WARN logged exception content more visible
-      log.warn("Query: {}; ", query.getClass().getName(), x);
-      qr.setPartialResults(true);
-    }
+    searcher.search(filterQuery, collector);
   }
 
   /**
