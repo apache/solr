@@ -61,9 +61,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminOperation;
@@ -716,13 +716,14 @@ public class JettySolrRunner {
     if (getCoreContainer() != null) {
       List<SolrCore> cores = getCoreContainer().getCores();
       for (SolrCore core : cores) {
-        NamedList<Object> coreStatus =
+        final var coreStatus =
             CoreAdminOperation.getCoreStatus(getCoreContainer(), core.getName(), false);
         core.withSearcher(
             solrIndexSearcher -> {
               SimpleOrderedMap<Object> lukeIndexInfo =
                   LukeRequestHandler.getIndexInfo(solrIndexSearcher.getIndexReader());
-              Map<String, Object> indexInfoMap = coreStatus.toMap(new LinkedHashMap<>());
+              // TODO NOCOMMIT Following line is a little suspect IMO, but we'll see if tests pass.
+              Map<String, Object> indexInfoMap = Utils.reflectToMap(coreStatus);
               indexInfoMap.putAll(lukeIndexInfo.toMap(new LinkedHashMap<>()));
               pw.println(JSONUtil.toJSON(indexInfoMap, 2));
 

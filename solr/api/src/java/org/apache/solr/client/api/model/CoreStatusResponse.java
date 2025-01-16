@@ -17,50 +17,56 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import java.util.Date;
 import java.util.Map;
 
 public class CoreStatusResponse extends SolrJerseyResponse {
 
-    // In the v1 code this is a Map of Exception instances by core name.  How are exceptions serialized out by things though, that's what I'd have to mirror on the v2 side.
-    @JsonProperty public Map<String, Exception> initFailures;
+  // In the v1 code this is a Map of Exception instances by core name.  How are exceptions
+  // serialized out by things though, that's what I'd have to mirror on the v2 side.
+  @JsonProperty public Map<String, Exception> initFailures;
 
-    @JsonProperty public Map<String, SingleCoreData> status;
+  @JsonProperty public Map<String, SingleCoreData> status;
 
-    public static class SingleCoreData {
-        @JsonProperty String name;
-        @JsonProperty String instanceDir;
-        @JsonProperty String dataDir;
-        @JsonProperty String config;
-        @JsonProperty String schema;
-        @JsonProperty String startTime; // TODO NOCOMMIT Date? Instant?
-        @JsonProperty Long uptime;
-        @JsonProperty String lastPublished;
-        @JsonProperty Integer configVersion;
-        @JsonProperty CloudDetails cloud;
-        @JsonProperty IndexDetails index;
-    }
+  public static class SingleCoreData {
+    @JsonProperty public String name;
 
-    public static class CloudDetails {
-        @JsonProperty public String collection;
-        @JsonProperty public String shard;
-        @JsonProperty public String replica;
-        @JsonProperty public String replicaType; // TODO enum?
-    }
+    @JsonProperty public Boolean isLoaded;
+    @JsonProperty public Boolean isLoading;
 
-    public static class IndexDetails {
-        @JsonProperty public Integer numDocs;
-        @JsonProperty public Integer maxDoc;
-        @JsonProperty public Integer deletedDocs;
-        @JsonProperty public Integer version;
-        @JsonProperty public Integer segmentCount;
-        @JsonProperty public Boolean current;
-        @JsonProperty public Boolean hasDeletions;
-        @JsonProperty public String directory;
-        @JsonProperty public String segmentsFile;
-        @JsonProperty public Integer segmentsFileSizeInBytes;
-        @JsonProperty public Map<String, String> userData;
-        @JsonProperty public Integer sizeInBytes;
-        @JsonProperty public String size; // Human readable representation of 'sizeInBytes'
-    }
+    @JsonProperty public String instanceDir;
+    @JsonProperty public String dataDir;
+    @JsonProperty public String config;
+    @JsonProperty public String schema;
+    @JsonProperty public Date startTime;
+    @JsonProperty public Long uptime;
+    @JsonProperty public String lastPublished;
+    @JsonProperty public Integer configVersion;
+    @JsonProperty public CloudDetails cloud;
+    @JsonProperty public IndexDetails index;
+  }
+
+  public static class CloudDetails {
+    @JsonProperty public String collection;
+    @JsonProperty public String shard;
+    @JsonProperty public String replica;
+    @JsonProperty public String replicaType; // TODO enum?
+  }
+
+  public static class IndexDetails {
+    @JsonProperty public Integer numDocs;
+    @JsonProperty public Integer maxDoc;
+    @JsonProperty public Integer deletedDocs;
+    @JsonProperty public Long version;
+    @JsonProperty public Integer segmentCount;
+    @JsonProperty public Boolean current;
+    @JsonProperty public Boolean hasDeletions;
+    @JsonProperty public String directory;
+    @JsonProperty public String segmentsFile;
+    @JsonProperty public Long segmentsFileSizeInBytes;
+    @JsonProperty public Map<String, String> userData;
+    @JsonProperty public Date lastModified;
+    @JsonProperty public Long sizeInBytes;
+    @JsonProperty public String size; // Human readable representation of 'sizeInBytes'
+  }
 }

@@ -17,18 +17,8 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.CORE;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
-import static org.apache.solr.common.params.CoreAdminParams.INDEX_INFO;
-
-import java.util.Locale;
-import java.util.Map;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCore;
-import org.apache.solr.handler.admin.api.CoreStatusAPI;
 import org.junit.Test;
 
 /**
@@ -44,7 +34,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new AllCoresStatusAPI(handler));
   }
 
   @Override
@@ -56,7 +45,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   public boolean isCoreSpecific() {
     return false;
   }
-
 
   @Test
   public void testCreateCoreRequestBodyMappingAllParams() throws Exception {
@@ -111,27 +99,5 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
     // V1 codepath handles the async/taskId differently, and it's not passed down the v2 code
     assertEquals(null, createRequestBody.async);
-  }
-
-  // TODO NOCOMMIT - following 2 tests will need attended to if they're still relevant
-  @Test
-  public void testSpecificCoreStatusApiAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/someCore", "GET", Map.of(INDEX_INFO, new String[] {"true"}));
-
-    assertEquals(STATUS.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
-    assertEquals("someCore", v1Params.get(CORE));
-    assertTrue(v1Params.getPrimitiveBool(INDEX_INFO));
-  }
-
-  @Test
-  public void testAllCoreStatusApiAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params("/cores", "GET", Map.of(INDEX_INFO, new String[] {"true"}));
-
-    assertEquals(STATUS.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
-    assertNull("Expected 'core' parameter to be null", v1Params.get(CORE));
-    assertTrue(v1Params.getPrimitiveBool(INDEX_INFO));
   }
 }

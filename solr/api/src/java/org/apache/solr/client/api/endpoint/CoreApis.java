@@ -41,11 +41,16 @@ public interface CoreApis {
 
     @GET
     @Operation(summary = "Fetch status info for all cores hosted on this node.", tags = "cores")
-    SolrJerseyResponse getAllCoreStatus(@QueryParam("indexInfo") Boolean indexInfo);
+    SolrJerseyResponse getAllCoreStatus(@QueryParam("indexInfo") Boolean indexInfo)
+        throws Exception;
 
     @GET
-    @Operation(summary = "Fetch status info for the core hosted on this node with the specified name.", tags = "cores")
+    @Operation(
+        summary = "Fetch status info for the core hosted on this node with the specified name.",
+        tags = "cores")
     @Path("/{coreName}")
-    SolrJerseyResponse getCoreStatus(@PathParam("coreName") String coreName, @QueryParam("indexInfo") Boolean indexInfo);
+    SolrJerseyResponse getCoreStatus(
+        @PathParam("coreName") String coreName, @QueryParam("indexInfo") Boolean indexInfo)
+        throws Exception;
   }
 }

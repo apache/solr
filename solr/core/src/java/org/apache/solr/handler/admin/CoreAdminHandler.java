@@ -54,8 +54,8 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
+import org.apache.solr.handler.admin.api.CoreStatus;
 import org.apache.solr.handler.admin.api.CreateCore;
 import org.apache.solr.handler.admin.api.CreateCoreBackup;
 import org.apache.solr.handler.admin.api.GetNodeCommandStatus;
@@ -71,7 +71,6 @@ import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
 import org.apache.solr.handler.admin.api.RestoreCore;
-import org.apache.solr.handler.admin.api.CoreStatusAPI;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
@@ -349,7 +348,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new AllCoresStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
@@ -367,7 +365,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         CoreSnapshot.class,
-        CoreStatusAPI.class,
+        CoreStatus.class,
         InstallCoreData.class,
         CreateCore.class,
         CreateCoreBackup.class,
