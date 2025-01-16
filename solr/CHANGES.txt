@@ -191,6 +191,9 @@ Other Changes
 
 * SOLR-17589: Prevent error log entry on solr server due to initial HEAD request from HttpJdkSolrClient. (Paul Blanchaert via James Dyer)
 
+* SOLR-17611: SolrJ's User-Agent header now uses the version of SolrJ.  There's a corresponding
+  HttpSolrCall.getUserAgentSolrVersion to parse it.  (David Smiley)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
