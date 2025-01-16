@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import java.io.IOException;
-import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -37,8 +36,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
-    TimeLimitingCollector.getGlobalTimerThread().join();
+
   }
 
   @Test
