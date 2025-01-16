@@ -18,6 +18,10 @@ Bug Fixes
 
 * SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
 
+* SOLR-17221: If multiple query param keys are sent that only vary by case, they were wrongly merged when
+  doing distributed search (sharded collections). This could likely occur for fielded parameters such as
+  f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)

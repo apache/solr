@@ -147,6 +147,8 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", MUST_ENCODE);
+    q.setParam("case_sensitive_param", "lowercase");
+    q.setParam("CASE_SENSITIVE_PARAM", "uppercase");
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE);
     if (rp != null) {
