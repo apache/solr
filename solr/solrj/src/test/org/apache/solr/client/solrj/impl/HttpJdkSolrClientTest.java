@@ -41,6 +41,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -630,7 +631,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Override
   protected String expectedUserAgent() {
-    return "Solr[" + HttpJdkSolrClient.class.getName() + "] 1.0";
+    return "Solr[" + HttpJdkSolrClient.class.getName() + "] " + SolrVersion.LATEST_STRING;
   }
 
   @Override
