@@ -71,7 +71,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
@@ -86,7 +85,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -784,18 +782,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
     } else {
       // application/x-www-form-urlencoded
-      Fields fields = new Fields();
-      Iterator<String> iter = wparams.getParameterNamesIterator();
-      while (iter.hasNext()) {
-        String key = iter.next();
-        String[] vals = wparams.getParams(key);
-        if (vals != null) {
-          for (String val : vals) {
-            fields.add(key, val);
-          }
-        }
-      }
-      req.body(new FormRequestContent(fields, FALLBACK_CHARSET));
+      String queryString = wparams.toQueryString();
+      // remove the leading "?" if there is any
+      queryString = queryString.startsWith("?") ? queryString.substring(1) : queryString;
+      req.body(
+          new StringRequestContent(
+              "application/x-www-form-urlencoded", queryString, FALLBACK_CHARSET));
     }
 
     return req;
