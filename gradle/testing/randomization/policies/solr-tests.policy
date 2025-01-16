@@ -109,9 +109,6 @@ grant {
   permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
   // needed by hadoop common RawLocalFileSystem for java nio getOwner
   permission java.lang.RuntimePermission "accessUserInformation";
-  // needed by hadoop hdfs
-  permission java.lang.RuntimePermission "readFileDescriptor";
-  permission java.lang.RuntimePermission "writeFileDescriptor";
   // needed by hadoop http
   permission java.lang.RuntimePermission "getProtectionDomain";
   // SolrProcessMgr to list processes
