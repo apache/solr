@@ -328,13 +328,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            collectionName,
-            30,
-            TimeUnit.SECONDS,
-            (l, c) -> c != null && c.getSlice("shardC") != null);
+    waitForState(
+        "Wait for shard to be visible",
+        collectionName,
+        c -> c != null && c.getSlice("shardC") != null);
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(3, coresStatus.size());
     int replicaTlog = 0;
