@@ -78,7 +78,7 @@ public class CoreStatus extends CoreAdminAPIBase implements CoreApis.GetStatus {
     // Populate status for each core
     final var coreNameList =
         (coreName != null) ? List.of(coreName) : coreContainer.getAllCoreNames();
-    coreNameList.sort(null);
+    if (coreNameList.size() > 1) coreNameList.sort(null);
     response.status = new HashMap<>();
     for (String toPopulate : coreNameList) {
       // TODO This is where I left off at 1/15.  Next TODO items are:
