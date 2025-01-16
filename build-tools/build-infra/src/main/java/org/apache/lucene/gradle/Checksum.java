@@ -47,7 +47,7 @@ import org.gradle.work.InputChanges;
 public class Checksum extends DefaultTask {
   private FileCollection files;
   private File outputDir;
-  private Algorithm algorithm = Checksum.Algorithm.SHA512;
+  private Algorithm algorithm;
 
   public enum Algorithm {
     MD5(new DigestUtils(DigestUtils.getMd5Digest())),
@@ -68,7 +68,7 @@ public class Checksum extends DefaultTask {
 
   public Checksum() {
     outputDir = new File(getProject().getBuildDir(), "checksums");
-    algorithm = Algorithm.SHA256;
+    algorithm = Checksum.Algorithm.SHA512;
   }
 
   @InputFiles
