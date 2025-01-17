@@ -32,7 +32,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * </ul>
  *
  * @lucene.experimental
- * @since 9.8.0
+ * @since 9.9.0
  */
 public class RawTFSimilarityFactory extends SimilarityFactory {
   private RawTFSimilarity similarity;
