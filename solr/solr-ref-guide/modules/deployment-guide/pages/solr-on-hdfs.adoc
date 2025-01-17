@@ -20,6 +20,8 @@
 The Solr HDFS Module has support for writing and reading Solr's index and transaction log files to the HDFS distributed filesystem.
 It does not use Hadoop MapReduce to process Solr data.
 
+IMPORTANT: The HDFS Module has been deprecated and will be retired in Solr 10.
+
 To use HDFS rather than a local filesystem, you must be using Hadoop 2.x and you will need to instruct Solr to use the `HdfsDirectoryFactory`.
 There are also several additional parameters to define.
 These can be set in one of three ways:
