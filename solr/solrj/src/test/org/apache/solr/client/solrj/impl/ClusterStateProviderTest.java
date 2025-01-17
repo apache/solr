@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.common.util.Utils.getNodeNameFromSolrUrl;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -203,51 +204,64 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       var jettyNode1 = cluster.getJettySolrRunner(0);
       var jettyNode2 = cluster.getJettySolrRunner(1);
 
+      String nodeName1 = getNodeNameFromSolrUrl(jettyNode1.getBaseUrl().toString());
+      String nodeName2 = getNodeNameFromSolrUrl(jettyNode2.getBaseUrl().toString());
+
       Set<String> actualLiveNodes = cspHttp.getLiveNodes();
       assertEquals(2, actualLiveNodes.size());
+      assertEquals(Set.of(nodeName1, nodeName2), actualLiveNodes);
 
       cluster.stopJettySolrRunner(jettyNode1);
       waitForCSPCacheTimeout();
 
       actualLiveNodes = cspHttp.getLiveNodes();
-      assertEquals(2, actualLiveNodes.size());
+      assertEquals(1, actualLiveNodes.size());
+      assertEquals(Set.of(nodeName2), actualLiveNodes);
 
       cluster.startJettySolrRunner(jettyNode1);
       cluster.stopJettySolrRunner(jettyNode2);
       waitForCSPCacheTimeout();
 
-      // Should still be reachable because live nodes doesn't remove initial nodes
+      // Should still be reachable because backup nodes
       actualLiveNodes = cspHttp.getLiveNodes();
-      assertEquals(2, actualLiveNodes.size());
+      assertEquals(1, actualLiveNodes.size());
+      assertEquals(Set.of(nodeName1), actualLiveNodes);
     }
   }
 
   @Test
-  public void testClusterStateProviderLiveNodesWithNewHost() throws Exception {
+  public void testClusterStateProviderLiveNodesWithNewNode() throws Exception {
     try (var cspHttp = http2ClusterStateProvider()) {
       var jettyNode1 = cluster.getJettySolrRunner(0);
       var jettyNode2 = cluster.getJettySolrRunner(1);
       var jettyNode3 = cluster.startJettySolrRunner();
 
-      String nodeName1 = cspHttp.getNodeNameFromSolrUrl(jettyNode1.getBaseUrl().toString());
-      String nodeName2 = cspHttp.getNodeNameFromSolrUrl(jettyNode2.getBaseUrl().toString());
-      String nodeName3 = cspHttp.getNodeNameFromSolrUrl(jettyNode3.getBaseUrl().toString());
-      Set<String> expectedKnownNodes = Set.of(nodeName1, nodeName2, nodeName3);
+      String nodeName1 = getNodeNameFromSolrUrl(jettyNode1.getBaseUrl().toString());
+      String nodeName2 = getNodeNameFromSolrUrl(jettyNode2.getBaseUrl().toString());
+      String nodeName3 = getNodeNameFromSolrUrl(jettyNode3.getBaseUrl().toString());
       waitForCSPCacheTimeout();
 
       Set<String> actualKnownNodes = cspHttp.getLiveNodes();
       assertEquals(3, actualKnownNodes.size());
-      assertEquals(expectedKnownNodes, actualKnownNodes);
+      assertEquals(Set.of(nodeName1, nodeName2, nodeName3), actualKnownNodes);
 
-      // Stop non initially passed node from the cluster
-      cluster.stopJettySolrRunner(jettyNode3);
-      expectedKnownNodes = Set.of(nodeName1, nodeName2);
+      // Stop all backup nodes
+      cluster.stopJettySolrRunner(jettyNode1);
+      cluster.stopJettySolrRunner(jettyNode2);
       waitForCSPCacheTimeout();
 
-      // New nodes are removable from known hosts
       actualKnownNodes = cspHttp.getLiveNodes();
-      assertEquals(2, actualKnownNodes.size());
-      assertEquals(expectedKnownNodes, actualKnownNodes);
+      assertEquals(1, actualKnownNodes.size());
+      assertEquals(Set.of(nodeName3), actualKnownNodes);
+
+      // Bring back a backup node and take down the new node
+      cluster.startJettySolrRunner(jettyNode2);
+      cluster.stopJettySolrRunner(jettyNode3);
+      waitForCSPCacheTimeout();
+
+      actualKnownNodes = cspHttp.getLiveNodes();
+      assertEquals(1, actualKnownNodes.size());
+      assertEquals(Set.of(nodeName2), actualKnownNodes);
     }
   }
 

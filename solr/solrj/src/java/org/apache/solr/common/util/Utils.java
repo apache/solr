@@ -40,6 +40,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -784,6 +787,20 @@ public class Utils {
     }
     final String hostAndPort = nodeName.substring(0, _offset);
     return urlScheme + "://" + hostAndPort + "/" + (isV2 ? "api" : "solr");
+  }
+
+  /**
+   * Construct base Solr URL to a Solr node name
+   *
+   * @param solrUrl Given a base Solr URL string (e.g., 'https://app-node-1:8983/solr')
+   * @return URL that looks like {@code app-node-1:8983_solr}
+   * @throws MalformedURLException if the provided URL string is malformed
+   * @throws URISyntaxException if the provided URL string could not be parsed as a URI reference.
+   */
+  public static String getNodeNameFromSolrUrl(String solrUrl)
+      throws MalformedURLException, URISyntaxException {
+    URL url = new URI(solrUrl).toURL();
+    return url.getAuthority() + url.getPath().replace('/', '_');
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
