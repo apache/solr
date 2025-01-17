@@ -823,7 +823,7 @@ It would be more prudent to get the analyser from the schema.
      ts.end();
 ----
 
-The schema will just define a multi-valued string value and an optional field to use at analysis time - similar to above.
+The schema will just define a multi-valued string value and an optional field to use at analysis time - similar to the above.
 
 [source,xml]
 ----

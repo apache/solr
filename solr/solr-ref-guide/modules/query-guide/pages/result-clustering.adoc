@@ -459,7 +459,7 @@ Ideally, the engine should translate (or understand) the content of documents an
 In reality, clustering algorithms are typically much simpler -- they infer similarity between documents from statistical properties of terms and phrases that occur in those documents.
 So texts written in different languages will not cluster too well.
 
-To deal with his situation the default clustering component implementation in Solr will try to first group all documents by their language and then apply clustering to each sub-group in that language.
+To deal with this situation the default clustering component implementation in Solr will try to first group all documents by their language and then apply clustering to each sub-group in that language.
 It is recommended to store the language of each document as its separate field and point at it using the `clustering.languageField` configuration property described above.
 
 == Tweaking Algorithm Settings
