@@ -88,10 +88,10 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     q = parse("foo bar");
     clauses = clauses(q);
     assertEquals(1, clauses.length);
-    assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
+    assertTrue(clauses[0].query() instanceof DisjunctionMaxQuery);
     assertEquals(
-        0.0, ((DisjunctionMaxQuery) clauses[0].getQuery()).getTieBreakerMultiplier(), 1e-15);
-    Collection<Query> qa = ((DisjunctionMaxQuery) clauses[0].getQuery()).getDisjuncts();
+        0.0, ((DisjunctionMaxQuery) clauses[0].query()).getTieBreakerMultiplier(), 1e-15);
+    Collection<Query> qa = ((DisjunctionMaxQuery) clauses[0].query()).getDisjuncts();
     assertEquals(2, qa.size());
     final Collection<String> qaStrings =
         qa.stream().map(q -> q.toString()).collect(Collectors.toList());
@@ -103,9 +103,9 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     q = parse("foo bar -baz");
     clauses = clauses(q);
     assertEquals(2, clauses.length);
-    assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
-    assertTrue(clauses[1].getQuery() instanceof TermQuery);
-    assertEquals("text:baz", clauses[1].getQuery().toString());
+    assertTrue(clauses[0].query() instanceof DisjunctionMaxQuery);
+    assertTrue(clauses[1].query() instanceof TermQuery);
+    assertEquals("text:baz", clauses[1].query().toString());
     assertTrue(clauses[1].isProhibited());
   }
 
@@ -114,9 +114,9 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     q = parse("foo bar", "tie", "0.5");
     clauses = clauses(q);
     assertEquals(1, clauses.length);
-    assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
+    assertTrue(clauses[0].query() instanceof DisjunctionMaxQuery);
     assertEquals(
-        0.5, ((DisjunctionMaxQuery) clauses[0].getQuery()).getTieBreakerMultiplier(), 1e-15);
+        0.5, ((DisjunctionMaxQuery) clauses[0].query()).getTieBreakerMultiplier(), 1e-15);
   }
 
   @Test
@@ -130,8 +130,8 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     q = parse("foo^5.0 bar^6.0 +baz^7");
     clauses = clauses(q);
     assertEquals(2, clauses.length);
-    assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
-    DisjunctionMaxQuery dmq = ((DisjunctionMaxQuery) clauses[0].getQuery());
+    assertTrue(clauses[0].query() instanceof DisjunctionMaxQuery);
+    DisjunctionMaxQuery dmq = ((DisjunctionMaxQuery) clauses[0].query());
     Query fooClause =
         ((BooleanQuery)
                 dmq.getDisjuncts().stream()
@@ -141,7 +141,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
             .clauses()
             .iterator()
             .next()
-            .getQuery();
+            .query();
     assertEquals(5.0, ((BoostQuery) fooClause).getBoost(), 1e-15);
     Query barClause =
         ((BooleanQuery)
@@ -152,17 +152,17 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
             .clauses()
             .iterator()
             .next()
-            .getQuery();
+            .query();
     assertEquals(6.0, ((BoostQuery) barClause).getBoost(), 1e-15);
-    assertEquals(7.0, ((BoostQuery) clauses[1].getQuery()).getBoost(), 1e-15);
+    assertEquals(7.0, ((BoostQuery) clauses[1].query()).getBoost(), 1e-15);
     assertFalse(q instanceof BoostQuery);
 
     // Grouped with parens on top level
     q = parse("(foo^2.0 bar)^3.0");
     clauses = clauses(q);
     assertEquals(1, clauses.length);
-    assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
-    dmq = ((DisjunctionMaxQuery) clauses[0].getQuery());
+    assertTrue(clauses[0].query() instanceof DisjunctionMaxQuery);
+    dmq = ((DisjunctionMaxQuery) clauses[0].query());
     fooClause =
         ((BooleanQuery)
                 dmq.getDisjuncts().stream()
@@ -172,7 +172,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
             .clauses()
             .iterator()
             .next()
-            .getQuery();
+            .query();
     assertEquals(2.0, ((BoostQuery) fooClause).getBoost(), 1e-15);
     barClause =
         ((BooleanQuery)
@@ -183,7 +183,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
             .clauses()
             .iterator()
             .next()
-            .getQuery();
+            .query();
     assertFalse(barClause instanceof BoostQuery);
     assertEquals(3.0, ((BoostQuery) q).getBoost(), 1e-15);
   }

@@ -371,7 +371,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
-      assertEquals(26, ((TermInSetQuery) q).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) q).getTermsCount());
 
       // large numeric filter query should use TermsQuery
       qParser =
@@ -399,7 +399,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
               ((PointInSetQuery) q).getPackedPoints().size());
         }
       } else {
-        assertEquals(20, ((TermInSetQuery) q).getTermData().size());
+        assertEquals(20, ((TermInSetQuery) q).getTermsCount());
       }
 
       // for point fields large filter query should use PointInSetQuery
@@ -425,16 +425,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setParams(params);
       q = qParser.getQuery();
       assertEquals(2, ((BooleanQuery) q).clauses().size());
-      qq = ((BooleanQuery) q).clauses().get(0).getQuery();
+      qq = ((BooleanQuery) q).clauses().get(0).query();
       if (qq instanceof TermQuery) {
-        qq = ((BooleanQuery) q).clauses().get(1).getQuery();
+        qq = ((BooleanQuery) q).clauses().get(1).query();
       }
 
       if (qq instanceof FilterQuery) {
         qq = ((FilterQuery) qq).getQuery();
       }
 
-      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) qq).getTermsCount());
 
       // test mixed boolean query, including quotes (which shouldn't matter)
       qParser =
@@ -447,10 +447,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       assertEquals(4, ((BooleanQuery) q).clauses().size());
       qq = null;
       for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-        qq = clause.getQuery();
+        qq = clause.query();
         if (qq instanceof TermInSetQuery) break;
       }
-      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
+      assertEquals(26, ((TermInSetQuery) qq).getTermsCount());
 
       // test terms queries of two different fields (LUCENE-7637 changed to require all terms be in
       // the same field)
@@ -465,8 +465,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       q = qParser.getQuery();
       assertEquals(2, ((BooleanQuery) q).clauses().size());
       for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-        qq = clause.getQuery();
-        assertEquals(17, ((TermInSetQuery) qq).getTermData().size());
+        qq = clause.query();
+        assertEquals(17, ((TermInSetQuery) qq).getTermsCount());
       }
     }
     req.close();

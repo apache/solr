@@ -37,19 +37,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TopFieldDocs;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.util.TestUtil;
@@ -251,7 +239,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
                   + ": "
                   + (br == null ? "<missing>" : br.utf8ToString())
                   + " id="
-                  + s.doc(fd.doc).get("id"));
+                  + s.storedFields().document(fd.doc).get("id"));
         }
       }
       for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
@@ -298,7 +286,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           Random random = new Random(seed ^ context.docBase);
           final int maxDoc = context.reader().maxDoc();
           final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
@@ -313,8 +301,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
             }
           }
 
-          return new ConstantScoreScorer(
-              this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
+          return new DefaultScorerSupplier(new ConstantScoreScorer(
+              score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality())));
         }
 
         @Override

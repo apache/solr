@@ -476,7 +476,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
         this.score = score;
       }
 
-      @Override
       public int docID() {
         return docid;
       }
