@@ -428,7 +428,7 @@ Then, change or add this line to the file:
 vm.swappiness = 1
 ----
 
-Alternatively, you can change the setting temporarily by running this comamnd:
+Alternatively, you can change the setting temporarily by running this command:
 
 [source,bash]
 ----

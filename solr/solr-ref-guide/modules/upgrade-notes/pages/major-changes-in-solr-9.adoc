@@ -263,7 +263,7 @@ TIP: Users who cannot upgrade their Docker engine will need to specify the docke
 * Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
 This change will only affect users that have used streaming expression classes in clients outside
 of Solr. Streaming expressions sent to the /stream handler will still operate exactly as before.
-External clients using streaming expression classes will need to update their depenencies to reference
+External clients using streaming expression classes will need to update their dependencies to reference
 the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
 
 === Deprecations
