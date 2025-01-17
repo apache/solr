@@ -365,6 +365,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       this.scoreMode = scoreMode;
     }
 
+
+
     // See MultiTermQueryConstantScoreWrapper matches()
     @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
@@ -518,30 +520,49 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
     }
 
-    //TBD already implements a scorerSupplier() . So this need not be overridden
 
- /*   @Override
-    public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+
+    private BulkScorer bulk(LeafReaderContext context) throws IOException {
       final SegState weightOrBitSet = getSegState(context);
       if (weightOrBitSet.weight != null) {
         return weightOrBitSet.weight.bulkScorer(context);
       } else {
-        final Scorer scorer = scorer(weightOrBitSet.set);
+        final Scorer scorer = scorer(context);
         if (scorer == null) {
           return null;
         }
         return new DefaultBulkScorer(scorer);
       }
-    }*/
+    }
+    //TBD Some tests in BasicFunctionalityTest is still failing
 
     @Override
     public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       final SegState weightOrBitSet = getSegState(context);
-      if (weightOrBitSet.weight != null) {
-        return new SolrDefaultScorerSupplier(weightOrBitSet.weight.scorer(context));
-      } else {
-        return scorerSupplier(weightOrBitSet.set);
-      }
+      ScorerSupplier ss = weightOrBitSet.weight != null ?
+              new SolrDefaultScorerSupplier(weightOrBitSet.weight.scorer(context)):
+              scorerSupplier(weightOrBitSet.set);
+
+      BulkScorer bulkScorer = bulk(context);
+
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          return ss.get(leadCost);
+        }
+
+        @Override
+        public long cost() {
+          return ss.cost();
+        }
+
+        @Override
+        public BulkScorer bulkScorer() throws IOException {
+          return bulkScorer;
+        }
+
+      };
+
     }
 
     @Override
