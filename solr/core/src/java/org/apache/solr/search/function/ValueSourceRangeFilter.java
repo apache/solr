@@ -24,6 +24,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.*;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /** RangeFilter over a ValueSource. */
 public class ValueSourceRangeFilter extends Query {
@@ -108,7 +109,7 @@ public class ValueSourceRangeFilter extends Query {
           valueSource
               .getValues(vsContext, context)
               .getRangeScorer(context, lowerVal, upperVal, includeLower, includeUpper);
-      return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, scorer.iterator()));
+      return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, scorer.iterator()));
     }
 
     @Override

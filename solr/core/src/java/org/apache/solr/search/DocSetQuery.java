@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.*;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /**
  * A Query based on a {@link DocSet}. The un-boosted score is always 1.
@@ -77,7 +78,7 @@ class DocSetQuery extends Query implements DocSetProducer {
         if (disi == null) {
           return null;
         }
-        return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
+        return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
       }
 
       @Override

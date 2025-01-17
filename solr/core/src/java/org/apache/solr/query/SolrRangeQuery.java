@@ -42,6 +42,7 @@ import org.apache.solr.search.DocSetProducer;
 import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.apache.solr.util.TestInjection;
 
 /**
@@ -514,7 +515,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (disi == null) {
         return null;
       }
-      return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
+      return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
     }
 
     //TBD already implements a scorerSupplier() . So this need not be overridden
@@ -537,7 +538,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       final SegState weightOrBitSet = getSegState(context);
       if (weightOrBitSet.weight != null) {
-        return new DefaultScorerSupplier(weightOrBitSet.weight.scorer(context));
+        return new SolrDefaultScorerSupplier(weightOrBitSet.weight.scorer(context));
       } else {
         return scorerSupplier(weightOrBitSet.set);
       }

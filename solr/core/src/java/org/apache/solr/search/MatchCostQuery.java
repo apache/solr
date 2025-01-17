@@ -22,6 +22,7 @@ import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.*;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /** Wraps a {@link Query} to customize the {@link TwoPhaseIterator#matchCost()}. */
 public class MatchCostQuery extends Query {
@@ -96,9 +97,9 @@ public class MatchCostQuery extends Query {
         }
         final TwoPhaseIterator tpi = scorer.twoPhaseIterator();
         if (tpi == null || tpi.matchCost() == matchCost) {
-          return new DefaultScorerSupplier(scorer); // needn't wrap/delegate
+          return new SolrDefaultScorerSupplier(scorer); // needn't wrap/delegate
         }
-        return new DefaultScorerSupplier(new Scorer() { // pass delegated weight
+        return new SolrDefaultScorerSupplier(new Scorer() { // pass delegated weight
 
           @Override
           public TwoPhaseIterator twoPhaseIterator() {

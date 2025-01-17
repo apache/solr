@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 public class HashRangeQuery extends Query {
 
@@ -73,7 +74,7 @@ public class HashRangeQuery extends Query {
               }
             };
 
-        return new DefaultScorerSupplier(new ConstantScoreScorer(boost, scoreMode, iterator));
+        return new SolrDefaultScorerSupplier(new ConstantScoreScorer(boost, scoreMode, iterator));
       }
 
       private int[] getCache(LeafReaderContext context) throws IOException {

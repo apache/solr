@@ -46,6 +46,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.uninverting.UninvertingReader.Type;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /** random sorting tests with uninversion */
 public class TestFieldCacheSortRandom extends SolrTestCase {
@@ -301,7 +302,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
             }
           }
 
-          return new DefaultScorerSupplier(new ConstantScoreScorer(
+          return new SolrDefaultScorerSupplier(new ConstantScoreScorer(
               score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality())));
         }
 

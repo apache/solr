@@ -36,6 +36,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -222,7 +223,7 @@ public class TermsQParserPlugin extends QParserPlugin {
           }
 
           final int docBase = context.docBase;
-          return new DefaultScorerSupplier(new ConstantScoreScorer(
+          return new SolrDefaultScorerSupplier(new ConstantScoreScorer(
               this.score(),
               scoreMode,
               new TwoPhaseIterator(segmentDocValues) {

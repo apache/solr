@@ -33,6 +33,7 @@ import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 public class BlockJoinParentQParser extends FiltersQParser {
   /** implementation detail subject to change */
@@ -154,7 +155,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
             return null;
           }
           DocIdSetIterator disi = new BitSetIterator(bitSet, bitSet.approximateCardinality());
-          return new DefaultScorerSupplier(new ConstantScoreScorer(boost, scoreMode, disi));
+          return new SolrDefaultScorerSupplier(new ConstantScoreScorer(boost, scoreMode, disi));
         }
 
         @Override

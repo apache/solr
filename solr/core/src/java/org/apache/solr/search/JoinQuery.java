@@ -45,6 +45,7 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 class JoinQuery extends Query {
   String fromField;
@@ -180,7 +181,7 @@ class JoinQuery extends Query {
       if (readerSetIterator == null) {
         return null;
       }
-      return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, readerSetIterator));
+      return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, readerSetIterator));
     }
 
     @Override

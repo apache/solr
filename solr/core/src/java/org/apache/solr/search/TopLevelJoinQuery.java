@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.join.MultiValueTermOrdinalCollector;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +93,7 @@ public class TopLevelJoinQuery extends JoinQuery {
           }
 
           final int docBase = context.docBase;
-          return new DefaultScorerSupplier(new ConstantScoreScorer(
+          return new SolrDefaultScorerSupplier(new ConstantScoreScorer(
               this.score(),
               scoreMode,
               new TwoPhaseIterator(toApproximation) {

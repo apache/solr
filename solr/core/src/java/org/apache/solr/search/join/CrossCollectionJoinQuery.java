@@ -52,6 +52,7 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 public class CrossCollectionJoinQuery extends Query {
 
@@ -325,7 +326,7 @@ public class CrossCollectionJoinQuery extends Query {
         return null;
       }
       Scorer scorer = new ConstantScoreScorer(score(), scoreMode, readerSetIterator);
-      return new DefaultScorerSupplier(scorer);
+      return new SolrDefaultScorerSupplier(scorer);
     }
 
     @Override

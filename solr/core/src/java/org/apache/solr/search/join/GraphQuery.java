@@ -34,6 +34,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /**
  * GraphQuery - search for nodes and traverse edges in an index.
@@ -272,7 +273,7 @@ public class GraphQuery extends Query {
       DocIdSetIterator disi = resultSet.iterator(context);
       // create a scrorer on the result set, if results from right query are empty, use empty
       // iterator.
-      return new DefaultScorerSupplier(new GraphScorer(this, disi == null ? DocIdSetIterator.empty() : disi, 1));
+      return new SolrDefaultScorerSupplier(new GraphScorer(this, disi == null ? DocIdSetIterator.empty() : disi, 1));
     }
 
     @Override

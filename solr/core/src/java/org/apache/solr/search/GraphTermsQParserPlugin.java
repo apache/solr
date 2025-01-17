@@ -53,6 +53,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /**
  * The GraphTermsQuery builds a disjunction query from a list of terms. The terms are first filtered
@@ -262,7 +263,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           }
           DocIdSet docIdSet = builder.build();
           DocIdSetIterator disi = docIdSet.iterator();
-          return disi == null ? null : new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
+          return disi == null ? null : new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
         }
 
         @Override
@@ -591,7 +592,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
         if (readerSetIterator == null) {
           return null;
         }
-        return new DefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, readerSetIterator));
+        return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, readerSetIterator));
       }
 
       @Override

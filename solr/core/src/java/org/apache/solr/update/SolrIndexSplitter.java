@@ -67,6 +67,7 @@ import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -568,7 +569,7 @@ public class SolrIndexSplitter {
               log.error("### INVALID DELS {}", dels.cardinality());
             }
           }
-          return new DefaultScorerSupplier(new ConstantScoreScorer(
+          return new SolrDefaultScorerSupplier(new ConstantScoreScorer(
               score(), scoreMode, new BitSetIterator(set, set.length())));
         }
 
