@@ -108,8 +108,8 @@ grant {
   permission java.lang.RuntimePermission "loadLibrary.jaas_unix";
   permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
   // needed by hadoop common RawLocalFileSystem for java nio getOwner
-  permission java.lang.RuntimePermission "accessUserInformation";
-  // needed by hadoop http
+  // permission java.lang.RuntimePermission "accessUserInformation";
+  // needed by mockito http
   permission java.lang.RuntimePermission "getProtectionDomain";
   // SolrProcessMgr to list processes
   permission java.lang.RuntimePermission "manageProcess";
