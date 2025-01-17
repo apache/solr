@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
  *
  * @deprecated The Hadoop Auth Plugin will be removed in Solr 10 with no replacement.
  */
-@Deprecated(forRemoval = true, since = "9.8")
+@Deprecated(since = "9.8")
 public class HadoopAuthPlugin extends AuthenticationPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
