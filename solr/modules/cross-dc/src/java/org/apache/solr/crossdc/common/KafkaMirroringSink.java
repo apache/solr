@@ -101,7 +101,8 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
           (metadata, exception) -> {
             if (exception != null) {
               log.error(
-                  "Failed adding update to CrossDC queue! request=" + request.getSolrRequest(),
+                  "Failed adding update to CrossDC queue! request={}",
+                  request.getSolrRequest(),
                   exception);
             }
           });
