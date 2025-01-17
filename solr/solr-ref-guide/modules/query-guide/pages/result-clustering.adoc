@@ -211,7 +211,7 @@ In other words, if cluster _A_ has a higher score than cluster _B_, cluster _A_ 
 Each cluster has an array of identifiers of documents belonging to it.
 These identifiers correspond to the `uniqueKey` field declared in the schema.
 
-Sometimes cluster labels may not make much sense (this depends on many factors -- text in clustered fields, number of documents, algorithm paramerters).
+Sometimes cluster labels may not make much sense (this depends on many factors -- text in clustered fields, number of documents, algorithm parameters).
 Also, some documents may be left out and not be clustered at all; these will be assigned to the synthetic _Other Topics_ group, marked with the `other-topics` property set to `true` (see the XML dump above for an example).
 The score of the other topics group is zero.
 
@@ -459,7 +459,7 @@ Ideally, the engine should translate (or understand) the content of documents an
 In reality, clustering algorithms are typically much simpler -- they infer similarity between documents from statistical properties of terms and phrases that occur in those documents.
 So texts written in different languages will not cluster too well.
 
-To deal witht his situation the default clustering component implementation in Solr will try to first group all documents by their language and then apply clustering to each sub-group in that language.
+To deal with this situation the default clustering component implementation in Solr will try to first group all documents by their language and then apply clustering to each sub-group in that language.
 It is recommended to store the language of each document as its separate field and point at it using the `clustering.languageField` configuration property described above.
 
 == Tweaking Algorithm Settings
