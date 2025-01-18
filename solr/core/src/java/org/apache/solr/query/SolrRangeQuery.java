@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -544,6 +543,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
               scorerSupplier(weightOrBitSet.set);
 
       BulkScorer bulkScorer = bulk(context);
+      if(ss == null || bulkScorer == null) return null;
 
       return new ScorerSupplier() {
         @Override
