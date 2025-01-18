@@ -33,6 +33,7 @@ plugins {
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
   alias(libs.plugins.openapi.generator) apply false
+  alias(libs.plugins.logchange) apply false
 }
 
 // Declare default Java versions for the entire project and for SolrJ separately
