@@ -104,7 +104,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
         final var testDataResponse = testDataRequest.process(client);
         assertEquals(200, testDataResponse.getHttpStatus());
         try (final var stream = testDataResponse.getResponseStream()) {
-          final var foundContents = IOUtils.toByteArray(stream);
+          final var foundContents = stream.readAllBytes();
           for (int i = 0; i < foundContents.length; i++) {
             assertEquals(foundContents[i], bytes[i]);
           }
