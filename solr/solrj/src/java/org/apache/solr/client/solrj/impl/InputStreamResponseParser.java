@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * Simply puts the InputStream into an entry in a NamedList named "stream".
@@ -54,7 +55,7 @@ public class InputStreamResponseParser extends ResponseParser {
 
   public static NamedList<Object> createInputStreamNamedList(
       int httpStatus, InputStream inputStream) {
-    final var nl = new NamedList<Object>();
+    final var nl = new SimpleOrderedMap<>();
     nl.add(STREAM_KEY, inputStream);
     nl.add(HTTP_STATUS_KEY, httpStatus);
     return nl;
