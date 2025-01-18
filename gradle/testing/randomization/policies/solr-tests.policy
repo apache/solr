@@ -140,8 +140,8 @@ grant {
   permission javax.security.auth.AuthPermission "getSubject";
   permission javax.security.auth.AuthPermission "modifyPrincipals";
   permission javax.security.auth.AuthPermission "doAs";
-  permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
-  permission javax.security.auth.AuthPermission "modifyPublicCredentials";
+  //permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
+  //permission javax.security.auth.AuthPermission "modifyPublicCredentials";
   //permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
 
   // needed by crossdc
