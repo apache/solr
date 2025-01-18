@@ -1385,7 +1385,7 @@ Trailing wildcards are supported when copying from localand must be quoted.
 
 Other examples are:
 
-*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/confgs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
+*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/configs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
 
 *Copy a single file from ZooKeeper to local*: `bin/solr zk cp zk:/configs/myconf/managed_schema /configs/myconf/managed_schema -z 111.222.333.444:2181`
 
@@ -1834,7 +1834,7 @@ The `package` command allows you to interact with Solr's xref:configuration-guid
 
 == Snapshots and Backups
 
-The snapshots capablity of the CLI allows you to:
+The snapshots capability of the CLI allows you to:
 
 * Create snapshotted view of your index
 * List all the available snapshots

@@ -94,9 +94,13 @@ public class DataConfigNode implements ConfigNode {
   }
 
   @Override
-  public List<ConfigNode> getAll(Predicate<ConfigNode> test, Set<String> matchNames) {
+  public List<ConfigNode> getAll(Set<String> names, Predicate<ConfigNode> test) {
+    if (names == null) {
+      return ConfigNode.super.getAll(names, test);
+    }
+    // fast implementation based on our index on named children:
     List<ConfigNode> result = new ArrayList<>();
-    for (String s : matchNames) {
+    for (String s : names) {
       List<ConfigNode> vals = kids.get(s);
       if (vals != null) {
         vals.forEach(

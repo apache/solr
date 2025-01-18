@@ -53,7 +53,7 @@ bin/solr start -Dsolr.directoryFactory=HdfsDirectoryFactory
 
 This command starts Solr using the defined JVM properties.
 
-=== User-Managed Cluters and Single-Node Installations
+=== User-Managed Clusters and Single-Node Installations
 
 For  For user-managed clusters or single-node Solr installations, there are a few parameters you should modify before starting Solr.
 These can be set in `solrconfig.xml` (more on that <<HdfsDirectoryFactory Parameters,below>>), or passed to the `bin/solr` script at startup.
@@ -246,7 +246,7 @@ s|Required |Default: none
 The Kerberos principal that Solr should use to authenticate to secure Hadoop; the format of a typical Kerberos V5 principal is: `primary/instance@realm`.
 
 == Update Log settings
-When using HDFS to store Solr indexes, it is recommended to also store the transaction logs on HDFS. This can be done by using the `solr.HdfsUpdateLog` update log hander class.
+When using HDFS to store Solr indexes, it is recommended to also store the transaction logs on HDFS. This can be done by using the `solr.HdfsUpdateLog` update log handler class.
 The solrconfig.xml is often used to define an update log handler class name either using a variable reference or direct specification, for example:
 
 [source,xml]

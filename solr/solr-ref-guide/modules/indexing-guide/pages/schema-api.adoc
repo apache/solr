@@ -1608,7 +1608,7 @@ The query parameters can be added to the API request after a '?'.
 Defines the format of the response.
 The options are `json` or `xml`.
 
-==== Show Global Similary Response
+==== Show Global Similarity Response
 
 The output will include the class name of the global similarity defined (if any).
 

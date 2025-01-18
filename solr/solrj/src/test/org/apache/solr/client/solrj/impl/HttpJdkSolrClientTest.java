@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -143,6 +144,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", MUST_ENCODE);
+    q.setParam("case_sensitive_param", "lowercase");
+    q.setParam("CASE_SENSITIVE_PARAM", "uppercase");
     HttpJdkSolrClient.Builder b = builder(url);
     if (rp != null) {
       b.withResponseParser(rp);
@@ -498,6 +501,21 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
+  @Test
+  public void testMaybeTryHeadRequestHasContentType() throws Exception {
+    DebugServlet.clear();
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (HttpJdkSolrClient client = builder(url).build()) {
+      assertTrue(client.maybeTryHeadRequest(url));
+
+      // if https, the client won't attempt a HEAD request
+      if (client.headRequested) {
+        assertEquals("head", DebugServlet.lastMethod);
+        assertTrue(DebugServlet.headers.containsKey("content-type"));
+      }
+    }
+  }
+
   /**
    * This is not required for any test, but there appears to be a bug in the JDK client where it
    * does not release all threads if the client has not performed any queries, even after a forced
@@ -517,7 +535,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Override
   protected String expectedUserAgent() {
-    return "Solr[" + HttpJdkSolrClient.class.getName() + "] 1.0";
+    return "Solr[" + HttpJdkSolrClient.class.getName() + "] " + SolrVersion.LATEST_STRING;
   }
 
   @Override
