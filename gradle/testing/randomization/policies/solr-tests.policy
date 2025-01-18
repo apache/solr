@@ -149,8 +149,8 @@ grant {
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
   
   // needed by hadoop security
-  permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
-  permission java.security.SecurityPermission "insertProvider";
+  //permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
+  //permission java.security.SecurityPermission "insertProvider";
 
   // Needed by JWT integration tests & S3 tests
   permission java.lang.RuntimePermission "setFactory";
