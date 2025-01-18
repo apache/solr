@@ -62,7 +62,10 @@ import org.slf4j.LoggerFactory;
  * communication. For this purpose {@linkplain ConfigurableInternodeAuthHadoopPlugin} should be
  * used. If this plugin is used in the SolrCloud mode, it will use PKI based authentication
  * mechanism for Solr internal communication.
+ *
+ * @deprecated The Hadoop Auth Plugin will be removed in Solr 10 with no replacement.
  */
+@Deprecated(since = "9.8")
 public class HadoopAuthPlugin extends AuthenticationPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

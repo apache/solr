@@ -18,6 +18,8 @@
 
 The Hadoop authentication plugin enables Solr to use the https://hadoop.apache.org/docs/stable/hadoop-auth/index.html[Hadoop authentication library] for securing Solr nodes.
 
+IMPORTANT: The Hadoop authentication plugin has been deprecated and will be removed in Solr 10.
+
 This authentication plugin is a thin wrapper that delegates all functionality to the Hadoop authentication library.
 All configuration parameters for the library are passed through the plugin.
 
