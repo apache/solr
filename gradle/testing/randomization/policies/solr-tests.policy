@@ -203,8 +203,8 @@ grant {
 // additional permissions based on system properties set by /bin/solr
 // NOTE: if the property is not set, the permission entry is ignored.
 grant {
-  permission java.io.FilePermission "${hadoop.security.credential.provider.path}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${hadoop.security.credential.provider.path}${/}-", "read,write,delete,readlink";
+  //permission java.io.FilePermission "${hadoop.security.credential.provider.path}", "read,write,delete,readlink";
+  //permission java.io.FilePermission "${hadoop.security.credential.provider.path}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${solr.jetty.keystore}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.jetty.keystore}${/}-", "read,write,delete,readlink";
