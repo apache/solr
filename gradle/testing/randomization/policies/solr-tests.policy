@@ -135,9 +135,6 @@ grant {
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
   
-  // needed by hadoop security
-  //permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
-  
   // needed by benchmark
   permission java.security.SecurityPermission "insertProvider";
 
