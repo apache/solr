@@ -150,7 +150,9 @@ grant {
   
   // needed by hadoop security
   //permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
-  //permission java.security.SecurityPermission "insertProvider";
+  
+  // needed by benchmark
+  permission java.security.SecurityPermission "insertProvider";
 
   // Needed by JWT integration tests & S3 tests
   permission java.lang.RuntimePermission "setFactory";
