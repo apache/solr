@@ -70,6 +70,7 @@ import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -85,8 +86,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -98,15 +97,12 @@ import org.slf4j.MDC;
 public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
-  private static final String DEFAULT_PATH = "/select";
   private static final long serialVersionUID = -946812319974801896L;
 
   protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
 
-  /** User-Agent String. */
-  public static final String AGENT = "Solr[" + HttpSolrClient.class.getName() + "] 1.0";
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  static final String USER_AGENT =
+      "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
   static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
 
@@ -542,7 +538,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       final ResponseParser processor,
       final boolean isV2Api)
       throws SolrServerException {
-    method.addHeader("User-Agent", AGENT);
+    method.addHeader("User-Agent", USER_AGENT);
 
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
         HttpClientUtil.createDefaultRequestConfigBuilder();

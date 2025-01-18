@@ -289,7 +289,7 @@ public class SolrXmlConfig {
   }
 
   private static NamedList<Object> readNodeListAsNamedList(ConfigNode cfg, String section) {
-    NamedList<Object> nl = DOMUtil.readNamedListChildren(cfg);
+    NamedList<Object> nl = cfg.childNodesToNamedList();
     Set<String> keys = new HashSet<>();
     for (Map.Entry<String, Object> entry : nl) {
       if (!keys.add(entry.getKey()))
@@ -724,7 +724,7 @@ public class SolrXmlConfig {
     builder.setHistogramSupplier(getPluginInfo(metrics.get("suppliers").get("histogram")));
 
     if (metrics.get("missingValues").exists()) {
-      NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(metrics.get("missingValues"));
+      NamedList<Object> missingValues = metrics.get("missingValues").childNodesToNamedList();
       builder.setNullNumber(decodeNullValue(missingValues.get("nullNumber")));
       builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
       builder.setNullString(decodeNullValue(missingValues.get("nullString")));
@@ -734,7 +734,7 @@ public class SolrXmlConfig {
     ConfigNode caching = metrics.get("solr/metrics/caching");
     if (caching != null) {
       Object threadsCachingIntervalSeconds =
-          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds");
+          caching.childNodesToNamedList().get("threadsIntervalSeconds");
       builder.setCacheConfig(
           new MetricsConfig.CacheConfig(
               threadsCachingIntervalSeconds == null

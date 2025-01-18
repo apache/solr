@@ -68,7 +68,7 @@ from consolemenu.items import FunctionItem, SubmenuItem, ExitItem
 from scriptutil import BranchType, Version, download, run
 
 # Solr-to-Java version mapping
-java_versions = {6: 8, 7: 8, 8: 8, 9: 11, 10: 11}
+java_versions = {6: 8, 7: 8, 8: 8, 9: 11, 10: 21}
 editor = None
 state = None
 templates = None
@@ -1353,7 +1353,7 @@ def main():
 
     state.save()
 
-    # Smoketester requires JAVA11_HOME to point to Java11
+    # Smoketester requires JAVA21_HOME to point to Java21
     os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 

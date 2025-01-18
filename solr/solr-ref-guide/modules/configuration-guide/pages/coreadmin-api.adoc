@@ -828,7 +828,7 @@ http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=1
 [[coreadmin-requestrecovery]]
 == REQUESTRECOVERY
 
-The `REQUESTRECOVERY` action manually asks a core to recover by synching with the leader.
+The `REQUESTRECOVERY` action manually asks a core to recover by syncing with the leader.
 This should be considered an "expert" level command and should be used in situations where the node (SorlCloud replica) is unable to become active automatically.
 
 `admin/cores?action=REQUESTRECOVERY&core=_core-name_`

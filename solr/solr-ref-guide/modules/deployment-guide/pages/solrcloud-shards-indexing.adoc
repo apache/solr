@@ -25,7 +25,7 @@ For example, you might have a collection where the "country" field of each docum
 A different collection might simply use a "hash" on the uniqueKey of each document to determine its Shard.
 
 There is support for distributing both the index process and the queries automatically, and ZooKeeper provides failover and load balancing.
-As well as supporting replication, automatic index spliting to shards, there is support for automatic routing of documents to specific shards by a sharding strategy.
+As well as supporting replication, automatic index splitting into shards, there is support for automatic routing of documents to specific shards by a sharding strategy.
 Additionally, every shard can have multiple replicas for additional robustness.
 
 == Leaders and Replicas

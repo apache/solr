@@ -225,7 +225,7 @@ This can be used to retrieve the features if they are stored in a SolrCloud coll
 * `field`: (Mandatory) The text field to extract the features from.
 * `outcome`: (Mandatory) The field that defines the class, positive or negative
 * `numTerms`: (Mandatory) How many feature terms to extract.
-* `positiveLabel`: (defaults to 1) The value in the outcome field that defines a postive outcome.
+* `positiveLabel`: (defaults to 1) The value in the outcome field that defines a positive outcome.
 
 === features Syntax
 
