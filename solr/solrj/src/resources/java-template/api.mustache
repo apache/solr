@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.JacksonParsingResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.InputStreamResponse;
 import org.apache.solr.client.solrj.ResponseParser;
 
 {{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}
@@ -86,11 +87,16 @@ public class {{classname}} {
 
     {{#operation}}
     {{^vendorExtensions.x-omitFromCodegen}}
-    public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
-          public {{operationIdCamelCase}}Response() {
-            super({{modelPackage}}.{{returnType}}.class);
-          }
+        {{#vendorExtensions.x-rawOutput}}
+        public static class {{operationIdCamelCase}}Response extends InputStreamResponse {}
+        {{/vendorExtensions.x-rawOutput}}
+        {{^vendorExtensions.x-rawOutput}}
+        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
+            public {{operationIdCamelCase}}Response() {
+                super({{modelPackage}}.{{returnType}}.class);
+            }
         }
+        {{/vendorExtensions.x-rawOutput}}
 
         public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
             {{#bodyParam}}

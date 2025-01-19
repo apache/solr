@@ -215,13 +215,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
       }
 
       if (wantStream(processor)) {
-        // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<>();
-        rsp.add("stream", is);
-        rsp.add("responseStatus", httpStatus);
         // Only case where stream should not be closed
         shouldClose = false;
-        return rsp;
+        // no processor specified, return raw stream
+        return InputStreamResponseParser.createInputStreamNamedList(httpStatus, is);
       }
 
       checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);

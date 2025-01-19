@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.OMIT_FROM_CODEGEN_PROPERTY;
+import static org.apache.solr.client.api.util.Constants.RAW_OUTPUT_PROPERTY;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -59,10 +59,9 @@ public interface ReplicationApis {
   @CoreApiParameters
   @Operation(
       summary = "Get a stream of a specific file path of a core",
-      tags = {"core-replication"},
-      extensions = { // TODO Remove as a part of SOLR-17562
-        @Extension(
-            properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
+      tags = {"replication"},
+      extensions = {
+        @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})
       })
   @Path("/files/{filePath}")
   StreamingOutput fetchFile(
