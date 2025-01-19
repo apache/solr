@@ -32,7 +32,6 @@
   <Loggers>
     <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
     <AsyncLogger name="org.apache.zookeeper" level="ERROR"/>
-    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
     <AsyncLogger name="org.eclipse.jetty.deploy" level="warn"/>
     <AsyncLogger name="org.eclipse.jetty.webapp" level="warn"/>
     <AsyncLogger name="org.eclipse.jetty.server.session" level="warn"/>
@@ -42,5 +41,3 @@
     </AsyncRoot>
   </Loggers>
 </Configuration>
-
-
