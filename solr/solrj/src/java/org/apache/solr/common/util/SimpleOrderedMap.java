@@ -17,8 +17,12 @@
 package org.apache.solr.common.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 /**
  * <code>SimpleOrderedMap</code> is a {@link NamedList} where access by key is more important than
@@ -33,7 +37,7 @@ import java.util.Map;
  * <p>This class does not provide efficient lookup by key, its main purpose is to hold data to be
  * serialized. It aims to minimize overhead and to be efficient at adding new elements.
  */
-public class SimpleOrderedMap<T> extends NamedList<T> {
+public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> {
 
   private static final SimpleOrderedMap<Object> EMPTY = new SimpleOrderedMap<>(List.of());
 
@@ -68,7 +72,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
   public SimpleOrderedMap<T> clone() {
     ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
-    return new SimpleOrderedMap<>(newList);
+    return new SimpleOrderedMap<T>(newList);
   }
 
   /**
@@ -86,6 +90,78 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
    * @return SimpleOrderedMap containing one key-value pair
    */
   public static <T> SimpleOrderedMap<T> of(String name, T val) {
-    return new SimpleOrderedMap<>(List.of(name, val));
+    return new SimpleOrderedMap<T>(List.of(name, val));
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return nvPairs.isEmpty();
+  }
+
+  @Override
+  public boolean containsKey(final Object key) {
+    return super.get((String) key) != null;
+  }
+
+  @Override
+  public boolean containsValue(final Object value) {
+    int sz = size();
+    for (int i = 0; i < sz; i++) {
+      if (value.equals(getVal(i))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public T get(final Object key) {
+    return super.get((String) key);
+  }
+
+  @Override
+  public T put(final String key, final T value) {
+    T oldValue = get(key);
+    add(key, value);
+    return oldValue;
+  }
+
+  @Override
+  public T remove(final Object key) {
+    return super.remove((String) key);
+  }
+
+  @Override
+  public void putAll(final Map<? extends String, ? extends T> m) {
+    m.forEach(this::put);
+  }
+
+  @Override
+  public Set<String> keySet() {
+    var keys = new HashSet<String>();
+    for (int i = 0; i < nvPairs.size(); i += 2) {
+      keys.add((String) nvPairs.get(i));
+    }
+    return keys;
+  }
+
+  @Override
+  @SuppressWarnings({"unchecked"})
+  public Collection<T> values() {
+    var values = new ArrayList<T>();
+    for (int i = 1; i < nvPairs.size(); i += 2) {
+      values.add((T) nvPairs.get(i));
+    }
+    return values;
+  }
+
+  @Override
+  @SuppressWarnings({"unchecked"})
+  public Set<Entry<String, T>> entrySet() {
+    var values = new HashSet<Entry<String, T>>();
+    for (int i = 0; i < nvPairs.size() - 1; i +=2) {
+		values.add(ImmutablePair.of((String) nvPairs.get(i), (T) nvPairs.get(i + 1)));
+    }
+    return values;
   }
 }

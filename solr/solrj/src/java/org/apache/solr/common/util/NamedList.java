@@ -799,7 +799,7 @@ public class NamedList<T>
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + o.getClass());
     }
 
-    if (collection.size() > 0) {
+    if (!collection.isEmpty()) {
       killAll(name);
     }
 
@@ -845,7 +845,7 @@ public class NamedList<T>
     }
   }
 
-  public void forEach(BiConsumer<String, ? super T> action) {
+  public void forEach(BiConsumer<? super String, ? super T> action) {
     int sz = size();
     for (int i = 0; i < sz; i++) {
       action.accept(getName(i), getVal(i));

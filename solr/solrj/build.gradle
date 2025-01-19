@@ -48,6 +48,7 @@ dependencies {
   })
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
+  implementation libs.apache.commons.lang3
 
   compileOnly libs.stephenc.jcip.annotations
 
