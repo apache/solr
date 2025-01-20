@@ -18,7 +18,7 @@ import org.gradle.internal.jvm.Jvm
  */
 
 // generate javadocs by calling javadoc tool
-// see https://docs.oracle.com/en/java/javase/11/tools/javadoc.html
+// see https://docs.oracle.com/en/java/javase/21/javadoc/javadoc.html
 
 def resources = scriptResources(buildscript)
 
@@ -49,10 +49,11 @@ allprojects {
       description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
       group "documentation"
 
-      taskResources = project.relativePath(resources)
+      taskResources = resources
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath
       srcDirSet = sourceSets.main.java
+      releaseVersion = project.minJavaVersion
 
       outputDir = project.javadoc.destinationDir
     }
@@ -61,10 +62,11 @@ allprojects {
       description "Generates Javadoc API documentation for the site (relative links)."
       group "documentation"
 
-      taskResources = project.relativePath(resources)
+      taskResources = resources
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath;
       srcDirSet = sourceSets.main.java;
+      releaseVersion = project.minJavaVersion
 
       relativeProjectLinks = true
 
@@ -80,15 +82,13 @@ allprojects {
 // Set up titles and link up some offline docs for all documentation
 // (they may be unused but this doesn't do any harm).
 
-def javaJavadocPackages = rootProject.file("${resources}/java11/")
-def junitJavadocPackages = rootProject.file("${resources}/junit/")
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
     title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
-        "https://docs.oracle.com/en/java/javase/11/docs/api/": project.relativePath(javaJavadocPackages),
-        "https://junit.org/junit4/javadoc/4.12/": project.relativePath(junitJavadocPackages)
+        "https://docs.oracle.com/en/java/javase/${project.minJavaVersion}/docs/api/": rootProject.file("${resources}/java${project.minJavaVersion}/"),
+        "https://junit.org/junit4/javadoc/4.12/": rootProject.file("${resources}/junit/")
     ]
 
     solrDocUrl = provider({ rootProject.solrDocUrl })
@@ -203,10 +203,26 @@ configure(subprojects) {
   }
 }
 
+class OfflineLink implements Serializable {
+  @Input
+  String url
+
+  @InputDirectory
+  @PathSensitive(PathSensitivity.RELATIVE)
+  @IgnoreEmptyDirectories
+  File location
+
+  OfflineLink(String url, File location) {
+    this.url = url
+    this.location = location
+  }
+}
+
 @CacheableTask
 class RenderJavadocTask extends DefaultTask {
   @InputFiles
   @PathSensitive(PathSensitivity.RELATIVE)
+  @IgnoreEmptyDirectories
   @SkipWhenEmpty
   SourceDirectorySet srcDirSet;
 
@@ -232,7 +248,16 @@ class RenderJavadocTask extends DefaultTask {
   boolean relativeProjectLinks = false
 
   @Input
-  def offlineLinks = [:]
+  JavaVersion releaseVersion
+
+  @Internal
+  Map<String, File> offlineLinks = [:]
+
+  // Computes cacheable inputs from the map in offlineLinks.
+  @Nested
+  List<OfflineLink> getCacheableOfflineLinks() {
+    return offlineLinks.collect { url, location -> new OfflineLink(url, location) }
+  }
 
   @Input
   @Optional
@@ -259,8 +284,10 @@ class RenderJavadocTask extends DefaultTask {
   final Property<String> executable = project.objects.property(String).convention(
       project.provider { Jvm.current().javadocExecutable.toString() })
 
-  @Input
-  def taskResources
+  @InputDirectory
+  @PathSensitive(PathSensitivity.RELATIVE)
+  @IgnoreEmptyDirectories
+  File taskResources
 
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {
@@ -375,7 +402,7 @@ class RenderJavadocTask extends DefaultTask {
       opts << [ '-linkoffline', url, dir ]
     }
 
-    opts << [ '--release', project.minJavaVersion.toString() ]
+    opts << [ '--release', releaseVersion.toString() ]
     opts << '-Xdoclint:all,-missing'
 
     // Increase Javadoc's heap.

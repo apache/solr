@@ -21,7 +21,7 @@ def isCIBuild = System.getenv().keySet().any { it ==~ /(?i)((JENKINS|HUDSON)(_\w
 // https://docs.gradle.com/enterprise/gradle-plugin/
 
 develocity {
-    server = "https://ge.apache.org"
+    server = "https://develocity.apache.org"
     projectId = "solr"
 
     buildScan {
