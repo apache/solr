@@ -101,10 +101,3 @@ allprojects {
         }
     }
 }
-
-tasks.named("dependencies") {
-    // It is common for users and tools to use "./gradlew dependencies --write-locks" to write locks
-    // This task dependency would correctly write locks for all modules, or if a module is specified like in
-    // "./gradlew :solr:api:dependencies --write-locks", it would only lock that specific module
-    dependsOn("resolveAndLockAll")
-}
