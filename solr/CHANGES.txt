@@ -173,6 +173,8 @@ Bug Fixes
   doing distributed search (sharded collections). This could likely occur for fielded parameters such as
   f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
 
+* SOLR-17617: Fix v2 CollectionPropertyApi and InstallCoreDataApi. (Colvin Cowie)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
