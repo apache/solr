@@ -184,7 +184,7 @@ threeten-bp = "1.6.8"
 undercouch-download = "5.5.0"
 xerces = "2.12.2"
 xerial-snappy = "1.1.10.5"
-logchange = "1.16.4"
+logchange = "1.16.5"
 
 [plugins]
 benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
