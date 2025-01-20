@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
@@ -107,7 +108,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   public boolean containsValue(final Object value) {
     int sz = size();
     for (int i = 0; i < sz; i++) {
-      if (value.equals(getVal(i))) {
+      T val = getVal(i);
+      if (Objects.equals(value, val)) {
         return true;
       }
     }
@@ -159,8 +161,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   @SuppressWarnings({"unchecked"})
   public Set<Entry<String, T>> entrySet() {
     var values = new HashSet<Entry<String, T>>();
-    for (int i = 0; i < nvPairs.size() - 1; i +=2) {
-		values.add(ImmutablePair.of((String) nvPairs.get(i), (T) nvPairs.get(i + 1)));
+    for (int i = 0; i < nvPairs.size() - 1; i += 2) {
+      values.add(ImmutablePair.of((String) nvPairs.get(i), (T) nvPairs.get(i + 1)));
     }
     return values;
   }
