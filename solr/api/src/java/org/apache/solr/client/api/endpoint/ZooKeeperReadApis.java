@@ -16,15 +16,19 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.RAW_OUTPUT_PROPERTY;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import org.apache.solr.client.api.model.ZooKeeperFileResponse;
+import jakarta.ws.rs.core.StreamingOutput;
 import org.apache.solr.client.api.model.ZooKeeperListChildrenResponse;
 
 /** V2 API definitions for Solr's ZooKeeper ready-proxy endpoint */
@@ -35,9 +39,12 @@ public interface ZooKeeperReadApis {
   @Path("/data{zkPath:.+}")
   @Operation(
       summary = "Return the data stored in a specified ZooKeeper node",
-      tags = {"zookeeper-read"})
+      tags = {"zookeeper-read"},
+      extensions = {
+        @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})
+      })
   @Produces({"application/vnd.apache.solr.raw", MediaType.APPLICATION_JSON})
-  ZooKeeperFileResponse readNode(
+  StreamingOutput readNode(
       @Parameter(description = "The path of the node to read from ZooKeeper") @PathParam("zkPath")
           String zkPath);
 
@@ -48,7 +55,7 @@ public interface ZooKeeperReadApis {
   @GET
   @Path("/data/security.json")
   @Produces({"application/vnd.apache.solr.raw", MediaType.APPLICATION_JSON})
-  ZooKeeperFileResponse readSecurityJsonNode();
+  StreamingOutput readSecurityJsonNode();
 
   @GET
   @Path("/children{zkPath:.*}")

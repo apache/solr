@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.HTTP_STATUS_KEY;
+import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +34,12 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Represents the NamedList response format created by {@link InputStreamResponseParser}.
+ *
+ * <p>Particularly useful when targeting APIs that return arbitrary or binary data (e.g. replication
+ * APIs for fetching index files)
+ */
 public class InputStreamResponse extends SimpleSolrResponse {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -42,9 +51,12 @@ public class InputStreamResponse extends SimpleSolrResponse {
 
   @Override
   public void setResponse(NamedList<Object> rsp) {
-    if (rsp.get("stream") == null) {
+    if (rsp.get(STREAM_KEY) == null) {
       throw new IllegalArgumentException(
-          getClass().getSimpleName()
+          "Missing key '"
+              + STREAM_KEY
+              + "'; "
+              + getClass().getSimpleName()
               + " can only be used with requests or clients configured to use "
               + InputStreamResponseParser.class.getSimpleName());
     }
@@ -52,7 +64,7 @@ public class InputStreamResponse extends SimpleSolrResponse {
   }
 
   public int getHttpStatus() {
-    return (int) getResponse().get("responseStatus");
+    return (int) getResponse().get(HTTP_STATUS_KEY);
   }
 
   /**
@@ -63,8 +75,7 @@ public class InputStreamResponse extends SimpleSolrResponse {
    */
   public InputStream getResponseStream() {
     final NamedList<Object> resp = getResponse();
-
-    return (InputStream) resp.get("stream");
+    return (InputStream) resp.get(STREAM_KEY);
   }
 
   /**
@@ -72,7 +83,7 @@ public class InputStreamResponse extends SimpleSolrResponse {
    * is 200 ('OK')
    *
    * <p>Caller is responsible for consuming and closing the stream, and releasing it from the
-   * tracking down by {@link ObjectReleaseTracker}.
+   * tracking done by {@link ObjectReleaseTracker}.
    */
   public InputStream getResponseStreamIfSuccessful() {
     return getResponseStreamIfSuccessful(HTTP_OK_VALIDATOR);
@@ -100,7 +111,9 @@ public class InputStreamResponse extends SimpleSolrResponse {
       } catch (IOException e) {
         log.error("could not print error", e);
       }
-      throw new SolrException(SolrException.ErrorCode.getErrorCode(httpStatus), "Unknown error");
+      throw new SolrException(
+          SolrException.ErrorCode.getErrorCode(httpStatus),
+          "Unexpected status code [" + httpStatus + "] on response.");
     }
   }
 

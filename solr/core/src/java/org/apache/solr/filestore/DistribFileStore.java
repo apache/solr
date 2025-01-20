@@ -18,6 +18,7 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
@@ -44,12 +45,13 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -178,8 +180,12 @@ public class DistribFileStore implements FileStore {
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(fromNode);
       if (baseUrl == null) throw new SolrException(BAD_REQUEST, "No such node");
 
-      ByteBuffer metadata = null;
-      Map<?, ?> m = null;
+      ByteBuffer metadata;
+      Map<?, ?> m;
+
+      InputStream is = null;
+      var solrClient = coreContainer.getDefaultHttpSolrClient();
+
       try {
         final var metadataRequest = new FileStoreApi.GetFile(getMetaPath());
         final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
@@ -190,6 +196,8 @@ public class DistribFileStore implements FileStore {
         m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
+      } finally {
+        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
 
       ByteBuffer filedata = null;
@@ -217,6 +225,8 @@ public class DistribFileStore implements FileStore {
         return true;
       } catch (IOException ioe) {
         throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
+      } finally {
+        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
     }
 
@@ -345,6 +355,7 @@ public class DistribFileStore implements FileStore {
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
+    String getFrom = "";
     try {
       for (String node : nodes) {
         String baseUrl =
@@ -372,8 +383,8 @@ public class DistribFileStore implements FileStore {
           nodeToFetchFrom = "*";
         }
         try {
-          // TODO This request succeeds but quietly doesn't pass the 'getFrom' parameter due to some
-          // logic in HttpSolrClient that whitelists the query params sent through on POST and PUT
+          // TODO NOCOMMIT This request succeeds but quietly doesn't pass the 'getFrom' parameter
+          // due to logic in HSC that whitelists the query params sent through on POST and PUT
           // requests.  I've never really understood this logic well, does it still need to exist?
           final var pullFileRequest = new FileStoreApi.ExecuteFileStoreCommand(info.path);
           pullFileRequest.setGetFrom(nodeToFetchFrom);
@@ -492,14 +503,27 @@ public class DistribFileStore implements FileStore {
   public void delete(String path) {
     deleteLocal(path);
     List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
-    HttpClient client = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
+
+    final var solrParams = new ModifiableSolrParams();
+    solrParams.add("localDelete", "true");
+    final var solrRequest =
+        new GenericSolrRequest(DELETE, "/cluster/filestore/files" + path, solrParams);
+
     for (String node : nodes) {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-      String url = baseUrl + "/cluster/filestore/files" + path + "?localDelete=true";
-      HttpDelete del = new HttpDelete(url);
-      // invoke delete command on all nodes asynchronously
-      coreContainer.runAsync(() -> Utils.executeHttpMethod(client, url, null, del));
+      try {
+        var solrClient = coreContainer.getDefaultHttpSolrClient();
+        // invoke delete command on all nodes asynchronously
+        solrClient.requestWithBaseUrl(baseUrl, client -> client.requestAsync(solrRequest));
+      } catch (SolrServerException | IOException e) {
+        // Note: This catch block will not handle failures from the asynchronous request,
+        // as requestAsync returns immediately and does not propagate remote exceptions.
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to delete " + path + " on node " + node,
+            e);
+      }
     }
   }
 
