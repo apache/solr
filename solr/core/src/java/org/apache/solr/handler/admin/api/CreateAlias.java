@@ -116,13 +116,7 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
             remoteMessage,
             CollectionParams.CollectionAction.CREATEALIAS,
             DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-    }
+    processRemoteResponse(response, remoteResponse, requestBody.async);
     return response;
   }
 
