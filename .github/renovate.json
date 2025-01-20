@@ -6,7 +6,7 @@
   "enabledManagers": ["gradle", "github-actions"],
   "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
-    "commands": ["./gradlew resolveAndLockAll", "./gradlew updateLicenses"],
+    "commands": ["./gradlew resolveAndLockAll --write-locks", "./gradlew updateLicenses"],
     "fileFilters": ["solr/licenses/*.sha1"],
     "executionMode": "branch"
   },
