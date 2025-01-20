@@ -120,7 +120,7 @@ Unless otherwise specified, SolrJ expects these URLs to point to the root Solr p
 
 A few notable exceptions to this are described below:
 
-- *Http2SolrClient* - Users of `Http2SolrClient` may choose to skip providing a root URL to their client, in favor of specifing the URL as a argument for the `Http2SolrClient.requestWithBaseUrl` method.
+- *Http2SolrClient* - Users of `Http2SolrClient` may choose to skip providing a root URL to their client, in favor of specifying the URL as an argument for the `Http2SolrClient.requestWithBaseUrl` method.
 Calling any other `request` methods on a URL-less `Http2SolrClient` will result in an `IllegalArgumentException`.
 - *LBHttpSolrClient* and *LBHttp2SolrClient* - Solr's "load balancing" clients are frequently used to round-robin requests across a set of replicas or cores.
 URLs are still expected to point to the Solr root (i.e. "/solr"), but to support this use-case the URLs are often supplemented by an additional parameter to specify the targeted core.

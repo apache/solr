@@ -339,7 +339,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           method.setConfig(requestConfigBuilder.build());
 
           method.setEntity(template);
-          method.addHeader("User-Agent", HttpSolrClient.AGENT);
+          method.addHeader("User-Agent", HttpSolrClient.USER_AGENT);
           method.addHeader("Content-Type", contentType);
 
           response =

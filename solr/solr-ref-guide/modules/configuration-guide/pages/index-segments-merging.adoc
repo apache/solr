@@ -330,7 +330,7 @@ These settings affect how or when updates are made to an index.
 === deletionPolicy
 
 Controls how commits are retained in case of rollback.
-The default is `SolrDeletionPolicy`, which take ths following parameters:
+The default is `SolrDeletionPolicy`, which takes the following parameters:
 
 `maxCommitsToKeep`::
 +
