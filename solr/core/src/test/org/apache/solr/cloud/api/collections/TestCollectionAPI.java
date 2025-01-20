@@ -381,7 +381,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           COLLECTION_NAME,
           30,
           TimeUnit.SECONDS,
-          (liveNodes, docCollection) ->
+          docCollection ->
               docCollection != null
                   && docCollection.getReplicas().stream()
                       .anyMatch(r -> r.getState().equals(Replica.State.DOWN) && !r.isLeader()));
