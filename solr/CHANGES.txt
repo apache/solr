@@ -194,6 +194,9 @@ Other Changes
 * SOLR-17611: SolrJ's User-Agent header now uses the version of SolrJ.  There's a corresponding
   HttpSolrCall.getUserAgentSolrVersion to parse it.  (David Smiley)
 
+* SOLR-17581: Introduce new test variant of waitForState(), that does not wait on live node changes when we're only
+ interested in the collection state. (Pierre Salagnac)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------

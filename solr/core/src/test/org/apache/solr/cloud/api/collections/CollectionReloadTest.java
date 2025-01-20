@@ -87,7 +87,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     waitForState(
         "Timed out waiting for core to re-register as ACTIVE after session expiry",
         testCollectionName,
-        (n, c) -> {
+        c -> {
           log.info("Collection state: {}", c);
           Replica expiredReplica = c.getReplica(leader.getName());
           return expiredReplica.getState() == Replica.State.ACTIVE

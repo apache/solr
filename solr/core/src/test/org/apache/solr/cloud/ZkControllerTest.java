@@ -340,12 +340,12 @@ public class ZkControllerTest extends SolrCloudTestCase {
                   collectionName,
                   10,
                   TimeUnit.SECONDS,
-                  ((liveNodes, collectionState) ->
+                  collectionState ->
                       Optional.ofNullable(collectionState)
                               .map(DocCollection::getReplicas)
                               .map(List::size)
                               .orElse(0)
-                          == 3));
+                          == 3);
         }
 
         Instant now = Instant.now();
