@@ -383,9 +383,6 @@ public class DistribFileStore implements FileStore {
           nodeToFetchFrom = "*";
         }
         try {
-          // TODO NOCOMMIT This request succeeds but quietly doesn't pass the 'getFrom' parameter
-          // due to logic in HSC that whitelists the query params sent through on POST and PUT
-          // requests.  I've never really understood this logic well, does it still need to exist?
           final var pullFileRequest = new FileStoreApi.ExecuteFileStoreCommand(info.path);
           pullFileRequest.setGetFrom(nodeToFetchFrom);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
