@@ -203,13 +203,4 @@ apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/node.gradle')
 
-logchange {
-  // taskPrefix = "logchange"
-  rootPath = "."
-  inputDir = "changelog"
-  unreleasedVersionDir = "unreleased"
-  outputFile = "CHANGELOG.md"
-  configFile = "logchange-config.yml"
-  generateChangesXml = false
-  xmlOutputFile = "changes.xml"
-}
+apply from: file('gradle/changelog.gradle')
