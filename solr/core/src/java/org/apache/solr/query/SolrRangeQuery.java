@@ -17,6 +17,7 @@
 package org.apache.solr.query;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -43,6 +44,8 @@ import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.apache.solr.util.TestInjection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @lucene.experimental
@@ -384,6 +387,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
                   context, doc, query, query.field, query.getTermsEnum(context)));
     }
 
+
     /**
      * Try to collect terms from the given terms enum and return count=sum(df) for terms visited so
      * far or (-count - 1) if this should be rewritten into a boolean query. The termEnum will
@@ -507,8 +511,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       return segStates[context.ord] = new SegState(segSet);
     }
 
-
-    private ScorerSupplier scorerSupplier(DocIdSet set) throws IOException {
+    private Scorer scorerInternal(DocIdSet set) throws IOException {
       if (set == null) {
         return null;
       }
@@ -516,53 +519,91 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (disi == null) {
         return null;
       }
-      return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
+      return new ConstantScoreScorer(score(), scoreMode, disi);
     }
 
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
-    private BulkScorer bulk(LeafReaderContext context) throws IOException {
+    public Scorer scorerInternal(LeafReaderContext context) throws IOException {
       final SegState weightOrBitSet = getSegState(context);
+      log.info("Query: " + getQuery());
+      log.info("weight: " + weightOrBitSet.weight);
+      if (weightOrBitSet.weight!=null) log.info("weight's scorer: " + weightOrBitSet.weight.scorer(context));
+      log.info("set: " + weightOrBitSet.set);
       if (weightOrBitSet.weight != null) {
-        return weightOrBitSet.weight.bulkScorer(context);
+        Scorer ret = weightOrBitSet.weight.scorer(context);
+        return ret;
       } else {
-        final Scorer scorer = scorer(context);
-        if (scorer == null) {
-          return null;
-        }
-        return new DefaultBulkScorer(scorer);
+        return scorerInternal(weightOrBitSet.set);
       }
     }
-    //TBD Some tests in BasicFunctionalityTest is still failing
 
     @Override
     public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-      final SegState weightOrBitSet = getSegState(context);
-      ScorerSupplier ss = weightOrBitSet.weight != null ?
-              new SolrDefaultScorerSupplier(weightOrBitSet.weight.scorer(context)):
-              scorerSupplier(weightOrBitSet.set);
+      Scorer sc = scorerInternal(context);
+      if (sc == null) {
+        sc = new Scorer() {
+          @Override
+          public int docID() {
+            return -1;
+          }
 
-      BulkScorer bulkScorer = bulk(context);
-      if(ss == null || bulkScorer == null) return null;
+          @Override
+          public DocIdSetIterator iterator() {
+            return new DocIdSetIterator() {
+              @Override
+              public int docID() {
+                return -1;
+              }
+
+              @Override
+              public int nextDoc() throws IOException {
+                return DocIdSetIterator.NO_MORE_DOCS;
+              }
+
+              @Override
+              public int advance(int target) throws IOException {
+                return DocIdSetIterator.NO_MORE_DOCS;
+              }
+
+              @Override
+              public long cost() {
+                return 0;
+              }
+            };
+          }
+
+          @Override
+          public float getMaxScore(int upTo) throws IOException {
+            return 0;
+          }
+
+          @Override
+          public float score() throws IOException {
+            return 0;
+          }
+        };
+      }
+      final Scorer scorer = sc;
 
       return new ScorerSupplier() {
         @Override
         public Scorer get(long leadCost) throws IOException {
-          return ss.get(leadCost);
-        }
-
-        @Override
-        public long cost() {
-          return ss.cost();
+          return scorer;
         }
 
         @Override
         public BulkScorer bulkScorer() throws IOException {
-          return bulkScorer;
+          Scorer sc = get(0l);
+          if (sc == null) return new DefaultBulkScorer(sc);
+          return new DefaultBulkScorer(sc);
         }
 
+        @Override
+        public long cost() {
+          return scorer.iterator().cost();
+        }
       };
-
     }
 
     @Override
