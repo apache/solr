@@ -61,7 +61,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     Replica leader =
         cluster.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
 
-    long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+    long coreStartTime = getCoreStatus(leader).startTime.getTime();
     CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());
 
     RetryUtil.retryUntil(
@@ -72,7 +72,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
         () -> {
           long restartTime;
           try {
-            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+            restartTime = getCoreStatus(leader).startTime.getTime();
           } catch (Exception e) {
             log.warn("Exception getting core start time: ", e);
             return false;

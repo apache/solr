@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -464,8 +463,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
     Path dataDir = null;
     try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
-      CoreStatus status = CoreAdminRequest.getCoreStatus("corex", true, client);
-      String dataDirectory = status.getDataDirectory();
+      final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
+      String dataDirectory = status.dataDir;
       dataDir = Paths.get(dataDirectory);
       assertTrue(Files.exists(dataDir));
     }

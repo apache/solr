@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -97,8 +96,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         getRandomReplica(
             shard, (r) -> (r.getState() == Replica.State.ACTIVE && !r.equals(shard.getLeader())));
 
-    CoreStatus coreStatus = getCoreStatus(replica);
-    Path dataDir = Paths.get(coreStatus.getDataDirectory());
+    final var coreStatus = getCoreStatus(replica);
+    Path dataDir = Paths.get(coreStatus.dataDir);
 
     Exception e =
         expectThrows(
@@ -164,12 +163,9 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     Replica leader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
     // Confirm that the instance and data directory exist
-    CoreStatus coreStatus = getCoreStatus(leader);
-    assertTrue(
-        "Instance directory doesn't exist",
-        Files.exists(Paths.get(coreStatus.getInstanceDirectory())));
-    assertTrue(
-        "DataDirectory doesn't exist", Files.exists(Paths.get(coreStatus.getDataDirectory())));
+    final var coreStatus = getCoreStatus(leader);
+    assertTrue("Instance directory doesn't exist", Files.exists(Paths.get(coreStatus.instanceDir)));
+    assertTrue("DataDirectory doesn't exist", Files.exists(Paths.get(coreStatus.dataDir)));
 
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
         .process(cluster.getSolrClient());
@@ -179,11 +175,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     assertNotEquals(leader, newLeader);
 
     // Confirm that the instance and data directory were deleted by default
-    assertFalse(
-        "Instance directory still exists",
-        Files.exists(Paths.get(coreStatus.getInstanceDirectory())));
-    assertFalse(
-        "DataDirectory still exists", Files.exists(Paths.get(coreStatus.getDataDirectory())));
+    assertFalse("Instance directory still exists", Files.exists(Paths.get(coreStatus.instanceDir)));
+    assertFalse("DataDirectory still exists", Files.exists(Paths.get(coreStatus.dataDir)));
   }
 
   @Test
