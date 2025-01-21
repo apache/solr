@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.util.Utils.getNodeNameFromSolrUrl;
+import static org.apache.solr.common.util.URLUtil.getNodeNameFromSolrUrl;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 
