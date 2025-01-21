@@ -56,7 +56,7 @@ import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.util.LogLevel;
@@ -813,7 +813,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     // now create the replica, take note that this has to be done after DocCollection creation with
     // empty slice, otherwise the DocCollection ctor would fetch the PRS entries and throw
     // exceptions
-    String replicaBaseUrl = Utils.getBaseUrlForNodeName(nodeName, "http");
+    String replicaBaseUrl = URLUtil.getBaseUrlForNodeName(nodeName, "http");
 
     String replicaName = "replica1";
     Replica replica =

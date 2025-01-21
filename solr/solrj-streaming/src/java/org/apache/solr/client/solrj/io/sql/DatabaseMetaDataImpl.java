@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.URLUtil;
 
 class DatabaseMetaDataImpl implements DatabaseMetaData {
   private final ConnectionImpl connection;
@@ -123,7 +123,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
             .getClusterProperty(ClusterState.URL_SCHEME, "http");
     for (String node : liveNodes) {
       try {
-        String nodeURL = Utils.getBaseUrlForNodeName(node, urlScheme);
+        String nodeURL = URLUtil.getBaseUrlForNodeName(node, urlScheme);
         solrClient = new Builder(nodeURL).build();
 
         QueryResponse rsp = solrClient.query(sysQuery);

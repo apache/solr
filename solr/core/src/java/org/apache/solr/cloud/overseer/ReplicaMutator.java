@@ -52,6 +52,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -407,7 +408,7 @@ public class ReplicaMutator {
     String nodeName = (String) replicaProps.get(ZkStateReader.NODE_NAME_PROP);
     if (nodeName != null) {
       String baseUrl =
-          Utils.getBaseUrlForNodeName(
+          URLUtil.getBaseUrlForNodeName(
               nodeName,
               cloudManager
                   .getClusterStateProvider()

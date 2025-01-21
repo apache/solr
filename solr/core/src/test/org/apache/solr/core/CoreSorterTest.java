@@ -37,7 +37,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
@@ -224,7 +224,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
                 ZkStateReader.NODE_NAME_PROP,
                 node,
                 ZkStateReader.BASE_URL_PROP,
-                Utils.getBaseUrlForNodeName(node, "http")),
+                URLUtil.getBaseUrlForNodeName(node, "http")),
             collection,
             slice);
     replicaList.add(r);

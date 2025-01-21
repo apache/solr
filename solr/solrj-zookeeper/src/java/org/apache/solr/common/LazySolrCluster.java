@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.WrappedSimpleMap;
 import org.apache.zookeeper.KeeperException;
@@ -430,7 +431,7 @@ public class LazySolrCluster implements SolrCluster {
 
     @Override
     public String baseUrl(ApiType apiType) {
-      return Utils.getBaseUrlForNodeName(
+      return URLUtil.getBaseUrlForNodeName(
           name, zkStateReader.getClusterProperty(URL_SCHEME, "http"), apiType == ApiType.V2);
     }
 

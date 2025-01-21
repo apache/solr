@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.util.Utils.getNodeNameFromSolrUrl;
+import static org.apache.solr.common.util.URLUtil.getNodeNameForBaseUrl;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -204,8 +204,8 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       var jettyNode1 = cluster.getJettySolrRunner(0);
       var jettyNode2 = cluster.getJettySolrRunner(1);
 
-      String nodeName1 = getNodeNameFromSolrUrl(jettyNode1.getBaseUrl().toString());
-      String nodeName2 = getNodeNameFromSolrUrl(jettyNode2.getBaseUrl().toString());
+      String nodeName1 = getNodeNameForBaseUrl(jettyNode1.getBaseUrl().toString());
+      String nodeName2 = getNodeNameForBaseUrl(jettyNode2.getBaseUrl().toString());
 
       Set<String> actualLiveNodes = cspHttp.getLiveNodes();
       assertEquals(2, actualLiveNodes.size());
@@ -236,9 +236,9 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       var jettyNode2 = cluster.getJettySolrRunner(1);
       var jettyNode3 = cluster.startJettySolrRunner();
 
-      String nodeName1 = getNodeNameFromSolrUrl(jettyNode1.getBaseUrl().toString());
-      String nodeName2 = getNodeNameFromSolrUrl(jettyNode2.getBaseUrl().toString());
-      String nodeName3 = getNodeNameFromSolrUrl(jettyNode3.getBaseUrl().toString());
+      String nodeName1 = getNodeNameForBaseUrl(jettyNode1.getBaseUrl().toString());
+      String nodeName2 = getNodeNameForBaseUrl(jettyNode2.getBaseUrl().toString());
+      String nodeName3 = getNodeNameForBaseUrl(jettyNode3.getBaseUrl().toString());
       waitForCSPCacheTimeout();
 
       Set<String> actualKnownNodes = cspHttp.getLiveNodes();

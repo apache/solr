@@ -25,7 +25,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.URLUtil;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
@@ -91,7 +91,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node4:8983_solr",
                 ZkStateReader.BASE_URL_PROP,
-                    Utils.getBaseUrlForNodeName("node4:8983_solr", "https"),
+                    URLUtil.getBaseUrlForNodeName("node4:8983_solr", "https"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"),
             "c1",
@@ -104,7 +104,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node5:8983_solr",
                 ZkStateReader.BASE_URL_PROP,
-                    Utils.getBaseUrlForNodeName("node5:8983_solr", "https"),
+                    URLUtil.getBaseUrlForNodeName("node5:8983_solr", "https"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"),
             "c1",
@@ -148,7 +148,8 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             "node1",
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node1:8983_solr",
-                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node1:8983_solr", "http"),
+                ZkStateReader.BASE_URL_PROP,
+                    URLUtil.getBaseUrlForNodeName("node1:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "NRT"),
             "c1",
@@ -158,7 +159,8 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             "node2",
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node2:8983_solr",
-                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node2:8983_solr", "http"),
+                ZkStateReader.BASE_URL_PROP,
+                    URLUtil.getBaseUrlForNodeName("node2:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"),
             "c1",
@@ -168,7 +170,8 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             "node3",
             Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node3:8983_solr",
-                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node3:8983_solr", "http"),
+                ZkStateReader.BASE_URL_PROP,
+                    URLUtil.getBaseUrlForNodeName("node3:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"),
             "c1",
