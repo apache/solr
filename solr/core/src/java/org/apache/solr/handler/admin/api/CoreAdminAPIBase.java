@@ -90,7 +90,11 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
       }
 
       MDCLoggingContext.setCoreName(coreName);
-      TraceUtils.setDbInstance(req, coreName);
+      try {
+        TraceUtils.setDbInstance(req, coreName);
+      } catch (Exception e) {
+        // TODO: Find better way to fix NPE
+      }
       if (taskId == null) {
         return supplier.get();
       } else {
