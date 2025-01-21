@@ -974,7 +974,7 @@ public class ZkController implements Closeable {
           zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
 
       // this must happen after zkStateReader has initialized the cluster props
-      this.baseURL = URLUtil.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
+      this.baseURL = Utils.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
 
       checkForExistingEphemeralNode();
       registerLiveNodesListener();

@@ -26,7 +26,7 @@ import java.util.Set;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL // not useful / needed for this test
@@ -45,7 +45,7 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
       propMap.put("core", "core" + counter);
       propMap.put("type", "NRT");
       propMap.put("node_name", nodeName);
-      propMap.put("base_url", URLUtil.getBaseUrlForNodeName(nodeName, "http"));
+      propMap.put("base_url", Utils.getBaseUrlForNodeName(nodeName, "http"));
       counter++;
       replicas.add(new Replica(url, propMap, "c1", "s1"));
     }

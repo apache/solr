@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 
@@ -242,8 +241,7 @@ public class ClusterStateMockUtil {
     int port = 8982 + Integer.parseInt(node);
     String nodeName = String.format(Locale.ROOT, "baseUrl%s:%d_", node, port);
     replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, nodeName);
-    replicaPropMap.put(
-        ZkStateReader.BASE_URL_PROP, URLUtil.getBaseUrlForNodeName(nodeName, "http"));
+    replicaPropMap.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(nodeName, "http"));
     replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
     replicaPropMap.put(ZkStateReader.CORE_NAME_PROP, sliceName + "_" + replicaName);
     replicaPropMap.put(ZkStateReader.REPLICA_TYPE, replicaType.name());

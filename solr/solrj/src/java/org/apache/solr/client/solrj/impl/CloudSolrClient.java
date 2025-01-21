@@ -81,7 +81,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -1030,13 +1030,13 @@ public abstract class CloudSolrClient extends SolrClient {
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
         Collections.shuffle(liveNodesList, rand);
-        final var chosenNodeUrl = URLUtil.getBaseUrlForNodeName(liveNodesList.get(0), urlScheme);
+        final var chosenNodeUrl = Utils.getBaseUrlForNodeName(liveNodesList.get(0), urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(chosenNodeUrl));
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
       for (String liveNode : liveNodes) {
-        final var nodeBaseUrl = URLUtil.getBaseUrlForNodeName(liveNode, urlScheme);
+        final var nodeBaseUrl = Utils.getBaseUrlForNodeName(liveNode, urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl));
       }
 
@@ -1054,7 +1054,7 @@ public abstract class CloudSolrClient extends SolrClient {
         String joinedInputCollections = StrUtils.join(inputCollections, ',');
         final var endpoints =
             preferredNodes.stream()
-                .map(nodeName -> URLUtil.getBaseUrlForNodeName(nodeName, urlScheme))
+                .map(nodeName -> Utils.getBaseUrlForNodeName(nodeName, urlScheme))
                 .map(nodeUrl -> new LBSolrClient.Endpoint(nodeUrl, joinedInputCollections))
                 .collect(Collectors.toList());
         if (!endpoints.isEmpty()) {

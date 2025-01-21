@@ -57,7 +57,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -1206,7 +1205,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   public String getBaseUrlForNodeName(final String nodeName) {
     String urlScheme = getClusterProperty(URL_SCHEME, "http");
-    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
   /**
@@ -1218,7 +1217,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   public String getBaseUrlV2ForNodeName(final String nodeName) {
     String urlScheme = getClusterProperty(URL_SCHEME, "http");
-    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, true);
+    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, true);
   }
 
   /** Watches a single collection's state.json. */
