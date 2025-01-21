@@ -277,7 +277,7 @@ task startUIBuildDir(type: Copy) {
     group = 'Site - UI'
     dependsOn tasks.downloadDefaultUITemplate
 
-    // Copy the antora latest default ui into the root folder, to mimick a new checkout of the default ui
+    // Copy the antora latest default ui into the root folder, to mimic a new checkout of the default ui
     with {
         from "${project.ext.nodeProjectDir}/node_modules/@antora/ui-default"
         duplicatesStrategy = 'EXCLUDE'

@@ -86,9 +86,9 @@ public class HdfsCollectionsApiTest extends SolrCloudTestCase {
 
       jettySolrRunner.stop();
       waitForState(
-          "",
+          "Waiting for replica to be marked down",
           collection,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             Replica replica = collectionState.getSlice("shard1").getReplicas().iterator().next();
             return replica.getState() == Replica.State.DOWN;
           });

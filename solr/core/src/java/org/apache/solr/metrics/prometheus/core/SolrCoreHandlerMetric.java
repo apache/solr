@@ -30,9 +30,8 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
   public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_time";
   public static final String CORE_REQUEST_TIMES = "solr_metrics_core_average_request_time";
 
-  public SolrCoreHandlerMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrCoreHandlerMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   /*

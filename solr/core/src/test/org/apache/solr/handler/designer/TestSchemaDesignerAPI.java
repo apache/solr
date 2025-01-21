@@ -239,7 +239,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     schemaDesignerAPI.query(req, rsp);
     assertNotNull(rsp.getResponseHeader());
     SolrDocumentList results = (SolrDocumentList) rsp.getResponse();
-    assertEquals(48, results.getNumFound());
+    assertEquals(47, results.getNumFound());
 
     // publish schema to a config set that can be used by real collections
     reqParams.clear();
@@ -740,7 +740,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     String mutableId = getMutableId(configSet);
     SchemaDesignerConfigSetHelper configSetHelper =
-        new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester(cc));
+        new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester());
     ManagedIndexSchema schema = schemaDesignerAPI.loadLatestSchema(mutableId);
 
     // make it required

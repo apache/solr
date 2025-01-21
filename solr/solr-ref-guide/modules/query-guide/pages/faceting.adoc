@@ -212,6 +212,8 @@ This parameter allows faceting to be faster in the presence of rapid index chang
 
 +
 The default value is `fc` (except for fields using the `BoolField` field type and when `facet.exists=true` is requested) since it tends to use less memory and is faster when a field has many unique terms in the index.
+[NOTE]
+If you request a method that is not compatible with the field you are faceting, Solr will automatically choose a different method that is compatible.  You can see the method you requested (`requestedMethod`) and the method Solr used (`appliedMethod`) by running a query with `debug=timing` or `debug=all`.
 
 `facet.enum.cache.minDf`::
 +

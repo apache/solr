@@ -26,11 +26,9 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -209,15 +207,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
       CloudDescriptor cloudDesc = cmd.getReq().getCore().getCoreDescriptor().getCloudDescriptor();
       String collection = cloudDesc.getCollectionName();
 
-      HttpClient httpClient =
-          cmd.getReq().getCore().getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-
-      try (HttpSolrClient client =
-          new HttpSolrClient.Builder(
-                  cmd.getReq().getCore().getCoreContainer().getZkController().getBaseUrl())
-              .withHttpClient(httpClient)
-              .build()) {
-
+      try {
         String uniqueField = cmd.getReq().getSchema().getUniqueKeyField().getName();
 
         // TODO: implement "expand without deep paging"
@@ -233,6 +223,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
         boolean done = false;
         while (!done) {
           q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+          var client = cmd.getReq().getCoreContainer().getDefaultHttpSolrClient();
           QueryResponse rsp = client.query(collection, q);
           String nextCursorMark = rsp.getNextCursorMark();
 

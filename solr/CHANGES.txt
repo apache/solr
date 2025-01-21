@@ -146,7 +146,9 @@ Other Changes
 ==================  9.9.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
+  fetching and computing it on the fly.  To avoid a backwards compatibilty concern, this won't work
+  for wt=javabin.  (Matthew Biscocho, David Smiley)
 
 Improvements
 ---------------------
@@ -154,22 +156,46 @@ Improvements
   specific collections or cores.  Collection information can be fetched by a call to `GET /api/collections/collectionName`, and core
   information with a call to `GET /api/cores/coreName/segments`. (Jason Gerlowski)
 
+* SOLR-16396: All v2 configset APIs have been moved to the slightly different path: `/api/configsets`, to better align with the design of
+  other v2 APIs.  SolrJ now offers (experimental) SolrRequest implementations for all v2 configset APIs in
+  `org.apache.solr.client.solrj.request.ConfigsetsApi`. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
+
+* SOLR-17221: If multiple query param keys are sent that only vary by case, they were wrongly merged when
+  doing distributed search (sharded collections). This could likely occur for fielded parameters such as
+  f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
 
 Dependency Upgrades
 ---------------------
-(No changes)
+* SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
 
 Other Changes
 ---------------------
 * SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
   LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
+
+* GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
+  for encapsulation and reuse. (David Smiley)
+
+* GITHUB#2680: Improve reliablity of NpmTasks finding needed files/commands.  (Tyler Bertrand via Eric Pugh)
+
+* SOLR-16503: Most remaining usages of Apache HttpClient in Solr switched to Jetty HttpClient (HTTP 2). (Sanjay Dutt, David Smiley)
+
+* SOLR-17589: Prevent error log entry on solr server due to initial HEAD request from HttpJdkSolrClient. (Paul Blanchaert via James Dyer)
+
+* SOLR-17611: SolrJ's User-Agent header now uses the version of SolrJ.  There's a corresponding
+  HttpSolrCall.getUserAgentSolrVersion to parse it.  (David Smiley)
+
+* SOLR-17581: Introduce new test variant of waitForState(), that does not wait on live node changes when we're only
+ interested in the collection state. (Pierre Salagnac)
 
 ==================  9.8.0 ==================
 New Features
