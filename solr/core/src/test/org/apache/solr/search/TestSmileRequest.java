@@ -78,8 +78,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
               query.setPath(path);
             }
             NamedList<Object> rsp = client.request(query);
-            @SuppressWarnings({"rawtypes"})
-            Map m = rsp.asMap(5);
+            var m = rsp.asMap(5);
             String jsonStr = Utils.toJSONString(m);
             SolrTestCaseHS.matchJSON(jsonStr, tests);
           }

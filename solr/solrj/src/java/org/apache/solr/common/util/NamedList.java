@@ -18,6 +18,8 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,7 +59,7 @@ import org.apache.solr.common.params.SolrParams;
  * ResponseWriters that output to a format such as JSON will normally choose a data structure that
  * allows order to be easily preserved in various clients (i.e. not a straight map). If access by
  * key is more important for serialization, see {@link SimpleOrderedMap}, or simply use a regular
- * {@link Map}
+ * {@link Map}.
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class NamedList<T>
@@ -126,9 +128,6 @@ public class NamedList<T>
    * <p>This method is package protected and exists solely so SimpleOrderedMap and clone() can
    * utilize it
    *
-   * <p>TODO: this method was formerly public, now that it's not we can change the impl details of
-   * this class to be based on a Map.Entry[]
-   *
    * @lucene.internal
    * @see #nameValueMapToList
    */
@@ -139,12 +138,6 @@ public class NamedList<T>
   /**
    * Method to serialize Map.Entry&lt;String, ?&gt; to a List in which the even indexed elements
    * (0,2,4, etc.) are Strings and odd elements (1,3,5,) are of the type "T".
-   *
-   * <p>NOTE: This a temporary placeholder method until the guts of the class are actually replaced
-   * by List&lt;String, ?&gt;.
-   *
-   * @return Modified List as per the above description
-   * @see <a href="https://issues.apache.org/jira/browse/SOLR-912">SOLR-912</a>
    */
   private List<Object> nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
     List<Object> result = new ArrayList<>(nameValuePairs.length << 1);
@@ -399,30 +392,22 @@ public class NamedList<T>
     return new NamedList<>(Collections.unmodifiableList(copy.nvPairs));
   }
 
+  /** A mutable {@link Map} view into the NamedList. Keys must not repeat. */
   public Map<String, T> asShallowMap() {
     return asShallowMap(false);
   }
 
-  public Map<String, T> asShallowMap(boolean allowDps) {
-    return new Map<String, T>() {
+  /** A mutable {@link Map} view into the NamedList. Keys may repeat if {@code allowDups}. */
+  public Map<String, T> asShallowMap(boolean allowDups) {
+    return new AbstractMap<>() {
       @Override
       public int size() {
         return NamedList.this.size();
       }
 
       @Override
-      public boolean isEmpty() {
-        return size() == 0;
-      }
-
-      @Override
       public boolean containsKey(Object key) {
         return NamedList.this.get((String) key) != null;
-      }
-
-      @Override
-      public boolean containsValue(Object value) {
-        return false;
       }
 
       @Override
@@ -432,7 +417,7 @@ public class NamedList<T>
 
       @Override
       public T put(String key, T value) {
-        if (allowDps) {
+        if (allowDups) {
           NamedList.this.add(key, value);
           return null;
         }
@@ -451,17 +436,15 @@ public class NamedList<T>
       }
 
       @Override
-      @SuppressWarnings({"unchecked"})
-      public void putAll(Map m) {
-        boolean isEmpty = isEmpty();
-        for (Object o : m.entrySet()) {
-          @SuppressWarnings({"rawtypes"})
-          Map.Entry e = (Entry) o;
-          if (isEmpty) { // we know that there are no duplicates
-            add((String) e.getKey(), (T) e.getValue());
-          } else {
-            put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
-          }
+      public void putAll(Map<? extends String, ? extends T> m) {
+        if (allowDups || isEmpty()) {
+          // if empty, we know that there are no duplicates, so just append the entries
+          NamedList.this.addAll((Map<String, T>) m);
+          return;
+        }
+        // replaces an existing entry, if found
+        for (var e : m.entrySet()) {
+          put(e.getKey(), (T) e.getValue());
         }
       }
 
@@ -471,23 +454,18 @@ public class NamedList<T>
       }
 
       @Override
-      @SuppressWarnings({"unchecked"})
-      public Set<String> keySet() {
-        // TODO implement more efficiently
-        return NamedList.this.asMap(1).keySet();
-      }
-
-      @Override
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      public Collection values() {
-        // TODO implement more efficiently
-        return NamedList.this.asMap(1).values();
-      }
-
-      @Override
       public Set<Entry<String, T>> entrySet() {
-        // TODO implement more efficiently
-        return NamedList.this.asMap(1).entrySet();
+        return new AbstractSet<>() {
+          @Override
+          public Iterator<Entry<String, T>> iterator() {
+            return NamedList.this.iterator();
+          }
+
+          @Override
+          public int size() {
+            return NamedList.this.size();
+          }
+        };
       }
 
       @Override
@@ -497,9 +475,13 @@ public class NamedList<T>
     };
   }
 
-  @SuppressWarnings("rawtypes")
-  public Map asMap(int maxDepth) {
-    LinkedHashMap result = new LinkedHashMap<>();
+  /**
+   * Clones into a new sequenced {@link Map} where multiple values for the same key become a List.
+   * If any value was a {@link NamedList}, it's converted recursively to a depth of {@code
+   * maxDepth}. 0 means no recursion.
+   */
+  public Map<String, Object> asMap(int maxDepth) {
+    LinkedHashMap<String, Object> result = new LinkedHashMap<>();
     for (int i = 0; i < size(); i++) {
       Object val = getVal(i);
       if (val instanceof NamedList && maxDepth > 0) {
@@ -549,41 +531,6 @@ public class NamedList<T>
     return new MultiMapSolrParams(map);
   }
 
-  /**
-   * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value relationship in
-   * NamedList (the keys of which are String-s)
-   */
-  public static final class NamedListEntry<T> implements Map.Entry<String, T> {
-
-    public NamedListEntry() {}
-
-    public NamedListEntry(String _key, T _value) {
-      key = _key;
-      value = _value;
-    }
-
-    @Override
-    public String getKey() {
-      return key;
-    }
-
-    @Override
-    public T getValue() {
-      return value;
-    }
-
-    @Override
-    public T setValue(T _value) {
-      T oldValue = value;
-      value = _value;
-      return oldValue;
-    }
-
-    private String key;
-
-    private T value;
-  }
-
   /** Iterates over the Map and sequentially adds its key/value pairs */
   public boolean addAll(Map<String, T> args) {
     for (Map.Entry<String, T> entry : args.entrySet()) {
@@ -617,50 +564,62 @@ public class NamedList<T>
 
     final NamedList<T> list = this;
 
-    Iterator<Map.Entry<String, T>> iter =
-        new Iterator<Map.Entry<String, T>>() {
+    return new Iterator<>() {
 
-          int idx = 0;
+      int idx = 0;
 
+      @Override
+      public boolean hasNext() {
+        return idx < list.size();
+      }
+
+      @Override
+      public Map.Entry<String, T> next() {
+        final int index = idx++;
+        return new Map.Entry<>() {
           @Override
-          public boolean hasNext() {
-            return idx < list.size();
+          public String getKey() {
+            return list.getName(index);
           }
 
           @Override
-          public Map.Entry<String, T> next() {
-            final int index = idx++;
-            Map.Entry<String, T> nv =
-                new Map.Entry<String, T>() {
-                  @Override
-                  public String getKey() {
-                    return list.getName(index);
-                  }
-
-                  @Override
-                  public T getValue() {
-                    return list.getVal(index);
-                  }
-
-                  @Override
-                  public String toString() {
-                    return getKey() + "=" + getValue();
-                  }
-
-                  @Override
-                  public T setValue(T value) {
-                    return list.setVal(index, value);
-                  }
-                };
-            return nv;
+          public T getValue() {
+            return list.getVal(index);
           }
 
           @Override
-          public void remove() {
-            throw new UnsupportedOperationException();
+          public String toString() {
+            return getKey() + "=" + getValue();
+          }
+
+          @Override
+          public T setValue(T value) {
+            return list.setVal(index, value);
+          }
+
+          @Override
+          public boolean equals(Object obj) {
+            if (!(obj instanceof Map.Entry<?, ?>)) return false;
+            Map.Entry<?, ?> e2 = (Map.Entry<?, ?>) obj;
+            return Objects.equals(getKey(), e2.getKey())
+                && Objects.equals(getValue(), e2.getValue());
+          }
+
+          @Override
+          public int hashCode() {
+            String key = getKey();
+            T value = getValue();
+            // copied from AbstractMap.SimpleEntry
+            return (key == null ? 0 : key.hashCode()) ^ (value == null ? 0 : value.hashCode());
           }
         };
-    return iter;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 
   /**

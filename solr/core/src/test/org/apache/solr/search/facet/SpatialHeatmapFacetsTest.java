@@ -155,11 +155,9 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
               .findRecursive("facet_counts", "facet_heatmaps", "course", "gridLevel"));
       assertTrue(
           ((NamedList<Object>)
-                      response
-                          .getResponse()
-                          .findRecursive("facet_counts", "facet_heatmaps", "course"))
-                  .indexOf("counts_" + courseFormat, 0)
-              >= 0);
+                  response.getResponse().findRecursive("facet_counts", "facet_heatmaps", "course"))
+              .asShallowMap()
+              .containsKey("counts_" + courseFormat));
     }
 
     // ------ Index data

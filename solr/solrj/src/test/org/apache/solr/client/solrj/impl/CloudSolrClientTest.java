@@ -471,11 +471,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Iterate over shards-info and check what cores responded
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>) shardsInfo;
-    @SuppressWarnings({"unchecked"})
-    Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
     List<String> shardAddresses = new ArrayList<String>();
-    while (itr.hasNext()) {
-      Map.Entry<String, ?> e = itr.next();
+    for (Map.Entry<String, ?> e : shardsInfoMap.asMap(100).entrySet()) {
       assertTrue(
           "Did not find map-type value in " + ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
       String shardAddress = (String) ((Map) e.getValue()).get("shardAddress");
@@ -548,11 +545,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Iterate over shards-info and check what cores responded
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>) shardsInfo;
-    @SuppressWarnings({"unchecked"})
-    Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
     List<String> shardAddresses = new ArrayList<String>();
-    while (itr.hasNext()) {
-      Map.Entry<String, ?> e = itr.next();
+    for (Map.Entry<String, ?> e : shardsInfoMap.asMap(100).entrySet()) {
       assertTrue(
           "Did not find map-type value in " + ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
       String shardAddress = (String) ((Map) e.getValue()).get("shardAddress");
@@ -1121,11 +1115,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Iterate over shards-info and check that replicas of correct type responded
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>) shardsInfo;
-    @SuppressWarnings({"unchecked"})
-    Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
     List<String> shardAddresses = new ArrayList<>();
-    while (itr.hasNext()) {
-      Map.Entry<String, ?> e = itr.next();
+    for (Map.Entry<String, ?> e : shardsInfoMap.asMap(100).entrySet()) {
       assertTrue(
           "Did not find map-type value in " + ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
       String shardAddress = (String) ((Map) e.getValue()).get("shardAddress");
