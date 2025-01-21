@@ -143,7 +143,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
     List<String> liveNodesList = (List<String>) cluster.get("live_nodes");
     if (liveNodesList != null) {
-      liveNodes = Set.copyOf(liveNodesList);
+      this.liveNodes = Set.copyOf(liveNodesList);
       liveNodesTimestamp = System.nanoTime();
     }
 
@@ -428,7 +428,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         .map(
             (url) -> {
               try {
-                return URLUtil.getNodeNameFromSolrUrl(url);
+                return URLUtil.getNodeNameForBaseUrl(url);
               } catch (MalformedURLException | URISyntaxException e) {
                 throw new IllegalArgumentException("Failed to parse base Solr URL " + url, e);
               }

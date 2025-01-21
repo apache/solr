@@ -127,7 +127,6 @@ public class URLUtil {
    *     https://app-node-1:8983/solr} (V1)
    * @throws IllegalArgumentException if the provided node name is malformed
    */
-  @Deprecated
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
     final int colonAt = nodeName.indexOf(':');
@@ -149,11 +148,11 @@ public class URLUtil {
    * Construct base Solr URL to a Solr node name
    *
    * @param solrUrl Given a base Solr URL string (e.g., 'https://app-node-1:8983/solr')
-   * @return URL that looks like {@code app-node-1:8983_solr}
+   * @return Node name that looks like {@code app-node-1:8983_solr}
    * @throws MalformedURLException if the provided URL string is malformed
    * @throws URISyntaxException if the provided URL string could not be parsed as a URI reference.
    */
-  public static String getNodeNameFromSolrUrl(String solrUrl)
+  public static String getNodeNameForBaseUrl(String solrUrl)
       throws MalformedURLException, URISyntaxException {
     URL url = new URI(solrUrl).toURL();
     return url.getAuthority() + url.getPath().replace('/', '_');

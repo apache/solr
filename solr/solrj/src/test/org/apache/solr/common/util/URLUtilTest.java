@@ -16,8 +16,8 @@
  */
 package org.apache.solr.common.util;
 
-import static org.apache.solr.common.util.URLUtil.getNodeNameFromSolrUrl;
-import static org.apache.solr.common.util.Utils.getBaseUrlForNodeName;
+import static org.apache.solr.common.util.URLUtil.getBaseUrlForNodeName;
+import static org.apache.solr.common.util.URLUtil.getNodeNameForBaseUrl;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -102,20 +102,20 @@ public class URLUtilTest extends SolrTestCase {
   }
 
   @Test
-  public void testGetNodeNameFromSolrUrl() throws MalformedURLException, URISyntaxException {
-    assertEquals("node-1-url:8983_solr", getNodeNameFromSolrUrl("https://node-1-url:8983/solr"));
-    assertEquals("node-1-url:8983_solr", getNodeNameFromSolrUrl("http://node-1-url:8983/solr"));
-    assertEquals("node-1-url:8983_api", getNodeNameFromSolrUrl("http://node-1-url:8983/api"));
-    assertThrows(MalformedURLException.class, () -> getNodeNameFromSolrUrl("node-1-url:8983/solr"));
+  public void testGetNodeNameForBaseUrl() throws MalformedURLException, URISyntaxException {
+    assertEquals("node-1-url:8983_solr", getNodeNameForBaseUrl("https://node-1-url:8983/solr"));
+    assertEquals("node-1-url:8983_solr", getNodeNameForBaseUrl("http://node-1-url:8983/solr"));
+    assertEquals("node-1-url:8983_api", getNodeNameForBaseUrl("http://node-1-url:8983/api"));
+    assertThrows(MalformedURLException.class, () -> getNodeNameForBaseUrl("node-1-url:8983/solr"));
     assertThrows(
-        URISyntaxException.class, () -> getNodeNameFromSolrUrl("http://node-1-url:8983/solr^"));
+        URISyntaxException.class, () -> getNodeNameForBaseUrl("http://node-1-url:8983/solr^"));
   }
 
   @Test
   public void testGetBaseUrlForNodeName() {
     assertEquals(
         "http://app-node-1:8983/solr",
-        URLUtil.getBaseUrlForNodeName("app-node-1:8983_solr", "http", false));
+        getBaseUrlForNodeName("app-node-1:8983_solr", "http", false));
     assertEquals(
         "https://app-node-1:8983/solr",
         getBaseUrlForNodeName("app-node-1:8983_solr", "https", false));
