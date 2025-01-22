@@ -16,14 +16,15 @@
  */
 package org.apache.solr.common.util;
 
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 /**
  * <code>SimpleOrderedMap</code> is a {@link NamedList} where access by key is more important than
@@ -76,24 +77,6 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     return new SimpleOrderedMap<T>(newList);
   }
 
-  /**
-   * Returns a shared, empty, and immutable instance of SimpleOrderedMap.
-   *
-   * @return Empty SimpleOrderedMap (immutable)
-   */
-  public static SimpleOrderedMap<Object> of() {
-    return EMPTY;
-  }
-
-  /**
-   * Returns an immutable instance of SimpleOrderedMap with a single key-value pair.
-   *
-   * @return SimpleOrderedMap containing one key-value pair
-   */
-  public static <T> SimpleOrderedMap<T> of(String name, T val) {
-    return new SimpleOrderedMap<T>(List.of(name, val));
-  }
-
   @Override
   public boolean isEmpty() {
     return nvPairs.isEmpty();
@@ -101,7 +84,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
 
   @Override
   public boolean containsKey(final Object key) {
-    return super.get((String) key) != null;
+    return this.indexOf((String) key) >= 0;
   }
 
   @Override
@@ -122,10 +105,16 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   }
 
   @Override
-  public T put(final String key, final T value) {
-    T oldValue = get(key);
-    add(key, value);
-    return oldValue;
+  public T put(String key, T value) {
+    int idx = indexOf(key);
+    if (idx == -1) {
+      add(key, value);
+      return null;
+    } else {
+      T t = get(key);
+      setVal(idx, value);
+      return t;
+    }
   }
 
   @Override
@@ -138,32 +127,54 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     m.forEach(this::put);
   }
 
+  private class InnerMap extends AbstractMap<String, T> {
+    @Override
+    public Set<Entry<String, T>> entrySet() {
+      return SimpleOrderedMap.this.entrySet();
+    }
+  }
+
   @Override
   public Set<String> keySet() {
-    var keys = new HashSet<String>();
-    for (int i = 0; i < nvPairs.size(); i += 2) {
-      keys.add((String) nvPairs.get(i));
-    }
-    return keys;
+    return new InnerMap().keySet();
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Collection<T> values() {
-    var values = new ArrayList<T>();
-    for (int i = 1; i < nvPairs.size(); i += 2) {
-      values.add((T) nvPairs.get(i));
-    }
-    return values;
+    return new InnerMap().values();
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Set<Entry<String, T>> entrySet() {
-    var values = new HashSet<Entry<String, T>>();
-    for (int i = 0; i < nvPairs.size() - 1; i += 2) {
-      values.add(ImmutablePair.of((String) nvPairs.get(i), (T) nvPairs.get(i + 1)));
-    }
-    return values;
+
+    return new AbstractSet<>() {
+      @Override
+      public Iterator<Entry<String, T>> iterator() {
+        return SimpleOrderedMap.this.iterator();
+      }
+
+      @Override
+      public int size() {
+        return SimpleOrderedMap.this.size();
+      }
+    };
+  }
+
+  /**
+   * Returns an immutable instance of SimpleOrderedMap with a single key-value pair.
+   *
+   * @return SimpleOrderedMap containing one key-value pair
+   */
+  public static <T> SimpleOrderedMap<T> of(String name, T val) {
+    return new SimpleOrderedMap<T>(List.of(name, val));
+  }
+
+  /**
+   * Returns a shared, empty, and immutable instance of SimpleOrderedMap.
+   *
+   * @return Empty SimpleOrderedMap (immutable)
+   */
+  public static SimpleOrderedMap<Object> of() {
+    return EMPTY;
   }
 }

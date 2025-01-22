@@ -238,6 +238,14 @@ public class NamedList<T>
     return -1;
   }
 
+  /***
+   * Scans the list sequentially beginning at index 0
+   * @see #indexOf(String, int)
+   */
+  public int indexOf(String name) {
+    return indexOf(name, 0);
+  }
+
   /**
    * Gets the value for the first instance of the specified name found.
    *

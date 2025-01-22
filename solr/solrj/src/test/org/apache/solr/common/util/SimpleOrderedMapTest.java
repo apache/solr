@@ -3,10 +3,10 @@ package org.apache.solr.common.util;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import org.junit.Assert;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class SimpleOrderedMapTest extends Assert {
+public class SimpleOrderedMapTest extends SolrTestCase {
 
   private final SimpleOrderedMap<Integer> map = new SimpleOrderedMap<>();
 
@@ -20,14 +20,28 @@ public class SimpleOrderedMapTest extends Assert {
     assertEquals(1, map.nvPairs.get(1));
     assertEquals("two", map.nvPairs.get(2));
     assertEquals(2, map.nvPairs.get(3));
+  }
 
-    Object one = map.put("one", -1);
-    assertEquals(1, one);
+  public void testPutReturnOldValue() {
+    map.put("one", 1);
+    int oldValue = map.put("one", 2);
+
+    assertEquals(oldValue, oldValue);
+  }
+
+  public void testPutReplaceExistingValue() {
+    map.put("one", 1);
+    map.put("one", 11);
+
+    assertEquals(2, map.nvPairs.size());
+    assertEquals("one", map.nvPairs.get(0));
+    assertEquals(11, map.nvPairs.get(1));
   }
 
   @Test
   public void testContains() {
     setupData();
+
     assertTrue(map.containsKey("one"));
     assertTrue(map.containsKey("two"));
     assertTrue(map.containsKey("three"));
@@ -35,9 +49,16 @@ public class SimpleOrderedMapTest extends Assert {
   }
 
   @Test
-  public void testContainsNull() {
-    map.add(null, 1);
+  public void testContainsNullAsKey() {
+    map.put(null, 1);
     assertTrue(map.containsKey(null));
+  }
+
+  @Test
+  public void testContainsNullAsKeyValuePair() {
+    map.put(null, null);
+    assertTrue(map.containsKey(null));
+    assertTrue(map.containsValue(null));
   }
 
   /***
@@ -68,7 +89,7 @@ public class SimpleOrderedMapTest extends Assert {
     assertEquals("one", map.nvPairs.get(0));
     assertEquals(3, map.nvPairs.get(5));
 
-    // since put all takes a unordered Map, we do not know the order of the elements
+    // since putAll takes a Map (unordered), we do not know the order of the elements
     assertTrue(map.nvPairs.contains("one"));
     assertTrue(map.nvPairs.contains(1));
     assertTrue(map.nvPairs.contains("three"));
@@ -89,6 +110,7 @@ public class SimpleOrderedMapTest extends Assert {
   @Test
   public void testValues() {
     setupData();
+
     Collection<Integer> values = map.values();
     assertEquals(3, values.size());
     assertTrue(values.contains(1));
