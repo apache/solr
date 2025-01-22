@@ -20,6 +20,7 @@ apply plugin: 'java-library'
 description = 'Open Telemetry (OTEL) tracer'
 
 dependencies {
+  implementation platform(project(':platform'))
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
