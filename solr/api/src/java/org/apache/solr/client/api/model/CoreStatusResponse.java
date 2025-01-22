@@ -22,9 +22,9 @@ import java.util.Map;
 
 public class CoreStatusResponse extends SolrJerseyResponse {
 
-  // In the v1 code this is a Map of Exception instances by core name.  How are exceptions
+  // NOCOMMIT In the v1 code this is a Map of Exception instances by core name.  How are exceptions
   // serialized out by things though, that's what I'd have to mirror on the v2 side.
-  @JsonProperty public Map<String, Exception> initFailures;
+  @JsonProperty public Map<String, Object> initFailures;
 
   @JsonProperty public Map<String, SingleCoreData> status;
 
