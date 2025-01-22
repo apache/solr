@@ -123,18 +123,18 @@ public class TestDocTermOrds extends SolrTestCase {
     assertEquals(0, iter.nextOrd());
     assertEquals(1, iter.nextOrd());
     assertEquals(2, iter.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, iter.nextOrd());
+    assertEquals(3, iter.docValueCount());
 
     assertEquals(1, iter.nextDoc());
     assertEquals(3, iter.nextOrd());
     assertEquals(4, iter.nextOrd());
     assertEquals(5, iter.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, iter.nextOrd());
+    assertEquals(3, iter.docValueCount());
 
     assertEquals(2, iter.nextDoc());
     assertEquals(0, iter.nextOrd());
     assertEquals(5, iter.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, iter.nextOrd());
+    assertEquals(2, iter.docValueCount());
 
     r.close();
     dir.close();
@@ -439,7 +439,8 @@ public class TestDocTermOrds extends SolrTestCase {
       final int[] answers = idToOrds[(int) docIDToID.longValue()];
       int upto = 0;
       long ord;
-      while ((ord = iter.nextOrd()) != SortedSetDocValues.NO_MORE_DOCS) {
+      for (int o=0; o<iter.docValueCount(); o++) {
+        ord = iter.nextOrd();
         te.seekExact(ord);
         final BytesRef expected = termsArray[answers[upto++]];
         if (VERBOSE) {
@@ -517,12 +518,12 @@ public class TestDocTermOrds extends SolrTestCase {
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, v.nextOrd());
+    assertEquals(2, v.getValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(-3, LegacyNumericUtils.prefixCodedToInt(value));
@@ -559,12 +560,12 @@ public class TestDocTermOrds extends SolrTestCase {
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(-3, LegacyNumericUtils.prefixCodedToLong(value));
@@ -694,15 +695,15 @@ public class TestDocTermOrds extends SolrTestCase {
 
     assertEquals(0, v.nextDoc());
     assertEquals(0, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(3, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_DOCS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals("bar", value.utf8ToString());

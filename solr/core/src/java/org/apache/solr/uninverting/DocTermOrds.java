@@ -919,7 +919,7 @@ public class DocTermOrds implements Accountable {
           return d;
         }
       }
-      return doc = NO_MORE_DOCS;
+      return doc = -1; // nocommit is this the right fix?
     }
 
     @Override

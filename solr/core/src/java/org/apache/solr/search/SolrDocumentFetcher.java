@@ -678,9 +678,8 @@ public class SolrDocumentFetcher {
         final SortedSetDocValues values = e.getSortedSetDocValues(localId, leafReader, readerOrd);
         if (values != null) {
           final List<Object> outValues = new ArrayList<>();
-          for (long ord = values.nextOrd();
-              ord != SortedSetDocValues.NO_MORE_DOCS;
-              ord = values.nextOrd()) {
+          for (int o=0; o<values.docValueCount(); o++) {
+            long ord = values.nextOrd();
             BytesRef value = values.lookupOrd(ord);
             outValues.add(e.schemaField.getType().toObject(e.schemaField, value));
           }

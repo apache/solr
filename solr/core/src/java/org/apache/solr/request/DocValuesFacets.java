@@ -448,10 +448,11 @@ public class DocValuesFacets {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (si.advanceExact(doc)) {
-        int term = (int) si.nextOrd();
-        do {
+        for (int o=0; o<si.docValueCount(); o++) {
+          long ord = si.nextOrd();
+          int term = (int) ord;
           segCounts[1 + term]++;
-        } while ((term = (int) si.nextOrd()) >= 0);
+        }
       } else {
         counts[0]++; // missing
       }

@@ -147,7 +147,8 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
       if (doc == docTermOrds.docID()) {
         BytesRef edgeValue = new BytesRef();
         long ord;
-        while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_DOCS) {
+        for (int o=0; o<docTermOrds.docValueCount(); o++) {
+          ord = docTermOrds.nextOrd();
           edgeValue = docTermOrds.lookupOrd(ord);
           // add the edge id to the collector terms.
           collectorTerms.add(edgeValue);

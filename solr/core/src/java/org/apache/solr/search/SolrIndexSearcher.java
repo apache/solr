@@ -316,6 +316,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     try {
+      log.info("Offending query: " + query);
       super.search(query, collector);
     } catch (ExitableDirectoryReader.ExitingReaderException
         | CancellableCollector.QueryCancelledException x) {

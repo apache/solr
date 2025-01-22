@@ -435,7 +435,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       if (docID == NO_MORE_DOCS) {
         break;
       }
-      long expectedOrd;
+      long expectedOrd; // nocommit fix
       while ((expectedOrd = expected.nextOrd()) != NO_MORE_ORDS) {
         assertEquals(expectedOrd, actual.nextOrd());
       }

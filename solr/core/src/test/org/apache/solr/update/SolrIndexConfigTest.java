@@ -115,7 +115,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler) iwc.getMergeScheduler();
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
-    assertTrue("ms.isAutoIOThrottle", ms.getAutoIOThrottle());
+    assertFalse("ms.isAutoIOThrottle", ms.getAutoIOThrottle());
   }
 
   @Test
