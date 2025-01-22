@@ -152,7 +152,7 @@ nimbusds-josejwt = "9.30.2"
 nodegradle-node = "7.0.1"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "16.20.2"
-openapi = "7.6.0"
+openapi = "7.11.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.40.0"
 osgi-annotation = "8.1.0"
