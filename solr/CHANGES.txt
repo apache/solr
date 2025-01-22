@@ -173,6 +173,9 @@ Bug Fixes
   doing distributed search (sharded collections). This could likely occur for fielded parameters such as
   f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
 
+* SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
+  it needs to close the stream to cleanup resources but wasn't. (David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
