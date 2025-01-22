@@ -517,7 +517,7 @@ public class MiniSolrCloudCluster {
   }
 
   /**
-   * Add a previously stopped node back to the cluster without reusing its port
+   * Add a previously stopped node back to the cluster on a different port
    *
    * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
    * @return the started node
