@@ -22,9 +22,9 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.api.model.CreateCoreParams;
 import org.apache.solr.client.api.model.CreateCoreResponse;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 public interface CoreApis {
 
@@ -41,7 +41,7 @@ public interface CoreApis {
 
     @GET
     @Operation(summary = "Fetch status info for all cores hosted on this node.", tags = "cores")
-    SolrJerseyResponse getAllCoreStatus(@QueryParam("indexInfo") Boolean indexInfo)
+    CoreStatusResponse getAllCoreStatus(@QueryParam("indexInfo") Boolean indexInfo)
         throws Exception;
 
     @GET
@@ -49,7 +49,7 @@ public interface CoreApis {
         summary = "Fetch status info for the core hosted on this node with the specified name.",
         tags = "cores")
     @Path("/{coreName}")
-    SolrJerseyResponse getCoreStatus(
+    CoreStatusResponse getCoreStatus(
         @PathParam("coreName") String coreName, @QueryParam("indexInfo") Boolean indexInfo)
         throws Exception;
   }
