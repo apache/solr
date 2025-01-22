@@ -151,5 +151,5 @@ org.semver4j:semver4j:5.3.0=jarValidation,runtimeClasspath,solrCore
 org.slf4j:jcl-over-slf4j:2.0.13=jarValidation,libExt,runtimeClasspath,solrCore
 org.slf4j:jul-to-slf4j:2.0.13=jarValidation,libExt,runtimeClasspath
 org.slf4j:slf4j-api:2.0.13=jarValidation,libExt,runtimeClasspath,serverLib,solrCore
-org.xerial.snappy:snappy-java:1.1.10.5=jarValidation,runtimeClasspath,solrCore
+org.xerial.snappy:snappy-java:1.1.10.7=jarValidation,runtimeClasspath,solrCore
 empty=apiHelper,apiHelperTest,compileClasspath,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,testCompileClasspath,testRuntimeClasspath,webapp

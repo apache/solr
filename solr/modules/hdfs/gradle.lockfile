@@ -190,6 +190,6 @@ org.slf4j:jul-to-slf4j:2.0.13=solrPlatformLibs
 org.slf4j:slf4j-api:1.7.32=permitTestUnusedDeclared
 org.slf4j:slf4j-api:2.0.13=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 org.xerial.snappy:snappy-java:1.1.10.4=apiHelper
-org.xerial.snappy:snappy-java:1.1.10.5=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
+org.xerial.snappy:snappy-java:1.1.10.7=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 ua.net.nlp:morfologik-ukrainian-search:4.9.1=jarValidation,testRuntimeClasspath
 empty=apiHelperTest,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,signatures

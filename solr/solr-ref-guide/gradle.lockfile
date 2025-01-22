@@ -152,5 +152,5 @@ org.pcollections:pcollections:4.0.1=annotationProcessor,errorprone,testAnnotatio
 org.semver4j:semver4j:5.3.0=testRuntimeClasspath
 org.slf4j:jcl-over-slf4j:2.0.13=testRuntimeClasspath
 org.slf4j:slf4j-api:2.0.13=testCompileClasspath,testRuntimeClasspath
-org.xerial.snappy:snappy-java:1.1.10.5=testRuntimeClasspath
+org.xerial.snappy:snappy-java:1.1.10.7=testRuntimeClasspath
 empty=apiHelper,apiHelperTest,compileClasspath,compileOnlyHelper,compileOnlyHelperTest,jarValidation,localPlaybook,missingdoclet,officialPlaybook,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,refGuide,runtimeClasspath
