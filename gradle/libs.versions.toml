@@ -132,7 +132,7 @@ jayway-jsonpath = "2.9.0"
 jctools = "4.0.5"
 jersey = "3.1.9"
 # TODO Sync with jersey versions
-jersey-containers = "2.39.1"
+jersey-containers = "2.46"
 # @keep for version alignment
 joda-time = "2.8.1"
 junit = "4.13.2"
