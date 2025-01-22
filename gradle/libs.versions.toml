@@ -157,7 +157,7 @@ openjdk-jmh = "1.37"
 opentelemetry = "1.40.0"
 osgi-annotation = "8.1.0"
 # @keep for version alignment
-ow2-asm = "9.3"
+ow2-asm = "9.7.1"
 owasp-dependencycheck = "9.0.8"
 # @keep for version alignment
 perfmark = "0.27.0"
