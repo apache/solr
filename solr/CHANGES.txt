@@ -176,8 +176,8 @@ Bug Fixes
 * SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
   it needs to close the stream to cleanup resources but wasn't. (David Smiley)
 
-* SOLR-17519: SolrJ fix to CloudSolrClient and HTTP ClusterState where it can fail to request cluster state
-  if its current live nodes list is stale. HTTP ClusterState now retains the initial configured list of passed URLs as backup
+* SOLR-17519: SolrJ CloudSolrClient configured with Solr URLs can fail to request cluster state if its
+  current live nodes list is stale. CloudSolrClient now retains the initial configured list of passed URLs as backup
   used for fetching cluster state when all live nodes have failed. (Matthew Biscocho via David Smiley, Houston Putman)
 
 Dependency Upgrades
