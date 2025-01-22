@@ -118,7 +118,7 @@ hsqldb = "2.7.2"
 ibm-icu = "74.2"
 immutables-valueannotations = "2.10.1"
 j256-simplemagic = "1.17"
-jakarta-annotation = "2.1.1"
+jakarta-annotation = "3.0.0"
 jakarta-inject = "2.0.1"
 jakarta-ws = "3.1.0"
 # @keep This is the minimum required Java version for the project.
