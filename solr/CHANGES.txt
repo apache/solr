@@ -202,7 +202,8 @@ New Features
 ---------------------
 * SOLR-17065: The Solr Cross-DC Project has graduated from the sandbox repository.
   It will now be released as a fully supported Solr feature.
-  This feature closes SIP-13: Cross Data Center Replication. (Mark Miller, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
+  This feature closes SIP-13: Cross Data Center Replication.
+  (Mark Miller, Anshum Gupta, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
 
 * SOLR-17150: Implement `memAllowed` parameter to limit per-thread memory allocations during request processing. (Andrzej Bialecki, Gus Heck)
 
