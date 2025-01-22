@@ -100,7 +100,7 @@ google-cloud-storage = "2.27.0"
 google-errorprone = "2.31.0"
 # @keep for version alignment
 google-gson = "2.11.0"
-google-guava = "33.1.0-jre"
+google-guava = "33.4.0-jre"
 # @keep for version alignment
 google-j2objc = "3.0.0"
 # @keep This is GJF version for spotless/ tidy.
