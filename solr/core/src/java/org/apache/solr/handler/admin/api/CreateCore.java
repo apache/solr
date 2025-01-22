@@ -74,6 +74,9 @@ public class CreateCore extends CoreAdminAPIBase implements CoreApis.Create {
   public CreateCoreResponse createCore(CreateCoreParams requestBody) throws Exception {
     final var response = instantiateJerseyResponse(CreateCoreResponse.class);
 
+    ensureRequiredRequestBodyProvided(requestBody);
+    ensureRequiredParameterProvided("name", requestBody.name);
+
     assert TestInjection.injectRandomDelayInCoreCreation();
     ensureRequiredRequestBodyProvided(requestBody);
     ensureRequiredParameterProvided("name", requestBody.name);
