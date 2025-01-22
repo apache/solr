@@ -22,9 +22,10 @@ import static org.apache.solr.client.solrj.SolrClient.RemoteSolrException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String urlScheme;
-  private List<String> configuredNodes;
+  private List<URL> configuredNodes;
   volatile Set<String> liveNodes;
   long liveNodesTimestamp = 0;
   volatile Map<String, List<String>> aliases;
@@ -67,7 +68,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.solrj.cache.timeout.sec", 5);
 
   public void init(List<String> solrUrls) throws Exception {
-    this.configuredNodes = getNodeNamesFromSolrUrls(solrUrls);
+    this.configuredNodes = setConfiguredNodes(solrUrls);
     for (String solrUrl : solrUrls) {
       urlScheme = solrUrl.startsWith("https") ? "https" : "http";
       try (SolrClient initialClient = getSolrClient(solrUrl)) {
@@ -226,13 +227,16 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
         > getCacheTimeout()) {
 
-      if (updateLiveNodes(liveNodes)) return this.liveNodes;
+      if (liveNodes.stream()
+          .anyMatch((node) -> updateLiveNodes(URLUtil.getBaseUrlForNodeName(node, urlScheme))))
+        return this.liveNodes;
 
       log.warn(
           "Attempt to fetch cluster state from all known live nodes {} failed. Trying backup nodes",
           liveNodes);
 
-      if (updateLiveNodes(configuredNodes)) return this.liveNodes;
+      if (configuredNodes.stream().anyMatch((node) -> updateLiveNodes(node.toString())))
+        return this.liveNodes;
 
       throw new RuntimeException(
           "Tried fetching live_nodes using all the node names we knew of, i.e. "
@@ -247,16 +251,13 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
   }
 
-  private boolean updateLiveNodes(Collection<String> liveNodes) {
-    for (String nodeName : liveNodes) {
-      String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
-      try (SolrClient client = getSolrClient(baseUrl)) {
-        this.liveNodes = fetchLiveNodes(client);
-        liveNodesTimestamp = System.nanoTime();
-        return true;
-      } catch (Exception e) {
-        log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
-      }
+  private boolean updateLiveNodes(String liveNode) {
+    try (SolrClient client = getSolrClient(liveNode)) {
+      this.liveNodes = fetchLiveNodes(client);
+      liveNodesTimestamp = System.nanoTime();
+      return true;
+    } catch (Exception e) {
+      log.warn("Attempt to fetch cluster state from {} failed.", liveNode, e);
     }
     return false;
   }
@@ -397,6 +398,19 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + "ZkClientClusterStateProvider can be used for this."); // TODO
   }
 
+  private List<URL> setConfiguredNodes(List<String> solrUrls) {
+    return solrUrls.stream()
+        .map(
+            (solrUrl) -> {
+              try {
+                return new URI(solrUrl).toURL();
+              } catch (MalformedURLException | URISyntaxException e) {
+                throw new IllegalArgumentException("Failed to parse base Solr URL " + solrUrl, e);
+              }
+            })
+        .collect(Collectors.toUnmodifiableList());
+  }
+
   @Override
   public Object getClusterProperty(String propertyName) {
     if (propertyName.equals(ClusterState.URL_SCHEME)) {
@@ -421,19 +435,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       return null;
     }
     return String.join(",", this.liveNodes);
-  }
-
-  public List<String> getNodeNamesFromSolrUrls(List<String> urls) {
-    return urls.stream()
-        .map(
-            (url) -> {
-              try {
-                return URLUtil.getNodeNameForBaseUrl(url);
-              } catch (MalformedURLException | URISyntaxException e) {
-                throw new IllegalArgumentException("Failed to parse base Solr URL " + url, e);
-              }
-            })
-        .collect(Collectors.toUnmodifiableList());
   }
 
   private enum ClusterStateRequestType {

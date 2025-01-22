@@ -218,7 +218,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       assertEquals(1, actualLiveNodes.size());
       assertEquals(Set.of(nodeName2), actualLiveNodes);
 
-      cluster.startJettySolrRunner(jettyNode1);
+      cluster.startJettySolrRunner(jettyNode1, true);
       cluster.stopJettySolrRunner(jettyNode2);
       waitForCSPCacheTimeout();
 
@@ -255,7 +255,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       assertEquals(Set.of(nodeName3), actualKnownNodes);
 
       // Bring back a backup node and take down the new node
-      cluster.startJettySolrRunner(jettyNode2);
+      cluster.startJettySolrRunner(jettyNode2, true);
       cluster.stopJettySolrRunner(jettyNode3);
       waitForCSPCacheTimeout();
 
