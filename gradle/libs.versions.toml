@@ -154,7 +154,7 @@ nodegradle-node = "7.0.1"
 nodejs = "16.20.2"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"
-opentelemetry = "1.40.0"
+opentelemetry = "1.46.0"
 osgi-annotation = "8.1.0"
 # @keep for version alignment
 ow2-asm = "9.3"
