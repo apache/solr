@@ -134,7 +134,7 @@ jersey = "3.1.9"
 # TODO Sync with jersey versions
 jersey-containers = "2.39.1"
 # @keep for version alignment
-joda-time = "2.8.1"
+joda-time = "2.13.0"
 junit = "4.13.2"
 langchain4j = "0.35.0"
 # @keep Link checker version used in ref-guide
