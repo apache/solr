@@ -68,7 +68,19 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.solrj.cache.timeout.sec", 5);
 
   public void init(List<String> solrUrls) throws Exception {
-    this.configuredNodes = setConfiguredNodes(solrUrls);
+    this.configuredNodes =
+        solrUrls.stream()
+            .map(
+                (solrUrl) -> {
+                  try {
+                    return new URI(solrUrl).toURL();
+                  } catch (MalformedURLException | URISyntaxException e) {
+                    throw new IllegalArgumentException(
+                        "Failed to parse base Solr URL " + solrUrl, e);
+                  }
+                })
+            .collect(Collectors.toList());
+
     for (String solrUrl : solrUrls) {
       urlScheme = solrUrl.startsWith("https") ? "https" : "http";
       try (SolrClient initialClient = getSolrClient(solrUrl)) {
@@ -396,19 +408,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         "Fetching cluster properties not supported"
             + " using the HttpClusterStateProvider. "
             + "ZkClientClusterStateProvider can be used for this."); // TODO
-  }
-
-  private List<URL> setConfiguredNodes(List<String> solrUrls) {
-    return solrUrls.stream()
-        .map(
-            (solrUrl) -> {
-              try {
-                return new URI(solrUrl).toURL();
-              } catch (MalformedURLException | URISyntaxException e) {
-                throw new IllegalArgumentException("Failed to parse base Solr URL " + solrUrl, e);
-              }
-            })
-        .collect(Collectors.toUnmodifiableList());
   }
 
   @Override
