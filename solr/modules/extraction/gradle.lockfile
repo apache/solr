@@ -3,7 +3,7 @@
 # This file is expected to be part of source control.
 com.adobe.xmp:xmpcore:6.1.10=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 com.beust:jcommander:1.82=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
-com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.1=jarValidation,testCompileClasspath,testRuntimeClasspath
+com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.2=jarValidation,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.epam:parso:2.0.14=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.18.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath

@@ -3,7 +3,7 @@
 # This file is expected to be part of source control.
 ch.qos.logback:logback-classic:1.2.13=permitTestUnusedDeclared
 ch.qos.logback:logback-core:1.2.13=permitTestUnusedDeclared
-com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.1=jarValidation,testCompileClasspath,testRuntimeClasspath
+com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.2=jarValidation,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.18.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-core:2.18.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
