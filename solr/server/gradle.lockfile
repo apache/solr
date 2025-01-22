@@ -2,13 +2,13 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.core:jackson-annotations:2.18.0=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.core:jackson-core:2.18.0=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.core:jackson-databind:2.18.0=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.0=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.0=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.18.0=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson:jackson-bom:2.18.0=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.core:jackson-annotations:2.18.2=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.core:jackson-core:2.18.2=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.core:jackson-databind:2.18.2=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.2=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.18.2=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson:jackson-bom:2.18.2=jarValidation,runtimeClasspath,solrCore
 com.fasterxml.woodstox:woodstox-core:7.0.0=jarValidation,runtimeClasspath,solrCore
 com.github.ben-manes.caffeine:caffeine:3.1.8=annotationProcessor,errorprone,jarValidation,runtimeClasspath,solrCore,testAnnotationProcessor
 com.github.kevinstern:software-and-algorithms:1.0=annotationProcessor,errorprone,testAnnotationProcessor
