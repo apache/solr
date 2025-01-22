@@ -139,7 +139,7 @@ junit = "4.13.2"
 langchain4j = "0.35.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
-littlerobots-versioncatalogupdate = "0.8.4"
+littlerobots-versioncatalogupdate = "0.8.5"
 lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
 mockito = "5.12.0"
