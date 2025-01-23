@@ -48,7 +48,7 @@ apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.2"
 # @keep for version alignment
 apiguardian = "1.1.2"
-aqute-bnd = "6.4.1"
+aqute-bnd = "7.1.0"
 # @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
