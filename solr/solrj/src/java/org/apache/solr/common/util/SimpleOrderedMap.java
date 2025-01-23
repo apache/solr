@@ -107,6 +107,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
 
   /**
    * Has linear lookup time O(N)
+   *
    * @see NamedList#get(String)
    */
   @Override
@@ -115,13 +116,14 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   }
 
   /**
-   * Associates the specified value with the specified key in this map
-   * If the map previously contained a mapping for the key, the old value is replaced by the specified value.
+   * Associates the specified value with the specified key in this map If the map previously
+   * contained a mapping for the key, the old value is replaced by the specified value.
    *
-   * @param key  key with which the specified value is to be associated value – value to be associated with the specified key
-   * @param value to be associated with the specified key            
-   * @return the previous value associated with key, or null if there was no mapping for key. 
-   * (A null return can also indicate that the map previously associated null with key)
+   * @param key key with which the specified value is to be associated value – value to be
+   *     associated with the specified key
+   * @param value to be associated with the specified key
+   * @return the previous value associated with key, or null if there was no mapping for key. (A
+   *     null return can also indicate that the map previously associated null with key)
    */
   @Override
   public T put(String key, T value) {
@@ -145,9 +147,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   }
 
   /**
-   * Copies all of the mappings from the specified map to this map.
-   * These mappings will replace any mappings that this map had for
-   * any of the keys currently in the specified map.
+   * Copies all of the mappings from the specified map to this map. These mappings will replace any
+   * mappings that this map had for any of the keys currently in the specified map.
    *
    * @param m mappings to be stored in this map
    * @throws NullPointerException if the specified map is null
@@ -158,8 +159,9 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   }
 
   /**
-   * return a  {@link Set} of all keys in the map.
-   * @return  {@link Set} of all keys in the map
+   * return a {@link Set} of all keys in the map.
+   *
+   * @return {@link Set} of all keys in the map
    */
   @Override
   public Set<String> keySet() {
@@ -168,6 +170,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
 
   /**
    * return a {@link Collection} of all values in the map.
+   *
    * @return {@link Collection} of all values in the map
    */
   @Override
@@ -176,8 +179,9 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   }
 
   /**
-   * Returns a {@link Set} view of the mappings contained in this map. 
-   * @return  {@link Set} view of mappings
+   * Returns a {@link Set} view of the mappings contained in this map.
+   *
+   * @return {@link Set} view of mappings
    */
   @Override
   public Set<Entry<String, T>> entrySet() {
@@ -212,7 +216,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   public static SimpleOrderedMap<Object> of() {
     return EMPTY;
   }
-  
+
   private class InnerMap extends AbstractMap<String, T> {
     @Override
     public Set<Entry<String, T>> entrySet() {
