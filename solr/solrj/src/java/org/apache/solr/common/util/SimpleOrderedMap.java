@@ -87,6 +87,12 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     return this.indexOf((String) key) >= 0;
   }
 
+  /**
+   * Returns {@code true} if this map maps one or more keys to the specified value.
+   *
+   * @param value value whose presence in this map is to be tested
+   * @return {@code true} if this map maps one or more keys to the specified value
+   */
   @Override
   public boolean containsValue(final Object value) {
     int sz = size();
@@ -99,11 +105,24 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     return false;
   }
 
+  /**
+   * Has linear lookup time O(N)
+   * @see NamedList#get(String)
+   */
   @Override
   public T get(final Object key) {
     return super.get((String) key);
   }
 
+  /**
+   * Associates the specified value with the specified key in this map
+   * If the map previously contained a mapping for the key, the old value is replaced by the specified value.
+   *
+   * @param key  key with which the specified value is to be associated value – value to be associated with the specified key
+   * @param value to be associated with the specified key            
+   * @return the previous value associated with key, or null if there was no mapping for key. 
+   * (A null return can also indicate that the map previously associated null with key)
+   */
   @Override
   public T put(String key, T value) {
     int idx = indexOf(key);
@@ -117,33 +136,49 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     }
   }
 
+  /**
+   * @see NamedList#remove(String)
+   */
   @Override
   public T remove(final Object key) {
     return super.remove((String) key);
   }
 
+  /**
+   * Copies all of the mappings from the specified map to this map.
+   * These mappings will replace any mappings that this map had for
+   * any of the keys currently in the specified map.
+   *
+   * @param m mappings to be stored in this map
+   * @throws NullPointerException if the specified map is null
+   */
   @Override
   public void putAll(final Map<? extends String, ? extends T> m) {
     m.forEach(this::put);
   }
 
-  private class InnerMap extends AbstractMap<String, T> {
-    @Override
-    public Set<Entry<String, T>> entrySet() {
-      return SimpleOrderedMap.this.entrySet();
-    }
-  }
-
+  /**
+   * return a  {@link Set} of all keys in the map.
+   * @return  {@link Set} of all keys in the map
+   */
   @Override
   public Set<String> keySet() {
     return new InnerMap().keySet();
   }
 
+  /**
+   * return a {@link Collection} of all values in the map.
+   * @return {@link Collection} of all values in the map
+   */
   @Override
   public Collection<T> values() {
     return new InnerMap().values();
   }
 
+  /**
+   * Returns a {@link Set} view of the mappings contained in this map. 
+   * @return  {@link Set} view of mappings
+   */
   @Override
   public Set<Entry<String, T>> entrySet() {
 
@@ -161,20 +196,27 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   }
 
   /**
-   * Returns an immutable instance of SimpleOrderedMap with a single key-value pair.
+   * Returns an immutable instance of {@link SimpleOrderedMap} with a single key-value pair.
    *
-   * @return SimpleOrderedMap containing one key-value pair
+   * @return {@link SimpleOrderedMap} containing one key-value pair
    */
   public static <T> SimpleOrderedMap<T> of(String name, T val) {
     return new SimpleOrderedMap<T>(List.of(name, val));
   }
 
   /**
-   * Returns a shared, empty, and immutable instance of SimpleOrderedMap.
+   * Returns a shared, empty, and immutable instance of {@link SimpleOrderedMap}.
    *
-   * @return Empty SimpleOrderedMap (immutable)
+   * @return Empty {@link SimpleOrderedMap} (immutable)
    */
   public static SimpleOrderedMap<Object> of() {
     return EMPTY;
+  }
+  
+  private class InnerMap extends AbstractMap<String, T> {
+    @Override
+    public Set<Entry<String, T>> entrySet() {
+      return SimpleOrderedMap.this.entrySet();
+    }
   }
 }

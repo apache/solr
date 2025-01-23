@@ -28,6 +28,12 @@ public class SimpleOrderedMapTest extends SolrTestCase {
 
     assertEquals(oldValue, oldValue);
   }
+  
+  public void testPutReturnNullForNullValue() {
+    Integer oldValue = map.put("one", null);
+
+    assertNull(oldValue);
+  }
 
   public void testPutReplaceExistingValue() {
     map.put("one", 1);
