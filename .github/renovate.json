@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "includePaths": ["versions.*", "build.gradle", ".github/workflows/*"],
+  "postUpgradeTasks": {
+    "commands": ["./gradlew updateLicenses"],
+    "fileFilters": ["solr/licenses/*.sha1"],
+    "executionMode": "branch"
+  },
+  "schedule": ["* * * * *"],
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 3,
+  "branchPrefix": "renovate-9x/",
+  "commitMessageSuffix": " (branch_9x)",
+  "dryRun": "extract"
+}
