@@ -293,7 +293,10 @@ public class Grouping {
     qr.setDocListAndSet(out);
 
     SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilterList());
-    final Query filterQuery = pf.filter;
+
+    final Query filterQuery = pf.filter == null ?
+            new MatchAllDocsQuery() :
+            pf.filter;
     maxDoc = searcher.maxDoc();
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
