@@ -17,18 +17,11 @@
 
 package org.apache.solr.llm.texttovector.update.processor;
 
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.texttovector.model.SolrTextToVectorModel;
-import org.apache.solr.llm.texttovector.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.rest.ManagedResource;
-import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -40,34 +33,17 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
  * in input a series of parameter that will be necessary to instantiate and use the embedder
  *
  */
-public class TextEmbedderUpdateProcessorFactory extends UpdateRequestProcessorFactory implements ResourceLoaderAware, ManagedResourceObserver {
+public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
     private static final String INPUT_FIELD_PARAM = "inputField";
   private static final String OUTPUT_FIELD_PARAM = "outputField";
   private static final String EMBEDDING_MODEl_NAME_PARAM = "model";
 
-    private String  inputField;
-  private String  outputField;
-  private String  embeddingModelName;
-  private ManagedTextToVectorModelStore modelStore = null;
-  private SolrTextToVectorModel textToVector;
-  private SolrParams params;
+  String  inputField;
+  String  outputField;
+  String  embeddingModelName;
+  SolrParams params;
 
-    @Override
-    public void inform(ResourceLoader loader) {
-        final SolrResourceLoader solrResourceLoader = (SolrResourceLoader) loader;
-        ManagedTextToVectorModelStore.registerManagedTextToVectorModelStore(solrResourceLoader, this);
-    }
-
-    @Override
-    public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
-            throws SolrException {
-        if (res instanceof ManagedTextToVectorModelStore) {
-            modelStore = (ManagedTextToVectorModelStore) res;
-        }
-        if (modelStore != null) {
-            modelStore.loadStoredModels();
-        }
-    }
+    
     
   @Override
   public void init(final NamedList<?> args) {
@@ -79,20 +55,8 @@ public class TextEmbedderUpdateProcessorFactory extends UpdateRequestProcessorFa
           outputField = params.get(OUTPUT_FIELD_PARAM);
           checkNotNull(OUTPUT_FIELD_PARAM, outputField);
           
-          
-
           embeddingModelName = params.get(EMBEDDING_MODEl_NAME_PARAM);
           checkNotNull(EMBEDDING_MODEl_NAME_PARAM, embeddingModelName);
-
-          textToVector = modelStore.getModel(embeddingModelName);
-          if (textToVector == null) {
-              throw new SolrException(
-                      SolrException.ErrorCode.BAD_REQUEST,
-                      "The model requested '"
-                              + embeddingModelName
-                              + "' can't be found in the store: "
-                              + ManagedTextToVectorModelStore.REST_END_POINT);
-          }
       }
   }
 
@@ -100,7 +64,7 @@ public class TextEmbedderUpdateProcessorFactory extends UpdateRequestProcessorFa
     if (param == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Text Embedder UpdateProcessor '" + paramName + "' can not be null");
+          "Text to Vector UpdateProcessor '" + paramName + "' can not be null");
     }
   }
 
@@ -111,7 +75,7 @@ public class TextEmbedderUpdateProcessorFactory extends UpdateRequestProcessorFa
     final SchemaField outputFieldSchema = req.getCore().getLatestSchema().getField(outputField);
     assertIsDenseVectorField(outputFieldSchema);
 
-    return new TextEmbedderUpdateProcessor(inputField, outputField, textToVector, next);
+    return new TexToVectorUpdateProcessor(inputField, outputField, embeddingModelName, req, next);
   }
 
     protected void assertIsDenseVectorField(SchemaField schemaField) {
@@ -131,7 +95,7 @@ public class TextEmbedderUpdateProcessorFactory extends UpdateRequestProcessorFa
         return outputField;
     }
 
-    public SolrTextToVectorModel getTextToVector() {
-        return textToVector;
+    public String getEmbeddingModelName() {
+        return embeddingModelName;
     }
 }

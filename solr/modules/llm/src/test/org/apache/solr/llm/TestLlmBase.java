@@ -45,17 +45,19 @@ public class TestLlmBase extends RestTestBase {
   protected static Path embeddingModelStoreFile = null;
 
   protected static String IDField = "id";
+  protected static String textField = "_text_";
   protected static String vectorField = "vector";
   protected static String vectorField2 = "vector2";
   protected static String vectorFieldByteEncoding = "vector_byte_encoding";
 
   protected static void setupTest(
-      String solrconfig, String schema, boolean buildIndex, boolean persistModelStore)
+          String solrconfig, String schema, boolean buildIndexWithVectors, boolean buildIndexWithText, boolean persistModelStore)
       throws Exception {
     initFolders(persistModelStore);
     createJettyAndHarness(
         tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
-    if (buildIndex) prepareIndex();
+    if (buildIndexWithVectors) prepareIndex(false);
+    if (buildIndexWithText) prepareIndex(true);
   }
 
   protected static void initFolders(boolean isPersistent) throws Exception {
@@ -111,12 +113,17 @@ public class TestLlmBase extends RestTestBase {
         ManagedTextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
 
-  protected static void prepareIndex() throws Exception {
-    List<SolrInputDocument> docsToIndex = prepareDocs();
+  protected static void prepareIndex(boolean textual) throws Exception {
+    List<SolrInputDocument> docsToIndex;
+    if(textual){
+      docsToIndex = prepareTextualDocs();
+    } else {
+      docsToIndex = prepareTextualDocs();
+    }
+
     for (SolrInputDocument doc : docsToIndex) {
       assertU(adoc(doc));
     }
-
     assertU(commit());
   }
 
@@ -174,6 +181,28 @@ public class TestLlmBase extends RestTestBase {
     docs.get(5).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
     docs.get(6).addField(vectorFieldByteEncoding, Arrays.asList(18, 2, 4, 4));
     docs.get(7).addField(vectorFieldByteEncoding, Arrays.asList(8, 3, 2, 4));
+
+    return docs;
+  }
+
+  private static List<SolrInputDocument> prepareTextualDocs() {
+    int docsCount = 13;
+    List<SolrInputDocument> docs = new ArrayList<>(docsCount);
+    for (int i = 1; i < docsCount + 1; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(IDField, i);
+      docs.add(doc);
+    }
+
+    docs.get(0)
+            .addField(textField, "Vegeta is the prince of all saiyans."); // cosine distance vector1= 1.0
+    docs.get(1)
+            .addField(
+                    textField, "Goku, also known as Kakaroth is a saiyan grown up on Earth."); // cosine distance vector1= 0.998
+    docs.get(2)
+            .addField(
+                    textField,
+                    Arrays.asList("Gohan is a Saiya-man hybrid.")); // cosine distance vector1= 0.992
 
     return docs;
   }
