@@ -302,7 +302,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
           // we know these are unequal but call assert instead of fail() because it gives a better
           // error message
           assertEquals(
-              "Failed on path " + key + " of " + description + "after attempt #" + (i + 1),
+              "Failed on path " + key + " of " + description + " after attempt #" + (i + 1),
               val,
               Utils.toJSONString(actual));
         }

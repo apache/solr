@@ -120,8 +120,7 @@ public class SchemaManager {
         errors = CommandOperation.captureErrors(operations);
         if (!errors.isEmpty()) break;
         SolrResourceLoader loader = req.getCore().getResourceLoader();
-        if (loader instanceof ZkSolrResourceLoader) {
-          ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+        if (loader instanceof ZkSolrResourceLoader zkLoader) {
           StringWriter sw = new StringWriter();
           try {
             managedIndexSchema.persist(sw);
@@ -484,8 +483,7 @@ public class SchemaManager {
 
     SolrResourceLoader resourceLoader = core.getResourceLoader();
     String schemaResourceName = core.getLatestSchema().getResourceName();
-    if (resourceLoader instanceof ZkSolrResourceLoader) {
-      final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) resourceLoader;
+    if (resourceLoader instanceof ZkSolrResourceLoader zkLoader) {
       SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
       String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + schemaResourceName;
       try {

@@ -69,8 +69,7 @@ public class StrField extends PrimitiveFieldType {
   }
 
   public static BytesRef getBytesRef(Object value) {
-    if (value instanceof ByteArrayUtf8CharSequence) {
-      ByteArrayUtf8CharSequence utf8 = (ByteArrayUtf8CharSequence) value;
+    if (value instanceof ByteArrayUtf8CharSequence utf8) {
       return new BytesRef(utf8.getBuf(), utf8.offset(), utf8.size());
     } else return new BytesRef(value.toString());
   }

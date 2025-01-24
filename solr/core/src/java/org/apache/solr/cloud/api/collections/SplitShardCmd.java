@@ -1126,8 +1126,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         }
       }
     } else if (splitKey != null) {
-      if (router instanceof CompositeIdRouter) {
-        CompositeIdRouter compositeIdRouter = (CompositeIdRouter) router;
+      if (router instanceof CompositeIdRouter compositeIdRouter) {
         List<DocRouter.Range> tmpSubRanges = compositeIdRouter.partitionRangeByKey(splitKey, range);
         if (tmpSubRanges.size() == 1) {
           throw new SolrException(

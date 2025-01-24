@@ -165,11 +165,10 @@ public abstract class FieldMutatingUpdateProcessorFactory extends UpdateRequestP
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "'exclude' init param can not be null");
       }
-      if (!(excObj instanceof NamedList)) {
+      if (!(excObj instanceof NamedList<?> exc)) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "'exclude' init param must be <lst/>");
       }
-      NamedList<?> exc = (NamedList<?>) excObj;
       exclusions.add(parseSelectorParams(exc));
       if (0 < exc.size()) {
         throw new SolrException(

@@ -52,8 +52,7 @@ public class RequestParams implements MapSerializable {
     Map<?, ?> paramsets = (Map<?, ?>) data.get(NAME);
     if (paramsets != null) {
       for (Map.Entry<?, ?> e : paramsets.entrySet()) {
-        if (e.getValue() instanceof Map) {
-          Map<?, ?> value = (Map<?, ?>) e.getValue();
+        if (e.getValue() instanceof Map<?, ?> value) {
           this.paramsets.put((String) e.getKey(), createParamSet(value, 0l));
         }
       }
@@ -87,8 +86,7 @@ public class RequestParams implements MapSerializable {
         }
       } else if (entry.getValue() == null) {
         copy.put(entry.getKey(), null);
-      } else if (entry.getValue() instanceof List) {
-        List<?> l = (List<?>) entry.getValue();
+      } else if (entry.getValue() instanceof List<?> l) {
         String[] sarr = new String[l.size()];
         for (int i = 0; i < l.size(); i++) {
           if (l.get(i) != null) sarr[i] = String.valueOf(l.get(i));
@@ -138,8 +136,7 @@ public class RequestParams implements MapSerializable {
 
   public static RequestParams getFreshRequestParams(
       SolrResourceLoader loader, RequestParams requestParams) {
-    if (loader instanceof ZkSolrResourceLoader) {
-      ZkSolrResourceLoader resourceLoader = (ZkSolrResourceLoader) loader;
+    if (loader instanceof ZkSolrResourceLoader resourceLoader) {
       try {
         Stat stat =
             resourceLoader

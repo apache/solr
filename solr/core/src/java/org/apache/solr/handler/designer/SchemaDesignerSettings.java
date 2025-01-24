@@ -144,8 +144,7 @@ class SchemaDesignerSettings implements SchemaDesignerConstants {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof SchemaDesignerSettings)) return false;
-    SchemaDesignerSettings that = (SchemaDesignerSettings) o;
+    if (!(o instanceof SchemaDesignerSettings that)) return false;
     return isDisabled == that.isDisabled
         && dynamicFieldsEnabled == that.dynamicFieldsEnabled
         && nestedDocsEnabled == that.nestedDocsEnabled

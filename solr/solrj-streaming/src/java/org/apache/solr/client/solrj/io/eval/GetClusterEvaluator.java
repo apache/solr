@@ -35,7 +35,7 @@ public class GetClusterEvaluator extends RecursiveObjectEvaluator implements Two
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if (!(value1 instanceof KmeansEvaluator.ClusterTuple)) {
+    if (!(value1 instanceof KmeansEvaluator.ClusterTuple clusterTuple)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -44,7 +44,6 @@ public class GetClusterEvaluator extends RecursiveObjectEvaluator implements Two
               value1.getClass().getSimpleName()));
     } else {
 
-      KmeansEvaluator.ClusterTuple clusterTuple = (KmeansEvaluator.ClusterTuple) value1;
       List<CentroidCluster<KmeansEvaluator.ClusterPoint>> clusters = clusterTuple.getClusters();
 
       Number index = (Number) value2;

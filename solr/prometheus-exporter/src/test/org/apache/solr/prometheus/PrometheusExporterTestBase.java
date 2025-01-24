@@ -28,7 +28,8 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
 
   public static final String COLLECTION = "collection1";
   public static final String CONF_NAME = COLLECTION + "_config";
-  public static final String CONF_DIR = getFile("solr/" + COLLECTION + "/conf").getAbsolutePath();
+  public static final String CONF_DIR =
+      getFile("solr/" + COLLECTION + "/conf").toAbsolutePath().toString();
   public static final int NUM_SHARDS = 2;
   public static final int NUM_REPLICAS = 2;
   public static final int NUM_NODES = NUM_SHARDS * NUM_REPLICAS;
@@ -60,7 +61,7 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
-    configureCluster(NUM_NODES).addConfig(CONF_NAME, getFile(CONF_DIR).toPath()).configure();
+    configureCluster(NUM_NODES).addConfig(CONF_NAME, getFile(CONF_DIR)).configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, CONF_NAME, NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());

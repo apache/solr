@@ -62,8 +62,7 @@ public class SliceMutator {
   }
 
   static SolrZkClient getZkClient(SolrCloudManager cloudManager) {
-    if (cloudManager instanceof SolrClientCloudManager) {
-      SolrClientCloudManager manager = (SolrClientCloudManager) cloudManager;
+    if (cloudManager instanceof SolrClientCloudManager manager) {
       return manager.getZkClient();
     } else {
       return null;

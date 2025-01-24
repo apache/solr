@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -86,8 +85,10 @@ public class PostToolTest extends SolrCloudTestCase {
 
     String[] args = {
       "post",
-      "--solr-update-url",
-      cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection + "/update",
+      "--solr-url",
+      cluster.getJettySolrRunner(0).getBaseUrl().toString(),
+      "--name",
+      collection,
       "--credentials",
       SecurityJson.USER_PASS,
       jsonDoc.getAbsolutePath()
@@ -256,7 +257,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAppendUrlPath() throws URISyntaxException {
+  public void testAppendUrlPath() {
     assertEquals(
         URI.create("http://[ff01::114]/a?foo=bar"),
         PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
@@ -280,20 +281,21 @@ public class PostToolTest extends SolrCloudTestCase {
   @Test
   public void testGuessType() {
     File f = new File("foo.doc");
-    assertEquals("application/msword", PostTool.guessType(f));
+    assertEquals("application/msword", PostTool.guessType(f.toPath()));
     f = new File("foobar");
-    assertEquals("application/octet-stream", PostTool.guessType(f));
+    assertEquals("application/octet-stream", PostTool.guessType(f.toPath()));
     f = new File("foo.json");
-    assertEquals("application/json", PostTool.guessType(f));
+    assertEquals("application/json", PostTool.guessType(f.toPath()));
   }
 
   @Test
-  public void testDoFilesMode() throws MalformedURLException {
+  public void testDoFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
-    File dir = getFile("exampledocs");
+    // TODO SOLR-8282 move to PATH
+    File dir = getFile("exampledocs").toFile();
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
   }
@@ -302,7 +304,7 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testDetectingIfRecursionPossibleInFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
-    File dir = getFile("exampledocs");
+    File dir = getFile("exampledocs").toFile();
     File doc = File.createTempFile("temp", ".json");
     assertTrue(postTool.recursionPossible(new String[] {dir.toString()}));
     assertFalse(postTool.recursionPossible(new String[] {doc.toString()}));
@@ -310,12 +312,13 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testRecursionAppliesToFilesMode() throws MalformedURLException {
+  public void testRecursionAppliesToFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
-    File dir = getFile("exampledocs");
+    // TODO SOLR-8282 move to PATH
+    File dir = getFile("exampledocs").toFile();
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
   }
@@ -405,17 +408,15 @@ public class PostToolTest extends SolrCloudTestCase {
       linkMap.put("http://[ff01::114]/page2", s);
 
       // Simulate a robots.txt file with comments and a few disallows
-      StringBuilder sb = new StringBuilder();
-      sb.append(
-          "# Comments appear after the \"#\" symbol at the start of a line, or after a directive\n");
-      sb.append("User-agent: * # match all bots\n");
-      sb.append("Disallow:  # This is void\n");
-      sb.append("Disallow: /disallow # Disallow this path\n");
-      sb.append("Disallow: /nonexistentpath # Disallow this path\n");
+      String sb =
+          "# Comments appear after the \"#\" symbol at the start of a line, or after a directive\n"
+              + "User-agent: * # match all bots\n"
+              + "Disallow:  # This is void\n"
+              + "Disallow: /disallow # Disallow this path\n"
+              + "Disallow: /nonexistentpath # Disallow this path\n";
       this.robotsCache.put(
           "[ff01::114]",
-          super.parseRobotsTxt(
-              new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8))));
+          super.parseRobotsTxt(new ByteArrayInputStream(sb.getBytes(StandardCharsets.UTF_8))));
     }
 
     @Override

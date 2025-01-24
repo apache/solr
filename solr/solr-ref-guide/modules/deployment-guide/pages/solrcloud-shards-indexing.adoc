@@ -25,7 +25,7 @@ For example, you might have a collection where the "country" field of each docum
 A different collection might simply use a "hash" on the uniqueKey of each document to determine its Shard.
 
 There is support for distributing both the index process and the queries automatically, and ZooKeeper provides failover and load balancing.
-As well as supporting replication, automatic index spliting to shards, there is support for automatic routing of documents to specific shards by a sharding strategy.
+As well as supporting replication, automatic index splitting into shards, there is support for automatic routing of documents to specific shards by a sharding strategy.
 Additionally, every shard can have multiple replicas for additional robustness.
 
 == Leaders and Replicas
@@ -138,7 +138,7 @@ At query time, you include the prefix(es) along with the number of bits into you
 If you do not want to influence how documents are stored, you don't need to specify a prefix in your document ID.
 
 If you created the collection and defined the "implicit" router at the time of creation, you can additionally define a `router.field` parameter to use a field from each document to identify a shard where the document belongs.
-If the field specified is missing in the document, however, the document will be rejected.
+If the field specified is missing in the document, then the document will be rejected.
 You could also use the `\_route_` parameter to name a specific shard.
 
 == Shard Splitting

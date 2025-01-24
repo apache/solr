@@ -84,9 +84,7 @@ public class FieldUtil {
   public static void visitOrds(SortedDocValues singleDv, DocIdSetIterator disi, OrdFunc ordFunc)
       throws IOException {
     int doc;
-    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
-      FieldCacheImpl.SortedDocValuesImpl.Iter fc =
-          (FieldCacheImpl.SortedDocValuesImpl.Iter) singleDv;
+    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter fc) {
       while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         ordFunc.handleOrd(doc, fc.getOrd(doc));
       }
@@ -102,9 +100,7 @@ public class FieldUtil {
   }
 
   public static OrdValues getOrdValues(SortedDocValues singleDv, DocIdSetIterator disi) {
-    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
-      FieldCacheImpl.SortedDocValuesImpl.Iter fc =
-          (FieldCacheImpl.SortedDocValuesImpl.Iter) singleDv;
+    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter fc) {
       return new FCOrdValues(fc, disi);
     }
     return new DVOrdValues(singleDv, disi);

@@ -162,14 +162,12 @@ public class FieldComparator implements StreamComparator {
     if (null == base) {
       return false;
     }
-    if (base instanceof FieldComparator) {
-      FieldComparator baseComp = (FieldComparator) base;
+    if (base instanceof FieldComparator baseComp) {
       return (leftFieldName.equals(baseComp.leftFieldName)
               || rightFieldName.equals(baseComp.rightFieldName))
           && order == baseComp.order;
-    } else if (base instanceof MultipleFieldComparator) {
+    } else if (base instanceof MultipleFieldComparator baseComps) {
       // must equal the first one
-      MultipleFieldComparator baseComps = (MultipleFieldComparator) base;
       if (baseComps.getComps().length > 0) {
         return isDerivedFrom(baseComps.getComps()[0]);
       }
@@ -194,8 +192,7 @@ public class FieldComparator implements StreamComparator {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof FieldComparator)) return false;
-    FieldComparator that = (FieldComparator) o;
+    if (!(o instanceof FieldComparator that)) return false;
     // comparator is based on the other fields so is not needed in this compare
     return leftFieldName.equals(that.leftFieldName)
         && rightFieldName.equals(that.rightFieldName)

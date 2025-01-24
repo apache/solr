@@ -55,14 +55,8 @@
 #-XX:SurvivorRatio=4 \
 #-XX:TargetSurvivorRatio=90 \
 #-XX:MaxTenuringThreshold=8 \
-#-XX:+UseConcMarkSweepGC \
-#-XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 \
-#-XX:+CMSScavengeBeforeRemark \
+#-XX:ParallelGCThreads=4 \
 #-XX:PretenureSizeThreshold=64m \
-#-XX:+UseCMSInitiatingOccupancyOnly \
-#-XX:CMSInitiatingOccupancyFraction=50 \
-#-XX:CMSMaxAbortablePrecleanTime=6000 \
-#-XX:+CMSParallelRemarkEnabled \
 #-XX:+ParallelRefProcEnabled        etc.
 
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
@@ -102,7 +96,7 @@
 
 # Anything you add to the SOLR_OPTS variable will be included in the java
 # start command line as-is, in ADDITION to other options. If you specify the
-# -a option on start script, those options will be appended as well. Examples:
+# --jvm-opts option on start script, those options will be appended as well. Examples:
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=3000"
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoCommit.maxTime=60000"
 
@@ -279,7 +273,7 @@
 # other directory, which will implicitly enable heap dumping. Dump name pattern will be solr-[timestamp]-pid[###].hprof
 # When using this feature, it is recommended to have an external service monitoring the given dir.
 # If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
-# See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
+# See https://docs.oracle.com/en/java/javase/21/troubleshoot/command-line-options1.html
 # You can test this behavior by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps

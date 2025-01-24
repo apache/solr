@@ -381,8 +381,7 @@ public class SolrReturnFields extends ReturnFields {
         ValueSource vs = null;
 
         try {
-          if (parser instanceof FunctionQParser) {
-            FunctionQParser fparser = (FunctionQParser) parser;
+          if (parser instanceof FunctionQParser fparser) {
             fparser.setParseMultipleSources(false);
             fparser.setParseToEnd(false);
 

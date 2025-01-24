@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -46,24 +47,19 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ChaosMonkey;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClusterStateUtil;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -383,79 +379,58 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
             .filter(jetty -> jetty.getCoreContainer() != null)
             .map(JettySolrRunner::getNodeName)
             .collect(Collectors.toSet());
-    long timeout =
-        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
-    boolean success = false;
-    while (!success && System.nanoTime() < timeout) {
-      success = true;
-      ClusterState clusterState = zkStateReader.getClusterState();
-      if (clusterState != null) {
-        Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-        for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-          DocCollection docCollection = entry.getValue();
-          Collection<Slice> slices = docCollection.getSlices();
-          for (Slice slice : slices) {
-            // only look at active shards
-            if (slice.getState() == Slice.State.ACTIVE) {
-              Collection<Replica> replicas = slice.getReplicas();
-              for (Replica replica : replicas) {
-                if (nodeNames.contains(replica.getNodeName())) {
-                  boolean live = clusterState.liveNodesContain(replica.getNodeName());
-                  if (live) {
-                    success = false;
-                  }
-                }
-              }
-            }
-          }
-        }
-        if (!success) {
-          try {
-            Thread.sleep(500);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted");
-          }
-        }
-      }
-    }
-
-    return success;
+    return ClusterStateUtil.waitFor(
+        zkStateReader,
+        null,
+        timeoutInMs,
+        TimeUnit.MILLISECONDS,
+        (liveNodes, state) ->
+            ClusterStateUtil.replicasOfActiveSlicesStream(state)
+                .noneMatch(
+                    replica ->
+                        nodeNames.contains(replica.getNodeName())
+                            && liveNodes.contains(replica.getNodeName())));
   }
 
   private void assertSliceAndReplicaCount(
       String collection, int numSlices, int numReplicas, int timeOutInMs)
-      throws InterruptedException, IOException {
-    TimeOut timeOut = new TimeOut(timeOutInMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      ClusterState clusterState = cloudClient.getClusterState();
-      Collection<Slice> slices = clusterState.getCollection(collection).getActiveSlices();
-      if (slices.size() == numSlices) {
-        boolean isMatch = true;
-        for (Slice slice : slices) {
-          int count = 0;
-          for (Replica replica : slice.getReplicas()) {
-            if (replica.getState() == Replica.State.ACTIVE
-                && clusterState.liveNodesContain(replica.getNodeName())) {
-              count++;
-            }
-          }
-          if (count < numReplicas) {
-            isMatch = false;
-          }
-        }
-        if (isMatch) return;
-      }
-      Thread.sleep(200);
+      throws InterruptedException {
+
+    try {
+      ZkStateReader.from(cloudClient)
+          .waitForState(
+              collection,
+              timeOutInMs,
+              TimeUnit.MILLISECONDS,
+              (liveNodes, c) -> {
+                Collection<Slice> slices = c.getActiveSlices();
+                if (slices.size() == numSlices) {
+                  for (Slice slice : slices) {
+                    int count = 0;
+                    for (Replica replica : slice.getReplicas()) {
+                      if (replica.getState() == Replica.State.ACTIVE
+                          && liveNodes.contains(replica.getNodeName())) {
+                        count++;
+                      }
+                    }
+                    if (count < numReplicas) {
+                      return false;
+                    }
+                  }
+                  return true;
+                }
+                return false;
+              });
+    } catch (TimeoutException e) {
+      fail(
+          "Expected numSlices="
+              + numSlices
+              + " numReplicas="
+              + numReplicas
+              + " but found "
+              + cloudClient.getClusterState().getCollection(collection)
+              + " with /live_nodes: "
+              + cloudClient.getClusterState().getLiveNodes());
     }
-    fail(
-        "Expected numSlices="
-            + numSlices
-            + " numReplicas="
-            + numReplicas
-            + " but found "
-            + cloudClient.getClusterState().getCollection(collection)
-            + " with /live_nodes: "
-            + cloudClient.getClusterState().getLiveNodes());
   }
 }

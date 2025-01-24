@@ -454,9 +454,9 @@ Attempting to do so while Solr is running may result in inconsistent state and s
 The VM properties `zkCredentialsInjector`, `zkACLProvider` and `zkCredentialsProvider`, included in the `SOLR_ZK_CREDS_AND_ACLS` environment variable in `solr.in.*`, control the conversion:
 
 * The Credentials Injector reads the credentials and pass them to the Credentials Provider.
-When omitted, the process will use no credentials (suitable for an unsecure configuration).
+When omitted, the process will use no credentials (suitable for an insecure configuration).
 * The Credentials Provider uses the credentials of the user with admin privileges on the nodes.
-When omitted, the process will use no credentials (suitable for an unsecure configuration).
+When omitted, the process will use no credentials (suitable for an insecure configuration).
 * The ACL Provider will be used to compute the new ACLs.
 When omitted, the process will set all permissions to all users, removing any security present.
 

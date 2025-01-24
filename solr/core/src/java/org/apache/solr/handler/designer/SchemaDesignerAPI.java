@@ -22,7 +22,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
-import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
@@ -85,7 +84,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** All V2 APIs that have a prefix of /api/schema-designer/ */
+/** All V2 APIs have a prefix of /api/schema-designer/ */
 public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
   private static final Set<String> excludeConfigSetNames =
@@ -103,8 +102,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   public SchemaDesignerAPI(CoreContainer coreContainer) {
     this(
         coreContainer,
-        SchemaDesignerAPI.newSchemaSuggester(coreContainer),
-        SchemaDesignerAPI.newSampleDocumentsLoader(coreContainer));
+        SchemaDesignerAPI.newSchemaSuggester(),
+        SchemaDesignerAPI.newSampleDocumentsLoader());
   }
 
   SchemaDesignerAPI(
@@ -119,13 +118,13 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     this.settingsDAO = new SchemaDesignerSettingsDAO(coreContainer, configSetHelper);
   }
 
-  public static SchemaSuggester newSchemaSuggester(CoreContainer coreContainer) {
+  public static SchemaSuggester newSchemaSuggester() {
     DefaultSchemaSuggester suggester = new DefaultSchemaSuggester();
     suggester.init(new NamedList<>());
     return suggester;
   }
 
-  public static SampleDocumentsLoader newSampleDocumentsLoader(CoreContainer coreContainer) {
+  public static SampleDocumentsLoader newSampleDocumentsLoader() {
     SampleDocumentsLoader loader = new DefaultSampleDocumentsLoader();
     loader.init(new NamedList<>());
     return loader;
@@ -254,7 +253,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       try {
         InMemoryResourceLoader loader =
             new InMemoryResourceLoader(coreContainer, mutableId, SOLR_CONFIG_XML, data);
-        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, requestIsTrusted, null);
+        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, null);
       } catch (Exception exc) {
         updateFileError = exc;
       }
@@ -520,7 +519,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String mutableId = checkMutable(configSet, req);
 
-    // verify the configSet we're going to apply changes to has not changed since being loaded for
+    // verify the configSet we're going to apply changes to hasn't been changed since being loaded
+    // for
     // editing by the schema designer
     SchemaDesignerSettings settings = settingsDAO.getSettings(mutableId);
     final Optional<Integer> publishedVersion = settings.getPublishedVersion();
@@ -845,7 +845,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
                   latestSchema.getUniqueKeyField().getName(), stored, MAX_SAMPLE_DOCS);
         }
 
-        // store in the blob store so we always have access to these docs
+        // store in the blob store so that we always have access to these docs
         configSetHelper.storeSampleDocs(configSet, docs);
       }
     }
@@ -890,10 +890,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       schema = (ManagedIndexSchema) schema.addFields(fieldsToAdd);
     }
     return schema;
-  }
-
-  protected String getManagedSchemaZkPath(final String configSet) {
-    return getConfigSetZkPath(configSet, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
   }
 
   protected SchemaDesignerSettings getMutableSchemaForConfigSet(

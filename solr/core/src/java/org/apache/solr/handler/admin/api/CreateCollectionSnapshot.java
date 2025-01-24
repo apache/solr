@@ -26,7 +26,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.client.api.endpoint.CreateCollectionSnapshotApi;
+import org.apache.solr.client.api.endpoint.CollectionSnapshotApis;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -43,7 +43,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /** V2 API implementation for creating a collection-level snapshot. */
-public class CreateCollectionSnapshot extends AdminAPIBase implements CreateCollectionSnapshotApi {
+public class CreateCollectionSnapshot extends AdminAPIBase
+    implements CollectionSnapshotApis.Create {
 
   @Inject
   public CreateCollectionSnapshot(
