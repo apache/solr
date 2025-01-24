@@ -156,7 +156,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for replica win the election",
         collectionName,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica newLeader = collectionState.getSlice("shard1").getLeader();
           if (newLeader == null) {
             return false;
@@ -268,7 +268,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       waitForState(
           "Timeout waiting for new leader",
           collectionName,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             Replica newLeader = collectionState.getSlice("shard1").getLeader();
             if (newLeader == null) {
               return false;

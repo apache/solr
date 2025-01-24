@@ -14,13 +14,16 @@
 # limitations under the License.
 
 import argparse
+import os
 import re
 import subprocess
 import sys
-import os
-from enum import Enum
 import time
-import urllib.request, urllib.error, urllib.parse
+import urllib.error
+import urllib.parse
+import urllib.request
+from enum import Enum
+
 
 class Version(object):
   def __init__(self, major, minor, bugfix, prerelease):
@@ -179,7 +182,7 @@ def attemptDownload(urlString, fileName):
 
 version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
 
-lucene_version_prop_re = re.compile(r'org\.apache\.lucene:\*=(.*?)\n')
+lucene_version_prop_re = re.compile(r'^apache-lucene\s*=\s*"([a-zA-Z0-9\.\-]+)"')
 
 def find_current_version():
   script_path = os.path.dirname(os.path.realpath(__file__))
@@ -190,7 +193,7 @@ def find_current_version():
 def find_current_lucene_version():
   script_path = os.path.dirname(os.path.realpath(__file__))
   top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
-  versions_file = open('%s/versions.props' % top_level_dir).read()
+  versions_file = open('%s/gradle/libs.versions.toml' % top_level_dir).read()
   return lucene_version_prop_re.search(versions_file).group(1).strip()
 
 

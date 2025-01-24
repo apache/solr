@@ -41,10 +41,10 @@ Some key changes that you may run into are:
  * You may use `--zk-host` (or `-z`) in place of the `--solr-url` option to lookup the Solr host.
  * Basic Authentication support has been added to bin/solr via the `--credentials` (or `-u`) option.
  * Some short and single-letter options have been removed to avoid conflicts or in favor to other options.
- 
+
 To learn about the updated options in each CLI tool, use the `--help` option or look up the tool in the documentation.
 
-Additionally, the `bin/solr delete` command no longer deletes a configset when you delete a collection.  Previously if you deleted a collection, it would also delete it's associated configset if it was the only user of it.  
+Additionally, the `bin/solr delete` command no longer deletes a configset when you delete a collection.  Previously if you deleted a collection, it would also delete it's associated configset if it was the only user of it.
 Now you have to explicitly provide a  `--delete-config` option to delete the configsets.  This decouples the lifecycle of a configset from that of a collection.
 
 === SolrJ
@@ -85,7 +85,7 @@ has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_
 
 * The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead.
 
-* The `BlobRepository`, which was deprecated in 8x in favour of the `FileStore` approach is removed.   
+* The `BlobRepository`, which was deprecated in 8x in favour of the `FileStore` approach is removed.
 Users should migrate to the `FileStore` implementation (per node stored file) and the still existing `BlobHandler` (across the cluster storage backed by `.system` collection).
 Please note this also removes the ability to share resource intensive objects across multiple cores as this feature was tied to the `BlobRepository` implementation.
 
@@ -97,3 +97,5 @@ The removed writer types (invoked as part of the `wt` parameter) include `python
 * Support for the `<lib/>` directive, which historically could be used in solrconfig.xml to add JARs on a core-by-core basis, was deprecated in 9.8 and has now been removed.
 Users that need to vary JAR accessibility on a per-core basis can use Solr's xref:configuration-guide:package-manager.adoc[Package Manager].
 Users who that don't need to vary JAR access on a per-core basis have several options, including the xref:configuration-guide:configuring-solr-xml.adoc[`<sharedLib/>` tag supported by solr.xml] or manipulation of Solr's classpath prior to JVM startup.
+
+* Kerberos based authentication has been removed.  This results in changes to SolrJ, the Solr Admin app, and the removal of the `hadoop-auth` module.

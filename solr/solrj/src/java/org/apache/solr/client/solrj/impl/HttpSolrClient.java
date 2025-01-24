@@ -34,7 +34,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -71,6 +70,7 @@ import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -86,8 +86,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -99,15 +97,12 @@ import org.slf4j.MDC;
 public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
-  private static final String DEFAULT_PATH = "/select";
   private static final long serialVersionUID = -946812319974801896L;
 
   protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
 
-  /** User-Agent String. */
-  public static final String AGENT = "Solr[" + HttpSolrClient.class.getName() + "] 1.0";
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  static final String USER_AGENT =
+      "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
   static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
 
@@ -543,7 +538,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       final ResponseParser processor,
       final boolean isV2Api)
       throws SolrServerException {
-    method.addHeader("User-Agent", AGENT);
+    method.addHeader("User-Agent", USER_AGENT);
 
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
         HttpClientUtil.createDefaultRequestConfigBuilder();
@@ -616,12 +611,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
       }
       if (processor == null || processor instanceof InputStreamResponseParser) {
-
         // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<>();
-        rsp.add("stream", respBody);
+        final var rsp =
+            InputStreamResponseParser.createInputStreamNamedList(
+                response.getStatusLine().getStatusCode(), respBody);
         rsp.add("closeableResponse", response);
-        rsp.add("responseStatus", response.getStatusLine().getStatusCode());
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;
@@ -870,17 +864,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       return this;
     }
 
-    /** Use a delegation token for authenticating via the KerberosPlugin */
-    public Builder withKerberosDelegationToken(String delegationToken) {
-      if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) != null) {
-        throw new IllegalStateException(
-            DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM + " is already defined!");
-      }
-      this.invariantParams.add(
-          DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM, delegationToken);
-      return this;
-    }
-
     /**
      * Adds to the set of params that the created {@link HttpSolrClient} will add on all requests
      *
@@ -907,20 +890,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
             "Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
 
-      if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) == null) {
-        return new HttpSolrClient(this);
-      } else {
-        urlParamNames =
-            urlParamNames == null
-                ? Set.of(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)
-                : urlParamNames;
-        if (!urlParamNames.contains(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)) {
-          urlParamNames = new HashSet<>(urlParamNames);
-          urlParamNames.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM);
-        }
-        urlParamNames = Set.copyOf(urlParamNames);
-        return new DelegationTokenHttpSolrClient(this);
-      }
+      return new HttpSolrClient(this);
     }
 
     @Override

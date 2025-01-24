@@ -159,7 +159,6 @@ public class ZkStateReader implements SolrCloseable {
   /** A view of the current state of all collections. */
   protected volatile ClusterState clusterState;
 
-  private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
   private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT =
       Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
 

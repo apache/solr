@@ -59,9 +59,6 @@ See the section xref:deployment-guide:basic-authentication-plugin.adoc[] for det
 
 Once logged in, the left-hand navigation will show the current user with an option to logout.
 
-If Kerberos is enabled and the user has a valid ticket, the login screen will be skipped.
-However, if the user does not have a valid ticket, they will see a message that they need to obtain a valid ticket before continuing.
-
 === Getting Assistance
 
 At the bottom of each screen of the Admin UI is a set of links that can be used to get more assistance with configuring and using Solr.

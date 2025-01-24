@@ -870,7 +870,6 @@ The `bin/solr` script allows enabling or disabling Authentication, allowing you 
 Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.
 
 For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
-For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.
 
 
 === Enabling Basic Authentication
@@ -900,7 +899,6 @@ Here are some example usages:
 ----
 Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
        solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
-       solr auth enable --type kerberos --config <kerberos configs> [--update-include-file-only <true|false>] [-v]
        solr auth disable [--update-include-file-only <true|false>] [-v]
 ----
 
@@ -1387,7 +1385,7 @@ Trailing wildcards are supported when copying from localand must be quoted.
 
 Other examples are:
 
-*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/confgs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
+*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/configs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
 
 *Copy a single file from ZooKeeper to local*: `bin/solr zk cp zk:/configs/myconf/managed_schema /configs/myconf/managed_schema -z 111.222.333.444:2181`
 
@@ -1836,7 +1834,7 @@ The `package` command allows you to interact with Solr's xref:configuration-guid
 
 == Snapshots and Backups
 
-The snapshots capablity of the CLI allows you to:
+The snapshots capability of the CLI allows you to:
 
 * Create snapshotted view of your index
 * List all the available snapshots

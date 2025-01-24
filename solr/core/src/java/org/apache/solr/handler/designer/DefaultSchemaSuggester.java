@@ -163,7 +163,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     Locale locale = Locale.ROOT;
 
     boolean isMV = isMultiValued(sampleValues);
-    String fieldTypeName = guessFieldType(fieldName, sampleValues, schema, isMV, locale);
+    String fieldTypeName = guessFieldType(sampleValues, isMV, locale);
     FieldType fieldType = schema.getFieldTypeByName(fieldTypeName);
     if (fieldType == null) {
       // TODO: construct this field type on-the-fly ...
@@ -222,12 +222,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     return mapByField;
   }
 
-  protected String guessFieldType(
-      String fieldName,
-      final List<Object> sampleValues,
-      IndexSchema schema,
-      boolean isMV,
-      Locale locale) {
+  protected String guessFieldType(final List<Object> sampleValues, boolean isMV, Locale locale) {
     String type = null;
 
     // flatten values to a single stream for easier analysis; also remove nulls
@@ -361,7 +356,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     }
 
     // if all values are less than some smallish threshold, then it's likely this field holds small
-    // numbers but be very conservative here as it's simply an optimization and we can always fall
+    // numbers but be very conservative here as it's simply an optimization, and we can always fall
     // back to long
     return maxLong < 10000 ? "pint" : "plong";
   }

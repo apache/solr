@@ -100,6 +100,8 @@ Deprecation Removals
   looking for similar functionality can use Solr's package manager.  Users that don't need to vary JAR access on a per-core basis
   have many options, including the `<sharedLib/>` tag and directly modifying Solr's classpath prior to JVM startup. (Jason Gerlowski)
 
+* SOLR-17540: Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -139,14 +141,82 @@ Other Changes
 
 * SOLR-17568: SolrCloud no longer reroutes/proxies a core request to another node if not found locally. (David Smiley)
 
+* SOLR-17548: Switch all public Java APIs from File to Path. (Matthew Biscocho via Eric Pugh)
+
+==================  9.9.0 ==================
+New Features
+---------------------
+* SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
+  fetching and computing it on the fly.  To avoid a backwards compatibilty concern, this won't work
+  for wt=javabin.  (Matthew Biscocho, David Smiley)
+
+* SOLR-17626: Add RawTFSimilarityFactory class. (Christine Poerschke)
+
+Improvements
+---------------------
+* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
+  specific collections or cores.  Collection information can be fetched by a call to `GET /api/collections/collectionName`, and core
+  information with a call to `GET /api/cores/coreName/segments`. (Jason Gerlowski)
+
+* SOLR-16396: All v2 configset APIs have been moved to the slightly different path: `/api/configsets`, to better align with the design of
+  other v2 APIs.  SolrJ now offers (experimental) SolrRequest implementations for all v2 configset APIs in
+  `org.apache.solr.client.solrj.request.ConfigsetsApi`. (Jason Gerlowski)
+
+Optimizations
+---------------------
+* SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
+
+Bug Fixes
+---------------------
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
+
+* SOLR-17221: If multiple query param keys are sent that only vary by case, they were wrongly merged when
+  doing distributed search (sharded collections). This could likely occur for fielded parameters such as
+  f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
+
+* SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
+  it needs to close the stream to cleanup resources but wasn't. (David Smiley)
+
+* SOLR-17519: SolrJ CloudSolrClient configured with Solr URLs can fail to request cluster state if its
+  current live nodes list is stale. CloudSolrClient now retains the initial configured list of passed URLs as backup
+  used for fetching cluster state when all live nodes have failed. (Matthew Biscocho via David Smiley, Houston Putman)
+
+Dependency Upgrades
+---------------------
+* SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
+
+Other Changes
+---------------------
+* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
+  LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
+
+* GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
+  for encapsulation and reuse. (David Smiley)
+
+* GITHUB#2680: Improve reliablity of NpmTasks finding needed files/commands.  (Tyler Bertrand via Eric Pugh)
+
+* SOLR-16503: Most remaining usages of Apache HttpClient in Solr switched to Jetty HttpClient (HTTP 2). (Sanjay Dutt, David Smiley)
+
+* SOLR-17589: Prevent error log entry on solr server due to initial HEAD request from HttpJdkSolrClient. (Paul Blanchaert via James Dyer)
+
+* SOLR-17611: SolrJ's User-Agent header now uses the version of SolrJ.  There's a corresponding
+  HttpSolrCall.getUserAgentSolrVersion to parse it.  (David Smiley)
+
+* SOLR-17581: Introduce new test variant of waitForState(), that does not wait on live node changes when we're only
+ interested in the collection state. (Pierre Salagnac)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
 * SOLR-17065: The Solr Cross-DC Project has graduated from the sandbox repository.
   It will now be released as a fully supported Solr feature.
-  This feature closes SIP-13: Cross Data Center Replication. (Mark Miller, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
+  This feature closes SIP-13: Cross Data Center Replication.
+  (Mark Miller, Anshum Gupta, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
 
 * SOLR-17150: Implement `memAllowed` parameter to limit per-thread memory allocations during request processing. (Andrzej Bialecki, Gus Heck)
+
+* SOLR-17525: Added knn_text_to_vector query parser to encode text to vector at query time through external LLM services. (Alessandro Benedetti)
 
 Improvements
 ---------------------
@@ -188,6 +258,8 @@ Improvements
 * SOLR-16470: Replication "fetch file" API now has a v2 equivalent, available at `GET /api/cores/coreName/replication/files/fileName`
   (Matthew Biscocho via Jason Gerlowski)
 
+* SOLR-17554: Suppress printing out of password to console when using auth CLI command. (Christos Malliaridis via Eric Pugh)
+
 
 Optimizations
 ---------------------
@@ -199,7 +271,9 @@ Optimizations
   that which consumes almost no memory, saving 1MB of memory per SolrCore.  (David Smiley)
 
 * SOLR-17381: Make CLUSTERSTATUS request configurable to improve performance by allowing retrieval of specific information,
-  reducing unnecessary data fetching. (Aparna Suresh, David Smiley)
+  reducing unnecessary data fetching.  Enhanced CloudSolrClient's HTTP ClusterStateProvider to use it, and to scale to
+  more collections better as well.
+   (Aparna Suresh, David Smiley)
 
 * SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
 
@@ -210,7 +284,8 @@ Optimizations
 
 * SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
 
-* SOLR-16503: Switched from HTTP1 to HTTP2 in SolrClientCloudManager by replacing CloudLegacySolrClient with CloudHttp2SolrClient. (Sanjay Dutt, David Smiley)
+* SOLR-17592: Switched from HTTP1 to HTTP2 in SolrCloudManager via HttpClient change from Apache to Jetty.
+  (Sanjay Dutt, David Smiley)
 
 * SOLR-17453: Leverage waitForState() instead of busy waiting in CREATE, MIGRATE, REINDEXCOLLECTION, MOVEREPLICA commands, and in some tests. (Pierre Salagnac)
 
@@ -239,6 +314,11 @@ Bug Fixes
 * SOLR-17575: Fixed broken backwards compatibility with the legacy "langid.whitelist" config in Solr Langid. (Jan Høydahl, Alexander Zagniotov)
 
 * SOLR-17574: Fix AllowListUrlChecker when liveNodes changes. Remove ClusterState.getHostAllowList (Bruno Roustant, David Smiley)
+
+* SOLR-17595: Fix two issues in Solr CLI that prevent Solr from starting with the techproducts example and from
+  correctly parsing arguments on Windows that start with -D and have multiple values separated by "," or spaces. (Christos Malliaridis)
+
+* SOLR-17306: fix replication problem on follower restart (Martin Anzinger and Peter Kroiss via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
@@ -271,11 +351,9 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17577: Remove "solr.indexfetcher.sotimeout" system property that was for optimizing replication tests.  It was disabled, but not removed. (Eric Pugh)
 
-==================  9.7.1 ==================
-Bug Fixes
----------------------
-* SOLR-17530: Metrics: Thew new Prometheus response writer wasn't detecting TLOG or PULL replicas properly.
-  (Matthew Biscocho)
+* SOLR-14680: NamedList: deprecating methods: forEachEntry, forEachKey, abortableForEachKey, abortableForEach,
+ asMap (no-arg only), get(key, default).  Added getOrDefault.  Deprecated the SimpleMap interface as well as the
+ entirety of the SolrJ package org.apache.solr.cluster.api, which wasn't used except for SimpleMap.  (David Smiley)
 
 ==================  9.7.0 ==================
 New Features
@@ -427,7 +505,7 @@ Other Changes
 
 * GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
 
-* SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
+* SOLR-17290: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
 
 * SOLR-16796: Include cyclonedx SBOMs with maven artifacts (Arnout Engelen, Houston Putman, Kevin Risden)
 

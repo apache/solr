@@ -32,23 +32,27 @@ import org.apache.solr.common.MapWriter;
  * efficient to implement and consume. The keys are always {@link CharSequence} objects, The values
  * can be of any type
  */
+@Deprecated
 public interface SimpleMap<T> extends MapWriter {
 
   /** get a value by key. If not present , null is returned */
   T get(String key);
 
+  @Deprecated
   default T get(String key, T def) {
     T val = get(key);
     return val == null ? def : val;
   }
 
   /** Navigate through all keys and values */
+  @Deprecated
   void forEachEntry(BiConsumer<String, ? super T> fun);
 
   /**
    * iterate through all keys The default impl is suboptimal. Proper implementations must do it more
    * efficiently
    */
+  @Deprecated
   default void forEachKey(Consumer<String> fun) {
     forEachEntry((k, t) -> fun.accept(k));
   }
@@ -62,6 +66,7 @@ public interface SimpleMap<T> extends MapWriter {
    * @param fun Consume each key and return a boolean to signal whether to proceed or not. If true,
    *     continue. If false stop
    */
+  @Deprecated
   default void abortableForEachKey(Function<String, Boolean> fun) {
     abortableForEach((key, t) -> fun.apply(key));
   }
@@ -73,6 +78,7 @@ public interface SimpleMap<T> extends MapWriter {
    * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If
    *     true, continue, if false stop
    */
+  @Deprecated
   default void abortableForEach(BiFunction<String, ? super T, Boolean> fun) {
     forEachEntry(
         new BiConsumer<>() {
@@ -91,11 +97,13 @@ public interface SimpleMap<T> extends MapWriter {
     forEachEntry(ew::putNoEx);
   }
 
+  @Deprecated
   default Map<String, T> asMap(Map<String, T> sink) {
     forEachEntry(sink::put);
     return sink;
   }
 
+  @Deprecated
   default Map<String, T> asMap() {
     return asMap(new LinkedHashMap<>());
   }

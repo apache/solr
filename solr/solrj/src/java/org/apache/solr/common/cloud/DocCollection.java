@@ -232,6 +232,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * that holds the same AtomicReference will see the same update
    *
    * <p>This does not create a new DocCollection.
+   *
+   * @lucene.internal
    */
   public final DocCollection setPerReplicaStates(PerReplicaStates newPerReplicaStates) {
     if (this.perReplicaStatesRef != null) {
@@ -260,11 +262,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
   }
 
+  /**
+   * @lucene.internal
+   */
   public static Object verifyProp(Map<String, Object> props, String propName) {
     return verifyProp(props, propName, null);
   }
 
-  public static Object verifyProp(Map<String, Object> props, String propName, Object def) {
+  private static Object verifyProp(Map<String, Object> props, String propName, Object def) {
     Object o = props.get(propName);
     if (o == null) {
       return def;
@@ -337,6 +342,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /** Return array of active slices for this collection (performance optimization). */
+  @Deprecated
   public Slice[] getActiveSlicesArr() {
     return activeSlicesArr;
   }
@@ -357,6 +363,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /** Get the list of all leaders hosted on the given node or <code>null</code> if none. */
+  @Deprecated
   public List<Replica> getLeaderReplicas(String nodeName) {
     return nodeNameLeaderReplicas.get(nodeName);
   }
@@ -469,6 +476,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return slices.values().iterator();
   }
 
+  @Deprecated // low usage and builds an ArrayList (surprising)
   public List<Replica> getReplicas() {
     List<Replica> replicas = new ArrayList<>();
     for (Slice slice : this) {
@@ -481,6 +489,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param predicate test against shardName vs. replica
    * @return the first replica that matches the predicate
    */
+  @Deprecated // just one test; move it
   public Replica getReplica(BiPredicate<String, Replica> predicate) {
     final Replica[] result = new Replica[1];
     forEachReplica(
@@ -493,6 +502,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return result[0];
   }
 
+  @Deprecated // just tests, so move out or make package-protected
   public List<Replica> getReplicas(EnumSet<Replica.Type> s) {
     List<Replica> replicas = new ArrayList<>();
     for (Slice slice : this) {
