@@ -571,10 +571,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public float score() {
       return score;
     }
-
-    public int docID() {
-      return docId;
-    }
   }
 
   /**
@@ -1551,7 +1547,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       // (our supper class may have set the "real" scorer on our leafDelegate
       // and it may have an incorrect docID)
       leafDelegate.setScorer(currentGroupState);
-      leafDelegate.collect(currentGroupState.docID());
+      leafDelegate.collect(currentGroupState.docId);
     }
 
     /**
@@ -1604,7 +1600,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       public int getCurrentGroup() {
-        assert -1 < docID();
+        assert -1 < this.docId;
         return this.currentGroup;
       }
 
@@ -1620,7 +1616,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       public boolean hasBoostedDocs() {
-        assert -1 < docID();
+        assert -1 < this.docId;
         return groupHasBoostedDocs;
       }
 
@@ -1630,7 +1626,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
        * collected)
        */
       public boolean isCurrentDocCollectable() {
-        return (-1 < docID() && !groupHasBoostedDocs);
+        return (-1 < this.docId && !groupHasBoostedDocs);
       }
     }
   }
@@ -1667,7 +1663,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       final boolean isBoosted = isBoostedAdvanceExact(contextDoc);
 
-      if (-1 < currentGroupState.docID() && docGroup == currentGroupState.getCurrentGroup()) {
+      if (-1 < currentGroupState.docId && docGroup == currentGroupState.getCurrentGroup()) {
         // we have an existing group, and contextDoc is in that group.
 
         if (isBoosted) {
@@ -1892,7 +1888,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       final boolean isBoosted = isBoostedAdvanceExact(contextDoc);
 
-      if (-1 < currentGroupState.docID() && docGroup == currentGroupState.getCurrentGroup()) {
+      if (-1 < currentGroupState.docId && docGroup == currentGroupState.getCurrentGroup()) {
         // we have an existing group, and contextDoc is in that group.
 
         if (isBoosted) {
