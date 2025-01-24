@@ -78,8 +78,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        if (payload instanceof ByteBuffer) {
-          ByteBuffer b = (ByteBuffer) payload;
+        if (payload instanceof ByteBuffer b) {
           os.write(b.array(), b.arrayOffset(), b.limit());
           return;
         }
@@ -109,6 +108,11 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   @Override
   public String getCollection() {
     return collection;
+  }
+
+  @Override
+  public ApiVersion getApiVersion() {
+    return ApiVersion.V2;
   }
 
   @Override

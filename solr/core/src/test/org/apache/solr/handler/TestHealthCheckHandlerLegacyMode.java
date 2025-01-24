@@ -74,8 +74,6 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
             buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
     followerClientHealthCheck =
         ReplicationTestHelper.createNewSolrClient(buildUrl(followerJetty.getLocalPort()));
-
-    System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
 
   public void clearIndexWithReplication() throws Exception {
@@ -116,7 +114,6 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
       followerClientHealthCheck.close();
       followerClientHealthCheck = null;
     }
-    System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
   @Test

@@ -26,7 +26,7 @@ The ZooKeeper specific commands are provided by the xref:solr-control-script-ref
 
 == Using Solr's CLI with ZooKeeper
 
-Use the `help` option to get a list of available ZooKeeper specifc commands from the script itself, as in `bin/solr zk -h`.
+Use the `help` option to get a list of available ZooKeeper specific commands from the script itself, as in `bin/solr zk -h`.
 
 == Solr CLI Examples
 

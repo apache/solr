@@ -27,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.http.HttpResponse;
@@ -749,20 +750,13 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
   }
 
-  static void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
-      log.info("Collection not yet deleted");
-      try {
-        Thread.sleep(100);
-        if (t.hasTimedOut()) {
-          fail("Timed out waiting for collection " + collection + " to be deleted.");
-        }
-        cluster.getZkStateReader().forceUpdateCollection(collection);
-      } catch (SolrException e) {
-        return;
-      }
-    }
+  static void waitForDeletion(String collection) {
+    waitForState(
+        "Waiting for collection " + collection + " to be deleted",
+        collection,
+        10,
+        TimeUnit.SECONDS,
+        Objects::isNull);
   }
 
   private DocCollection assertNumberOfReplicas(

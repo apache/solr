@@ -515,9 +515,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof ConvertedCurrencyValueSource)) return false;
-
-      ConvertedCurrencyValueSource that = (ConvertedCurrencyValueSource) o;
+      if (!(o instanceof ConvertedCurrencyValueSource that)) return false;
 
       return Objects.equals(source, that.source)
           && (rate == that.rate)
@@ -728,9 +726,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof RawCurrencyValueSource)) return false;
-
-      RawCurrencyValueSource that = (RawCurrencyValueSource) o;
+      if (!(o instanceof RawCurrencyValueSource that)) return false;
 
       return Objects.equals(amountValues, that.amountValues)
           && Objects.equals(currencyValues, that.currencyValues)

@@ -17,10 +17,10 @@
 package org.apache.solr.handler.clustering;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrDocument;
@@ -55,9 +55,9 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
-    initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
+    Path testHome = createTempDir();
+    PathUtils.copyDirectory(getFile("clustering/solr"), testHome);
+    initCore("solrconfig.xml", "schema.xml", testHome.toAbsolutePath().toString());
 
     String[] languages = {
       "English", "French", "German", "Unknown",

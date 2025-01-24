@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -56,6 +58,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetBlobInfoAPI;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.admin.api.UploadBlobAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -111,8 +114,8 @@ public class BlobHandler extends RequestHandlerBase
 
       for (ContentStream stream : req.getContentStreams()) {
         ByteBuffer payload;
-        try (InputStream is = stream.getStream()) {
-          payload = Utils.toByteArray(is, maxSize);
+        try (InputStream is = boundedInputStream(stream.getStream(), maxSize)) {
+          payload = Utils.toByteArray(is);
         }
         MessageDigest m = MessageDigest.getInstance("MD5");
         m.update(payload.array(), payload.arrayOffset() + payload.position(), payload.limit());
@@ -192,7 +195,7 @@ public class BlobHandler extends RequestHandlerBase
           return;
         }
       }
-      if (ReplicationHandler.FILE_STREAM.equals(req.getParams().get(CommonParams.WT))) {
+      if (ReplicationAPIBase.FILE_STREAM.equals(req.getParams().get(CommonParams.WT))) {
         if (blobName == null) {
           throw new SolrException(
               SolrException.ErrorCode.NOT_FOUND,
@@ -209,7 +212,7 @@ public class BlobHandler extends RequestHandlerBase
                       new Sort(new SortField("version", SortField.Type.LONG, true)));
           if (docs.totalHits.value > 0) {
             rsp.add(
-                ReplicationHandler.FILE_STREAM,
+                ReplicationAPIBase.FILE_STREAM,
                 new SolrCore.RawWriter() {
 
                   @Override
@@ -259,6 +262,16 @@ public class BlobHandler extends RequestHandlerBase
             rsp);
       }
     }
+  }
+
+  private static InputStream boundedInputStream(final InputStream is, final long maxLength)
+      throws IOException {
+    return new BoundedInputStream(is, maxLength) {
+      @Override
+      protected void onMaxLength(long maxLength, long count) {
+        throw new BufferOverflowException();
+      }
+    };
   }
 
   private void verifyWithRealtimeGet(

@@ -382,8 +382,7 @@ public class QueryResponse extends SolrResponseBase {
       Object rawGap = values.get("gap");
 
       RangeFacet rangeFacet;
-      if (rawGap instanceof Number) {
-        Number gap = (Number) rawGap;
+      if (rawGap instanceof Number gap) {
         Number start = (Number) values.get("start");
         Number end = (Number) values.get("end");
 
@@ -393,9 +392,7 @@ public class QueryResponse extends SolrResponseBase {
 
         rangeFacet =
             new RangeFacet.Numeric(facet.getKey(), start, end, gap, before, after, between);
-      } else if (rawGap instanceof String && values.get("start") instanceof Date) {
-        String gap = (String) rawGap;
-        Date start = (Date) values.get("start");
+      } else if (rawGap instanceof String gap && values.get("start") instanceof Date start) {
         Date end = (Date) values.get("end");
 
         Number before = (Number) values.get("before");
@@ -637,7 +634,7 @@ public class QueryResponse extends SolrResponseBase {
   }
 
   /**
-   * @return a list of FacetFields where the count is less then then #getResults() {@link
+   * @return a list of FacetFields where the count is less than the #getResults() {@link
    *     SolrDocumentList#getNumFound()}
    *     <p>If you want all results exactly as returned by solr, use: {@link #getFacetFields()}
    */

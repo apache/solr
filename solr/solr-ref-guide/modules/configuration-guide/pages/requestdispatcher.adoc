@@ -146,7 +146,7 @@ The content of this element will be sent as the value of the Cache-Control heade
 This header is used to modify the default caching behavior of the requesting client.
 The possible values for the Cache-Control header are defined by the HTTP 1.1 specification in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9[Section 14.9].
 
-Setting the max-age field controls how long a client may re-use a cached response before requesting it again from the server.
+Setting the max-age field controls how long a client may reuse a cached response before requesting it again from the server.
 This time interval should be set according to how often you update your index and whether or not it is acceptable for your application to use content that is somewhat out of date.
 Setting `must-revalidate` will tell the client to validate with the server that its cached copy is still good before re-using it.
 This will ensure that the most timely result is used, while avoiding a second fetch of the content if it isn't needed, at the cost of a request to the server to do the check.

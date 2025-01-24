@@ -36,9 +36,26 @@ This is provided via the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr 
 
 == Starting Solr on HDFS
 
-=== User-Managed Cluters and Single-Node Installations
+=== SolrCloud Installations
 
-For user-managed clusters or single-node Solr installations, there are a few parameters you should modify before starting Solr.
+In SolrCloud mode, it's best to leave the data and update log directories as the defaults Solr comes with and simply specify the `solr.hdfs.home`.
+All dynamically created collections will create the appropriate directories automatically under the `solr.hdfs.home` root directory.
+
+* Set `solr.hdfs.home` in the form `hdfs://host:port/path`
+* You should specify a lock factory type of `'hdfs'` or none.
+
+[source,bash]
+----
+bin/solr start -Dsolr.directoryFactory=HdfsDirectoryFactory
+     -Dsolr.lock.type=hdfs
+     -Dsolr.hdfs.home=hdfs://host:port/path
+----
+
+This command starts Solr using the defined JVM properties.
+
+=== User-Managed Clusters and Single-Node Installations
+
+For  For user-managed clusters or single-node Solr installations, there are a few parameters you should modify before starting Solr.
 These can be set in `solrconfig.xml` (more on that <<HdfsDirectoryFactory Parameters,below>>), or passed to the `bin/solr` script at startup.
 
 * You need to use an `HdfsDirectoryFactory` and a data directory in the form `hdfs://host:port/path`
@@ -56,24 +73,6 @@ bin/solr start -Dsolr.directoryFactory=HdfsDirectoryFactory
 ----
 
 This example will start Solr using the defined JVM properties (explained in more detail <<HdfsDirectoryFactory Parameters,below>>).
-
-=== SolrCloud Instances
-
-In SolrCloud mode, it's best to leave the data and update log directories as the defaults Solr comes with and simply specify the `solr.hdfs.home`.
-All dynamically created collections will create the appropriate directories automatically under the `solr.hdfs.home` root directory.
-
-* Set `solr.hdfs.home` in the form `hdfs://host:port/path`
-* You should specify a lock factory type of `'hdfs'` or none.
-
-[source,bash]
-----
-bin/solr start -c -Dsolr.directoryFactory=HdfsDirectoryFactory
-     -Dsolr.lock.type=hdfs
-     -Dsolr.hdfs.home=hdfs://host:port/path
-----
-
-This command starts Solr using the defined JVM properties.
-
 
 === Modifying solr.in.sh (*nix) or solr.in.cmd (Windows)
 
@@ -247,7 +246,7 @@ s|Required |Default: none
 The Kerberos principal that Solr should use to authenticate to secure Hadoop; the format of a typical Kerberos V5 principal is: `primary/instance@realm`.
 
 == Update Log settings
-When using HDFS to store Solr indexes, it is recommended to also store the transaction logs on HDFS. This can be done by using the `solr.HdfsUpdateLog` update log hander class.
+When using HDFS to store Solr indexes, it is recommended to also store the transaction logs on HDFS. This can be done by using the `solr.HdfsUpdateLog` update log handler class.
 The solrconfig.xml is often used to define an update log handler class name either using a variable reference or direct specification, for example:
 
 [source,xml]

@@ -239,8 +239,7 @@ public class PluginBag<T> implements AutoCloseable {
     if (loadV2ApisIfPresent) {
       if (plugin.isLoaded()) {
         T inst = plugin.get();
-        if (inst instanceof ApiSupport) {
-          ApiSupport apiSupport = (ApiSupport) inst;
+        if (inst instanceof ApiSupport apiSupport) {
           if (registerApi == null) registerApi = apiSupport.registerV2();
           if (disableHandler == null) disableHandler = !apiSupport.registerV1();
 
@@ -366,8 +365,7 @@ public class PluginBag<T> implements AutoCloseable {
 
   private void registerMBean(Object inst, SolrCore core, String pluginKey) {
     if (core == null) return;
-    if (inst instanceof SolrInfoBean) {
-      SolrInfoBean mBean = (SolrInfoBean) inst;
+    if (inst instanceof SolrInfoBean mBean) {
       String name = (inst instanceof SolrRequestHandler) ? pluginKey : mBean.getName();
       core.registerInfoBean(name, mBean);
     }

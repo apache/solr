@@ -352,8 +352,7 @@ public class JavaBinUpdateRequestCodec {
       m.forEach(
           (k, v) -> {
             if (CHILDDOC.equals(k.toString())) {
-              if (v instanceof List) {
-                List<?> list = (List<?>) v;
+              if (v instanceof List<?> list) {
                 for (Object o : list) {
                   if (o instanceof Map) {
                     result.addChildDocument(convertMapToSolrInputDoc((Map<?, ?>) o));

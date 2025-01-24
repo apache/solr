@@ -46,8 +46,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
 
     TupleStream stream = (TupleStream) req.getContext().get("stream");
 
-    if (stream instanceof GraphHandler.DummyErrorStream) {
-      GraphHandler.DummyErrorStream d = (GraphHandler.DummyErrorStream) stream;
+    if (stream instanceof GraphHandler.DummyErrorStream d) {
       Exception e = d.getException();
       e.printStackTrace(new PrintWriter(writer));
       return;

@@ -103,7 +103,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -435,7 +434,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     int liveNodes = cluster.getJettySolrRunners().size();
 
     // For this case every shard should have all its cores on the same node.
-    // Hence the below configuration for our collection
+    // Hence, the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
@@ -760,7 +759,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
-    BaseHttpSolrClient.RemoteSolrException sse = null;
+    SolrClient.RemoteSolrException sse = null;
 
     try (SolrClient solrClient = getHttpSolrClient(r.getBaseUrl(), COLLECTION)) {
 
@@ -814,7 +813,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       try {
         QueryResponse rsp = solrClient.query(q);
         log.info("error was expected");
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         sse = e;
       }
       assertNotNull(sse);
@@ -1052,7 +1051,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     int liveNodes = cluster.getJettySolrRunners().size();
 
     // For these tests we need to have multiple replica types.
-    // Hence the below configuration for our collection
+    // Hence, the below configuration for our collection
     int pullReplicas = Math.max(1, liveNodes - 2);
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, pullReplicas)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
@@ -1112,7 +1111,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       for (Replica replica : slice.getReplicas()) {
         String coreUrl = replica.getCoreUrl();
         // It seems replica reports its core URL with a trailing slash while shard
-        // info returned from the query doesn't. Oh well.
+        // info returned from the query doesn't.
         if (coreUrl.endsWith("/")) {
           coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
         }

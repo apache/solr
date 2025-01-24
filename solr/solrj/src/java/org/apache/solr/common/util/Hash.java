@@ -20,10 +20,10 @@ package org.apache.solr.common.util;
  * Fast, well distributed, cross-platform hash functions.
  *
  * <p>Development background: I was surprised to discovered that there isn't a good cross-platform
- * hash function defined for strings. MD5, SHA, FVN, etc, all define hash functions over bytes,
+ * hash function defined for strings. MD5, SHA, FVN, etc., all define hash functions over bytes,
  * meaning that it's under-specified for strings.
  *
- * <p>So I set out to create a standard 32 bit string hash that would be well defined for
+ * <p>So I set out to create a standard 32 bit string hash that would be well-defined for
  * implementation in all languages, have very high performance, and have very good hash properties
  * such as distribution. After evaluating all the options, I settled on using Bob Jenkins' lookup3
  * as a base. It's a well studied and very fast hash function, and the hashword variant can work
@@ -63,7 +63,7 @@ public class Hash {
    * @param offset offset of the start of the key
    * @param length length of the key
    * @param initval initial value to fold into the hash
-   * @return the 32 bit hash code
+   * @return the 32-bit hash code
    */
   @SuppressWarnings("fallthrough")
   public static int lookup3(int[] k, int offset, int length, int initval) {
@@ -77,7 +77,7 @@ public class Hash {
       c += k[i + 2];
 
       // mix(a,b,c)... Java needs "out" parameters!!!
-      // Note: recent JVMs (Sun JDK6) turn pairs of shifts (needed to do a rotate)
+      // Note: recent JVMs (Sun JDK6) turn pairs of shifts (needed to do a rotate operation)
       // into real x86 rotate instructions.
       {
         a -= c;
@@ -251,7 +251,7 @@ public class Hash {
       if (i >= end) break;
 
       // mix(a,b,c)... Java needs "out" parameters!!!
-      // Note: recent JVMs (Sun JDK6) turn pairs of shifts (needed to do a rotate)
+      // Note: recent JVMs (Sun JDK6) turn pairs of shifts (needed to do a rotate operation)
       // into real x86 rotate instructions.
       {
         a -= c;

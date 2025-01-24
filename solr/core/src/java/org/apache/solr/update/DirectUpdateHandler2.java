@@ -738,6 +738,9 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
+        if (cmd.isClosingOnCommit()) {
+          core.readOnly = true;
+        }
         IndexWriter writer = iw.get();
         if (cmd.optimize) {
           writer.forceMerge(cmd.maxOptimizeSegments);
@@ -786,7 +789,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
           if (ulog != null) ulog.preSoftCommit(cmd);
           if (cmd.openSearcher) {
             core.getSearcher(true, false, waitSearcher);
-          } else {
+          } else if (!cmd.isClosingOnCommit()) {
             // force open a new realtime searcher so realtime-get and versioning code can see the
             // latest
             RefCounted<SolrIndexSearcher> searchHolder = core.openNewSearcher(true, true);
@@ -971,8 +974,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
             // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't
             // be used)
-            SolrIndexWriter.setCommitData(writer, cmd.getVersion(), null);
-            writer.commit();
+            if (shouldCommit(cmd, writer)) {
+              SolrIndexWriter.setCommitData(writer, cmd.getVersion(), cmd.commitData);
+              writer.commit();
+            }
 
             synchronized (solrCoreState.getUpdateLock()) {
               ulog.postCommit(cmd);
