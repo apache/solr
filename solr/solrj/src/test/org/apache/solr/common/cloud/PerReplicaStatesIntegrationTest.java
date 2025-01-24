@@ -245,7 +245,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
                     .resolve("streaming")
                     .resolve("conf"))
             .configure();
-    PerReplicaStates original = null;
     try {
       CollectionAdminRequest.createCollection(COLL, "conf", 3, 1)
           .setPerReplicaState(Boolean.TRUE)
@@ -253,42 +252,39 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLL, 3, 3);
 
       PerReplicaStates prs1 =
-          original =
-              PerReplicaStatesOps.fetch(
-                  DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
+          PerReplicaStatesOps.fetch(
+              DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
       log.info("prs1 : {}", prs1);
 
       CollectionAdminRequest.modifyCollection(
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "false"))
           .process(cluster.getSolrClient());
-      cluster
-          .getZkStateReader()
-          .waitForState(
-              COLL,
-              5,
-              TimeUnit.SECONDS,
-              (liveNodes, collectionState) ->
-                  "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
+      waitForState(
+          "Waiting for PRS property",
+          COLL,
+          5,
+          TimeUnit.SECONDS,
+          collectionState ->
+              "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
       CollectionAdminRequest.modifyCollection(
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "true"))
           .process(cluster.getSolrClient());
-      cluster
-          .getZkStateReader()
-          .waitForState(
-              COLL,
-              5,
-              TimeUnit.SECONDS,
-              (liveNodes, collectionState) -> {
-                AtomicBoolean anyFail = new AtomicBoolean(false);
-                PerReplicaStates prs2 =
-                    PerReplicaStatesOps.fetch(
-                        DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
-                prs2.states.forEach(
-                    (r, newState) -> {
-                      if (newState.getDuplicate() != null) anyFail.set(true);
-                    });
-                return !anyFail.get();
-              });
+      waitForState(
+          "Waiting for PRS property",
+          COLL,
+          5,
+          TimeUnit.SECONDS,
+          collectionState -> {
+            AtomicBoolean anyFail = new AtomicBoolean(false);
+            PerReplicaStates prs2 =
+                PerReplicaStatesOps.fetch(
+                    DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null);
+            prs2.states.forEach(
+                (r, newState) -> {
+                  if (newState.getDuplicate() != null) anyFail.set(true);
+                });
+            return !anyFail.get();
+          });
 
     } finally {
       cluster.shutdown();

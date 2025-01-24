@@ -28,6 +28,7 @@ ext {
 }
 
 dependencies {
+  implementation platform(project(':platform'))
   api project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
@@ -36,7 +37,6 @@ dependencies {
   implementation libs.apache.kafka.clients
   implementation libs.google.guava
   implementation libs.dropwizard.metrics.core
-  implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.zookeeper.zookeeper
   implementation libs.apache.zookeeper.jute
 

@@ -20,6 +20,7 @@ apply plugin: 'java-library'
 description = 'Scripting Package'
 
 dependencies {
+  implementation platform(project(':platform'))
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
