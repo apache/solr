@@ -22,21 +22,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.TreeSet;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
@@ -252,15 +249,10 @@ public class GraphQuery extends Query {
     }
 
     private DocSet resolveLeafNodes() throws IOException {
-      String field = collectSchemaField.getName();
       BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
-      Query edgeQuery =
-          collectSchemaField.hasDocValues()
-              ? new FieldExistsQuery(field)
-              : new WildcardQuery(new Term(field, "*"));
+      Query edgeQuery = collectSchemaField.getType().getExistenceQuery(null, collectSchemaField);
       leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
-      DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
-      return leafNodes;
+      return fromSearcher.getDocSet(leafNodeQuery.build());
     }
 
     /** Build an automaton to represent the frontier query */

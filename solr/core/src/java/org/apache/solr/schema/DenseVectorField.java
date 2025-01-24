@@ -394,7 +394,7 @@ public class DenseVectorField extends FloatPointField {
 
   /** Not Supported */
   @Override
-  public Query getRangeQuery(
+  public Query getSpecializedRangeQuery(
       QParser parser,
       SchemaField field,
       String part1,

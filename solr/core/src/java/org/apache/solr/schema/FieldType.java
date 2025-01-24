@@ -948,7 +948,7 @@ public abstract class FieldType extends FieldProperties {
    * @param maxInclusive whether the maximum of the range is inclusive or not
    * @return a Query instance to perform range search according to given parameters
    */
-  public Query getRangeQuery(
+  public final Query getRangeQuery(
       QParser parser,
       SchemaField field,
       String part1,
@@ -1030,10 +1030,7 @@ public abstract class FieldType extends FieldProperties {
    * @return The {@link org.apache.lucene.search.Query} instance.
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
-    if (field.hasDocValues()) {
-      return new FieldExistsQuery(field.getName());
-    } else if (!field.omitNorms()
-        && !isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
+    if (field.hasDocValues() || !field.omitNorms()) {
       return new FieldExistsQuery(field.getName());
     } else {
       // Default to an unbounded range query

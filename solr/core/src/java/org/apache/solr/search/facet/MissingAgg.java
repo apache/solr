@@ -42,12 +42,7 @@ public class MissingAgg extends SimpleAggValueSource {
       SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
 
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
-        Query query = null;
-        if (sf.hasDocValues()) {
-          query = sf.getType().getExistenceQuery(null, sf);
-        } else {
-          query = sf.getType().getRangeQuery(null, sf, null, null, false, false);
-        }
+        Query query = sf.getType().getExistenceQuery(null, sf);
         vs = new QueryValueSource(query, 0.0f);
       } else {
         vs = sf.getType().getValueSource(sf, null);
