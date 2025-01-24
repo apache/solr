@@ -16,7 +16,14 @@
  */
 package org.apache.solr.common.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -92,5 +99,61 @@ public class URLUtil {
     }
 
     return url;
+  }
+
+  /**
+   * Construct a V1 base url for the Solr node, given its name (e.g., 'app-node-1:8983_solr') and a
+   * URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @return url that looks like {@code https://app-node-1:8983/solr}
+   * @throws IllegalArgumentException if the provided node name is malformed
+   */
+  public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
+    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+  }
+
+  /**
+   * Construct a V1 or a V2 base url for the Solr node, given its name (e.g.,
+   * 'app-node-1:8983_solr') and a URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @param isV2 whether a V2 url should be constructed
+   * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
+   *     https://app-node-1:8983/solr} (V1)
+   * @throws IllegalArgumentException if the provided node name is malformed
+   */
+  public static String getBaseUrlForNodeName(
+      final String nodeName, final String urlScheme, boolean isV2) {
+    final int colonAt = nodeName.indexOf(':');
+    if (colonAt == -1) {
+      throw new IllegalArgumentException(
+          "nodeName does not contain expected ':' separator: " + nodeName);
+    }
+
+    final int _offset = nodeName.indexOf('_', colonAt);
+    if (_offset < 0) {
+      throw new IllegalArgumentException(
+          "nodeName does not contain expected '_' separator: " + nodeName);
+    }
+    final String hostAndPort = nodeName.substring(0, _offset);
+    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
+  }
+
+  /**
+   * Construct base Solr URL to a Solr node name
+   *
+   * @param solrUrl Given a base Solr URL string (e.g., 'https://app-node-1:8983/solr')
+   * @return Node name that looks like {@code app-node-1:8983_solr}
+   * @throws MalformedURLException if the provided URL string is malformed
+   * @throws URISyntaxException if the provided URL string could not be parsed as a URI reference.
+   */
+  public static String getNodeNameForBaseUrl(String solrUrl)
+      throws MalformedURLException, URISyntaxException {
+    URL url = new URI(solrUrl).toURL();
+    return url.getAuthority() + url.getPath().replace('/', '_');
   }
 }

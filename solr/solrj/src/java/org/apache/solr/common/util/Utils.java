@@ -39,7 +39,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -739,9 +738,11 @@ public class Utils {
    * @param urlScheme scheme for the base url ('http' or 'https')
    * @return url that looks like {@code https://app-node-1:8983/solr}
    * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String)}
    */
+  @Deprecated
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
-    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
   /**
@@ -754,23 +755,12 @@ public class Utils {
    * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
    *     https://app-node-1:8983/solr} (V1)
    * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String, boolean)}
    */
+  @Deprecated
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
-    final int colonAt = nodeName.indexOf(':');
-    if (colonAt == -1) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected ':' separator: " + nodeName);
-    }
-
-    final int _offset = nodeName.indexOf('_', colonAt);
-    if (_offset < 0) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected '_' separator: " + nodeName);
-    }
-    final String hostAndPort = nodeName.substring(0, _offset);
-    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, isV2);
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
