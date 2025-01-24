@@ -282,10 +282,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Replica)) return false;
+    if (!(o instanceof Replica other)) return false;
     if (!super.equals(o)) return false;
-
-    Replica other = (Replica) o;
 
     return name.equals(other.name);
   }
@@ -331,6 +329,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return state;
   }
 
+  @Deprecated
   public void setState(State state) {
     this.state = state;
     propMap.put(ReplicaStateProps.STATE, this.state.toString());

@@ -24,7 +24,7 @@ All of the examples in this section assume you are running the "techproducts" So
 
 [source,bash]
 ----
-bin/solr start -c -e techproducts
+bin/solr start -e techproducts
 ----
 
 [[create]]
@@ -228,6 +228,7 @@ When such a collection is deleted, its autocreated configset will be deleted by 
 +
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field.
 If the field specified is null in the document, the document will be rejected.
+For nested documents, the route field must match among all the documents in the hierarchy.
 +
 Please note that xref:configuration-guide:realtime-get.adoc[] or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
@@ -989,7 +990,7 @@ There are additionally a number of optional parameters that determine the target
 If they are not specified in the request then their values are copied from the source collection.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
-`shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
+`shards`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
 When the reindexing process has completed the target collection is marked using
 `property.rx: "finished"`, and the source collection state is updated to become read-write.
@@ -1049,11 +1050,9 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=techpro
 V2 API::
 +
 ====
-The closest V2 API is this one, but doesn't support all the features of the V1 equivalent.
-
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts_v2
+curl -X GET "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
 ----
 ====
 ======
@@ -1071,7 +1070,8 @@ Such incompatibilities may result from incompatible schema changes or after migr
 |===
 +
 Collection name.
-If missing then it means all collections.
+Provided as a query-parameter in v1 requests, and as a path-parameter in v2.
+If missing then information is returned about all collections (supported by v1 requests only).
 
 `coreInfo`::
 +
@@ -2256,7 +2256,7 @@ In this example:
 This is considered successful.
 * In the "successes" section, core_node23 was _not_ the leader for shard3, so leadership was assigned to that replica.
 
-The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as requried.
+The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as required.
 If a replica cannot be made leader due to not being healthy (for example, it is on a Solr instance that is not running), it's also considered success.
 
 [source,json]

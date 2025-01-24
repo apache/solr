@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.NavigableObject;
@@ -35,9 +35,9 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
   private volatile boolean isClosed = false;
   private final Map<String, Map<String, Object>> nodeVsTagsCache = new ConcurrentHashMap<>();
   private ZkStateReader zkStateReader;
-  private final SolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
-  public NodesSysPropsCacher(SolrClient solrClient, ZkStateReader zkStateReader) {
+  public NodesSysPropsCacher(Http2SolrClient solrClient, ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
     this.solrClient = solrClient;
     zkStateReader.registerLiveNodesListener(
@@ -86,10 +86,12 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
     }
 
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", msp);
-    req.setBasePath(zkStateReader.getBaseUrlForNodeName(nodeName));
     try {
       LinkedHashMap<String, Object> result = new LinkedHashMap<>();
-      NavigableObject response = solrClient.request(req);
+      NavigableObject response =
+          solrClient
+              .requestWithBaseUrl(zkStateReader.getBaseUrlForNodeName(nodeName), null, req)
+              .getResponse();
       NavigableObject metrics = (NavigableObject) response._get("metrics", MapWriter.EMPTY);
       keys.forEach((tag, key) -> result.put(tag, metrics._get(key, null)));
       return result;

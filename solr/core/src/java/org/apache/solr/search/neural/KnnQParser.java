@@ -26,8 +26,8 @@ import org.apache.solr.search.SyntaxError;
 public class KnnQParser extends AbstractVectorQParserBase {
 
   // retrieve the top K results based on the distance similarity function
-  static final String TOP_K = "topK";
-  static final int DEFAULT_TOP_K = 10;
+  protected static final String TOP_K = "topK";
+  protected static final int DEFAULT_TOP_K = 10;
 
   public KnnQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);

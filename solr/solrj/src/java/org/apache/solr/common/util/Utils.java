@@ -165,8 +165,7 @@ public class Utils {
 
   @SuppressWarnings({"unchecked"})
   public static void forEachMapEntry(Object o, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
-    if (o instanceof MapWriter) {
-      MapWriter m = (MapWriter) o;
+    if (o instanceof MapWriter m) {
       try {
         m.writeMap(
             new MapWriter.EntryWriter() {
@@ -530,8 +529,7 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return null;
         if (idx > -1) {
-          if (o instanceof List) {
-            List<?> l = (List<?>) o;
+          if (o instanceof List<?> l) {
             o = idx < l.size() ? l.get(idx) : null;
           } else if (o instanceof IteratorWriter) {
             o = getValueAt((IteratorWriter) o, idx);
@@ -755,9 +753,11 @@ public class Utils {
    * @param urlScheme scheme for the base url ('http' or 'https')
    * @return url that looks like {@code https://app-node-1:8983/solr}
    * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String)}
    */
+  @Deprecated
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
-    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
   /**
@@ -770,22 +770,12 @@ public class Utils {
    * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
    *     https://app-node-1:8983/solr} (V1)
    * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String, boolean)}
    */
+  @Deprecated
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
-    final int colonAt = nodeName.indexOf(':');
-    if (colonAt == -1) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected ':' separator: " + nodeName);
-    }
-
-    final int _offset = nodeName.indexOf('_', colonAt);
-    if (_offset < 0) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected '_' separator: " + nodeName);
-    }
-    final String hostAndPort = nodeName.substring(0, _offset);
-    return urlScheme + "://" + hostAndPort + "/" + (isV2 ? "api" : "solr");
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, isV2);
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -1175,29 +1165,10 @@ public class Utils {
     }
   }
 
+  /** Reads an input stream into a byte array. Does not close the input. */
   public static ByteBuffer toByteArray(InputStream is) throws IOException {
-    return toByteArray(is, Integer.MAX_VALUE);
-  }
-
-  /**
-   * Reads an input stream into a byte array
-   *
-   * @param is the input stream
-   * @return the byte array
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public static ByteBuffer toByteArray(InputStream is, long maxSize) throws IOException {
     try (BAOS bos = new BAOS()) {
-      long sz = 0;
-      int next = is.read();
-      while (next > -1) {
-        if (++sz > maxSize) {
-          throw new BufferOverflowException();
-        }
-        bos.write(next);
-        next = is.read();
-      }
-      bos.flush();
+      is.transferTo(bos);
       return bos.getByteBuffer();
     }
   }

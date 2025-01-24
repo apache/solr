@@ -41,8 +41,7 @@ public class SolrInputField implements Iterable<Object>, Serializable {
    * then that collection will be used as the backing collection for the values.
    */
   public void setValue(Object v) {
-    if (v instanceof Object[]) {
-      Object[] arr = (Object[]) v;
+    if (v instanceof Object[] arr) {
       Collection<Object> c = new ArrayList<>(arr.length);
       for (Object o : arr) {
         c.add(o);
@@ -100,8 +99,7 @@ public class SolrInputField implements Iterable<Object>, Serializable {
   // ---------------------------------------------------------------
 
   public Object getFirstValue() {
-    if (value instanceof Collection) {
-      Collection<?> c = (Collection<?>) value;
+    if (value instanceof Collection<?> c) {
       if (c.size() > 0) {
         return c.iterator().next();
       }

@@ -86,9 +86,7 @@ public class StringDistanceFunction extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof StringDistanceFunction)) return false;
-
-    StringDistanceFunction that = (StringDistanceFunction) o;
+    if (!(o instanceof StringDistanceFunction that)) return false;
 
     if (!dist.equals(that.dist)) return false;
     if (!str1.equals(that.str1)) return false;

@@ -52,6 +52,21 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
+  public enum ApiVersion {
+    V1("/solr"),
+    V2("/api");
+
+    private final String apiPrefix;
+
+    ApiVersion(String apiPrefix) {
+      this.apiPrefix = apiPrefix;
+    }
+
+    public String getApiPrefix() {
+      return apiPrefix;
+    }
+  }
+
   public enum SolrRequestType {
     QUERY,
     UPDATE,
@@ -189,6 +204,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   /**
+   * Indicates which API version this request will make
+   *
+   * <p>Defaults implementation returns 'V1'.
+   */
+  public ApiVersion getApiVersion() {
+    return ApiVersion.V1;
+  }
+
+  /**
    * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
    */
   @Deprecated
@@ -226,7 +250,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
       throws SolrServerException, IOException {
     long startNanos = System.nanoTime();
     T res = createResponse(client);
-    res.setResponse(client.request(this, collection));
+    var namedList = client.request(this, collection);
+    res.setResponse(namedList);
     long endNanos = System.nanoTime();
     res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;
@@ -246,18 +271,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public String getCollection() {
     return getParams() == null ? null : getParams().get("collection");
-  }
-
-  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
-  public void setBasePath(String path) {
-    if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
-
-    this.basePath = path;
-  }
-
-  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
-  public String getBasePath() {
-    return basePath;
   }
 
   public void addHeader(String key, String value) {

@@ -2,9 +2,11 @@
 dependencies:
   - changed-files:
       - any-glob-to-any-file:
-        - versions.props
-        - versions.lock
-        - solr/licenses/**
+        - "gradle/libs.versions.toml" # Solr 10+
+        - "**/*.lockfile"
+        - "versions.props" # Solr < v10
+        - "versions.lock"
+        - "solr/licenses/**"
 
 # Add 'documentation' label to any changes within ref-guide or dev-docs
 documentation:
@@ -121,11 +123,6 @@ module:gcs-repository:
   - changed-files:
       - any-glob-to-any-file:
           - solr/modules/gcs-repository/**
-
-module:hadoop-auth:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/modules/hadoop-auth/**
 
 module:hdfs:
   - changed-files:

@@ -146,8 +146,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     handleAwareCallbacks(newest.getLoader(), instance, core);
     T old = inst;
     inst = (T) instance;
-    if (old instanceof AutoCloseable) {
-      AutoCloseable closeable = (AutoCloseable) old;
+    if (old instanceof AutoCloseable closeable) {
       try {
         closeable.close();
       } catch (Exception e) {
@@ -158,8 +157,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
   }
 
   private void handleAwareCallbacks(SolrResourceLoader loader, Object instance, SolrCore core) {
-    if (instance instanceof SolrCoreAware) {
-      SolrCoreAware coreAware = (SolrCoreAware) instance;
+    if (instance instanceof SolrCoreAware coreAware) {
       if (!core.getResourceLoader().addToCoreAware(coreAware)) {
         coreAware.inform(core);
       }

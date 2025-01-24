@@ -102,8 +102,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
       }
     }
     if (!CommandOperation.captureErrors(commands).isEmpty()) return null;
-    if (authenticationProvider instanceof ConfigEditablePlugin) {
-      ConfigEditablePlugin editablePlugin = (ConfigEditablePlugin) authenticationProvider;
+    if (authenticationProvider instanceof ConfigEditablePlugin editablePlugin) {
       return editablePlugin.edit(latestConf, commands);
     }
     throw new SolrException(ErrorCode.BAD_REQUEST, "This cannot be edited");
@@ -223,11 +222,8 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   @Override
   protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
     if (forwardCredentials) {
-      if (httpContext instanceof HttpClientContext) {
-        HttpClientContext httpClientContext = (HttpClientContext) httpContext;
-        if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal) {
-          BasicAuthUserPrincipal principal =
-              (BasicAuthUserPrincipal) httpClientContext.getUserToken();
+      if (httpContext instanceof HttpClientContext httpClientContext) {
+        if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal principal) {
           String userPassBase64 =
               Base64.getEncoder()
                   .encodeToString(
@@ -245,8 +241,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   protected boolean interceptInternodeRequest(Request request) {
     if (forwardCredentials) {
       Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
-      if (userToken instanceof BasicAuthUserPrincipal) {
-        BasicAuthUserPrincipal principal = (BasicAuthUserPrincipal) userToken;
+      if (userToken instanceof BasicAuthUserPrincipal principal) {
         String userPassBase64 =
             Base64.getEncoder()
                 .encodeToString(
@@ -311,8 +306,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof BasicAuthUserPrincipal)) return false;
-      BasicAuthUserPrincipal that = (BasicAuthUserPrincipal) o;
+      if (!(o instanceof BasicAuthUserPrincipal that)) return false;
       return Objects.equals(username, that.username) && Objects.equals(password, that.password);
     }
 

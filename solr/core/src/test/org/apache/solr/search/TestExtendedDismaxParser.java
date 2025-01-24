@@ -3124,8 +3124,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       Query query, String field, String value, int boost, boolean fuzzy) {
 
     float queryBoost = 1f;
-    if (query instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) query;
+    if (query instanceof BoostQuery bq) {
       query = bq.getQuery();
       queryBoost = bq.getBoost();
     }

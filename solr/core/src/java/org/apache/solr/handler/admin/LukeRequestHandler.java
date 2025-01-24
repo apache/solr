@@ -547,9 +547,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
   private static SimpleOrderedMap<Object> getAnalyzerInfo(Analyzer analyzer) {
     SimpleOrderedMap<Object> aninfo = new SimpleOrderedMap<>();
     aninfo.add("className", analyzer.getClass().getName());
-    if (analyzer instanceof TokenizerChain) {
-
-      TokenizerChain tchain = (TokenizerChain) analyzer;
+    if (analyzer instanceof TokenizerChain tchain) {
 
       CharFilterFactory[] cfiltfacs = tchain.getCharFilterFactories();
       if (0 < cfiltfacs.length) {
