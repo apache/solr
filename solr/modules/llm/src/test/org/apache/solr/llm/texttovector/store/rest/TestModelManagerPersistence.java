@@ -30,7 +30,7 @@ public class TestModelManagerPersistence extends TestLlmBase {
 
   @Before
   public void init() throws Exception {
-    setupTest("solrconfig-llm.xml", "schema.xml", false, false, true);
+    setupTest("solrconfig-llm.xml", "schema.xml", false, true);
   }
 
   @After
