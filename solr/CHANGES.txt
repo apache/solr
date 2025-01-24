@@ -150,6 +150,8 @@ New Features
   fetching and computing it on the fly.  To avoid a backwards compatibilty concern, this won't work
   for wt=javabin.  (Matthew Biscocho, David Smiley)
 
+* SOLR-17626: Add RawTFSimilarityFactory class. (Christine Poerschke)
+
 Improvements
 ---------------------
 * SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
