@@ -51,6 +51,10 @@ public class SpellCheckCollator {
   private boolean suggestionsMayOverlap = false;
   private int docCollectionLimit = 0;
 
+  private static volatile boolean mergeSpellCheckCorrections =
+      Boolean.parseBoolean(
+          System.getProperty("solr.SpellCheckCollator.mergeSpellCheckCorrections", "true"));
+
   public List<SpellCheckCollation> collate(
       SpellingResult result, String originalQuery, ResponseBuilder ultimateResponse) {
     List<SpellCheckCollation> collations = new ArrayList<>();
@@ -212,7 +216,8 @@ public class SpellCheckCollator {
     return collations;
   }
 
-  private String getCollation(String origQuery, List<SpellCheckCorrection> corrections) {
+  static String getCollation(String origQuery, List<SpellCheckCorrection> correctionsAll) {
+    List<SpellCheckCorrection> corrections = mergeSpellCheckCorrections(correctionsAll);
     StringBuilder collation = new StringBuilder(origQuery);
     int offset = 0;
     String corr = "";
@@ -260,11 +265,70 @@ public class SpellCheckCollator {
       }
       corr = corrSb.toString();
       int startIndex = tok.startOffset() + offset - oneForReqOrProhib;
+
+      if (startIndex < 0) { // avoiding StringIndexOutOfBoundsException see SOLR-13360
+        logSIOOBEDebugData(origQuery, correctionsAll);
+        break;
+      }
+
       int endIndex = tok.endOffset() + offset;
       collation.replace(startIndex, endIndex, corr);
       offset += corr.length() - oneForReqOrProhib - (tok.endOffset() - tok.startOffset());
     }
     return collation.toString();
+  }
+
+  static List<SpellCheckCorrection> mergeSpellCheckCorrections(
+      List<SpellCheckCorrection> corrections) {
+    if (!mergeSpellCheckCorrections) {
+      return corrections;
+    }
+
+    // Note. fix overlapping token intervals
+    // - sorting by token.startOffset. unclear if this can cause some reshuffle where lower rank
+    // items with the same position can come first
+    // - remove overlapping [startOffset, endOffset] intervals
+
+    List<SpellCheckCorrection> filtered = new ArrayList<SpellCheckCorrection>(corrections);
+    filtered.sort(new PossibilityIterator.StartOffsetComparator());
+
+    int end = -1;
+    for (Iterator<SpellCheckCorrection> iterator = filtered.iterator(); iterator.hasNext(); ) {
+      SpellCheckCorrection correction = iterator.next();
+      Token t = correction.getOriginal();
+      if (t.startOffset() > end && t.endOffset() > end) {
+        end = t.endOffset();
+      } else {
+        iterator.remove();
+      }
+    }
+
+    return filtered;
+  }
+
+  static void logSIOOBEDebugData(String origQuery, List<SpellCheckCorrection> corrections) {
+    if (log.isDebugEnabled()) {
+      StringBuilder info = new StringBuilder(origQuery);
+      info.append("[");
+      for (SpellCheckCorrection correction : corrections) {
+        Token tok = correction.getOriginal();
+        info.append(
+            "('"
+                + tok
+                + "', "
+                + tok.startOffset()
+                + ", "
+                + tok.endOffset()
+                + ", "
+                + tok.getPositionIncrement()
+                + ", '"
+                + correction.getOriginal()
+                + "'),");
+      }
+      info.append("]");
+      info.append(", mergeSpellCheckCorrections=" + mergeSpellCheckCorrections);
+      log.debug("logging SIOOBE debug data, please report to SOLR-13360 {}", info);
+    }
   }
 
   public SpellCheckCollator setMaxCollations(int maxCollations) {

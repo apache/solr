@@ -386,7 +386,7 @@ public class PossibilityIterator implements Iterator<PossibilityIterator.RankedS
     }
   }
 
-  private static class StartOffsetComparator implements Comparator<SpellCheckCorrection> {
+  static class StartOffsetComparator implements Comparator<SpellCheckCorrection> {
     @Override
     public int compare(SpellCheckCorrection o1, SpellCheckCorrection o2) {
       return o1.getOriginal().startOffset() - o2.getOriginal().startOffset();

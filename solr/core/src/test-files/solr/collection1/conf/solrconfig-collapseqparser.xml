@@ -177,6 +177,13 @@
       <str name="field">a_s</str>
       <int name="minQueryLength">3</int>
     </lst>
+
+    <lst name="spellchecker">
+      <str name="name">direct_spelltest_t</str>
+      <str name="classname">solr.DirectSolrSpellChecker</str>
+      <str name="field">spelltest_t</str>
+      <int name="minQueryLength">3</int>
+    </lst>
   </searchComponent>
 
   <!--
