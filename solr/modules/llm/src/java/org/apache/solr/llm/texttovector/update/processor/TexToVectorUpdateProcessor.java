@@ -32,30 +32,16 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-class TexToVectorUpdateProcessor extends UpdateRequestProcessor implements ResourceLoaderAware, ManagedResourceObserver {
+
+class TexToVectorUpdateProcessor extends UpdateRequestProcessor{
   private final String inputField;
   private final String outputField;
   private final String model;
   private SolrTextToVectorModel textToVector;
   private ManagedTextToVectorModelStore modelStore = null;
-
-  @Override
-  public void inform(ResourceLoader loader) {
-    final SolrResourceLoader solrResourceLoader = (SolrResourceLoader) loader;
-    ManagedTextToVectorModelStore.registerManagedTextToVectorModelStore(solrResourceLoader, this);
-  }
-
-  @Override
-  public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
-          throws SolrException {
-    if (res instanceof ManagedTextToVectorModelStore) {
-      modelStore = (ManagedTextToVectorModelStore) res;
-    }
-    if (modelStore != null) {
-      modelStore.loadStoredModels();
-    }
-  }
   
   public TexToVectorUpdateProcessor(
       String inputField,
@@ -88,8 +74,14 @@ class TexToVectorUpdateProcessor extends UpdateRequestProcessor implements Resou
     
     SolrInputDocument doc = cmd.getSolrInputDocument();
     String textToEmbed = doc.get(inputField).getValue().toString();//add null checks and
+   
     float[] vector = textToVector.vectorise(textToEmbed);
-    doc.addField(outputField, vector);
+    List<Float> vectorAsList = new ArrayList<Float>(vector.length);
+    for (float f : vector) {
+      vectorAsList.add(f);
+    }
+    
+    doc.addField(outputField, vectorAsList);
     super.processAdd(cmd);
   }
 }

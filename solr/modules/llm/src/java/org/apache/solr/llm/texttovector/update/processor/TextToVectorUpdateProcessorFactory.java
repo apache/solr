@@ -31,59 +31,56 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 /**
  * This class implements an UpdateProcessorFactory for the Text Embedder Update Processor. It takes
  * in input a series of parameter that will be necessary to instantiate and use the embedder
- *
  */
 public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
     private static final String INPUT_FIELD_PARAM = "inputField";
-  private static final String OUTPUT_FIELD_PARAM = "outputField";
-  private static final String EMBEDDING_MODEl_NAME_PARAM = "model";
+    private static final String OUTPUT_FIELD_PARAM = "outputField";
+    private static final String EMBEDDING_MODEl_NAME_PARAM = "model";
 
-  String  inputField;
-  String  outputField;
-  String  embeddingModelName;
-  SolrParams params;
+    String inputField;
+    String outputField;
+    String embeddingModelName;
+    SolrParams params;
 
-    
-    
-  @Override
-  public void init(final NamedList<?> args) {
-      if (args != null) {
-          params = args.toSolrParams();
-          inputField = params.get(INPUT_FIELD_PARAM);
-          checkNotNull(INPUT_FIELD_PARAM, inputField);
 
-          outputField = params.get(OUTPUT_FIELD_PARAM);
-          checkNotNull(OUTPUT_FIELD_PARAM, outputField);
-          
-          embeddingModelName = params.get(EMBEDDING_MODEl_NAME_PARAM);
-          checkNotNull(EMBEDDING_MODEl_NAME_PARAM, embeddingModelName);
-      }
-  }
+    @Override
+    public void init(final NamedList<?> args) {
+        if (args != null) {
+            params = args.toSolrParams();
+            inputField = params.get(INPUT_FIELD_PARAM);
+            checkNotNull(INPUT_FIELD_PARAM, inputField);
 
-  private void checkNotNull(String paramName, Object param) {
-    if (param == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Text to Vector UpdateProcessor '" + paramName + "' can not be null");
+            outputField = params.get(OUTPUT_FIELD_PARAM);
+            checkNotNull(OUTPUT_FIELD_PARAM, outputField);
+
+            embeddingModelName = params.get(EMBEDDING_MODEl_NAME_PARAM);
+            checkNotNull(EMBEDDING_MODEl_NAME_PARAM, embeddingModelName);
+        }
     }
-  }
 
-  @Override
-  public UpdateRequestProcessor getInstance(
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    private void checkNotNull(String paramName, Object param) {
+        if (param == null) {
+            throw new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "Text to Vector UpdateProcessor '" + paramName + "' can not be null");
+        }
+    }
 
-    final SchemaField outputFieldSchema = req.getCore().getLatestSchema().getField(outputField);
-    assertIsDenseVectorField(outputFieldSchema);
+    @Override
+    public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+        req.getCore().getLatestSchema().getField(inputField);
+        final SchemaField outputFieldSchema = req.getCore().getLatestSchema().getField(outputField);
+        assertIsDenseVectorField(outputFieldSchema);
 
-    return new TexToVectorUpdateProcessor(inputField, outputField, embeddingModelName, req, next);
-  }
+        return new TexToVectorUpdateProcessor(inputField, outputField, embeddingModelName, req, next);
+    }
 
     protected void assertIsDenseVectorField(SchemaField schemaField) {
         FieldType fieldType = schemaField.getType();
         if (!(fieldType instanceof DenseVectorField)) {
             throw new SolrException(
-                    SolrException.ErrorCode.BAD_REQUEST,
-                    "only DenseVectorField is compatible with Vector Query Parsers");
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "only DenseVectorField is compatible with Vector Query Parsers: " + schemaField.getName());
         }
     }
 
