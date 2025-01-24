@@ -1,0 +1,9 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+org.apache.lucene:lucene-analysis-common:9.12.1=javadocs
+org.apache.lucene:lucene-analysis-stempel:9.12.1=javadocs
+org.apache.lucene:lucene-core:9.12.1=javadocs
+org.apache.lucene:lucene-queryparser:9.12.1=javadocs
+org.apache.lucene:lucene-spatial-extras:9.12.1=javadocs
+empty=changesHtml,jarValidation,minimalSite,site

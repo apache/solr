@@ -30,43 +30,40 @@ In order to upgrade a dependency, you need to run through a number of steps:
 
 1. Identify the available versions from e.g. https://search.maven.org[Maven Central]
 2. Update the version in `gradle/libs.versions.toml` file
-3. Run `./gradlew writeLocks` to re-generate `versions.lock`. Note that this may cause a cascading effect where
+3. Run `./gradlew resolveAndLockAll` to re-generate lockfiles. Note that this may cause a cascading effect where
    the locked version of other dependencies also change.
 4. In case of a conflict, resolve the conflict according to `help/dependencies.txt`
-5. Check if there are any constraints that are obsolete after the dependency update
-6. Update the license and notice files of the changed dependencies. See `help/dependencies.txt` for
-   details.
-7. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
-8. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
+5. Update the license and notice files of the changed dependencies. See `help/dependencies.txt` for details.
+6. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
+7. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
    You'll need to decide whether to keep or exclude them. See `help/dependencies.txt` for details.
 
-=== Reviewing Constraints
+=== Constraints and Version Alignment
 
-The constraints are defined in gradle/validation/dependencies.gradle. There, if the updated dependency is listed,
-the constraint can be reviewed, updated or removed.
+To sync the version of direct and transitive dependencies across the project, we iterate in the `:platform` module
+over the libraries defined in `gradle/libs.version.toml` and add them as constraints. Then, we use the module in
+main modules like `:solr:api` and `:solr:core` and transitively pass down to all other modules the constraints.
 
-The constraints fall into two "groups". In the first group there are dependency constraints from dependencies
-that our project directly includes and require version alignment to sync the versions across all transitive
-dependencies. In the second group are dependencies that are only present as transitive dependencies.
-There, we try to follow the convention to provide additional information with "which dependencies use what version",
-so that the next person reviewing the constraint does not have to look it up. However, this is quite time-consuming
-to analyze the dependencies and therefore subject to change.
+If a new module does not depend on another module that already includes `:platform` as a platform dependency, it should
+explicitly add it to sync the versions with the rest of the project. `:solr:server` is one case where this is necessary.
 
-In order to review a constraint, you have to check if the updated dependency is mentioned in any of the constraints,
-either as a reason for another dependency constraint or as the constraint's dependency. Removing temporarily
-a constraint, the task writeLocks will fail if the constraint is still required.
+=== Addressing Security Vulnerabilities
 
-This process and the constraints of dependencies.gradle are not optimal, as it is quite time-consuming and not obvious
-by just looking at it. We just haven't found yet a more efficient way to maintain these constraints.
+When it comes to security vulnerabilities that are found in direct or transitive dependencies, the recommended way to
+address them is to update the specific library if there is a new release that solves this issue. For both direct and
+transitive dependencies, we simply have to update the version as described above.
+
+In case it is a transitive dependency that is not directly used, you can simply add it to `libs.versions.toml` as you
+would with any other dependency. The dependency resolution approach defined in `:platform` will handle the rest.
+Don't forget to add a `# @keep` note with a reference to the vulnerable version and CVE that is fixed with the explicit
+definition of the library and new version. This way it is easier to keep track of unreferenced dependencies in our
+libraries toml file, and we can clean them up once the libraries using the modules are updated.
 
 == Renovate bot Pull Requests
 
-The renovate bot may be replaced in the future with dependabot and this section may only be relevant for older
-versions (<10.0). See https://lists.apache.org/thread/1sb9ttv3lp57z2yod1htx1fykp5sj73z for updates.
-
 A member of the Solr community operates a Github bot running https://github.com/renovatebot/renovate[Renovate], which
 files Pull Requests to Solr with dependency upgrade proposals. The PRs are labeled `dependencies` and do include
-changes resulting from `./gradlew writeLocks` and `updateLicenses`.
+changes resulting from the gradle tasks `resolveAndLockAll` and `updateLicenses`.
 
 Community members and committers can then review, and if manual changes are needed, help bring the PR to completion.
 For many dependencies, a changelog is included in the PR text, which may help guide the upgrade decision.
@@ -78,9 +75,13 @@ that will get its own separate Pull Request, so you can choose.
 If an upgrade is decided, simply merge (and backport) the PR. To skip an upgrade, close the PR. If a PR is left open,
 it will be re-used and auto updated whenever a newer patch- or minor version gets available. Thus, one can reduce
 churn from frequently-updated dependencies by delaying merge until a few weeks before a new release. One can also
-choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`
+choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`.
+
+Please note that Solr version prior to 10.X use a versions resolution plugin that uses `versions.lock` instead of
+`libs.version.toml`. Therefore, changes cannot be backported via cherry-pick.
 
 === Configuring renovate.json
+
 While the bot runs on a https://github.com/solrbot/renovate-github-action[GitHub repo external to the project],
 the bot behavior can be tailored by editing `.github/renovate.json` in this project.
 See https://docs.renovatebot.com[Renovatebot docs] for available options.

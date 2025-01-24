@@ -78,7 +78,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertNotNull(cluster);
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     assertNotNull(cc);
-    helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester(cc));
+    helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester());
   }
 
   @Test

@@ -73,7 +73,7 @@ tar zxf solr-{solr-full-version}.tgz
 
 Once extracted, you are now ready to run Solr using the instructions provided in the <<Starting Solr>> section below.
 
-TIP: Windows includes the `tar` tool since Windows 10. Open a command line window and execute the above comamnd. There are also several 3rd party un-archiving tools that support `.tar` archives.
+TIP: Windows includes the `tar` tool since Windows 10. Open a command line window and execute the above command. There are also several 3rd party un-archiving tools that support `.tar` archives.
 
 == Directory Layout
 

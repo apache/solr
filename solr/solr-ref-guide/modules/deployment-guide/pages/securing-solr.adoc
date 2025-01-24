@@ -75,7 +75,7 @@ The authorization plugins that ship with Solr are:
 
 == Audit Logging
 
-Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs.
+Audit logging will record an audit trail of incoming requests to your cluster, such as users being denied access to admin APIs.
 Learn more about audit logging and how to implement an audit logger plugin in the section xref:audit-logging.adoc[].
 
 == IP Access Control
