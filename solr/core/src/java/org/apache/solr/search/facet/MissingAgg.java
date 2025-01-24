@@ -45,7 +45,7 @@ public class MissingAgg extends SimpleAggValueSource {
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
         Query query = null;
         if (sf.hasDocValues()) {
-          query = new FieldExistsQuery(sf.getName());
+          query = sf.getType().getExistenceQuery(null, sf);
         } else {
           query = sf.getType().getRangeQuery(null, sf, null, null, false, false);
         }
