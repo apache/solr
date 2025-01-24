@@ -353,12 +353,6 @@ led to the suppression of exceptions. (Andrey Bozhko)
  asMap (no-arg only), get(key, default).  Added getOrDefault.  Deprecated the SimpleMap interface as well as the
  entirety of the SolrJ package org.apache.solr.cluster.api, which wasn't used except for SimpleMap.  (David Smiley)
 
-==================  9.7.1 ==================
-Bug Fixes
----------------------
-* SOLR-17530: Metrics: Thew new Prometheus response writer wasn't detecting TLOG or PULL replicas properly.
-  (Matthew Biscocho)
-
 ==================  9.7.0 ==================
 New Features
 ---------------------
