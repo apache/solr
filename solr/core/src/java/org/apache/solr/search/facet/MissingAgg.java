@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.function.IntFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
