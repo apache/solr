@@ -26,7 +26,15 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -52,7 +60,6 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 public class CrossCollectionJoinQuery extends Query {
 
@@ -316,7 +323,7 @@ public class CrossCollectionJoinQuery extends Query {
     }
 
     @Override
-    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       if (docs == null) {
         docs = getDocSet();
       }
@@ -325,8 +332,7 @@ public class CrossCollectionJoinQuery extends Query {
       if (readerSetIterator == null) {
         return null;
       }
-      Scorer scorer = new ConstantScoreScorer(score(), scoreMode, readerSetIterator);
-      return new SolrDefaultScorerSupplier(scorer);
+      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
     }
 
     @Override

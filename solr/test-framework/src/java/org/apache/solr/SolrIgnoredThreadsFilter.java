@@ -18,6 +18,7 @@ package org.apache.solr;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import java.lang.Thread.State;
+import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
 /** This ignores those threads in Solr for which there is no way to clean up after a suite. */
 public class SolrIgnoredThreadsFilter implements ThreadFilter {
@@ -32,6 +33,9 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
      */
 
     String threadName = t.getName();
+    if (threadName.equals(TimerThread.THREAD_NAME)) {
+      return true;
+    }
 
     // due to netty - will stop on it's own
     if (threadName.startsWith("globalEventExecutor")) {

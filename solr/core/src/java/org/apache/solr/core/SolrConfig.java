@@ -269,12 +269,12 @@ public class SolrConfig implements MapSerializable {
       indexConfig = new SolrIndexConfig(get("indexConfig"), null);
 
       booleanQueryMaxClauseCount =
-          get("query").get("maxBooleanClauses").intVal(IndexSearcher.getMaxClauseCount());
+          get("query").get("maxBooleanClauses").intVal(BooleanQuery.getMaxClauseCount());
       if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
         log.warn(
             "solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} and will have no effect {}",
             booleanQueryMaxClauseCount,
-                IndexSearcher.getMaxClauseCount(),
+            BooleanQuery.getMaxClauseCount(),
             "set 'maxBooleanClauses' in solr.xml to increase global limit");
       }
       prefixQueryMinPrefixLength =

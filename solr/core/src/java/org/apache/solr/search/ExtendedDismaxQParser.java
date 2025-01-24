@@ -368,7 +368,7 @@ public class ExtendedDismaxQParser extends QParser {
    * @return the resulting query (flattened if needed) with "min should match" rules applied as
    *     specified in the config.
    * @see #parseOriginalQuery
-   * @see SolrPluginUtils#flattenBooleanQuery(BooleanQuery.Builder, BooleanQuery)
+   * @see SolrPluginUtils#flattenBooleanQuery
    */
   protected Query parseEscapedQuery(
       ExtendedSolrQueryParser up, String escapedUserQuery, ExtendedDismaxConfiguration config)
@@ -1240,9 +1240,9 @@ public class ExtendedDismaxQParser extends QParser {
                   BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
                   subs.add(
                       new BoostQuery(
-                          booleanQuery.clauses().get(c).query(), boostQuery.getBoost()));
+                          booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
                 } else {
-                  subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).query());
+                  subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).getQuery());
                 }
               }
               q.add(
@@ -1302,17 +1302,17 @@ public class ExtendedDismaxQParser extends QParser {
             break;
           }
           for (int c = 0; c < firstBooleanClauses.size(); ++c) {
-            if (nthBooleanClauses.get(c).query().getClass()
-                    != firstBooleanClauses.get(c).query().getClass()
-                || nthBooleanClauses.get(c).occur() != firstBooleanClauses.get(c).occur()) {
+            if (nthBooleanClauses.get(c).getQuery().getClass()
+                    != firstBooleanClauses.get(c).getQuery().getClass()
+                || nthBooleanClauses.get(c).getOccur() != firstBooleanClauses.get(c).getOccur()) {
               allSame = false;
               break;
             }
-            if (firstBooleanClauses.get(c).query() instanceof BooleanQuery
+            if (firstBooleanClauses.get(c).getQuery() instanceof BooleanQuery
                 && !allSameQueryStructure(
                     Arrays.asList(
-                        firstBooleanClauses.get(c).query(),
-                        nthBooleanClauses.get(c).query()))) {
+                        firstBooleanClauses.get(c).getQuery(),
+                        nthBooleanClauses.get(c).getQuery()))) {
               allSame = false;
               break;
             }
@@ -1336,8 +1336,8 @@ public class ExtendedDismaxQParser extends QParser {
       if (q instanceof BooleanQuery) {
         boolean allOptionalDisMaxQueries = true;
         for (BooleanClause c : ((BooleanQuery) q).clauses()) {
-          if (c.occur() != BooleanClause.Occur.SHOULD
-              || !(c.query() instanceof DisjunctionMaxQuery)) {
+          if (c.getOccur() != BooleanClause.Occur.SHOULD
+              || !(c.getQuery() instanceof DisjunctionMaxQuery)) {
             allOptionalDisMaxQueries = false;
             break;
           }
@@ -1347,7 +1347,7 @@ public class ExtendedDismaxQParser extends QParser {
           // DisjunctionMaxQuery-s. Unwrap the query and add a clause for each contained DisMax
           // query.
           for (BooleanClause c : ((BooleanQuery) q).clauses()) {
-            clauses.add(newBooleanClause(c.query(), occur));
+            clauses.add(newBooleanClause(c.getQuery(), occur));
           }
           return;
         }

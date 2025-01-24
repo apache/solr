@@ -341,7 +341,7 @@ public class MultiThreadedSearcher {
         } else {
           mergedTopDocs = TopDocs.merge(0, len, topDocs);
         }
-        totalHits = (int) mergedTopDocs.totalHits.value();
+        totalHits = (int) mergedTopDocs.totalHits.value;
       }
       return new TopDocsResult(mergedTopDocs, totalHits);
     }

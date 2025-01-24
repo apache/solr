@@ -26,7 +26,6 @@ import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValuesSkipper;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -102,7 +101,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     } else {
       Version minVersion = Version.LATEST;
       for (LeafReaderContext leafReaderContext : reader.leaves()) {
-        Version leafVersion = leafReaderContext.reader().getMetaData().minVersion();
+        Version leafVersion = leafReaderContext.reader().getMetaData().getMinVersion();
         if (leafVersion == null) {
           minVersion = null;
           break;
@@ -113,18 +112,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       LeafMetaData leafMetaData = reader.leaves().get(0).reader().getMetaData();
       metaData =
           new LeafMetaData(
-              leafMetaData.createdVersionMajor(),
+              leafMetaData.getCreatedVersionMajor(),
               minVersion,
-              leafMetaData.sort(),
+              leafMetaData.getSort(),
               leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
-  }
-
-  @Override
-  public DocValuesSkipper getDocValuesSkipper(String field) throws IOException {
-    //TODO implement skipping
-    return null;
   }
 
   @Override
@@ -320,6 +313,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  @Deprecated
+  public Fields getTermVectors(int docID) throws IOException {
+    return in.getTermVectors(docID);
+  }
+
+  @Override
   public TermVectors termVectors() throws IOException {
     ensureOpen();
     return in.termVectors();
@@ -341,6 +340,13 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return in.maxDoc();
+  }
+
+  @Override
+  @Deprecated
+  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
+    ensureOpen();
+    in.document(docID, visitor);
   }
 
   @Override

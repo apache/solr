@@ -35,9 +35,10 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.FieldExistsQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
@@ -371,7 +372,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
-      assertEquals(26, ((TermInSetQuery) q).getTermsCount());
+      assertEquals(26, ((TermInSetQuery) q).getTermData().size());
 
       // large numeric filter query should use TermsQuery
       qParser =
@@ -399,7 +400,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
               ((PointInSetQuery) q).getPackedPoints().size());
         }
       } else {
-        assertEquals(20, ((TermInSetQuery) q).getTermsCount());
+        assertEquals(20, ((TermInSetQuery) q).getTermData().size());
       }
 
       // for point fields large filter query should use PointInSetQuery
@@ -425,16 +426,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setParams(params);
       q = qParser.getQuery();
       assertEquals(2, ((BooleanQuery) q).clauses().size());
-      qq = ((BooleanQuery) q).clauses().get(0).query();
+      qq = ((BooleanQuery) q).clauses().get(0).getQuery();
       if (qq instanceof TermQuery) {
-        qq = ((BooleanQuery) q).clauses().get(1).query();
+        qq = ((BooleanQuery) q).clauses().get(1).getQuery();
       }
 
       if (qq instanceof FilterQuery) {
         qq = ((FilterQuery) qq).getQuery();
       }
 
-      assertEquals(26, ((TermInSetQuery) qq).getTermsCount());
+      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
 
       // test mixed boolean query, including quotes (which shouldn't matter)
       qParser =
@@ -447,10 +448,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       assertEquals(4, ((BooleanQuery) q).clauses().size());
       qq = null;
       for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-        qq = clause.query();
+        qq = clause.getQuery();
         if (qq instanceof TermInSetQuery) break;
       }
-      assertEquals(26, ((TermInSetQuery) qq).getTermsCount());
+      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
 
       // test terms queries of two different fields (LUCENE-7637 changed to require all terms be in
       // the same field)
@@ -465,8 +466,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       q = qParser.getQuery();
       assertEquals(2, ((BooleanQuery) q).clauses().size());
       for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-        qq = clause.query();
-        assertEquals(17, ((TermInSetQuery) qq).getTermsCount());
+        qq = clause.getQuery();
+        assertEquals(17, ((TermInSetQuery) qq).getTermData().size());
       }
     }
     req.close();
@@ -1808,13 +1809,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
           assertFalse(
               "For float and double fields \""
                   + query
-                  + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
-              createdQuery instanceof FieldExistsQuery);
+                  + "\" is not an existence query, so the query returned should not be a DocValuesFieldExistsQuery.",
+              createdQuery instanceof DocValuesFieldExistsQuery);
           assertFalse(
               "For float and double fields \""
                   + query
-                  + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
-              createdQuery instanceof FieldExistsQuery);
+                  + "\" is not an existence query, so the query returned should not be a NormsFieldExistsQuery.",
+              createdQuery instanceof NormsFieldExistsQuery);
           assertFalse(
               "For float and double fields \""
                   + query
@@ -1830,8 +1831,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             assertTrue(
                 "Field has docValues, so existence query \""
                     + query
-                    + "\" should return FieldExistsQuery",
-                createdQuery instanceof FieldExistsQuery);
+                    + "\" should return DocValuesFieldExistsQuery",
+                createdQuery instanceof DocValuesFieldExistsQuery);
           } else if (!schemaField.omitNorms()
               && !schemaField
                   .getType()
@@ -1839,8 +1840,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             assertTrue(
                 "Field has norms and no docValues, so existence query \""
                     + query
-                    + "\" should return FieldExistsQuery",
-                createdQuery instanceof FieldExistsQuery);
+                    + "\" should return NormsFieldExistsQuery",
+                createdQuery instanceof NormsFieldExistsQuery);
           } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE
               || schemaField.getType().getNumberType() == NumberType.FLOAT) {
             assertTrue(
@@ -1870,13 +1871,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             assertFalse(
                 "Field doesn't have docValues, so existence query \""
                     + query
-                    + "\" should not return FieldExistsQuery",
-                createdQuery instanceof FieldExistsQuery);
+                    + "\" should not return DocValuesFieldExistsQuery",
+                createdQuery instanceof DocValuesFieldExistsQuery);
             assertFalse(
                 "Field doesn't have norms, so existence query \""
                     + query
-                    + "\" should not return FieldExistsQuery",
-                createdQuery instanceof FieldExistsQuery);
+                    + "\" should not return NormsFieldExistsQuery",
+                createdQuery instanceof NormsFieldExistsQuery);
           }
         }
       }

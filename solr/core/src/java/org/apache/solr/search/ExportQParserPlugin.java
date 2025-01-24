@@ -94,10 +94,10 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Query rewrite(IndexSearcher searcher) throws IOException {
-      Query q = mainQuery.rewrite(searcher);
+    public Query rewrite(IndexReader reader) throws IOException {
+      Query q = mainQuery.rewrite(reader);
       if (q.equals(mainQuery)) {
-        return super.rewrite(searcher);
+        return super.rewrite(reader);
       } else {
         return clone().wrap(q);
       }

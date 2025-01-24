@@ -21,8 +21,17 @@ import java.io.IOException;
 import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
-import org.apache.solr.util.SolrDefaultScorerSupplier;
+import org.apache.lucene.search.BulkScorer;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 
 /** Wraps a {@link Query} to customize the {@link TwoPhaseIterator#matchCost()}. */
 public class MatchCostQuery extends Query {
@@ -57,8 +66,8 @@ public class MatchCostQuery extends Query {
   }
 
   @Override
-  public Query rewrite(IndexSearcher searcher) throws IOException {
-    final Query rewrite = delegate.rewrite(searcher);
+  public Query rewrite(IndexReader reader) throws IOException {
+    final Query rewrite = delegate.rewrite(reader);
     if (delegate.equals(rewrite)) {
       return this; // unchanged
     }
@@ -90,16 +99,16 @@ public class MatchCostQuery extends Query {
       // scorer() so that we can wrap TPI
 
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         final Scorer scorer = weight.scorer(context);
         if (scorer == null) {
           return null;
         }
         final TwoPhaseIterator tpi = scorer.twoPhaseIterator();
         if (tpi == null || tpi.matchCost() == matchCost) {
-          return new SolrDefaultScorerSupplier(scorer); // needn't wrap/delegate
+          return scorer; // needn't wrap/delegate
         }
-        return new SolrDefaultScorerSupplier(new Scorer() { // pass delegated weight
+        return new Scorer(weight) { // pass delegated weight
 
           @Override
           public TwoPhaseIterator twoPhaseIterator() {
@@ -135,7 +144,13 @@ public class MatchCostQuery extends Query {
           public int docID() {
             return scorer.docID();
           }
-        });
+        };
+      }
+
+      // delegate because thus there's no need to care about TPI matchCost if called
+      @Override
+      public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+        return weight.bulkScorer(context);
       }
     };
   }

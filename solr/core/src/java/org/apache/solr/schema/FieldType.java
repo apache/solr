@@ -47,9 +47,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
-import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -482,7 +483,8 @@ public abstract class FieldType extends FieldProperties {
     if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
-    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr), sf.getType().getRewriteMethod(parser, sf));
+    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(parser, query, termStr);
     return query;
   }
@@ -1020,7 +1022,8 @@ public abstract class FieldType extends FieldProperties {
    * to an unbounded rangeQuery.
    *
    * <p>This method should only be overridden whenever a fieldType does not support {@link
-   * org.apache.lucene.search.FieldExistsQuery}. If a fieldType does not support an unbounded
+   * org.apache.lucene.search.DocValuesFieldExistsQuery} or {@link
+   * org.apache.lucene.search.NormsFieldExistsQuery}. If a fieldType does not support an unbounded
    * rangeQuery as an existenceQuery (such as <code>double</code> or <code>float</code> fields),
    * {@link #getSpecializedExistenceQuery} should be overridden.
    *
@@ -1030,10 +1033,10 @@ public abstract class FieldType extends FieldProperties {
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
     if (field.hasDocValues()) {
-      return new FieldExistsQuery(field.getName());
+      return new DocValuesFieldExistsQuery(field.getName());
     } else if (!field.omitNorms()
         && !isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
-      return new FieldExistsQuery(field.getName());
+      return new NormsFieldExistsQuery(field.getName());
     } else {
       // Default to an unbounded range query
       return getSpecializedExistenceQuery(parser, field);

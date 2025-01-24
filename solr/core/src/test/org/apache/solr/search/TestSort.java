@@ -31,8 +31,24 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FilterCollector;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.util.TestUtil;
@@ -242,7 +258,7 @@ public class TestSort extends SolrTestCaseJ4 {
                   }
 
                   @Override
-                  public ScorerSupplier scorerSupplier(LeafReaderContext leafReaderContext) {
+                  public Scorer scorer(LeafReaderContext leafReaderContext) {
                     return null;
                   }
 
@@ -307,7 +323,7 @@ public class TestSort extends SolrTestCaseJ4 {
                 : "zzz";
 
         final TopFieldCollector topCollector =
-            new TopFieldCollectorManager(sort, top, Integer.MAX_VALUE).newCollector();
+            TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves

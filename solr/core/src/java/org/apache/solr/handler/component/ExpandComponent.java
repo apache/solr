@@ -37,7 +37,24 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -761,13 +778,13 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             docs[i] = scoreDoc.doc;
             scores[i] = scoreDoc.score;
           }
-          assert topDocs.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
+          assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
           return new DocSlice(
               0,
               docs.length,
               docs,
               scores,
-              topDocs.totalHits.value(),
+              topDocs.totalHits.value,
               Float.NaN,
               TotalHits.Relation.EQUAL_TO);
         }
@@ -808,9 +825,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if (limit == 0) {
         collector = new TotalHitCountCollector();
       } else if (sort == null) {
-        collector = new TopScoreDocCollectorManager(limit, Integer.MAX_VALUE).newCollector();
+        collector = TopScoreDocCollector.create(limit, Integer.MAX_VALUE);
       } else {
-        collector = new TopFieldCollectorManager(sort, limit, Integer.MAX_VALUE).newCollector();
+        collector = TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
       }
       return collector;
     }
@@ -830,7 +847,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       bytesRefs[++index] = term.toBytesRef();
     }
 
-    return new TermInSetQuery(fname, Arrays.asList(bytesRefs));
+    return new TermInSetQuery(fname, bytesRefs);
   }
 
   private Query getPointGroupQuery(SchemaField sf, int size, LongHashSet groupSet) {
@@ -872,7 +889,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       IntObjectCursor<BytesRef> cursor = it.next();
       bytesRefs[++index] = cursor.value;
     }
-    return new TermInSetQuery(fname, Arrays.asList(bytesRefs));
+    return new TermInSetQuery(fname, bytesRefs);
   }
 
   ////////////////////////////////////////////
