@@ -35,10 +35,10 @@ import java.util.Set;
  * {"foo":10,"bar":20} and may choose to write a NamedList as ["foo",10,"bar",20]. An XML response
  * writer may choose to render both the same way.
  *
- * <p>This class does not provide efficient lookup by key. The lookup performance is only O(N),
- * and not O(1) or O(Log N) as it is for the most common Map-implementations. 
- * Its main purpose is to hold data to be serialized.
- * It aims to minimize overhead and to be efficient at adding new elements.
+ * <p>This class does not provide efficient lookup by key. The lookup performance is only O(N), and
+ * not O(1) or O(Log N) as it is for the most common Map-implementations. Its main purpose is to
+ * hold data to be serialized. It aims to minimize overhead and to be efficient at adding new
+ * elements.
  */
 public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> {
 
@@ -95,7 +95,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
 
   /**
    * {@inheritDoc}
-   * 
+   *
    * <p>Has linear lookup time O(N)
    *
    * @see NamedList#get(String)
@@ -176,8 +176,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   }
 
   /**
-   *  {@link SimpleOrderedMap} extending {@link NamedList}, we are not able to extend
-   *  {@link AbstractMap}. With the help of InnerMap we can still use {@link AbstractMap} methods.
+   * {@link SimpleOrderedMap} extending {@link NamedList}, we are not able to extend {@link
+   * AbstractMap}. With the help of InnerMap we can still use {@link AbstractMap} methods.
    */
   private class InnerMap extends AbstractMap<String, T> {
     @Override
