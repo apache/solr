@@ -40,8 +40,8 @@ plugins {
 rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(libs.versions.java.min.get())
 rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
 
-// Enable development mode for entire project (unset defaults to true)
-rootProject.ext.development = !project.hasProperty('development') || project.findProperty('development') == 'true'
+// Check development mode for entire project (defaults to true if 'production' not provided and set to true)
+rootProject.ext.development = !project.hasProperty('production') || project.findProperty('production') != 'true'
 
 apply from: file('gradle/globals.gradle')
 
