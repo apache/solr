@@ -408,6 +408,9 @@ public class NamedList<T>
   }
 
   public Map<String, T> asShallowMap() {
+    if(this instanceof SimpleOrderedMap simpleOrderedMap){
+      return  simpleOrderedMap;
+    }
     return asShallowMap(false);
   }
 
