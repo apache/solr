@@ -32,7 +32,6 @@ plugins {
 apply from: file('gradle/develocity.gradle')
 
 rootProject.name = "solr-root"
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 includeBuild("build-tools/missing-doclet")
 
