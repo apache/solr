@@ -12,8 +12,8 @@ The following list contains a possible approach for implementing a new UI compon
 5. Create previews with preview component implementations to check the UI implementation
 6. Create a store and store provider for fetching resources and interacting with Solr backend
 7. Implement the client used by the store provider
-8. Write test and test the new component
-9. If not already done, integrate component in the existing application
+8. Write tests and test the new component
+9. If not already done, integrate the component in the existing application
 10. If not already done, extract resources like texts to allow internationalization and localization
 
 It is recommended to take a look at existing components, so that you get a better understanding
@@ -26,7 +26,7 @@ of how things are implemented, what they have in common, and how each technology
 The component integration interacts with the UI composables and the state store.
 
 The implementation of the component interface "catches" user inputs like clicks and passes them
-to the store as `Intent`s. The intents are then handled by the store implementation and
+to the store as ``Intent``s. The intents are then handled by the store implementation and
 may send a request to the backend and / or update the store state. The component is consuming
 and mapping the store state to the UI state. So once the store state is updated, it will
 reflect the changes in the UI.
@@ -96,3 +96,22 @@ Since components hold a hierarchical context that needs to be managed somehow, c
 
 Decompose provides https://arkivanov.github.io/Decompose/navigation/overview/[a few examples]
 and details of the process behind the navigation and child components.
+
+== Additional Notes
+
+=== Dependency Locking
+
+When adding or changing dependencies, you typically run `./gradlew resolveAndLockAll --write-locks`.
+Since we are building a web application from kotlin sources, we also have to update the JS lockfile
+with `./gradlew kotlinUpgradeYarnLock`. This will update the lockfile found at `kotlin-js-store/yarn.lock`.
+
+Some multiplatform libraries have platform-specific dependency resolution that will result in different
+lockfiles being generated, based on the environment the lock task is executed. It is important to exclude
+these platform-specific libraries from the lockfile to ensure a consistent lockfile generation across
+different operating systems.
+
+Platform-specific libraries come with a module name suffix that includes the platform name, like
+in `org.jetbrains.compose.desktop:desktop-jvm-windows-x64`. To identify those, look into the
+changes after updating the lockfile and add the necessary ignore-clause if such libraries
+exist. These ignore-clauses should be added in `gradle/validation/dependencies.gradle` inside the
+`allprojects.dependencyLocking` block.

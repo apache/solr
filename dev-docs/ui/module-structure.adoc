@@ -40,7 +40,7 @@ if no API interaction is necessary. Multiple components may also be used to simp
 or separate the responsibilities into smaller UI elements.
 
 Component data classes for API and internal use may also be merged and used interchangeably to
-reduce overall complexity. However, this is affects the separation of concerns and may require
+reduce overall complexity. However, this affects the separation of concerns and may require
 in a later state the separation and mapping again.
 
 This structure is strongly inspired by Decompose's https://arkivanov.github.io/Decompose/samples/[samples].
@@ -51,7 +51,8 @@ Similar to the logical part, the UI classes are also separated in components und
 `org.apache.solr.composeui.ui`.
 
 Components may consist of one or multiple composables that make up a screen, section or
-element. The composables may also be reused, which is why they may be moved to `.ui.components`.
+element. The composables may also be reused, which is why they may be moved at some point
+during development to `.ui.components`.
 
 Some vector assets like logos may be migrated to `ImageVector` and placed in `.ui.icons`
 to later be used in the UI.
