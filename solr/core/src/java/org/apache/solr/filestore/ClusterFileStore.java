@@ -303,18 +303,20 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   @Override
   @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
-  public SolrJerseyResponse executeFileStoreCommand(String path, String getFrom, Boolean sync) {
+  public SolrJerseyResponse fetchFile(String path, String getFrom) {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
-
-    if (Boolean.TRUE.equals(sync)) {
-      syncToAllNodes(fileStore, path);
-    } else if (getFrom != null) {
-      if (path == null) {
-        path = "";
-      }
-      pullFileFromNode(coreContainer, fileStore, path, getFrom);
+    if (path == null) {
+      path = "";
     }
+    pullFileFromNode(coreContainer, fileStore, path, getFrom);
+    return response;
+  }
 
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+  public SolrJerseyResponse syncFile(String path) {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    syncToAllNodes(fileStore, path);
     return response;
   }
 

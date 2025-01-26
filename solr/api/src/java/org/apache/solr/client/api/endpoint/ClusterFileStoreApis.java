@@ -100,20 +100,24 @@ public interface ClusterFileStoreApis {
 
   @POST
   @Operation(
-      summary =
-          "Pushes a file to other nodes, or pulls a file from other nodes in the Solr cluster.",
+      summary = "Fetches a filestore entry from other nodes in the cluster.",
       tags = {"file-store"})
-  @Path("/commands{path:.+}")
-  SolrJerseyResponse executeFileStoreCommand(
+  @Path("/commands/fetch{path:.+}")
+  SolrJerseyResponse fetchFile(
       @Parameter(description = "Path to a file or directory within the filestore")
           @PathParam("path")
           String path,
       @Parameter(description = "An optional Solr node name to fetch the file from")
           @QueryParam("getFrom")
-          String getFrom,
-      @Parameter(
-              description =
-                  "If true, triggers syncing for this file across all nodes in the filestore")
-          @QueryParam("sync")
-          Boolean sync);
+          String getFrom);
+
+  @POST
+  @Operation(
+      summary = "Syncs a file by pushing it to other nodes in the cluster.",
+      tags = {"file-store"})
+  @Path("/commands/sync{path:.+}")
+  SolrJerseyResponse syncFile(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("path")
+          String path);
 }

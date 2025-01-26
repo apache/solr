@@ -18,7 +18,6 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
@@ -48,10 +47,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -203,8 +200,7 @@ public class DistribFileStore implements FileStore {
       ByteBuffer filedata = null;
       try {
         final var fileRequest = new FileStoreApi.GetFile(path);
-        final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
-        final var fileResponse = fileRequest.process(client);
+        final var fileResponse = solrClient.requestWithBaseUrl(baseUrl, null, fileRequest);
         filedata =
             Utils.newBytesConsumer((int) MAX_PKG_SIZE)
                 .accept(fileResponse.getResponseStreamIfSuccessful());
@@ -377,13 +373,13 @@ public class DistribFileStore implements FileStore {
             } catch (Exception e) {
             }
           }
-          // trying to avoid the thundering herd problem when there are a very large no:of nodes
-          // others should try to fetch it from any node where it is available. By now,
+          // trying to avoid the thundering herd problem when there are a very large number of
+          // nodes others should try to fetch it from any node where it is available. By now,
           // almost FETCHFROM_SRC other nodes may have it
           nodeToFetchFrom = "*";
         }
         try {
-          final var pullFileRequest = new FileStoreApi.ExecuteFileStoreCommand(info.path);
+          final var pullFileRequest = new FileStoreApi.FetchFile(info.path);
           pullFileRequest.setGetFrom(nodeToFetchFrom);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
           // fire and forget
@@ -501,10 +497,8 @@ public class DistribFileStore implements FileStore {
     deleteLocal(path);
     List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
 
-    final var solrParams = new ModifiableSolrParams();
-    solrParams.add("localDelete", "true");
-    final var solrRequest =
-        new GenericSolrRequest(DELETE, "/cluster/filestore/files" + path, solrParams);
+    final var solrRequest = new FileStoreApi.DeleteFile(path);
+    solrRequest.setLocalDelete(Boolean.TRUE);
 
     for (String node : nodes) {
       String baseUrl =
