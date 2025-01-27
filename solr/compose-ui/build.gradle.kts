@@ -129,8 +129,28 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.apache.solr.composeui"
+
             packageVersion = "1.0.0"
+
+            windows {
+                packageName = "Apache Solr Desktop"
+                // App icon (needs to be .ico)
+                iconFile.set(project.file("assets/logo.ico"))
+                // Directory name (if not per user "C:\Program Files\[installationPath]")
+                installationPath = "Apache Solr Desktop"
+                // Create desktop shortcut
+                shortcut = true
+            }
+
+            linux {
+                packageName = "solr-desktop"
+                iconFile.set(project.file("assets/logo.png"))
+            }
+
+            macOS {
+                packageName = "ApacheSolrDesktop"
+                iconFile.set(project.file("assets/logo.png"))
+            }
         }
     }
 }
