@@ -722,36 +722,36 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
 
     assertSliceCounts("deleteById commitWithin did not work", before + 1, dColl);
-    // NOCOMMIT
-    //    // try deleteByQuery commitWithin
-    //    UpdateRequest deleteByQueryReq = new UpdateRequest();
-    //    deleteByQueryReq.deleteByQuery("id:301");
-    //    deleteByQueryReq.setCommitWithin(10);
-    //    deleteByQueryReq.process(cloudClient);
-    //
-    //    newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
-    //
-    //    assertSliceCounts("deleteByQuery commitWithin did not work", before, dColl);
-    //
-    //    // TODO: This test currently fails because debug info is obtained only
-    //    // on shards with matches.
-    //    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
-    //
-    //    // would be better if these where all separate tests - but much, much
-    //    // slower
-    //    doOptimisticLockingAndUpdating();
-    //    testShardParamVariations();
-    //    testMultipleCollections();
-    //    testANewCollectionInOneInstance();
-    //    testSearchByCollectionName();
-    //    testUpdateByCollectionName();
-    //    testANewCollectionInOneInstanceWithManualShardAssignement();
-    //    testNumberOfCommitsWithCommitAfterAdd();
-    //
-    //    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
-    //    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
-    //
-    //    testStopAndStartCoresInOneInstance();
+
+    // try deleteByQuery commitWithin
+    UpdateRequest deleteByQueryReq = new UpdateRequest();
+    deleteByQueryReq.deleteByQuery("id:301");
+    deleteByQueryReq.setCommitWithin(10);
+    deleteByQueryReq.process(cloudClient);
+
+    newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
+
+    assertSliceCounts("deleteByQuery commitWithin did not work", before, dColl);
+
+    // TODO: This test currently fails because debug info is obtained only
+    // on shards with matches.
+    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
+
+    // would be better if these where all separate tests - but much, much
+    // slower
+    doOptimisticLockingAndUpdating();
+    testShardParamVariations();
+    testMultipleCollections();
+    testANewCollectionInOneInstance();
+    testSearchByCollectionName();
+    testUpdateByCollectionName();
+    testANewCollectionInOneInstanceWithManualShardAssignement();
+    testNumberOfCommitsWithCommitAfterAdd();
+
+    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
+    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
+
+    testStopAndStartCoresInOneInstance();
   }
 
   private void testSortableTextFaceting() throws Exception {

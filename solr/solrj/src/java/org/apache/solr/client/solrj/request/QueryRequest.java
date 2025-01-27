@@ -20,7 +20,6 @@ import java.util.Objects;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
@@ -32,7 +31,7 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
 
   public QueryRequest() {
     super(METHOD.GET, null);
-    query = new ModifiableSolrParams(); // TODO SolrParams.of()
+    query = SolrParams.of();
   }
 
   public QueryRequest(SolrParams q) {
