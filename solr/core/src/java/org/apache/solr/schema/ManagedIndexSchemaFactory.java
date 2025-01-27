@@ -410,7 +410,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
               "nor under SolrConfig.getConfigDir() or the current directory. ",
               "PLEASE REMOVE THIS FILE.");
         } else {
-          Path upgradedSchemaFile = Path.of(nonManagedSchemaFile + UPGRADED_SCHEMA_EXTENSION);
+          Path upgradedSchemaFile =
+              nonManagedSchemaFile.resolveSibling(
+                  nonManagedSchemaFile.getFileName() + UPGRADED_SCHEMA_EXTENSION);
           try {
             Files.move(nonManagedSchemaFile, upgradedSchemaFile);
             // Set the resource name to the managed schema so that the CoreAdminHandler returns a

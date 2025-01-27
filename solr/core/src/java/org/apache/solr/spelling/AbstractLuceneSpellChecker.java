@@ -84,9 +84,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
     // If indexDir is relative then create index inside core.getDataDir()
     if (indexDir != null) {
-      if (!indexDir.isAbsolute()) {
-        indexDir = Path.of(core.getDataDir(), indexDir.toString());
-      }
+      indexDir = Path.of(core.getDataDir()).resolve(indexDir);
     }
 
     sourceLocation = (String) config.get(LOCATION);

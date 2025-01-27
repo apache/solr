@@ -372,12 +372,16 @@ public class SolrResourceLoader
 
     // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
     // We need a ClassLoader-compatible (forward-slashes) path here!
-    InputStream is = classLoader.getResourceAsStream(resource);
+    InputStream is =
+        classLoader.getResourceAsStream(
+            resource.replace(FileSystems.getDefault().getSeparator(), "/"));
 
     // This is a hack just for tests (it is not done in ZKResourceLoader)!
     // TODO can we nuke this?
     if (is == null && System.getProperty("jetty.testMode") != null) {
-      is = classLoader.getResourceAsStream(Path.of("conf").resolve(resource).toString());
+      is =
+          classLoader.getResourceAsStream(
+              ("conf/" + resource).replace(FileSystems.getDefault().getSeparator(), "/"));
     }
 
     if (is == null) {

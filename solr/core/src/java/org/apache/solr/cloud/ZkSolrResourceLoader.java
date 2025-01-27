@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -120,8 +121,9 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
     try {
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      // Use Path to normalize path separator
-      is = classLoader.getResourceAsStream(Path.of(resource).toString());
+      is =
+          classLoader.getResourceAsStream(
+              resource.replace(FileSystems.getDefault().getSeparator(), "/"));
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }

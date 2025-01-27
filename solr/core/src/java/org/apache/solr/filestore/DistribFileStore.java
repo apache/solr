@@ -84,14 +84,15 @@ public class DistribFileStore implements FileStore {
     return _getRealPath(path, solrHome);
   }
 
-  private static Path _getRealPath(String path, Path solrHome) {
-    Path dir = Path.of(path);
-    SolrPaths.assertNotUnc(dir);
+  private static Path _getRealPath(String dir, Path solrHome) {
+    Path path = Path.of(dir);
+    SolrPaths.assertNotUnc(path);
 
-    // Strip the path of from being absolute to become relative to resolve with SolrHome
-    while (path.startsWith("/")) {
-      path = path.substring(1);
+    if (path.isAbsolute()) {
+      // Strip the path of from being absolute to become relative to resolve with SolrHome
+      path = path.subpath(0, path.getNameCount());
     }
+
     var finalPath = getFileStoreDirPath(solrHome).resolve(path);
 
     // Guard against path traversal by asserting final path is sub path of filestore
@@ -432,8 +433,7 @@ public class DistribFileStore implements FileStore {
     Path file = getRealPath(path);
     String simpleName = file.getFileName().toString();
     if (isMetaDataFile(simpleName)) {
-      // TODO SOLR-8282 Move to Files.newInputStream
-      try (InputStream is = new FileInputStream(file.toString())) {
+      try (InputStream is = Files.newInputStream(file)) {
         consumer.accept(
             new FileEntry(null, null, path) {
               // no metadata for metadata file

@@ -1494,11 +1494,10 @@ public class IndexFetcher {
       if (Files.exists(oldPath)) {
         try {
           Path backupFile =
-              Path.of(
-                  oldPath
+              oldPath.resolveSibling(
+                  oldPath.getFileName()
                       + "."
                       + getDateAsStr(new Date(Files.getLastModifiedTime(oldPath).toMillis())));
-          Files.createDirectories(backupFile.getParent());
           Files.move(oldPath, backupFile);
         } catch (Exception e) {
           throw new SolrException(

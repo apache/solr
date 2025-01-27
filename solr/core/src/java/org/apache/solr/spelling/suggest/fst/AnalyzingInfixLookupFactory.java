@@ -89,9 +89,8 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
         params.get(INDEX_PATH) != null
             ? Path.of(params.get(INDEX_PATH).toString())
             : Path.of(DEFAULT_INDEX_PATH);
-    if (!indexPath.isAbsolute()) {
-      indexPath = Path.of(core.getDataDir(), indexPath.toString());
-    }
+
+    indexPath = Path.of(core.getDataDir()).resolve(indexPath);
 
     int minPrefixChars =
         params.get(MIN_PREFIX_CHARS) != null

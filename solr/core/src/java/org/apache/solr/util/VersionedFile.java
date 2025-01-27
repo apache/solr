@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -38,9 +36,9 @@ public class VersionedFile {
    * the last fileName.* after being sorted lexicographically.
    * Older versions of the file are deleted (and queued for deletion if
    * that fails).
+   * TODO SOLR-8282 dirName should be a Path instead of string
    */
-  public static InputStream getLatestFile(String dirName, String fileName)
-      throws FileNotFoundException {
+  public static InputStream getLatestFile(String dirName, String fileName) throws IOException {
     Collection<Path> oldFiles = null;
     final String prefix = fileName + '.';
     Path f = Path.of(dirName, fileName);
@@ -66,15 +64,14 @@ public class VersionedFile {
                 SolrException.ErrorCode.SERVER_ERROR, "Unable to list files in " + dir, e);
           }
 
-          f = Path.of(dir.toString(), fileList.getLast().getFileName().toString());
+          f = dir.resolve(fileList.getLast());
           oldFiles = new ArrayList<>();
           for (int i = 0; i < fileList.size() - 1; i++) {
-            oldFiles.add(Path.of(dir.toString(), fileList.get(i).toString()));
+            oldFiles.add(dir.resolve(fileList.get(i)));
           }
         }
 
-        // TODO SOLR-8282 Move to Files.newInputStream
-        is = new FileInputStream(f.toString());
+        is = Files.newInputStream(f);
       } catch (Exception e) {
         // swallow exception for now
       }
@@ -82,7 +79,7 @@ public class VersionedFile {
 
     // allow exception to be thrown from the final try.
     if (is == null) {
-      is = new FileInputStream(f.toString());
+      is = Files.newInputStream(f);
     }
 
     // delete old files only after we have successfully opened the newest
