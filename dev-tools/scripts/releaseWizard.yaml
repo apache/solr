@@ -226,7 +226,7 @@ groups:
       You will need these tools:
 
       * Python v3.4 or later, with dependencies listed in requirements.txt
-      * Java 11 in $JAVA11_HOME
+      * Java 21 in $JAVA21_HOME
       * gpg
       * git
       * svn

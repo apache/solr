@@ -599,6 +599,9 @@ public class CoreContainer {
       SolrHttpClientBuilder builder =
           builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
 
+      // The Hadoop Auth Plugin was removed in SOLR-17540, however leaving the below reference
+      // for future readers, as there may be an option to simplify this logic.
+      //
       // this caused plugins like KerberosPlugin to register its intercepts, but this intercept
       // logic is also handled by the pki authentication code when it decides to let the plugin
       // handle auth via its intercept - so you would end up with two intercepts

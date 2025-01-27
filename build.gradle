@@ -22,7 +22,6 @@ plugins {
   id 'base'
   id 'solr.build-infra'
 
-  alias(libs.plugins.carrotsearch.dependencychecks)
   alias(libs.plugins.owasp.dependencycheck)
   alias(libs.plugins.cutterslade.analyze)
   alias(libs.plugins.benmanes.versions)
@@ -122,10 +121,6 @@ ext {
 apply from: file('gradle/conventions.gradle')
 apply from: file('gradle/generation/local-settings.gradle')
 
-// Ant-compatibility layer: apply folder layout early so that
-// evaluation of other scripts doesn't need to be deferred.
-apply from: file('gradle/ant-compat/solr.folder-layout.gradle')
-
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
 apply from: file('gradle/java/folder-layout.gradle')
@@ -133,7 +128,6 @@ apply from: file('gradle/java/javac.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
-apply from: file('gradle/testing/fail-on-unsupported-jdk.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 apply from: file('gradle/testing/retry-test.gradle')
@@ -189,13 +183,6 @@ apply from: file('gradle/help.gradle')
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 
-// Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
-// here so that we can coexist with current ant build but they are indicative
-// of potential problems with the build conventions, dependencies, etc.
-apply from: file('gradle/ant-compat/misc.gradle')
-
-apply from: file('gradle/ant-compat/artifact-naming.gradle')
-
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
@@ -206,7 +193,6 @@ apply from: file('gradle/hacks/global-exclude-dependencies.gradle')
 apply from: file('gradle/hacks/gradle-archives.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
-apply from: file('gradle/hacks/hashmapAssertions.gradle')
 apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
 apply from: file('gradle/hacks/dummy-outputs.gradle')
 

@@ -60,6 +60,15 @@ grant {
 
   // needed by randomizedtesting runner to identify test methods.
   permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.dev.langchain4j.model.cohere";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.dev.ai4j.openai4j";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.dev.langchain4j.model.huggingface";
+  permission java.net.SocketPermission "api.cohere.ai", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "api.openai.com", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "api.mistral.ai", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "api-inference.huggingface.co", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "langchain4j.dev", "accept,listen,connect,resolve";
+
   permission java.lang.RuntimePermission "accessDeclaredMembers";
   // needed by certain tests to redirect sysout/syserr:
   permission java.lang.RuntimePermission "setIO";
@@ -95,7 +104,7 @@ grant {
   permission java.lang.RuntimePermission "closeClassLoader";
   // needed by HttpSolrClient
   permission java.lang.RuntimePermission "getFileSystemAttributes";
-  // needed by hadoop auth (TODO: there is a cleaner way to handle this)
+  // needed by hadoop hdfs (TODO: there is a cleaner way to handle this)
   permission java.lang.RuntimePermission "loadLibrary.jaas";
   permission java.lang.RuntimePermission "loadLibrary.jaas_unix";
   permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
@@ -108,7 +117,6 @@ grant {
   permission java.lang.RuntimePermission "getProtectionDomain";
   // needed by aws s3 sdk (Apache HTTP Client)
   permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
-
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
@@ -131,16 +139,18 @@ grant {
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
 
-  // needed by hadoop auth
+  // needed by hadoop hdfs
   permission javax.security.auth.AuthPermission "getSubject";
   permission javax.security.auth.AuthPermission "modifyPrincipals";
   permission javax.security.auth.AuthPermission "doAs";
-  permission javax.security.auth.AuthPermission "getLoginConfiguration";
-  permission javax.security.auth.AuthPermission "setLoginConfiguration";
   permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
   permission javax.security.auth.AuthPermission "modifyPublicCredentials";
   permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
 
+  // needed by crossdc
+  permission javax.security.auth.AuthPermission "getLoginConfiguration";
+  permission javax.security.auth.AuthPermission "setLoginConfiguration";
+  
   // needed by hadoop security
   permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
   permission java.security.SecurityPermission "insertProvider";

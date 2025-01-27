@@ -1,0 +1,270 @@
+= Text to Vector
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This module brings the power of *Large Language Models* (*LLM*s) to Solr.  More specifically, it provides a text-to-vector capability, used on documents or queries, via integrating with popular external services that do this.  The state-of-the-art of such services use an LLM, hence the name of this module. 
+_Without_ this module, vectors must be supplied _to_ Solr for indexing & searching, possibly coordinating with such services.
+
+
+== Main Concepts
+
+=== From Text to Vector
+
+The aim of encoding text to numerical vectors is to represent text in a way that semantically similar sentences are encoded to vectors close in a vector space.
+Vector distance metrics (algorithms) can then be used to compute a pairwise similarity, producing a score.
+
+
+=== Large Language Models 
+
+Specific Large Language Models are able to encode text to a numerical vector.
+
+For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
+
+==== Text to Vector Online Services
+
+Training, fine-tuning and operating such Large Language Models is expensive.
+
+Many companies focus on this aspect and let users access APIs to encode the text (at the price of a license fee).
+
+Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to connect to such apis.
+
+[IMPORTANT]
+====
+This module sends your documents and queries off to some hosted service on the internet. 
+There are cost, privacy, performance, and service availability implications on such a strong dependency that should be diligently examined before employing this module in a serious way.
+
+====
+
+At the moment a subset of the text vectorisation services supported by LangChain4j is supported by Solr.
+
+*Disclaimer*: Apache Solr is *in no way* affiliated to any of these corporations or services.
+
+If you want to add support for additional services or improve the support for the existing ones, feel free to contribute:
+
+* https://github.com/apache/solr/blob/main/CONTRIBUTING.md[Contributing to Solr]
+
+== Module
+
+This is provided via the `llm` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+== LLM Configuration
+
+You need to register / configure the plugins provided by the LLM module that you want to use. This is done in `solrconfig.xml`. 
+
+* Declaration of the `knn_text_to_vector` query parser.
++
+[source,xml]
+----
+<queryParser name="knn_text_to_vector" class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin"/>
+----
+
+== Text to Vector Lifecycle
+
+
+=== Models
+
+* A model encodes text to a vector.
+* A model in Solr is a reference to an external API that runs the Large Language Model responsible for text vectorisation.
+
+[IMPORTANT]
+====
+the Solr vectorisation model specifies the parameters to access the APIs, the model doesn't run internally in Solr
+
+====
+
+A model is described by these parameters:
+
+
+`class`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The model implementation.
+Accepted values: 
+
+* `dev.langchain4j.model.huggingface.HuggingFaceEmbeddingModel`.
+* `dev.langchain4j.model.mistralai.MistralAiEmbeddingModel`.
+* `dev.langchain4j.model.openai.OpenAiEmbeddingModel`.
+* `dev.langchain4j.model.cohere.CohereEmbeddingModel`.
+
+
+`name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The identifier of your model, this is used by any component that intends to use the model (`knn_text_to_vector` query parser).
+
+`params`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Each model class has potentially different params.
+Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr: https://docs.langchain4j.dev/category/embedding-models[Vectorisationm Models in LangChain4j].
+
+
+=== Supported Models
+Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support text vectorisation.
+The models currently supported are:
+
+[tabs#supported-models]
+======
+Hugging Face::
++
+====
+
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.huggingface.HuggingFaceEmbeddingModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "accessToken": "<your-huggingface-api-key>",
+    "modelId": "<a-huggingface-vectorisation-model>"
+  }
+}
+----
+====
+
+MistralAI::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.mistralai.MistralAiEmbeddingModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.mistral.ai/v1",
+    "apiKey": "<your-mistralAI-api-key>",
+    "modelName": "<a-mistralAI-vectorisation-model>",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+
+OpenAI::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.openai.OpenAiEmbeddingModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "<your-openAI-api-key>",
+    "modelName": "<a-openAI-vectorisation-model>",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+
+Cohere::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.cohere.CohereEmbeddingModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.cohere.ai/v1/",
+    "apiKey": "<your-cohere-api-key>",
+    "modelName": "<a-cohere-vectorisation-model>",
+    "inputType": "search_document",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true
+  }
+}
+----
+====
+======
+
+=== Uploading a Model
+
+To upload the model in a `/path/myModel.json` file, please run:
+
+[source,bash]
+----
+curl -XPUT 'http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+----
+
+
+To view all models:
+
+[source,text]
+http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store
+
+To delete the `currentModel` model:
+
+[source,bash]
+----
+curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store/currentModel'
+----
+
+
+To view the model you just uploaded please open the following URL in a browser:
+
+[source,text]
+http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store
+
+.Example: /path/myModel.json
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.openai.OpenAiEmbeddingModel",
+  "name": "openai-1",
+  "params": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "apiKey-openAI",
+    "modelName": "text-embedding-3-small",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+
+----
+
+=== Running a Text-to-Vector Query
+To run a query that embeds your query text, using a model you previously uploaded is simple:
+
+[source,text]
+?q={!knn_text_to_vector model=a-model f=vector topK=10}hello world query
+
+The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
+
+For more details on how to work with vector search query parsers in Apache Solr, please refer to the dedicated page: xref:dense-vector-search.adoc[Dense Vector Search]

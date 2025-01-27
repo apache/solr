@@ -936,7 +936,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    File file = getFile("solrj/books.csv");
+    File file = getFile("solrj/books.csv").toFile();
     final int opened[] = new int[] {0};
     final int closed[] = new int[] {0};
 
@@ -960,7 +960,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           };
       up.addContentStream(contentStreamMock);
     } else {
-      up.addFile(file, "application/csv");
+      up.addFile(file.toPath(), "application/csv");
     }
 
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -985,8 +985,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
     NamedList<Object> result =
         client.request(
-            new StreamingUpdateRequest(
-                    "/update", getFile("solrj/books.csv").toPath(), "application/csv")
+            new StreamingUpdateRequest("/update", getFile("solrj/books.csv"), "application/csv")
                 .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     assertNotNull("Couldn't upload books.csv", result);
     rsp = client.query(new SolrQuery("*:*"));
@@ -1019,7 +1018,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   private ByteBuffer getFileContent(NamedList<?> nl, String name) throws IOException {
-    try (InputStream is = new FileInputStream(getFile(name))) {
+    try (InputStream is = new FileInputStream(getFile(name).toFile())) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }
   }

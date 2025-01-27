@@ -40,7 +40,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     initCore(
         "solrconfig-languageidentifier.xml",
         "schema.xml",
-        getFile("langid/solr").getAbsolutePath());
+        getFile("langid/solr").toAbsolutePath().toString());
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id_tika");
     assertNotNull(chained);

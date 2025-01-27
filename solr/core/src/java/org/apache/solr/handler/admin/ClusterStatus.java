@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,15 +26,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -180,6 +179,8 @@ public class ClusterStatus {
     String routeKey = solrParams.get(ShardParams._ROUTE_);
     String shard = solrParams.get(ZkStateReader.SHARD_ID_PROP);
 
+    Set<String> requestedShards = (shard != null) ? Set.of(shard.split(",")) : null;
+
     Stream<DocCollection> collectionStream;
     if (collection == null) {
       collectionStream = clusterState.collectionStream();
@@ -205,54 +206,35 @@ public class ClusterStatus {
       }
     }
 
-    // TODO use an Iterable to stream the data to the client instead of gathering it all in mem
-
-    NamedList<Object> collectionProps = new SimpleOrderedMap<>();
-
-    collectionStream.forEach(
-        clusterStateCollection -> {
-          Map<String, Object> collectionStatus;
-          String name = clusterStateCollection.getName();
-
-          Set<String> requestedShards = new HashSet<>();
-          if (routeKey != null) {
-            DocRouter router = clusterStateCollection.getRouter();
-            Collection<Slice> slices =
-                router.getSearchSlices(routeKey, null, clusterStateCollection);
-            for (Slice slice : slices) {
-              requestedShards.add(slice.getName());
-            }
-          }
-          if (shard != null) {
-            String[] paramShards = shard.split(",");
-            requestedShards.addAll(Arrays.asList(paramShards));
-          }
-
-          byte[] bytes = Utils.toJSON(clusterStateCollection);
-          @SuppressWarnings("unchecked")
-          Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
-          collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
-
-          collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
-          collectionStatus.put(
-              "creationTimeMillis", clusterStateCollection.getCreationTime().toEpochMilli());
-
-          if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
-            collectionStatus.put("aliases", collectionVsAliases.get(name));
-          }
-          String configName = clusterStateCollection.getConfigName();
-          collectionStatus.put("configName", configName);
-          if (solrParams.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
-            PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
-            collectionStatus.put("PRS", prs);
-          }
-          collectionProps.add(name, collectionStatus);
-        });
-
-    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
-    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
-
-    clusterStatus.add("collections", collectionProps);
+    // Because of back-compat for SolrJ, create the whole response into a NamedList
+    // Otherwise stream with MapWriter to save memory
+    if (CommonParams.JAVABIN.equals(solrParams.get(CommonParams.WT))) {
+      NamedList<Object> collectionProps = new SimpleOrderedMap<>();
+      collectionStream.forEach(
+          collectionState -> {
+            collectionProps.add(
+                collectionState.getName(),
+                buildResponseForCollection(
+                    collectionState, collectionVsAliases, routeKey, liveNodes, requestedShards));
+          });
+      clusterStatus.add("collections", collectionProps);
+    } else {
+      MapWriter collectionPropsWriter =
+          ew -> {
+            collectionStream.forEach(
+                (collectionState) -> {
+                  ew.putNoEx(
+                      collectionState.getName(),
+                      buildResponseForCollection(
+                          collectionState,
+                          collectionVsAliases,
+                          routeKey,
+                          liveNodes,
+                          requestedShards));
+                });
+          };
+      clusterStatus.add("collections", collectionPropsWriter);
+    }
   }
 
   private void addAliasMap(Aliases aliases, NamedList<Object> clusterStatus) {
@@ -307,23 +289,20 @@ public class ClusterStatus {
    */
   @SuppressWarnings("unchecked")
   protected void crossCheckReplicaStateWithLiveNodes(
-      List<String> liveNodes, NamedList<Object> collectionProps) {
-    for (Map.Entry<String, Object> next : collectionProps) {
-      Map<String, Object> collMap = (Map<String, Object>) next.getValue();
-      Map<String, Object> shards = (Map<String, Object>) collMap.get("shards");
-      for (Object nextShard : shards.values()) {
-        Map<String, Object> shardMap = (Map<String, Object>) nextShard;
-        Map<String, Object> replicas = (Map<String, Object>) shardMap.get("replicas");
-        for (Object nextReplica : replicas.values()) {
-          Map<String, Object> replicaMap = (Map<String, Object>) nextReplica;
-          if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP))
-              != Replica.State.DOWN) {
-            // not down, so verify the node is live
-            String node_name = (String) replicaMap.get(ZkStateReader.NODE_NAME_PROP);
-            if (!liveNodes.contains(node_name)) {
-              // node is not live, so this replica is actually down
-              replicaMap.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
-            }
+      List<String> liveNodes, Map<String, Object> collectionProps) {
+    var shards = (Map<String, Object>) collectionProps.get("shards");
+    for (Object nextShard : shards.values()) {
+      var shardMap = (Map<String, Object>) nextShard;
+      var replicas = (Map<String, Object>) shardMap.get("replicas");
+      for (Object nextReplica : replicas.values()) {
+        var replicaMap = (Map<String, Object>) nextReplica;
+        if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP))
+            != Replica.State.DOWN) {
+          // not down, so verify the node is live
+          String node_name = (String) replicaMap.get(ZkStateReader.NODE_NAME_PROP);
+          if (!liveNodes.contains(node_name)) {
+            // node is not live, so this replica is actually down
+            replicaMap.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
           }
         }
       }
@@ -367,5 +346,48 @@ public class ClusterStatus {
         });
     collection.put("health", Health.combine(healthStates).toString());
     return collection;
+  }
+
+  private Map<String, Object> buildResponseForCollection(
+      DocCollection clusterStateCollection,
+      Map<String, List<String>> collectionVsAliases,
+      String routeKey,
+      List<String> liveNodes,
+      Set<String> requestedShards) {
+    Map<String, Object> collectionStatus;
+    Set<String> shards = new HashSet<>();
+    String name = clusterStateCollection.getName();
+
+    if (routeKey != null)
+      clusterStateCollection
+          .getRouter()
+          .getSearchSlices(routeKey, null, clusterStateCollection)
+          .forEach((slice) -> shards.add(slice.getName()));
+
+    if (requestedShards != null) shards.addAll(requestedShards);
+
+    byte[] bytes = Utils.toJSON(clusterStateCollection);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
+    collectionStatus = getCollectionStatus(docCollection, name, shards);
+
+    collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
+    collectionStatus.put(
+        "creationTimeMillis", clusterStateCollection.getCreationTime().toEpochMilli());
+
+    if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
+      collectionStatus.put("aliases", collectionVsAliases.get(name));
+    }
+    String configName = clusterStateCollection.getConfigName();
+    collectionStatus.put("configName", configName);
+    if (solrParams.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
+      PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
+      collectionStatus.put("PRS", prs);
+    }
+
+    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
+    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionStatus);
+
+    return collectionStatus;
   }
 }

@@ -18,6 +18,8 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 
 import java.net.URL;
 import java.util.List;
@@ -86,11 +88,14 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
   @Test
   public void testClusterPropertyOpsAllGood() throws Exception {
     try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      // List Properties, confirm there aren't any
+      // List Properties, confirm the test property does not exist
+      // This ignores eventually existing other properties
       Object o =
           Utils.executeGET(client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
       assertNotNull(o);
-      assertEquals(0, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
+      @SuppressWarnings("unchecked")
+      List<String> initProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
+      assertThat(initProperties, not(hasItem(testClusterProperty)));
 
       // Create a single cluster property
       String path = baseUrlV2ClusterProps + "/" + testClusterProperty;
@@ -100,13 +105,12 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
       o = Utils.executeHttpMethod(client.getHttpClient(), path, Utils.JSONCONSUMER, httpPut);
       assertNotNull(o);
 
-      // List Properties, this time there should be 1
+      // List Properties, this time there should be the just added property
       o = Utils.executeGET(client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
       assertNotNull(o);
-      assertEquals(1, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
-      assertEquals(
-          testClusterProperty,
-          (String) ((List<?>) getObjectByPath(o, true, "clusterProperties")).get(0));
+      @SuppressWarnings("unchecked")
+      List<String> updatedProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
+      assertThat(updatedProperties, hasItem(testClusterProperty));
 
       // Fetch Cluster Property
       // Same path as used in the Create step above
@@ -122,10 +126,12 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
       o = Utils.executeHttpMethod(client.getHttpClient(), path, Utils.JSONCONSUMER, httpDelete);
       assertNotNull(o);
 
-      // List Properties, should be back to 0
+      // List Properties, the test property should be gone
       o = Utils.executeGET(client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
       assertNotNull(o);
-      assertEquals(0, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
+      @SuppressWarnings("unchecked")
+      List<String> clearedProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
+      assertThat(clearedProperties, not(hasItem(testClusterProperty)));
     }
   }
 
