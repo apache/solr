@@ -943,7 +943,7 @@ public abstract class FieldType extends FieldProperties {
    * @param parser the {@link org.apache.solr.search.QParser} calling the method
    * @param field the schema field
    * @param part1 the lower boundary of the range, nulls are allowed.
-   * @param part2 the upper boundary of the range, nulls are allowe
+   * @param part2 the upper boundary of the range, nulls are allowed.
    * @param minInclusive whether the minimum of the range is inclusive or not
    * @param maxInclusive whether the maximum of the range is inclusive or not
    * @return a Query instance to perform range search according to given parameters
