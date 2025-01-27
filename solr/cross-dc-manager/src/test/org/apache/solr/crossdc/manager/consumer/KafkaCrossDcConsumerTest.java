@@ -300,10 +300,7 @@ public class KafkaCrossDcConsumerTest {
                   return ((UpdateRequest) solrRequest)
                           .getDocuments()
                           .equals(validRequest.getDocuments())
-                      && solrRequest
-                          .getParams()
-                          .toNamedList()
-                          .equals(validRequest.getParams().toNamedList());
+                      && solrRequest.getParams().equals(validRequest.getParams());
                 }),
             eq(MirroredSolrRequest.Type.UPDATE),
             eq(record),
@@ -349,10 +346,7 @@ public class KafkaCrossDcConsumerTest {
             argThat(
                 solrRequest -> {
                   // Check if the SolrRequest has the same content as the original validRequest
-                  return solrRequest
-                      .getParams()
-                      .toNamedList()
-                      .equals(create.getParams().toNamedList());
+                  return solrRequest.getParams().equals(create.getParams());
                 }),
             eq(MirroredSolrRequest.Type.ADMIN),
             eq(record1),
@@ -479,10 +473,7 @@ public class KafkaCrossDcConsumerTest {
                   System.out.println(Utils.toJSONString(solrRequest));
                   // Check if the UpdateRequest has the same content as the original invalidRequest
                   return ((UpdateRequest) solrRequest).getDocuments() == null
-                      && solrRequest
-                          .getParams()
-                          .toNamedList()
-                          .equals(invalidRequest.getParams().toNamedList());
+                      && solrRequest.getParams().equals(invalidRequest.getParams());
                 }),
             any(),
             eq(record),
