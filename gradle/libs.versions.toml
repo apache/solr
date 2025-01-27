@@ -141,6 +141,7 @@ jetbrains-annotations = "26.0.2"
 # @keep for version alignment
 joda-time = "2.13.0"
 junit = "4.13.2"
+junit-jupiter = "5.8.1"
 kotlin = "2.1.0"
 # @keep for version alignment
 kotlinx-atomicfu = "0.27.0"
@@ -418,6 +419,7 @@ jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "j
 # @keep transitive dependency for version alignment
 jodatime-jodatime = { module = "joda-time:joda-time", version.ref = "joda-time" }
 junit-junit = { module = "junit:junit", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
 # @keep transitive dependency for version alignment
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 # @keep transitive dependency for version alignment
@@ -426,6 +428,7 @@ kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "k
 kotlinx-browser = { module = "org.jetbrains.kotlinx:kotlinx-browser", version.ref = "kotlinx-browser" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
