@@ -250,7 +250,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
   private static SolrQueryResponse v2ApiInvoke(
       ApiBag bag, String uri, String method, SolrParams params, InputStream payload) {
-    if (params == null) params = new ModifiableSolrParams();
     SolrQueryResponse rsp = new SolrQueryResponse();
     HashMap<String, String> templateVals = new HashMap<>();
     Api[] currentApi = new Api[1];

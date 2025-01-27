@@ -526,4 +526,9 @@ public abstract class SolrParams
     }
     return sb.toString();
   }
+
+  /** An empty, immutable SolrParams. */
+  public static SolrParams of() {
+    return EmptySolrParams.INSTANCE;
+  }
 }

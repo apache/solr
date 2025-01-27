@@ -16,9 +16,11 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
@@ -26,26 +28,27 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> {
 
-  private SolrParams query;
+  private final SolrParams query;
 
   public QueryRequest() {
     super(METHOD.GET, null);
+    query = new ModifiableSolrParams(); // TODO SolrParams.of()
   }
 
   public QueryRequest(SolrParams q) {
     super(METHOD.GET, null);
-    query = q;
+    query = Objects.requireNonNull(q);
   }
 
   public QueryRequest(SolrParams q, METHOD method) {
     super(method, null);
-    query = q;
+    query = Objects.requireNonNull(q);
   }
 
   /** Use the params 'QT' parameter if it exists */
   @Override
   public String getPath() {
-    String qt = query == null ? null : query.get(CommonParams.QT);
+    String qt = query.get(CommonParams.QT);
     if (qt == null) {
       qt = super.getPath();
     }

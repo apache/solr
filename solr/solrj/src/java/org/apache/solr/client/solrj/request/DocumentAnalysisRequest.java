@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
@@ -85,7 +86,7 @@ public class DocumentAnalysisRequest
   }
 
   @Override
-  public ModifiableSolrParams getParams() {
+  public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (query != null) {
       params.add(AnalysisParams.QUERY, query);
