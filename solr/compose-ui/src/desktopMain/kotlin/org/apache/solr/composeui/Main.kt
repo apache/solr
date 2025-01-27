@@ -19,7 +19,6 @@ package org.apache.solr.composeui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
@@ -80,10 +79,7 @@ fun main() {
             window.minimumSize = Dimension(720, 560)
 
             SolrTheme(useDarkTheme = isSystemInDarkTheme()) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) {
+                Surface(modifier = Modifier.fillMaxSize()) {
                     RootContent(root)
                 }
             }

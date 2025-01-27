@@ -21,6 +21,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.InternalComposeUiApi
+import androidx.compose.ui.LocalSystemTheme
+import androidx.compose.ui.SystemTheme
 
 /**
  * Solr theme object that holds additional fields, like extended typography and extended colors.
@@ -42,6 +45,7 @@ object SolrTheme {
         get() = LocalExtendedColorScheme.current
 }
 
+@OptIn(InternalComposeUiApi::class)
 @Composable
 fun SolrTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
@@ -55,6 +59,7 @@ fun SolrTheme(
     CompositionLocalProvider(
         LocalExtendedTypography provides extendedTypography(),
         LocalExtendedColorScheme provides extendedColorScheme(useDarkTheme),
+        LocalSystemTheme provides if (useDarkTheme) SystemTheme.Dark else SystemTheme.Light,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
