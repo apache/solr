@@ -81,7 +81,7 @@ public abstract class PointField extends NumericFieldType {
       args.remove("precisionStep");
     }
     // Point fields do not support norms
-    properties &= OMIT_NORMS;
+    properties |= OMIT_NORMS;
   }
 
   @Override
