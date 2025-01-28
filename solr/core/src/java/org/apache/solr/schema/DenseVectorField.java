@@ -36,6 +36,7 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
@@ -390,6 +391,11 @@ public class DenseVectorField extends FloatPointField {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "Field Queries are not supported for Dense Vector fields. Please use the {!knn} query parser to run K nearest neighbors search queries.");
+  }
+
+  @Override
+  public Query getExistenceQuery(QParser parser, SchemaField field) {
+    return new FieldExistsQuery(field.getName());
   }
 
   /** Not Supported */

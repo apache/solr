@@ -284,8 +284,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     CurrencyValue value = CurrencyValue.parse(externalVal, defaultCurrency);
-    CurrencyValue valueDefault;
-    valueDefault = value.convertTo(provider, defaultCurrency);
+    CurrencyValue valueDefault = value.convertTo(provider, defaultCurrency);
 
     return getRangeQueryInternal(parser, field, valueDefault, valueDefault, true, true);
   }
@@ -386,7 +385,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         (p1 != null) ? p1.getCurrencyCode() : (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
 
     // ValueSourceRangeFilter doesn't check exists(), so we have to
-    final Query docsWithValues = getAmountField(field).getType().getExistenceQuery(parser, field);
+    SchemaField amountField = getAmountField(field);
+    final Query docsWithValues = amountField.getType().getExistenceQuery(parser, amountField);
     final Query vsRangeFilter =
         new ValueSourceRangeFilter(
             new RawCurrencyValueSource(field, currencyCode, parser),
