@@ -1030,7 +1030,8 @@ public abstract class FieldType extends FieldProperties {
    * @return The {@link org.apache.lucene.search.Query} instance.
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
-    if (field.hasDocValues() || !field.omitNorms()) {
+    // TODO: Remove !isPointField() for SOLR-14199
+    if (field.hasDocValues() || (!field.omitNorms() && !isPointField())) {
       return new FieldExistsQuery(field.getName());
     } else {
       // Default to an unbounded range query

@@ -80,8 +80,6 @@ public abstract class PointField extends NumericFieldType {
     if (TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS) {
       args.remove("precisionStep");
     }
-    // Point fields do not support norms
-    properties |= OMIT_NORMS;
   }
 
   @Override
