@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
@@ -38,7 +38,7 @@ public class SolrMultiCollectorManager
     implements CollectorManager<SolrMultiCollectorManager.Collectors, Object[]> {
 
   private final CollectorManager<Collector, ?>[] collectorManagers;
-  private AtomicInteger maxHits = null;
+  private LongAdder maxHits = null;
   private int maxDocsToCollect;
   private final List<Collectors> reducableCollectors = new ArrayList<>();
 
@@ -52,8 +52,8 @@ public class SolrMultiCollectorManager
     }
     this.collectorManagers = (CollectorManager[]) collectorManagers;
     if (queryCommand.getTerminateEarly()) {
-      maxHits = new AtomicInteger(queryCommand.getMaxHits());
-      maxDocsToCollect = queryCommand.getMaxHits();
+      maxHits = new LongAdder();
+      maxDocsToCollect = queryCommand.getMaxHitsTerminateEarly();
     }
   }
 

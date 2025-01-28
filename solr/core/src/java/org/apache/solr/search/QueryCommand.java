@@ -42,7 +42,7 @@ public class QueryCommand {
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
   private boolean distribStatsDisabled;
-  private int maxHits = Integer.MAX_VALUE;
+  private int maxHitsTerminateEarly = Integer.MAX_VALUE;
 
   public CursorMark getCursorMark() {
     return cursorMark;
@@ -195,7 +195,8 @@ public class QueryCommand {
   }
 
   public boolean getTerminateEarly() {
-    return (flags & SolrIndexSearcher.TERMINATE_EARLY) != 0 || maxHits < Integer.MAX_VALUE;
+    return (flags & SolrIndexSearcher.TERMINATE_EARLY) != 0
+        || maxHitsTerminateEarly < Integer.MAX_VALUE;
   }
 
   public QueryCommand setTerminateEarly(boolean segmentTerminateEarly) {
@@ -247,11 +248,11 @@ public class QueryCommand {
     return searcher.search(this);
   }
 
-  public int getMaxHits() {
-    return maxHits;
+  public int getMaxHitsTerminateEarly() {
+    return maxHitsTerminateEarly;
   }
 
-  public void setMaxHits(int maxHits) {
-    this.maxHits = maxHits;
+  public void setMaxHitsTerminateEarly(int maxHitsTerminateEarly) {
+    this.maxHitsTerminateEarly = maxHitsTerminateEarly;
   }
 }

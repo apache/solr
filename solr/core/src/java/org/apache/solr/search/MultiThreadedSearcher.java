@@ -262,10 +262,10 @@ public class MultiThreadedSearcher {
 
       MaxScoreCollector collector;
       float maxScore = 0.0f;
-      for (Iterator var4 = collectors.iterator();
-          var4.hasNext();
+      for (Iterator collectorIterator = collectors.iterator();
+          collectorIterator.hasNext();
           maxScore = Math.max(maxScore, collector.getMaxScore())) {
-        Collector next = (Collector) var4.next();
+        Collector next = (Collector) collectorIterator.next();
         if (next instanceof final EarlyTerminatingCollector earlyTerminatingCollector) {
           next = earlyTerminatingCollector.getDelegate();
         }

@@ -411,7 +411,8 @@ This parameter specifies the max number of hits a searcher will iterate through 
 The count is per shard and across all threads involved in case of multi-threaded search. This parameter works
 in conjunction with other parameters that could early terminate a search, ex: _timeAllowed_ etc. In case the search
 was early terminated due to it exceeding maxHits a _terminatedEarly_ header in the response will be set along with
-_partialResults_ to indicate the same
+_partialResults_ to indicate the same. Note that the _partialResults_ flag could be set in the absence of the _maxHits_
+parameter due to other limits like _timeAllowed_ or _cpuAllowed_.
 Note : the hits counted will need not be exactly equal to the maxHits provided, however it will be within range of this value.
 
 

@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FilterCollector;
@@ -37,7 +37,7 @@ public class EarlyTerminatingCollector extends FilterCollector {
   private int numCollected = 0;
   private int prevReaderCumulativeSize = 0;
   private int currentReaderSize = 0;
-  private final AtomicInteger pendingDocsToCollect;
+  private final LongAdder pendingDocsToCollect;
   private boolean terminatedEarly = false;
 
   /**
@@ -48,11 +48,11 @@ public class EarlyTerminatingCollector extends FilterCollector {
    * @param maxDocsToCollect - the maximum number of documents to Collect
    */
   public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect) {
-    this(delegate, maxDocsToCollect, new AtomicInteger(maxDocsToCollect));
+    this(delegate, maxDocsToCollect, new LongAdder());
   }
 
   public EarlyTerminatingCollector(
-      Collector delegate, int maxDocsToCollect, AtomicInteger docsToCollect) {
+      Collector delegate, int maxDocsToCollect, LongAdder docsToCollect) {
     super(delegate);
     this.maxDocsToCollect = maxDocsToCollect;
     this.pendingDocsToCollect = docsToCollect;
@@ -71,7 +71,9 @@ public class EarlyTerminatingCollector extends FilterCollector {
         numCollected++;
         terminatedEarly = maxDocsToCollect <= numCollected;
         if (numCollected % chunkSize == 0) {
-          terminatedEarly = pendingDocsToCollect.addAndGet(-1 * chunkSize) < 0;
+          pendingDocsToCollect.add(chunkSize);
+          final long overallCollectedDocCount = pendingDocsToCollect.intValue();
+          terminatedEarly = overallCollectedDocCount >= maxDocsToCollect;
         }
         if (terminatedEarly) {
           throw new EarlyTerminatingCollectorException(

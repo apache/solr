@@ -415,7 +415,7 @@ public class QueryComponent extends SearchComponent {
       if (cmd.getMinExactCount() < Integer.MAX_VALUE) {
         hitsPerShard = Math.max(cmd.getMinExactCount(), hitsPerShard);
       }
-      cmd.setMaxHits(hitsPerShard);
+      cmd.setMaxHitsTerminateEarly(hitsPerShard);
     }
 
     //
