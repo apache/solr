@@ -385,7 +385,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         (p1 != null) ? p1.getCurrencyCode() : (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
 
     // ValueSourceRangeFilter doesn't check exists(), so we have to
-    SchemaField amountField = getAmountField(field);
+    final SchemaField amountField = getAmountField(field);
     final Query docsWithValues = amountField.getType().getExistenceQuery(parser, amountField);
     final Query vsRangeFilter =
         new ValueSourceRangeFilter(
