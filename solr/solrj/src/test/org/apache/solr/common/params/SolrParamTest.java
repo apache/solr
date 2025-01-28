@@ -67,8 +67,20 @@ public class SolrParamTest extends SolrTestCase {
 
   public void testTrivialEquals() {
     assertEquals(params(), params());
-    assertNotEquals(params(), params("foo", "val"));
-    assertEquals("order", params("a", "1", "b", "2"), params("b", "2", "a", "1"));
+    assertFalse(params().equals(null));
+
+    var pFoo = params("foo", "val");
+    assertNotEquals(params(), pFoo);
+    assertNotEquals(pFoo, params()); // reflexive
+
+    assertNotEquals(pFoo, params("foo", "something-else")); // diff vals
+
+    // order
+    var pAB = params("a", "1", "b", "2");
+    var pBA = params("b", "2", "a", "1");
+    assertEquals("order", pAB, pBA);
+    assertEquals("order", pBA, pAB); // reflexive
+
     // some other tests also test equality
   }
 
