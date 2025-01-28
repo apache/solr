@@ -188,6 +188,7 @@ public class OverseerCancelMessageHandler implements OverseerMessageHandler, Sol
   }
 
   // TODO: find a better way to lock, currently lock based on asyncId being unique
+  @Override
   public Lock lockTask(ZkNodeProps message, long ignored) {
     String cancelTaskMsg = getTaskKey(message);
     if (canExecute(cancelTaskMsg)) {
