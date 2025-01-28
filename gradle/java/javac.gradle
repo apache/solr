@@ -19,19 +19,19 @@
 
 allprojects {
   plugins.withType(JavaPlugin) {
-      // Use 'release' flag instead of 'source' and 'target'
-      tasks.withType(JavaCompile) {
-        compileTestJava {
-          sourceCompatibility = project.minJavaTestVersion
-          targetCompatibility = project.minJavaTestVersion
-          options.compilerArgs += ["--release", project.minJavaTestVersion.toString()]
-        }
-        compileJava {
-          sourceCompatibility = project.minJavaVersion
-          targetCompatibility = project.minJavaVersion
-          options.compilerArgs += ["--release", project.minJavaVersion.toString()]
-        }
+    sourceCompatibility = project.minJavaVersion
+    targetCompatibility = project.minJavaVersion
+    // Use 'release' flag instead of 'source' and 'target'
+    tasks.withType(JavaCompile) {
+      compileTestJava {
+        sourceCompatibility = project.minJavaTestVersion
+        targetCompatibility = project.minJavaTestVersion
+        options.compilerArgs += ["--release", project.minJavaTestVersion.toString()]
       }
+      compileJava {
+        options.compilerArgs += ["--release", project.minJavaVersion.toString()]
+      }
+    }
     // Configure warnings.
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"

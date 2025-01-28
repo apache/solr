@@ -95,12 +95,11 @@ to do is to run versionCatalogFormat to sort the version catalog.
 This command does also remove unused libraries. You can use "# @keep"
 with a reason why the library should not be removed. This is sometimes
 necessary if the usage of a library is not identified by the plugin,
-like when using it with "classpath [dependency]".
+like when using it with "classpath [dependency]" or for version alignment.
 
-The next you want to regenerate the "versions.lock" file using the
-following command:
+The next you want to update the lockfiles file using the following command:
 
-gradlew writeLocks
+gradlew resolveAndLockAll
 
 Since we are responsible to provide and maintain the versions of
 libraries, the lock file will reflect the versions of the version
@@ -108,47 +107,7 @@ catalog.
 
 The locking will fail if multiple versions of the same dependency are found.
 This may be the case if libraries have a used library as transitive
-dependency with a different version. If that is the case, you have to add
-a constraint to the modules in gradle/dependencies.gradle with a reason
-why the constraint is applied. The below example adds a constraint for
-"foo.bar:baz" with the given version from the version catalog, enforcing
-the version to all transitive dependencies as well:
-
-dependencies {
-    ...
-    constraints { handler ->
-        consolidatedConfigurations.configureEach { Configuration conf ->
-            ...
-            handler.add(conf.name, libs.foo.bar.baz, {
-                because 'version alignment for consistency across project'
-            })
-        }
-    }
-}
-
-Because the constraints have to be maintained by the contributors and cleaned
-up manually, you should always provide additional information why the constraint
-is needed. This information may include the current version of the libraries
-that add transitively the dependency of the constraint. This helps others later
-find and cleanup constraints if they update dependencies that use newer versions
-of the conflicting dependency. For example:
-
-handler.add(conf.name, libs.ow2.asm, {
-        because "transitive version alignment for consistency across project" +
-            "\n- ${getFullName(libs.apache.lucene.expressions)} uses 7.2" +
-            "\n- ${getFullName(libs.apache.tika.parsers)} uses 9.3"
-    })
-
-In this case, the module org.ow2.asm:asm is used by both org.apache.lucene:lucene-expressions
-and org.apache.tika:tika-parsers, but with completely different versions.
-The constraint syncs the transitive dependency and lets the maintainers know
-which dependencies use it. So if at some point someone else updates the
-lucene-expressions to a newer version that uses asm version 9.3, the constraint
-would be obsolete and could be removed.
-
-The hashes from the versions.lock file can be used to look up
-which modules use a specific library. Simply look up the hash in the
-versions.lock and you will find a group of modules that use it.
+dependency with a different version.
 
 Update Lucene prerelease
 ------------------------
@@ -171,7 +130,7 @@ If you want to upgrade Lucene to a newer build proceed like the following:
 - Edit ./gradle/globals.gradle and change jenkins build number, too
   (this directs the repository to the one created by latest build):
     def lucenePrereleaseBuild = 'X'
-- Run: gradlew writeLocks (as described before)
+- Run: gradlew resolveAndLockAll (as described before)
 
 
 Lucene local dependency substitution
@@ -229,6 +188,8 @@ with:
 
 gradlew -p solr/solrj dependencies --configuration runtimeClasspath
 
+Additionally, you can always inspect the lockfile of a module to see
+which versions are used for which configuration.
 
 Excluding a transitive dependency
 ---------------------------------

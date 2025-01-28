@@ -819,13 +819,13 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState(
         "Waiting for setting preferredleader flag",
         collectionName,
-        (n, c) -> {
+        10,
+        TimeUnit.SECONDS,
+        c -> {
           Map<String, Slice> slices = c.getSlicesMap();
           Replica me = slices.get(slice.getName()).getReplica(newLeaderName);
           return me.getBool("property.preferredleader", false);
-        },
-        10,
-        TimeUnit.SECONDS);
+        });
 
     // Rebalance leaders
     params = new ModifiableSolrParams();
@@ -840,14 +840,14 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState(
         "Waiting for a new leader to be elected",
         collectionName,
-        (n, c) -> {
+        30,
+        TimeUnit.SECONDS,
+        c -> {
           Replica leader = c.getSlice(slice.getName()).getLeader();
           return leader != null
               && leader.getName().equals(newLeaderName)
               && leader.isActive(cloudClient.getClusterState().getLiveNodes());
-        },
-        30,
-        TimeUnit.SECONDS);
+        });
 
     new UpdateRequest()
         .add(sdoc("id", "1"))
@@ -864,7 +864,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState(
         "Expect new leader",
         collectionName,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Replica leader = collectionState.getLeader(shardName);
           if (leader == null
               || !leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
@@ -1030,9 +1030,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState(
         "Waiting for collection " + collection + " to be deleted",
         collection,
-        (n, c) -> c == null,
         10,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        Objects::isNull);
   }
 
   private DocCollection assertNumberOfReplicas(

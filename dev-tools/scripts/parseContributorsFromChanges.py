@@ -37,7 +37,7 @@ pattern = re.compile(r"\(([^()]*)\)$")
 
 for para in paras:
   # Normalize whitespace (replace all whitespace with a single space)
-  para = re.sub('\s+', ' ', para).strip()
+  para = re.sub(r"\s+", ' ', para).strip()
   #print(f'> {para}')
 
   # Find all contributors in the line

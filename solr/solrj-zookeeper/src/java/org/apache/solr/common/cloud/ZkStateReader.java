@@ -159,7 +159,6 @@ public class ZkStateReader implements SolrCloseable {
   /** A view of the current state of all collections. */
   protected volatile ClusterState clusterState;
 
-  private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
   private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT =
       Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
 
@@ -1003,30 +1002,12 @@ public class ZkStateReader implements SolrCloseable {
 
   public List<ZkCoreNodeProps> getReplicaProps(
       String collection, String shardId, String thisCoreNodeName) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, null);
-  }
-
-  public List<ZkCoreNodeProps> getReplicaProps(
-      String collection,
-      String shardId,
-      String thisCoreNodeName,
-      Replica.State mustMatchStateFilter) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, mustMatchStateFilter, null);
-  }
-
-  public List<ZkCoreNodeProps> getReplicaProps(
-      String collection,
-      String shardId,
-      String thisCoreNodeName,
-      Replica.State mustMatchStateFilter,
-      Replica.State mustNotMatchStateFilter) {
-    // TODO: We don't need all these getReplicaProps method overloading. Also, it's odd that the
-    // default is to return replicas of type TLOG and NRT only
+    // TODO: It's odd that the default is to return replicas of type TLOG and NRT only
     return getReplicaProps(
         collection,
         shardId,
         thisCoreNodeName,
-        mustMatchStateFilter,
+        null,
         null,
         EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT));
   }
