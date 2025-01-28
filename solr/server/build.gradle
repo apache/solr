@@ -119,15 +119,19 @@ task assemblePackaging(type: Sync) {
     include "README.md"
 
     if (rootProject.ext.development) {
-      rename { String fileName ->
-        // Allow duplicates to overwrite previous files
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
-        // For development builds we overwrite configurations with dev configs
-        fileName.replace("-dev.xml", ".xml")
-      }
+      // Allow duplicates to overwrite previous files
+      duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      // Rename dev files in development
+      rename { String fileName -> fileName.replace("-dev.xml", ".xml") }
+
+      // Exclude production configurations
+      exclude "**/*-prod.xml"
     } else {
-      // For release builds we exclude all dev configurations
-      exclude "**-dev.*"
+      // Rename prod files in production
+      rename { String fileName -> fileName.replace("-prod.xml", ".xml") }
+
+      // Exclude dev configurations
+      exclude "**/*-dev.xml"
     }
   })
 
