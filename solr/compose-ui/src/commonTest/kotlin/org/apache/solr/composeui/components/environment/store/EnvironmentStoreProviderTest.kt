@@ -20,13 +20,9 @@ package org.apache.solr.composeui.components.environment.store
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.apache.solr.composeui.components.environment.data.SystemData
 
@@ -34,7 +30,7 @@ import org.apache.solr.composeui.components.environment.data.SystemData
 class EnvironmentStoreProviderTest {
 
     @Test
-    fun testFetchInitialSystemDataAction() = runTest(timeout = 1.seconds) {
+    fun testFetchInitialSystemDataAction() = runTest(timeout = 2.seconds) {
         val expectedJavaProperties = listOf("key" to "value")
         val expectedSystemData = SystemData(solrHome = "some/path")
         val client = MockedEnvironmentStoreClient(
@@ -46,38 +42,21 @@ class EnvironmentStoreProviderTest {
         val store = EnvironmentStoreProvider(
             storeFactory = DefaultStoreFactory(),
             client = client,
-            ioContext = coroutineContext
+            ioContext = backgroundScope.coroutineContext
         ).provide()
 
-        // not the best way to consume a flow, but the simplest
-        // We expect 2 states to be emitted, one for each response received
-        val state = store.stateFlow.take(2).last()
-
-        assertNotNull(actual = state, message = "Expected state to be emitted.")
-        assertContentEquals(
-            expected = expectedJavaProperties,
-            actual = state.javaProperties,
-            message = "Expected java properties to match.",
-        )
-        assertEquals(
-            expected = expectedSystemData.system,
-            actual = state.system,
-            message = "Expected system data to match.",
-        )
-        assertEquals(
-            expected = expectedSystemData.jvm,
-            actual = state.jvm,
-            message = "Expected jvm data to match.",
-        )
-        assertEquals(
-            expected = expectedSystemData.solrHome,
-            actual = state.solrHome,
-            message = "Expected solrHome to match.",
-        )
+        // Collect the state updates and wait for the expected state
+        // If the expected state is never published, test will run into a timeout
+        store.stateFlow.first { state ->
+            state.javaProperties == expectedJavaProperties &&
+                    state.system == expectedSystemData.system &&
+                    state.jvm == expectedSystemData.jvm &&
+                    state.solrHome == expectedSystemData.solrHome
+        }
     }
 
     @Test
-    fun testFetchSystemDataIntent() = runTest(timeout = 5.seconds) {
+    fun testFetchSystemDataIntent() = runTest(timeout = 2.seconds) {
         var initialRequest1 = true
         var initialRequest2 = true
         val expectedJavaProperties = listOf("key2" to "value2")
@@ -97,8 +76,7 @@ class EnvironmentStoreProviderTest {
                 if (initialRequest2) {
                     initialRequest2 = false
                     Result.success(SystemData(solrHome = "some/path"))
-                }
-                else Result.success(expectedSystemData)
+                } else Result.success(expectedSystemData)
             },
         )
 
@@ -106,35 +84,18 @@ class EnvironmentStoreProviderTest {
         val store = EnvironmentStoreProvider(
             storeFactory = DefaultStoreFactory(),
             client = client,
-            ioContext = coroutineContext,
+            ioContext = backgroundScope.coroutineContext,
         ).provide()
 
-        // Send a fetch to re-fetch the data
+        // Send an intent to re-fetch the data
         store.accept(EnvironmentStore.Intent.FetchSystemData)
 
-        // This time we expect 4 states to be emitted, 2 for initialization, 2 for the intent
-        val state = store.stateFlow.take(4).last()
-
-        assertNotNull(actual = state, message = "Expected state to be emitted.")
-        assertContentEquals(
-            expected = expectedJavaProperties,
-            actual = store.state.javaProperties,
-            message = "Expected java properties to match.",
-        )
-        assertEquals(
-            expected = expectedSystemData.system,
-            actual = store.state.system,
-            message = "Expected system data to match.",
-        )
-        assertEquals(
-            expected = expectedSystemData.jvm,
-            actual = store.state.jvm,
-            message = "Expected jvm data to match.",
-        )
-        assertEquals(
-            expected = expectedSystemData.solrHome,
-            actual = store.state.solrHome,
-            message = "Expected solrHome to match.",
-        )
+        // Collect the state updates and wait for the expected state
+        store.stateFlow.first { state ->
+            state.javaProperties == expectedJavaProperties &&
+                    state.system == expectedSystemData.system &&
+                    state.jvm == expectedSystemData.jvm &&
+                    state.solrHome == expectedSystemData.solrHome
+        }
     }
 }

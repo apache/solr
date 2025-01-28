@@ -54,6 +54,16 @@ kotlin {
                 }
                 // Note that webpack.config.d/ contains additional configuration
             }
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                    useConfigDirectory(
+                        project.projectDir
+                            .resolve("karma.config.d")
+                            .resolve("wasm")
+                    )
+                }
+            }
         }
         binaries.executable()
     }
