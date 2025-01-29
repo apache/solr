@@ -239,7 +239,8 @@ public class NamedList<T>
   }
 
   /***
-   * Scans the list sequentially beginning at index 0
+   * Scans the names of the list sequentially beginning at index 0 and returns the index of the first
+   * pair with the specified name.
    * @see #indexOf(String, int)
    */
   public int indexOf(String name) {
@@ -411,7 +412,10 @@ public class NamedList<T>
     return asShallowMap(false);
   }
 
-  private Map<String, T> asShallowMap(boolean allowDps) {
+  /**
+   * @deprecated use {@link SimpleOrderedMap} instead of NamedList when a Map is required.
+   */
+  public Map<String, T> asShallowMap(boolean allowDps) {
     return new Map<>() {
       @Override
       public int size() {

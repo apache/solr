@@ -93,6 +93,11 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     return values().contains(value);
   }
 
+  @Override
+  public Map<String, T> asShallowMap() {
+    return this;
+  }
+
   /**
    * {@inheritDoc}
    *
@@ -133,11 +138,6 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     } else {
       m.forEach(this::put);
     }
-  }
-
-  @Override
-  public Map<String, T> asShallowMap() {
-    return this;
   }
 
   @Override
