@@ -78,7 +78,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertNotNull(cluster);
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     assertNotNull(cc);
-    helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester(cc));
+    helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester());
   }
 
   @Test
@@ -256,7 +256,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     helper.postDataToBlobStore(
         cluster.getSolrClient(),
         configSet + "_sample",
-        DefaultSampleDocumentsLoader.streamAsBytes(toJavabin(Collections.singletonList(doc))));
+        SchemaDesignerConfigSetHelper.readAllBytes(() -> toJavabin(List.of(doc))));
 
     List<SolrInputDocument> docs = helper.getStoredSampleDocs(configSet);
     assertTrue(docs != null && docs.size() == 1);

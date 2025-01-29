@@ -25,18 +25,13 @@
 ** xref:taking-solr-to-production.adoc[]
 ** xref:jvm-settings.adoc[]
 ** xref:upgrading-a-solr-cluster.adoc[]
-*** xref:indexupgrader-tool.adoc[]
 ** xref:backup-restore.adoc[]
 ** xref:solr-in-docker.adoc[]
 *** xref:docker-faq.adoc[]
-*** xref:docker-networking.adoc[]
 ** xref:solr-on-hdfs.adoc[]
 
 * Scaling Solr
 ** xref:cluster-types.adoc[]
-** User-Managed Clusters
-*** xref:user-managed-index-replication.adoc[]
-*** xref:user-managed-distributed-search.adoc[]
 ** SolrCloud Clusters
 *** xref:solrcloud-shards-indexing.adoc[]
 *** xref:solrcloud-recoveries-and-write-tolerance.adoc[]
@@ -57,6 +52,9 @@
 *** Admin UI
 **** xref:collections-core-admin.adoc[]
 **** xref:cloud-screens.adoc[]
+** User-Managed Clusters
+*** xref:user-managed-index-replication.adoc[]
+*** xref:user-managed-distributed-search.adoc[]
 
 * Monitoring Solr
 ** xref:configuring-logging.adoc[]
@@ -76,10 +74,8 @@
 * xref:securing-solr.adoc[]
 ** xref:authentication-and-authorization-plugins.adoc[]
 *** xref:basic-authentication-plugin.adoc[]
-*** xref:kerberos-authentication-plugin.adoc[]
 *** xref:jwt-authentication-plugin.adoc[]
 *** xref:cert-authentication-plugin.adoc[]
-*** xref:hadoop-authentication-plugin.adoc[]
 *** xref:rule-based-authorization-plugin.adoc[]
 ** xref:audit-logging.adoc[]
 ** xref:enabling-ssl.adoc[]

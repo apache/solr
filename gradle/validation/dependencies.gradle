@@ -1,0 +1,103 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+// Helper function for specifying stable versions for dependency updates
+// https://github.com/ben-manes/gradle-versions-plugin
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+buildscript {
+    configurations.classpath {
+        resolutionStrategy.activateDependencyLocking()
+    }
+}
+
+// Configure sanity check for conflicting dependencies across certain configurations
+allprojects {
+
+    // Enable dependency locking in all modules and configurations
+    projects.configure {
+        dependencyLocking {
+            lockAllConfigurations()
+        }
+    }
+
+    dependencies {
+        modules {
+            module("org.hamcrest:hamcrest-core") {
+                replacedBy("org.hamcrest:hamcrest", "hamcrest-core was renamed to hamcrest")
+            }
+        }
+    }
+}
+
+// Configure version catalog cleanups plugin.
+configure(rootProject) {
+    apply plugin: libs.plugins.littlerobots.versioncatalogupdate.get().pluginId
+
+    versionCatalogUpdate {
+        sortByKey = true
+    }
+
+    tasks.matching { it.name == "tidy" }.configureEach {
+        it.dependsOn(":versionCatalogFormat")
+    }
+
+    tasks.matching {
+        it.path in [":versionCatalogUpdate"]
+    }.configureEach {
+        it.interactive = true
+    }
+
+    tasks.register("updateLibs", {
+        dependsOn ":versionCatalogUpdate"
+    })
+
+    // on dependencyUpdates get only stable versions recommended if current version is stable
+    // https://github.com/ben-manes/gradle-versions-plugin
+    tasks.named("dependencyUpdates").configure {
+        checkConstraints = true
+        checkBuildEnvironmentConstraints = true
+        rejectVersionIf {
+            isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
+        }
+    }
+}
+
+allprojects {
+    // Register task that allows lock-file generation in all modules
+    tasks.register("resolveAndLockAll") {
+        doFirst {
+            // If the task is not directly used, do not enforce --write-locks to be provided
+            assert !gradle.startParameter.taskNames.contains("resolveAndLockAll")
+                    || gradle.startParameter.writeDependencyLocks: "$path must be run from the command line with the `--write-locks` flag"
+        }
+        doLast {
+            if (gradle.startParameter.writeDependencyLocks) {
+                // Resolve and update locks only if --write-locks explicitly included
+                // This may not be the case where this task is added as a dependency, like for "dependencies" task
+                project.configurations.findAll {
+                    // Add any custom filtering on the configurations to be resolved
+                    it.canBeResolved
+                }.each { it.resolve() }
+            }
+        }
+    }
+}

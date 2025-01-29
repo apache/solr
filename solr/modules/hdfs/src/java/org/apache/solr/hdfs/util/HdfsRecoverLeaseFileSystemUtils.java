@@ -54,7 +54,7 @@ public class HdfsRecoverLeaseFileSystemUtils {
 
   /*
    * Run the dfs recover lease. recoverLease is asynchronous. It returns:
-   *    -false when it starts the lease recovery (i.e. lease recovery not *yet* done)
+   *    - false when it starts the lease recovery (i.e. lease recovery not *yet* done)
    *    - true when the lease recovery has succeeded or the file is closed.
    * But, we have to be careful.  Each time we call recoverLease, it starts the recover lease
    * process over from the beginning.  We could put ourselves in a situation where we are

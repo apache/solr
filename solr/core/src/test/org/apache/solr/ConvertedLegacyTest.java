@@ -637,8 +637,8 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
         "<add><doc><field name=\"id\">107</field><field name=\"val_s\">port</field></doc></add>");
     assertU("<commit/>");
 
-    assertQ(req("val_s:a*"), "//*[@numFound='3']");
-    assertQ(req("val_s:p*"), "//*[@numFound='4']");
+    assertQ(req("val_s:ap*"), "//*[@numFound='3']");
+    assertQ(req("val_s:pe*"), "//*[@numFound='3']");
     // val_s:* %//*[@numFound="8"]
 
     // test wildcard query

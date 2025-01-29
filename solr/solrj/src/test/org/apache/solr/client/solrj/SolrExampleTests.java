@@ -42,7 +42,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
@@ -76,7 +75,6 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.RTimer;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONParser;
@@ -720,7 +718,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     SolrException ex = expectThrows(SolrException.class, () -> client.query(query));
     assertEquals(400, ex.code());
-    MatcherAssert.assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
+    assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 
     // the df=text here is a kluge for the test to supply a default field in case there is none in
     // schema.xml. alternatively, the resulting assertion could be modified to assert that no
@@ -742,17 +740,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       ex = expectThrows(SolrException.class, () -> client.add(doc));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
-    } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
+    } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
       // XXX concurrentupdatesolrserver reports errors differently
-      ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-          (ErrorTrackingConcurrentUpdateSolrClient) client;
       concurrentClient.lastError = null;
       concurrentClient.add(doc);
       concurrentClient.blockUntilFinished();
       assertNotNull("Should throw exception!", concurrentClient.lastError);
       assertEquals(
           "Unexpected exception type",
-          RemoteSolrException.class,
+          SolrClient.RemoteSolrException.class,
           concurrentClient.lastError.getClass());
       assertTrue(
           "Unexpected exception message: " + concurrentClient.lastError.getMessage(),
@@ -940,7 +936,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    File file = getFile("solrj/books.csv");
+    File file = getFile("solrj/books.csv").toFile();
     final int opened[] = new int[] {0};
     final int closed[] = new int[] {0};
 
@@ -964,7 +960,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           };
       up.addContentStream(contentStreamMock);
     } else {
-      up.addFile(file, "application/csv");
+      up.addFile(file.toPath(), "application/csv");
     }
 
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -989,8 +985,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
     NamedList<Object> result =
         client.request(
-            new StreamingUpdateRequest(
-                    "/update", getFile("solrj/books.csv").toPath(), "application/csv")
+            new StreamingUpdateRequest("/update", getFile("solrj/books.csv"), "application/csv")
                 .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     assertNotNull("Couldn't upload books.csv", result);
     rsp = client.query(new SolrQuery("*:*"));
@@ -1023,7 +1018,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   private ByteBuffer getFileContent(NamedList<?> nl, String name) throws IOException {
-    try (InputStream is = new FileInputStream(getFile(name))) {
+    try (InputStream is = new FileInputStream(getFile(name).toFile())) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }
   }
@@ -2427,20 +2422,18 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       if (client instanceof HttpSolrClient) {
         // XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
-      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
+      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
-        ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-            (ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
             concurrentClient.lastError.getMessage().contains("Conflict"));
       } else if (client
-          instanceof SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) {
+          instanceof
+          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
+          concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
-        SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-            (SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
@@ -2576,7 +2569,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   @Test
-  public void testChildDoctransformer() throws IOException, SolrServerException {
+  public void testChildDocTransformer() throws IOException, SolrServerException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
@@ -3032,9 +3025,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     q.addSort("id", SolrQuery.ORDER.desc);
 
     SolrDocumentList results = client.query(q).getResults();
-    MatcherAssert.assertThat(results.getNumFound(), is(1L));
+    assertThat(results.getNumFound(), is(1L));
     SolrDocument foundDoc = results.get(0);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a child free doc"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child free doc"));
 
     // Rewrite child free doc
     docToUpdate.setField("title_s", "i am a parent");
@@ -3050,11 +3043,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     results = client.query(q).getResults();
 
-    MatcherAssert.assertThat(results.getNumFound(), is(2L));
+    assertThat(results.getNumFound(), is(2L));
     foundDoc = results.get(0);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a parent"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a parent"));
     foundDoc = results.get(1);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a child"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child"));
   }
 
   @Test
@@ -3092,13 +3085,13 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     SolrQuery q = new SolrQuery("*:*");
     SolrDocumentList results = client.query(q).getResults();
-    MatcherAssert.assertThat(results.getNumFound(), is(4L));
+    assertThat(results.getNumFound(), is(4L));
 
     client.deleteById("p0");
     client.commit();
 
     results = client.query(q).getResults();
-    MatcherAssert.assertThat(
+    assertThat(
         "All the children are expected to be deleted together with parent",
         results.getNumFound(),
         is(0L));

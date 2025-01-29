@@ -19,9 +19,9 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -36,6 +36,16 @@ import org.noggit.JSONWriter;
  * <p>Used to send an arbitrary HTTP request to a Solr API endpoint.
  */
 public class ApiTool extends ToolBase {
+
+  private static final Option SOLR_URL_OPTION =
+      Option.builder("s")
+          .longOpt("solr-url")
+          .hasArg()
+          .argName("URL")
+          .required()
+          .desc("Send a GET request to a Solr API endpoint.")
+          .build();
+
   public ApiTool() {
     this(CLIO.getOutStream());
   }
@@ -50,35 +60,26 @@ public class ApiTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("get")
-            .argName("URL")
-            .hasArg()
-            .required(true)
-            .desc("Send a GET request to a Solr API endpoint.")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String response = null;
-    String getUrl = cli.getOptionValue("get");
-    if (getUrl != null) {
-      response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
-    }
-    if (response != null) {
-      // pretty-print the response to stdout
-      echo(response);
-    }
+    String getUrl = cli.getOptionValue(SOLR_URL_OPTION);
+    String response = callGet(getUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+
+    // pretty-print the response to stdout
+    echo(response);
   }
 
   protected String callGet(String url, String credentials) throws Exception {
     URI uri = new URI(url.replace("+", "%20"));
     String solrUrl = getSolrUrlFromUri(uri);
     String path = uri.getPath();
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
+    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
       // For path parameter we need the path without the root so from the second / char
       // (because root can be configured)
       // E.g URL is http://localhost:8983/solr/admin/info/system path is
@@ -97,7 +98,7 @@ public class ApiTool extends ToolBase {
       NamedList<Object> response = solrClient.request(req);
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       return arr.toString();
     }
   }
@@ -109,7 +110,7 @@ public class ApiTool extends ToolBase {
    * @return Solr base url with port and root (from above example http://localhost:8983/solr)
    */
   public static String getSolrUrlFromUri(URI uri) {
-    return uri.getScheme() + "://" + uri.getAuthority() + "/" + uri.getPath().split("/")[1];
+    return uri.resolve("/" + uri.getPath().split("/")[1]).toString();
   }
 
   public static ModifiableSolrParams getSolrParamsFromUri(URI uri) {

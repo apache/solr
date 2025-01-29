@@ -41,7 +41,6 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -253,7 +252,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   collectionName,
                   (long) 30,
                   TimeUnit.SECONDS,
-                  SolrCloudTestCase.activeClusterShape(2, 4));
+                  SolrCloudTestCase.activeClusterShape(2, 3));
 
           if (state == RequestStatusState.COMPLETED) {
             CountDownLatch newReplicaLatch = new CountDownLatch(1);
@@ -440,7 +439,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     ZkStateReader.from(cloudClient)
         .waitForState(
-            collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
+            collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 8));
 
     ZkStateReader.from(cloudClient).forceUpdateCollection(collectionName);
     ClusterState clusterState = cloudClient.getClusterState();
@@ -798,7 +797,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with just one custom hash range should not succeed");
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+    } catch (SolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
     }
     subRanges.clear();
@@ -809,7 +808,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with missing hashes in between given ranges should not succeed");
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+    } catch (SolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
     }
     subRanges.clear();
@@ -822,7 +821,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with overlapping ranges should not succeed");
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+    } catch (SolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
     }
     subRanges.clear();
@@ -914,7 +913,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           log.info("Layout after split: \n");
           printLayout();
           break;
-        } catch (BaseHttpSolrClient.RemoteSolrException e) {
+        } catch (SolrClient.RemoteSolrException e) {
           if (e.code() != 500) {
             throw e;
           }
@@ -961,7 +960,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     List<Integer> list = collectionInfos.get(collectionName);
-    checkForCollection(collectionName, list, null);
+    checkForCollection(collectionName, list);
 
     waitForRecoveriesToFinish(false);
 
@@ -1032,7 +1031,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     List<Integer> list = collectionInfos.get(collectionName);
-    checkForCollection(collectionName, list, null);
+    checkForCollection(collectionName, list);
 
     waitForRecoveriesToFinish(false);
 
@@ -1133,7 +1132,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       try {
         splitShard(collectionName, shardId, null, splitKey, false);
         break;
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         if (e.code() != 500) {
           throw e;
         }
@@ -1277,9 +1276,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl =
-        ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
+    String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 
     try (SolrClient baseServer =
         new HttpSolrClient.Builder(baseUrl)
@@ -1323,8 +1320,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   public static int getHashRangeIdx(DocRouter router, List<DocRouter.Range> ranges, String id) {
     int hash = 0;
-    if (router instanceof HashBasedRouter) {
-      HashBasedRouter hashBasedRouter = (HashBasedRouter) router;
+    if (router instanceof HashBasedRouter hashBasedRouter) {
       hash = hashBasedRouter.sliceHash(id, null, null, null);
     }
     for (int i = 0; i < ranges.size(); i++) {

@@ -118,7 +118,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DirectUpdateHandler2(SolrCore core) {
-    super(core);
+    super(core, null, false);
 
     solrCoreState = core.getSolrCoreState();
 
@@ -156,10 +156,13 @@ public class DirectUpdateHandler2 extends UpdateHandler
       commitWithinSoftCommit = false;
       commitTracker.setOpenSearcher(true);
     }
+    if (ulog != null) {
+      initUlog(true);
+    }
   }
 
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
-    super(core, updateHandler.getUpdateLog());
+    super(core, updateHandler.getUpdateLog(), false);
     solrCoreState = core.getSolrCoreState();
 
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig().getUpdateHandlerInfo();
@@ -190,11 +193,14 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
 
-    UpdateLog existingLog = updateHandler.getUpdateLog();
-    if (this.ulog != null && this.ulog == existingLog) {
+    if (ulog != null) {
       // If we are reusing the existing update log, inform the log that its update handler has
       // changed. We do this as late as possible.
-      this.ulog.init(this, core);
+      // TODO: not sure _why_ we "do this as late as possible". Consider simplifying by
+      //  moving `ulog.init(UpdateHandler, SolrCore)` entirely into the `UpdateHandler` ctor,
+      //  avoiding the need for the `UpdateHandler(SolrCore, UpdateLog, boolean)` ctor
+      //  (with the extra boolean `initUlog` param).
+      initUlog(ulog != updateHandler.getUpdateLog());
     }
   }
 
@@ -732,6 +738,9 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
+        if (cmd.isClosingOnCommit()) {
+          core.readOnly = true;
+        }
         IndexWriter writer = iw.get();
         if (cmd.optimize) {
           writer.forceMerge(cmd.maxOptimizeSegments);
@@ -780,7 +789,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
           if (ulog != null) ulog.preSoftCommit(cmd);
           if (cmd.openSearcher) {
             core.getSearcher(true, false, waitSearcher);
-          } else {
+          } else if (!cmd.isClosingOnCommit()) {
             // force open a new realtime searcher so realtime-get and versioning code can see the
             // latest
             RefCounted<SolrIndexSearcher> searchHolder = core.openNewSearcher(true, true);
@@ -965,8 +974,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
             // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't
             // be used)
-            SolrIndexWriter.setCommitData(writer, cmd.getVersion(), null);
-            writer.commit();
+            if (shouldCommit(cmd, writer)) {
+              SolrIndexWriter.setCommitData(writer, cmd.getVersion(), cmd.commitData);
+              writer.commit();
+            }
 
             synchronized (solrCoreState.getUpdateLock()) {
               ulog.postCommit(cmd);

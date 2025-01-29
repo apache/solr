@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -45,7 +46,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,9 +71,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance)
       throws Exception {
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        new File(instance.getHomeDir(), "solr.xml"));
+    Files.copy(
+        Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
+        Path.of(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
@@ -237,7 +237,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  private void testDeleteNamedBackup(String backupNames[]) throws Exception {
+  private void testDeleteNamedBackup(String[] backupNames) throws Exception {
     final BackupStatusChecker backupStatus =
         new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
@@ -260,7 +260,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
             + "?wt=xml&command="
             + cmd
             + params;
-    URL url = new URL(leaderUrl);
+    URL url = URI.create(leaderUrl).toURL();
     try (InputStream stream = url.openStream()) {
       assert stream != null;
     }

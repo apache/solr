@@ -70,7 +70,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();
-    // SchemaDesignerAPI depends on the blob store
+    // SchemaDesignerAPI depends on the blob store ".system" collection existing.
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
@@ -188,7 +188,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
       when(req.getParams()).thenReturn(reqParams);
 
       // POST some sample JSON docs
-      ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next);
+      ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next.toPath());
       stream.setContentType(TestSampleDocumentsLoader.guessContentTypeFromFilename(next.getName()));
       when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -239,7 +239,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     schemaDesignerAPI.query(req, rsp);
     assertNotNull(rsp.getResponseHeader());
     SolrDocumentList results = (SolrDocumentList) rsp.getResponse();
-    assertEquals(48, results.getNumFound());
+    assertEquals(47, results.getNumFound());
 
     // publish schema to a config set that can be used by real collections
     reqParams.clear();
@@ -300,7 +300,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
 
     // POST some sample XML docs
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml);
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml.toPath());
     stream.setContentType("application/xml");
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -354,7 +354,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     // POST some sample JSON docs
     File booksJson = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs/books.json");
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson);
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson.toPath());
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -740,7 +740,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     String mutableId = getMutableId(configSet);
     SchemaDesignerConfigSetHelper configSetHelper =
-        new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester(cc));
+        new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester());
     ManagedIndexSchema schema = schemaDesignerAPI.loadLatestSchema(mutableId);
 
     // make it required
@@ -839,6 +839,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     SimpleOrderedMap<Object> idFieldMapUpdated = idFieldMap.clone();
     idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("docValues", 0), Boolean.FALSE);
     idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("useDocValuesAsStored", 0), Boolean.FALSE);
+    idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("uninvertible", 0), Boolean.TRUE);
     idFieldMapUpdated.setVal(
         idFieldMapUpdated.indexOf("omitTermFreqAndPositions", 0), Boolean.FALSE);
 
@@ -892,14 +893,23 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertEquals(
         Arrays.asList(
             Map.of(
-                "omitTermFreqAndPositions", true, "useDocValuesAsStored", true, "docValues", true),
+                "omitTermFreqAndPositions",
+                true,
+                "useDocValuesAsStored",
+                true,
+                "docValues",
+                true,
+                "uninvertible",
+                false),
             Map.of(
                 "omitTermFreqAndPositions",
                 false,
                 "useDocValuesAsStored",
                 false,
                 "docValues",
-                false)),
+                false,
+                "uninvertible",
+                true)),
         mapDiff.get("id"));
     assertNotNull(fieldsDiff.get("added"));
     Map<String, Object> fieldsAdded = (Map<String, Object>) fieldsDiff.get("added");

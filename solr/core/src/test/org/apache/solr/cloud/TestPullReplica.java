@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.http.HttpResponse;
@@ -52,8 +54,10 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -221,6 +225,27 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   /**
+   * For some tests (when we want to check for <i>absence</i> of tlog dir), we need a standin for
+   * the common case where <code>core.getUpdateHandler().getUpdateLog() == null</code>. This method
+   * returns the actual tlog dir if an {@link UpdateLog} is configured on the core's {@link
+   * org.apache.solr.update.UpdateHandler}; otherwise, falls back to the legacy behavior: if {@link
+   * CoreDescriptor#getUlogDir()} is specified, returns the <code>tlog</code> subdirectory of that;
+   * otherwise returns the <code>tlog</code> subdirectory within {@link SolrCore#getDataDir()}.
+   * (NOTE: the last of these is by far the most common default location of the tlog directory).
+   */
+  static File getHypotheticalTlogDir(SolrCore core) {
+    String ulogDir;
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    if (ulog != null) {
+      return new File(ulog.getTlogDir());
+    } else if ((ulogDir = core.getCoreDescriptor().getUlogDir()) != null) {
+      return new File(ulogDir, UpdateLog.TLOG_NAME);
+    } else {
+      return new File(core.getDataDir(), UpdateLog.TLOG_NAME);
+    }
+  }
+
+  /**
    * Asserts that Update logs don't exist for replicas of type {@link
    * org.apache.solr.common.cloud.Replica.Type#PULL}
    */
@@ -233,10 +258,11 @@ public class TestPullReplica extends SolrCloudTestCase {
         try (SolrCore core =
             cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName())) {
           assertNotNull(core);
+          File tlogDir = getHypotheticalTlogDir(core);
           assertFalse(
               "Update log should not exist for replicas of type Passive but file is present: "
-                  + core.getUlogDir(),
-              new java.io.File(core.getUlogDir()).exists());
+                  + tlogDir,
+              tlogDir.exists());
         }
       }
     }
@@ -724,20 +750,13 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
   }
 
-  static void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
-      log.info("Collection not yet deleted");
-      try {
-        Thread.sleep(100);
-        if (t.hasTimedOut()) {
-          fail("Timed out waiting for collection " + collection + " to be deleted.");
-        }
-        cluster.getZkStateReader().forceUpdateCollection(collection);
-      } catch (SolrException e) {
-        return;
-      }
-    }
+  static void waitForDeletion(String collection) {
+    waitForState(
+        "Waiting for collection " + collection + " to be deleted",
+        collection,
+        10,
+        TimeUnit.SECONDS,
+        Objects::isNull);
   }
 
   private DocCollection assertNumberOfReplicas(

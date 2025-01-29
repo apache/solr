@@ -16,15 +16,14 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.packagemanager.PackageUtils.format;
+
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,22 +41,10 @@ public class ZkMvTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("src")
-            .argName("src")
-            .hasArg()
-            .required(true)
-            .desc("Source Znode to move from.")
-            .build(),
-        Option.builder("dst")
-            .argName("dst")
-            .hasArg()
-            .required(true)
-            .desc("Destination Znode to move to.")
-            .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -66,24 +53,33 @@ public class ZkMvTool extends ToolBase {
   }
 
   @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = SolrCLI.getZkHost(cli);
-    if (zkHost == null) {
-      throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("solrUrl")
-              + " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
-    }
+  public String getUsage() {
+    return "bin/solr zk mv [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] source destination";
+  }
 
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String src = cli.getOptionValue("src");
-      String dst = cli.getOptionValue("dst");
+  @Override
+  public String getHeader() {
+    StringBuilder sb = new StringBuilder();
+    format(sb, "mv moves (renames) znodes on Zookeeper.");
+    format(sb, "");
+    format(sb, "<src>, <dest> : Zookeeper nodes, the 'zk:' prefix is optional.");
+    format(sb, "If <dest> ends with '/', then <dest> will be a parent znode");
+    format(sb, "and the last element of the <src> path will be appended.");
+    format(sb, "Zookeeper nodes CAN have data, so moving a single file to a parent znode");
+    format(sb, "will overlay the data on the parent Znode so specifying the trailing slash");
+    format(sb, "is important.");
+    format(sb, "\nList of options:");
+    return sb.toString();
+  }
+
+  @Override
+  public void runImpl(CommandLine cli) throws Exception {
+    String zkHost = CLIUtils.getZkHost(cli);
+
+    try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+      String src = cli.getArgs()[0];
+      String dst = cli.getArgs()[1];
 
       if (src.toLowerCase(Locale.ROOT).startsWith("file:")
           || dst.toLowerCase(Locale.ROOT).startsWith("file:")) {

@@ -16,13 +16,13 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.packagemanager.PackageUtils.format;
+
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,13 @@ import org.slf4j.LoggerFactory;
 /** Supports zk mkroot command in the bin/solr script. */
 public class ZkMkrootTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Option FAIL_ON_EXISTS_OPTION =
+      Option.builder()
+          .longOpt("fail-on-exists")
+          .hasArg()
+          .desc("Raise an error if the root exists.  Defaults to false.")
+          .build();
 
   public ZkMkrootTool() {
     this(CLIO.getOutStream());
@@ -40,16 +47,11 @@ public class ZkMkrootTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("path")
-            .argName("path")
-            .hasArg()
-            .required(true)
-            .desc("Path to create.")
-            .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(FAIL_ON_EXISTS_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -58,27 +60,31 @@ public class ZkMkrootTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk mkroot [--fail-on-exists <arg>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+  }
+
+  @Override
+  public String getHeader() {
+    StringBuilder sb = new StringBuilder();
+    format(
+        sb,
+        "mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary");
+    format(sb, "depth but primarily intended to create a 'chroot'.\n\nList of options:");
+    return sb.toString();
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
+    String znode = cli.getArgs()[0];
+    boolean failOnExists = cli.hasOption(FAIL_ON_EXISTS_OPTION);
 
-    if (zkHost == null) {
-      throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("zkHost")
-              + " is running in standalone server mode, 'zk mkroot' can only be used when running in SolrCloud mode.\n");
-    }
+    try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-
-      String znode = cli.getOptionValue("path");
       echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
-      zkClient.makePath(znode, true);
+      zkClient.makePath(znode, failOnExists, true);
     } catch (Exception e) {
       log.error("Could not complete mkroot operation for reason: ", e);
       throw (e);

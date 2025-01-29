@@ -37,8 +37,7 @@ public class TestMacroExpander extends SolrTestCase {
       me = new MacroExpander(testParams, failOnMissingParams);
     }
 
-    // default examples: https://cwiki.apache.org/confluence/display/solr/Parameter+Substitution
-    // and http://yonik.com/solr-query-parameter-substitution/
+    // default examples: https://yonik.com/solr-query-parameter-substitution/
 
     // using params
     String[] lowParams = {"50"};

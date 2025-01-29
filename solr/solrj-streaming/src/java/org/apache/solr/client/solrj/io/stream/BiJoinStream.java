@@ -28,8 +28,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- * Joins leftStream with rightStream based on a Equalitor. Both streams must be sorted by the fields
- * being joined on. Resulting stream is sorted by the equalitor.
+ * Joins leftStream with rightStream based on an {@link StreamEqualitor}. Both streams must be
+ * sorted by the fields being joined on. Resulting stream is sorted by the equalitor.
  *
  * @since 6.0.0
  */
@@ -91,10 +91,8 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
         StreamEqualitor sourceEqualitor = ((MultipleFieldEqualitor) eq).getEqs()[idx];
         StreamComparator sourceComparator = ((MultipleFieldComparator) comp).getComps()[idx];
 
-        if (sourceEqualitor instanceof FieldEqualitor
-            && sourceComparator instanceof FieldComparator) {
-          FieldEqualitor fieldEqualitor = (FieldEqualitor) sourceEqualitor;
-          FieldComparator fieldComparator = (FieldComparator) sourceComparator;
+        if (sourceEqualitor instanceof FieldEqualitor fieldEqualitor
+            && sourceComparator instanceof FieldComparator fieldComparator) {
           compoundComps[idx] =
               new FieldComparator(
                   fieldEqualitor.getLeftFieldName(),
@@ -109,10 +107,8 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
       StreamEqualitor sourceEqualitor = eq;
       StreamComparator sourceComparator = ((MultipleFieldComparator) comp).getComps()[0];
 
-      if (sourceEqualitor instanceof FieldEqualitor
-          && sourceComparator instanceof FieldComparator) {
-        FieldEqualitor fieldEqualitor = (FieldEqualitor) sourceEqualitor;
-        FieldComparator fieldComparator = (FieldComparator) sourceComparator;
+      if (sourceEqualitor instanceof FieldEqualitor fieldEqualitor
+          && sourceComparator instanceof FieldComparator fieldComparator) {
         return new FieldComparator(
             fieldEqualitor.getLeftFieldName(),
             fieldEqualitor.getRightFieldName(),
@@ -124,10 +120,8 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
       StreamEqualitor sourceEqualitor = eq;
       StreamComparator sourceComparator = comp;
 
-      if (sourceEqualitor instanceof FieldEqualitor
-          && sourceComparator instanceof FieldComparator) {
-        FieldEqualitor fieldEqualitor = (FieldEqualitor) sourceEqualitor;
-        FieldComparator fieldComparator = (FieldComparator) sourceComparator;
+      if (sourceEqualitor instanceof FieldEqualitor fieldEqualitor
+          && sourceComparator instanceof FieldComparator fieldComparator) {
         return new FieldComparator(
             fieldEqualitor.getLeftFieldName(),
             fieldEqualitor.getRightFieldName(),
@@ -148,8 +142,7 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
       for (int idx = 0; idx < compoundComps.length; ++idx) {
         StreamComparator sourceComparator = ((MultipleFieldComparator) comp).getComps()[idx];
 
-        if (sourceComparator instanceof FieldComparator) {
-          FieldComparator fieldComparator = (FieldComparator) sourceComparator;
+        if (sourceComparator instanceof FieldComparator fieldComparator) {
           compoundComps[idx] =
               new FieldComparator(
                   fieldComparator.getLeftFieldName(),
@@ -163,8 +156,7 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
     } else if (comp instanceof MultipleFieldComparator) {
       StreamComparator sourceComparator = ((MultipleFieldComparator) comp).getComps()[0];
 
-      if (sourceComparator instanceof FieldComparator) {
-        FieldComparator fieldComparator = (FieldComparator) sourceComparator;
+      if (sourceComparator instanceof FieldComparator fieldComparator) {
         return new FieldComparator(
             fieldComparator.getLeftFieldName(),
             fieldComparator.getRightFieldName(),
@@ -175,8 +167,7 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
     } else {
       StreamComparator sourceComparator = comp;
 
-      if (sourceComparator instanceof FieldComparator) {
-        FieldComparator fieldComparator = (FieldComparator) sourceComparator;
+      if (sourceComparator instanceof FieldComparator fieldComparator) {
         return new FieldComparator(
             fieldComparator.getLeftFieldName(),
             fieldComparator.getRightFieldName(),

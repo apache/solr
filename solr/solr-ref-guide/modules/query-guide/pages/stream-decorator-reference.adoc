@@ -1213,7 +1213,7 @@ It executes on all the documents and the result bitset is cached in the filterCa
 
 For a `parallel` stream with the same number of workers and `partitionKeys` the first query would be slower than subsequent queries.
 A trick to not pay the penalty for the first slow query would be to use a warmup query for every new searcher.
-The following is a `solrconfig.xml` snippet for 2 workers and "year_i" as the `partionKeys`.
+The following is a `solrconfig.xml` snippet for 2 workers and "year_i" as the `partitionKeys`.
 
 [source,text]
 ----

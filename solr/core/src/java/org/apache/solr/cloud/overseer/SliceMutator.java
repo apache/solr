@@ -62,8 +62,7 @@ public class SliceMutator {
   }
 
   static SolrZkClient getZkClient(SolrCloudManager cloudManager) {
-    if (cloudManager instanceof SolrClientCloudManager) {
-      SolrClientCloudManager manager = (SolrClientCloudManager) cloudManager;
+    if (cloudManager instanceof SolrClientCloudManager manager) {
       return manager.getZkClient();
     } else {
       return null;
@@ -157,6 +156,10 @@ public class SliceMutator {
 
     if (coll == null) {
       log.error("Could not mark shard leader for non existing collection: {}", collectionName);
+      return ZkStateWriter.NO_OP;
+    }
+    if (coll.isPerReplicaState()) {
+      log.debug("Do not mark shard leader for PRS collection: {}", collectionName);
       return ZkStateWriter.NO_OP;
     }
 

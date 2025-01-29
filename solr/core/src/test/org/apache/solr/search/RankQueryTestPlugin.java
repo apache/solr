@@ -105,8 +105,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (o instanceof TestRankQuery) {
-        TestRankQuery trq = (TestRankQuery) o;
+      if (o instanceof TestRankQuery trq) {
 
         return (trq.q.equals(q) && trq.collector == collector);
       }
@@ -140,7 +139,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     @Override
-    public TopDocsCollector<ScoreDoc> getTopDocsCollector(
+    public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
         int len, QueryCommand cmd, IndexSearcher searcher) {
       if (collector == 0) return new TestCollector(null);
       else return new TestCollector1(null);

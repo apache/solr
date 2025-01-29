@@ -127,7 +127,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
             .map(r -> r.getStr(ZkStateReader.BASE_URL_PROP))
             .toArray(String[]::new);
     // Create new SolrServer to configure new HttpClient w/ SSL config
-    try (SolrClient client = new LBHttpSolrClient.Builder().withBaseSolrUrls(urls).build()) {
+    try (SolrClient client = new LBHttpSolrClient.Builder().withBaseEndpoints(urls).build()) {
       client.request(request);
     }
   }

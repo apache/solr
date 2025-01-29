@@ -232,7 +232,7 @@ Any number of group commands (e.g., `group.field`, `group.func`, `group.query`, 
 
 == Grouping Examples
 
-All of the following sample queries work with Solr's "`bin/solr -e techproducts`" example.
+All of the following sample queries work with Solr's "`bin/solr start -e techproducts`" example.
 
 === Grouping Results by Field
 

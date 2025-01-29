@@ -24,17 +24,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -55,7 +53,7 @@ public class SyncStrategy {
 
   private volatile boolean isClosed;
 
-  private final HttpClient client;
+  private final Http2SolrClient solrClient;
 
   private final ExecutorService updateExecutor;
 
@@ -69,7 +67,7 @@ public class SyncStrategy {
 
   public SyncStrategy(CoreContainer cc) {
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
-    client = updateShardHandler.getDefaultHttpClient();
+    solrClient = updateShardHandler.getRecoveryOnlyHttpClient();
     shardHandler = cc.getShardHandlerFactory().getShardHandler();
     updateExecutor = updateShardHandler.getUpdateExecutor();
   }
@@ -347,40 +345,37 @@ public class SyncStrategy {
     }
   }
 
-  @SuppressForbidden(reason = "Passed to an executor with a naming thread factory")
   private void requestRecovery(
       final ZkNodeProps leaderProps, final String baseUrl, final String coreName)
       throws SolrServerException, IOException {
-    Thread thread =
-        new Thread(
-            () -> {
-              if (isClosed) {
-                log.info("We have been closed, won't request recovery");
-                return;
-              }
-              RequestRecovery recoverRequestCmd = new RequestRecovery();
-              recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
-              recoverRequestCmd.setCoreName(coreName);
+    Runnable runnable =
+        () -> {
+          if (isClosed) {
+            log.info("We have been closed, won't request recovery");
+            return;
+          }
+          RequestRecovery recoverRequestCmd = new RequestRecovery();
+          recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
+          recoverRequestCmd.setCoreName(coreName);
+          try (SolrClient client =
+              new Http2SolrClient.Builder(baseUrl)
+                  .withHttpClient(solrClient)
+                  .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+                  .withIdleTimeout(120000, TimeUnit.MILLISECONDS)
+                  .build()) {
+            client.request(recoverRequestCmd);
+          } catch (Throwable t) {
+            log.error(
+                "{}: Could not tell a replica to recover",
+                ZkCoreNodeProps.getCoreUrl(leaderProps),
+                t);
+            if (t instanceof Error) {
+              throw (Error) t;
+            }
+          }
+        };
 
-              try (SolrClient client =
-                  new HttpSolrClient.Builder(baseUrl)
-                      .withHttpClient(SyncStrategy.this.client)
-                      .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
-                      .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
-                      .build()) {
-                client.request(recoverRequestCmd);
-              } catch (Throwable t) {
-                log.error(
-                    "{}: Could not tell a replica to recover",
-                    ZkCoreNodeProps.getCoreUrl(leaderProps),
-                    t);
-                if (t instanceof Error) {
-                  throw (Error) t;
-                }
-              }
-            });
-    thread.setDaemon(true);
-    updateExecutor.execute(thread);
+    updateExecutor.execute(runnable);
   }
 
   public static ModifiableSolrParams params(String... params) {

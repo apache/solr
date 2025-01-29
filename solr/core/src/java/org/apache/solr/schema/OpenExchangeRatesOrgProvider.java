@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,9 +122,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof OpenExchangeRatesOrgProvider)) return false;
+    if (!(o instanceof OpenExchangeRatesOrgProvider that)) return false;
 
-    OpenExchangeRatesOrgProvider that = (OpenExchangeRatesOrgProvider) o;
     return Objects.equals(rates, that.rates);
   }
 
@@ -151,7 +150,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     try {
       log.debug("Reloading exchange rates from {}", ratesFileLocation);
       try {
-        ratesJsonStream = (new URL(ratesFileLocation)).openStream();
+        ratesJsonStream = (new URI(ratesFileLocation).toURL()).openStream();
       } catch (Exception e) {
         ratesJsonStream = resourceLoader.openResource(ratesFileLocation);
       }

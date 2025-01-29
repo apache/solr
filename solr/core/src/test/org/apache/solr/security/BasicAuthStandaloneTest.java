@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
@@ -201,7 +202,8 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir().toString());
     JettySolrRunner jetty =
-        new JettySolrRunner(instance.getHomeDir().toString(), nodeProperties, buildJettyConfig());
+        new JettySolrRunner(
+            instance.getHomeDir().toString(), nodeProperties, JettyConfig.builder().build());
     jetty.start();
     return jetty;
   }

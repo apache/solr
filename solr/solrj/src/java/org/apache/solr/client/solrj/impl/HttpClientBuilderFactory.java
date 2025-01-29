@@ -30,7 +30,7 @@ public interface HttpClientBuilderFactory extends Closeable {
    * This method configures the {@linkplain SolrHttpClientBuilder} by overriding the configuration
    * of passed SolrHttpClientBuilder or as a new instance.
    *
-   * @param builder The instance of the {@linkplain SolrHttpClientBuilder} which should by
+   * @param builder The instance of the {@linkplain SolrHttpClientBuilder} which should be
    *     configured (optional).
    * @return the {@linkplain SolrHttpClientBuilder}
    */

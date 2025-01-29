@@ -48,9 +48,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
-import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -232,14 +230,8 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     request.setPath("/admin/collections");
     solrClient.request(request);
 
-    final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cloudClient.getClusterState().hasCollection(DELETE_DATA_DIR_COLLECTION)) {
-      if (timeout.hasTimedOut()) {
-        throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
-      }
-
-      Thread.sleep(200);
-    }
+    waitForCollectionToDisappear(
+        DELETE_DATA_DIR_COLLECTION, ZkStateReader.from(cloudClient), true, 10);
 
     // check that all dirs are gone
     for (String dataDir : dataDirs) {
@@ -250,5 +242,9 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
             fs.exists(new Path(dataDir)));
       }
     }
+  }
+
+  protected String getBaseUrl(SolrClient client) {
+    return ((HttpSolrClient) client).getBaseURL();
   }
 }

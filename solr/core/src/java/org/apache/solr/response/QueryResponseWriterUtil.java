@@ -49,13 +49,11 @@ public final class QueryResponseWriterUtil {
       String contentType)
       throws IOException {
 
-    if (responseWriter instanceof JacksonJsonWriter) {
-      JacksonJsonWriter binWriter = (JacksonJsonWriter) responseWriter;
+    if (responseWriter instanceof JacksonJsonWriter binWriter) {
       BufferedOutputStream bos = new BufferedOutputStream(new NonFlushingStream(outputStream));
       binWriter.write(bos, solrRequest, solrResponse);
       bos.flush();
-    } else if (responseWriter instanceof BinaryQueryResponseWriter) {
-      BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
+    } else if (responseWriter instanceof BinaryQueryResponseWriter binWriter) {
       binWriter.write(outputStream, solrRequest, solrResponse);
     } else {
       OutputStream out = new NonFlushingStream(outputStream);
@@ -75,6 +73,14 @@ public final class QueryResponseWriterUtil {
     return new FastWriter(writer);
   }
 
+  /**
+   * Delegates write methods to an underlying {@link OutputStream}, but does not delegate {@link
+   * OutputStream#flush()}, (nor {@link OutputStream#close()}). This allows code writing to this
+   * stream to flush internal buffers without flushing the response. If we were to flush the
+   * response early, that would trigger chunked encoding.
+   *
+   * <p>See SOLR-8669.
+   */
   private static class NonFlushingStream extends OutputStream {
     private final OutputStream outputStream;
 
@@ -88,11 +94,13 @@ public final class QueryResponseWriterUtil {
     }
 
     @Override
-    public void flush() throws IOException {
-      // We don't flush here, which allows us to flush below
-      // and only flush internal buffers, not the response.
-      // If we flush the response early, we trigger chunked encoding.
-      // See SOLR-8669.
+    public void write(byte[] b) throws IOException {
+      outputStream.write(b);
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+      outputStream.write(b, off, len);
     }
   }
 }

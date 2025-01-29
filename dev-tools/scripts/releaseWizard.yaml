@@ -87,7 +87,7 @@ templates:
 
     The Solr PMC is pleased to announce the release of Apache Solr {{ release_version }}.
 
-    Solr is the popular, blazing fast, open source NoSQL search platform from the Apache Solr project. Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering, database integration, rich document handling, and geospatial search. Solr is highly scalable, providing fault tolerant distributed search and indexing, and powers the search and navigation features of many of the world's largest internet sites.
+    Solr is the blazing-fast, open source, multi-modal search platform built on Apache Lucene. It powers full-text, vector, analytics, and geospatial search at many of the world's largest organizations. Other major features include Kubernetes and docker integration, streaming, highlighting, faceting, and spellchecking.
 
     Solr {{ release_version }} is available for immediate download at:
 
@@ -226,7 +226,7 @@ groups:
       You will need these tools:
 
       * Python v3.4 or later, with dependencies listed in requirements.txt
-      * Java 11 in $JAVA11_HOME
+      * Java 21 in $JAVA21_HOME
       * gpg
       * git
       * svn
@@ -391,7 +391,6 @@ groups:
     title: Create a new minor branch off the stable branch
     description: |
       In our case we'll create {{ release_branch }}.
-      Also edit `.asf.yaml` to add the new branch under `protected_branches`.
     types:
     - major
     - minor
@@ -417,15 +416,37 @@ groups:
       - !Command
         cmd: git push --set-upstream origin {{ release_branch }}
         tee: true
-      - !Command
-        cmd: "{{ editor }} .asf.yaml"
-        comment: |
-          Add the new branch {{ release_branch }} under `protected_branches` in `.asf.yaml`. An editor will open.
-        stdout: true
-      - !Command
-        cmd: git add .asf.yaml && git commit -m "Add branch protection for {{ release_branch }}" && git push
-        logfile: commit-branch-protection.log
-        tee: true
+  - !Todo
+    id: protect_branches
+    title: Protect the new git branch(es)
+    vars:
+      branch_names: "{{ release_branch }}{% if release_type == 'major' %} and {{ stable_branch }}{% endif %}"
+    description: >
+      Edit `.asf.yaml` to protect new git branch(es) {{ branch_names }}.
+    types:
+      - major
+      - minor
+    depends: create_minor_branch
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to edit `.asf.yaml` and protect the new branch(es)
+      commands:
+        - !Command
+          cmd: git checkout main
+          tee: true
+        - !Command
+          cmd: git pull --ff-only
+          tee: true
+        - !Command
+          cmd: "{{ editor }} .asf.yaml"
+          comment: >
+            Add the newly created branch(es) {{ branch_names }}
+            under `protected_branches` in `.asf.yaml`. An editor will open.
+          stdout: true
+        - !Command
+          cmd: git add .asf.yaml && git commit -m "Add branch protection for {{ branch_names }}" && git push
+          logfile: commit-branch-protection.log
+          tee: true
   - !Todo
     id: update_minor_branch_prerelease_antora
     title: Update Ref Guide Metadata for new Minor Branch
@@ -530,14 +551,44 @@ groups:
     links:
     - https://projects.apache.org/doap.html
   - !Todo
-    id: jenkins_builds
-    title: Add Jenkins task for the release branch
-    description: '...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.'
+    id: new_jenkins_builds
+    title: Add Jenkins tasks for new branch(es)
+    description: |
+      This will make sure we are continuously testing the new branch(es) we have created.
+      Consult the JenkinsReleaseBuilds page for more information.
+      
+      Job Suffixes to create:
+        {% if release_type == 'major' %}
+        *-{{release_version_major}}.x (The new stable branch)
+        {% endif %}
+        *-{{release_version_major}}.{{release_version_minor}} (The new release branch)
     types:
     - major
     - minor
     links:
-    - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://ci-builds.apache.org/job/Solr/
+  - !Todo
+    id: old_jenkins_builds
+    title: Remove old Jenkins tasks for decommissioned branches
+    description: |
+      This will make sure we aren't using resources to test branches no longer in development.
+      Consult the JenkinsReleaseBuilds page for more information.
+      
+      Job Suffixes to delete:
+        {% if release_type == 'major' %}
+        *-{{latest_lts_version_major}}.{{latest_lts_version_minor}} (The previous LTS release branch)
+        *-{{latest_version_major}}.x (The previous stable branch)
+        {% else %}
+        *-{{latest_version_major}}.{{latest_version_minor}} (The previous release branch)
+        {% endif %}
+    depends: new_jenkins_builds
+    types:
+      - major
+      - minor
+    links:
+      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://ci-builds.apache.org/job/Solr/
   - !Todo
     id: inform_devs
     title: Inform Devs of the new Release Branch
@@ -659,7 +710,7 @@ groups:
       {% if release_type == 'major' -%}
       . Change name of version `main ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
       {%- endif %}
-      . Create a new (unreleased) version `{{ get_next_version }}`
+      . Create a new (unreleased) version `{{ release_version_major }}.{{ release_version_minor + 1 }}`
     types:
     - major
     - minor
@@ -1078,7 +1129,12 @@ groups:
           comment: Add the new slim distribution Dockerfile to the repo
           logfile: solr_docker_add_dockerfile_slim.log
         - !Command
-          cmd: 'git add {{ docker_version }}/Dockerfile {{ docker_version }}-slim/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
+          cmd: "{% if docker_version_to_remove %}rm -rf {{ docker_version_to_remove }} {{ docker_version_to_remove }}-slim{% else %}echo Nothing to delete{% endif %}"
+          cwd: solr-docker
+          comment: "{% if docker_version_to_remove %}Mark docker image version {{ docker_version_to_remove }} as not supported{% else %}N/A - No docker versions to delete for this release{% endif %}"
+          logfile: solr_remove_old_docker_images.log
+        - !Command
+          cmd: 'git add . && git commit -m "Apache Solr release {{ release_version }}"'
           cwd: solr-docker
           comment: Commit the new Dockerfile
           logfile: solr_docker_commit.log
@@ -1808,16 +1864,9 @@ groups:
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |
         Run these commands to delete proposed versions from distribution directory.
-        Note, as long as we have some releases (7.x, 8.x) in Lucene dist repo and other
-        releases (9.0 ->) in the Solr dist repo, we may need to delete two places.
-
+        
         WARNING: Validate that the proposal is correct!
       commands:
-      - !Command
-        cmd: |
-          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
-        logfile: svn-rm-solr.log
-        comment: Delete from Lucene dist area
       - !Command
         cmd: |
           svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/solr/{{ ver }}{% endfor %}

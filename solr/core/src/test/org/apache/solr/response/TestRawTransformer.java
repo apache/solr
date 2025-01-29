@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -34,6 +35,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -59,7 +61,11 @@ public class TestRawTransformer extends SolrCloudTestCase {
     if (random().nextBoolean()) {
       initStandalone();
       JSR.start();
-      CLIENT = JSR.newClient();
+      if (random().nextBoolean()) {
+        CLIENT = JSR.newClient();
+      } else {
+        CLIENT = new EmbeddedSolrServer(JSR.getCoreContainer(), null);
+      }
     } else {
       initCloud();
       CLIENT = JSR.newClient();
@@ -93,7 +99,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
     nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
     JSR =
         new JettySolrRunner(
-            homeDir.toAbsolutePath().toString(), nodeProperties, buildJettyConfig());
+            homeDir.toAbsolutePath().toString(), nodeProperties, JettyConfig.builder().build());
   }
 
   private static void initCloud() throws Exception {

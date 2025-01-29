@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-currencyfieldtype-ft-oer-norates" version="1.6">
+<schema name="bad-schema-currencyfieldtype-ft-oer-norates" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
 
   <!-- BEGIN BAD STUFF: no rates -->
   <fieldType name="currency"

@@ -17,36 +17,30 @@
 package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH_PLACEHOLDER;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
+import org.apache.solr.client.api.model.CloneConfigsetRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
-import org.apache.solr.common.params.DefaultSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.handler.configsets.CreateConfigSetAPI;
-import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
+import org.apache.solr.handler.configsets.CloneConfigSet;
+import org.apache.solr.handler.configsets.ConfigSetAPIBase;
+import org.apache.solr.handler.configsets.DeleteConfigSet;
 import org.apache.solr.handler.configsets.ListConfigSets;
-import org.apache.solr.handler.configsets.UploadConfigSetAPI;
-import org.apache.solr.handler.configsets.UploadConfigSetFileAPI;
-import org.apache.solr.request.DelegatingSolrQueryRequest;
+import org.apache.solr.handler.configsets.UploadConfigSet;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -96,51 +90,30 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     switch (action) {
       case DELETE:
-        final DeleteConfigSetAPI deleteConfigSetAPI = new DeleteConfigSetAPI(coreContainer);
-        final SolrQueryRequest v2DeleteReq =
-            new DelegatingSolrQueryRequest(req) {
-              @Override
-              public Map<String, String> getPathTemplateValues() {
-                return Map.of(
-                    DeleteConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER,
-                    req.getParams().required().get(NAME));
-              }
-            };
-        deleteConfigSetAPI.deleteConfigSet(v2DeleteReq, rsp);
+        final DeleteConfigSet deleteConfigSetAPI = new DeleteConfigSet(coreContainer, req, rsp);
+        final var deleteResponse =
+            deleteConfigSetAPI.deleteConfigSet(req.getParams().required().get(NAME));
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteResponse);
         break;
       case UPLOAD:
-        final SolrQueryRequest v2UploadReq =
-            new DelegatingSolrQueryRequest(req) {
-              @Override
-              public Map<String, String> getPathTemplateValues() {
-                final Map<String, String> templateValsByName = new HashMap<>();
-
-                templateValsByName.put(
-                    UploadConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER,
-                    req.getParams().required().get(NAME));
-                if (!req.getParams().get(ConfigSetParams.FILE_PATH, "").isEmpty()) {
-                  templateValsByName.put(
-                      FILEPATH_PLACEHOLDER, req.getParams().get(ConfigSetParams.FILE_PATH));
-                }
-                return templateValsByName;
-              }
-
-              // Set the v1 default vals where they differ from v2's
-              @Override
-              public SolrParams getParams() {
-                final ModifiableSolrParams v1Defaults = new ModifiableSolrParams();
-                v1Defaults.add(ConfigSetParams.OVERWRITE, "false");
-                v1Defaults.add(ConfigSetParams.CLEANUP, "false");
-                return new DefaultSolrParams(super.getParams(), v1Defaults);
-              }
-            };
+        final var uploadApi = new UploadConfigSet(coreContainer, req, rsp);
+        final var configSetName = req.getParams().required().get(NAME);
+        final var overwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
+        final var cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
+        final var configSetData = ConfigSetAPIBase.ensureNonEmptyInputStream(req);
+        SolrJerseyResponse uploadResponse;
         if (req.getParams()
             .get(ConfigSetParams.FILE_PATH, "")
             .isEmpty()) { // Uploading a whole configset
-          new UploadConfigSetAPI(coreContainer).uploadConfigSet(v2UploadReq, rsp);
+          uploadResponse =
+              uploadApi.uploadConfigSet(configSetName, overwrite, cleanup, configSetData);
         } else { // Uploading a single file
-          new UploadConfigSetFileAPI(coreContainer).updateConfigSetFile(v2UploadReq, rsp);
+          final var filePath = req.getParams().get(ConfigSetParams.FILE_PATH);
+          uploadResponse =
+              uploadApi.uploadConfigSetFile(
+                  configSetName, filePath, overwrite, cleanup, configSetData);
         }
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, uploadResponse);
         break;
       case LIST:
         final ListConfigSets listConfigSetsAPI = new ListConfigSets(coreContainer);
@@ -153,12 +126,14 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         }
 
         // Map v1 parameters into v2 format and process request
-        final CreateConfigPayload createPayload = new CreateConfigPayload();
-        createPayload.name = newConfigSetName;
+        final var requestBody = new CloneConfigsetRequestBody();
+        requestBody.name = newConfigSetName;
         if (req.getParams().get(ConfigSetCmds.BASE_CONFIGSET) != null) {
-          createPayload.baseConfigSet = req.getParams().get(ConfigSetCmds.BASE_CONFIGSET);
+          requestBody.baseConfigSet = req.getParams().get(ConfigSetCmds.BASE_CONFIGSET);
+        } else {
+          requestBody.baseConfigSet = "_default";
         }
-        createPayload.properties = new HashMap<>();
+        requestBody.properties = new HashMap<>();
         req.getParams().stream()
             .filter(entry -> entry.getKey().startsWith(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX))
             .forEach(
@@ -167,10 +142,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
                       entry.getKey().substring(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX.length());
                   final Object value =
                       (entry.getValue().length == 1) ? entry.getValue()[0] : entry.getValue();
-                  createPayload.properties.put(newKey, value);
+                  requestBody.properties.put(newKey, value);
                 });
-        final CreateConfigSetAPI createConfigSetAPI = new CreateConfigSetAPI(coreContainer);
-        createConfigSetAPI.create(new PayloadObj<>("create", null, createPayload, req, rsp));
+        final CloneConfigSet createConfigSetAPI = new CloneConfigSet(coreContainer, req, rsp);
+        final var createResponse = createConfigSetAPI.cloneExistingConfigSet(requestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, createResponse);
         break;
       default:
         throw new IllegalStateException("Unexpected ConfigSetAction detected: " + action);
@@ -207,18 +183,13 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new CreateConfigSetAPI(coreContainer)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteConfigSetAPI(coreContainer)));
-    apis.addAll(AnnotatedApi.getApis(new UploadConfigSetAPI(coreContainer)));
-    apis.addAll(AnnotatedApi.getApis(new UploadConfigSetFileAPI(coreContainer)));
-
-    return apis;
+    return new ArrayList<>();
   }
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(ListConfigSets.class);
+    return List.of(
+        ListConfigSets.class, CloneConfigSet.class, DeleteConfigSet.class, UploadConfigSet.class);
   }
 
   @Override

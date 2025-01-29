@@ -61,9 +61,9 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
             container.solrHome,
             container.getResourceLoader().classLoader) {
 
-          @Override
-          public CoreContainer getCoreContainer() {
-            return container;
+          // instance initializer block
+          {
+            setCoreContainer(container);
           }
 
           @Override
@@ -84,7 +84,7 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
     long startTime = System.currentTimeMillis();
     int numReads = 100;
     for (int i = 0; i < numReads; i++) {
-      allConfigs.add(SolrConfig.readFromResourceLoader(srl, "solrconfig.xml", true, null));
+      allConfigs.add(SolrConfig.readFromResourceLoader(srl, "solrconfig.xml", null));
     }
     assertEquals(numReads, allConfigs.size());
     System.gc();

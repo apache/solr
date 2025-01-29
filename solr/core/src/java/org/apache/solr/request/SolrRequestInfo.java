@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.http.HttpServletRequest;
@@ -33,7 +34,6 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryLimits;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,6 @@ public class SolrRequestInfo {
   private static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal =
       ThreadLocal.withInitial(ArrayDeque::new);
   static final Object LIMITS_KEY = new Object();
-  static final Object CPU_TIMER_KEY = new Object();
 
   private int refCount = 1; // prevent closing when still used
 
@@ -68,6 +67,14 @@ public class SolrRequestInfo {
     return stack.peek();
   }
 
+  public static Optional<SolrRequestInfo> getReqInfo() {
+    return Optional.ofNullable(getRequestInfo());
+  }
+
+  public static Optional<SolrQueryRequest> getRequest() {
+    return getReqInfo().map(i -> i.req);
+  }
+
   /**
    * Adds the SolrRequestInfo onto a stack held in a {@link ThreadLocal}. Remember to call {@link
    * #clearRequestInfo()}!
@@ -80,10 +87,12 @@ public class SolrRequestInfo {
       assert false : "SolrRequestInfo Stack is full";
       log.error("SolrRequestInfo Stack is full");
     } else if (!stack.isEmpty() && info.req != null) {
-      // New SRI instances inherit limits and thread CPU from prior SRI regardless of parameters.
+      // New SRI instances inherit limits from prior SRI regardless of parameters.
       // This ensures these two properties cannot be changed or removed for a given thread once set.
       // if req is null then limits will be an empty instance with no limits anyway.
-      info.req.getContext().put(CPU_TIMER_KEY, stack.peek().getThreadCpuTimer());
+
+      // protected by !stack.isEmpty()
+      // noinspection DataFlowIssue
       info.req.getContext().put(LIMITS_KEY, stack.peek().getLimits());
     }
     // this creates both new QueryLimits and new ThreadCpuTime if not already set
@@ -244,24 +253,12 @@ public class SolrRequestInfo {
    */
   public QueryLimits getLimits() {
     // make sure the ThreadCpuTime is always initialized
-    getThreadCpuTimer();
-    return req == null
-        ? QueryLimits.NONE
-        : (QueryLimits) req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req));
+    return req == null || rsp == null ? QueryLimits.NONE : getQueryLimits(req, rsp);
   }
 
-  /**
-   * Get the thread CPU time monitor for the current request. This will either trigger the creation
-   * of a new instance if it hasn't been yet created, or will retrieve the already existing instance
-   * from the "bottom" of the request stack.
-   *
-   * @return the {@link ThreadCpuTimer} object for the current request.
-   */
-  public ThreadCpuTimer getThreadCpuTimer() {
-    return req == null
-        ? new ThreadCpuTimer()
-        : (ThreadCpuTimer)
-            req.getContext().computeIfAbsent(CPU_TIMER_KEY, k -> new ThreadCpuTimer());
+  public static QueryLimits getQueryLimits(SolrQueryRequest request, SolrQueryResponse response) {
+    return (QueryLimits)
+        request.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(request, response));
   }
 
   public SolrDispatchFilter.Action getAction() {

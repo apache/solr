@@ -35,9 +35,7 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    JettyConfig jettyConfig =
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), JettyConfig.builder().build());
   }
 
   @Test

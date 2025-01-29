@@ -1,4 +1,5 @@
 = Backup and Restore
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -242,12 +243,11 @@ The index files are snapshotted in the same index directory and can be reference
 
 You can trigger a snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1createsnapshot]
+[tabs#createsnapshot]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=techproducts&commitName=commit1
@@ -255,10 +255,9 @@ curl -X POST http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=t
 ----
 ====
 
-[example.tab-pane#v2createsnapshot]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
 [source,bash]
@@ -266,7 +265,7 @@ With the v2 API, the core and snapshot names are part of the path instead of que
 curl -X POST http://localhost:8983/api/cores/techproducts/snapshots/commit1
 ----
 ====
---
+======
 
 === CREATE Parameters
 
@@ -291,12 +290,11 @@ If the status is anything other than "success", an error message will explain wh
 
 You can trigger a list snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listsnapshots]
+[tabs#listsnapshots]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproducts&commitName=commit1
@@ -304,10 +302,9 @@ curl http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproduc
 ----
 ====
 
-[example.tab-pane#v2listsnapshots]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API the core name appears in the path, instead of as a query parameter.
 
 [source,bash]
@@ -315,7 +312,7 @@ With the v2 API the core name appears in the path, instead of as a query paramet
 curl http://localhost:8983/api/cores/techproducts/snapshots
 ----
 ====
---
+======
 
 === LIST Parameters
 
@@ -340,12 +337,11 @@ If the status is anything other than "success", an error message will explain wh
 
 You can trigger a delete snapshot with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletesnapshot]
+[tabs#deletesnapshot]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&commitName=commit1
@@ -353,10 +349,9 @@ curl http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techprodu
 ----
 ====
 
-[example.tab-pane#v2deletesnapshot]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
 [source,bash]
@@ -364,7 +359,7 @@ With the v2 API, the core and snapshot names are part of the path instead of que
 curl -X DELETE http://localhost:8983/api/cores/techproducts/snapshots/commit1
 ----
 ====
---
+======
 
 === DELETE Parameters
 
@@ -731,13 +726,13 @@ When using the Backup & Restore Collections API Calls, the **`location`** option
 All the above options will resolve to the same directory in your S3 Bucket: `dir/in/bucket`.
 
 Pre-Creation::
-The location must already exist within your S3 bucket before you can preform any backup operations with that location.
+The location must already exist within your S3 bucket before you can perform any backup operations with that location.
 +
 **Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
 
 Empty Location::
 If you do not want to use a sub-directory within your bucket to store your backup, you can use any of the following location options: `/`, `s3:/`, `s3://`.
-However the location option is mandatory and you will recieve an error when trying to perform backup operations without it.
+However the location option is mandatory and you will receive an error when trying to perform backup operations without it.
 ====
 
 An example configuration to enable S3 backups and restore can be seen below:

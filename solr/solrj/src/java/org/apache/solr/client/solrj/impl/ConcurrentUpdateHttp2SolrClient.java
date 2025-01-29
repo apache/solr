@@ -48,9 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-/**
- * @lucene.experimental
- */
+/** A Solr client using {@link Http2SolrClient} to send concurrent updates to Solr. */
 public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -281,8 +279,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                 log.warn("Failed to parse error response from {} due to: ", basePath, exc);
               } finally {
                 solrExc =
-                    new BaseHttpSolrClient.RemoteSolrException(
-                        basePath, statusCode, msg.toString(), null);
+                    new SolrClient.RemoteSolrException(basePath, statusCode, msg.toString(), null);
                 if (metadata != null) {
                   solrExc.setMetadata(metadata);
                 }
@@ -361,14 +358,13 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
-    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
-      collection = defaultCollection;
-    if (!(request instanceof UpdateRequest)) {
-      request.setBasePath(basePath);
-      return client.request(request, collection);
+    final String effectiveCollection =
+        ClientUtils.shouldApplyDefaultCollection(collection, request)
+            ? defaultCollection
+            : collection;
+    if (!(request instanceof UpdateRequest req)) {
+      return client.requestWithBaseUrl(basePath, (c) -> c.request(request, effectiveCollection));
     }
-    UpdateRequest req = (UpdateRequest) request;
-    req.setBasePath(basePath);
     // this happens for commit...
     if (streamDeletes) {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())
@@ -376,13 +372,14 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           && (req.getDeleteByIdMap() == null || req.getDeleteByIdMap().isEmpty())) {
         if (req.getDeleteQuery() == null) {
           blockUntilFinished();
-          return client.request(request, collection);
+          return client.requestWithBaseUrl(
+              basePath, (c) -> c.request(request, effectiveCollection));
         }
       }
     } else {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())) {
         blockUntilFinished();
-        return client.request(request, collection);
+        return client.requestWithBaseUrl(basePath, (c) -> c.request(request, effectiveCollection));
       }
     }
 
@@ -392,7 +389,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       if (params.getBool(UpdateParams.WAIT_SEARCHER, false)) {
         log.info("blocking for commit/optimize");
         blockUntilFinished(); // empty the queue
-        return client.request(request, collection);
+        return client.requestWithBaseUrl(basePath, (c) -> c.request(request, effectiveCollection));
       }
     }
 
@@ -402,16 +399,16 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         tmpLock.await();
       }
 
-      Update update = new Update(req, collection);
+      Update update = new Update(req, effectiveCollection);
       boolean success = queue.offer(update);
 
       long lastStallTime = -1;
       int lastQueueSize = -1;
       for (; ; ) {
         synchronized (runners) {
-          // see if queue is half full and we can add more runners
+          // see if queue is half full, and we can add more runners
           // special case: if only using a threadCount of 1 and the queue
-          // is filling up, allow 1 add'l runner to help process the queue
+          // is filling up, allow 1 additional runner to help process the queue
           if (runners.isEmpty()
               || (queue.remainingCapacity() < queue.size() && runners.size() < threadCount)) {
             // We need more runners, so start a new one.
@@ -488,7 +485,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
       synchronized (runners) {
 
-        // NOTE: if the executor is shut down, runners may never become empty (a scheduled task may
+        // NOTE: if the executor is shut down, runners may never become empty. A scheduled task may
         // never be run, which means it would never remove itself from the runners list. This is why
         // we don't wait forever and periodically check if the scheduler is shutting down.
         int loopCount = 0;
@@ -629,7 +626,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   }
 
   /**
-   * Intended to be used as an extension point for doing post processing after a request completes.
+   * Intended to be used as an extension point for doing post-processing after a request completes.
    *
    * @param respBody the body of the response, subclasses must not close this stream.
    */
@@ -709,10 +706,48 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected boolean closeHttp2Client;
     private long pollQueueTimeMillis;
 
+    /**
+     * Initialize a Builder object, based on the provided URL and client.
+     *
+     * <p>The provided URL must point to the root Solr path (i.e. "/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr", http2Client)
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL pointing to the root Solr path, typically of the form
+     *     "http[s]://host:port/solr"
+     * @param client a client for this ConcurrentUpdateHttp2SolrClient to use for all requests
+     *     internally. Callers are responsible for closing the provided client (after closing any
+     *     clients created by this builder)
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
     }
 
+    /**
+     * Initialize a Builder object, based on the provided arguments.
+     *
+     * <p>The provided URL must point to the root Solr path (i.e. "/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr", http2Client)
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL pointing to the root Solr path, typically of the form
+     *     "http[s]://host:port/solr"
+     * @param client a client for this ConcurrentUpdateHttp2SolrClient to use for all requests
+     *     internally.
+     * @param closeHttp2Client a boolean flag indicating whether the created
+     *     ConcurrentUpdateHttp2SolrClient should assume responsibility for closing the provided
+     *     'client'
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttp2Client) {
       this.baseSolrUrl = baseSolrUrl;
       this.client = client;
@@ -783,7 +818,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     /**
      * Configures created clients to not stream delete requests.
      *
-     * <p>With this option set when the created ConcurrentUpdateHttp2SolrClient sents a delete
+     * <p>With this option set when the created ConcurrentUpdateHttp2SolrClient sends a delete
      * request it will first will lock the queue and block until all queued updates have been sent,
      * and then send the delete request.
      */

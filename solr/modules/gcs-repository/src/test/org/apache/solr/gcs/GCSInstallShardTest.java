@@ -52,7 +52,7 @@ public class GCSInstallShardTest extends AbstractInstallShardTest {
   public static void setupClass() throws Exception {
 
     configureCluster(1) // nodes
-        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(SOLR_XML)
         .configure();
 

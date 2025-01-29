@@ -19,11 +19,16 @@ package org.apache.solr.handler.component;
 import org.apache.solr.client.solrj.SolrResponse;
 
 public final class ShardResponse {
+
+  // WARNING: this class is used as a key in a map and is modified during that period.
+  // Do not implement equals() or hashCode() without considering impact on
+  // HttpShardHandler.responseFutureMap
+
   private ShardRequest req;
   private String shard;
   private String nodeName;
   private volatile String shardAddress; // the specific shard that this response was received from
-  private int rspCode;
+  private volatile int rspCode;
   private volatile Throwable exception;
   private SolrResponse rsp;
 
