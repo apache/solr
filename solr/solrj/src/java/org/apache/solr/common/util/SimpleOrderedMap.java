@@ -128,7 +128,11 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
 
   @Override
   public void putAll(final Map<? extends String, ? extends T> m) {
-    m.forEach(this::put);
+    if (isEmpty()) {
+      m.forEach(this::add);
+    } else {
+      m.forEach(this::put);
+    }
   }
 
   @Override
