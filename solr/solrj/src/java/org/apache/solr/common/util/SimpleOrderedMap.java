@@ -135,6 +135,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     }
   }
 
+  @Override
   public Map<String, T> asShallowMap() {
     return this;
   }
