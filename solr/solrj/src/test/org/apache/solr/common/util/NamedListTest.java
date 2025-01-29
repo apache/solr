@@ -214,6 +214,6 @@ public class NamedListTest extends SolrTestCase {
   public void testShallowMapReturningItSelf() {
     SimpleOrderedMap<String> simpleOrderedMap = new SimpleOrderedMap<>();
     Map<String, String> shallowMap = simpleOrderedMap.asShallowMap();
-    assertTrue(shallowMap instanceof SimpleOrderedMap<String>);
+    assertSame(simpleOrderedMap, shallowMap);
   }
 }
