@@ -67,7 +67,7 @@ public class TupStream extends TupleStream implements Expressible {
       fieldLabels.put(name, name);
       StreamExpressionParameter param = np.getParameter();
 
-      // we're going to split these up here so we only make the choice once
+      // we're going to split these up here, so we only make the choice once
       // order of these in read() doesn't matter
       if (param instanceof StreamExpressionValue) {
         stringParams.put(name, ((StreamExpressionValue) param).getValue());
@@ -229,8 +229,7 @@ public class TupStream extends TupleStream implements Expressible {
       for (Object o : values.values()) {
         if (o instanceof Tuple) {
           unnestedTuple = (Tuple) o;
-        } else if (o instanceof List) {
-          List<?> l = (List<?>) o;
+        } else if (o instanceof List<?> l) {
           if (l.size() > 0 && l.get(0) instanceof Tuple) {
             @SuppressWarnings({"unchecked"})
             List<Tuple> tl = (List<Tuple>) l;

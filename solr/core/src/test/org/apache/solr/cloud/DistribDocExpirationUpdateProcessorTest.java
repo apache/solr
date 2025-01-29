@@ -97,13 +97,10 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     setAuthIfNeeded(CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2))
         .process(cluster.getSolrClient());
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            COLLECTION,
-            DEFAULT_TIMEOUT,
-            TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    waitForState(
+        "Waiting for collection creation",
+        COLLECTION,
+        (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
   }
 
   @Test
@@ -384,8 +381,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof ReplicaData) {
-        ReplicaData that = (ReplicaData) other;
+      if (other instanceof ReplicaData that) {
         return this.shardName.equals(that.shardName)
             && this.coreName.equals(that.coreName)
             && (this.indexVersion == that.indexVersion)

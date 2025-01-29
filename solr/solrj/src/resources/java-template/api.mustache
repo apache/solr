@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.JacksonParsingResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.InputStreamResponse;
 import org.apache.solr.client.solrj.ResponseParser;
 
 {{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}
@@ -48,9 +49,21 @@ import {{import}};
 {{#operation}}
 {{#bodyParam}}
 {{#vars}}
+
+{{! Catches all model types used "directly" (i.e. not in a container) in request/response classes. }}
 {{#isModel}}
 import {{modelPackage}}.{{dataType}};
 {{/isModel}}
+
+{{! Catches all model types used in a List<Foo>, Map<Bar>, or other container in request/response classes. }}
+{{#isContainer}}
+{{#items}}
+{{#isModel}}
+import {{modelPackage}}.{{dataType}};
+{{/isModel}}
+{{/items}}
+{{/isContainer}}
+
 {{/vars}}
 {{/bodyParam}}
 {{/operation}}
@@ -74,11 +87,16 @@ public class {{classname}} {
 
     {{#operation}}
     {{^vendorExtensions.x-omitFromCodegen}}
-    public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
-          public {{operationIdCamelCase}}Response() {
-            super({{modelPackage}}.{{returnType}}.class);
-          }
+        {{#vendorExtensions.x-rawOutput}}
+        public static class {{operationIdCamelCase}}Response extends InputStreamResponse {}
+        {{/vendorExtensions.x-rawOutput}}
+        {{^vendorExtensions.x-rawOutput}}
+        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
+            public {{operationIdCamelCase}}Response() {
+                super({{modelPackage}}.{{returnType}}.class);
+            }
         }
+        {{/vendorExtensions.x-rawOutput}}
 
         public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
             {{#bodyParam}}
@@ -121,11 +139,30 @@ public class {{classname}} {
                 {{/requiredParams}}
                 {{#bodyParam}}
                 {{^vendorExtensions.x-genericEntity}}
+                {{#isMap}}
+                    this.requestBody = new HashMap<>();
+                {{/isMap}}
+                {{#isArray}}
+                    this.requestBody = new ArrayList<>();
+                {{/isArray}}
+                {{^isMap}}
+                {{^isArray}}
                     this.requestBody = new {{{dataType}}}();
+                {{/isArray}}
+                {{/isMap}}
                     addHeader("Content-type", "application/json");
                 {{/vendorExtensions.x-genericEntity}}
                 {{/bodyParam}}
             }
+
+            {{! If the request body is a list, provide methods to add to it}}
+            {{#bodyParam}}
+            {{#isArray}}
+            public void add{{items.dataType}}({{items.dataType}} entry) {
+                this.requestBody.add(entry);
+            }
+            {{/isArray}}
+            {{/bodyParam}}
 
             {{#optionalParams}}
             {{^isBodyParam}}
@@ -183,6 +220,11 @@ public class {{classname}} {
             @Override
             public String getRequestType() {
               return SolrRequestType.ADMIN.toString();
+            }
+
+            @Override
+            public ApiVersion getApiVersion() {
+              return ApiVersion.V2;
             }
 
             @Override

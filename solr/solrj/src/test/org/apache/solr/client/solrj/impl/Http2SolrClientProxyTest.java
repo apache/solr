@@ -87,7 +87,7 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
     try (HttpJdkSolrClient client = builder.build()) {
       testProxy(client);
     }
-    // This is a workaround for java.net.http.HttpClient not implementing closeable/autoclosable
+    // This is a workaround for java.net.http.HttpClient not implementing closeable/autocloseable
     // until Java 21.
     Thread[] threads = new Thread[Thread.currentThread().getThreadGroup().activeCount()];
     Thread.currentThread().getThreadGroup().enumerate(threads);
@@ -102,7 +102,7 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
     System.gc();
   }
 
-  /** Setup a simple http proxy and verify a request works */
+  /** Set up a simple http proxy and verify a request works */
   public void testProxy(HttpSolrClientBase client) throws Exception {
     String id = "1234";
     SolrInputDocument doc = new SolrInputDocument();

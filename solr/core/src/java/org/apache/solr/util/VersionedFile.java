@@ -41,6 +41,7 @@ public class VersionedFile {
    */
   public static InputStream getLatestFile(String dirName, String fileName)
       throws FileNotFoundException {
+    // TODO SOLR-8282 move to PATH
     Collection<File> oldFiles = null;
     final String prefix = fileName + '.';
     File f = new File(dirName, fileName);

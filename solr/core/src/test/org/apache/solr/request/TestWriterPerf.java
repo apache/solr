@@ -179,8 +179,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
     System.gc();
     RTimer timer = new RTimer();
     for (int i = 0; i < encIter; i++) {
-      if (w instanceof BinaryQueryResponseWriter) {
-        BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) w;
+      if (w instanceof BinaryQueryResponseWriter binWriter) {
         out = new ByteArrayOutputStream();
         binWriter.write(out, req, rsp);
         out.close();

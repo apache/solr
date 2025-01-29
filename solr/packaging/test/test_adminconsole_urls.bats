@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "assert able to launch solr admin console" {
-  run solr start -c
+  run solr start
 
   run curl -s -o /dev/null -w "%{http_code}" http://localhost:${SOLR_PORT}/solr/
 

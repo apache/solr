@@ -165,7 +165,7 @@ public class V2HttpCall extends HttpSolrCall {
           core = getCoreByCollection(collectionName, isPreferLeader);
           if (core == null) {
             // this collection exists , but this node does not have a replica for that collection
-            extractRemotePath(collectionName, collectionName);
+            extractRemotePath(collectionName);
             if (action == REMOTEQUERY) {
               action = ADMIN_OR_REMOTEQUERY;
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
@@ -188,6 +188,8 @@ public class V2HttpCall extends HttpSolrCall {
 
       Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
       this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
+      // Core-level API, so populate "collection" template val
+      parts.put(COLLECTION_PROP, origCorename);
       Api apiInfo = getApiInfo(core.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
       if (isCompositeApi && apiInfo instanceof CompositeApi) {
         ((CompositeApi) this.api).add(apiInfo);

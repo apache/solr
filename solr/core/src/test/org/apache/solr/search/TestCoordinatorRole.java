@@ -750,7 +750,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Failed to wait for child shards after split",
           COLLECTION_NAME,
-          (liveNodes, collectionState) ->
+          collectionState ->
               collectionState.getSlice("shard1_0") != null
                   && collectionState.getSlice("shard1_0").getState() == Slice.State.ACTIVE
                   && collectionState.getSlice("shard1_1") != null
@@ -761,7 +761,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Parent shard is not yet deleted after split",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> collectionState.getSlice("shard1") == null);
+          collectionState -> collectionState.getSlice("shard1") == null);
 
       response =
           new QueryRequest(new SolrQuery("*:*"))
@@ -796,7 +796,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Cannot find replica on first node yet",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             if (collectionState.getReplicas().size() == 1) {
               Replica replica = collectionState.getReplicas().get(0);
               return fromNode.equals(replica.getNodeName())
@@ -837,7 +837,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Cannot find replica on second node yet after repliac move",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             if (collectionState.getReplicas().size() == 1) {
               Replica replica = collectionState.getReplicas().get(0);
               return toNodeName.equals(replica.getNodeName())

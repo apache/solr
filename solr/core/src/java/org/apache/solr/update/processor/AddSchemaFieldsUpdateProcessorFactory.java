@@ -191,11 +191,10 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         throw new SolrException(
             SERVER_ERROR, "'" + TYPE_MAPPING_PARAM + "' init param cannot be null");
       }
-      if (!(typeMappingObj instanceof NamedList)) {
+      if (!(typeMappingObj instanceof NamedList<?> typeMappingNamedList)) {
         throw new SolrException(
             SERVER_ERROR, "'" + TYPE_MAPPING_PARAM + "' init param must be a <lst>");
       }
-      NamedList<?> typeMappingNamedList = (NamedList<?>) typeMappingObj;
 
       Object fieldTypeObj = typeMappingNamedList.remove(FIELD_TYPE_PARAM);
       if (null == fieldTypeObj) {
@@ -256,11 +255,10 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       Collection<CopyFieldDef> copyFieldDefs = new ArrayList<>();
       while (typeMappingNamedList.get(COPY_FIELD_PARAM) != null) {
         Object copyFieldObj = typeMappingNamedList.remove(COPY_FIELD_PARAM);
-        if (!(copyFieldObj instanceof NamedList)) {
+        if (!(copyFieldObj instanceof NamedList<?> copyFieldNamedList)) {
           throw new SolrException(
               SERVER_ERROR, "'" + COPY_FIELD_PARAM + "' init param must be a <lst>");
         }
-        NamedList<?> copyFieldNamedList = (NamedList<?>) copyFieldObj;
         // dest
         Object destObj = copyFieldNamedList.remove(DEST_PARAM);
         if (null == destObj) {

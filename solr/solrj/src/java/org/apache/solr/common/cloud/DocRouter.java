@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.cluster.api.HashRange;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
@@ -89,7 +88,7 @@ public abstract class DocRouter {
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   // TODO: ranges may not be all contiguous in the future (either that or we will
   // need an extra class to model a collection of ranges)
-  public static class Range implements JSONWriter.Writable, Comparable<Range>, HashRange {
+  public static class Range implements JSONWriter.Writable, Comparable<Range> {
     public int min; // inclusive
     public int max; // inclusive
 
@@ -99,17 +98,14 @@ public abstract class DocRouter {
       this.max = max;
     }
 
-    @Override
     public int min() {
       return min;
     }
 
-    @Override
     public int max() {
       return max;
     }
 
-    @Override
     public boolean includes(int hash) {
       return hash >= min && hash <= max;
     }
@@ -136,8 +132,7 @@ public abstract class DocRouter {
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof Range)) return false;
-      Range other = (Range) obj;
+      if (!(obj instanceof Range other)) return false;
       return this.min == other.min && this.max == other.max;
     }
 
@@ -237,7 +232,7 @@ public abstract class DocRouter {
 
   /**
    * This method is consulted to determine what slices should be queried for a request when an
-   * explicit shards parameter was not used. This method only accepts a single shard key (or null).
+   * explicit shards' parameter was not used. This method only accepts a single shard key (or null).
    * If you have a comma separated list of shard keys, call getSearchSlices
    */
   public abstract Collection<Slice> getSearchSlicesSingle(
@@ -245,7 +240,7 @@ public abstract class DocRouter {
 
   /**
    * This method is consulted to determine what search range (the part of the hash ring) should be
-   * queried for a request when an explicit shards parameter was not used. This method only accepts
+   * queried for a request when an explicit shards' parameter was not used. This method only accepts
    * a single shard key (or null).
    */
   public Range getSearchRangeSingle(String shardKey, SolrParams params, DocCollection collection) {
@@ -263,7 +258,7 @@ public abstract class DocRouter {
 
   /**
    * This method is consulted to determine what slices should be queried for a request when an
-   * explicit shards parameter was not used. This method accepts a multi-valued shardKeys parameter
+   * explicit shards' parameter was not used. This method accepts a multi-valued shardKeys parameter
    * (normally comma separated from the shard.keys request parameter) and aggregates the slices
    * returned by getSearchSlicesSingle for each shardKey.
    */

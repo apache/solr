@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -42,7 +41,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -76,7 +74,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.http.client.HttpClient;
-import org.apache.logging.log4j.Level;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
@@ -94,7 +91,6 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.TestConnectionStrategy;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -111,7 +107,6 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -140,18 +135,14 @@ import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SSLTestConfig;
-import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -188,8 +179,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000; // default socket connection timeout in ms
-
-  private static String initialRootLogLevel;
 
   protected static volatile ExecutorService testExecutor;
 
@@ -259,8 +248,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
-    initialRootLogLevel = StartupLoggingUtils.getLogLevelString();
-    initClassLogLevels();
     resetExceptionIgnores();
 
     testExecutor =
@@ -284,10 +271,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.retries.on.forward", "1");
     System.setProperty("solr.retries.to.followers", "1");
 
-    System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
-    System.setProperty("solr.zookeeper.connectionStrategy", TestConnectionStrategy.class.getName());
     System.setProperty("enable.update.log", Boolean.toString(usually()));
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
@@ -295,7 +280,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
 
-    System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -335,7 +319,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } finally {
       TestInjection.reset();
       initCoreDataDir = null;
-      System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
       System.clearProperty("tests.shardhandler.randomSeed");
@@ -344,7 +327,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty(URL_SCHEME);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
-      System.clearProperty(ZK_WHITELIST_PROPERTY);
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
 
@@ -355,10 +337,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       testSolrHome = null;
 
       IpTables.unblockAllPorts();
-
-      LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
-      savedClassLogLevels.clear();
-      StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
     }
   }
 
@@ -396,38 +374,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (ReflectiveOperationException e) {
       fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
     }
-  }
-
-  @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
-  private static Map<String, Level> savedClassLogLevels = new HashMap<>();
-
-  public static void initClassLogLevels() {
-    Class<?> currentClass = RandomizedContext.current().getTargetClass();
-    LogLevel annotation = currentClass.getAnnotation(LogLevel.class);
-    if (annotation == null) {
-      return;
-    }
-    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-    savedClassLogLevels.putAll(previousLevels);
-  }
-
-  private Map<String, Level> savedMethodLogLevels = new HashMap<>();
-
-  @Before
-  public void initMethodLogLevels() {
-    Method method = RandomizedContext.current().getTargetMethod();
-    LogLevel annotation = method.getAnnotation(LogLevel.class);
-    if (annotation == null) {
-      return;
-    }
-    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-    savedMethodLogLevels.putAll(previousLevels);
-  }
-
-  @After
-  public void restoreMethodLogLevels() {
-    LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
-    savedMethodLogLevels.clear();
   }
 
   protected static boolean isSSLMode() {
@@ -1769,16 +1715,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof Doc)) return false;
-      Doc other = (Doc) o;
+      if (!(o instanceof Doc other)) return false;
       return this == other || Objects.equals(id, other.id);
     }
 
     @Override
     @SuppressWarnings({"unchecked"})
     public int compareTo(Object o) {
-      if (!(o instanceof Doc)) return this.getClass().hashCode() - o.getClass().hashCode();
-      Doc other = (Doc) o;
+      if (!(o instanceof Doc other)) return this.getClass().hashCode() - o.getClass().hashCode();
       return this.id.compareTo(other.id);
     }
 
@@ -2136,16 +2080,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Gets a resource from the context classloader as {@link File}. This method should only be used,
+   * Gets a resource from the context classloader as {@link Path}. This method should only be used,
    * if a real file is needed. To get a stream, code should prefer {@link Class#getResourceAsStream}
    * using {@code this.getClass()}.
    */
-  public static File getFile(String name) {
+  public static Path getFile(String name) {
     final URL url =
         SolrTestCaseJ4.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
     if (url != null) {
       try {
-        return new File(url.toURI());
+        return Path.of(url.toURI());
       } catch (Exception e) {
         throw new RuntimeException(
             "Resource was found on classpath, but cannot be resolved to a "
@@ -2153,20 +2097,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
                 + name);
       }
     }
-    final File file = new File(name);
-    if (file.exists()) {
+    final Path file = Path.of(name);
+    if (Files.exists(file)) {
       return file;
     }
     throw new RuntimeException(
-        "Cannot find resource in classpath or in file-system (relative to CWD): " + name);
+        "Cannot find resource in classpath or in file-system (relative to CWD): "
+            + new File(name).getAbsolutePath());
   }
 
   public static String TEST_HOME() {
-    return getFile("solr/collection1").getParent();
+    return getFile("solr/collection1").getParent().toString();
   }
 
   public static Path TEST_PATH() {
-    return getFile("solr/collection1").getParentFile().toPath();
+    return getFile("solr/collection1").getParent();
   }
 
   public static Path TEST_COLL1_CONF() {
@@ -2353,16 +2298,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public boolean compareSolrDocument(Object expected, Object actual) {
 
-    if (!(expected instanceof SolrDocument) || !(actual instanceof SolrDocument)) {
+    if (!(expected instanceof SolrDocument solrDocument1)
+        || !(actual instanceof SolrDocument solrDocument2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrDocument solrDocument1 = (SolrDocument) expected;
-    SolrDocument solrDocument2 = (SolrDocument) actual;
 
     if (solrDocument1.getFieldNames().size() != solrDocument2.getFieldNames().size()) {
       return false;
@@ -2404,16 +2347,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public boolean compareSolrDocumentList(Object expected, Object actual) {
-    if (!(expected instanceof SolrDocumentList) || !(actual instanceof SolrDocumentList)) {
+    if (!(expected instanceof SolrDocumentList list1)
+        || !(actual instanceof SolrDocumentList list2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrDocumentList list1 = (SolrDocumentList) expected;
-    SolrDocumentList list2 = (SolrDocumentList) actual;
 
     if (list1.getMaxScore() == null) {
       if (list2.getMaxScore() != null) {
@@ -2438,16 +2379,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public boolean compareSolrInputDocument(Object expected, Object actual) {
 
-    if (!(expected instanceof SolrInputDocument) || !(actual instanceof SolrInputDocument)) {
+    if (!(expected instanceof SolrInputDocument sdoc1)
+        || !(actual instanceof SolrInputDocument sdoc2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrInputDocument sdoc1 = (SolrInputDocument) expected;
-    SolrInputDocument sdoc2 = (SolrInputDocument) actual;
 
     if (sdoc1.getFieldNames().size() != sdoc2.getFieldNames().size()) {
       return false;
@@ -2513,16 +2452,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
-    if (!(expected instanceof SolrInputField) || !(actual instanceof SolrInputField)) {
+    if (!(expected instanceof SolrInputField sif1) || !(actual instanceof SolrInputField sif2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrInputField sif1 = (SolrInputField) expected;
-    SolrInputField sif2 = (SolrInputField) actual;
 
     if (!sif1.getName().equals(sif2.getName())) {
       return false;
@@ -2947,8 +2883,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   private static boolean isChildDoc(Object o) {
-    if (o instanceof Collection) {
-      Collection<?> col = (Collection<?>) o;
+    if (o instanceof Collection<?> col) {
       if (col.size() == 0) {
         return false;
       }

@@ -154,8 +154,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (!super.equals(obj)) return false;
-      if (!(obj instanceof OtherCoreJoinQuery)) return false;
-      OtherCoreJoinQuery other = (OtherCoreJoinQuery) obj;
+      if (!(obj instanceof OtherCoreJoinQuery other)) return false;
       return (fromCoreOpenTime == other.fromCoreOpenTime)
           && Objects.equals(fromIndex, other.fromIndex);
     }

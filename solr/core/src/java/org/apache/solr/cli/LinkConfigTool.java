@@ -18,16 +18,34 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
 
 /** Supports linking a configset to a collection */
 public class LinkConfigTool extends ToolBase {
+
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of the collection to link.")
+          .build();
+
+  private static final Option CONF_NAME_OPTION =
+      Option.builder("n")
+          .longOpt("conf-name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Configset name in ZooKeeper.")
+          .build();
 
   public LinkConfigTool() {
     this(CLIO.getOutStream());
@@ -43,32 +61,24 @@ public class LinkConfigTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of the collection to link.")
-            .build(),
-        Option.builder("n")
-            .longOpt("conf-name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Configset name in ZooKeeper.")
-            .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+  public String getUsage() {
+    return "bin/solr zk linkconfig -c <NAME> -n <NAME> [-z <HOST>]";
+  }
+
+  @Override
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(CONF_NAME_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
 
-    String collection = cli.getOptionValue("name");
-    String confName = cli.getOptionValue("conf-name");
-    String zkHost = SolrCLI.getZkHost(cli);
+    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
+    String confName = cli.getOptionValue(CONF_NAME_OPTION);
+    String zkHost = CLIUtils.getZkHost(cli);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()

@@ -51,7 +51,7 @@ If no nodes are already running, restart will skip the step to stop and proceed 
 The `bin/solr` script provides many options to allow you to customize the server in common ways, such as changing the listening port.
 However, most of the defaults are adequate for most Solr installations, especially when just getting started.
 
-`-a <jvmParams>`::
+`--jvm-opts <jvmParams>`::
 +
 [%autowidth,frame=none]
 |===
@@ -59,15 +59,15 @@ However, most of the defaults are adequate for most Solr installations, especial
 |===
 +
 Start Solr with additional JVM parameters, such as those starting with `-X`.
-For example setting up Java debugger to attach to the Solr JVM you could pass: `-a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"`.
+For example setting up Java debugger to attach to the Solr JVM you could pass: `--jvm-opts "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"`.
 In most cases, you should wrap the additional parameters in double quotes.
 +
-If you are passing JVM parameters that begin with `-D`, you can omit the `-a` option.
+If you are passing JVM parameters that begin with `-D`, you can omit the `--jvm-opts` option.
 +
 *Example*:
 +
 [source,bash]
-bin/solr start -a "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
+bin/solr start --jvm-opts "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
 
 `-j <jettyParams>`::
 +
@@ -80,23 +80,20 @@ Additional parameters to pass to Jetty when starting Solr.
 For example, to add configuration folder that Jetty should read you could pass: `-j "--include-jetty-dir=/etc/jetty/custom/server/"`.
 In most cases, you should wrap the additional parameters in double quotes.
 
-`--cloud` or `-c`::
+`--user-managed`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Start Solr in SolrCloud mode, which will also launch the embedded ZooKeeper instance included with Solr.
-The embedded ZooKeeper instance is started on Solr port+1000, so 9983 if Solr is bound to 8983.
+Start Solr in User Managed mode (AKA Standalone mode).  This is the style of Solr that supports only cores, not collections.
 +
-If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) or pass the `-z` parameter.
+For more details, see the section <<User Managed Mode>> below.
 +
-For more details, see the section <<SolrCloud Mode>> below.
-+
-*Example*: `bin/solr start -c`
+*Example*: `bin/solr start --user-managed`
 
-`-d <dir>`::
+`--server-dir <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -105,9 +102,9 @@ For more details, see the section <<SolrCloud Mode>> below.
 +
 Define a server directory, defaults to `server` (as in, `$SOLR_TIP/server`).
 It is uncommon to override this option.
-When running multiple instances of Solr on the same host, it is more common to use the same server directory for each instance and use a unique Solr home directory using the `-s` option.
+When running multiple instances of Solr on the same host, it is more common to use the same server directory for each instance and use a unique Solr home directory using the `--solr-home` option.
 +
-*Example*: `bin/solr start -d newServerDir`
+*Example*: `bin/solr start --server-dir newServerDir`
 
 `-e <name>`::
 +
@@ -194,7 +191,7 @@ If this is not specified, `8983` will be used.
 +
 *Example*: `bin/solr start -p 8655`
 
-`-s <dir>`::
+`--solr-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -203,7 +200,7 @@ If this is not specified, `8983` will be used.
 +
 Sets the `solr.solr.home` system property.
 Solr will create core directories under this directory.
-This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `-d` parameter.
+This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `--server-dir` parameter.
 If set, the specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 +
 This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
@@ -211,9 +208,9 @@ This parameter is ignored when running examples (`-e`), as the `solr.solr.home` 
 The default value is `server/solr`.
 If passed relative dir, validation with current dir will be done, before trying default `server/<dir>`.
 +
-*Example*: `bin/solr start -s newHome`
+*Example*: `bin/solr start --solr-home newHome`
 
-`-t <dir>` or `--data-home <dir>`::
+`--data-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -223,19 +220,19 @@ If passed relative dir, validation with current dir will be done, before trying 
 Sets the `solr.data.home` system property, where Solr will store index data in <instance_dir>/data subdirectories.
 If not set, Solr uses solr.solr.home for config and data.
 
-`-v`::
+`--verbose`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Be more verbose.
-This changes the logging level of Log4j in Solr from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
+This does two things.  It provides additional debugging information on how the script is configured to start Solr.
+It also changes the logging level of Log4j in Solr from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
 +
-*Example*: `bin/solr start -f -v`
+*Example*: `bin/solr start -f --verbose`
 
-`-q`::
+`-q` or `--quiet`::
 +
 [%autowidth,frame=none]
 |===
@@ -247,17 +244,6 @@ This changes the logging level of Log4j in Solr from `INFO` to `WARN`, having th
 This can be useful in a production setting where you want to limit logging to warnings and errors.
 +
 *Example*: `bin/solr start -f -q`
-
-`-V` or `--verbose`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Verbose messages from this script.
-+
-*Example*: `bin/solr start -V`
 
 `-z <zkHost>` or `--zk-host <zkHost>`::
 +
@@ -271,7 +257,7 @@ If `ZK_HOST` is not specified in `solr.in.sh`/`solr.in.cmd` and this option is n
 +
 Set the `ZK_CREATE_CHROOT` environment variable to true if your ZK host has a chroot path, and you want to create it automatically.
 +
-*Example*: `bin/solr start -c -z server1:2181,server2:2181`
+*Example*: `bin/solr start -z server1:2181,server2:2181`
 
 `--force`::
 +
@@ -289,7 +275,7 @@ To emphasize how the default settings work take a moment to understand that the 
 
 `bin/solr start`
 
-`bin/solr start -h localhost -p 8983 -d server -s solr -m 512m`
+`bin/solr start --host localhost -p 8983 --server-dir server --solr-home solr -m 512m`
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 
@@ -314,11 +300,7 @@ the `SOLR_TOOL_OPTS` environment variable should be used.
 
 ==== SolrCloud Mode
 
-The `-c` and `--cloud` options are equivalent:
-
-`bin/solr start -c`
-
-`bin/solr start --cloud`
+This is the default mode for running Solr.
 
 If you specify a ZooKeeper connection string, such as `-z 192.168.1.4:2181`, then Solr will connect to ZooKeeper and join the cluster.
 
@@ -338,6 +320,13 @@ When starting in SolrCloud mode, the interactive script session will prompt you 
 
 For more information about starting Solr in SolrCloud mode, see also the section xref:getting-started:tutorial-solrcloud.adoc[].
 
+==== User Managed Mode
+
+`bin/solr start --user-managed` starts Solr in User Managed mode (AKA Standalone mode).  This was the default mode up until Solr 10x.
+
+For more information about the different modes, see the section xref:deployment-guide:cluster-types.adoc[].
+
+
 ==== Running with Example Configurations
 
 `bin/solr start -e <name>`
@@ -348,7 +337,7 @@ Each example launches Solr with a managed schema, which allows use of the xref:i
 
 If you would prefer to manually modify a `schema.xml` file directly, you can change this default as described in the section xref:configuration-guide:schema-factory.adoc[].
 
-Unless otherwise noted in the descriptions below, the examples do not enable SolrCloud nor xref:indexing-guide:schemaless-mode.adoc[].
+Unless otherwise noted in the descriptions below, the examples do not enable xref:indexing-guide:schemaless-mode.adoc[].
 
 The following examples are provided:
 
@@ -426,7 +415,7 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 *Example*: `bin/solr stop -k solrrocks`
 
-`-V` or `--verbose`::
+`--verbose`::
 +
 [%autowidth,frame=none]
 |===
@@ -435,17 +424,17 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 Stop Solr with verbose messages from this script.
 +
-*Example*: `bin/solr stop -V`
+*Example*: `bin/solr stop --verbose`
 
 == System Information
 
 === Version
 
-The `version` command simply returns the version of Solr currently installed and immediately exists.
+The `--version` command simply returns the version of Solr currently installed and immediately exists.
 
 [source,bash]
 ----
-$ bin/solr version
+$ bin/solr --version
 X.Y.0
 ----
 
@@ -509,34 +498,28 @@ The basic usage of `bin/solr assert` is:
 [source, plain]
 ----
 $ bin/solr assert -h
-usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
-                <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]
- -c,---cloud <url>             Asserts that Solr is running in cloud mode.
-                               Also fails if Solr not running.  URL should
-                               be for root Solr path.
- -C,--not-cloud <url>          Asserts that Solr is not running in cloud
-                               mode.  Also fails if Solr not running.  URL
-                               should be for root Solr path.
- -e,--exitcode                 Return an exit code instead of printing
-                               error message on assert fail.
- -h,--help                     Print this message.
- -m,--message <message>        Exception message to be used in place of
-                               the default error message.
- -R,--not-root                 Asserts that we are NOT the root user.
- -r,--root                     Asserts that we are the root user.
- -S,--not-started <url>        Asserts that Solr is NOT running on a
-                               certain URL. Default timeout is 1000ms.
- -s,--started <url>            Asserts that Solr is running on a certain
-                               URL. Default timeout is 1000ms.
- -t,--timeout <ms>             Timeout in ms for commands supporting a
-                               timeout.
- -u,--same-user <directory>    Asserts that we run as same user that owns
-                               <directory>.
- -v,--verbose                  Enable more verbose command output.
- -x,--exists <directory>       Asserts that directory <directory> exists.
- -X,--not-exists <directory>   Asserts that directory <directory> does NOT
-                               exist.
- -u,--credentials <user:pass>  Username and password for Basic authentication.
+usage: bin/solr assert [--cloud <url>] [--exists <directory>] [--exitcode] [-h] [--message <message>] [--not-cloud
+       <url>] [--not-exists <directory>] [--not-root] [--not-started <url>] [--root] [--same-user <directory>]
+       [--started <url>] [--timeout <ms>] [-u <credentials>] [--verbose]
+
+List of options:
+    --cloud <url>                 Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL
+                                  should be for root Solr path.
+    --exists <directory>          Asserts that directory <directory> exists.
+    --exitcode                    Return an exit code instead of printing error message on assert fail.
+ -h,--help                        Print this message.
+    --message <message>           Exception message to be used in place of the default error message.
+    --not-cloud <url>             Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL
+                                  should be for root Solr path.
+    --not-exists <directory>      Asserts that directory <directory> does NOT exist.
+    --not-root                    Asserts that we are NOT the root user.
+    --not-started <url>           Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.
+    --root                        Asserts that we are the root user.
+    --same-user <directory>       Asserts that we run as same user that owns <directory>.
+    --started <url>               Asserts that Solr is running on a certain URL. Default timeout is 1000ms.
+    --timeout <ms>                Timeout in ms for commands supporting a timeout.
+ -u,--credentials <credentials>   Credentials in the format username:password. Example: --credentials solr:SolrRocks
+    --verbose                     Enable verbose command output.
 ----
 
 === Healthcheck
@@ -561,7 +544,7 @@ Name of the collection to run a healthcheck against.
 +
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
-`--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -650,15 +633,15 @@ Below is an example healthcheck request and response using a non-standard ZooKee
 
 The `bin/solr` script can also help you create new collections or cores, or delete collections or cores.
 
-=== Create a Core or Collection
+=== Create a Collection or Core
 
-The `create` command creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
+The `create` command creates a Collection or Core depending on whether Solr is running in SolrCloud (collection) or user-managed mode (core).
 
 `bin/solr create [options]`
 
 `bin/solr create --help`
 
-==== Create Core or Collection Parameters
+==== Create Collection or Core Parameters
 
 `-c <name>`::
 +
@@ -667,7 +650,7 @@ The `create` command creates a core or collection depending on whether Solr is r
 s|Required |Default: none
 |===
 +
-Name of the core or collection to create.
+Name of the collection or core to create.
 +
 *Example*: `bin/solr create -c mycollection`
 
@@ -692,11 +675,11 @@ See the section <<Configuration Directories and SolrCloud>> below for more detai
 |===
 +
 The configuration name.
-This defaults to the same name as the core or collection.
+This defaults to the same name as the collection or core.
 +
 *Example*: `bin/solr create -n basic`
 
-`-s <shards>` or `-shards <shards>`::
+`-sh <shards>` or `-shards <shards>`::
 +
 [%autowidth,frame=none]
 |===
@@ -706,7 +689,7 @@ This defaults to the same name as the core or collection.
 Number of shards to split a collection into.
 Only applies when Solr is running in SolrCloud mode.
 +
-*Example*: `bin/solr create -s 2`
+*Example*: `bin/solr create --shards 2`
 
 `-rf <replicas>` or `--replication-factor <replicas>`::
 +
@@ -742,7 +725,7 @@ It is possible to override this warning with the --force parameter.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -803,20 +786,20 @@ $ bin/solr config -c mycollection --action set-user-property --property update.a
 
 See also the section <<Set or Unset Configuration Properties>>.
 
-=== Delete Core or Collection
+=== Delete Collection or Core
 
-The `delete` command detects the mode that Solr is running in and then deletes the specified core (user-managed or single-node) or collection (SolrCloud) as appropriate.
+The `delete` command detects the mode that Solr is running in and then deletes the specified collection (SolrCloud) or core (user-managed or single-node) as appropriate.
 
 `bin/solr delete [options]`
 
 `bin/solr delete --help`
 
-If you're deleting a collection in SolrCloud mode, the default behavior is to also delete the configuration directory from Zookeeper so long as it is not being used by another collection.
+If you're deleting a collection in SolrCloud mode, the default behavior is to leave the configuration directory in Zookeeper. If you want to delete the configuration then you need to pass in `--delete-config` as well.
 
-For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
-If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You can override this behavior by passing -deleteConfig false when running this command.atom
+For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts --delete-config` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
+If not, then the `/configs/contacts` directory is removed from ZooKeeper.
 
-==== Delete Core or Collection Parameters
+==== Delete Collection or Core Parameters
 
 `-c <name>`::
 +
@@ -825,7 +808,7 @@ If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You c
 s|Required |Default: none
 |===
 +
-Name of the core or collection to delete.
+Name of the collection or core to delete.
 +
 *Example*: `bin/solr delete -c mycoll`
 
@@ -833,20 +816,20 @@ Name of the core or collection to delete.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: none
 |===
 +
-Whether or not the configuration directory should also be deleted from ZooKeeper.
+Specify the configuration directory should also be deleted from ZooKeeper.
 +
-If the configuration directory is being used by another collection, then it will not be deleted even if you pass `--deleteConfig` as `true`.
+If the configuration directory is being used by another collection, then it will not be deleted.
 +
-*Example*: `bin/solr delete --delete-config false`
+*Example*: `bin/solr delete --delete-config`
 
-`--force-delete-config`::
+`-f` or `--force`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: none
 |===
 +
 Skip safety checks when deleting the configuration directory used by a collection.
@@ -861,7 +844,7 @@ Skip safety checks when deleting the configuration directory used by a collectio
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -887,7 +870,6 @@ The `bin/solr` script allows enabling or disabling Authentication, allowing you 
 Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.
 
 For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
-For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.
 
 
 === Enabling Basic Authentication
@@ -917,7 +899,6 @@ Here are some example usages:
 ----
 Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
        solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
-       solr auth enable --type kerberos --config <kerberos configs> [--update-include-file-only <true|false>] [-v]
        solr auth disable [--update-include-file-only <true|false>] [-v]
 ----
 
@@ -997,7 +978,7 @@ Defines the ZooKeeper connect string.
 This is useful if you want to enable authentication before all your Solr nodes have come up.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-d <dir>`::
+`--server-dir <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1007,7 +988,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 Defines the Solr server directory, by default `$SOLR_TIP/server`.
 It is not common to need to override the default, and is only needed if you have customized the `$SOLR_HOME` directory path.
 
-`-s <dir>` or `--solr-home <dir>`::
+`--solr-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1068,7 +1049,7 @@ To unset a previously set user-defined property, specify `--action unset-user-pr
 s|Required |Default: none
 |===
 +
-Name of the core or collection on which to change configuration.
+Name of the collection or core on which to change configuration.
 
 `--action <name>`::
 +
@@ -1107,7 +1088,7 @@ Set the property to this value; accepts JSON objects and strings.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-u <url>` or --solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1139,7 +1120,7 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 == ZooKeeper Operations
 
 The `bin/solr` script allows certain operations affecting ZooKeeper.
-These operations are for SolrCloud mode only.
+These operations are for SolrCloud mode only.  For more information see xref:zookeeper-utilities.adoc[ZooKeeper Utilities].
 
 The operations are available as sub-commands, which each have their own set of options.
 
@@ -1218,7 +1199,7 @@ Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1290,7 +1271,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1314,7 +1295,7 @@ This command will copy from the local drive to ZooKeeper, from ZooKeeper to the 
 
 ==== ZK Copy Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===
@@ -1374,7 +1355,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1404,7 +1385,7 @@ Trailing wildcards are supported when copying from localand must be quoted.
 
 Other examples are:
 
-*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/confgs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
+*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/configs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
 
 *Copy a single file from ZooKeeper to local*: `bin/solr zk cp zk:/configs/myconf/managed_schema /configs/myconf/managed_schema -z 111.222.333.444:2181`
 
@@ -1414,7 +1395,7 @@ Use the `zk rm` command to remove a znode (and optionally all child nodes) from 
 
 ==== ZK Remove Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===
@@ -1457,7 +1438,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1519,7 +1500,7 @@ An example of this command is:
 
 `bin/solr zk mv /configs/oldconfigset /configs/newconfigset`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1535,7 +1516,7 @@ Use the `zk ls` command to see the children of a znode.
 
 ==== ZK List Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===
@@ -1570,7 +1551,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1619,7 +1600,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1651,16 +1632,27 @@ NOTE: The `export` command only works with in a Solr running in cloud mode.
 
 The `bin/solr export` command takes the following parameters:
 
-`--url <url>`::
+`-s <url>` or `--solr-url <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Fully-qualified address to a Solr.
++
+*Example*: `--solr-url http://localhost:8983`
+
+`-c <collection>`::
 +
 [%autowidth,frame=none]
 |===
 s|Required |Default: none
 |===
 +
-Fully-qualified address to a collection.
+Name of the collection to run an export against.
 +
-*Example*: `--url http://localhost:8983/solr/techproducts`
+*Example*: `bin/solr export -c gettingstarted`
 
 `--format <format>`::
 +
@@ -1673,7 +1665,7 @@ The file format of the export, `json`, `jsonl`, or `javabin`.
 Choosing `javabin` exports in the native Solr format, and is compact and fast to import.
 `jsonl` is the Json with Lines format, learn more at https://jsonlines.org/.
 
-`--out <path>`::
+`--output <path>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1713,7 +1705,6 @@ The default is `\*:*` which will export all documents.
 Comma separated list of fields to be exported.
 By default all fields are fetched.
 
-
 `--limit <number of documents>`::
 +
 [%autowidth,frame=none]
@@ -1739,13 +1730,13 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 Export all documents from a collection `gettingstarted`:
 
 [source,bash]
-bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1
+bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1
 
 Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a compressed JSON file:
 
 [source,bash]
 ----
-bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1 --format json --compress --out 1MDocs
+bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1 --format json --compress --output 1MDocs
 ----
 
 === Importing Documents into a Collection
@@ -1758,7 +1749,7 @@ First export the documents, making sure to ignore any fields that are populated 
 
 [,console]
 ----
-$ bin/solr export --url http://localhost:8983/solr/gettingstarted --fields id,name,manu,cat,features
+$ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --fields id,name,manu,cat,features
 ----
 
 Create a new collection to import the exported documents into:
@@ -1784,7 +1775,7 @@ $ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http
 
 [,console]
 ----
-$ bin/solr export --url http://localhost:8983/solr/gettingstarted --format javabin --fields id,name,manu,cat,features
+$ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --format javabin --fields id,name,manu,cat,features
 $ curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin 'http://localhost:8983/solr/test_collection/update?commit=true'
 ----
 
@@ -1799,7 +1790,7 @@ If you have configured basicAuth or TLS with your Solr you may find this easier 
 
 The `bin/solr api` command takes the following parameters:
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1834,3 +1825,69 @@ Here is an example of sending a SQL query to the techproducts `/sql` end point (
 $ bin/solr api --solr-url http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
 
 Results are streamed to the terminal.
+
+
+== Managing Solr Packages
+
+The `package` command allows you to interact with Solr's xref:configuration-guide:package-manager.adoc[Package Manager].
+
+
+== Snapshots and Backups
+
+The snapshots capability of the CLI allows you to:
+
+* Create snapshotted view of your index
+* List all the available snapshots
+* Provide details about individual Snapshots
+* Export snapshots as part of a backup strategy
+* Delete existing snapshots
+
+Learn more about on the xref:backup-restore.adoc[Backup and Restore] and xref:collection-management.adoc[Collection Management] pages.
+
+=== Create Snapshotted View
+
+To create a snapshot you just give it the collection and the name you want:
+
+[,console]
+----
+$  bin/solr snapshot-create -c <collection-name> --snapshot-name <snapshot-name>
+----
+
+=== List all available snapshots
+
+To list all the snapshots that have been taken for a collection:
+
+[,console]
+----
+$ bin/solr snapshot-list -c <collection-name>
+----
+
+=== Detailed information about a Snapshot
+
+Use the describe command to gain detailed information about a specific snapshot:
+
+[,console]
+----
+$ bin/solr snapshot-describe -c <collection-name> --snapshot-name <snapshot-name>
+----
+
+=== Converting a Snapshot to a Backup
+
+Use the export command to take :
+
+[,console]
+----
+$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [--async-id <ID>] --snapshot-name <NAME>
+----
+
+The `--async-id` parameter specifies that this is an asynchronous process.
+
+
+=== Delete a Snapshot
+
+Use the delete command to delete a snapshot :
+
+[,console]
+----
+$ bin/solr snapshot-delete -c <NAME> --snapshot-name <NAME>
+----

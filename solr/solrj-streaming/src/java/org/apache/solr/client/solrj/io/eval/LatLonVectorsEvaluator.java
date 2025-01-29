@@ -64,11 +64,10 @@ public class LatLonVectorsEvaluator extends RecursiveObjectEvaluator implements 
 
     if (objects.length == 1) {
       // Just docs
-      if (!(objects[0] instanceof List)) {
+      if (!(objects[0] instanceof List<?> list)) {
         throw new IOException(
             "The latlonVectors function expects a list of Tuples as a parameter.");
       } else {
-        List<?> list = (List<?>) objects[0];
         if (list.size() > 0) {
           Object o = list.get(0);
           if (!(o instanceof Tuple)) {

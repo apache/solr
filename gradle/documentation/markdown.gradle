@@ -33,10 +33,10 @@ buildscript {
   }
 
   dependencies {
-    classpath "com.vladsch.flexmark:flexmark:${scriptDepVersions['flexmark']}"
-    classpath "com.vladsch.flexmark:flexmark-ext-abbreviation:${scriptDepVersions['flexmark']}"
-    classpath "com.vladsch.flexmark:flexmark-ext-attributes:${scriptDepVersions['flexmark']}"
-    classpath "com.vladsch.flexmark:flexmark-ext-autolink:${scriptDepVersions['flexmark']}"
+    classpath libs.flexmark.flexmark
+    classpath libs.flexmark.extensions.abbreviation
+    classpath libs.flexmark.extensions.attributes
+    classpath libs.flexmark.extensions.autolink
   }
 }
 

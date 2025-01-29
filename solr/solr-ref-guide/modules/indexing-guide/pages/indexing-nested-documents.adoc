@@ -283,7 +283,7 @@ This makes it much easier to apply
 xref:partial-document-updates.adoc#updating-child-documents[atomic updates] to individual child documents.
 ====
 
-== Maintaining Integrity with Updates and Deletes
+== Maintaining Integrity with Updates, Deletes, and Shard Splits
 
 Nested document trees can be modified with
 xref:partial-document-updates.adoc#atomic-updates[atomic updates] to
@@ -303,6 +303,10 @@ Instead, use delete-by-query (most efficient) or xref:partial-document-updates.a
 
 If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query is structured to ensure no descendent children remain of any documents that are being deleted.
 *_Doing otherwise will violate integrity assumptions that Solr expects._*
+
+When xref:deployment-guide:shard-management.adoc#splitshard[splitting shards], child documents get transmitted and routed independently.
+If you use the default `router.field`, this is handled correctly for you.
+If your collection has a custom `router.field`, then you must ensure that all documents in a hierarchy have the same value for that field.
 
 == Indexing Anonymous Children
 

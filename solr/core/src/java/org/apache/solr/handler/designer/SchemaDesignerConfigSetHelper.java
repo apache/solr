@@ -65,6 +65,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -77,7 +78,6 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -167,24 +167,12 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   List<String> listCollectionsForConfig(String configSet) {
-    final List<String> collections = new ArrayList<>();
-    Map<String, ClusterState.CollectionRef> states =
-        zkStateReader().getClusterState().getCollectionStates();
-    for (Map.Entry<String, ClusterState.CollectionRef> e : states.entrySet()) {
-      final String coll = e.getKey();
-      if (coll.startsWith(DESIGNER_PREFIX)) {
-        continue; // ignore temp
-      }
-
-      try {
-        if (configSet.equals(e.getValue().get().getConfigName()) && e.getValue().get() != null) {
-          collections.add(coll);
-        }
-      } catch (Exception exc) {
-        log.warn("Failed to get config name for {}", coll, exc);
-      }
-    }
-    return collections;
+    return zkStateReader()
+        .getClusterState()
+        .collectionStream()
+        .filter(c -> configSet.equals(c.getConfigName()))
+        .map(DocCollection::getName)
+        .toList();
   }
 
   @SuppressWarnings("unchecked")
@@ -336,8 +324,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     // nice, the json for this field looks like
     // "synonymQueryStyle":
     // "org.apache.solr.parser.SolrQueryParserBase$SynonymQueryStyle:AS_SAME_TERM"
-    if (typeAttrs.get("synonymQueryStyle") instanceof String) {
-      String synonymQueryStyle = (String) typeAttrs.get("synonymQueryStyle");
+    if (typeAttrs.get("synonymQueryStyle") instanceof String synonymQueryStyle) {
       if (synonymQueryStyle.lastIndexOf(':') != -1) {
         typeAttrs.put(
             "synonymQueryStyle",
@@ -542,12 +529,12 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
       int statusCode = entity.getStatusLine().getStatusCode();
       if (statusCode == HttpStatus.SC_OK) {
-        byte[] bytes = DefaultSampleDocumentsLoader.streamAsBytes(entity.getEntity().getContent());
+        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
         if (bytes.length > 0) {
           docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
         }
       } else if (statusCode != HttpStatus.SC_NOT_FOUND) {
-        byte[] bytes = DefaultSampleDocumentsLoader.streamAsBytes(entity.getEntity().getContent());
+        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
         throw new IOException(
             "Failed to lookup stored docs for "
                 + configSet
@@ -562,10 +549,14 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
-    postDataToBlobStore(
-        cloudClient(),
-        configSet + "_sample",
-        DefaultSampleDocumentsLoader.streamAsBytes(toJavabin(docs)));
+    postDataToBlobStore(cloudClient(), configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
+  }
+
+  /** Gets the stream, reads all the bytes, closes the stream. */
+  static byte[] readAllBytes(IOSupplier<InputStream> hasStream) throws IOException {
+    try (InputStream in = hasStream.get()) {
+      return in.readAllBytes();
+    }
   }
 
   protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
@@ -686,9 +677,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   SolrConfig loadSolrConfig(String configSet) {
     ZkSolrResourceLoader zkLoader = zkLoaderForConfigSet(configSet);
-    boolean trusted = isConfigSetTrusted(configSet);
-
-    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, trusted, null);
+    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, null);
   }
 
   ManagedIndexSchema loadLatestSchema(String configSet) {
@@ -1063,7 +1052,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       }
     }
 
-    // if we fall thru to here, then the file should be excluded
+    // if we fall through to here, then the file should be excluded
     return false;
   }
 
@@ -1231,8 +1220,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   public void removeConfigSetTrust(String configSetName) {
     try {
-      Map<String, Object> metadata = Collections.singletonMap("trusted", false);
-      cc.getConfigSetService().setConfigMetadata(configSetName, metadata);
+      cc.getConfigSetService().setConfigSetTrust(configSetName, false);
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
