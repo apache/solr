@@ -34,6 +34,8 @@ Improvements
 
 * SOLR-17516: `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. (James Dyer)
 
+* SOLR-XXXXX: Support different filesystem implementations with EmbeddedSolrServer (Andrey Bozhko)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
