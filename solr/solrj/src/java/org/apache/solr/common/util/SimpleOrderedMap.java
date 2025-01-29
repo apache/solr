@@ -135,6 +135,10 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     }
   }
 
+  public Map<String, T> asShallowMap() {
+    return this;
+  }
+
   @Override
   public Set<String> keySet() {
     return new InnerMap().keySet();

@@ -408,14 +408,11 @@ public class NamedList<T>
   }
 
   public Map<String, T> asShallowMap() {
-    if (this instanceof SimpleOrderedMap simpleOrderedMap) {
-      return simpleOrderedMap;
-    }
     return asShallowMap(false);
   }
 
-  public Map<String, T> asShallowMap(boolean allowDps) {
-    return new Map<String, T>() {
+  private Map<String, T> asShallowMap(boolean allowDps) {
+    return new Map<>() {
       @Override
       public int size() {
         return NamedList.this.size();
