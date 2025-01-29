@@ -70,7 +70,6 @@ import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.security.AllowListUrlChecker;
@@ -1086,8 +1085,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                   @Override
                   public boolean accept(File dir, String name) {
                     File f = new File(dir, name);
-                    return f.isDirectory()
-                        && !SolrSnapshotMetaDataManager.SNAPSHOT_METADATA_DIR.equals(name);
+                    return f.isDirectory() && !name.startsWith("snapshot");
                   }
                 });
     return list.length;
