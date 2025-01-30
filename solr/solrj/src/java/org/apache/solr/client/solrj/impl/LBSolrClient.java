@@ -303,7 +303,9 @@ public abstract class LBSolrClient extends SolrClient {
       }
       // Skipping check time exceeded for the first request
       // Ugly string based hack but no live servers message here is VERY misleading :(
-      if ((previousEx != null && previousEx.getMessage().contains("Limits exceeded!"))
+      if ((previousEx != null
+              && previousEx.getMessage() != null
+              && previousEx.getMessage().contains("Limits exceeded!"))
           || (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime))) {
         throw new SolrServerException(
             "The processing limits for to this request were exceeded, see cause for details",

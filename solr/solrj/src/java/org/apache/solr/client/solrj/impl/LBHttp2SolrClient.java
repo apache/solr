@@ -236,7 +236,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
               String url;
               try {
                 url = it.nextOrError(e);
-              } catch (SolrServerException ex) {
+              } catch (Throwable ex) {
                 apiFuture.completeExceptionally(e);
                 return;
               }
