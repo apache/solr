@@ -209,11 +209,4 @@ public class NamedListTest extends SolrTestCase {
     assertEquals("Val2", nl.get("key2"));
     assertEquals("Val2", m.get("key2"));
   }
-
-  @Test
-  public void testShallowMapReturningItSelf() {
-    SimpleOrderedMap<String> simpleOrderedMap = new SimpleOrderedMap<>();
-    Map<String, String> shallowMap = simpleOrderedMap.asShallowMap();
-    assertSame(simpleOrderedMap, shallowMap);
-  }
 }

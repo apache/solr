@@ -159,8 +159,6 @@ Improvements
 * SOLR-16396: All v2 configset APIs have been moved to the slightly different path: `/api/configsets`, to better align with the design of
   other v2 APIs.  SolrJ now offers (experimental) SolrRequest implementations for all v2 configset APIs in
   `org.apache.solr.client.solrj.request.ConfigsetsApi`. (Jason Gerlowski)
-  
- * SOLR-17623: SimpleOrderedMap is now implementing java.util.Map. (Renato Haeberli, David Smiley)
 
 Optimizations                                           
 ---------------------
@@ -195,6 +193,8 @@ Other Changes
 
 * SOLR-17611: SolrJ's User-Agent header now uses the version of SolrJ.  There's a corresponding
   HttpSolrCall.getUserAgentSolrVersion to parse it.  (David Smiley)
+
+* SOLR-17623: SimpleOrderedMap (a NamedList) now implements java.util.Map. (Renato Haeberli, David Smiley)
 
 ==================  9.8.0 ==================
 New Features

@@ -71,11 +71,13 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     super(nameValuePairs);
   }
 
+  // TODO override asShallowMap in Solr 10
+
   @Override
   public SimpleOrderedMap<T> clone() {
     ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
-    return new SimpleOrderedMap<T>(newList);
+    return new SimpleOrderedMap<>(newList);
   }
 
   @Override
@@ -91,11 +93,6 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   @Override
   public boolean containsValue(final Object value) {
     return values().contains(value);
-  }
-
-  @Override
-  public Map<String, T> asShallowMap() {
-    return this;
   }
 
   /**
@@ -172,7 +169,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
    * @return {@link SimpleOrderedMap} containing one key-value pair
    */
   public static <T> SimpleOrderedMap<T> of(String name, T val) {
-    return new SimpleOrderedMap<T>(List.of(name, val));
+    return new SimpleOrderedMap<>(List.of(name, val));
   }
 
   /**

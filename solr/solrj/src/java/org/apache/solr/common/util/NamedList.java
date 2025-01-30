@@ -415,6 +415,7 @@ public class NamedList<T>
   /**
    * @deprecated use {@link SimpleOrderedMap} instead of NamedList when a Map is required.
    */
+  @Deprecated
   public Map<String, T> asShallowMap(boolean allowDps) {
     return new Map<>() {
       @Override
