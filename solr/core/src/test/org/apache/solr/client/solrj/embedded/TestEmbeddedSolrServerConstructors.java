@@ -68,7 +68,7 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
   @Test
   public void testPathConstructorZipFS() throws Exception {
     assumeTrue(
-        "Test only works without Security Manager due to SecurityConfHandlerLocal" +
+        "Test only works without Security Manager due to SecurityConfHandlerLocal " +
                 "missing permission to read /1/2/3/4/security.json file",
         System.getSecurityManager() == null);
 
@@ -102,7 +102,8 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
       PathUtils.copyDirectory(configset("zipfs"), confDir);
 
       // Need to make sure we circumvent any Solr attempts
-      // to modify the archive - so to achieve that we:
+      // to modify the archive when we point solrHome to
+      // the archive content. Steps to achieve that:
       // - set a custom data dir,
       // - disable the update log,
       // - configure the rest manager in the solrconfig.xml with InMemoryStorageIO.
@@ -112,7 +113,8 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
     }
 
     // Then :
-    // EmbeddedSolrServer successfully loads the configset directly from the archive
+    // EmbeddedSolrServer successfully loads the core
+    // using the configset directly from the archive
     var configSetFs = FileSystems.newFileSystem(archive);
     try (configSetFs) {
       var server = new EmbeddedSolrServer(configSetFs.getPath("/1/2/3/4"), null);
