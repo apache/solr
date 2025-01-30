@@ -43,6 +43,9 @@ Bug Fixes
   current live nodes list is stale. CloudSolrClient now retains the initial configured list of passed URLs as backup
   used for fetching cluster state when all live nodes have failed. (Matthew Biscocho via David Smiley, Houston Putman)
 
+* SOLR-17637: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
+  This can cause the HttpShardHandler to indefinitely wait on a completed response that will never come. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
