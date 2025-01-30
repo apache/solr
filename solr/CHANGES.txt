@@ -34,7 +34,7 @@ Improvements
 
 * SOLR-17516: `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. (James Dyer)
 
-* SOLR-XXXXX: Support different filesystem implementations with EmbeddedSolrServer (Andrey Bozhko)
+* SOLR-17640: Support different filesystem implementations with EmbeddedSolrServer (Andrey Bozhko)
 
 Optimizations
 ---------------------
