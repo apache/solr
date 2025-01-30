@@ -160,7 +160,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     }
   }
 
-  /** Return event based on ZK path within queue **/
+  /** Return event based on ZK path within queue * */
   public QueueEvent get(String path) throws KeeperException, InterruptedException {
     try {
       byte[] data = zookeeper.getData(path, null, null, true);

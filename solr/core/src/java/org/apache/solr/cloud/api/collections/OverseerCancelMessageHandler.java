@@ -51,7 +51,6 @@ public class OverseerCancelMessageHandler implements OverseerMessageHandler, Sol
 
   public static final String CANCEL_PREFIX = "cancel";
 
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Overseer overseer;
