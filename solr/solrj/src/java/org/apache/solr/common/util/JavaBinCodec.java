@@ -426,7 +426,9 @@ public class JavaBinCodec implements PushWriter {
     }
     if (val instanceof MapSerializable) {
       // todo find a better way to reuse the map more efficiently
-      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
+      // allowDups = true as an optimization since we know the keys don't repeat, so avoid
+      //  an O(N^2) in pointless checking for duplicates
+      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap(true)));
       return true;
     }
     if (val instanceof AtomicInteger) {

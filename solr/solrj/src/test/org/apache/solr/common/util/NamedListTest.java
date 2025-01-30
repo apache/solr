@@ -19,6 +19,8 @@ package org.apache.solr.common.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.StreamSupport;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
@@ -208,5 +210,50 @@ public class NamedListTest extends SolrTestCase {
     assertEquals(0, nl.indexOf("key1", 0));
     assertEquals("Val2", nl.get("key2"));
     assertEquals("Val2", m.get("key2"));
+  }
+
+  public void testShallowMapEntrySet() {
+    // test that a NamedList with another NamedList inside is still a NamedList
+    // when seen from the map and its entrySet
+    NamedList<Object> nl = new NamedList<>();
+    NamedList<Object> innerNl = new NamedList<>();
+    innerNl.add("keyInner", "valInner");
+    nl.add("keyOuter", innerNl);
+
+    Map<String, Object> m = nl.asShallowMap(); // a view
+
+    assertEquals(1, m.size());
+    assertTrue(m.get("keyOuter") instanceof NamedList);
+    Entry<String, Object> entry = m.entrySet().stream().findFirst().get();
+    assertEquals("keyOuter", entry.getKey());
+    assertEquals(innerNl, entry.getValue());
+
+    // now add a second value for the same key and ensure it's visible
+    nl.add("keyOuter", "valOuter");
+    assertEquals(2, nl.size());
+    assertEquals(2, m.size());
+    assertEquals(2, m.entrySet().size());
+    assertEquals(2, m.entrySet().stream().count());
+    assertEquals(m.get("keyOuter"), nl.get("keyOuter"));
+
+    // test allowDups with a another value for the same key retains the existing values
+    m = nl.asShallowMap(true);
+    m.putAll(Map.of("keyOuter", "Val3"));
+    assertEquals(3, nl.size());
+    // put no allowDups will do a replace
+    m = nl.asShallowMap(false);
+    m.putAll(Map.of("keyOuter", "Val4"));
+    assertEquals(3, nl.size()); // replaces just one value, not all (debatable)
+
+    // lets see the current state:
+    assertEquals(List.of("keyOuter", "keyOuter", "keyOuter"), m.keySet().stream().toList());
+    assertEquals(List.of("Val4", "valOuter", "Val3"), m.values().stream().toList());
+
+    // ensure Iterable of NL & Map are consistent
+    Iterable<Map.Entry<String, Object>> outerIterable = nl;
+    Iterable<Map.Entry<String, Object>> mapIterable = m.entrySet();
+    var outerList = StreamSupport.stream(outerIterable.spliterator(), false).toArray();
+    var mapList = StreamSupport.stream(mapIterable.spliterator(), false).toArray();
+    assertArrayEquals(outerList, mapList);
   }
 }

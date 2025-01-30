@@ -98,7 +98,7 @@ public class MetricsQuery {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       if (queryParameters != null) {
-        for (Map.Entry<String, Object> entrySet : queryParameters.asShallowMap().entrySet()) {
+        for (Map.Entry<String, Object> entrySet : queryParameters) {
           if (entrySet.getValue() instanceof Collection) {
             @SuppressWarnings("unchecked")
             Collection<Object> values = (Collection<Object>) entrySet.getValue();
