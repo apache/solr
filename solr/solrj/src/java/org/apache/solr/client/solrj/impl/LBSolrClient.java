@@ -887,8 +887,7 @@ public abstract class LBSolrClient extends SolrClient {
   public void close() {
     synchronized (this) {
       if (aliveCheckExecutor != null) {
-        aliveCheckExecutor.shutdownNow();
-        ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
+        ExecutorUtil.shutdownNowAndAwaitTermination(aliveCheckExecutor);
       }
     }
     ObjectReleaseTracker.release(this);
