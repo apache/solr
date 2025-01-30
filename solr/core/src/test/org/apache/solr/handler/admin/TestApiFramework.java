@@ -24,14 +24,22 @@ import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PAT
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
@@ -72,7 +80,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   public void testFramework() {
     Map<String, Object[]> calls = new HashMap<>();
     Map<String, Object> out = new HashMap<>();
-    CoreContainer mockCC = TestCoreAdminApis.getCoreContainerMock(calls, out);
+    CoreContainer mockCC = getCoreContainerMock(calls, out);
     PluginBag<SolrRequestHandler> containerHandlers =
         new PluginBag<>(SolrRequestHandler.class, null, false);
     TestCollectionAPIs.MockCollectionsHandler collectionsHandler =
@@ -363,5 +371,40 @@ public class TestApiFramework extends SolrTestCaseJ4 {
             val);
       }
     }
+  }
+
+  public static CoreContainer getCoreContainerMock(
+      final Map<String, Object[]> in, Map<String, Object> out) {
+    assumeWorkingMockito();
+
+    CoreContainer mockCC = mock(CoreContainer.class);
+    when(mockCC.create(any(String.class), any(Path.class), any(Map.class), anyBoolean()))
+        .thenAnswer(
+            invocationOnMock -> {
+              in.put("create", invocationOnMock.getArguments());
+              return null;
+            });
+
+    doAnswer(
+            invocationOnMock -> {
+              in.put("rename", invocationOnMock.getArguments());
+              return null;
+            })
+        .when(mockCC)
+        .rename(any(String.class), any(String.class));
+
+    doAnswer(
+            invocationOnMock -> {
+              in.put("unload", invocationOnMock.getArguments());
+              return null;
+            })
+        .when(mockCC)
+        .unload(any(String.class), anyBoolean(), anyBoolean(), anyBoolean());
+
+    when(mockCC.getCoreRootDirectory()).thenReturn(Paths.get("coreroot"));
+    when(mockCC.getContainerProperties()).thenReturn(new Properties());
+
+    when(mockCC.getRequestHandlers()).thenAnswer(invocationOnMock -> out.get("getRequestHandlers"));
+    return mockCC;
   }
 }

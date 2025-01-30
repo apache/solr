@@ -66,6 +66,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
@@ -622,6 +623,35 @@ public class LukeRequestHandler extends RequestHandlerBase {
   // This method just gets the top-most level of information. This was conflated with getting
   // detailed info for *all* the fields, called from CoreAdminHandler etc.
 
+  public static CoreStatusResponse.IndexDetails getIndexInfoTyped(DirectoryReader reader)
+      throws IOException {
+    Directory dir = reader.directory();
+    final var indexInfo = new CoreStatusResponse.IndexDetails();
+
+    indexInfo.numDocs = reader.numDocs();
+    indexInfo.maxDoc = reader.maxDoc();
+    indexInfo.deletedDocs = reader.maxDoc() - reader.numDocs();
+    // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
+    indexInfo.version = reader.getVersion();
+    indexInfo.segmentCount = reader.leaves().size();
+    indexInfo.current = closeSafe(reader::isCurrent);
+    indexInfo.hasDeletions = reader.hasDeletions();
+    indexInfo.directory = dir.toString();
+    IndexCommit indexCommit = reader.getIndexCommit();
+    String segmentsFileName = indexCommit.getSegmentsFileName();
+    indexInfo.segmentsFile = segmentsFileName;
+    indexInfo.segmentsFileSizeInBytes = getSegmentsFileLength(indexCommit);
+    Map<String, String> userData = indexCommit.getUserData();
+    indexInfo.userData = userData;
+    String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+    if (s != null) {
+      indexInfo.lastModified = new Date(Long.parseLong(s));
+    }
+    return indexInfo;
+  }
+
+  // TODO NOCOMMIT Nuke this method and its usages, in favor of the typed version above that
+  // produces CoreStatusResponse.IndexInfo
   public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader) throws IOException {
     Directory dir = reader.directory();
     SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<>();
@@ -653,7 +683,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     boolean get() throws IOException;
   }
 
-  private static Object closeSafe(IOSupplier isCurrent) {
+  private static boolean closeSafe(IOSupplier isCurrent) {
     try {
       return isCurrent.get();
     } catch (AlreadyClosedException | IOException exception) {

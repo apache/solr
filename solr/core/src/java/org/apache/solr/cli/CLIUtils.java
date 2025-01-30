@@ -19,7 +19,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 
 import java.io.IOException;
@@ -45,7 +44,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -321,16 +320,15 @@ public final class CLIUtils {
           final int clamPeriodForStatusPollMs = 1000;
           Thread.sleep(clamPeriodForStatusPollMs);
         }
-        NamedList<Object> existsCheckResult =
-            CoreAdminRequest.getStatus(coreName, solrClient).getResponse();
-        NamedList<Object> status = (NamedList<Object>) existsCheckResult.get("status");
-        NamedList<Object> coreStatus = (NamedList<Object>) status.get(coreName);
-        Map<String, Object> failureStatus =
-            (Map<String, Object>) existsCheckResult.get("initFailures");
-        String errorMsg = (String) failureStatus.get(coreName);
-        final boolean hasName = coreStatus != null && coreStatus.get(NAME) != null;
-        exists = hasName || errorMsg != null;
-        wait = hasName && errorMsg == null && "true".equals(coreStatus.get("isLoading"));
+        final var coreStatusReq = new CoresApi.GetCoreStatus(coreName);
+        final var coreStatusRsp = coreStatusReq.process(solrClient).getParsed();
+        final var coreStatusByName = coreStatusRsp.status;
+        final var coreStatus = coreStatusByName.get(coreName);
+        final var failureStatus = coreStatusRsp.initFailures;
+        final var initFailureForCore = failureStatus.get(coreName);
+        final boolean hasName = coreStatus != null && coreStatus.name != null;
+        exists = hasName || initFailureForCore != null;
+        wait = hasName && initFailureForCore == null && "true".equals(coreStatus.isLoading);
       } while (wait && System.nanoTime() - startWaitAt < MAX_WAIT_FOR_CORE_LOAD_NANOS);
     } catch (Exception exc) {
       // just ignore it since we're only interested in a positive result here

@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -87,11 +86,9 @@ public class DeleteShardTest extends SolrCloudTestCase {
     // Get replica details
     Replica leader = getCollectionState(collection).getLeader("a");
 
-    CoreStatus coreStatus = getCoreStatus(leader);
-    assertTrue(
-        "Instance directory doesn't exist",
-        FileUtils.fileExists(coreStatus.getInstanceDirectory()));
-    assertTrue("Data directory doesn't exist", FileUtils.fileExists(coreStatus.getDataDirectory()));
+    var coreStatus = getCoreStatus(leader);
+    assertTrue("Instance directory doesn't exist", FileUtils.fileExists(coreStatus.instanceDir));
+    assertTrue("Data directory doesn't exist", FileUtils.fileExists(coreStatus.dataDir));
 
     assertEquals(3, getCollectionState(collection).getActiveSlices().size());
 
@@ -101,9 +98,8 @@ public class DeleteShardTest extends SolrCloudTestCase {
     waitForState("Expected 'a' to be removed", collection, c -> c.getSlice("a") == null);
 
     assertEquals(2, getCollectionState(collection).getActiveSlices().size());
-    assertFalse(
-        "Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
-    assertFalse("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
+    assertFalse("Instance directory still exists", FileUtils.fileExists(coreStatus.instanceDir));
+    assertFalse("Data directory still exists", FileUtils.fileExists(coreStatus.dataDir));
 
     leader = getCollectionState(collection).getLeader("b");
     coreStatus = getCoreStatus(leader);
@@ -117,9 +113,8 @@ public class DeleteShardTest extends SolrCloudTestCase {
     waitForState("Expected 'b' to be removed", collection, c -> c.getSlice("b") == null);
 
     assertEquals(1, getCollectionState(collection).getActiveSlices().size());
-    assertTrue(
-        "Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
-    assertTrue("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
+    assertTrue("Instance directory still exists", FileUtils.fileExists(coreStatus.instanceDir));
+    assertTrue("Data directory still exists", FileUtils.fileExists(coreStatus.dataDir));
   }
 
   private void setSliceState(String collectionName, String shardId, Slice.State state)
