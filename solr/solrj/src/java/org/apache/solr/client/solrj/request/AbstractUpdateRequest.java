@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -23,7 +24,7 @@ import org.apache.solr.common.params.UpdateParams;
 
 public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
-  protected ModifiableSolrParams params = new ModifiableSolrParams(); // TODO make final
+  protected ModifiableSolrParams params = new ModifiableSolrParams(); // maybe make final; no setter
   protected int commitWithin = -1;
 
   public enum ACTION {
@@ -111,7 +112,7 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
 
   /** Sets the parameters for this update request, overwriting any previous */
   public void setParams(ModifiableSolrParams params) {
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
   }
 
   @Override

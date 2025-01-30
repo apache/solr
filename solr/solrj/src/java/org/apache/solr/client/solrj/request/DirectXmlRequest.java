@@ -28,7 +28,6 @@ import org.apache.solr.common.params.SolrParams;
  *
  * @since solr 1.3
  */
-@Deprecated
 public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
 
