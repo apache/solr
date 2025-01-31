@@ -121,8 +121,8 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       // first run the standard query
       TopDocs hits = searcher.search(bqBuilder.build(), 10);
       assertEquals(2, hits.totalHits.value);
-      assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-      assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+      assertEquals("0", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
+      assertEquals("1", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
 
       final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2}, "finalScore");
       final List<Normalizer> norms =
@@ -145,8 +145,8 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       hits = rescorer.rescore(searcher, hits, 2);
 
       // rerank using the field finalScore
-      assertEquals("1", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-      assertEquals("0", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+      assertEquals("1", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
+      assertEquals("0", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
     }
   }
 
@@ -173,11 +173,11 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       TopDocs hits = searcher.search(bqBuilder.build(), 10);
       assertEquals(5, hits.totalHits.value);
 
-      assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-      assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
-      assertEquals("2", searcher.doc(hits.scoreDocs[2].doc).get("id"));
-      assertEquals("3", searcher.doc(hits.scoreDocs[3].doc).get("id"));
-      assertEquals("4", searcher.doc(hits.scoreDocs[4].doc).get("id"));
+      assertEquals("0", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
+      assertEquals("1", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
+      assertEquals("2", searcher.storedFields().document(hits.scoreDocs[2].doc).get("id"));
+      assertEquals("3", searcher.storedFields().document(hits.scoreDocs[3].doc).get("id"));
+      assertEquals("4", searcher.storedFields().document(hits.scoreDocs[4].doc).get("id"));
 
       final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2}, "finalScoreFloat");
       final List<Normalizer> norms =
@@ -201,11 +201,11 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
       // rerank @ 0 should not change the order
       hits = rescorer.rescore(searcher, hits, 0);
-      assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-      assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
-      assertEquals("2", searcher.doc(hits.scoreDocs[2].doc).get("id"));
-      assertEquals("3", searcher.doc(hits.scoreDocs[3].doc).get("id"));
-      assertEquals("4", searcher.doc(hits.scoreDocs[4].doc).get("id"));
+      assertEquals("0", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
+      assertEquals("1", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
+      assertEquals("2", searcher.storedFields().document(hits.scoreDocs[2].doc).get("id"));
+      assertEquals("3", searcher.storedFields().document(hits.scoreDocs[3].doc).get("id"));
+      assertEquals("4", searcher.storedFields().document(hits.scoreDocs[4].doc).get("id"));
 
       // test rerank with different topN cuts
 
@@ -219,9 +219,14 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
         hits = rescorer.rescore(searcher, hits, topN);
         for (int i = topN - 1, j = 0; i >= 0; i--, j++) {
           if (log.isInfoEnabled()) {
-            log.info("doc {} in pos {}", searcher.doc(hits.scoreDocs[j].doc).get("id"), j);
+            log.info(
+                "doc {} in pos {}",
+                searcher.storedFields().document(hits.scoreDocs[j].doc).get("id"),
+                j);
           }
-          assertEquals(i, Integer.parseInt(searcher.doc(hits.scoreDocs[j].doc).get("id")));
+          assertEquals(
+              i,
+              Integer.parseInt(searcher.storedFields().document(hits.scoreDocs[j].doc).get("id")));
           assertEquals((i + 1) * features.size() * featureWeight, hits.scoreDocs[j].score, 0.00001);
         }
       }

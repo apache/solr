@@ -207,8 +207,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     final TopDocs docs = searcher.search(join(one("cd")), 10);
     assertEquals(2, docs.totalHits.value);
     final String pAct =
-        searcher.doc(docs.scoreDocs[0].doc).get(parent)
-            + searcher.doc(docs.scoreDocs[1].doc).get(parent);
+        searcher.storedFields().document(docs.scoreDocs[0].doc).get(parent)
+            + searcher.storedFields().document(docs.scoreDocs[1].doc).get(parent);
     assertTrue(pAct.contains(dubbed) && pAct.contains(overwritten) && pAct.length() == 2);
 
     assertQ(req("id:66", "//*[@numFound='6']"));
@@ -1028,7 +1028,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       throws IOException {
     final TopDocs docs = searcher.search(join(childTerm), 10);
     assertEquals(1, docs.totalHits.value);
-    final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent);
+    final String pAct = searcher.storedFields().document(docs.scoreDocs[0].doc).get(parent);
     assertEquals(parentExp, pAct);
   }
 
