@@ -29,17 +29,16 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 
 /**
- * This class implements an UpdateProcessorFactory for the Text Embedder Update Processor. It takes
- * in input a series of parameter that will be necessary to instantiate and use the embedder
+ * This class implements an UpdateProcessorFactory for the Text To Vector Update Processor.
  */
 public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
     private static final String INPUT_FIELD_PARAM = "inputField";
     private static final String OUTPUT_FIELD_PARAM = "outputField";
-    private static final String EMBEDDING_MODEl_NAME_PARAM = "model";
+    private static final String MODEL_NAME = "model";
 
     String inputField;
     String outputField;
-    String embeddingModelName;
+    String modelName;
     SolrParams params;
 
 
@@ -53,8 +52,8 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
             outputField = params.get(OUTPUT_FIELD_PARAM);
             checkNotNull(OUTPUT_FIELD_PARAM, outputField);
 
-            embeddingModelName = params.get(EMBEDDING_MODEl_NAME_PARAM);
-            checkNotNull(EMBEDDING_MODEl_NAME_PARAM, embeddingModelName);
+            modelName = params.get(MODEL_NAME);
+            checkNotNull(MODEL_NAME, modelName);
         }
     }
 
@@ -72,7 +71,7 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
         final SchemaField outputFieldSchema = req.getCore().getLatestSchema().getField(outputField);
         assertIsDenseVectorField(outputFieldSchema);
 
-        return new TexToVectorUpdateProcessor(inputField, outputField, embeddingModelName, req, next);
+        return new TextToVectorUpdateProcessor(inputField, outputField, modelName, req, next);
     }
 
     protected void assertIsDenseVectorField(SchemaField schemaField) {
@@ -92,7 +91,7 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
         return outputField;
     }
 
-    public String getEmbeddingModelName() {
-        return embeddingModelName;
+    public String getModelName() {
+        return modelName;
     }
 }

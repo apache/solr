@@ -22,9 +22,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.llm.TestLlmBase;
 import org.apache.solr.request.SolrQueryRequestBase;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -56,7 +54,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
 
     assertEquals("_text_", factoryToTest.getInputField());
     assertEquals("vector", factoryToTest.getOutputField());
-    assertEquals("model1", factoryToTest.getEmbeddingModelName());
+    assertEquals("model1", factoryToTest.getModelName());
   }
 
   @Test
