@@ -42,8 +42,6 @@ import org.junit.BeforeClass;
 /**
  * Tests for the field mutating update processors that parse Dates, Longs, Doubles, and Booleans.
  */
-@org.apache.solr.util.LogLevel(
-    "org.apache.solr.update.processor.ParseDateFieldUpdateProcessorFactory=DEBUG") // nocommit
 public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   private static final double EPSILON = 1E-15;
   private static final DateTimeFormatter isoDateOptionalTimeFormatter =
