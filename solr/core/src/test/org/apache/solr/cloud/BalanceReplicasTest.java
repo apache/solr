@@ -37,9 +37,9 @@ import org.apache.solr.client.api.model.BalanceReplicasRequestBody;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.junit.Before;
@@ -100,9 +100,7 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
     log.debug("### Before balancing: {}", collection);
 
     postDataAndGetResponse(
-        cluster.getSolrClient(),
-        "/api/cluster/replicas/balance",
-        new MapWriterMap(Collections.emptyMap()));
+        cluster.getSolrClient(), "/api/cluster/replicas/balance", SimpleOrderedMap.of());
 
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After balancing: {}", collection);

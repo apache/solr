@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_ST
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,7 +31,6 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -190,17 +188,13 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
         PerReplicaStates.State st = prs.get(replicaName);
         assertNotEquals(Replica.State.ACTIVE, st.state);
         @SuppressWarnings("unchecked")
-        NavigableObject rsp =
-            new MapWriterMap(
-                (Map<String, Object>)
-                    Utils.fromJSON(
-                        SolrCloudTestCase.cluster
-                            .getZkClient()
-                            .getData(
-                                DocCollection.getCollectionPath(testCollection),
-                                null,
-                                null,
-                                true)));
+        var rsp =
+            NavigableObject.wrap(
+                Utils.fromJSON(
+                    SolrCloudTestCase.cluster
+                        .getZkClient()
+                        .getData(
+                            DocCollection.getCollectionPath(testCollection), null, null, true)));
 
         assertNull(
             rsp._get(
