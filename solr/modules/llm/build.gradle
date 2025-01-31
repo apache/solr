@@ -38,6 +38,7 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation libs.junit.junit
   testImplementation libs.commonsio.commonsio
+  
 }
 
 // langchain4j has reflection issues, and requires the following permissions
