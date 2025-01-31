@@ -114,9 +114,7 @@ public abstract class RestTestBase extends SolrJettyTestBase {
       throw new RuntimeException("Exception during query", e2);
     }
   }
-
   
-  //String results = TestHarness.validateXPath(response, tests);
   /**
    * Validates a query matches some XPath test expressions
    *
