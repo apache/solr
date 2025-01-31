@@ -204,6 +204,10 @@ allprojects {
         if (project.ext.has("useSecurityManager")) {
           useSecurityManager = project.ext.get("useSecurityManager")
         }
+        // Solr does not run with the Security Mangager for Java 24+
+        if (rootProject.currentJavaVersion.compareTo(JavaVersion.VERSION_24) >= 0) {
+          useSecurityManager = false
+        }
         if (useSecurityManager) {
           def commonSolrDir = project(':solr').layout.projectDirectory
           def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
