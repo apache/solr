@@ -94,7 +94,7 @@ public final class SolrPaths {
 
   /** Asserts that a path is not a Windows UNC path */
   public static void assertNotUnc(Path pathToAssert) {
-    if (OS.isFamilyWindows() || pathToAssert.toString().startsWith("\\\\")) {
+    if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Path " + pathToAssert + " disallowed. UNC paths not supported.");

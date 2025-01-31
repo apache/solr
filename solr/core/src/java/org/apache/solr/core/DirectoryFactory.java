@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.io.file.PathUtils;
@@ -358,7 +359,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
                         && !file.equals(currentIndexDir)
                         && (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
                   })
-              .sorted()
+              .sorted(Comparator.reverseOrder())
               .toList();
     }
     ;
@@ -369,15 +370,17 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
 
     int i = 0;
     if (afterCoreReload) {
-      log.info("Will not remove most recent old directory after reload {}", dirsList.getFirst());
+      if (log.isInfoEnabled())
+        log.info("Will not remove most recent old directory after reload {}", dirsList.getFirst());
       i = 1;
     }
 
-    log.info(
-        "Found {} old index directories to clean-up under {} afterReload={}",
-        dirsList.size() - i,
-        dataDirPath,
-        afterCoreReload);
+    if (log.isInfoEnabled())
+      log.info(
+          "Found {} old index directories to clean-up under {} afterReload={}",
+          dirsList.size() - i,
+          dataDirPath,
+          afterCoreReload);
 
     dirsList.stream()
         .skip(i)

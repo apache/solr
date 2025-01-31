@@ -32,9 +32,9 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1354,17 +1354,33 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // initialize disk total / free metrics
-    Path dataDirFile = Paths.get(dataDir);
-
-    // Do not pre-compute the data directory total/usable space on initialization. Calculated when
-    // metric is fetched
-    // TODO Move metrics initialization calls to after the data directory is created to fetch true
-    // directory space on initialization
-    parentContext.gauge(() -> 0L, true, "totalSpace", Category.CORE.toString(), "fs");
-    parentContext.gauge(() -> 0L, true, "usableSpace", Category.CORE.toString(), "fs");
-
+    Path dataDirPath = Path.of(dataDir);
     parentContext.gauge(
-        () -> dataDirFile.toAbsolutePath().toString(),
+        () -> {
+          try {
+            return Files.getFileStore(dataDirPath).getTotalSpace();
+          } catch (IOException e) {
+            return 0L;
+          }
+        },
+        true,
+        "totalSpace",
+        Category.CORE.toString(),
+        "fs");
+    parentContext.gauge(
+        () -> {
+          try {
+            return Files.getFileStore(dataDirPath).getUsableSpace();
+          } catch (IOException e) {
+            return 0L;
+          }
+        },
+        true,
+        "usableSpace",
+        Category.CORE.toString(),
+        "fs");
+    parentContext.gauge(
+        () -> dataDirPath.toAbsolutePath().toString(),
         true,
         "path",
         Category.CORE.toString(),

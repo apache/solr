@@ -254,7 +254,7 @@ public class DistribFileStore implements FileStore {
     MetaData readMetaData() throws IOException {
       Path file = getRealPath(getMetaPath());
       if (Files.exists(file)) {
-        try (InputStream fis = new FileInputStream(file.toString())) {
+        try (InputStream fis = Files.newInputStream(file)) {
           return new MetaData((Map<String, Object>) Utils.fromJSON(fis));
         }
       }

@@ -353,8 +353,9 @@ public class SolrResourceLoader
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-    SolrPaths.assertNotUnc(Path.of(resource)); // Always disallow UNC paths
-
+    if (resource.trim().startsWith("\\\\")) { // Always disallow UNC paths
+      throw new SolrResourceNotFoundException("Resource '" + resource + "' could not be loaded.");
+    }
     Path instanceDir = getInstancePath().normalize();
     Path inInstanceDir = getInstancePath().resolve(resource).normalize();
     Path inConfigDir = instanceDir.resolve("conf").resolve(resource).normalize();
@@ -381,7 +382,7 @@ public class SolrResourceLoader
     if (is == null && System.getProperty("jetty.testMode") != null) {
       is =
           classLoader.getResourceAsStream(
-              ("conf/" + resource).replace(FileSystems.getDefault().getSeparator(), "/"));
+              ("conf/" + resource.replace(FileSystems.getDefault().getSeparator(), "/")));
     }
 
     if (is == null) {
