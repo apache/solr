@@ -20,12 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.index.RandomIndexWriter;
@@ -141,17 +136,15 @@ public class TestNumericTerms64 extends SolrTestCase {
         upper = a;
       }
       Query tq =
-          LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
+          LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
       TopDocs topDocs =
           searcher.search(tq, noDocs, new Sort(new SortField(field, SortField.Type.LONG, true)));
-      if (topDocs.totalHits.value == 0) continue;
+      if (topDocs.totalHits.value() == 0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      long last =
-          searcher.storedFields().document(sd[0].doc).getField(field).numericValue().longValue();
+      long last = searcher.storedFields().document(sd[0].doc).getField(field).numericValue().longValue();
       for (int j = 1; j < sd.length; j++) {
-        long act =
-            searcher.storedFields().document(sd[j].doc).getField(field).numericValue().longValue();
+        long act = searcher.storedFields().document(sd[j].doc).getField(field).numericValue().longValue();
         assertTrue("Docs should be sorted backwards", last > act);
         last = act;
       }
