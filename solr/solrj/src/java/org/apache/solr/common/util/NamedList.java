@@ -238,6 +238,15 @@ public class NamedList<T>
     return -1;
   }
 
+  /***
+   * Scans the names of the list sequentially beginning at index 0 and returns the index of the first
+   * pair with the specified name.
+   * @see #indexOf(String, int)
+   */
+  public int indexOf(String name) {
+    return indexOf(name, 0);
+  }
+
   /**
    * Gets the value for the first instance of the specified name found.
    *
@@ -403,8 +412,12 @@ public class NamedList<T>
     return asShallowMap(false);
   }
 
+  /**
+   * @deprecated use {@link SimpleOrderedMap} instead of NamedList when a Map is required.
+   */
+  @Deprecated
   public Map<String, T> asShallowMap(boolean allowDps) {
-    return new Map<String, T>() {
+    return new Map<>() {
       @Override
       public int size() {
         return NamedList.this.size();
@@ -801,7 +814,7 @@ public class NamedList<T>
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + o.getClass());
     }
 
-    if (collection.size() > 0) {
+    if (!collection.isEmpty()) {
       killAll(name);
     }
 
@@ -848,7 +861,7 @@ public class NamedList<T>
     }
   }
 
-  public void forEach(BiConsumer<String, ? super T> action) {
+  public void forEach(BiConsumer<? super String, ? super T> action) {
     int sz = size();
     for (int i = 0; i < sz; i++) {
       action.accept(getName(i), getVal(i));
