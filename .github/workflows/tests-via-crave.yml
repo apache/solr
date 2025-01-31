@@ -11,7 +11,7 @@ jobs:
     name: Run Solr Tests using Crave.io resources
 
     runs-on: self-hosted
-    timeout-minutes: 90
+    timeout-minutes: 40
 
     steps:
     - name: Destroy previous clone
