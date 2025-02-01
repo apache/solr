@@ -83,7 +83,8 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
 
     final IndexReader r = DirectoryReader.open(dir);
     try {
-      final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
+      final LeafReader ar =
+          SlowCompositeReaderWrapper.wrap(r, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
       TestUtil.checkReader(ar);
       final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field"); // bigTerms turned off
       if (SHOULD_TRIGGER) {
