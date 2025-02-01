@@ -448,7 +448,7 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing)
+  public void get(String path, Consumer<FileEntry> consumer, boolean fetchMissing)
       throws IOException {
     Path file = getRealPath(path);
     String simpleName = file.getFileName().toString();
@@ -570,7 +570,6 @@ public class DistribFileStore implements FileStore {
         @SuppressWarnings({"rawtypes"})
         List myFiles = list(path, s -> true);
         for (Object f : l) {
-          // TODO: https://issues.apache.org/jira/browse/SOLR-15426
           // l should be a List<String> and myFiles should be a List<FileDetails>, so contains
           // should always return false!
           if (!myFiles.contains(f)) {
