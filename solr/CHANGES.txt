@@ -137,7 +137,7 @@ Other Changes
 
 * SOLR-17321: Minimum Java version for Apache Solr is now 21, and for SolrJ, it is 17. (Sanjay Dutt, David Smiley)
 
-* SOLR-16903: Update CLI tools to use java.nio.file.Path instead of java.io.File (Andrey Bozhko)
+* SOLR-16903: Update CLI tools and Solr Core to use java.nio.file.Path instead of java.io.File (Andrey Bozhko, Matthew Biscocho)
 
 * SOLR-17568: SolrCloud no longer reroutes/proxies a core request to another node if not found locally. (David Smiley)
 
