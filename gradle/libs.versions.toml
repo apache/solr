@@ -65,7 +65,7 @@ benmanes-versions = "0.51.0"
 bouncycastle = "1.78.1"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
-carrot2-core = "4.5.1"
+carrot2-core = "4.6.0"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.1"
 # @keep for version alignment
