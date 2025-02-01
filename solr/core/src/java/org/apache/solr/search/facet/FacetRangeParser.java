@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.search.SyntaxError;
 
-class FacetRangeParser extends FacetParser<FacetRange> {
+abstract class FacetRangeParser extends FacetParser<FacetRange> {
   public FacetRangeParser(FacetParser<?> parent, String key) {
     super(parent, key);
     facet = new FacetRange();
