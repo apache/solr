@@ -17,8 +17,10 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
+import static org.apache.solr.cloud.api.collections.OverseerCancelMessageHandler.CANCEL_PREFIX;
 
 import java.io.IOException;
+import org.apache.solr.cloud.api.collections.OverseerCancelMessageHandler;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -110,6 +112,9 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
     // coreContainer is passed instead of configSetService as configSetService is loaded late
     final OverseerConfigSetMessageHandler configMessageHandler =
         new OverseerConfigSetMessageHandler(zkStateReader, overseer.getCoreContainer());
+
+    final OverseerCancelMessageHandler overseerCancelMessageHandler =
+        new OverseerCancelMessageHandler(shardHandlerFactory, stats, overseer);
     return new OverseerMessageHandlerSelector() {
       @Override
       public void close() throws IOException {
@@ -117,10 +122,13 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
       }
 
       @Override
-      public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
+      public OverseerMessageHandler selectOverseerMessageHandler(
+          ZkNodeProps message, OverseerTaskProcessor overseerTaskProcessor) {
         String operation = message.getStr(Overseer.QUEUE_OPERATION);
         if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
           return configMessageHandler;
+        } else if (operation != null && operation.startsWith((CANCEL_PREFIX))) {
+          return overseerCancelMessageHandler.withOverseerTaskProcessor(overseerTaskProcessor);
         }
         return collMessageHandler;
       }

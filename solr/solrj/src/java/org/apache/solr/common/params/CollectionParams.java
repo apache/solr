@@ -107,6 +107,7 @@ public interface CollectionParams {
     ADDREPLICA(true, LockLevel.SHARD),
     MOVEREPLICA(true, LockLevel.SHARD),
     OVERSEERSTATUS(false, LockLevel.NONE),
+    CANCEL(true, LockLevel.NONE),
     // For testing. Could eventually be exposed publicly if needed
     DISTRIBUTEDAPIPROCESSING(false, LockLevel.NONE),
     LIST(false, LockLevel.NONE),
