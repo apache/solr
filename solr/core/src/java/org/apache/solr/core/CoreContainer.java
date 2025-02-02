@@ -2401,9 +2401,8 @@ public class CoreContainer {
   }
 
   /** The primary path of a Solr server's config, cores, and misc things. Absolute. */
-  // TODO return Path
-  public String getSolrHomeRenamed() {
-    return solrHome.toString();
+  public Path getSolrHome() {
+    return solrHome;
   }
 
   /**
