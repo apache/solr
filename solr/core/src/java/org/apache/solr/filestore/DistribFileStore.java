@@ -80,7 +80,7 @@ public class DistribFileStore implements FileStore {
 
   public DistribFileStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    this.solrHome = Paths.get(this.coreContainer.getSolrHome());
+    this.solrHome = Paths.get(this.coreContainer.getSolrHomeRenamed());
   }
 
   @Override

@@ -788,7 +788,7 @@ public class CoreContainer {
   /** Load the cores defined for this CoreContainer */
   private void loadInternal() {
     if (log.isDebugEnabled()) {
-      log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
+      log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHomeRenamed());
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
@@ -2402,7 +2402,7 @@ public class CoreContainer {
 
   /** The primary path of a Solr server's config, cores, and misc things. Absolute. */
   // TODO return Path
-  public String getSolrHome() {
+  public String getSolrHomeRenamed() {
     return solrHome.toString();
   }
 

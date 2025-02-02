@@ -286,7 +286,7 @@ public class SolrPackageLoader implements Closeable {
             new PackageResourceLoader(
                 "PACKAGE_LOADER: " + parent.name() + ":" + version,
                 paths,
-                Paths.get(coreContainer.getSolrHome()),
+                Paths.get(coreContainer.getSolrHomeRenamed()),
                 coreContainer.getResourceLoader().getClassLoader());
       }
 

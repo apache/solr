@@ -87,7 +87,7 @@ public class ZkContainer {
     // TODO: remove after updating to an slf4j based zookeeper
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
-    String solrHome = cc.getSolrHome();
+    String solrHome = cc.getSolrHomeRenamed();
     if (zkRun != null) {
       String zkDataHome =
           System.getProperty("zkServerDataDir", Paths.get(solrHome).resolve("zoo_data").toString());

@@ -318,7 +318,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
+      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHomeRenamed()));
       String url = jetty.getBaseURLV2() + "/node/files" + path + "?sync=true";
       Object resp = Utils.executeGET(client.getHttpClient(), url, null);
       log.info("sync resp: {} was {}", url, resp);

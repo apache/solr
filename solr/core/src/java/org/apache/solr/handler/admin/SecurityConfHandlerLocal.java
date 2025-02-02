@@ -40,7 +40,7 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
 
   public SecurityConfHandlerLocal(CoreContainer coreContainer) {
     super(coreContainer);
-    securityJsonPath = Paths.get(coreContainer.getSolrHome()).resolve("security.json");
+    securityJsonPath = Paths.get(coreContainer.getSolrHomeRenamed()).resolve("security.json");
   }
 
   /**

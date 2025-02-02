@@ -58,7 +58,7 @@ public class SyntheticSolrCore extends SolrCore {
     CoreDescriptor syntheticCoreDescriptor =
         new CoreDescriptor(
             syntheticCoreName,
-            Path.of(coreContainer.getSolrHome(), syntheticCoreName),
+            Path.of(coreContainer.getSolrHomeRenamed(), syntheticCoreName),
             coreProps,
             coreContainer.getContainerProperties(),
             coreContainer.getZkController());
