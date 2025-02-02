@@ -207,7 +207,7 @@ public abstract class ConfigSetService {
       log.info(
           "bootstrapping config for {} cores into ZooKeeper using solr.xml from {}",
           cds.size(),
-          cc.getSolrHomeRenamed());
+          cc.getSolrHome());
     }
 
     for (CoreDescriptor cd : cds) {

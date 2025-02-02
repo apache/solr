@@ -95,7 +95,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     try {
 
       // instance dir & resource loader for the CC
-      assertEquals(realSolrHome.toString(), cc.getSolrHomeRenamed());
+      assertEquals(realSolrHome, cc.getSolrHome());
       assertEquals(realSolrHome, cc.getResourceLoader().getInstancePath());
 
     } finally {
@@ -983,7 +983,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // -----
     // "fix" the bad collection
-    Path confDir = Path.of(cc.getSolrHomeRenamed(), "col_bad", "conf");
+    Path confDir = cc.getSolrHome().resolve("col_bad").resolve("conf");
     Files.createDirectories(confDir);
     Files.copy(
         getFile("solr/collection1/conf/solrconfig-defaults.xml"),
@@ -1059,7 +1059,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     final long col_bad_old_start = getCoreStartTime(cc, "col_bad");
 
     Files.writeString(
-        Path.of(cc.getSolrHomeRenamed(), "col_bad", "conf", "solrconfig.xml"),
+        cc.getSolrHome().resolve("col_bad").resolve("conf").resolve("solrconfig.xml"),
         "This is giberish, not valid XML <",
         StandardCharsets.UTF_8);
 

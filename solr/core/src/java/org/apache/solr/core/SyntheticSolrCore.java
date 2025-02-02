@@ -17,7 +17,6 @@
 
 package org.apache.solr.core;
 
-import java.nio.file.Path;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -58,7 +57,7 @@ public class SyntheticSolrCore extends SolrCore {
     CoreDescriptor syntheticCoreDescriptor =
         new CoreDescriptor(
             syntheticCoreName,
-            Path.of(coreContainer.getSolrHomeRenamed(), syntheticCoreName),
+            coreContainer.getSolrHome().resolve(syntheticCoreName),
             coreProps,
             coreContainer.getContainerProperties(),
             coreContainer.getZkController());
