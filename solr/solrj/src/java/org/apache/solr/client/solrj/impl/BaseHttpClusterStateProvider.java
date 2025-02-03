@@ -21,6 +21,10 @@ import static org.apache.solr.client.solrj.SolrClient.RemoteSolrException;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -43,6 +48,7 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +57,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String urlScheme;
+  private List<URL> configuredNodes;
   volatile Set<String> liveNodes;
   long liveNodesTimestamp = 0;
   volatile Map<String, List<String>> aliases;
@@ -61,6 +68,19 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.solrj.cache.timeout.sec", 5);
 
   public void init(List<String> solrUrls) throws Exception {
+    this.configuredNodes =
+        solrUrls.stream()
+            .map(
+                (solrUrl) -> {
+                  try {
+                    return new URI(solrUrl).toURL();
+                  } catch (MalformedURLException | URISyntaxException e) {
+                    throw new IllegalArgumentException(
+                        "Failed to parse base Solr URL " + solrUrl, e);
+                  }
+                })
+            .collect(Collectors.toList());
+
     for (String solrUrl : solrUrls) {
       urlScheme = solrUrl.startsWith("https") ? "https" : "http";
       try (SolrClient initialClient = getSolrClient(solrUrl)) {
@@ -80,7 +100,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
               + "succeeded in obtaining the cluster state from none of them."
               + "If you think your Solr cluster is up and is accessible,"
               + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s) or zkHost(s).");
+              + " solrUrl(s).");
     }
   }
 
@@ -125,7 +145,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + "succeeded in obtaining the cluster state from none of them."
             + "If you think your Solr cluster is up and is accessible,"
             + " you could try re-creating a new CloudSolrClient using working"
-            + " solrUrl(s) or zkHost(s).");
+            + " solrUrl(s).");
   }
 
   @SuppressWarnings("unchecked")
@@ -216,27 +236,20 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public Set<String> getLiveNodes() {
-    if (liveNodes == null) {
-      throw new RuntimeException(
-          "We don't know of any live_nodes to fetch the"
-              + " latest live_nodes information from. "
-              + "If you think your Solr cluster is up and is accessible,"
-              + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s) or zkHost(s).");
-    }
     if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
         > getCacheTimeout()) {
-      for (String nodeName : liveNodes) {
-        String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
-        try (SolrClient client = getSolrClient(baseUrl)) {
-          Set<String> liveNodes = fetchLiveNodes(client);
-          this.liveNodes = (liveNodes);
-          liveNodesTimestamp = System.nanoTime();
-          return liveNodes;
-        } catch (Exception e) {
-          log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
-        }
-      }
+
+      if (liveNodes.stream()
+          .anyMatch((node) -> updateLiveNodes(URLUtil.getBaseUrlForNodeName(node, urlScheme))))
+        return this.liveNodes;
+
+      log.warn(
+          "Attempt to fetch cluster state from all known live nodes {} failed. Trying backup nodes",
+          liveNodes);
+
+      if (configuredNodes.stream().anyMatch((node) -> updateLiveNodes(node.toString())))
+        return this.liveNodes;
+
       throw new RuntimeException(
           "Tried fetching live_nodes using all the node names we knew of, i.e. "
               + liveNodes
@@ -244,10 +257,21 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
               + "succeeded in obtaining the cluster state from none of them."
               + "If you think your Solr cluster is up and is accessible,"
               + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s) or zkHost(s).");
+              + " solrUrl(s).");
     } else {
-      return liveNodes; // cached copy is fresh enough
+      return this.liveNodes; // cached copy is fresh enough
     }
+  }
+
+  private boolean updateLiveNodes(String liveNode) {
+    try (SolrClient client = getSolrClient(liveNode)) {
+      this.liveNodes = fetchLiveNodes(client);
+      liveNodesTimestamp = System.nanoTime();
+      return true;
+    } catch (Exception e) {
+      log.warn("Attempt to fetch cluster state from {} failed.", liveNode, e);
+    }
+    return false;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -278,7 +302,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
               + " latest aliases information from. "
               + "If you think your Solr cluster is up and is accessible,"
               + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s) or zkHost(s).");
+              + " solrUrl(s).");
     }
 
     if (forceFetch
@@ -300,7 +324,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
           if (e instanceof RemoteSolrException && ((RemoteSolrException) e).code() == 400) {
             log.warn(
                 "LISTALIASES not found, possibly using older Solr server. Aliases won't work {}",
-                "unless you re-create the CloudSolrClient using zkHost(s) or upgrade Solr server",
+                "unless you upgrade Solr server",
                 e);
             this.aliases = Collections.emptyMap();
             this.aliasProperties = Collections.emptyMap();
@@ -318,7 +342,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
               + "succeeded in obtaining the cluster state from none of them."
               + "If you think your Solr cluster is up and is accessible,"
               + " you could try re-creating a new CloudSolrClient using a working"
-              + " solrUrl or zkHost.");
+              + " solrUrl.");
     } else {
       return Collections.unmodifiableMap(this.aliases); // cached copy is fresh enough
     }
@@ -352,13 +376,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + "succeeded in obtaining the cluster state from none of them."
             + "If you think your Solr cluster is up and is accessible,"
             + " you could try re-creating a new CloudSolrClient using working"
-            + " solrUrl(s) or zkHost(s).");
+            + " solrUrl(s).");
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public Map<String, Object> getClusterProperties() {
-    // Map<String, Object> clusterPropertiesMap = new HashMap<>();
     for (String nodeName : liveNodes) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
@@ -376,7 +399,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + "succeeded in obtaining the cluster state from none of them."
             + "If you think your Solr cluster is up and is accessible,"
             + " you could try re-creating a new CloudSolrClient using working"
-            + " solrUrl(s) or zkHost(s).");
+            + " solrUrl(s).");
   }
 
   @Override

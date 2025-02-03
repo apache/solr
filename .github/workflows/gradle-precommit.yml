@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
 
     steps:
     # Setup
@@ -36,7 +36,7 @@ jobs:
       with:
         path: |
           ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('versions.lock') }}
+        key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('**/*.lockfile') }}
         restore-keys: |
           ${{ runner.os }}-gradle-precommit-
           ${{ runner.os }}-gradle-

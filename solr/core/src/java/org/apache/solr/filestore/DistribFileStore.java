@@ -18,11 +18,12 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,13 +44,16 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -80,19 +84,21 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public Path getRealpath(String path) {
+  public Path getRealPath(String path) {
     return _getRealPath(path, solrHome);
   }
 
-  private static Path _getRealPath(String path, Path solrHome) {
-    if (File.separatorChar == '\\') {
-      path = path.replace('/', File.separatorChar);
+  private static Path _getRealPath(String dir, Path solrHome) {
+    Path path = Path.of(dir);
+    SolrPaths.assertNotUnc(path);
+
+    if (path.isAbsolute()) {
+      // Strip the path of from being absolute to become relative to resolve with SolrHome
+      path = path.subpath(0, path.getNameCount());
     }
-    SolrPaths.assertNotUnc(Path.of(path));
-    while (path.startsWith(File.separator)) { // Trim all leading slashes
-      path = path.substring(1);
-    }
+
     var finalPath = getFileStoreDirPath(solrHome).resolve(path);
+
     // Guard against path traversal by asserting final path is sub path of filestore
     if (!finalPath.normalize().startsWith(getFileStoreDirPath(solrHome).normalize())) {
       throw new SolrException(BAD_REQUEST, "Illegal path " + path);
@@ -111,7 +117,7 @@ public class DistribFileStore implements FileStore {
 
     ByteBuffer getFileData(boolean validate) throws IOException {
       if (fileData == null) {
-        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealpath(path)));
+        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealPath(path)));
       }
       return fileData;
     }
@@ -136,7 +142,7 @@ public class DistribFileStore implements FileStore {
     }
 
     public boolean exists(boolean validateContent, boolean fetchMissing) throws IOException {
-      Path file = getRealpath(path);
+      Path file = getRealPath(path);
       if (!Files.exists(file)) {
         if (fetchMissing) {
           return fetchFromAnyNode();
@@ -166,7 +172,7 @@ public class DistribFileStore implements FileStore {
 
     private void deleteFile() {
       try {
-        IOUtils.deleteFilesIfExist(getRealpath(path), getRealpath(getMetaPath()));
+        IOUtils.deleteFilesIfExist(getRealPath(path), getRealPath(getMetaPath()));
       } catch (IOException e) {
         log.error("Unable to delete files: {}", path);
       }
@@ -178,25 +184,33 @@ public class DistribFileStore implements FileStore {
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(fromNode);
       if (baseUrl == null) throw new SolrException(BAD_REQUEST, "No such node");
 
-      ByteBuffer metadata = null;
-      Map<?, ?> m = null;
+      ByteBuffer metadata;
+      Map<?, ?> m;
+
+      InputStream is = null;
+      var solrClient = coreContainer.getDefaultHttpSolrClient();
+
       try {
+        GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + getMetaPath());
+        request.setResponseParser(new InputStreamResponseParser(null));
+        var response = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
+        is = (InputStream) response.get("stream");
         metadata =
-            Utils.executeGET(
-                coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-                baseUrl + "/node/files" + getMetaPath(),
-                Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+            Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
         m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
-      } catch (SolrException e) {
+      } catch (SolrServerException | IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
+      } finally {
+        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
 
       try {
+        GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + path);
+        request.setResponseParser(new InputStreamResponseParser(null));
+        var response = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
+        is = (InputStream) response.get("stream");
         ByteBuffer filedata =
-            Utils.executeGET(
-                coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-                baseUrl + "/node/files" + path,
-                Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+            Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
         filedata.mark();
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
         String expected = (String) m.get("sha512");
@@ -207,10 +221,12 @@ public class DistribFileStore implements FileStore {
         filedata.reset();
         persistToFile(filedata, metadata);
         return true;
-      } catch (SolrException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
+      } catch (SolrServerException e) {
+        throw new SolrException(SERVER_ERROR, "Error fetching data", e);
       } catch (IOException ioe) {
         throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
+      } finally {
+        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
     }
 
@@ -221,17 +237,18 @@ public class DistribFileStore implements FileStore {
         try {
           String baseUrl =
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
-          String reqUrl = baseUrl + "/node/files" + path + "?meta=true&wt=javabin&omitHeader=true";
+          final var solrParams = new ModifiableSolrParams();
+          solrParams.add("meta", "true");
+          solrParams.add("omitHeader", "true");
+
+          final var request = new GenericSolrRequest(GET, "/node/files" + path, solrParams);
           boolean nodeHasBlob = false;
-          Object nl =
-              Utils.executeGET(
-                  coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-                  reqUrl,
-                  Utils.JAVABINCONSUMER);
-          if (Utils.getObjectByPath(nl, false, Arrays.asList("files", path)) != null) {
+          var solrClient = coreContainer.getDefaultHttpSolrClient();
+          var resp = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
+
+          if (Utils.getObjectByPath(resp, false, Arrays.asList("files", path)) != null) {
             nodeHasBlob = true;
           }
-
           if (nodeHasBlob) {
             boolean success = fetchFileFromNodeAndPersist(liveNode);
             if (success) return true;
@@ -245,14 +262,14 @@ public class DistribFileStore implements FileStore {
     }
 
     public Path realPath() {
-      return getRealpath(path);
+      return getRealPath(path);
     }
 
     @SuppressWarnings("unchecked")
     MetaData readMetaData() throws IOException {
-      File file = getRealpath(getMetaPath()).toFile();
-      if (file.exists()) {
-        try (InputStream fis = new FileInputStream(file)) {
+      Path file = getRealPath(getMetaPath());
+      if (Files.exists(file)) {
+        try (InputStream fis = Files.newInputStream(file)) {
           return new MetaData((Map<String, Object>) Utils.fromJSON(fis));
         }
       }
@@ -344,16 +361,16 @@ public class DistribFileStore implements FileStore {
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
+    String getFrom = "";
     try {
       for (String node : nodes) {
         String baseUrl =
             coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-        String url = baseUrl + "/node/files" + info.path + "?getFrom=";
         if (i < FETCHFROM_SRC) {
           // this is to protect very large clusters from overwhelming a single node
           // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
           // it's there in  the memory now. So , it must be served fast
-          url += myNodeName;
+          getFrom = myNodeName;
         } else {
           if (i == FETCHFROM_SRC) {
             // This is just an optimization
@@ -367,11 +384,16 @@ public class DistribFileStore implements FileStore {
           // trying to avoid the thundering herd problem when there are a very large no:of nodes
           // others should try to fetch it from any node where it is available. By now,
           // almost FETCHFROM_SRC other nodes may have it
-          url += "*";
+          getFrom = "*";
         }
         try {
+          var solrClient = coreContainer.getDefaultHttpSolrClient();
+          var solrParams = new ModifiableSolrParams();
+          solrParams.set("getFrom", getFrom);
+
+          var request = new GenericSolrRequest(GET, "/node/files" + info.path, solrParams);
           // fire and forget
-          Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
+          solrClient.requestWithBaseUrl(baseUrl, request::process);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception
@@ -428,10 +450,10 @@ public class DistribFileStore implements FileStore {
   @Override
   public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing)
       throws IOException {
-    File file = getRealpath(path).toFile();
-    String simpleName = file.getName();
+    Path file = getRealPath(path);
+    String simpleName = file.getFileName().toString();
     if (isMetaDataFile(simpleName)) {
-      try (InputStream is = new FileInputStream(file)) {
+      try (InputStream is = Files.newInputStream(file)) {
         consumer.accept(
             new FileEntry(null, null, path) {
               // no metadata for metadata file
@@ -459,24 +481,26 @@ public class DistribFileStore implements FileStore {
 
   @Override
   public List<FileDetails> list(String path, Predicate<String> predicate) {
-    File file = getRealpath(path).toFile();
+    Path file = getRealPath(path);
     List<FileDetails> fileDetails = new ArrayList<>();
     FileType type = getType(path, false);
     if (type == FileType.DIRECTORY) {
-      file.list(
-          (dir, name) -> {
-            if (predicate == null || predicate.test(name)) {
-              if (!isMetaDataFile(name)) {
-                fileDetails.add(new FileInfo(path + "/" + name).getDetails());
+      try (Stream<Path> fileStream = Files.list(file)) {
+        fileStream.forEach(
+            (f) -> {
+              String fileName = f.getFileName().toString();
+              if (predicate == null || predicate.test(fileName)) {
+                if (!isMetaDataFile(fileName)) {
+                  fileDetails.add(new FileInfo(path + "/" + fileName).getDetails());
+                }
               }
-            }
-            return false;
-          });
-
+            });
+      } catch (IOException e) {
+        throw new SolrException(SERVER_ERROR, "Error listing files from provided path " + path, e);
+      }
     } else if (type == FileType.FILE) {
       fileDetails.add(new FileInfo(path).getDetails());
     }
-
     return fileDetails;
   }
 
@@ -484,14 +508,26 @@ public class DistribFileStore implements FileStore {
   public void delete(String path) {
     deleteLocal(path);
     List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
-    HttpClient client = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
+
+    final var solrParams = new ModifiableSolrParams();
+    solrParams.add("localDelete", "true");
+    final var solrRequest = new GenericSolrRequest(DELETE, "/cluster/files" + path, solrParams);
+
     for (String node : nodes) {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-      String url = baseUrl + "/cluster/files" + path + "?localDelete=true";
-      HttpDelete del = new HttpDelete(url);
-      // invoke delete command on all nodes asynchronously
-      coreContainer.runAsync(() -> Utils.executeHttpMethod(client, url, null, del));
+      try {
+        var solrClient = coreContainer.getDefaultHttpSolrClient();
+        // invoke delete command on all nodes asynchronously
+        solrClient.requestWithBaseUrl(baseUrl, client -> client.requestAsync(solrRequest));
+      } catch (SolrServerException | IOException e) {
+        // Note: This catch block will not handle failures from the asynchronous request,
+        // as requestAsync returns immediately and does not propagate remote exceptions.
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to delete " + path + " on node " + node,
+            e);
+      }
     }
   }
 
@@ -550,19 +586,19 @@ public class DistribFileStore implements FileStore {
 
   @Override
   public FileType getType(String path, boolean fetchMissing) {
-    File file = getRealpath(path).toFile();
-    if (!file.exists() && fetchMissing) {
+    Path file = getRealPath(path);
+    if (!Files.exists(file) && fetchMissing) {
       if (fetch(path, null)) {
-        file = getRealpath(path).toFile();
+        file = getRealPath(path);
       }
     }
     return _getFileType(file);
   }
 
-  public static FileType _getFileType(File file) {
-    if (!file.exists()) return FileType.NOFILE;
-    if (file.isDirectory()) return FileType.DIRECTORY;
-    return isMetaDataFile(file.getName()) ? FileType.METADATA : FileType.FILE;
+  public static FileType _getFileType(Path file) {
+    if (!Files.exists(file)) return FileType.NOFILE;
+    if (Files.isDirectory(file)) return FileType.DIRECTORY;
+    return isMetaDataFile(file.getFileName().toString()) ? FileType.METADATA : FileType.FILE;
   }
 
   public static boolean isMetaDataFile(String file) {
@@ -620,13 +656,20 @@ public class DistribFileStore implements FileStore {
   private static Map<String, byte[]> _getKeys(Path solrHome) throws IOException {
     Map<String, byte[]> result = new HashMap<>();
     Path keysDir = _getRealPath(ClusterFileStore.KEYS_DIR, solrHome);
-
-    File[] keyFiles = keysDir.toFile().listFiles();
-    if (keyFiles == null) return result;
-    for (File keyFile : keyFiles) {
-      if (keyFile.isFile() && !isMetaDataFile(keyFile.getName())) {
-        result.put(keyFile.getName(), Files.readAllBytes(keyFile.toPath()));
-      }
+    try (Stream<Path> fileStream = Files.list(keysDir)) {
+      fileStream.forEach(
+          (keyFile) -> {
+            if (Files.isRegularFile(keyFile) && !isMetaDataFile(keyFile.getFileName().toString())) {
+              try {
+                result.put(keyFile.getFileName().toString(), Files.readAllBytes(keyFile));
+              } catch (IOException e) {
+                throw new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "Unable to read all bytes file: " + keyFile.getFileName(),
+                    e);
+              }
+            }
+          });
     }
     return result;
   }
