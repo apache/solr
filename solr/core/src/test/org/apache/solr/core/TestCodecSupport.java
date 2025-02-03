@@ -242,7 +242,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
         config.get("codecFactory").attr("class"));
     assertTrue(
         "Unexpected configuration of codec factory for this test. Expecting empty element",
-        config.get("codecFactory").getAll(null, Set.of()).isEmpty());
+        config.get("codecFactory").getAll(null, null).isEmpty());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();
