@@ -95,7 +95,7 @@ IF NOT DEFINED SOLR_SSL_RELOAD_ENABLED (
 )
 
 REM Enable java security manager by default for Java 23 and before (limiting filesystem access and other things)
-IF !JAVA_MAJOR_VERSION! GEQ "24" (
+IF !JAVA_MAJOR_VERSION! GEQ 24 (
   set SOLR_SECURITY_MANAGER_ENABLED=false
 )
 IF NOT DEFINED SOLR_SECURITY_MANAGER_ENABLED (
