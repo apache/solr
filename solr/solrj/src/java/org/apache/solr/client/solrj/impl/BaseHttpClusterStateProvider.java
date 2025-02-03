@@ -29,7 +29,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -163,11 +162,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
     Map<String, DocCollection> collStateByName =
         CollectionUtil.newLinkedHashMap(collectionsMap.size());
-    for (Entry<String, Map<String, Object>> entry : collectionsMap.entrySet()) {
-      collStateByName.put(
-          entry.getKey(), getDocCollectionFromObjects(entry.getKey(), entry.getValue()));
-    }
-
+    collectionsMap.forEach(
+        (key, value) -> collStateByName.put(key, getDocCollectionFromObjects(key, value)));
     return new ClusterState(this.liveNodes, collStateByName);
   }
 
