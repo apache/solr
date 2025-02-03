@@ -209,7 +209,7 @@ public class ClusterStatus {
       }
     }
 
-    if (solrVersion.greaterThanOrEqualTo(SolrVersion.valueOf("9.9.0"))) {
+    if (solrVersion == null || solrVersion.greaterThanOrEqualTo(SolrVersion.valueOf("9.9.0"))) {
       MapWriter collectionPropsWriter =
           ew -> {
             collectionStream.forEach(

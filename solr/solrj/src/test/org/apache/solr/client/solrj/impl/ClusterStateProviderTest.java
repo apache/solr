@@ -201,8 +201,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testClusterStateProviderBackwardCompatability()
-      throws SolrServerException, IOException {
+  public void testClusterStateProviderOldVersion() throws SolrServerException, IOException {
     CollectionAdminRequest.setClusterProperty("ext.foo", "bar").process(cluster.getSolrClient());
     createCollection("col1");
     createCollection("col2");
@@ -217,6 +216,35 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
               new HttpField(
                   HttpHeader.USER_AGENT,
                   "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + "9.8.0"));
+
+      assertThat(cspHttp.getCollection("col1"), equalTo(cspZk.getCollection("col1")));
+
+      final var clusterStateZk = cspZk.getClusterState();
+      final var clusterStateHttp = cspHttp.getClusterState();
+      assertThat(
+          clusterStateHttp.getLiveNodes(),
+          containsInAnyOrder(clusterStateHttp.getLiveNodes().toArray()));
+      assertEquals(2, clusterStateZk.size());
+      assertEquals(clusterStateZk.size(), clusterStateHttp.size());
+      assertThat(
+          clusterStateHttp.collectionStream().toList(),
+          containsInAnyOrder(clusterStateHttp.collectionStream().toArray()));
+
+      assertThat(
+          clusterStateZk.getCollection("col2"), equalTo(clusterStateHttp.getCollection("col2")));
+    }
+  }
+
+  @Test
+  public void testClusterStateProviderEmptySolrVersion() throws SolrServerException, IOException {
+    CollectionAdminRequest.setClusterProperty("ext.foo", "bar").process(cluster.getSolrClient());
+    createCollection("col1");
+    createCollection("col2");
+
+    try (var cspZk = zkClientClusterStateProvider();
+        var cspHttp = http2ClusterStateProvider()) {
+
+      cspHttp.getHttpClient().getHttpClient().setUserAgentField(null);
 
       assertThat(cspHttp.getCollection("col1"), equalTo(cspZk.getCollection("col1")));
 
