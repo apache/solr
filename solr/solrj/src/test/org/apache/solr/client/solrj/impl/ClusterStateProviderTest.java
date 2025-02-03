@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.List;
@@ -36,6 +37,8 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -135,7 +138,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     try (ClusterStateProvider provider = createClusterStateProvider()) {
 
       ClusterState.CollectionRef collectionRef = provider.getState("testGetState");
-
       DocCollection docCollection = collectionRef.get();
       assertNotNull(docCollection);
       assertEquals(
@@ -159,7 +161,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     NamedList<Object> response = clusterStatusResponse.getResponse();
 
     NamedList<Object> cluster = (NamedList<Object>) response.get("cluster");
-    NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+    Map<String, Object> collections = (Map<String, Object>) cluster.get("collections");
     Map<String, Object> collection = (Map<String, Object>) collections.get(collectionName);
     return Instant.ofEpochMilli((long) collection.get("creationTimeMillis"));
   }
@@ -179,6 +181,42 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       assertThat(
           cspZk.getClusterProperties().entrySet(),
           containsInAnyOrder(cspHttp.getClusterProperties().entrySet().toArray()));
+
+      assertThat(cspHttp.getCollection("col1"), equalTo(cspZk.getCollection("col1")));
+
+      final var clusterStateZk = cspZk.getClusterState();
+      final var clusterStateHttp = cspHttp.getClusterState();
+      assertThat(
+          clusterStateHttp.getLiveNodes(),
+          containsInAnyOrder(clusterStateHttp.getLiveNodes().toArray()));
+      assertEquals(2, clusterStateZk.size());
+      assertEquals(clusterStateZk.size(), clusterStateHttp.size());
+      assertThat(
+          clusterStateHttp.collectionStream().toList(),
+          containsInAnyOrder(clusterStateHttp.collectionStream().toArray()));
+
+      assertThat(
+          clusterStateZk.getCollection("col2"), equalTo(clusterStateHttp.getCollection("col2")));
+    }
+  }
+
+  @Test
+  public void testClusterStateProviderBackwardCompatability()
+      throws SolrServerException, IOException {
+    CollectionAdminRequest.setClusterProperty("ext.foo", "bar").process(cluster.getSolrClient());
+    createCollection("col1");
+    createCollection("col2");
+
+    try (var cspZk = zkClientClusterStateProvider();
+        var cspHttp = http2ClusterStateProvider()) {
+      // SolrJ < version 9.9.0 for non streamed response
+      cspHttp
+          .getHttpClient()
+          .getHttpClient()
+          .setUserAgentField(
+              new HttpField(
+                  HttpHeader.USER_AGENT,
+                  "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + "9.8.0"));
 
       assertThat(cspHttp.getCollection("col1"), equalTo(cspZk.getCollection("col1")));
 
