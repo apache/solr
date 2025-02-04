@@ -99,7 +99,13 @@ like when using it with "classpath [dependency]" or for version alignment.
 
 The next you want to update the lockfiles file using the following command:
 
-gradlew resolveAndLockAll
+gradlew resolveAndLockAll --write-locks
+
+Starting in Solr 10, we also have to update a kotlin-js-store lockfile
+that is used by the new Admin UI WebAssembly target. This can be done by
+running:
+
+gradlew kotlinUpgradeYarnLock
 
 Since we are responsible to provide and maintain the versions of
 libraries, the lock file will reflect the versions of the version

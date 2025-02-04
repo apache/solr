@@ -26,16 +26,18 @@ Read the https://github.com/apache/solr/blob/main/help/dependencies.txt[help/dep
 explanation of how dependencies are managed.
 
 == Manual dependency upgrades
-In order to upgrade a dependency, you need to run through a number of steps:
+To upgrade a dependency, you need to run through a number of steps:
 
 1. Identify the available versions from e.g. https://search.maven.org[Maven Central]
 2. Update the version in `gradle/libs.versions.toml` file
-3. Run `./gradlew resolveAndLockAll` to re-generate lockfiles. Note that this may cause a cascading effect where
-   the locked version of other dependencies also change.
-4. In case of a conflict, resolve the conflict according to `help/dependencies.txt`
-5. Update the license and notice files of the changed dependencies. See `help/dependencies.txt` for details.
-6. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
-7. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
+3. Run `./gradlew resolveAndLockAll --write-locks` to re-generate lockfiles. Note that this may cause a cascading effect
+   where the locked version of other dependencies also changes.
+4. Run `./gradlew kotlinUpgradeYarnLock` to update the kotlin-js-store lockfile used for the new UI.
+   Most of the cases it will not have any changes.
+5. In case of a conflict, resolve the conflict according to `help/dependencies.txt`
+6. Update the license and notice files of the changed dependencies. See `help/dependencies.txt` for details.
+7. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
+8. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
    You'll need to decide whether to keep or exclude them. See `help/dependencies.txt` for details.
 
 === Constraints and Version Alignment

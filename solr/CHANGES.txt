@@ -14,6 +14,9 @@ New Features
 
 * SOLR-14673: Solr CLI now has bin/solr stream tool that executates streaming expressions via command line, either locally or on solr cluster. (Eric Pugh)
 
+* SOLR-14414: Introduce a new, experimental Admin UI that can be used aside the current Admin UI. The new module is
+  loaded together with the existing Admin UI and available under the URL path /solr/compose. (Christos Malliaridis)
+
 Improvements
 ---------------------
 

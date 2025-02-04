@@ -1,0 +1,144 @@
+= Testing and Deployment
+
+== Testing
+
+Thanks to the abstraction and separation of concerns, UI and logic can be tested and previewed
+independently and in combination.
+
+=== Composable Previews
+
+In the local environment, you can use the
+https://plugins.jetbrains.com/plugin/16541-compose-multiplatform-ide-support[Compose Multiplatform plugin]
+for IntelliJ to render previews in the IDE. These previews are stored in `desktopMain` and
+are simple composables marked with `@Preview`.
+
+Note that UI component previews come with many limitations. They work only with static data,
+have limited interaction support and do not have an environment context. They are only useful
+for previewing how a component will be rendered with fake data, so bear that in mind while
+using previews.
+
+=== Execution
+
+You can always run the new UI as a standalone client or in web. When working on the UI,
+the web is not very flexible, as you have to stop any running Solr instance, build the entire
+project, and then restart the Solr instance. There are options to launch the web UI separately,
+but you will likely run into CORS issues.
+
+For this reason, it is recommended to always use the JVM client for development and have a Solr
+instance running in the background. This way, you can apply changes and restart the UI without
+restarting the Solr server.
+
+To launch the JVM client, you can use:
+
+[source,bash]
+----
+./gradlew :solr:ui:run
+----
+
+To run the app on the web, you can launch the web target with:
+
+[source,bash]
+----
+# not recommended for the above reasons
+./gradlew :solr:ui:wasmJsBrowserRun
+----
+
+Build times may be a bit longer than with the standalone JVM build.
+
+=== Integration Tests
+
+The integration tests of the module focus on testing the implementation found in
+`org.apache.solr.ui.views`. That includes all UI elements / composables. Integration tests
+may test entire flows as well, but require a suitable testing environment.
+
+Since UI tests require a more complex and platform-specific testing environment, they are disabled
+by default in the automation pipelines, and only unit tests are executed. Once we have meaningful
+UI tests and a suitable testing environment for them, we may run these tests in the pipelines.
+
+=== Unit Tests
+
+Unit tests test the implementation found in `org.apache.solr.ui.components`. That package
+includes the logical part of the new UI and does not have any constraints to the UI part.
+Therefore, they can be executed in the automation pipelines easily.
+
+The unit tests use mocks for the API and test mainly the behavior and state changes of the
+components to confirm correct component state transitions with specific inputs.
+
+== Deployment
+
+The `ui` module is configured to build artifacts for `WebAssembly` and `JVM`.
+
+=== Packaging
+
+The module `ui` can be built and packaged for two targets (wasmJs / JVM) with two
+variants each, development and production.
+
+To package the JVM target for development and generate a distribution (DEB, MSI or DMG file),
+you can use:
+
+[source,bash]
+----
+./gradlew :solr:ui:packageDistributionForCurrentOS
+----
+
+The distribution can be found at `solr/ui/build/compose/binaries/main/[deb|msi|dmg]/`.
+
+To build the JVM target for production, you can use:
+
+[source,bash]
+----
+./gradlew :solr:ui:packageReleaseDistributionForCurrentOS
+----
+
+Platform-specific gradle tasks exist as well, but you cannot build for a
+platform other than the current one.
+
+If the client machine has Java installed, you can also generate an UberJar:
+
+[source,bash]
+----
+# for development
+./gradlew :solr:ui:packageUberJarForCurrentOs
+
+# for production
+./gradlew :solr:ui:packageReleaseUberJarForCurrentOs
+----
+
+When building the entire Solr project, the wasmJs target is included in the build artifacts.
+If no configuration is provided, it will automatically use the development variant. This is
+the default configuration to avoid any long-lasting production builds in the automation pipelines.
+To tell the build process to use the production variant instead, you have ot pass
+`production=true` in the `gradle.properties`.
+
+=== Targets
+
+==== wasmJs
+
+The WebAssembly (wasmJs) target is used to generate artifacts that can be hosted together
+with our current webapp. The `server` that hosts the webapp is configured to host the new UI
+as a module that is available under the URL path `/solr/ui`.
+
+For that, two configuration files are added, one for development (`jetty-new-ui-dev.xml`) and
+one for production (`jetty-new-ui.xml`). The module configuration for development is less strict,
+as it enables specific debugging options important for development.
+
+When packaging the project for production, the development configuration is replaced with the
+more secure production configuration.
+
+Like other modules, the new UI is enabled with the jetty module parameter `--module=new-ui`.
+When using the Solr CLI, users can disable the new UI with
+`SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED=true` or by disabling the entire UI with
+`SOLR_ADMIN_UI_DISABLED=true`.
+
+==== JVM
+
+The JVM target packages the UI into a standalone desktop application. This allows the execution
+on all JVM-supported platforms, including Windows, Linux and MacOS.
+
+=== Artifacts
+
+The wasmJs artifacts are shipped with new Solr releases starting at v10. Therefore, wasmJs
+artifacts have relatively longer release cycles compared to the JVM artifacts.
+
+The JVM artifacts are shipped independently of Solr releases to allow more frequent
+releases during the experimental phase. They are generated and published on GitHub.

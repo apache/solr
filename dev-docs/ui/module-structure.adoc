@@ -1,0 +1,84 @@
+= Module Structure and Elements
+
+== Module Structure
+
+The `ui` module follows a quite simple structure. It is split in
+
+- *components*, which covers the logic part of the frontend and therefore contains
+the interfaces and implementations of them,
+- the *UI* part, which covers the visual elements, styling and everything related to UI, and
+- the *utils*, which contains various utilities used in both UI and logic.
+
+In general, both UI and logic of the frontend are separated in "components" that follow similar,
+if not the same, structure and files.
+
+== Components (Logic)
+
+The logical part of a simple component (`org/apache/solr/ui/components`) usually consists of:
+
+- **The component interface** (`[ComponentName]Component.kt`), that defines the UI state and the
+interaction options,
+
+- **The store interface** (`store/[ComponentName]Store.kt`), that defines the (Solr) API state,
+intents for interacting with the state and optional labels (fire-and-forget events),
+
+- **The store provider** (`store/[ComponentName]StoreProvider.kt`), that defines an API client
+interface that is used for making requests against the Solr API by consuming intents,
+updates the state and publishes labels,
+
+- **The implementations** (`integration/*`), including component-specific mappings
+(`integration/Mappers.kt`) and interface implementations (like
+`integration/[Variant][ComponentName]Component.kt`),
+
+- **Component-specific data classes** (`domain/*`), that are used only by the UI module
+
+- **Component-specific API classes** (`data/*`), that are used for representing API requests /
+responses.
+
+Some components may use multiple stores to consume different API endpoints or no store at all
+if no API interaction is necessary. Multiple components may also be used to simplify the complexity
+or separate the responsibilities into smaller UI elements.
+
+Component data classes for API and internal use may also be merged and used interchangeably to
+reduce overall complexity. However, this affects the separation of concerns and may require
+in a later state the separation and mapping again.
+
+This structure is strongly inspired by Decompose's https://arkivanov.github.io/Decompose/samples/[samples].
+
+== User Interface (UI)
+
+Similar to the logical part, the UI classes are also separated in components under
+`org.apache.solr.ui.views`.
+
+Components may consist of one or multiple composables that make up a screen, section or
+element. The composables may also be reused, which is why they may be moved at some point
+during development to `.ui.components`.
+
+Some vector assets like logos may be migrated to `ImageVector` and placed in `.ui.icons`
+to later be used in the UI.
+
+Theme-related classes, functions and variables are all placed inside `.ui.theme`. The UI
+is making strong use of and customizes Material 3. You can find more information about
+Compose and Material 3 at https://m3.material.io/develop/android/jetpack-compose[Material Design - Jetpack Compose].
+
+Composables may accept a component interface and be stateful, or simply hoist the entire
+state via parameters and be stateless. For more information about state hoisting,
+you can have a look at https://developer.android.com/develop/ui/compose/state[Managing state].
+
+=== Compose Resources
+
+Compose Resources are similar to assets in a web app and can be found at
+`commonMain/composeResources`. They contain files like fonts, translations, images,
+raw files and more.
+
+The resource directories can use "qualifiers" that allow files to have variants.
+The most common use case is having translations for any text loaded. The directory
+`values/strings.xml` is the default / fallback strings resource file, that holds all values
+in english. If we would like to add translations for german now, we could use
+`values-de/strings.xml` and translate individual strings to german. Any string that is used
+and has no translation will automatically fall back to the value stored in `values/strings.xml`.
+
+At the moment of writing, the language, theme and density qualifier are supported.
+
+For more information about Compose Resources, see
+https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-images-resources.html[Multiplatform Resources].
