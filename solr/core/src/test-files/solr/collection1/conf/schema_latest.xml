@@ -729,6 +729,8 @@
   <fieldType name="currency" class="solr.CurrencyField" precisionStep="8" defaultCurrency="USD"
              currencyConfig="currency.xml"/>
 
+  <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <field name="severity_mv" type="severityType" indexed="true" stored="true" multiValued="true" docValues="true" />
 
   <!-- some examples for different languages (generally ordered by ISO code) -->
   <!-- REMOVED.  these reference things not in the test config, like lang/stopwords_en.txt -->
