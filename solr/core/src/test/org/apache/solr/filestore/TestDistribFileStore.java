@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -115,7 +116,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       assertResponseValues(
           10,
           cluster.getSolrClient(),
-          new V2Request.Builder("/node/files/package/mypkg/v1.0")
+          new V2Request.Builder("/cluster/filestore/metadata/package/mypkg/v1.0")
               .withMethod(SolrRequest.METHOD.GET)
               .build(),
           Map.of(
@@ -128,7 +129,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       assertResponseValues(
           10,
           cluster.getSolrClient(),
-          new V2Request.Builder("/node/files/package/mypkg")
+          new V2Request.Builder("/cluster/filestore/metadata/package/mypkg")
               .withMethod(SolrRequest.METHOD.GET)
               .build(),
           Map.of(
@@ -169,7 +170,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
                   });
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
         String baseUrl = jettySolrRunner.getBaseURLV2().toString();
-        String url = baseUrl + "/node/files/package/mypkg/v1.0?wt=javabin";
+        String url = baseUrl + "/cluster/filestore/metadata/package/mypkg/v1.0?wt=javabin";
         assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
       }
       // Delete Jars
@@ -197,7 +198,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseURLV2().toString();
-      String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
+      String url = baseUrl + "/cluster/filestore/metadata" + path + "?wt=javabin";
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 
       if (verifyContent) {
@@ -205,7 +206,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
           ByteBuffer buf =
               Utils.executeGET(
                   solrClient.getHttpClient(),
-                  baseUrl + "/node/files" + path,
+                  baseUrl + "/cluster/filestore/files" + path,
                   Utils.newBytesConsumer(Integer.MAX_VALUE));
           assertEquals(
               "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
@@ -320,9 +321,10 @@ public class TestDistribFileStore extends SolrCloudTestCase {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
       PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
-      String url = jetty.getBaseURLV2() + "/node/files" + path + "?sync=true";
-      Object resp = Utils.executeGET(client.getHttpClient(), url, null);
-      log.info("sync resp: {} was {}", url, resp);
+
+      final var syncReq = new FileStoreApi.SyncFile(path);
+      final var syncRsp = syncReq.process(client);
+      log.info("sync resp for path {} was {}", path, syncRsp.getParsed().responseHeader.status);
     }
     checkAllNodesForFile(
         cluster,

@@ -88,10 +88,9 @@ The metadata file stores the sha512 and signatures of the jar files too.
 
 The end points are:
 
-* `PUT /api/cluster/filestore/files/{full/path/to/file}` in each node
-* `GET /api/node/files/{full/path/to/file}` to download the file
-* `GET /api/node/files/{full/path/to/file}?meta=true` get the metadata of the file
-* `GET /api/node/files/{full/path/to/}` get the list of files in `/full/path/to`
+* `PUT /api/cluster/filestore/files/{full/path/to/file}` to upload a new file and add it to the file store
+* `GET /api/cluster/filestore/files/{full/path/to/file}` to download a file already in the filestore
+* `GET /api/cluster/filestore/metadata/{full/path/to/file}` to get the metadata of a particular file, or a list of files available in a directory
 
 === Signing Your Artifacts
 
@@ -122,7 +121,7 @@ curl --data-binary @runtimelibs.jar -X PUT  http://localhost:8983/api/cluster/fi
 +
 [source, bash]
 ----
-curl http://localhost:8983/api/node/files/mypkg/1.0?omitHeader=true
+curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/1.0?omitHeader=true
 ----
 +
 [source, json]
@@ -335,7 +334,7 @@ curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/f
 +
 [source, bash]
 ----
-curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
+curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/2.0?omitHeader=true
 ----
 +
 [source, json]

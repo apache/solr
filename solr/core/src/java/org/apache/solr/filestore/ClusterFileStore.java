@@ -155,6 +155,11 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
   public SolrJerseyResponse getFile(String path) {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+
+    // TODO NOCOMMIT - This codepath needs a getType() == NOFILE check similar to what NodeFileStore
+    // had previously.  Not sure what the correct behavior here should be.  We should probably
+    // return 404 on a bad path, but that's inconsistent with the previous behavior that returned a
+    // 200 with a hint in the response.
     attachFileToResponse(path, fileStore, req, rsp);
     return response;
   }
