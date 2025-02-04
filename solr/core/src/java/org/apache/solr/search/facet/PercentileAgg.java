@@ -355,8 +355,7 @@ public class PercentileAgg extends SimpleAggValueSource {
         digests[slot] = digest = new AVLTreeDigest(100);
       }
       long ord;
-      for (int o=0; o<values.docValueCount(); o++) {
-        ord = values.nextOrd();
+      while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         BytesRef term = values.lookupOrd(ord);
         Object obj = sf.getType().toObject(sf, term);
         double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();

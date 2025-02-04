@@ -224,7 +224,8 @@ public class SolrFeature extends Feature {
       }
     }
 
-    public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
+    @Override
+    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       Scorer solrScorer = solrQueryWeight.scorer(context);
       if (solrScorer == null) {
         return null;

@@ -833,8 +833,8 @@ public class TestFieldValueFeature extends TestRerankBase {
       }
 
       @Override
-      public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
-        FeatureScorer scorer = super.featureScorer(context);
+      public FeatureScorer scorer(LeafReaderContext context) throws IOException {
+        FeatureScorer scorer = super.scorer(context);
         usedScorerClass = scorer.getClass().getName();
         return scorer;
       }

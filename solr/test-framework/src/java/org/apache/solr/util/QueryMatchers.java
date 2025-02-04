@@ -138,14 +138,14 @@ public class QueryMatchers {
       protected boolean matchesSafely(BooleanClause item, Description mismatchDescription) {
         boolean match = true;
         mismatchDescription.appendText("was a BooleanClause ");
-        if (occur != item.occur()) {
+        if (occur != item.getOccur()) {
           match = false;
-          mismatchDescription.appendText("that " + item.occur().name() + " occur ");
+          mismatchDescription.appendText("that " + item.getOccur().name() + " occur ");
         }
-        if (!query.matches(item.query())) {
+        if (!query.matches(item.getQuery())) {
           match = false;
-          mismatchDescription.appendText("with " + item.query());
-          query.describeMismatch(item.query(), mismatchDescription);
+          mismatchDescription.appendText("with " + item.getQuery());
+          query.describeMismatch(item.getQuery(), mismatchDescription);
         }
         return match;
       }

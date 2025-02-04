@@ -56,7 +56,6 @@ import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
-import org.apache.lucene.util.automaton.RegExp;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
@@ -460,7 +459,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (clauses.size() > 0 && conj == CONJ_AND) {
       BooleanClause c = clauses.get(clauses.size() - 1);
       if (!c.isProhibited())
-        clauses.set(clauses.size() - 1, new BooleanClause(c.query(), BooleanClause.Occur.MUST));
+        clauses.set(clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.MUST));
     }
 
     if (clauses.size() > 0 && operator == AND_OPERATOR && conj == CONJ_OR) {
@@ -471,7 +470,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       BooleanClause c = clauses.get(clauses.size() - 1);
       if (!c.isProhibited())
         clauses.set(
-            clauses.size() - 1, new BooleanClause(c.query(), BooleanClause.Occur.SHOULD));
+            clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.SHOULD));
     }
 
     // We might have been passed a null query; the term might have been
@@ -599,8 +598,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @return new RegexpQuery instance
    */
   protected Query newRegexpQuery(Term regexp) {
+    RegexpQuery query = new RegexpQuery(regexp);
     SchemaField sf = schema.getField(regexp.field());
-    return new RegexpQuery(regexp, RegExp.ALL, 0, RegexpQuery.DEFAULT_PROVIDER, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT, sf.getType().getRewriteMethod(parser, sf));
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    return query;
   }
 
   @Override
@@ -629,7 +630,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<>(terms.length);
         for (TermAndBoost term : terms) {
-          currPosnClauses.add(newTermQuery(new Term(field, term.term()), term.boost()));
+          currPosnClauses.add(newTermQuery(new Term(field, term.term), term.boost));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
@@ -637,7 +638,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (TermAndBoost term : terms) {
           builder.add(
-              newTermQuery(new Term(field, term.term()), term.boost()), BooleanClause.Occur.SHOULD);
+              newTermQuery(new Term(field, term.term), term.boost), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:
@@ -680,8 +681,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @return new WildcardQuery instance
    */
   protected Query newWildcardQuery(Term t) {
+    WildcardQuery query = new WildcardQuery(t);
     SchemaField sf = schema.getField(t.field());
-    return new WildcardQuery(t, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT, sf.getType().getRewriteMethod(parser, sf));
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    return query;
   }
 
   /**
@@ -705,8 +708,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     boolean onlyRawQueries = true;
     int allRawQueriesTermCount = 0;
     for (BooleanClause clause : clauses) {
-      if (clause.query() instanceof RawQuery) {
-        allRawQueriesTermCount += ((RawQuery) clause.query()).getTermCount();
+      if (clause.getQuery() instanceof RawQuery) {
+        allRawQueriesTermCount += ((RawQuery) clause.getQuery()).getTermCount();
       } else {
         onlyRawQueries = false;
       }
@@ -718,12 +721,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     Map<SchemaField, List<RawQuery>> fmap = new HashMap<>();
 
     for (BooleanClause clause : clauses) {
-      Query subq = clause.query();
+      Query subq = clause.getQuery();
       if (subq instanceof RawQuery) {
-        if (clause.occur() != BooleanClause.Occur.SHOULD) {
+        if (clause.getOccur() != BooleanClause.Occur.SHOULD) {
           // We only collect optional terms for set queries.  Since this isn't optional,
           // convert the raw query to a normal query and handle as usual.
-          clause = new BooleanClause(rawToNormal(subq), clause.occur());
+          clause = new BooleanClause(rawToNormal(subq), clause.getOccur());
         } else {
           // Optional raw query.
           RawQuery rawq = (RawQuery) subq;
@@ -746,7 +749,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             continue;
           }
 
-          clause = new BooleanClause(rawToNormal(subq), clause.occur());
+          clause = new BooleanClause(rawToNormal(subq), clause.getOccur());
         }
       }
 
@@ -808,8 +811,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     BooleanQuery bq = QueryUtils.build(booleanBuilder, parser);
     if (bq.clauses().size() == 1) { // Unwrap single SHOULD query
       BooleanClause clause = bq.clauses().iterator().next();
-      if (clause.occur() == BooleanClause.Occur.SHOULD) {
-        return clause.query();
+      if (clause.getOccur() == BooleanClause.Occur.SHOULD) {
+        return clause.getQuery();
       }
     }
     return bq;
@@ -1290,7 +1293,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (factory != null) {
       Term term = new Term(field, termStr);
       // fsa representing the query
-      Automaton automaton = WildcardQuery.toAutomaton(term, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
+      Automaton automaton = WildcardQuery.toAutomaton(term);
       // TODO: we should likely use the automaton to calculate shouldReverse, too.
       if (factory.shouldReverse(termStr)) {
         automaton = Operations.concatenate(automaton, Automata.makeChar(factory.getMarkerChar()));

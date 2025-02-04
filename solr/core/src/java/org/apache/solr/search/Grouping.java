@@ -26,11 +26,26 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.CachingCollector;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
+import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
@@ -91,6 +106,7 @@ public class Grouping {
   private int maxMatches; // max number of matches from any grouping command
   private float maxScore = Float.NaN; // max score seen in any doclist
   private boolean signalCacheWarning = false;
+  private TimeLimitingCollector timeLimitingCollector;
 
   // output if one of the grouping commands should be used as the main result.
   public DocList mainResult;
@@ -293,10 +309,7 @@ public class Grouping {
     qr.setDocListAndSet(out);
 
     SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilterList());
-
-    final Query filterQuery = pf.filter == null ?
-            new MatchAllDocsQuery() :
-            pf.filter;
+    final Query filterQuery = pf.filter;
     maxDoc = searcher.maxDoc();
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
@@ -425,7 +438,32 @@ public class Grouping {
    */
   private void searchWithTimeLimiter(final Query filterQuery, Collector collector)
       throws IOException {
-    searcher.search(filterQuery, collector);
+    if (cmd.getTimeAllowed() > 0) {
+      if (timeLimitingCollector == null) {
+        timeLimitingCollector =
+            new TimeLimitingCollector(
+                collector, TimeLimitingCollector.getGlobalCounter(), cmd.getTimeAllowed());
+      } else {
+        /*
+         * This is so the same timer can be used for grouping's multiple phases.
+         * We don't want to create a new TimeLimitingCollector for each phase because that would
+         * reset the timer for each phase.  If time runs out during the first phase, the
+         * second phase should timeout quickly.
+         */
+        timeLimitingCollector.setCollector(collector);
+      }
+      collector = timeLimitingCollector;
+    }
+    try {
+      searcher.search(QueryUtils.combineQueryAndFilter(query, filterQuery), collector);
+    } catch (TimeLimitingCollector.TimeExceededException
+        | ExitableDirectoryReader.ExitingReaderException x) {
+      // INFO log the (possibly quite long) query object separately
+      log.info("Query: {}; ", query);
+      // to make WARN logged exception content more visible
+      log.warn("Query: {}; ", query.getClass().getName(), x);
+      qr.setPartialResults(true);
+    }
   }
 
   /**
@@ -566,7 +604,7 @@ public class Grouping {
     protected void populateScoresIfNecessary() throws IOException {
       if (needScores) {
         for (GroupDocs<?> groups : result.groups) {
-          TopFieldCollector.populateScores(groups.scoreDocs(), searcher, query);
+          TopFieldCollector.populateScores(groups.scoreDocs, searcher, query);
         }
       }
     }
@@ -586,8 +624,8 @@ public class Grouping {
     }
 
     protected DocList getDocList(GroupDocs<?> groups) {
-      assert groups.totalHits().relation() == TotalHits.Relation.EQUAL_TO;
-      int max = Math.toIntExact(groups.totalHits().value());
+      assert groups.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+      int max = Math.toIntExact(groups.totalHits.value);
       int off = groupOffset;
       int len = docsPerGroup;
       if (format == Format.simple) {
@@ -597,16 +635,16 @@ public class Grouping {
       int docsToCollect = getMax(off, len, max);
 
       // TODO: implement a DocList impl that doesn't need to start at offset=0
-      int docsCollected = Math.min(docsToCollect, groups.scoreDocs().length);
+      int docsCollected = Math.min(docsToCollect, groups.scoreDocs.length);
 
       int ids[] = new int[docsCollected];
       float[] scores = needScores ? new float[docsCollected] : null;
       for (int i = 0; i < ids.length; i++) {
-        ids[i] = groups.scoreDocs()[i].doc;
-        if (scores != null) scores[i] = groups.scoreDocs()[i].score;
+        ids[i] = groups.scoreDocs[i].doc;
+        if (scores != null) scores[i] = groups.scoreDocs[i].score;
       }
 
-      float score = groups.maxScore();
+      float score = groups.maxScore;
       maxScore = maxAvoidNaN(score, maxScore);
       DocSlice docs =
           new DocSlice(
@@ -614,7 +652,7 @@ public class Grouping {
               Math.max(0, ids.length - off),
               ids,
               scores,
-              groups.totalHits().value(),
+              groups.totalHits.value,
               score,
               TotalHits.Relation.EQUAL_TO);
 
@@ -643,9 +681,9 @@ public class Grouping {
 
       outer:
       for (GroupDocs<T> group : groups) {
-        maxScore = maxAvoidNaN(maxScore, group.maxScore());
+        maxScore = maxAvoidNaN(maxScore, group.maxScore);
 
-        for (ScoreDoc scoreDoc : group.scoreDocs()) {
+        for (ScoreDoc scoreDoc : group.scoreDocs) {
           if (docsGathered >= docsToGather) {
             break outer;
           }
@@ -806,20 +844,20 @@ public class Grouping {
         // To keep the response format compatable with trunk.
         // In trunk MutableValue can convert an indexed value to its native type. E.g. string to int
         // The only option I currently see is the use the FieldType for this
-        if (group.groupValue() != null) {
+        if (group.groupValue != null) {
           SchemaField schemaField = searcher.getSchema().getField(groupBy);
           FieldType fieldType = schemaField.getType();
           // use createFields so that fields having doc values are also supported
           // TODO: currently, this path is called only for string field, so
           // should we just use fieldType.toObject(schemaField, group.groupValue) here?
-          List<IndexableField> fields = schemaField.createFields(group.groupValue().utf8ToString());
+          List<IndexableField> fields = schemaField.createFields(group.groupValue.utf8ToString());
           if (fields != null && !fields.isEmpty()) {
             nl.add("groupValue", fieldType.toObject(fields.get(0)));
           } else {
             throw new SolrException(
                 ErrorCode.INVALID_STATE,
                 "Couldn't create schema field for grouping, group value: "
-                    + group.groupValue().utf8ToString()
+                    + group.groupValue.utf8ToString()
                     + ", field: "
                     + schemaField);
           }
@@ -868,11 +906,14 @@ public class Grouping {
       Collector subCollector;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         subCollector =
-            topCollector = new TopScoreDocCollectorManager(groupDocsToCollect, Integer.MAX_VALUE).newCollector();
+            topCollector =
+                new TopScoreDocCollectorManager(groupDocsToCollect, Integer.MAX_VALUE)
+                    .newCollector();
       } else {
         topCollector =
             new TopFieldCollectorManager(
-                searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE).newCollector();
+                    searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE)
+                .newCollector();
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();
           subCollector = MultiCollector.wrap(topCollector, maxScoreCollector);
@@ -1033,7 +1074,7 @@ public class Grouping {
       for (GroupDocs<MutableValue> group : result.groups) {
         NamedList<Object> nl = new SimpleOrderedMap<>();
         groupList.add(nl); // grouped={ key={ groups=[ {
-        nl.add("groupValue", group.groupValue().toObject());
+        nl.add("groupValue", group.groupValue.toObject());
         addDocList(nl, group);
       }
     }

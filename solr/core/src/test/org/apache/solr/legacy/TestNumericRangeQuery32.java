@@ -20,7 +20,16 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.index.RandomIndexWriter;
@@ -153,7 +162,8 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     String field = "field" + precisionStep;
     int count = 3000;
     int lower = (distance * 3 / 2) + startOffset, upper = lower + count * distance + (distance / 3);
-    LegacyNumericRangeQuery<Integer> q;
+    LegacyNumericRangeQuery<Integer> q =
+        LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
     for (byte i = 0; i < 2; i++) {
       TopFieldCollector collector =
           new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, Integer.MAX_VALUE).newCollector();
@@ -161,11 +171,11 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
       switch (i) {
         case 0:
           type = " (constant score filter rewrite)";
-          q = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+          q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
           break;
         case 1:
           type = " (constant score boolean rewrite)";
-          q = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
+          q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
           break;
         default:
           return;
@@ -175,12 +185,12 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       assertEquals("Score doc count" + type, count, sd.length);
-      Document doc = searcher.storedFields().document(sd[0].doc);
+      Document doc = searcher.doc(sd[0].doc);
       assertEquals(
           "First doc" + type,
           2 * distance + startOffset,
           doc.getField(field).numericValue().intValue());
-      doc = searcher.storedFields().document(sd[sd.length - 1].doc);
+      doc = searcher.doc(sd[sd.length - 1].doc);
       assertEquals(
           "Last doc" + type,
           (1 + count) * distance + startOffset,
@@ -206,7 +216,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
   @Test
   public void testOneMatchQuery() throws Exception {
     LegacyNumericRangeQuery<Integer> q =
-        LegacyNumericRangeQuery.newIntRange("ascfield8", 8, 1000, 1000, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+        LegacyNumericRangeQuery.newIntRange("ascfield8", 8, 1000, 1000, true, true);
     TopDocs topDocs = searcher.search(q, noDocs);
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
@@ -218,27 +228,27 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     int count = 3000;
     int upper = (count - 1) * distance + (distance / 3) + startOffset;
     LegacyNumericRangeQuery<Integer> q =
-        LegacyNumericRangeQuery.newIntRange(field, precisionStep, null, upper, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+        LegacyNumericRangeQuery.newIntRange(field, precisionStep, null, upper, true, true);
     TopDocs topDocs = searcher.search(q, noDocs, Sort.INDEXORDER);
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length);
-    Document doc = searcher.storedFields().document(sd[0].doc);
+    Document doc = searcher.doc(sd[0].doc);
     assertEquals("First doc", startOffset, doc.getField(field).numericValue().intValue());
-    doc = searcher.storedFields().document(sd[sd.length - 1].doc);
+    doc = searcher.doc(sd[sd.length - 1].doc);
     assertEquals(
         "Last doc",
         (count - 1) * distance + startOffset,
         doc.getField(field).numericValue().intValue());
 
-    q = LegacyNumericRangeQuery.newIntRange(field, precisionStep, null, upper, false, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+    q = LegacyNumericRangeQuery.newIntRange(field, precisionStep, null, upper, false, true);
     topDocs = searcher.search(q, noDocs, Sort.INDEXORDER);
     sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length);
-    doc = searcher.storedFields().document(sd[0].doc);
+    doc = searcher.doc(sd[0].doc);
     assertEquals("First doc", startOffset, doc.getField(field).numericValue().intValue());
-    doc = searcher.storedFields().document(sd[sd.length - 1].doc);
+    doc = searcher.doc(sd[sd.length - 1].doc);
     assertEquals(
         "Last doc",
         (count - 1) * distance + startOffset,
@@ -265,7 +275,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     int count = 3000;
     int lower = (count - 1) * distance + (distance / 3) + startOffset;
     LegacyNumericRangeQuery<Integer> q =
-        LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+        LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, true);
     TopFieldCollector collector =
         new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, Integer.MAX_VALUE).newCollector();
     searcher.search(q, collector);
@@ -273,26 +283,27 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs - count, sd.length);
-    Document doc = searcher.storedFields().document(sd[0].doc);
+    Document doc = searcher.doc(sd[0].doc);
     assertEquals(
         "First doc", count * distance + startOffset, doc.getField(field).numericValue().intValue());
-    doc = searcher.storedFields().document(sd[sd.length - 1].doc);
+    doc = searcher.doc(sd[sd.length - 1].doc);
     assertEquals(
         "Last doc",
         (noDocs - 1) * distance + startOffset,
         doc.getField(field).numericValue().intValue());
 
-    q = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, false, MultiTermQuery.CONSTANT_SCORE_REWRITE);
-    collector = new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, Integer.MAX_VALUE).newCollector();
+    q = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, false);
+    collector =
+        new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, Integer.MAX_VALUE).newCollector();
     searcher.search(q, collector);
     topDocs = collector.topDocs();
     sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs - count, sd.length);
-    doc = searcher.storedFields().document(sd[0].doc);
+    doc = searcher.doc(sd[0].doc);
     assertEquals(
         "First doc", count * distance + startOffset, doc.getField(field).numericValue().intValue());
-    doc = searcher.storedFields().document(sd[sd.length - 1].doc);
+    doc = searcher.doc(sd[sd.length - 1].doc);
     assertEquals(
         "Last doc",
         (noDocs - 1) * distance + startOffset,
@@ -408,41 +419,42 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
       }
       // test inclusive range
       Query tq =
-          LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
-      TopScoreDocCollector collector = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+          LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
+      TopScoreDocCollector collector =
+          new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
       searcher.search(tq, collector);
       TopDocs tTopDocs = collector.topDocs();
       assertEquals(
           "Returned count of range query must be equal to inclusive range length",
           upper - lower + 1,
-          tTopDocs.totalHits.value());
+          tTopDocs.totalHits.value);
       // test exclusive range
-      tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, false, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+      tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, false);
       collector = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals(
           "Returned count of range query must be equal to exclusive range length",
           Math.max(upper - lower - 1, 0),
-          tTopDocs.totalHits.value());
+          tTopDocs.totalHits.value);
       // test left exclusive range
-      tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+      tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, true);
       collector = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals(
           "Returned count of range query must be equal to half exclusive range length",
           upper - lower,
-          tTopDocs.totalHits.value());
+          tTopDocs.totalHits.value);
       // test right exclusive range
-      tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, false, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+      tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, false);
       collector = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals(
           "Returned count of range query must be equal to half exclusive range length",
           upper - lower,
-          tTopDocs.totalHits.value());
+          tTopDocs.totalHits.value);
     }
   }
 
@@ -474,13 +486,14 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
             NumericUtils.sortableIntToFloat(upper),
             true,
             true);
-    TopScoreDocCollector collector = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+    TopScoreDocCollector collector =
+        new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
     searcher.search(tq, collector);
     TopDocs tTopDocs = collector.topDocs();
     assertEquals(
         "Returned count of range query must be equal to inclusive range length",
         upper - lower + 1,
-        tTopDocs.totalHits.value());
+        tTopDocs.totalHits.value);
   }
 
   @Test
@@ -500,41 +513,41 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
 
   @Test
   public void testEqualsAndHash() {
-    QueryUtils.checkHashEquals(LegacyNumericRangeQuery.newIntRange("test1", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+    QueryUtils.checkHashEquals(LegacyNumericRangeQuery.newIntRange("test1", 4, 10, 20, true, true));
     QueryUtils.checkHashEquals(
-        LegacyNumericRangeQuery.newIntRange("test2", 4, 10, 20, false, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test2", 4, 10, 20, false, true));
     QueryUtils.checkHashEquals(
-        LegacyNumericRangeQuery.newIntRange("test3", 4, 10, 20, true, false, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test3", 4, 10, 20, true, false));
     QueryUtils.checkHashEquals(
-        LegacyNumericRangeQuery.newIntRange("test4", 4, 10, 20, false, false, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test4", 4, 10, 20, false, false));
     QueryUtils.checkHashEquals(
-        LegacyNumericRangeQuery.newIntRange("test5", 4, 10, null, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test5", 4, 10, null, true, true));
     QueryUtils.checkHashEquals(
-        LegacyNumericRangeQuery.newIntRange("test6", 4, null, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test6", 4, null, 20, true, true));
     QueryUtils.checkHashEquals(
-        LegacyNumericRangeQuery.newIntRange("test7", 4, null, null, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test7", 4, null, null, true, true));
     QueryUtils.checkEqual(
-        LegacyNumericRangeQuery.newIntRange("test8", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE),
-        LegacyNumericRangeQuery.newIntRange("test8", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test8", 4, 10, 20, true, true),
+        LegacyNumericRangeQuery.newIntRange("test8", 4, 10, 20, true, true));
     QueryUtils.checkUnequal(
-        LegacyNumericRangeQuery.newIntRange("test9", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE),
-        LegacyNumericRangeQuery.newIntRange("test9", 8, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test9", 4, 10, 20, true, true),
+        LegacyNumericRangeQuery.newIntRange("test9", 8, 10, 20, true, true));
     QueryUtils.checkUnequal(
-        LegacyNumericRangeQuery.newIntRange("test10a", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE),
-        LegacyNumericRangeQuery.newIntRange("test10b", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test10a", 4, 10, 20, true, true),
+        LegacyNumericRangeQuery.newIntRange("test10b", 4, 10, 20, true, true));
     QueryUtils.checkUnequal(
-        LegacyNumericRangeQuery.newIntRange("test11", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE),
-        LegacyNumericRangeQuery.newIntRange("test11", 4, 20, 10, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test11", 4, 10, 20, true, true),
+        LegacyNumericRangeQuery.newIntRange("test11", 4, 20, 10, true, true));
     QueryUtils.checkUnequal(
-        LegacyNumericRangeQuery.newIntRange("test12", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE),
-        LegacyNumericRangeQuery.newIntRange("test12", 4, 10, 20, false, true, MultiTermQuery.CONSTANT_SCORE_REWRITE));
+        LegacyNumericRangeQuery.newIntRange("test12", 4, 10, 20, true, true),
+        LegacyNumericRangeQuery.newIntRange("test12", 4, 10, 20, false, true));
     QueryUtils.checkUnequal(
-        LegacyNumericRangeQuery.newIntRange("test13", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE),
+        LegacyNumericRangeQuery.newIntRange("test13", 4, 10, 20, true, true),
         LegacyNumericRangeQuery.newFloatRange("test13", 4, 10f, 20f, true, true));
     // the following produces a hash collision, because Long and Integer have the same hashcode, so
     // only test equality:
-    Query q1 = LegacyNumericRangeQuery.newIntRange("test14", 4, 10, 20, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
-    Query q2 = LegacyNumericRangeQuery.newLongRange("test14", 4, 10L, 20L, true, true, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+    Query q1 = LegacyNumericRangeQuery.newIntRange("test14", 4, 10, 20, true, true);
+    Query q2 = LegacyNumericRangeQuery.newLongRange("test14", 4, 10L, 20L, true, true);
     assertNotEquals(q1, q2);
     assertNotEquals(q2, q1);
   }

@@ -40,14 +40,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -467,7 +465,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         Explanation e = ltrScoringModel.getNormalizerExplanation(explanations[f.getIndex()], idx);
         featureExplanations.add(e);
       }
-      final ModelScorer bs = modelScorer(context);
+      final ModelScorer bs = scorer(context);
       bs.iterator().advance(doc);
 
       final float finalScore = bs.score();
@@ -487,16 +485,12 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     @Override
-    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-      return new SolrDefaultScorerSupplier(modelScorer(context));
-    }
-
-    public ModelScorer modelScorer(LeafReaderContext context) throws IOException {
+    public ModelScorer scorer(LeafReaderContext context) throws IOException {
 
       final List<Feature.FeatureWeight.FeatureScorer> featureScorers =
           new ArrayList<Feature.FeatureWeight.FeatureScorer>(extractedFeatureWeights.length);
       for (final Feature.FeatureWeight featureWeight : extractedFeatureWeights) {
-        final Feature.FeatureWeight.FeatureScorer scorer = featureWeight.featureScorer(context);
+        final Feature.FeatureWeight.FeatureScorer scorer = featureWeight.scorer(context);
         if (scorer != null) {
           featureScorers.add(scorer);
         }
@@ -524,6 +518,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       }
 
       public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+        super(weight);
         docInfo = new DocInfo();
         for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
           subScorer.setDocInfo(docInfo);
@@ -569,13 +564,14 @@ public class LTRScoringQuery extends Query implements Accountable {
         private int activeDoc = -1;
 
         private SparseModelScorer(
-            Weight unusedWeight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+            Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+          super(weight);
           if (featureScorers.size() <= 1) {
             throw new IllegalArgumentException("There must be at least 2 subScorers");
           }
           subScorers = new DisiPriorityQueue(featureScorers.size());
           for (final Scorer scorer : featureScorers) {
-            final DisiWrapper w = new DisiWrapper(scorer, false /* impacts */);
+            final DisiWrapper w = new DisiWrapper(scorer);
             subScorers.add(w);
           }
 
@@ -598,9 +594,8 @@ public class LTRScoringQuery extends Query implements Accountable {
           reset();
           if (activeDoc == targetDoc) {
             for (DisiWrapper w = topList; w != null; w = w.next) {
-              final Feature.FeatureWeight.FeatureScorer subScorer =
-                  (Feature.FeatureWeight.FeatureScorer) w.scorer;
-              Feature.FeatureWeight scFW = subScorer.getWeight();
+              final Scorer subScorer = w.scorer;
+              Feature.FeatureWeight scFW = (Feature.FeatureWeight) subScorer.getWeight();
               final int featureId = scFW.getIndex();
               featuresInfo[featureId].setValue(subScorer.score());
               featuresInfo[featureId].setUsed(true);
@@ -667,7 +662,8 @@ public class LTRScoringQuery extends Query implements Accountable {
         private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
         private DenseModelScorer(
-            Weight unusedWeight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+            Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
+          super(weight);
           this.featureScorers = featureScorers;
         }
 
@@ -684,9 +680,7 @@ public class LTRScoringQuery extends Query implements Accountable {
             for (final Scorer scorer : featureScorers) {
               if (scorer.docID() == activeDoc) {
                 freq++;
-                Feature.FeatureWeight.FeatureScorer featureScorer =
-                    (Feature.FeatureWeight.FeatureScorer) scorer;
-                Feature.FeatureWeight scFW = featureScorer.getWeight();
+                Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
                 final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setValue(scorer.score());
                 featuresInfo[featureId].setUsed(true);

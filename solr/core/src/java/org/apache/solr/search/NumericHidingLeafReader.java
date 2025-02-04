@@ -19,8 +19,15 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.solr.uninverting.UninvertingReader;
 
 /**
@@ -56,12 +63,11 @@ public class NumericHidingLeafReader extends FilterLeafReader {
             new FieldInfo(
                 fi.name,
                 fi.number,
-                fi.hasTermVectors(),
+                fi.hasVectors(),
                 fi.omitsNorms(),
                 fi.hasPayloads(),
                 fi.getIndexOptions(),
                 DocValuesType.NONE,
-                DocValuesSkipIndexType.NONE,
                 -1,
                 Collections.emptyMap(),
                 fi.getPointDimensionCount(),

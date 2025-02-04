@@ -307,7 +307,7 @@ public class JettySolrRunner {
         configuration.addCustomizer(customizer);
         HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
 
-        if (config.onlyHttp1) {
+        if (config.onlyHttp1 || !Constants.JRE_IS_MINIMUM_JAVA9) {
           connector =
               new ServerConnector(
                   server,

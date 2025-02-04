@@ -47,9 +47,9 @@ public final class WrappedQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Query rewrite(IndexSearcher searcher) throws IOException {
+  public Query rewrite(IndexReader reader) throws IOException {
     // currently no need to continue wrapping at this point.
-    return q.rewrite(searcher);
+    return q.rewrite(reader);
   }
 
   @Override

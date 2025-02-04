@@ -324,13 +324,12 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
     if (blockCacheFileTypes != null && !isCachableFile(name)) {
       return false;
     }
-    switch (context.context()) {
+    switch (context.context) {
         // depending on params, we don't cache on merges or when only reading once
       case MERGE:
         {
           return cacheMerges;
         }
-        /* TODO
       case READ:
         {
           if (context.readOnce) {
@@ -339,7 +338,6 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
             return true;
           }
         }
-        */
       default:
         {
           return true;
@@ -357,7 +355,7 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
     if (blockCacheFileTypes != null && !isCachableFile(name)) {
       return false;
     }
-    switch (context.context()) {
+    switch (context.context) {
       case MERGE:
         {
           // we currently don't cache any merge context writes

@@ -113,7 +113,8 @@ public class FieldLengthFeature extends Feature {
       super(FieldLengthFeature.this, searcher, request, originalQuery, efi);
     }
 
-    public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
+    @Override
+    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       NumericDocValues norms = context.reader().getNormValues(field);
       if (norms == null) {
         return new ValueFeatureScorer(

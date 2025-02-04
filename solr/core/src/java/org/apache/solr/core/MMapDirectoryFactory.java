@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MMapDirectory;
@@ -35,6 +34,8 @@ import org.slf4j.LoggerFactory;
  * <p>Can set the following parameters:
  *
  * <ul>
+ *   <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}
+ *   <li>preload -- See {@link MMapDirectory#setPreload(boolean)}
  *   <li>maxChunkSize -- The Max chunk size. See {@link MMapDirectory#MMapDirectory(Path,
  *       LockFactory, long)}
  * </ul>
@@ -65,7 +66,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
       throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
-    mapDirectory.setPreload((s, ioContext) -> preload);
+    mapDirectory.setPreload(preload);
     return mapDirectory;
   }
 }

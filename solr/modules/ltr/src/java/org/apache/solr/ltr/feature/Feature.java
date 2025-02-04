@@ -26,7 +26,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -34,7 +33,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
-import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
@@ -269,12 +267,8 @@ public abstract class Feature extends Query implements Accountable {
       return Feature.this.getDefaultValue();
     }
 
-    public abstract FeatureScorer featureScorer(LeafReaderContext context) throws IOException;
-
     @Override
-    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-      return new SolrDefaultScorerSupplier(featureScorer(context));
-    }
+    public abstract FeatureScorer scorer(LeafReaderContext context) throws IOException;
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
@@ -283,7 +277,7 @@ public abstract class Feature extends Query implements Accountable {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      final FeatureScorer r = featureScorer(context);
+      final FeatureScorer r = scorer(context);
       float score = getDefaultValue();
       if (r != null) {
         r.iterator().advance(doc);
@@ -312,11 +306,10 @@ public abstract class Feature extends Query implements Accountable {
 
       protected final String name;
       private DocInfo docInfo;
-      private final Feature.FeatureWeight weight;
       protected final DocIdSetIterator itr;
 
       public FeatureScorer(Feature.FeatureWeight weight, DocIdSetIterator itr) {
-        this.weight = weight;
+        super(weight);
         this.itr = itr;
         name = weight.getName();
         docInfo = null;
@@ -337,10 +330,6 @@ public abstract class Feature extends Query implements Accountable {
       @Override
       public int docID() {
         return itr.docID();
-      }
-
-      public Feature.FeatureWeight getWeight() {
-        return weight;
       }
 
       @Override

@@ -25,7 +25,18 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.FilterDirectoryReader;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
@@ -274,12 +285,11 @@ public class UninvertingReader extends FilterLeafReader {
             new FieldInfo(
                 fi.name,
                 fi.number,
-                fi.hasTermVectors(),
+                fi.hasVectors(),
                 fi.omitsNorms(),
                 fi.hasPayloads(),
                 fi.getIndexOptions(),
                 type,
-                DocValuesSkipIndexType.NONE,
                 fi.getDocValuesGen(),
                 fi.attributes(),
                 fi.getPointDimensionCount(),

@@ -23,8 +23,18 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.solr.SolrTestCase;
@@ -115,7 +125,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value());
+    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
 
     // Now search w/ a Query which returns a null Scorer
     DocSetQuery f = new DocSetQuery(DocSet.empty());
@@ -125,7 +135,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
             .add(new MatchAllDocsQuery(), Occur.MUST)
             .add(f, Occur.FILTER)
             .build();
-    assertEquals(0, searcher.search(filtered, 10).totalHits.value());
+    assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }
@@ -141,7 +151,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value());
+    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
 
     // Now search w/ a Query which returns a null Scorer
     Query f =
@@ -156,7 +166,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
               }
 
               @Override
-              public ScorerSupplier scorerSupplier(LeafReaderContext leafReaderContext) {
+              public Scorer scorer(LeafReaderContext leafReaderContext) {
                 return null;
               }
 
@@ -191,7 +201,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
             .add(new MatchAllDocsQuery(), Occur.MUST)
             .add(f, Occur.FILTER)
             .build();
-    assertEquals(0, searcher.search(filtered, 10).totalHits.value());
+    assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }

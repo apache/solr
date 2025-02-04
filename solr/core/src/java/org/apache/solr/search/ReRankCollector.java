@@ -24,7 +24,18 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Rescorer;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.QueryElevationComponent;
@@ -76,12 +87,15 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     if (sort == null) {
       this.sort = null;
       this.mainCollector =
-          new TopScoreDocCollectorManager(Math.max(this.reRankDocs, length), cmd.getMinExactCount()).newCollector();
+          new TopScoreDocCollectorManager(Math.max(this.reRankDocs, length), cmd.getMinExactCount())
+              .newCollector();
     } else {
       this.sort = sort = sort.rewrite(searcher);
       // scores are needed for Rescorer (regardless of whether sort needs it)
       this.mainCollector =
-          new TopFieldCollectorManager(sort, Math.max(this.reRankDocs, length), cmd.getMinExactCount()).newCollector();
+          new TopFieldCollectorManager(
+                  sort, Math.max(this.reRankDocs, length), cmd.getMinExactCount())
+              .newCollector();
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -109,7 +123,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       TopDocs mainDocs = mainCollector.topDocs(0, Math.max(reRankDocs, length));
 
-      if (mainDocs.totalHits.value() == 0 || mainDocs.scoreDocs.length == 0) {
+      if (mainDocs.totalHits.value == 0 || mainDocs.scoreDocs.length == 0) {
         return mainDocs;
       }
 

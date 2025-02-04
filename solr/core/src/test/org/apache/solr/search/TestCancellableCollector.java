@@ -27,7 +27,16 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -88,7 +97,8 @@ public class TestCancellableCollector extends SolrTestCase {
 
   private CancellableCollector buildCancellableCollector(
       final int numHits, boolean delayStart, boolean delayCollection) {
-    TopScoreDocCollector topScoreDocCollector = new TopScoreDocCollectorManager(numHits, null, 1).newCollector();
+    TopScoreDocCollector topScoreDocCollector =
+        new TopScoreDocCollectorManager(numHits, null, 1).newCollector();
     CancellableCollector collector = new CancellableCollector(topScoreDocCollector);
 
     return new DummyCancellableCollector(collector, delayStart, delayCollection);
@@ -106,7 +116,7 @@ public class TestCancellableCollector extends SolrTestCase {
     TopScoreDocCollector topScoreDocCollector =
         (TopScoreDocCollector) internalCancellableCollector.getInternalCollector();
 
-    assertEquals(topDocs.totalHits.value(), topScoreDocCollector.getTotalHits());
+    assertEquals(topDocs.totalHits.value, topScoreDocCollector.getTotalHits());
   }
 
   private void cancelQuery(CancellableCollector cancellableCollector) {

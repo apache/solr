@@ -30,6 +30,7 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
@@ -244,6 +245,12 @@ public class CommandHandler {
    */
   private void searchWithTimeLimiter(Query query, ProcessedFilter filter, Collector collector)
       throws IOException {
+    if (queryCommand.getTimeAllowed() > 0) {
+      collector =
+          new TimeLimitingCollector(
+              collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
+    }
+
     TotalHitCountCollector hitCountCollector = new TotalHitCountCollector();
     if (includeHitCount) {
       collector = MultiCollector.wrap(collector, hitCountCollector);
@@ -258,7 +265,8 @@ public class CommandHandler {
 
     try {
       searcher.search(query, collector);
-    } catch (ExitableDirectoryReader.ExitingReaderException x) {
+    } catch (TimeLimitingCollector.TimeExceededException
+        | ExitableDirectoryReader.ExitingReaderException x) {
       log.warn("Query: {}; ", query, x);
     }
 

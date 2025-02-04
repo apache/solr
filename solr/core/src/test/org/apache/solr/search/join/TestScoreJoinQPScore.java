@@ -218,7 +218,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     final Query luceneQ =
         QParser.getParser(req.getParams().get("q"), req)
             .getQuery()
-            .rewrite(req.getSearcher());
+            .rewrite(req.getSearcher().getSlowAtomicReader());
     assertTrue(luceneQ instanceof BoostQuery);
     float boost = ((BoostQuery) luceneQ).getBoost();
     assertEquals("" + luceneQ, Float.floatToIntBits(200), Float.floatToIntBits(boost));

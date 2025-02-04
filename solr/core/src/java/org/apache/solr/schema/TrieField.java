@@ -38,7 +38,6 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
@@ -353,7 +352,7 @@ public class TrieField extends NumericFieldType {
                 min == null ? null : parseIntFromUser(field.getName(), min),
                 max == null ? null : parseIntFromUser(field.getName(), max),
                 minInclusive,
-                maxInclusive, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+                maxInclusive);
         break;
       case FLOAT:
         query =
@@ -373,7 +372,7 @@ public class TrieField extends NumericFieldType {
                 min == null ? null : parseLongFromUser(field.getName(), min),
                 max == null ? null : parseLongFromUser(field.getName(), max),
                 minInclusive,
-                maxInclusive, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+                maxInclusive);
         break;
       case DOUBLE:
         query =
@@ -393,7 +392,7 @@ public class TrieField extends NumericFieldType {
                 min == null ? null : DateMathParser.parseMath(null, min).getTime(),
                 max == null ? null : DateMathParser.parseMath(null, max).getTime(),
                 minInclusive,
-                maxInclusive, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+                maxInclusive);
         break;
       default:
         throw new SolrException(

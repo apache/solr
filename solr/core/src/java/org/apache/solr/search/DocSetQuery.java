@@ -19,8 +19,15 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
-import org.apache.solr.util.SolrDefaultScorerSupplier;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 
 /**
  * A Query based on a {@link DocSet}. The un-boosted score is always 1.
@@ -73,12 +80,12 @@ class DocSetQuery extends Query implements DocSetProducer {
       throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context) {
+      public Scorer scorer(LeafReaderContext context) {
         DocIdSetIterator disi = docSet.iterator(context);
         if (disi == null) {
           return null;
         }
-        return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
+        return new ConstantScoreScorer(this, score(), scoreMode, disi);
       }
 
       @Override

@@ -23,18 +23,29 @@ import java.util.Objects;
 import java.util.TreeSet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /**
  * GraphQuery - search for nodes and traverse edges in an index.
@@ -245,7 +256,7 @@ public class GraphQuery extends Query {
       BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
       Query edgeQuery =
           collectSchemaField.hasDocValues()
-              ? new FieldExistsQuery(field)
+              ? new DocValuesFieldExistsQuery(field)
               : new WildcardQuery(new Term(field, "*"));
       leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
       DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
@@ -261,19 +272,19 @@ public class GraphQuery extends Query {
         termBytesHash.get(i, ref);
         terms.add(ref);
       }
-      final Automaton a = Automata.makeStringUnion(terms);
+      final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
       return a;
     }
 
     @Override
-    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
       if (resultSet == null) {
         resultSet = getDocSet();
       }
       DocIdSetIterator disi = resultSet.iterator(context);
       // create a scrorer on the result set, if results from right query are empty, use empty
       // iterator.
-      return new SolrDefaultScorerSupplier(new GraphScorer(this, disi == null ? DocIdSetIterator.empty() : disi, 1));
+      return new GraphScorer(this, disi == null ? DocIdSetIterator.empty() : disi, 1);
     }
 
     @Override
@@ -289,7 +300,7 @@ public class GraphQuery extends Query {
 
     // graph query scorer constructor with iterator
     public GraphScorer(Weight w, DocIdSetIterator iter, float score) throws IOException {
-      super();
+      super(w);
       this.iter = iter == null ? DocIdSet.EMPTY.iterator() : iter;
       this.score = score;
     }

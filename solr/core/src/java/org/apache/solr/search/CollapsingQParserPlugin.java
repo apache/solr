@@ -36,7 +36,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.EmptyDocValuesProducer;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.OrdinalMap;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -511,12 +522,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               new FieldInfo(
                   fieldInfo.name,
                   fieldInfo.number,
-                  fieldInfo.hasTermVectors(),
+                  fieldInfo.hasVectors(),
                   fieldInfo.hasNorms(),
                   fieldInfo.hasPayloads(),
                   fieldInfo.getIndexOptions(),
                   DocValuesType.NONE,
-                  DocValuesSkipIndexType.NONE,
                   fieldInfo.getDocValuesGen(),
                   fieldInfo.attributes(),
                   fieldInfo.getPointDimensionCount(),
@@ -570,6 +580,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     public float score() {
       return score;
+    }
+
+    @Override
+    public int docID() {
+      return docId;
     }
   }
 
@@ -1547,7 +1562,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       // (our supper class may have set the "real" scorer on our leafDelegate
       // and it may have an incorrect docID)
       leafDelegate.setScorer(currentGroupState);
-      leafDelegate.collect(currentGroupState.docId);
+      leafDelegate.collect(currentGroupState.docID());
     }
 
     /**
@@ -1600,7 +1615,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       public int getCurrentGroup() {
-        assert -1 < this.docId;
+        assert -1 < docID();
         return this.currentGroup;
       }
 
@@ -1616,7 +1631,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       public boolean hasBoostedDocs() {
-        assert -1 < this.docId;
+        assert -1 < docID();
         return groupHasBoostedDocs;
       }
 
@@ -1626,7 +1641,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
        * collected)
        */
       public boolean isCurrentDocCollectable() {
-        return (-1 < this.docId && !groupHasBoostedDocs);
+        return (-1 < docID() && !groupHasBoostedDocs);
       }
     }
   }
@@ -1663,7 +1678,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       final boolean isBoosted = isBoostedAdvanceExact(contextDoc);
 
-      if (-1 < currentGroupState.docId && docGroup == currentGroupState.getCurrentGroup()) {
+      if (-1 < currentGroupState.docID() && docGroup == currentGroupState.getCurrentGroup()) {
         // we have an existing group, and contextDoc is in that group.
 
         if (isBoosted) {
@@ -1888,7 +1903,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       final boolean isBoosted = isBoostedAdvanceExact(contextDoc);
 
-      if (-1 < currentGroupState.docId && docGroup == currentGroupState.getCurrentGroup()) {
+      if (-1 < currentGroupState.docID() && docGroup == currentGroupState.getCurrentGroup()) {
         // we have an existing group, and contextDoc is in that group.
 
         if (isBoosted) {

@@ -25,7 +25,6 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -107,7 +106,7 @@ public class EnumField extends AbstractEnumField {
               min == null ? null : minValue,
               max == null ? null : maxValue,
               minInclusive,
-              maxInclusive, MultiTermQuery.CONSTANT_SCORE_REWRITE);
+              maxInclusive);
     }
 
     return query;

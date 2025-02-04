@@ -192,9 +192,9 @@ public class TestLTRScoringQuery extends SolrTestCase {
     final IndexSearcher searcher = getSearcher(r);
     // first run the standard query
     final TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(2, hits.totalHits.value());
-    assertEquals("0", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("1", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
+    assertEquals(2, hits.totalHits.value);
+    assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});

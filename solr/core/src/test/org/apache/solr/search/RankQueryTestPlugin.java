@@ -452,12 +452,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             }
 
             doc -= currentLeaf.docBase; // adjust for what segment this is in
-            leafComparator.setScorer(new Scorable() {
-              @Override
-              public float score() {
-                return score;
-              }
-            });
+            leafComparator.setScorer(new ScoreAndDoc(doc, score));
             leafComparator.copy(0, doc);
             Object val = comparator.value(0);
             if (null != ft) val = ft.marshalSortValue(val);
@@ -468,6 +463,27 @@ public class RankQueryTestPlugin extends QParserPlugin {
         }
 
         rsp.add("merge_values", sortVals);
+      }
+    }
+
+    private static class ScoreAndDoc extends Scorable {
+
+      final int docid;
+      final float score;
+
+      ScoreAndDoc(int docid, float score) {
+        this.docid = docid;
+        this.score = score;
+      }
+
+      @Override
+      public int docID() {
+        return docid;
+      }
+
+      @Override
+      public float score() {
+        return score;
       }
     }
 
