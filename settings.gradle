@@ -58,6 +58,7 @@ include "solr:modules:s3-repository"
 include "solr:modules:scripting"
 include "solr:modules:sql"
 include "solr:webapp"
+include "solr:ui"
 include "solr:benchmark"
 include "solr:test-framework"
 include "solr:solr-ref-guide"
@@ -67,7 +68,6 @@ include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
 include "solr:prometheus-exporter"
-include "solr:compose-ui"
 
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')

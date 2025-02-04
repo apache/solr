@@ -32,7 +32,7 @@ To launch the JVM client, you can use:
 
 [source,bash]
 ----
-./gradlew :solr:compose-ui:run
+./gradlew :solr:ui:run
 ----
 
 To run the app on the web, you can launch the web target with:
@@ -40,7 +40,7 @@ To run the app on the web, you can launch the web target with:
 [source,bash]
 ----
 # not recommended for the above reasons
-./gradlew :solr:compose-ui:wasmJsBrowserRun
+./gradlew :solr:ui:wasmJsBrowserRun
 ----
 
 Build times may be a bit longer than with the standalone JVM build.
@@ -48,7 +48,7 @@ Build times may be a bit longer than with the standalone JVM build.
 === Integration Tests
 
 The integration tests of the module focus on testing the implementation found in
-`org.apache.solr.composeui.ui`. That includes all UI elements / composables. Integration tests
+`org.apache.solr.ui.views`. That includes all UI elements / composables. Integration tests
 may test entire flows as well, but require a suitable testing environment.
 
 Since UI tests require a more complex and platform-specific testing environment, they are disabled
@@ -57,7 +57,7 @@ UI tests and a suitable testing environment for them, we may run these tests in 
 
 === Unit Tests
 
-Unit tests test the implementation found in `org.apache.solr.compose.components`. That package
+Unit tests test the implementation found in `org.apache.solr.ui.components`. That package
 includes the logical part of the new UI and does not have any constraints to the UI part.
 Therefore, they can be executed in the automation pipelines easily.
 
@@ -66,11 +66,11 @@ components to confirm correct component state transitions with specific inputs.
 
 == Deployment
 
-The `compose-ui` module is configured to build artifacts for `WebAssembly` and `JVM`.
+The `ui` module is configured to build artifacts for `WebAssembly` and `JVM`.
 
 === Packaging
 
-The module `compose-ui` can be built and packaged for two targets (wasmJs / JVM) with two
+The module `ui` can be built and packaged for two targets (wasmJs / JVM) with two
 variants each, development and production.
 
 To package the JVM target for development and generate a distribution (DEB, MSI or DMG file),
@@ -78,16 +78,16 @@ you can use:
 
 [source,bash]
 ----
-./gradlew :solr:compose-ui:packageDistributionForCurrentOS
+./gradlew :solr:ui:packageDistributionForCurrentOS
 ----
 
-The distribution can be found at `solr/compose-ui/build/compose/binaries/main/[deb|msi|dmg]/`.
+The distribution can be found at `solr/ui/build/compose/binaries/main/[deb|msi|dmg]/`.
 
 To build the JVM target for production, you can use:
 
 [source,bash]
 ----
-./gradlew :solr:compose-ui:packageReleaseDistributionForCurrentOS
+./gradlew :solr:ui:packageReleaseDistributionForCurrentOS
 ----
 
 Platform-specific gradle tasks exist as well, but you cannot build for a
@@ -98,10 +98,10 @@ If the client machine has Java installed, you can also generate an UberJar:
 [source,bash]
 ----
 # for development
-./gradlew :solr:compose-ui:packageUberJarForCurrentOs
+./gradlew :solr:ui:packageUberJarForCurrentOs
 
 # for production
-./gradlew :solr:compose-ui:packageReleaseUberJarForCurrentOs
+./gradlew :solr:ui:packageReleaseUberJarForCurrentOs
 ----
 
 When building the entire Solr project, the wasmJs target is included in the build artifacts.
@@ -116,7 +116,7 @@ To tell the build process to use the production variant instead, you have ot pas
 
 The WebAssembly (wasmJs) target is used to generate artifacts that can be hosted together
 with our current webapp. The `server` that hosts the webapp is configured to host the new UI
-as a module that is available under the URL path `/solr/compose`.
+as a module that is available under the URL path `/solr/ui`.
 
 For that, two configuration files are added, one for development (`jetty-new-ui-dev.xml`) and
 one for production (`jetty-new-ui.xml`). The module configuration for development is less strict,

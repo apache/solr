@@ -94,22 +94,22 @@ task downloadBrowserify(type: NpmTask) {
   outputs.dir("${nodeProjectDir}/node_modules/browserify")
 }
 
-tasks.register("generateComposeUiDevFiles") {
+tasks.register("generateUiDevFiles") {
   description = "Generate new UI for development and add files to outputs for later referencing."
   group = "build"
 
   // Development files are larger in size but have shorter compile times.
-  dependsOn project(":solr:compose-ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
-  outputs.dir(project(":solr:compose-ui").file("build/dist/wasmJs/developmentExecutable/"))
+  dependsOn project(":solr:ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
+  outputs.dir(project(":solr:ui").file("build/dist/wasmJs/developmentExecutable/"))
 }
 
-tasks.register("generateComposeUiProdFiles") {
+tasks.register("generateUiProdFiles") {
   description = "Generate new UI for production and add files to outputs for later referencing"
   group = "build"
 
   // Production files are smaller in size but have longer compile times.
-  dependsOn project(":solr:compose-ui").tasks.wasmJsBrowserDistribution
-  outputs.dir(project(":solr:compose-ui").file("build/dist/wasmJs/productionExecutable/"))
+  dependsOn project(":solr:ui").tasks.wasmJsBrowserDistribution
+  outputs.dir(project(":solr:ui").file("build/dist/wasmJs/productionExecutable/"))
 }
 
 task generateJsClientBundle(type: NpxTask) {
@@ -160,12 +160,12 @@ war {
   // Include new Admin UI files in webapp
   // By default, we always build dev that does not optimize generated files for release to reduce build times.
   if (rootProject.ext.development) {
-    from (tasks.generateComposeUiDevFiles) {
-      into "compose"
+    from (tasks.generateUiDevFiles) {
+      into "ui"
     }
   } else {
-    from (tasks.generateComposeUiProdFiles) {
-      into "compose"
+    from (tasks.generateUiProdFiles) {
+      into "ui"
     }
   }
 }

@@ -2,7 +2,7 @@
 
 == Module Structure
 
-The UI module `compose-ui` follows a quite simple structure. It is split in
+The `ui` module follows a quite simple structure. It is split in
 
 - *components*, which covers the logic part of the frontend and therefore contains
 the interfaces and implementations of them,
@@ -14,7 +14,7 @@ if not the same, structure and files.
 
 == Components (Logic)
 
-The logical part of a simple component (`org/apache/solr/composeui/components`) usually consists of:
+The logical part of a simple component (`org/apache/solr/ui/components`) usually consists of:
 
 - **The component interface** (`[ComponentName]Component.kt`), that defines the UI state and the
 interaction options,
@@ -48,7 +48,7 @@ This structure is strongly inspired by Decompose's https://arkivanov.github.io/D
 == User Interface (UI)
 
 Similar to the logical part, the UI classes are also separated in components under
-`org.apache.solr.composeui.ui`.
+`org.apache.solr.ui.views`.
 
 Components may consist of one or multiple composables that make up a screen, section or
 element. The composables may also be reused, which is why they may be moved at some point

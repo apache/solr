@@ -20,7 +20,7 @@
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server to respond with different CSP header -->
-<!-- for new Admin UI endpoint /compose/*.                           -->
+<!-- for new Admin UI endpoint /solr/ui/*.                           -->
 <!-- This configuration overrides jetty-new-ui.xml during            -->
 <!-- development and is excluded from released otherwise.            -->
 <!-- =============================================================== -->
@@ -30,7 +30,7 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-            <Set name="pattern">/solr/compose/*</Set>
+            <Set name="pattern">/solr/ui/*</Set>
             <Set name="name">Content-Security-Policy</Set>
             <Set name="value">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; worker-src 'self';</Set>
           </New>
