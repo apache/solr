@@ -130,7 +130,7 @@ javacc = "7.0.12"
 jaxb = "2.3.8"
 jayway-jsonpath = "2.9.0"
 jctools = "4.0.5"
-jersey = "3.1.9"
+jersey = "3.1.10"
 # TODO Sync with jersey versions
 jersey-containers = "2.39.1"
 # @keep for version alignment
