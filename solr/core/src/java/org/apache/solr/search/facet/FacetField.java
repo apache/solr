@@ -152,7 +152,7 @@ public class FacetField extends FacetRequestSorted {
       }
     }
 
-    if (sf.hasDocValues() && sf.getType().isPointField()) {
+    if (sf.hasDocValues() && (sf.getType().isPointField() || sf.getType().getNumberType() != null)) {
       return new FacetFieldProcessorByHashDV(fcontext, this, sf);
     }
 
