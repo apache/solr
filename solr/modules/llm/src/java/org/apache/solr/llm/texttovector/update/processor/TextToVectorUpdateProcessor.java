@@ -41,7 +41,7 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
     private final String outputField;
     private final String model;
     private SolrTextToVectorModel textToVector;
-    private ManagedTextToVectorModelStore modelStore = null;
+    private final ManagedTextToVectorModelStore modelStore;
 
     public TextToVectorUpdateProcessor(
             String inputField,
