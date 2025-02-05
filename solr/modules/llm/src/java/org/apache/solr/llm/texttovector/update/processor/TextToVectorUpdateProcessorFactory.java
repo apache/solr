@@ -20,6 +20,8 @@ package org.apache.solr.llm.texttovector.update.processor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.llm.texttovector.model.SolrTextToVectorModel;
+import org.apache.solr.llm.texttovector.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.DenseVectorField;
@@ -71,7 +73,18 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
         final SchemaField outputFieldSchema = req.getCore().getLatestSchema().getField(outputField);
         assertIsDenseVectorField(outputFieldSchema);
 
-        return new TextToVectorUpdateProcessor(inputField, outputField, modelName, req, next);
+        ManagedTextToVectorModelStore modelStore = ManagedTextToVectorModelStore.getManagedModelStore(req.getCore());
+        SolrTextToVectorModel textToVector = modelStore.getModel(modelName);
+        if (textToVector == null) {
+            throw new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "The model configured in the Update Request Processor '"
+                            + modelName
+                            + "' can't be found in the store: "
+                            + ManagedTextToVectorModelStore.REST_END_POINT);
+        }
+        
+        return new TextToVectorUpdateProcessor(inputField, outputField, textToVector, next);
     }
 
     protected void assertIsDenseVectorField(SchemaField schemaField) {

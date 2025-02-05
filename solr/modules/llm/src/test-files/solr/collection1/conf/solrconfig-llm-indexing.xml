@@ -57,6 +57,7 @@
  <initParams path="/update/**">
   <lst name="defaults">
    <str name="update.chain">textToVector</str>
+   <str name="wt">xml</str>
   </lst>
  </initParams>
  

@@ -60,11 +60,9 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
      */
     @Test
     public void processAdd_modelNotFound_shouldRaiseException() {
-        assertFailedU("This update should fail but actually succeeded", adoc("id", "99", "_text_", "Vegeta is the saiyan prince."));
-
         checkUpdateU(adoc("id", "99", "_text_", "Vegeta is the saiyan prince."),
-                "/response/lst[@name='error']/str[@name='msg']=\"The model requested 'dummy-1' can't be found in the store: /schema/text-to-vector-model-store\"",
-                "/response/lst[@name='error']/int[@name='code']='400'");
+                "/response/lst[@name='error']/str[@name='msg']=\"The model configured in the Update Request Processor 'dummy-1' can't be found in the store: /schema/text-to-vector-model-store\"",
+                "/response/lst[@name='error']/int[@name='code']='500'");
     }
 
     @Test
