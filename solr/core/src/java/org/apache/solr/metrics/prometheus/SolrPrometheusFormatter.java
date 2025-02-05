@@ -119,7 +119,7 @@ public abstract class SolrPrometheusFormatter {
 
 
   /**
-   * Export {@link Timer} ands its mean rate to {@link
+   * Export {@link Timer} ands its quantile data to {@link
    * io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot}
    * and collect datapoint
    *
@@ -265,7 +265,7 @@ public abstract class SolrPrometheusFormatter {
   }
 
   /**
-   * Collects {@link io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot} and
+   * Collects {@link io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot} and
    * appends to existing metric or create new metric if name does not exist
    *
    * @param metricName Name of metric
