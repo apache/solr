@@ -78,10 +78,6 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       return SampleDocuments.NONE;
     }
 
-    if (params == null) {
-      params = new ModifiableSolrParams();
-    }
-
     Long streamSize = stream.getSize();
     if (streamSize != null && streamSize > MAX_STREAM_SIZE) {
       throw new SolrException(

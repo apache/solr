@@ -55,7 +55,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -485,11 +484,8 @@ public abstract class LBSolrClient extends SolrClient {
    * @return time allowed in nanos, returns -1 if no time_allowed is specified.
    */
   private static long getTimeAllowedInNanos(final SolrRequest<?> req) {
-    SolrParams reqParams = req.getParams();
-    return reqParams == null
-        ? -1
-        : TimeUnit.NANOSECONDS.convert(
-            reqParams.getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
+    return TimeUnit.NANOSECONDS.convert(
+        req.getParams().getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
   }
 
   private static boolean isTimeExceeded(long timeAllowedNano, long timeOutTime) {

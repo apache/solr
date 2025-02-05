@@ -59,10 +59,9 @@ public class MirroredSolrRequest<T extends SolrResponse> {
   }
 
   public static class MirroredAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
-    private ModifiableSolrParams params;
+    private SolrParams params;
 
-    public MirroredAdminRequest(
-        CollectionParams.CollectionAction action, ModifiableSolrParams params) {
+    public MirroredAdminRequest(CollectionParams.CollectionAction action, SolrParams params) {
       super(action);
       this.params = params;
     }
@@ -72,7 +71,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
       return params;
     }
 
-    public void setParams(ModifiableSolrParams params) {
+    public void setParams(SolrParams params) {
       this.params = params;
     }
 
@@ -247,10 +246,10 @@ public class MirroredSolrRequest<T extends SolrResponse> {
   }
 
   public static void setParams(SolrRequest<?> request, ModifiableSolrParams params) {
-    if (request instanceof MirroredAdminRequest) {
-      ((MirroredAdminRequest) request).setParams(params);
-    } else if (request instanceof UpdateRequest) {
-      ((UpdateRequest) request).setParams(params);
+    if (request instanceof MirroredAdminRequest mReq) {
+      mReq.setParams(params);
+    } else if (request instanceof UpdateRequest uReq) {
+      uReq.setParams(params);
     } else {
       throw new UnsupportedOperationException("Can't setParams on request " + request);
     }

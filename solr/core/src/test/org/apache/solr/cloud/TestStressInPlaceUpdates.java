@@ -625,11 +625,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("versions", "true");
-
     UpdateRequest ureq = new UpdateRequest();
-    ureq.setParams(params);
+    ureq.getParams().set("versions", true);
     ureq.add(doc);
     UpdateResponse resp;
 
@@ -647,10 +644,10 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
   protected long deleteDocAndGetVersion(
       String id, ModifiableSolrParams params, boolean deleteByQuery) throws Exception {
-    params.add("versions", "true");
-
     UpdateRequest ureq = new UpdateRequest();
-    ureq.setParams(params);
+    ureq.getParams().add(params);
+    ureq.getParams().set("versions", true);
+
     if (deleteByQuery) {
       ureq.deleteByQuery("id:" + id);
     } else {

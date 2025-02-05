@@ -47,12 +47,11 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
 
   @Override
   public SolrParams getParams() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
     if (maxLagAllowed.isPresent()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(PARAM_MAX_GENERATION_LAG, maxLagAllowed.getAsInt());
-      return params;
     }
-    return null;
+    return params;
   }
 
   @Override

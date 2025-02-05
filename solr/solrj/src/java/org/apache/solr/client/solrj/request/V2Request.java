@@ -65,7 +65,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
   @Override
   public SolrParams getParams() {
-    return solrParams;
+    return solrParams != null ? solrParams : SolrParams.of();
   }
 
   @Override

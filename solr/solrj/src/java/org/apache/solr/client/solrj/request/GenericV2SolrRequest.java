@@ -40,8 +40,7 @@ public class GenericV2SolrRequest extends GenericSolrRequest {
    * @param params query parameter names and values for making this request.
    */
   public GenericV2SolrRequest(METHOD m, String path, SolrParams params) {
-    super(m, path);
-    this.params = params;
+    super(m, removeLeadingApiRoot(path), params);
   }
 
   @Override

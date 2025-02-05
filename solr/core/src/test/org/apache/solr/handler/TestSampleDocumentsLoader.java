@@ -52,7 +52,7 @@ public class TestSampleDocumentsLoader extends SolrTestCase {
 
   @Test
   public void testJson() throws Exception {
-    loadTestDocs(null, new File(exampleDir, "films/films.json"), 500, 500);
+    loadTestDocs(SolrParams.of(), new File(exampleDir, "films/films.json"), 500, 500);
   }
 
   @Test
@@ -78,7 +78,7 @@ public class TestSampleDocumentsLoader extends SolrTestCase {
 
   @Test
   public void testSolrXml() throws Exception {
-    loadTestDocs(null, new File(exampleDir, "films/films.xml"), 1000, 1000);
+    loadTestDocs(SolrParams.of(), new File(exampleDir, "films/films.xml"), 1000, 1000);
   }
 
   protected List<SolrInputDocument> loadTestDocs(

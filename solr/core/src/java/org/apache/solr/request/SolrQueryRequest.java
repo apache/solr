@@ -75,7 +75,7 @@ public interface SolrQueryRequest extends AutoCloseable {
     return !allowPartialResults(params);
   }
 
-  /** returns the current request parameters */
+  /** The parameters for this request; never null. Use {@link #setParams(SolrParams)} to change. */
   SolrParams getParams();
 
   /**
@@ -88,8 +88,8 @@ public interface SolrQueryRequest extends AutoCloseable {
   Iterable<ContentStream> getContentStreams();
 
   /**
-   * Returns the original request parameters. As this does not normally include configured defaults
-   * it's more suitable for logging.
+   * The original request parameters; never null. As this does not normally include configured
+   * defaults, it's more suitable for logging.
    */
   SolrParams getOriginalParams();
 

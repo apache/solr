@@ -34,7 +34,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -70,7 +69,7 @@ public class JavaBinUpdateRequestCodec {
    */
   public void marshal(UpdateRequest updateRequest, OutputStream os) throws IOException {
     NamedList<Object> nl = new NamedList<>();
-    NamedList<Object> params = solrParamsToNamedList(updateRequest.getParams());
+    NamedList<Object> params = updateRequest.getParams().toNamedList();
     if (updateRequest.getCommitWithin() != -1) {
       params.add("commitWithin", updateRequest.getCommitWithin());
     }
@@ -128,7 +127,7 @@ public class JavaBinUpdateRequestCodec {
 
     // NOTE: if the update request contains only delete commands the params
     // must be loaded now
-    if (updateRequest.getParams() == null) {
+    if (updateRequest.getParams().iterator().hasNext() == false) { // no params
       NamedList<?> params = (NamedList<?>) namedList[0].get("params");
       if (params != null) {
         updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
@@ -177,11 +176,6 @@ public class JavaBinUpdateRequestCodec {
     }
 
     return updateRequest;
-  }
-
-  private NamedList<Object> solrParamsToNamedList(SolrParams params) {
-    if (params == null) return new NamedList<>();
-    return params.toNamedList();
   }
 
   public interface StreamingUpdateHandler {

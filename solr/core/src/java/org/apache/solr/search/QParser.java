@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -62,10 +63,11 @@ public abstract class QParser {
   /**
    * Constructor for the QParser
    *
-   * @param qstr The part of the query string specific to this parser
-   * @param localParams The set of parameters that are specific to this QParser. See
+   * @param qstr The query string to be parsed
+   * @param localParams Params scoped to this query, customizing the parsing. Null if none. Most
+   *     params the parser needs are resolved here first, overlaying the request. See
    *     https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
-   * @param params The rest of the {@link org.apache.solr.common.params.SolrParams}
+   * @param params Params for the request, taken from {@link SolrQueryRequest#getParams()}; not null
    * @param req The original {@link org.apache.solr.request.SolrQueryRequest}.
    */
   public QParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -97,7 +99,7 @@ public abstract class QParser {
       }
     }
 
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
     this.req = req;
   }
 
@@ -160,7 +162,7 @@ public abstract class QParser {
   }
 
   public void setParams(SolrParams params) {
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
   }
 
   public SolrQueryRequest getReq() {
