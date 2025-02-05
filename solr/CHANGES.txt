@@ -162,7 +162,7 @@ Improvements
   other v2 APIs.  SolrJ now offers (experimental) SolrRequest implementations for all v2 configset APIs in
   `org.apache.solr.client.solrj.request.ConfigsetsApi`. (Jason Gerlowski)
 
-Optimizations                                           
+Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
@@ -210,6 +210,9 @@ Other Changes
  interested in the collection state. (Pierre Salagnac)
 
 * SOLR-17623: SimpleOrderedMap (a NamedList) now implements java.util.Map. (Renato Haeberli, David Smiley)
+
+* SOLR-17648: multiThreaded=true: changed queue implementation from unlimited to 1000 max, after
+  which the caller thread will execute.  (David Smiley)
 
 ==================  9.8.0 ==================
 New Features
