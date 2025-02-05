@@ -46,7 +46,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
   }
 
   @Test
-  public void init_fullArgs_shouldInitFullClassificationParams() {
+  public void init_fullArgs_shouldInitAllParams() {
     args.add("inputField", "_text_");
     args.add("outputField", "vector");
     args.add("model", "model1");
@@ -63,7 +63,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     args.add("model", "model1");
     
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
-    assertEquals("Text to Vector UpdateProcessor 'inputField' can not be null", e.getMessage());
+    assertEquals("Missing required parameter: inputField", e.getMessage());
   }
 
   @Test
@@ -86,7 +86,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     args.add("model", "model1");
     
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
-    assertEquals("Text to Vector UpdateProcessor 'outputField' can not be null", e.getMessage());
+    assertEquals("Missing required parameter: outputField", e.getMessage());
   }
 
   @Test
@@ -123,7 +123,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     args.add("outputField", "vector");
     
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
-    assertEquals("Text to Vector UpdateProcessor 'model' can not be null", e.getMessage());
+    assertEquals("Missing required parameter: model", e.getMessage());
   }
   
 }

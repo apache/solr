@@ -18,6 +18,7 @@
 package org.apache.solr.llm.texttovector.update.processor;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.llm.texttovector.model.SolrTextToVectorModel;
@@ -26,6 +27,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
@@ -46,31 +48,24 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
 
     @Override
     public void init(final NamedList<?> args) {
-        if (args != null) {
-            params = args.toSolrParams();
-            inputField = params.get(INPUT_FIELD_PARAM);
-            checkNotNull(INPUT_FIELD_PARAM, inputField);
-
-            outputField = params.get(OUTPUT_FIELD_PARAM);
-            checkNotNull(OUTPUT_FIELD_PARAM, outputField);
-
-            modelName = params.get(MODEL_NAME);
-            checkNotNull(MODEL_NAME, modelName);
-        }
-    }
-
-    private void checkNotNull(String paramName, Object param) {
-        if (param == null) {
-            throw new SolrException(
-                    SolrException.ErrorCode.SERVER_ERROR,
-                    "Text to Vector UpdateProcessor '" + paramName + "' can not be null");
-        }
+        params = args.toSolrParams();
+        RequiredSolrParams required = params.required();
+        inputField = required.get(INPUT_FIELD_PARAM);
+        outputField = required.get(OUTPUT_FIELD_PARAM);
+        modelName = required.get(MODEL_NAME);
     }
 
     @Override
     public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-        req.getCore().getLatestSchema().getField(inputField);
-        final SchemaField outputFieldSchema = req.getCore().getLatestSchema().getField(outputField);
+        IndexSchema latestSchema = req.getCore().getLatestSchema();
+        if(!latestSchema.hasExplicitField(inputField)){
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + inputField + "\"");
+        }
+        if(!latestSchema.hasExplicitField(outputField)){
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + outputField + "\"");
+        }
+       
+        final SchemaField outputFieldSchema = latestSchema.getField(outputField);
         assertIsDenseVectorField(outputFieldSchema);
 
         ManagedTextToVectorModelStore modelStore = ManagedTextToVectorModelStore.getManagedModelStore(req.getCore());
