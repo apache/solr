@@ -14,6 +14,8 @@ Bug Fixes
   Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
   (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
 
+* SOLR-17652: Fix a bug that could cause long leader elections to leave PULL replicas in DOWN state forever. (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
