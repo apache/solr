@@ -88,10 +88,9 @@ The metadata file stores the sha512 and signatures of the jar files too.
 
 The end points are:
 
-* `PUT /api/cluster/files/{full/path/to/file}` in each node
-* `GET /api/node/files/{full/path/to/file}` to download the file
-* `GET /api/node/files/{full/path/to/file}?meta=true` get the metadata of the file
-* `GET /api/node/files/{full/path/to/}` get the list of files in `/full/path/to`
+* `PUT /api/cluster/filestore/files/{full/path/to/file}` to upload a new file and add it to the file store
+* `GET /api/cluster/filestore/files/{full/path/to/file}` to download a file already in the filestore
+* `GET /api/cluster/filestore/metadata/{full/path/to/file}` to get the metadata of a particular file, or a list of files available in a directory
 
 === Signing Your Artifacts
 
@@ -115,14 +114,14 @@ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 
 +
 [source, bash]
 ----
-curl --data-binary @runtimelibs.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
+curl --data-binary @runtimelibs.jar -X PUT  http://localhost:8983/api/cluster/filestore/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
 ----
 
 . Verify your jar upload:
 +
 [source, bash]
 ----
-curl http://localhost:8983/api/node/files/mypkg/1.0?omitHeader=true
+curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/1.0?omitHeader=true
 ----
 +
 [source, json]
@@ -328,14 +327,14 @@ curl -o runtimelibs3.jar   -LO https://github.com/apache/solr/blob/releases/solr
 
 openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 
-curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=<signature>
+curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/filestore/files/mypkg/2.0/myplugins.jar?sig=<signature>
 ----
 
 . Verify it:
 +
 [source, bash]
 ----
-curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
+curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/2.0?omitHeader=true
 ----
 +
 [source, json]
