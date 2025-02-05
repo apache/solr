@@ -979,7 +979,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CLUSTERSTATUS,
         (req, rsp, h) -> {
           new ClusterStatus(h.coreContainer.getZkController().getZkStateReader(), req.getParams())
-              .getClusterStatus(rsp.getValues());
+              .getClusterStatus(rsp.getValues(), req.getHttpSolrCall().getUserAgentSolrVersion());
           return null;
         }),
     ADDREPLICAPROP_OP(

@@ -372,7 +372,7 @@ public class StatusTool extends ToolBase {
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
     // TODO get this as a metric from the metrics API instead, or something else.
-    var collections = (NamedList<Object>) json.findRecursive("cluster", "collections");
+    var collections = (Map<String, Object>) json.findRecursive("cluster", "collections");
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;
