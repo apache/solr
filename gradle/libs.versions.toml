@@ -136,7 +136,7 @@ jersey-containers = "2.39.1"
 # @keep for version alignment
 joda-time = "2.8.1"
 junit = "4.13.2"
-langchain4j = "0.35.0"
+langchain4j = "0.36.2"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.4"
