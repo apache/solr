@@ -22,26 +22,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.ByteVectorValues;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FloatVectorValues;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.LeafMetaData;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.StoredFields;
-import org.apache.lucene.index.TermVectors;
-import org.apache.lucene.index.Terms;
+
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.KnnCollector;
@@ -303,12 +285,6 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      @Deprecated
-      public Fields getTermVectors(int docID) {
-        return null;
-      }
-
-      @Override
       public TermVectors termVectors() {
         return null;
       }
@@ -364,6 +340,11 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
+      public DocValuesSkipper getDocValuesSkipper(String field) throws IOException {
+        return null;
+      }
+
+      @Override
       public PointValues getPointValues(String field) {
         return null;
       }
@@ -393,10 +374,6 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       protected void doClose() {}
-
-      @Override
-      @Deprecated
-      public void document(int doc, StoredFieldVisitor visitor) {}
 
       @Override
       public void checkIntegrity() {}

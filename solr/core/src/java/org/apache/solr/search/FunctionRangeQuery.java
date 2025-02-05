@@ -85,7 +85,6 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
       FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
       valueSourceScorer =
           dv.getRangeScorer(
-              weight,
               context,
               rangeFilt.getLowerVal(),
               rangeFilt.getUpperVal(),

@@ -281,13 +281,10 @@ public class TestFieldCache extends SolrTestCase {
           assertEquals(i, termOrds.nextDoc());
         }
         long ord = termOrds.nextOrd();
-        assertNotEquals(ord, SortedSetDocValues.NO_MORE_ORDS);
         BytesRef scratch = termOrds.lookupOrd(ord);
         assertEquals(v, scratch);
       }
-      if (i == termOrds.docID()) {
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, termOrds.nextOrd());
-      }
+      assertEquals(i, termOrds.docValueCount());
     }
 
     // test bad field
@@ -501,7 +498,7 @@ public class TestFieldCache extends SolrTestCase {
     SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sorted", null);
     assertEquals(0, sortedSet.nextDoc());
     assertEquals(0, sortedSet.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+    assertEquals(1, sortedSet.docValueCount());
     assertEquals(1, sortedSet.getValueCount());
 
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "sorted", null);
@@ -569,7 +566,6 @@ public class TestFieldCache extends SolrTestCase {
     assertEquals(0, sortedSet.nextDoc());
     assertEquals(0, sortedSet.nextOrd());
     assertEquals(1, sortedSet.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
     assertEquals(2, sortedSet.getValueCount());
 
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset", null);
