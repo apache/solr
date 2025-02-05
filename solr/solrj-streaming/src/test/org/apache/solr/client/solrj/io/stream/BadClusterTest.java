@@ -79,28 +79,21 @@ public class BadClusterTest extends SolrCloudTestCase {
   }
 
   private void testEmptyCollection() throws Exception {
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    assertEquals(0, getTuples(stream).size());
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      assertEquals(0, getTuples(stream).size());
+    }
   }
 
   private void testAllNodesDown() throws Exception {
-
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    cluster.expireZkSession(cluster.getReplicaJetty(getReplicas().get(0)));
-
-    try {
-      getTuples(stream);
-      fail("Expected IOException");
-    } catch (IOException ioe) {
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      cluster.expireZkSession(cluster.getReplicaJetty(getReplicas().get(0)));
+      expectThrows(IOException.class, () -> getTuples(stream));
     }
   }
 
   private void testClusterShutdown() throws Exception {
-
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
-    cluster.shutdown();
-
-    try {
+    try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
+      cluster.shutdown();
       getTuples(stream);
       fail("Expected IOException: SolrException: TimeoutException");
     } catch (IOException ioe) {

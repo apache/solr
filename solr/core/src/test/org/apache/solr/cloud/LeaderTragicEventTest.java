@@ -88,7 +88,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     waitForState(
         "Now waiting for new replica to become leader",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Slice slice = collectionState.getSlice("shard1");
 
           if (slice.getReplicas().size() != 2) return false;
@@ -176,7 +176,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       waitForState(
           "Timeout waiting for replica get down",
           collection,
-          (liveNodes, collectionState) ->
+          collectionState ->
               getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
     }
 

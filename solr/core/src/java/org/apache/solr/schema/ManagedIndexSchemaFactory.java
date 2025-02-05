@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -401,8 +400,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
             "On upgrading to managed schema, did not rename non-managed schema '{}' because it's the same as the managed schema's name.",
             resourceName);
       } else {
-        // TODO SOLR-8282 move to PATH
-        final File nonManagedSchemaFile = locateConfigFile(resourceName).toFile();
+        final Path nonManagedSchemaFile = locateConfigFile(resourceName);
         if (null == nonManagedSchemaFile) {
           // Don't throw an exception for failure to rename the non-managed schema
           log.warn(
@@ -412,17 +410,19 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
               "nor under SolrConfig.getConfigDir() or the current directory. ",
               "PLEASE REMOVE THIS FILE.");
         } else {
-          File upgradedSchemaFile = new File(nonManagedSchemaFile + UPGRADED_SCHEMA_EXTENSION);
-          if (nonManagedSchemaFile.renameTo(upgradedSchemaFile)) {
+          Path upgradedSchemaFile =
+              nonManagedSchemaFile.resolveSibling(
+                  nonManagedSchemaFile.getFileName() + UPGRADED_SCHEMA_EXTENSION);
+          try {
+            Files.move(nonManagedSchemaFile, upgradedSchemaFile);
             // Set the resource name to the managed schema so that the CoreAdminHandler returns a
             // findable filename
             schema.setResourceName(managedSchemaResourceName);
-
             log.info(
                 "After upgrading to managed schema, renamed the non-managed schema {} to {}",
                 nonManagedSchemaFile,
                 upgradedSchemaFile);
-          } else {
+          } catch (Exception e) {
             // Don't throw an exception for failure to rename the non-managed schema
             log.warn(
                 "Can't rename {} to {} - PLEASE REMOVE THIS FILE.",

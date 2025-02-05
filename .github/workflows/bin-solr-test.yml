@@ -38,7 +38,7 @@ jobs:
       with:
         path: |
           ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-binsolr-${{ hashFiles('versions.lock') }}
+        key: ${{ runner.os }}-gradle-binsolr-${{ hashFiles('**/*.lockfile') }}
         restore-keys: |
           ${{ runner.os }}-gradle-binsolr-
           ${{ runner.os }}-gradle-

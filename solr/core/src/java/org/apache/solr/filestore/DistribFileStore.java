@@ -22,7 +22,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +41,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
@@ -79,19 +79,21 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public Path getRealpath(String path) {
+  public Path getRealPath(String path) {
     return _getRealPath(path, solrHome);
   }
 
-  private static Path _getRealPath(String path, Path solrHome) {
-    if (File.separatorChar == '\\') {
-      path = path.replace('/', File.separatorChar);
+  private static Path _getRealPath(String dir, Path solrHome) {
+    Path path = Path.of(dir);
+    SolrPaths.assertNotUnc(path);
+
+    if (path.isAbsolute()) {
+      // Strip the path of from being absolute to become relative to resolve with SolrHome
+      path = path.subpath(0, path.getNameCount());
     }
-    SolrPaths.assertNotUnc(Path.of(path));
-    while (path.startsWith(File.separator)) { // Trim all leading slashes
-      path = path.substring(1);
-    }
+
     var finalPath = getFileStoreDirPath(solrHome).resolve(path);
+
     // Guard against path traversal by asserting final path is sub path of filestore
     if (!finalPath.normalize().startsWith(getFileStoreDirPath(solrHome).normalize())) {
       throw new SolrException(BAD_REQUEST, "Illegal path " + path);
@@ -110,7 +112,7 @@ public class DistribFileStore implements FileStore {
 
     ByteBuffer getFileData(boolean validate) throws IOException {
       if (fileData == null) {
-        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealpath(path)));
+        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealPath(path)));
       }
       return fileData;
     }
@@ -135,7 +137,7 @@ public class DistribFileStore implements FileStore {
     }
 
     public boolean exists(boolean validateContent, boolean fetchMissing) throws IOException {
-      Path file = getRealpath(path);
+      Path file = getRealPath(path);
       if (!Files.exists(file)) {
         if (fetchMissing) {
           return fetchFromAnyNode();
@@ -165,7 +167,7 @@ public class DistribFileStore implements FileStore {
 
     private void deleteFile() {
       try {
-        IOUtils.deleteFilesIfExist(getRealpath(path), getRealpath(getMetaPath()));
+        IOUtils.deleteFilesIfExist(getRealPath(path), getRealPath(getMetaPath()));
       } catch (IOException e) {
         log.error("Unable to delete files: {}", path);
       }
@@ -252,14 +254,14 @@ public class DistribFileStore implements FileStore {
     }
 
     public Path realPath() {
-      return getRealpath(path);
+      return getRealPath(path);
     }
 
     @SuppressWarnings("unchecked")
     MetaData readMetaData() throws IOException {
-      File file = getRealpath(getMetaPath()).toFile();
-      if (file.exists()) {
-        try (InputStream fis = new FileInputStream(file)) {
+      Path file = getRealPath(getMetaPath());
+      if (Files.exists(file)) {
+        try (InputStream fis = Files.newInputStream(file)) {
           return new MetaData((Map<String, Object>) Utils.fromJSON(fis));
         }
       }
@@ -440,10 +442,10 @@ public class DistribFileStore implements FileStore {
   @Override
   public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing)
       throws IOException {
-    File file = getRealpath(path).toFile();
-    String simpleName = file.getName();
+    Path file = getRealPath(path);
+    String simpleName = file.getFileName().toString();
     if (isMetaDataFile(simpleName)) {
-      try (InputStream is = new FileInputStream(file)) {
+      try (InputStream is = Files.newInputStream(file)) {
         consumer.accept(
             new FileEntry(null, null, path) {
               // no metadata for metadata file
@@ -471,24 +473,26 @@ public class DistribFileStore implements FileStore {
 
   @Override
   public List<FileDetails> list(String path, Predicate<String> predicate) {
-    File file = getRealpath(path).toFile();
+    Path file = getRealPath(path);
     List<FileDetails> fileDetails = new ArrayList<>();
     FileType type = getType(path, false);
     if (type == FileType.DIRECTORY) {
-      file.list(
-          (dir, name) -> {
-            if (predicate == null || predicate.test(name)) {
-              if (!isMetaDataFile(name)) {
-                fileDetails.add(new FileInfo(path + "/" + name).getDetails());
+      try (Stream<Path> fileStream = Files.list(file)) {
+        fileStream.forEach(
+            (f) -> {
+              String fileName = f.getFileName().toString();
+              if (predicate == null || predicate.test(fileName)) {
+                if (!isMetaDataFile(fileName)) {
+                  fileDetails.add(new FileInfo(path + "/" + fileName).getDetails());
+                }
               }
-            }
-            return false;
-          });
-
+            });
+      } catch (IOException e) {
+        throw new SolrException(SERVER_ERROR, "Error listing files from provided path " + path, e);
+      }
     } else if (type == FileType.FILE) {
       fileDetails.add(new FileInfo(path).getDetails());
     }
-
     return fileDetails;
   }
 
@@ -573,19 +577,19 @@ public class DistribFileStore implements FileStore {
 
   @Override
   public FileType getType(String path, boolean fetchMissing) {
-    File file = getRealpath(path).toFile();
-    if (!file.exists() && fetchMissing) {
+    Path file = getRealPath(path);
+    if (!Files.exists(file) && fetchMissing) {
       if (fetch(path, null)) {
-        file = getRealpath(path).toFile();
+        file = getRealPath(path);
       }
     }
     return _getFileType(file);
   }
 
-  public static FileType _getFileType(File file) {
-    if (!file.exists()) return FileType.NOFILE;
-    if (file.isDirectory()) return FileType.DIRECTORY;
-    return isMetaDataFile(file.getName()) ? FileType.METADATA : FileType.FILE;
+  public static FileType _getFileType(Path file) {
+    if (!Files.exists(file)) return FileType.NOFILE;
+    if (Files.isDirectory(file)) return FileType.DIRECTORY;
+    return isMetaDataFile(file.getFileName().toString()) ? FileType.METADATA : FileType.FILE;
   }
 
   public static boolean isMetaDataFile(String file) {
@@ -643,13 +647,20 @@ public class DistribFileStore implements FileStore {
   private static Map<String, byte[]> _getKeys(Path solrHome) throws IOException {
     Map<String, byte[]> result = new HashMap<>();
     Path keysDir = _getRealPath(ClusterFileStore.KEYS_DIR, solrHome);
-
-    File[] keyFiles = keysDir.toFile().listFiles();
-    if (keyFiles == null) return result;
-    for (File keyFile : keyFiles) {
-      if (keyFile.isFile() && !isMetaDataFile(keyFile.getName())) {
-        result.put(keyFile.getName(), Files.readAllBytes(keyFile.toPath()));
-      }
+    try (Stream<Path> fileStream = Files.list(keysDir)) {
+      fileStream.forEach(
+          (keyFile) -> {
+            if (Files.isRegularFile(keyFile) && !isMetaDataFile(keyFile.getFileName().toString())) {
+              try {
+                result.put(keyFile.getFileName().toString(), Files.readAllBytes(keyFile));
+              } catch (IOException e) {
+                throw new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "Unable to read all bytes file: " + keyFile.getFileName(),
+                    e);
+              }
+            }
+          });
     }
     return result;
   }

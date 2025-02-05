@@ -66,7 +66,6 @@ bouncycastle = "1.78.1"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
 carrot2-core = "4.5.1"
-carrotsearch-dependencychecks = "0.0.9"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.1"
 # @keep for version alignment
@@ -74,7 +73,6 @@ checkerframework = "3.44.0"
 codehaus-woodstox = "4.2.2"
 commons-cli = "1.9.0"
 commons-codec = "1.17.1"
-commons-collections = "3.2.2"
 commons-io = "2.15.1"
 cutterslade-analyze = "1.10.0"
 cybozulabs-langdetect = "1.1-20120112"
@@ -85,7 +83,7 @@ eclipse-jetty = "10.0.22"
 eclipse-jettytoolchain = "4.0.6"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "6.7.0.202309050840-r"
-fasterxml = "2.18.0"
+fasterxml = "2.18.2"
 fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
@@ -101,8 +99,6 @@ google-cloud-nio = "0.127.3"
 google-cloud-storage = "2.27.0"
 google-errorprone = "2.31.0"
 # @keep for version alignment
-google-failureaccess = "1.0.2"
-# @keep for version alignment
 google-gson = "2.11.0"
 google-guava = "33.1.0-jre"
 # @keep for version alignment
@@ -111,7 +107,6 @@ google-j2objc = "3.0.0"
 google-javaformat = "1.18.1"
 # @keep for version alignment
 google-protobuf = "3.25.3"
-google-re2j = "1.7"
 # @keep Gradle version to run the build
 gradle = "8.10"
 grpc = "1.65.1"
@@ -119,7 +114,7 @@ grpc = "1.65.1"
 gulp-cli = "2.3.0"
 hamcrest = "3.0"
 hk2 = "3.1.1"
-hsqldb = "2.7.2"
+hsqldb = "2.7.4"
 ibm-icu = "74.2"
 immutables-valueannotations = "2.10.1"
 j256-simplemagic = "1.17"
@@ -147,19 +142,19 @@ link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.4"
 lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
-mockito = "5.12.0"
+mockito = "5.15.2"
 morethan-jmhreport = "0.9.0"
 navsecurity = "0.5.10"
 netty = "4.1.114.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.66.Final"
-nimbusds-josejwt = "9.30.2"
+nimbusds-josejwt = "9.48"
 nodegradle-node = "7.0.1"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "16.20.2"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"
-opentelemetry = "1.40.0"
+opentelemetry = "1.46.0"
 osgi-annotation = "8.1.0"
 # @keep for version alignment
 ow2-asm = "9.3"
@@ -170,7 +165,7 @@ prometheus-metrics = "1.1.0"
 prometheus-simpleclient = "0.16.0"
 quicktheories = "0.26"
 semver4j = "5.3.0"
-slf4j = "2.0.13"
+slf4j = "2.0.16"
 spatial4j = "0.8"
 spotbugs = "4.8.6"
 squareup-okhttp3-mockwebserver = "4.11.0"
@@ -187,7 +182,6 @@ xerial-snappy = "1.1.10.5"
 
 [plugins]
 benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
-carrotsearch-dependencychecks = { id = "com.carrotsearch.gradle.dependencychecks", version.ref = "carrotsearch-dependencychecks" }
 cutterslade-analyze = { id = "ca.cutterslade.analyze", version.ref = "cutterslade-analyze" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 littlerobots-versioncatalogupdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "littlerobots-versioncatalogupdate" }
@@ -294,7 +288,6 @@ checkerframework-qual = { module = "org.checkerframework:checker-qual", version.
 codehaus-woodstox-stax2api = { module = "org.codehaus.woodstox:stax2-api", version.ref = "codehaus-woodstox" }
 commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
 commonscodec-commonscodec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
-commonscollections-commonscollections = { module = "commons-collections:commons-collections", version.ref = "commons-collections" }
 commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons-io" }
 cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
@@ -362,7 +355,6 @@ google-j2objc-annotations = { module = "com.google.j2objc:j2objc-annotations", v
 # @keep transitive dependency for version alignment
 google-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "google-protobuf" }
 google-protobuf-javautils = { module = "com.google.protobuf:protobuf-java-util", version.ref = "google-protobuf" }
-google-re2j = { module = "com.google.re2j:re2j", version.ref = "google-re2j" }
 # @keep transitive dependency for version alignment
 grpc-api = { module = "io.grpc:grpc-api", version.ref = "grpc" }
 # @keep transitive dependency for version alignment
@@ -420,6 +412,7 @@ netty-tcnative-boringssl = { module = "io.netty:netty-tcnative-boringssl-static"
 netty-tcnative-classes = { module = "io.netty:netty-tcnative-classes", version.ref = "netty-tcnative" }
 # @keep transitive dependency for version alignment
 netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epoll", version.ref = "netty" }
+# @keep transitive dependency for version alignment
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }

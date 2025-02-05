@@ -156,7 +156,7 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
               Endpoint url;
               try {
                 url = it.nextOrError(e);
-              } catch (SolrServerException ex) {
+              } catch (Throwable ex) {
                 apiFuture.completeExceptionally(e);
                 return;
               }
