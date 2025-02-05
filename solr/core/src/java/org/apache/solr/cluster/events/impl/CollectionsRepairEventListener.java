@@ -80,9 +80,7 @@ public class CollectionsRepairEventListener
 
   public CollectionsRepairEventListener(CoreContainer cc) {
     this.cc = cc;
-    this.solrClient =
-        cc.getSolrClientCache()
-            .getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());
+    this.solrClient = cc.getZkController().getSolrClient();
     this.solrCloudManager = cc.getZkController().getSolrCloudManager();
   }
 

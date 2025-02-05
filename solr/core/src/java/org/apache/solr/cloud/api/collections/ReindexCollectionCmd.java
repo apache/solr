@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -163,8 +162,6 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
             .collect(Collectors.toUnmodifiableMap(Cmd::toLower, Function.identity()));
   }
 
-  private String zkHost;
-
   public ReindexCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
   }
@@ -275,7 +272,6 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     Exception exc = null;
     boolean createdTarget = false;
     try {
-      zkHost = ccc.getZkStateReader().getZkClient().getZkServerAddress();
       // set the running flag
       reindexingState.clear();
       reindexingState.put("actualSourceCollection", collection);
@@ -444,9 +440,9 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               + "\","
               + "initialCheckpoint=\"0\"))))");
       log.debug("- starting copying documents from {} to {}", collection, targetCollection);
-      SolrResponse rsp = null;
+      SolrResponse rsp;
       try {
-        rsp = ccc.getSolrCloudManager().request(new QueryRequest(q));
+        rsp = new QueryRequest(q).process(ccc.getSolrCloudManager().getSolrClient());
       } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -630,8 +626,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private long getNumberOfDocs(String collection) {
-    CloudSolrClient solrClient =
-        ccc.getCoreContainer().getSolrClientCache().getCloudSolrClient(zkHost);
+    var solrClient = ccc.getCoreContainer().getZkController().getSolrClient();
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add(CommonParams.Q, "*:*");
