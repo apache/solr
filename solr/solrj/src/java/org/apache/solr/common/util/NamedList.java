@@ -277,7 +277,9 @@ public class NamedList<T>
    *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
+   * @deprecated Use {@link #indexOf(String, int)} then {@link #getVal(int)}.
    */
+  @Deprecated
   public T get(String name, int start) {
     int sz = size();
     for (int i = start; i < sz; i++) {
@@ -346,7 +348,9 @@ public class NamedList<T>
    *
    * @param args One or more strings specifying the tree to navigate.
    * @return the last entry in the given path hierarchy, null if not found.
+   * @deprecated use {@link org.apache.solr.common.NavigableObject} methods instead
    */
+  @Deprecated
   public Object findRecursive(String... args) {
     NamedList<?> currentList = null;
     Object value = null;
@@ -408,6 +412,10 @@ public class NamedList<T>
     return new NamedList<>(Collections.unmodifiableList(copy.nvPairs));
   }
 
+  /**
+   * @deprecated Use {@link SimpleOrderedMap} instead.
+   */
+  @Deprecated
   public Map<String, T> asShallowMap() {
     return asShallowMap(false);
   }
