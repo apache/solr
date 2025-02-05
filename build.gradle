@@ -32,6 +32,7 @@ plugins {
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
   alias(libs.plugins.openapi.generator) apply false
+  alias(libs.plugins.logchange)
 }
 
 // Declare default Java versions for the entire project and for SolrJ separately
@@ -200,3 +201,5 @@ apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/node.gradle')
+
+apply from: file('gradle/changelog.gradle')
