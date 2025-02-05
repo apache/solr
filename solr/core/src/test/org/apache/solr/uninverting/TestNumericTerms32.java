@@ -141,9 +141,11 @@ public class TestNumericTerms32 extends SolrTestCase {
       if (topDocs.totalHits.value == 0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      int last = searcher.doc(sd[0].doc).getField(field).numericValue().intValue();
+      int last =
+          searcher.storedFields().document(sd[0].doc).getField(field).numericValue().intValue();
       for (int j = 1; j < sd.length; j++) {
-        int act = searcher.doc(sd[j].doc).getField(field).numericValue().intValue();
+        int act =
+            searcher.storedFields().document(sd[j].doc).getField(field).numericValue().intValue();
         assertTrue("Docs should be sorted backwards", last > act);
         last = act;
       }
