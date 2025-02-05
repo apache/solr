@@ -176,7 +176,7 @@ if [[ $? -ne 0 ]] ; then
   exit 1
 else
   JAVA_VER_NUM=$(echo "$JAVA_VER" | grep -v '_OPTIONS' | head -1 | awk -F '"' '/version/ {print $2}' | sed -e's/^1\.//' | sed -e's/[._-].*$//')
-  if [[ "$JAVA_VER_NUM" -lt "$JAVA_VER_REQ" ]] ; then
+  if (( JAVA_VER_NUM < JAVA_VER_REQ )) ; then
     echo >&2 "Your current version of Java is too old to run this version of Solr."
     echo >&2 "We found major version $JAVA_VER_NUM, using command '${JAVA} -version', with response:"
     echo >&2 "${JAVA_VER}"
@@ -1153,6 +1153,11 @@ if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
   fi
 else
   REMOTE_JMX_OPTS=()
+fi
+
+# Do not use the java security manager when running Java 24+
+if (( JAVA_VER_NUM >= 24 )) ; then
+    export SOLR_SECURITY_MANAGER_ENABLED="false"
 fi
 
 # Enable java security manager (allowing filesystem access and other things)
