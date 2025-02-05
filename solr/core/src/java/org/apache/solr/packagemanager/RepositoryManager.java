@@ -152,7 +152,13 @@ public class RepositoryManager {
     String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome));
     final var syncRequest = new FileStoreApi.SyncFile(path);
-    syncRequest.process(solrClient);
+    final var syncResponse = syncRequest.process(solrClient).getParsed();
+    final var status = syncResponse.responseHeader.status;
+    if (status != 0) {
+      throw new SolrException(
+          ErrorCode.getErrorCode(status),
+          "Unexpected status " + status + " while syncing filestore upload.");
+    }
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient)

@@ -201,9 +201,9 @@ public class DistribFileStore implements FileStore {
       try {
         final var fileRequest = new FileStoreApi.GetFile(path);
         final var fileResponse = solrClient.requestWithBaseUrl(baseUrl, null, fileRequest);
-        filedata =
-            Utils.newBytesConsumer((int) MAX_PKG_SIZE)
-                .accept(fileResponse.getResponseStreamIfSuccessful());
+        try (final var stream = fileResponse.getResponseStreamIfSuccessful()) {
+          filedata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(stream);
+        }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
       }
