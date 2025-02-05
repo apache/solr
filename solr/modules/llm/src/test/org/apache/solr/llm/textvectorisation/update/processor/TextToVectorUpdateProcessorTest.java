@@ -34,7 +34,8 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     @Test
     public void processAdd_inputField_shouldVectoriseInputField()
             throws Exception {
-        loadModel("dummy-model.json");
+        loadModel("dummy-model.json");//preparation
+        
         assertU(adoc("id", "99", "_text_", "Vegeta is the saiyan prince."));
         assertU(adoc("id", "98", "_text_", "Vegeta is the saiyan prince."));
         assertU(commit());
@@ -52,7 +53,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
                 "/response/docs/[1]/id=='98'",
                 "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); //clean up
     }
 
     /*
@@ -67,7 +68,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
 
     @Test
     public void processAdd_emptyInputField_shouldLogAndIndexWithNoVector() throws Exception {
-        loadModel("dummy-model.json");
+        loadModel("dummy-model.json");//preparation
         assertU(adoc("id", "99", "_text_", ""));
         assertU(adoc("id", "98", "_text_", "Vegeta is the saiyan prince."));
         assertU(commit());
@@ -85,12 +86,12 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
                 "/response/docs/[1]/id=='98'",
                 "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); //clean up
     }
 
     @Test
     public void processAdd_nullInputField_shouldLogAndIndexWithNoVector() throws Exception {
-        loadModel("dummy-model.json");
+        loadModel("dummy-model.json");//preparation
         assertU(adoc("id", "99", "_text_", "Vegeta is the saiyan prince."));
         assertU(adoc("id", "98"));
         assertU(commit());
@@ -108,7 +109,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
                 "/response/docs/[1]/id=='98'",
                 "!/response/docs/[1]/vector==");//no vector field for the document 98
 
-        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); //clean up
     }
 
 
