@@ -39,21 +39,17 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
 
     private final String inputField;
     private final String outputField;
-    private final String model;
     private SolrTextToVectorModel textToVector;
-    private final ManagedTextToVectorModelStore modelStore;
 
     public TextToVectorUpdateProcessor(
             String inputField,
             String outputField,
-            String model,
-            SolrQueryRequest req,
+            SolrTextToVectorModel textToVector,
             UpdateRequestProcessor next) {
         super(next);
         this.inputField = inputField;
         this.outputField = outputField;
-        this.model = model;
-        this.modelStore = ManagedTextToVectorModelStore.getManagedModelStore(req.getCore());
+        this.textToVector = textToVector;
     }
 
     /**
@@ -62,16 +58,6 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
      */
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
-        this.textToVector = modelStore.getModel(model);
-        if (textToVector == null) {
-            throw new SolrException(
-                    SolrException.ErrorCode.BAD_REQUEST,
-                    "The model requested '"
-                            + model
-                            + "' can't be found in the store: "
-                            + ManagedTextToVectorModelStore.REST_END_POINT);
-        }
-
         SolrInputDocument doc = cmd.getSolrInputDocument();
         SolrInputField inputFieldContent = doc.get(inputField);
         if (!isNullOrEmpty(inputFieldContent, doc, inputField)) {
