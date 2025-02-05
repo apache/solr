@@ -324,7 +324,9 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
       final var syncReq = new FileStoreApi.SyncFile(path);
       final var syncRsp = syncReq.process(client);
-      log.info("sync resp for path {} was {}", path, syncRsp.getParsed().responseHeader.status);
+      if (log.isInfoEnabled()) {
+        log.info("sync resp for path {} was {}", path, syncRsp.getParsed().responseHeader.status);
+      }
     }
     checkAllNodesForFile(
         cluster,
