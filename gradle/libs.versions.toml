@@ -92,7 +92,7 @@ google-api-gax = "2.33.0"
 google-api-grpc-proto = "2.41.0"
 google-auth = "1.19.0"
 # @keep for version alignment
-google-autovalue = "1.10.4"
+google-autovalue = "1.11.0"
 google-cloud-bom = "0.224.0"
 google-cloud-core = "2.23.0"
 google-cloud-nio = "0.127.3"
