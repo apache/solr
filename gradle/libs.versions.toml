@@ -62,7 +62,7 @@ bats-file = "0.3.0"
 bc-jose4j = "0.9.6"
 benmanes-caffeine = "3.1.8"
 benmanes-versions = "0.51.0"
-bouncycastle = "1.78.1"
+bouncycastle = "1.80"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
 carrot2-core = "4.5.1"
