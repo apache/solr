@@ -37,6 +37,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SSLTestConfig;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -46,6 +47,11 @@ import org.junit.Test;
 @SuppressSSL
 @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
+
+  @After
+  public void afterTest() {
+    HttpClientUtil.resetHttpClientBuilder(); // also resets SocketFactoryRegistryProvider
+  }
 
   @Test
   public void test() throws Exception {
@@ -64,7 +70,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     }
 
     HttpClientUtil.setSocketFactoryRegistryProvider(
-        sslConfig.buildClientSocketFactoryRegistryProvider());
+        sslConfig.buildClientSocketFactoryRegistryProvider()); // we reset in After
     for (int i = 0; i < this.jettys.size(); i++) {
       JettySolrRunner runner = jettys.get(i);
       JettyConfig config =

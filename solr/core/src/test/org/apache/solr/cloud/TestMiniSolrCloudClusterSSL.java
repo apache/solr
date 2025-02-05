@@ -104,8 +104,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   public void testNoSsl() throws Exception {
     final SSLTestConfig sslConfig = new SSLTestConfig(false, false);
     HttpClientUtil.setSocketFactoryRegistryProvider(
-        sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+        sslConfig.buildClientSocketFactoryRegistryProvider()); // must be reset
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig()); // must be reset
     System.setProperty(ZkStateReader.URL_SCHEME, "http");
     checkClusterWithNodeReplacement(sslConfig);
   }
