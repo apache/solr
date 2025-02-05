@@ -29,6 +29,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -67,11 +68,9 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     SolrCore emptyCore = h.getCore();
     QParserPlugin qParserPlugin =
         QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME);
-    Map<String, String> params = new HashMap<>();
-    params.put("field", "cat");
     QParser parser =
         qParserPlugin.createParser(
-            "", new MapSolrParams(params), new MapSolrParams(new HashMap<>()), null);
+            "", SolrParams.of("field", "cat"), SolrParams.of(), null);
     AnalyticsQuery query = (AnalyticsQuery) parser.parse();
     SolrQueryResponse resp = new SolrQueryResponse();
 
@@ -105,7 +104,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     params.put("field", "cat");
     QParser parser =
         qParserPlugin.createParser(
-            "", new MapSolrParams(params), new MapSolrParams(new HashMap<>()), null);
+            "", new MapSolrParams(params), SolrParams.of(), null);
     AnalyticsQuery query = (AnalyticsQuery) parser.parse();
     SolrQueryResponse resp = new SolrQueryResponse();
 

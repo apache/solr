@@ -330,7 +330,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, new MapSolrParams(new HashMap<>())) {
+        new LocalSolrQueryRequest(null, SolrParams.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             return Collections.emptyList();
