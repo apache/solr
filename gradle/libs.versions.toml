@@ -78,7 +78,7 @@ cutterslade-analyze = "1.10.0"
 cybozulabs-langdetect = "1.1-20120112"
 diffplug-spotless = "6.5.2"
 dropwizard-metrics = "4.2.26"
-eclipse-ecj = "3.39.0"
+eclipse-ecj = "3.40.0"
 eclipse-jetty = "10.0.22"
 eclipse-jettytoolchain = "4.0.6"
 # @keep jgit version used by git-status.gradle
