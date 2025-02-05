@@ -34,6 +34,10 @@ Improvements
 
 * SOLR-17516: `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. (James Dyer)
 
+* SOLR-17351: Solr's filestore "get-file" API has been decomposed into several separate endpoints.  Traditional file-fetching is now available at
+  `GET /api/cluster/filestore/files/some/path.txt` and metadata fetching (and directory listing) is now available at `GET /api/cluster/filestore/metadata/some/path.txt`.
+  SolrJ now offers request and response bindings for these APIs in `org.apache.solr.client.solrj.request.FileStoreApi`. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
