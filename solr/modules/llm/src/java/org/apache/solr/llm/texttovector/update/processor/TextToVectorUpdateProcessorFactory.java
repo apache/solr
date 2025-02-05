@@ -36,10 +36,10 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
     private static final String OUTPUT_FIELD_PARAM = "outputField";
     private static final String MODEL_NAME = "model";
 
-    String inputField;
-    String outputField;
-    String modelName;
-    SolrParams params;
+    private String inputField;
+    private String outputField;
+    private String modelName;
+    private SolrParams params;
 
 
     @Override
