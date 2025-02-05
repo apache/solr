@@ -350,8 +350,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     boolean belongToThisStream(SolrRequest<?> solrRequest, String collection) {
-      ModifiableSolrParams solrParams = new ModifiableSolrParams(solrRequest.getParams());
-      return origParams.toNamedList().equals(solrParams.toNamedList())
+      return origParams.equals(solrRequest.getParams())
           && Objects.equals(origCollection, collection);
     }
 
