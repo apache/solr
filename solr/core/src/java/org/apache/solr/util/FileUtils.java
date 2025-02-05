@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.FileExistsException;
@@ -68,5 +69,18 @@ public class FileUtils {
 
     return normalizedChild.startsWith(normalizedParent)
         && !normalizedChild.equals(normalizedParent);
+  }
+
+  /**
+   * Takes a path and normalizes it with the OS default filesystems separator
+   *
+   * @param path the path to normalize
+   * @return path normalized with the filesystems default separator
+   */
+  public static String normalizeToOsPathSeparator(String path) {
+    if (path == null) return null;
+    path = path.replace("/", FileSystems.getDefault().getSeparator());
+    path = path.replace("\\", FileSystems.getDefault().getSeparator());
+    return path;
   }
 }

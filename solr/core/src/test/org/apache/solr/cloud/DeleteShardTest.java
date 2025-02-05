@@ -66,14 +66,12 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     // Can delete an INACTIVE shard
     CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient());
-    waitForState(
-        "Expected 'shard1' to be removed", collection, (n, c) -> c.getSlice("shard1") == null);
+    waitForState("Expected 'shard1' to be removed", collection, c -> c.getSlice("shard1") == null);
 
     // Can delete a shard under construction
     setSliceState(collection, "shard2", Slice.State.CONSTRUCTION);
     CollectionAdminRequest.deleteShard(collection, "shard2").process(cluster.getSolrClient());
-    waitForState(
-        "Expected 'shard2' to be removed", collection, (n, c) -> c.getSlice("shard2") == null);
+    waitForState("Expected 'shard2' to be removed", collection, c -> c.getSlice("shard2") == null);
   }
 
   @Test
@@ -97,7 +95,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     // Delete shard 'a'
     CollectionAdminRequest.deleteShard(collection, "a").process(cluster.getSolrClient());
 
-    waitForState("Expected 'a' to be removed", collection, (n, c) -> c.getSlice("a") == null);
+    waitForState("Expected 'a' to be removed", collection, c -> c.getSlice("a") == null);
 
     assertEquals(2, getCollectionState(collection).getActiveSlices().size());
     assertFalse("Instance directory still exists", FileUtils.fileExists(coreStatus.instanceDir));
@@ -112,7 +110,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
         .setDeleteInstanceDir(false)
         .process(cluster.getSolrClient());
 
-    waitForState("Expected 'b' to be removed", collection, (n, c) -> c.getSlice("b") == null);
+    waitForState("Expected 'b' to be removed", collection, c -> c.getSlice("b") == null);
 
     assertEquals(1, getCollectionState(collection).getActiveSlices().size());
     assertTrue("Instance directory still exists", FileUtils.fileExists(coreStatus.instanceDir));
@@ -125,6 +123,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
     waitForState(
         "Expected shard " + shardId + " to be in state " + state,
         collectionName,
-        (n, c) -> c.getSlice(shardId).getState() == state);
+        c -> c.getSlice(shardId).getState() == state);
   }
 }

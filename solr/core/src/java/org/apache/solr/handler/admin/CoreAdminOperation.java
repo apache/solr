@@ -40,6 +40,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SWAP
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UNLOAD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
+import static org.apache.solr.util.FileUtils.normalizeToOsPathSeparator;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -326,7 +327,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
           if (core != null) {
             info.name = core.getName();
             info.instanceDir = core.getInstancePath().toString();
-            info.dataDir = normalizePath(core.getDataDir());
+            info.dataDir = normalizeToOsPathSeparator(core.getDataDir());
             info.config = core.getConfigResource();
             info.schema = core.getSchemaResource();
             info.startTime = core.getStartTimeStamp();

@@ -227,7 +227,7 @@ To support rolling restarts from older versions, Solr can be configured to accep
 
 If the `SolrAuthV2` header is present but fails validation, then Solr will not fall back to checking `SolrAuth`. The legacy authentication headers will only be consulted when the newest headers are not present.
 
-Unkown values for `solr.pki.acceptVersion` will emit a warning log message but will not cause errors to more smoothly support future protocol revisions.
+Unknown values for `solr.pki.acceptVersion` will emit a warning log message but will not cause errors to more smoothly support future protocol revisions.
 
 The timeout is configurable through a system property called `pkiauth.ttl`.
 For example, if you wish to increase the time-to-live to 10 seconds (10,000 milliseconds), start each node with a property `'-Dpkiauth.ttl=10000'`.
