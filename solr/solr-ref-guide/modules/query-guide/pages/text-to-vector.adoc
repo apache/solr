@@ -69,7 +69,7 @@ You need to register / configure the plugins provided by the LLM module that you
 +
 [source,xml]
 ----
-<queryParser name="knn_text_to_vector" class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin"/>
+<queryParser name="knn_text_to_vector" class="org.apache.solr.llm.textvectorisation.search.TextToVectorQParserPlugin"/>
 ----
 
 == Text to Vector Lifecycle

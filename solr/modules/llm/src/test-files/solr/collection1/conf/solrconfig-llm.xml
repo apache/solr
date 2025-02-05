@@ -23,7 +23,7 @@
 
  <!-- Query parser used to run neural queries-->
  <queryParser name="knn_text_to_vector"
-  class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin" />
+  class="org.apache.solr.llm.textvectorisation.search.TextToVectorQParserPlugin" />
 
  <query>
   <filterCache class="solr.CaffeineCache" size="4096"
