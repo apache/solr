@@ -69,8 +69,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     QParserPlugin qParserPlugin =
         QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME);
     QParser parser =
-        qParserPlugin.createParser(
-            "", SolrParams.of("field", "cat"), SolrParams.of(), null);
+        qParserPlugin.createParser("", SolrParams.of("field", "cat"), SolrParams.of(), null);
     AnalyticsQuery query = (AnalyticsQuery) parser.parse();
     SolrQueryResponse resp = new SolrQueryResponse();
 
@@ -103,8 +102,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     Map<String, String> params = new HashMap<>();
     params.put("field", "cat");
     QParser parser =
-        qParserPlugin.createParser(
-            "", new MapSolrParams(params), SolrParams.of(), null);
+        qParserPlugin.createParser("", new MapSolrParams(params), SolrParams.of(), null);
     AnalyticsQuery query = (AnalyticsQuery) parser.parse();
     SolrQueryResponse resp = new SolrQueryResponse();
 
