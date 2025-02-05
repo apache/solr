@@ -103,31 +103,15 @@ public abstract class SolrPrometheusFormatter {
   }
 
   /**
-   * Export {@link Timer} ands its mean rate to {@link
-   * io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot} and collect
-   * datapoint
-   *
-   * @param metricName name of prometheus metric
-   * @param dropwizardMetric the {@link Timer} to be exported
-   * @param labels label names and values to record
-   */
-  public void exportTimer(String metricName, Timer dropwizardMetric, Labels labels) {
-    GaugeSnapshot.GaugeDataPointSnapshot dataPoint =
-        createGaugeDatapoint(dropwizardMetric.getSnapshot().getMean(), labels);
-    collectGaugeDatapoint(metricName, dataPoint);
-  }
-
-
-  /**
-   * Export {@link Timer} ands its quantile data to {@link
-   * io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot}
+   * Export {@link Timer} ands its quantile data to
+   * {@link io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot}
    * and collect datapoint
    *
    * @param metricName name of prometheus metric
    * @param dropwizardMetric the {@link Timer} to be exported
    * @param labels label names and values to record
    */
-  public void exportTimerSummary(String metricName, Timer dropwizardMetric, Labels labels) {
+  public void exportTimer(String metricName, Timer dropwizardMetric, Labels labels) {
     Snapshot snapshot = dropwizardMetric.getSnapshot();
 
     long count = snapshot.size();

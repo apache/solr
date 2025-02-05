@@ -27,8 +27,7 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 /** Dropwizard metrics of name SEARCHER.* */
 public class SolrCoreSearcherMetric extends SolrCoreMetric {
   public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher_documents";
-  public static final String CORE_SEARCHER_TIMES = "solr_metrics_core_average_searcher_warmup_time";
-  public static final String CORE_SEARCHER_TIME_SUMMARY = "solr_metrics_core_searcher_warmup_time";
+  public static final String CORE_SEARCHER_TIMES = "solr_metrics_core_searcher_warmup_time";
 
   public SolrCoreSearcherMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
@@ -60,7 +59,6 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
       }
     } else if (dropwizardMetric instanceof Timer) {
       formatter.exportTimer(CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, getLabels());
-      formatter.exportTimerSummary(CORE_SEARCHER_TIME_SUMMARY, (Timer) dropwizardMetric, getLabels());
     }
   }
 }

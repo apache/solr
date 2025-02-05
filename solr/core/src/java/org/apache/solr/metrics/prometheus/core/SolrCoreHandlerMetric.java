@@ -28,8 +28,7 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
   public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests";
   public static final String CORE_REQUESTS_UPDATE_HANDLER = "solr_metrics_core_update_handler";
   public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_time";
-  public static final String CORE_REQUEST_TIMES = "solr_metrics_core_average_request_time";
-  public static final String CORE_REQUEST_TIME_SUMMARY = "solr_metrics_core_request_time";
+  public static final String CORE_REQUEST_TIMES = "solr_metrics_core_request_time";
 
   public SolrCoreHandlerMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
@@ -73,7 +72,6 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
       // Do not need type label for request times
       labels.remove("type");
       formatter.exportTimer(CORE_REQUEST_TIMES, (Timer) dropwizardMetric, getLabels());
-      formatter.exportTimerSummary(CORE_REQUEST_TIME_SUMMARY, (Timer) dropwizardMetric, getLabels());
     }
   }
 }
