@@ -82,7 +82,7 @@ eclipse-ecj = "3.39.0"
 eclipse-jetty = "10.0.22"
 eclipse-jettytoolchain = "4.0.6"
 # @keep jgit version used by git-status.gradle
-eclipse-jgit = "6.7.0.202309050840-r"
+eclipse-jgit = "7.1.0.202411261347-r"
 fasterxml = "2.18.2"
 fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
