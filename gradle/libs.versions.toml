@@ -106,7 +106,7 @@ google-j2objc = "3.0.0"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.18.1"
 # @keep for version alignment
-google-protobuf = "3.25.3"
+google-protobuf = "4.29.3"
 # @keep Gradle version to run the build
 gradle = "8.10"
 grpc = "1.65.1"
