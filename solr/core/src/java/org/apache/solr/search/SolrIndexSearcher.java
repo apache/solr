@@ -237,7 +237,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         0L,
         TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<>(
-            EnvUtils.getPropertyAsInteger("solr.searcherCollector.queueSize", 1000)),
+            EnvUtils.getPropertyAsInteger("solr.search.multiThreaded.queueSize", 1000)),
         new SolrNamedThreadFactory("searcherCollector")) {
 
       @Override
