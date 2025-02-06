@@ -56,12 +56,41 @@ There are several options defined in this example:
 
 <1> The first block defines the authentication plugin to be used and its parameters.
 <2> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
-<3> A user called 'solr', with a password `'SolrRocks'`, in the encoded format detailed above, has been defined.
+<3> A user called 'solr', with a password `'SolrRocks'`, in the encoded format detailed above, has been defined. See below for a bash script on how to caculate the encoded format.
 <4> We override the `realm` property to display another text on the login prompt.
 <5> The parameter `"forwardCredentials":false` means we let Solr's PKI authentication handle distributed request instead of forwarding the Basic Auth header.
 
 Save your settings to a file called `security.json` locally.
 If you are using Solr in single-node installation, you should put this file in `$SOLR_HOME`.
+
+The following bash script illustrates how to calculated the encoded password format:
+[generate-salt-and-password.sh]
+----
+#!/bin/bash
+
+# Check for required arguments
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <username> <password>"
+    exit 1
+fi
+
+username="$1"
+password="$2"
+
+# Generate a random 32-byte salt and encode it in base64
+raw_salt=$(openssl rand -base64 32)
+decoded_salt=$(echo -n "$raw_salt" | base64 -d)
+
+# hash password and salt and base64 encode it
+hash=$(echo -n "$decoded_salt$password" | openssl dgst -binary -sha256 | openssl dgst -binary -sha256 | base64)
+
+# Format credentials for Solr security.json
+echo "{"
+echo "  \"credentials\": {"
+echo "    \"$username\": \"$hash $raw_salt\","
+echo "    ..."
+echo "}"
+----
 
 If `blockUnknown` is not defined in the `security.json` file, it will default to `true`.
 This has the effect of requiring authentication for HTTP access to Solr.
