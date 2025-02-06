@@ -79,7 +79,7 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
                             + ManagedTextToVectorModelStore.REST_END_POINT);
         }
         
-        return new TextToVectorUpdateProcessor(inputField, outputField, textToVector, next);
+        return new TextToVectorUpdateProcessor(inputField, outputField, textToVector, req, next);
     }
 
     protected void assertIsDenseVectorField(SchemaField schemaField) {

@@ -20,6 +20,9 @@ package org.apache.solr.llm.textvectorisation.update.processor;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.llm.textvectorisation.model.SolrTextToVectorModel;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.slf4j.Logger;
@@ -34,6 +37,7 @@ import java.util.List;
 class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+    private IndexSchema schema;
     private final String inputField;
     private final String outputField;
     private SolrTextToVectorModel textToVector;
@@ -42,8 +46,9 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
             String inputField,
             String outputField,
             SolrTextToVectorModel textToVector,
-            UpdateRequestProcessor next) {
+            SolrQueryRequest req, UpdateRequestProcessor next) {
         super(next);
+        this.schema = req.getSchema();
         this.inputField = inputField;
         this.outputField = outputField;
         this.textToVector = textToVector;
@@ -57,27 +62,25 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
     public void processAdd(AddUpdateCommand cmd) throws IOException {
         SolrInputDocument doc = cmd.getSolrInputDocument();
         SolrInputField inputFieldContent = doc.get(inputField);
-        if (!isNullOrEmpty(inputFieldContent, doc, inputField)) {
-            String textToVectorise = inputFieldContent.getValue().toString();//add null checks and
-            float[] vector = textToVector.vectorise(textToVectorise);
-            List<Float> vectorAsList = new ArrayList<Float>(vector.length);
-            for (float f : vector) {
-                vectorAsList.add(f);
+        if (!isNullOrEmpty(inputFieldContent)) {
+            try {
+                String textToVectorise = inputFieldContent.getValue().toString();
+                float[] vector = textToVector.vectorise(textToVectorise);
+                List<Float> vectorAsList = new ArrayList<Float>(vector.length);
+                for (float f : vector) {
+                    vectorAsList.add(f);
+                }
+                doc.addField(outputField, vectorAsList);
+            } catch (RuntimeException vectorisationFailure) {
+                SchemaField uniqueKeyField = schema.getUniqueKeyField();
+                String uniqueKeyFieldName = uniqueKeyField.getName();
+                log.error("Could not vectorise: " + inputField + " for the document with " + uniqueKeyFieldName + ": " + doc.getFieldValue(uniqueKeyFieldName), vectorisationFailure);
             }
-            doc.addField(outputField, vectorAsList);
         }
         super.processAdd(cmd);
     }
 
-    protected boolean isNullOrEmpty(SolrInputField inputFieldContent, SolrInputDocument doc, String fieldName) {
-        if (inputFieldContent == null || inputFieldContent.getValue() == null) {
-            log.warn("the input field: " + fieldName + " is missing for the document: " + doc.toString());
-            return true;
-        } else if (inputFieldContent.getValue().toString().isEmpty()) {
-            log.warn("the input field: " + fieldName + " is empty (string instance of zero length) for the document: " + doc.toString());
-            return true;
-        } else {
-            return false;
-        }
+    protected boolean isNullOrEmpty(SolrInputField inputFieldContent) {
+        return (inputFieldContent == null || inputFieldContent.getValue() == null || inputFieldContent.getValue().toString().isEmpty());
     }
 }

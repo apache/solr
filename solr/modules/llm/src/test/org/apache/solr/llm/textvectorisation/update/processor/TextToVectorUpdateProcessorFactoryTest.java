@@ -67,6 +67,53 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
   }
 
   @Test
+  public void init_nullOutputField_shouldThrowExceptionWithDetailedMessage() {
+    args.add("inputField", "_text_");
+    args.add("model", "model1");
+    
+    SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
+    assertEquals("Missing required parameter: outputField", e.getMessage());
+  }
+  
+  @Test
+  public void init_nullModel_shouldThrowExceptionWithDetailedMessage() {
+    args.add("inputField", "_text_");
+    args.add("outputField", "vector");
+    
+    SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
+    assertEquals("Missing required parameter: model", e.getMessage());
+  }
+
+  /* Following tests depends on a real solr schema */
+  @Test
+  public void init_notExistentOutputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
+    args.add("inputField", "_text_");
+    args.add("outputField", "notExistentOutput");
+    args.add("model", "model1");
+
+    Map<String, String[]> params = new HashMap<>();
+    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
+    factoryToTest.init(args);
+    SolrException e = assertThrows(SolrException.class, () -> factoryToTest.getInstance(req,null,null));
+    assertEquals("undefined field: \"notExistentOutput\"", e.getMessage());
+  }
+
+  @Test
+  public void init_notDenseVectorOutputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
+    args.add("inputField", "_text_");
+    args.add("outputField", "_text_");
+    args.add("model", "model1");
+
+    Map<String, String[]> params = new HashMap<>();
+    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
+    factoryToTest.init(args);
+    SolrException e = assertThrows(SolrException.class, () -> factoryToTest.getInstance(req,null,null));
+    assertEquals("only DenseVectorField is compatible with Vector Query Parsers: _text_", e.getMessage());
+  }
+
+  @Test
   public void init_notExistentInputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
     args.add("inputField", "notExistentInput");
     args.add("outputField", "vector");
@@ -78,52 +125,6 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     factoryToTest.init(args);
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.getInstance(req,null,null));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
-  }
-
-  @Test
-  public void init_nullOutputField_shouldThrowExceptionWithDetailedMessage() {
-    args.add("inputField", "_text_");
-    args.add("model", "model1");
-    
-    SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
-    assertEquals("Missing required parameter: outputField", e.getMessage());
-  }
-
-  @Test
-  public void init_notExistentOutputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
-    args.add("inputField", "_text_");
-    args.add("outputField", "notExistentOutput");
-    args.add("model", "model1");
-    
-    Map<String, String[]> params = new HashMap<>();
-    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
-    factoryToTest.init(args);
-    SolrException e = assertThrows(SolrException.class, () -> factoryToTest.getInstance(req,null,null));
-    assertEquals("undefined field: \"notExistentOutput\"", e.getMessage());
-  }
-  
-  @Test
-  public void init_notDenseVectorOutputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
-    args.add("inputField", "_text_");
-    args.add("outputField", "_text_");
-    args.add("model", "model1");
-    
-    Map<String, String[]> params = new HashMap<>();
-    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
-    factoryToTest.init(args);
-    SolrException e = assertThrows(SolrException.class, () -> factoryToTest.getInstance(req,null,null));
-    assertEquals("only DenseVectorField is compatible with Vector Query Parsers: _text_", e.getMessage());
-  }
-
-  @Test
-  public void init_nullModel_shouldThrowExceptionWithDetailedMessage() {
-    args.add("inputField", "_text_");
-    args.add("outputField", "vector");
-    
-    SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
-    assertEquals("Missing required parameter: model", e.getMessage());
   }
   
 }
