@@ -119,13 +119,8 @@ templates:
   announce_solr_announce_mail: |    
     The template below can be used to announce the Solr release to the
     `announce@apache.org` mailing list. The email *must* be sent *from your `@apache.org` account*,
-    and it *can optionally* be signed with your PGP key. To sign the mail body, follow these steps:
-    
-    1. Copy the body of the announce email to clipboard
-    2. Run the command `gpg --output - --clearsign` in your terminal
-    3. Paste the body of the email into the terminal
-    4. Press `Ctrl-D` to end the input and obtain the signed text
-    5. Copy the signed text and paste it into the email client
+    and it *can optionally* be signed with your PGP key, using the `--clearsign` option of 
+    gpg, as explained in https://www.gnupg.org/gph/en/manual/x135.html.
 
     .Mail template
     ----
