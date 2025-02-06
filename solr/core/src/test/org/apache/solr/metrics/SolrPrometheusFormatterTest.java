@@ -29,7 +29,6 @@ import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.SummarySnapshot;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

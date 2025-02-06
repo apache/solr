@@ -29,13 +29,11 @@ import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import io.prometheus.metrics.model.snapshots.Quantile;
 import io.prometheus.metrics.model.snapshots.Quantiles;
 import io.prometheus.metrics.model.snapshots.SummarySnapshot;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -103,9 +101,9 @@ public abstract class SolrPrometheusFormatter {
   }
 
   /**
-   * Export {@link Timer} ands its quantile data to
-   * {@link io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot}
-   * and collect datapoint
+   * Export {@link Timer} ands its quantile data to {@link
+   * io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot} and collect
+   * datapoint
    *
    * @param metricName name of prometheus metric
    * @param dropwizardMetric the {@link Timer} to be exported
@@ -115,20 +113,22 @@ public abstract class SolrPrometheusFormatter {
     Snapshot snapshot = dropwizardMetric.getSnapshot();
 
     long count = snapshot.size();
-    double sum = Arrays.stream(snapshot.getValues())
-      .asDoubleStream()
-      .map(num -> MetricUtils.nsToMs(num))
-      .sum();
+    double sum =
+        Arrays.stream(snapshot.getValues())
+            .asDoubleStream()
+            .map(num -> MetricUtils.nsToMs(num))
+            .sum();
 
-    Quantiles quantiles = Quantiles.of(List.of(
-      new Quantile(0.50, MetricUtils.nsToMs(snapshot.getMedian())),
-      new Quantile(0.75, MetricUtils.nsToMs(snapshot.get75thPercentile())),
-      new Quantile(0.99, MetricUtils.nsToMs(snapshot.get99thPercentile())),
-      new Quantile(0.999, MetricUtils.nsToMs(snapshot.get999thPercentile()))
-    ));
+    Quantiles quantiles =
+        Quantiles.of(
+            List.of(
+                new Quantile(0.50, MetricUtils.nsToMs(snapshot.getMedian())),
+                new Quantile(0.75, MetricUtils.nsToMs(snapshot.get75thPercentile())),
+                new Quantile(0.99, MetricUtils.nsToMs(snapshot.get99thPercentile())),
+                new Quantile(0.999, MetricUtils.nsToMs(snapshot.get999thPercentile()))));
 
     SummarySnapshot.SummaryDataPointSnapshot summary =
-      createSummaryDataPointSnapshot(count, sum, quantiles, labels);
+        createSummaryDataPointSnapshot(count, sum, quantiles, labels);
 
     collectSummaryDatapoint(metricName, summary);
   }
@@ -212,13 +212,13 @@ public abstract class SolrPrometheusFormatter {
    * @param labels set of name/values labels
    */
   public SummarySnapshot.SummaryDataPointSnapshot createSummaryDataPointSnapshot(
-    long count, double sum, Quantiles quantiles, Labels labels) {
+      long count, double sum, Quantiles quantiles, Labels labels) {
     return SummarySnapshot.SummaryDataPointSnapshot.builder()
-      .count(count)
-      .sum(sum)
-      .labels(labels)
-      .quantiles(quantiles)
-      .build();
+        .count(count)
+        .sum(sum)
+        .labels(labels)
+        .quantiles(quantiles)
+        .build();
   }
 
   /**
@@ -252,14 +252,14 @@ public abstract class SolrPrometheusFormatter {
   }
 
   /**
-   * Collects {@link io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot} and
-   * appends to existing metric or create new metric if name does not exist
+   * Collects {@link io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot}
+   * and appends to existing metric or create new metric if name does not exist
    *
    * @param metricName Name of metric
    * @param dataPoint Gauge datapoint to be collected
    */
-  public void collectSummaryDatapoint(String metricName,
-    SummarySnapshot.SummaryDataPointSnapshot dataPoint) {
+  public void collectSummaryDatapoint(
+      String metricName, SummarySnapshot.SummaryDataPointSnapshot dataPoint) {
     if (!metricSummaries.containsKey(metricName)) {
       metricSummaries.put(metricName, new ArrayList<>());
     }
@@ -282,7 +282,8 @@ public abstract class SolrPrometheusFormatter {
           new GaugeSnapshot(new MetricMetadata(metricName), metricGauges.get(metricName)));
     }
     for (String metricName : metricSummaries.keySet()) {
-      snapshots.add(new SummarySnapshot(new MetricMetadata(metricName), metricSummaries.get(metricName)));
+      snapshots.add(
+          new SummarySnapshot(new MetricMetadata(metricName), metricSummaries.get(metricName)));
     }
 
     return new MetricSnapshots(snapshots);

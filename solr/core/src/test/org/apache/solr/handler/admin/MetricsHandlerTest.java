@@ -26,7 +26,6 @@ import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import io.prometheus.metrics.model.snapshots.SummarySnapshot;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -797,8 +796,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
                 "updateHandler"));
     assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
-    actualSnapshot =
-        getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_warmup_time");
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_warmup_time");
     actualSummaryDataPoint =
         getSummaryDataPointSnapshot(
             actualSnapshot, Labels.of("core", "collection1", "type", "warmup"));
