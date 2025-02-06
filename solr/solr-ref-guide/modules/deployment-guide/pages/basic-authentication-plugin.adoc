@@ -56,14 +56,14 @@ There are several options defined in this example:
 
 <1> The first block defines the authentication plugin to be used and its parameters.
 <2> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
-<3> A user called 'solr', with a password `'SolrRocks'`, in the encoded format detailed above, has been defined. See below for a bash script on how to caculate the encoded format.
+<3> A user called 'solr', with a password `'SolrRocks'`, in the encoded format detailed above, has been defined. See below for a bash script on how to calculate the encoded format.
 <4> We override the `realm` property to display another text on the login prompt.
 <5> The parameter `"forwardCredentials":false` means we let Solr's PKI authentication handle distributed request instead of forwarding the Basic Auth header.
 
 Save your settings to a file called `security.json` locally.
 If you are using Solr in single-node installation, you should put this file in `$SOLR_HOME`.
 
-The following bash script illustrates how to calculated the encoded password format:
+The following bash script illustrates how to calculate the encoded password format:
 [generate-salt-and-password.sh]
 ----
 #!/bin/bash
