@@ -85,6 +85,19 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     compareObjects((List) getObject(getBytes(types, true)), (List) types);
   }
 
+  public void testReadMap() throws Exception {
+    Map<String, String> types = new HashMap<>();
+    types.put("1", "one");
+
+    EnvUtils.setProperty("solr.solrj.javabin.mapAsNamedList", "true");
+
+    byte[] bytes = getBytes(types, true);
+    Object result = getObject(bytes);
+
+    assertTrue(result instanceof SimpleOrderedMap);
+    assertEquals("one", ((SimpleOrderedMap<?>) result).get("1"));
+  }
+
   public static SolrDocument generateSolrDocumentWithChildDocs() {
     SolrDocument parentDocument = new SolrDocument();
     parentDocument.addField("id", "1");

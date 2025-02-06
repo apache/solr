@@ -848,15 +848,40 @@ public class JavaBinCodec implements PushWriter {
     return size < 0 ? new LinkedHashMap<>() : CollectionUtil.newLinkedHashMap(size);
   }
 
-  public Map<Object, Object> readMap(DataInputInputStream dis) throws IOException {
+  public Map<?, Object> readMap(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
-    return readMap(dis, sz);
+
+    if (EnvUtils.getPropertyAsBool("solr.solrj.javabin.mapAsNamedList", true)) {
+      return readMapAsSimpleOrderedMapForStringKeys(dis, sz);
+    } else {
+      return readMap(dis, sz);
+    }
   }
 
   protected Map<Object, Object> readMap(DataInputInputStream dis, int sz) throws IOException {
     Map<Object, Object> m = newMap(sz);
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
+      Object val = readVal(dis);
+      m.put(key, val);
+    }
+    return m;
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  protected Map<?, Object> readMapAsSimpleOrderedMapForStringKeys(DataInputInputStream dis, int sz)
+      throws IOException {
+    Map m = null;
+    for (int i = 0; i < sz; i++) {
+      Object key = readVal(dis);
+
+      if (m == null) {
+        if (key instanceof String) {
+          m = new SimpleOrderedMap<>(sz);
+        } else {
+          m = newMap(sz);
+        }
+      }
       Object val = readVal(dis);
       m.put(key, val);
     }
