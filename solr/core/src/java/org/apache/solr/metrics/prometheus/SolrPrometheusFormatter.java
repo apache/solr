@@ -115,7 +115,10 @@ public abstract class SolrPrometheusFormatter {
     Snapshot snapshot = dropwizardMetric.getSnapshot();
 
     long count = snapshot.size();
-    double sum = Arrays.stream(snapshot.getValues()).asDoubleStream().sum();
+    double sum = Arrays.stream(snapshot.getValues())
+      .asDoubleStream()
+      .map(num -> MetricUtils.nsToMs(num))
+      .sum();
 
     Quantiles quantiles = Quantiles.of(List.of(
       new Quantile(0.50, MetricUtils.nsToMs(snapshot.getMedian())),
