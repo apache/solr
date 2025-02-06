@@ -23,6 +23,7 @@ import org.apache.solr.llm.textvectorisation.search.TextToVectorQParserPlugin;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.RestManager;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,6 +32,11 @@ public class TestModelManager extends TestLlmBase {
   @BeforeClass
   public static void init() throws Exception {
     setupTest("solrconfig-llm.xml", "schema.xml", false, false);
+  }
+
+  @AfterClass
+  public static void cleanup() throws Exception {
+    afterTest();
   }
 
   @Test
