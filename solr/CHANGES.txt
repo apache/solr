@@ -185,6 +185,9 @@ Bug Fixes
 * SOLR-17637: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
   This can cause the HttpShardHandler to indefinitely wait on a completed response that will never come. (Houston Putman)
 
+* SOLR-17630: Added a node-wide CloudSolrClient to ZkController, and accessible via SolrCloudManager too.
+  Uses Jetty HttpClient.  Deprecated CloudSolrClient.getSolrClientCache.  Redirected some callers.  (David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
