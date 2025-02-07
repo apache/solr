@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 
 public class FacetField extends FacetRequestSorted {
@@ -95,9 +94,9 @@ public class FacetField extends FacetRequestSorted {
       return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
     }
 
-    NumberType ntype = ft.getNumberType();
+    final boolean isNumber = ft.getNumberType() != null;
     // ensure we can support the requested options for numeric faceting:
-    if (ntype != null) {
+    if (isNumber) {
       if (prefix != null) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -139,11 +138,11 @@ public class FacetField extends FacetRequestSorted {
     // FieldType.getDocValuesType()
 
     if (!multiToken) {
-      if (mincount > 0 && prefix == null && (ntype != null || method == FacetMethod.DVHASH)) {
+      if (mincount > 0 && prefix == null && (isNumber || method == FacetMethod.DVHASH)) {
         // TODO can we auto-pick for strings when term cardinality is much greater than DocSet
         // cardinality? or if we don't know cardinality but DocSet size is very small
         return new FacetFieldProcessorByHashDV(fcontext, this, sf);
-      } else if (ntype == null) {
+      } else if (isNumber == false) {
         // single valued string...
         return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
       } else {
@@ -154,8 +153,7 @@ public class FacetField extends FacetRequestSorted {
 
     // multi-valued after this point
 
-    if (sf.hasDocValues()
-        && (sf.getType().isPointField() || sf.getType().getNumberType() != null)) {
+    if (sf.hasDocValues() && isNumber && sf.getType().isPointField()) { // not legacy Trie numerics
       return new FacetFieldProcessorByHashDV(fcontext, this, sf);
     }
 
