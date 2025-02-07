@@ -18,6 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -153,7 +154,8 @@ public class FacetField extends FacetRequestSorted {
 
     // multi-valued after this point
 
-    if (sf.hasDocValues() && isNumber && sf.getType().isPointField()) { // not legacy Trie numerics
+    if (sf.hasDocValues() && isNumber && dvType(fcontext, field) != DocValuesType.SORTED_SET) {
+      // doesn't support SORTED_SET DV (it's a TODO)
       return new FacetFieldProcessorByHashDV(fcontext, this, sf);
     }
 
@@ -164,6 +166,11 @@ public class FacetField extends FacetRequestSorted {
 
     // Top-level multi-valued field cache (UIF)
     return new FacetFieldProcessorByArrayUIF(fcontext, this, sf);
+  }
+
+  private static DocValuesType dvType(FacetContext fcontext, String field) {
+    var fieldInfo = fcontext.searcher.getFieldInfos().fieldInfo(field);
+    return fieldInfo == null ? null : fieldInfo.getDocValuesType();
   }
 
   @Override
