@@ -373,6 +373,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public static CoreContainer getCoreContainerMock(
       final Map<String, Object[]> in, Map<String, Object> out) {
     assumeWorkingMockito();

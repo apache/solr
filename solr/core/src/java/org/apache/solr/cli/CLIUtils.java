@@ -328,7 +328,7 @@ public final class CLIUtils {
         final var initFailureForCore = failureStatus.get(coreName);
         final boolean hasName = coreStatus != null && coreStatus.name != null;
         exists = hasName || initFailureForCore != null;
-        wait = hasName && initFailureForCore == null && "true".equals(coreStatus.isLoading);
+        wait = hasName && initFailureForCore == null && Boolean.TRUE.equals(coreStatus.isLoading);
       } while (wait && System.nanoTime() - startWaitAt < MAX_WAIT_FOR_CORE_LOAD_NANOS);
     } catch (Exception exc) {
       // just ignore it since we're only interested in a positive result here

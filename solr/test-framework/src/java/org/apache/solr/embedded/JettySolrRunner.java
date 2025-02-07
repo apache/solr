@@ -66,8 +66,8 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.CoreAdminOperation;
 import org.apache.solr.handler.admin.LukeRequestHandler;
+import org.apache.solr.handler.admin.api.CoreStatus;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -716,13 +716,11 @@ public class JettySolrRunner {
     if (getCoreContainer() != null) {
       List<SolrCore> cores = getCoreContainer().getCores();
       for (SolrCore core : cores) {
-        final var coreStatus =
-            CoreAdminOperation.getCoreStatus(getCoreContainer(), core.getName(), false);
+        final var coreStatus = CoreStatus.getCoreStatus(getCoreContainer(), core.getName(), false);
         core.withSearcher(
             solrIndexSearcher -> {
               SimpleOrderedMap<Object> lukeIndexInfo =
                   LukeRequestHandler.getIndexInfo(solrIndexSearcher.getIndexReader());
-              // TODO NOCOMMIT Following line is a little suspect IMO, but we'll see if tests pass.
               Map<String, Object> indexInfoMap = Utils.reflectToMap(coreStatus);
               indexInfoMap.putAll(lukeIndexInfo.toMap(new LinkedHashMap<>()));
               pw.println(JSONUtil.toJSON(indexInfoMap, 2));
