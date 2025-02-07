@@ -156,8 +156,8 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     types.add((float) 6);
     types.add(new Date(0));
 
-    Map<Integer, Integer> map = new HashMap<>();
-    map.put(1, 2);
+    Map<String, Integer> map = new SimpleOrderedMap<>();
+    map.put("two", 2);
     types.add(map);
 
     SolrDocument doc = new SolrDocument();
@@ -306,7 +306,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         for (int i = 1;
             i < currentFormatBytes.length;
             i++) { // ignore the first byte. It is version information
-          assertEquals(newFormatBytes[i], currentFormatBytes[i]);
+          assertEquals("for i:" + i, newFormatBytes[i], currentFormatBytes[i]);
         }
       }
     }

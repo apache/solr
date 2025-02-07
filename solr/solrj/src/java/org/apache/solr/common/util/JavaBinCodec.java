@@ -871,21 +871,17 @@ public class JavaBinCodec implements PushWriter {
   @SuppressWarnings({"rawtypes", "unchecked"})
   protected Map<?, Object> readMapAsSimpleOrderedMapForStringKeys(DataInputInputStream dis, int sz)
       throws IOException {
-    Map m = null;
+
+    SimpleOrderedMap<Object> entries = new SimpleOrderedMap<>(sz);
+    
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
-
-      if (m == null) {
-        if (key instanceof String) {
-          m = new SimpleOrderedMap<>(sz);
-        } else {
-          m = newMap(sz);
-        }
-      }
+      assert key instanceof String;
       Object val = readVal(dis);
-      m.put(key, val);
+      entries.put((String) key, val);
     }
-    return m;
+    return entries;
+
   }
 
   public final ItemWriter itemWriter =
