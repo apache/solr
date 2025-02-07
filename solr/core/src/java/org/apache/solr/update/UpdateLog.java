@@ -268,40 +268,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected Meter copyOverOldUpdatesMeter;
   protected SolrMetricsContext solrMetricsContext;
 
-  public static class LogPtr {
-    final long pointer;
-    final long version;
-    // used for entries that are in-place updates and need a pointer to a previous update command
-    final long previousPointer;
-
-    /**
-     * Creates an object that contains the position and version of an update. In this constructor,
-     * the effective value of the previousPointer is -1.
-     *
-     * @param pointer Position in the transaction log of an update
-     * @param version Version of the update at the given position
-     */
-    public LogPtr(long pointer, long version) {
-      this(pointer, version, -1);
-    }
-
-    /**
-     * @param pointer Position in the transaction log of an update
-     * @param version Version of the update at the given position
-     * @param previousPointer Position, in the transaction log, of an update on which the current
-     *     update depends
-     */
-    public LogPtr(long pointer, long version, long previousPointer) {
-      this.pointer = pointer;
-      this.version = version;
-      this.previousPointer = previousPointer;
-    }
-
-    @Override
-    public String toString() {
-      return "LogPtr(" + pointer + ")";
-    }
-  }
+  /**
+   * Pointer into the log with a version.
+   *
+   * @param pointer Position in the transaction log of an update
+   * @param version Version of the update at the given position
+   */
+  protected record LogPtr(long pointer, long version) {}
 
   public long getTotalLogsSize() {
     long size = 0;
@@ -778,7 +751,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       if (!clearCaches) {
         // TODO: in the future we could support a real position for a REPLAY update.
         // Only currently would be useful for RTG while in recovery mode though.
-        LogPtr ptr = new LogPtr(pos, cmd.getVersion(), prevPointer);
+        LogPtr ptr = new LogPtr(pos, cmd.getVersion());
 
         map.put(cmd.getIndexedId(), ptr);
 
