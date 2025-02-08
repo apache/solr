@@ -45,6 +45,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -139,11 +140,12 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     NamedList<?> rspValues = rsp.getValues();
     Map<String, String> matchingNames = new HashMap<>();
     SolrIndexSearcher searcher = req.getSearcher();
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     DocList docList = (DocList) rspValues.get("response");
     DocIterator iter = docList.iterator();
     while (iter.hasNext()) {
       int docId = iter.next();
-      Document doc = searcher.doc(docId);
+      Document doc = docFetcher.doc(docId);
       String id = doc.getField("id").stringValue();
       String name = lookupByName(doc.get("name"));
       assertEquals("looking for " + name, NAMES.indexOf(name) + "", id);

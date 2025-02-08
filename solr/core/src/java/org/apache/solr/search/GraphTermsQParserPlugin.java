@@ -39,19 +39,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -65,6 +53,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /**
  * The GraphTermsQuery builds a disjunction query from a list of terms. The terms are first filtered
@@ -200,7 +189,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     public void setCost(int cost) {}
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Query rewrite(IndexSearcher searcher) throws IOException {
       return this;
     }
 
@@ -253,7 +242,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
           Terms terms = reader.terms(field);
           if (terms == null) {
@@ -264,17 +253,17 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
           for (int i = 0; i < finalContexts.size(); i++) {
             TermStates ts = finalContexts.get(i);
-            TermState termState = ts.get(context);
+            TermState termState = ts.get(context).get();
             if (termState != null) {
               Term term = finalTerms.get(i);
-              termsEnum.seekExact(term.bytes(), ts.get(context));
+              termsEnum.seekExact(term.bytes(), ts.get(context).get());
               docs = termsEnum.postings(docs, PostingsEnum.NONE);
               builder.add(docs);
             }
           }
           DocIdSet docIdSet = builder.build();
           DocIdSetIterator disi = docIdSet.iterator();
-          return disi == null ? null : new ConstantScoreScorer(this, score(), scoreMode, disi);
+          return disi == null ? null : new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
         }
 
         @Override
@@ -593,7 +582,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
       DocSet docs;
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         if (docs == null) {
           docs = getDocSet(searcher);
         }
@@ -603,7 +592,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
         if (readerSetIterator == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+        return new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, readerSetIterator));
       }
 
       @Override

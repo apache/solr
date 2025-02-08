@@ -201,7 +201,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
     if (needScores) {
       for (GroupDocs<?> group : topGroups.groups) {
-        TopFieldCollector.populateScores(group.scoreDocs, searcher, query);
+        TopFieldCollector.populateScores(group.scoreDocs(), searcher, query);
       }
     }
   }
