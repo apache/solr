@@ -264,7 +264,7 @@ Documentation Indexing time
 
 
 === Enriching documents with vectors at indexing time
-To vectorise textual fields from your documents at indexing time you need to configure an {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[Update Request Processor Chain] that includes at least one `TextToVectorUpdateProcessor` update request processor (you can include more than one, if you want to vectorise multiple fields):
+To vectorise textual fields of your documents at indexing time you need to configure an {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[Update Request Processor Chain] that includes at least one `TextToVectorUpdateProcessor` update request processor (you can include more than one, if you want to vectorise multiple fields):
 
 [source,xml]
 ----
@@ -287,7 +287,7 @@ To perform the vectorisation it leverages a 'model' you have previously uploaded
 [IMPORTANT]
 ====
 This update processor sends your document field content off to some hosted service on the internet.
-There are serious performance implications that should be diligently examined before employing this component in a serious way.
+There are serious performance implications that should be diligently examined before employing this component in production.
 It will slow down substantially your indexing pipeline so make sure to stress test your solution before going live.
 
 ====
@@ -295,9 +295,9 @@ It will slow down substantially your indexing pipeline so make sure to stress te
 For more details on how to work with update request processors in Apache Solr, please refer to the dedicated page: xref:configuration-guide:update-request-processors.adoc[Update Request Processor]
 
 === Index first and enrich your documents with vectors on a second pass
-Vectorising text using a hosted service may be slow so depending on your use case it could be a good idea to index first yur documents and then add vectors iteratively.
+Vectorising text using a hosted service may be slow, so, depending on your use case it could be a good idea to index first your documents and then add vectors iteratively.
 
-This can be done in Solr defining two update request processors chains: one that includes all the processors you need excluded the TextToVectorUpdateProcessor (let's call it 'no-vectorisation') and one that includes only the TextToVectorUpdateProcessor (let's call it 'vectorisation').
+This can be done in Solr defining two update request processors chains: one that includes all the processors you need, excluded the TextToVectorUpdateProcessor (let's call it 'no-vectorisation') and one that includes only the TextToVectorUpdateProcessor (let's call it 'vectorisation').
 
 [source,xml]
 ----
@@ -337,7 +337,7 @@ You would index your documents first using the 'no-vectorisation' and when finis
 [IMPORTANT]
 ====
 This implies you need to send the documents you want to index to Solr twice and re-run any other update request processor you need, in the second chain.
-This has data traffic (you transfer your documents over the network twice) and processing (if you have other update request processors in your chain, those must be repeated the second time as we are literally replacing the indexed documents one by one) implications
+This has data traffic implications(you transfer your documents over the network twice) and processing implications (if you have other update request processors in your chain, those must be repeated the second time as we are literally replacing the indexed documents one by one).
 ====
 
 If your use case is compatible with xref:indexing-guide:partial-document-updates.adoc[Partial Updates], you can do better:

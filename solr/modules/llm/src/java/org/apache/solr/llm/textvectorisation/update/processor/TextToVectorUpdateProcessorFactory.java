@@ -33,8 +33,19 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 
 /**
- * This class implements an UpdateProcessorFactory for the Text To Vector Update Processor.
- */
+ * Vectorises a textual field value and add the resulting vector to another field.
+ *
+ * <p>The parameters supported are:
+ *
+ * <pre class="prettyprint" >
+ * &lt;processor class=&quot;solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory&quot;&gt;
+ *   &lt;str name=&quot;inputField&quot;&gt;textualField&lt;/str&gt;
+ *   &lt;str name=&quot;outputField&quot;&gt;vectorField&lt;/str&gt;
+ *   &lt;str name=&quot;model&quot;&gt;textToVectorModel&lt;/str&gt;
+ * &lt;/processor&gt;
+ * </pre>
+ *
+ * **/
 public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
     private static final String INPUT_FIELD_PARAM = "inputField";
     private static final String OUTPUT_FIELD_PARAM = "outputField";
