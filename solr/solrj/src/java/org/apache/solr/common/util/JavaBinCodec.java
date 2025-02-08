@@ -124,6 +124,9 @@ public class JavaBinCodec implements PushWriter {
   private boolean alreadyUnmarshalled;
   protected boolean readStringAsCharSeq = false;
 
+  private boolean mapAsNamedList =
+      EnvUtils.getPropertyAsBool("solr.solrj.javabin.mapAsNamedList", true);
+
   public JavaBinCodec() {
     resolver = null;
     writableDocFields = null;
@@ -851,7 +854,7 @@ public class JavaBinCodec implements PushWriter {
   public Map<?, Object> readMap(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
 
-    if (EnvUtils.getPropertyAsBool("solr.solrj.javabin.mapAsNamedList", true)) {
+    if (mapAsNamedList) {
       return readMapAsSimpleOrderedMapForStringKeys(dis, sz);
     } else {
       return readMap(dis, sz);
@@ -873,7 +876,7 @@ public class JavaBinCodec implements PushWriter {
       throws IOException {
 
     SimpleOrderedMap<Object> entries = new SimpleOrderedMap<>(sz);
-    
+
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
       assert key instanceof String;
@@ -881,7 +884,6 @@ public class JavaBinCodec implements PushWriter {
       entries.put((String) key, val);
     }
     return entries;
-
   }
 
   public final ItemWriter itemWriter =
@@ -1456,5 +1458,9 @@ public class JavaBinCodec implements PushWriter {
     if (daos != null) {
       daos.flushBuffer();
     }
+  }
+
+  public void setMapAsNamedList(boolean mapAsNamedList) {
+    this.mapAsNamedList = mapAsNamedList;
   }
 }
