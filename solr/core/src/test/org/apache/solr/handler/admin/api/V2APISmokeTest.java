@@ -217,7 +217,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         canGet("/node/key");
         canGet("/node/logging/levels");
         canPut("/node/logging/levels", "[]");
-        canGet("/node/logging/messages?since=" + System.currentTimeMillis());
+        canGet("/node/logging/messages?since=1739116089");
         canPut("/node/logging/messages/threshold", """
                 {
                   "level": "WARN"
