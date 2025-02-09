@@ -175,7 +175,7 @@ osgi-annotation = "8.1.0"
 oshai-logging = "7.0.3"
 # @keep for version alignment
 ow2-asm = "9.7.1"
-owasp-dependencycheck = "9.0.8"
+owasp-dependencycheck = "9.2.0"
 # @keep for version alignment
 perfmark = "0.27.0"
 prometheus-metrics = "1.1.0"
