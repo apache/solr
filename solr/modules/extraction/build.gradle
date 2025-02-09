@@ -20,6 +20,7 @@ apply plugin: 'java-library'
 description = 'Solr Integration with Tika for extracting content from binary file formats such as Microsoft Word and Adobe PDF'
 
 dependencies {
+  implementation platform(project(':platform'))
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 

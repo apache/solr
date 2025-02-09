@@ -23,6 +23,7 @@ apply plugin: 'java-library'
 description = 'Cross-DC Manager'
 
 dependencies {
+  implementation platform(project(':platform'))
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
   implementation project(':solr:modules:cross-dc')

@@ -43,18 +43,21 @@ allprojects { prj ->
       tasks.withType(JavaCompile) { task -> task.dependsOn ":errorProneSkipped" }
 
       // Error prone plugin adds error prone to test classpath. We need to add it here too
-      // (manually) so that versions.lock is consistent with or without error prone.
+      // (manually) so that lockfiles are consistent with or without error prone.
       configurations {
         errorprone
       }
       dependencies {
+        errorprone platform(project(":platform"))
         errorprone libs.google.errorprone.core
       }
       configurations.annotationProcessor.extendsFrom(configurations.errorprone)
+      configurations.testAnnotationProcessor.extendsFrom(configurations.errorprone)
     } else {
       prj.apply plugin: libs.plugins.ltgt.errorprone.get().pluginId
 
       dependencies {
+        errorprone platform(project(":platform"))
         errorprone libs.google.errorprone.core
       }
 

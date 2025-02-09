@@ -197,13 +197,23 @@ IF "%SOLR_GZIP_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=gzip"
 )
 
+REM Jetty configuration for new Admin UI
+IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
+  REM Do not load jetty-configuration if Admin UI explicitly disabled
+) ELSE IF "%SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED%"=="true" (
+  REM Do not load jetty-configuration if new Admin UI explicitly disabled
+) ELSE (
+  REM Enable new Admin UI by loading jetty-configuration
+  set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=new-ui"
+)
+
 REM Authentication options
 
 IF NOT DEFINED SOLR_AUTH_TYPE (
   IF DEFINED SOLR_AUTHENTICATION_OPTS (
     echo WARNING: SOLR_AUTHENTICATION_OPTS variable configured without associated SOLR_AUTH_TYPE variable
     echo          Please configure SOLR_AUTH_TYPE variable with the authentication type to be used.
-    echo          Currently supported authentication types are [kerberos, basic]
+    echo          Currently supported authentication types are [basic]
   )
 )
 
@@ -211,7 +221,7 @@ IF DEFINED SOLR_AUTH_TYPE (
   IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
     echo WARNING: SOLR_AUTHENTICATION_CLIENT_BUILDER and SOLR_AUTH_TYPE variables are configured together
     echo          Use SOLR_AUTH_TYPE variable to configure authentication type to be used
-    echo          Currently supported authentication types are [kerberos, basic]
+    echo          Currently supported authentication types are [basic]
     echo          The value of SOLR_AUTHENTICATION_CLIENT_BUILDER configuration variable will be ignored
   )
 )
@@ -220,12 +230,8 @@ IF DEFINED SOLR_AUTH_TYPE (
   IF /I "%SOLR_AUTH_TYPE%" == "basic" (
     set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
   ) ELSE (
-    IF /I "%SOLR_AUTH_TYPE%" == "kerberos" (
-      set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
-    ) ELSE (
-      echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
-      goto err
-    )
+    echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
+    goto err
   )
 )
 
@@ -647,15 +653,36 @@ SHIFT
 goto parse_args
 
 :set_passthru
-set "PASSTHRU=%~1=%~2"
+set "PASSTHRU_KEY=%~1"
+set "PASSTHRU_VALUES="
+
+SHIFT
+:repeat_passthru
+set "arg=%~1"
+if "%arg%"=="" goto end_passthru
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  goto end_passthru
+)
+
+if defined PASSTHRU_VALUES (
+    set "PASSTHRU_VALUES=%PASSTHRU_VALUES%,%arg%"
+) else (
+    set "PASSTHRU_VALUES=%arg%"
+)
+SHIFT
+goto repeat_passthru
+
+:end_passthru
+set "PASSTHRU=%PASSTHRU_KEY%=%PASSTHRU_VALUES%"
+
 IF NOT "%SOLR_OPTS%"=="" (
   set "SOLR_OPTS=%SOLR_OPTS% %PASSTHRU%"
 ) ELSE (
   set "SOLR_OPTS=%PASSTHRU%"
 )
 set "PASS_TO_RUN_EXAMPLE=%PASSTHRU% !PASS_TO_RUN_EXAMPLE!"
-SHIFT
-SHIFT
+
 goto parse_args
 
 :set_noprompt
@@ -843,8 +870,7 @@ IF NOT EXIST "%SOLR_HOME%\" (
   )
 )
 
-@REM This is quite hacky, but examples rely on a different log4j2.xml
-@REM so that we can write logs for examples to %SOLR_HOME%\..\logs
+@REM Handle overriding where logs are written to
 IF [%SOLR_LOGS_DIR%] == [] (
   set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
 ) ELSE (

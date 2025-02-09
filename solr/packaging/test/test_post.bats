@@ -120,8 +120,8 @@ teardown() {
   # We filter to xml,json,and csv as we don't want to invoke the Extract handler, and are running it as a dry run
   run solr post --dry-run --filetypes xml,json,csv --solr-url http://localhost:${SOLR_PORT} -c foobar --skip-commit ${SOLR_TIP}/example/exampledocs
 
-  assert_output --partial 'Dry run complete. 16 would have been indexed.'
-  refute_output --partial '16 files indexed.'
+  assert_output --partial 'Dry run complete. 15 would have been indexed.'
+  refute_output --partial '15 files indexed.'
   refute_output --partial 'ERROR'
 }
 
@@ -132,10 +132,10 @@ teardown() {
   # We filter to xml,json,and csv as we don't want to invoke the Extract handler.
   run solr post --filetypes xml,json,csv --solr-url http://localhost:${SOLR_PORT} -c mixed_content ${SOLR_TIP}/example/exampledocs
 
-  assert_output --partial '16 files indexed.'
+  assert_output --partial '15 files indexed.'
   refute_output --partial 'ERROR'
   run curl "http://localhost:${SOLR_PORT}/solr/mixed_content/select?q=*:*"
-  assert_output --partial '"numFound":46'
+  assert_output --partial '"numFound":45'
 }
 
 # this test doesn't complete due to issues in posting to the /extract handler

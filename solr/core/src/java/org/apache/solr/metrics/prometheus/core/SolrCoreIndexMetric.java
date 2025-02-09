@@ -24,9 +24,8 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 public class SolrCoreIndexMetric extends SolrCoreMetric {
   public static final String CORE_INDEX_METRICS = "solr_metrics_core_index_size_bytes";
 
-  public SolrCoreIndexMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrCoreIndexMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   /*

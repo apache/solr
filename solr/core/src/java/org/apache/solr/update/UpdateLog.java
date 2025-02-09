@@ -24,8 +24,6 @@ import com.carrotsearch.hppc.LongSet;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -391,7 +389,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
     int timeoutMs =
         objToInt(
-            info.initArgs.get("docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
+            info.initArgs.getOrDefault(
+                "docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
             EnvUtils.getPropertyAsLong("solr.update.docLockTimeoutMs", 0L).intValue());
     updateLocks = new UpdateLocks(timeoutMs);
 
@@ -580,7 +579,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not set up tlogs", e);
     }
-    tlogFiles = getLogList(tlogDir.toFile());
+    tlogFiles = getLogList(tlogDir);
     id = getLastLogId() + 1; // add 1 since we will create a new log for the next update
 
     if (debug) {
@@ -731,14 +730,17 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return (cmd.getFlags() & UpdateCommand.REPLAY) != 0 && state == State.REPLAYING;
   }
 
-  public String[] getLogList(File directory) {
+  public String[] getLogList(Path directory) {
     final String prefix = TLOG_NAME + '.';
-    String[] names = directory.list((dir, name) -> name.startsWith(prefix));
-    if (names == null) {
-      throw new RuntimeException(new FileNotFoundException(directory.getAbsolutePath()));
+    try (Stream<Path> files = Files.list(directory)) {
+      return files
+          .map((file) -> file.getFileName().toString())
+          .filter((name) -> name.startsWith(prefix))
+          .sorted()
+          .toArray(String[]::new);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-    Arrays.sort(names);
-    return names;
   }
 
   public long getLastLogId() {

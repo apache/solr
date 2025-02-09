@@ -29,9 +29,8 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
   public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher_documents";
   public static final String CORE_SEARCHER_TIMES = "solr_metrics_core_average_searcher_warmup_time";
 
-  public SolrCoreSearcherMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrCoreSearcherMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   /*

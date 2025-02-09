@@ -129,7 +129,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Expected replica " + replica.getName() + " to have been removed",
         collectionName,
-        (n, c) -> {
+        c -> {
           Slice testShard = c.getSlice(shard.getName());
           return testShard.getReplica(replica.getName()) == null;
         });
@@ -286,8 +286,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Timeout waiting for replica get deleted",
         collectionName,
-        (liveNodes, collectionState) ->
-            collectionState.getSlice("shard1").getReplicas().size() == 2);
+        collectionState -> collectionState.getSlice("shard1").getReplicas().size() == 2);
 
     TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeOut.waitFor(
@@ -430,7 +429,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         waitForState(
             "Expected replica:" + replica1 + " get down",
             collectionName,
-            (liveNodes, collectionState) ->
+            collectionState ->
                 collectionState.getSlice("shard1").getReplica(replica1.getName()).getState()
                     == DOWN);
       }
@@ -465,7 +464,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Expected new active leader",
         collectionName,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           Slice shard = collectionState.getSlice("shard1");
           Replica newLeader = shard.getLeader();
           return newLeader != null
@@ -549,20 +548,10 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       thread.join();
     }
 
-    try {
-      cluster
-          .getZkStateReader()
-          .waitForState(
-              collectionName,
-              20,
-              TimeUnit.SECONDS,
-              (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
-    } catch (TimeoutException e) {
-      if (log.isInfoEnabled()) {
-        log.info("Timeout wait for state {}", getCollectionState(collectionName));
-      }
-      throw e;
-    }
+    waitForState(
+        "Waiting for single replica in state",
+        collectionName,
+        collectionState -> collectionState.getReplicas().size() == 1);
   }
 
   /**

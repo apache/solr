@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase.BadApple;
@@ -63,8 +62,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
             ExecutorUtil.newMDCAwareSingleThreadExecutor(
                 new SolrNamedThreadFactory(this.getTestName()));
         try (ZkController zkController =
-            new ZkController(
-                cc, server.getZkAddress(), 15000, cloudConfig, Collections::emptyList)) {
+            new ZkController(cc, server.getZkAddress(), 15000, cloudConfig)) {
           threadExecutor.execute(
               () -> {
                 TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);

@@ -32,6 +32,9 @@ import org.noggit.JSONWriter;
  */
 public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.Writable {
 
+  /** Writes this object's entries out to {@code ew}. */
+  void writeMap(EntryWriter ew) throws IOException;
+
   default String jsonStr() {
     return Utils.toJSONString(this);
   }
@@ -41,6 +44,7 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
     return Utils.convertToMap(this, map);
   }
 
+  /** For implementing Noggit {@link org.noggit.JSONWriter.Writable}. */
   @Override
   default void write(JSONWriter writer) {
     writer.startObject();
@@ -67,16 +71,6 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
       throw new RuntimeException(e);
     }
     writer.endObject();
-  }
-
-  void writeMap(EntryWriter ew) throws IOException;
-
-  default MapWriter append(MapWriter another) {
-    MapWriter m = this;
-    return ew -> {
-      m.writeMap(ew);
-      another.writeMap(ew);
-    };
   }
 
   /**
