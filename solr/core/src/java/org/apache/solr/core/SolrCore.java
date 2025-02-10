@@ -1129,7 +1129,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       initWriters();
       qParserPlugins.init(QParserPlugin.standardPlugins, this);
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
-      transformerFactories.init(TransformerFactory.defaultFactories, this);
+      transformerFactories.init(TransformerFactory.builtIns(coreContainer.getConfig()), this);
       loadSearchComponents();
       updateProcessors.init(Collections.emptyMap(), this);
 

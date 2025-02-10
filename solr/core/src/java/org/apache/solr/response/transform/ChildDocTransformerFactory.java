@@ -18,6 +18,7 @@ package org.apache.solr.response.transform;
 
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.apache.lucene.search.BooleanClause;
@@ -56,6 +57,7 @@ import org.apache.solr.search.SyntaxError;
  *
  * @since solr 4.9
  */
+@Named("child")
 public class ChildDocTransformerFactory extends TransformerFactory {
 
   static final char PATH_SEP_CHAR = '/';

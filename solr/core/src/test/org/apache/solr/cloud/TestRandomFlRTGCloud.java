@@ -198,13 +198,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    *
    * @see FlValidator#getDefaultTransformerFactoryName
    * @see #FL_VALIDATORS
-   * @see TransformerFactory#defaultFactories
    */
   public void testCoverage() {
-    final Set<String> implicit = new LinkedHashSet<>();
-    for (String t : TransformerFactory.defaultFactories.keySet()) {
-      implicit.add(t);
-    }
+    final Set<String> implicit =
+        new TreeSet<>(
+            TransformerFactory.builtIns(
+                    cluster.getJettySolrRunner(0).getCoreContainer().getNodeConfig())
+                .keySet());
+    assert implicit.isEmpty() == false;
 
     final Set<String> covered = new LinkedHashSet<>();
     for (FlValidator v : FL_VALIDATORS) {
@@ -704,9 +705,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
 
     /**
-     * the name of a transformer listed in {@link TransformerFactory#defaultFactories} that this
-     * validator corresponds to, or null if not applicable. Used for testing coverage of Solr's
-     * implicitly supported transformers.
+     * the name of a built-in transformer that this validator corresponds to, or null if not
+     * applicable. Used for testing coverage of Solr's implicitly supported transformers.
      *
      * <p>Default behavior is to return null
      *

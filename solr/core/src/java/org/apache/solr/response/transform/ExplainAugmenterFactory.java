@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import jakarta.inject.Named;
 import java.io.IOException;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.common.SolrDocument;
@@ -29,6 +30,7 @@ import org.apache.solr.util.SolrPluginUtils;
 /**
  * @since solr 4.0
  */
+@Named("explain")
 public class ExplainAugmenterFactory extends TransformerFactory {
   public enum Style {
     nl,

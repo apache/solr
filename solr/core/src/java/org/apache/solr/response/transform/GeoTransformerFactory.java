@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -69,6 +70,7 @@ import org.locationtech.spatial4j.shape.Shape;
  *   <li>the value is not stored in a format the output understands (ie, raw GeoJSON)
  * </ul>
  */
+@Named("geo")
 public class GeoTransformerFactory extends TransformerFactory
     implements TransformerFactory.FieldRenamer {
 
