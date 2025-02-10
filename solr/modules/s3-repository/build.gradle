@@ -20,9 +20,11 @@ apply plugin: 'java-library'
 description = 'S3 Repository'
 
 dependencies {
+  implementation platform(project(':platform'))
   api(project(':solr:core')) {
     exclude group: 'org.ow2.asm', module: '*'
   }
+
   implementation project(':solr:solrj')
 
   implementation libs.apache.lucene.core

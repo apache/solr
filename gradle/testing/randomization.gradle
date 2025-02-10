@@ -213,7 +213,7 @@ allprojects {
                   javaSecurityPolicy: javaSecurityPolicy
               )
           )
-          systemProperty 'java.security.manager', "org.apache.lucene.tests.util.TestSecurityManager"
+          systemProperty 'java.security.manager', "default"
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()
           systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')

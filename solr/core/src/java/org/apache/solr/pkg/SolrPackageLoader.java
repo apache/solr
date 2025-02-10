@@ -279,7 +279,7 @@ public class SolrPackageLoader implements Closeable {
           throw new RuntimeException("Cannot load package: " + errs);
         }
         for (String file : version.files) {
-          paths.add(coreContainer.getFileStore().getRealpath(file));
+          paths.add(coreContainer.getFileStore().getRealPath(file));
         }
 
         loader =

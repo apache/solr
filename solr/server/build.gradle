@@ -37,6 +37,7 @@ configurations {
 }
 
 dependencies {
+  serverLib platform(project(":platform"))
   serverLib(libs.eclipse.jetty.deploy, {
     exclude group: "org.awaitility", module: "awaitility"
   })
@@ -119,6 +120,22 @@ task assemblePackaging(type: Sync) {
     include "scripts/**"
     include "solr/**"
     include "README.md"
+
+    if (rootProject.ext.development) {
+      // Allow duplicates to overwrite previous files
+      duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      // Rename dev files in development
+      rename { String fileName -> fileName.replace("-dev.xml", ".xml") }
+
+      // Exclude production configurations
+      exclude "**/*-prod.xml"
+    } else {
+      // Rename prod files in production
+      rename { String fileName -> fileName.replace("-prod.xml", ".xml") }
+
+      // Exclude dev configurations
+      exclude "**/*-dev.xml"
+    }
   })
 
   // Add in the intersection of serverLib and solrCore
