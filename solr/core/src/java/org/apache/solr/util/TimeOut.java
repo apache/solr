@@ -23,15 +23,31 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.apache.solr.common.util.TimeSource;
 
+/**
+ * Timeout tool to ease time unit conversion, to check time left or time elapsed, and to easily wait
+ * on a {@link Supplier<Boolean>}. It is based on {@link TimeSource} to allow choosing the time
+ * source, and to facilitate time control in tests.
+ */
 public class TimeOut {
 
+  // Internally, the time unit is nanosecond.
   private final long timeoutAt, startTime;
   private final TimeSource timeSource;
 
+  /**
+   * Internally the timeout is stored in nanoseconds, so it cannot track more than {@link
+   * Long#MAX_VALUE} nanoseconds. Depending on the {@link TimeUnit} selected in this constructor,
+   * this means large {@code interval} can be truncated when converting to {@link Long#MAX_VALUE}
+   * nanoseconds.
+   */
   public TimeOut(long interval, TimeUnit unit, TimeSource timeSource) {
     this.timeSource = timeSource;
     startTime = timeSource.getTimeNs();
-    this.timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
+    // Consider negative interval as 0.
+    interval = Math.max(interval, 0L);
+    // Detect long addition overflow.
+    long timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
+    this.timeoutAt = timeoutAt < startTime ? Long.MAX_VALUE : timeoutAt;
   }
 
   public boolean hasTimedOut() {
@@ -51,7 +67,7 @@ public class TimeOut {
   }
 
   /**
-   * Wait until the given {@link Supplier} returns true or the time out expires which ever happens
+   * Wait until the given {@link Supplier} returns true or the timeout expires which ever happens
    * first
    *
    * @param messageOnTimeOut the exception message to be used in case a TimeoutException is thrown
