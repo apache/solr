@@ -148,7 +148,7 @@ kotlinx-atomicfu = "0.27.0"
 # @keep for version alignment
 kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
-kotlinx-datetime = "0.6.1"
+kotlinx-datetime = "0.6.2"
 kotlinx-serialization = "1.8.0"
 ktor = "3.0.3"
 langchain4j = "0.35.0"
