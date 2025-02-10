@@ -260,11 +260,7 @@ public abstract class SolrPrometheusFormatter {
    */
   public void collectSummaryDatapoint(
       String metricName, SummarySnapshot.SummaryDataPointSnapshot dataPoint) {
-    if (!metricSummaries.containsKey(metricName)) {
-      metricSummaries.put(metricName, new ArrayList<>());
-    }
-
-    metricSummaries.get(metricName).add(dataPoint);
+    metricSummaries.computeIfAbsent(metricName, k -> new ArrayList<>()).add(dataPoint);
   }
 
   /**

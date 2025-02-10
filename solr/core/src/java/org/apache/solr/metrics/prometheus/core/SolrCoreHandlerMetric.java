@@ -28,7 +28,7 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
   public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests";
   public static final String CORE_REQUESTS_UPDATE_HANDLER = "solr_metrics_core_update_handler";
   public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_time";
-  public static final String CORE_REQUEST_TIMES = "solr_metrics_core_request_time";
+  public static final String CORE_REQUEST_TIMES = "solr_metrics_core_request_time_ms";
 
   public SolrCoreHandlerMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
