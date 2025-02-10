@@ -25,8 +25,8 @@ import org.apache.solr.common.util.TimeSource;
 
 /**
  * Timeout tool to ease time unit conversion, to check time left or time elapsed, and to easily wait
- * on a {@link Supplier<Boolean>}. It is based on {@link TimeSource} to allow choosing the time
- * source, and to facilitate time control in tests.
+ * on a {@link Supplier}. It is based on {@link TimeSource} to allow choosing the time source, and
+ * to facilitate time control in tests.
  */
 public class TimeOut {
 
