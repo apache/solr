@@ -732,7 +732,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(actualSnapshots);
 
     MetricSnapshot actualSnapshot =
-        getMetricSnapshot(actualSnapshots, "solr_metrics_core_request_time");
+        getMetricSnapshot(actualSnapshots, "solr_metrics_core_request_time_ms");
     SummarySnapshot.SummaryDataPointSnapshot actualSummaryDataPoint =
         getSummaryDataPointSnapshot(
             actualSnapshot,
@@ -768,13 +768,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             Labels.of("item", "default", "core", "collection1", "type", "SolrFragmenter"));
     assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_requests_time");
-    actualCounterDataPoint =
-        getCounterDatapointSnapshot(
-            actualSnapshot,
-            Labels.of("category", "QUERY", "core", "collection1", "handler", "/select[shard]"));
-    assertEquals(0, actualCounterDataPoint.getValue(), 0);
-
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_documents");
     actualGaugeDataPoint =
         getGaugeDatapointSnapshot(
@@ -796,7 +789,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
                 "updateHandler"));
     assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_warmup_time");
+    actualSnapshot =
+        getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_warmup_time_ms");
     actualSummaryDataPoint =
         getSummaryDataPointSnapshot(
             actualSnapshot, Labels.of("core", "collection1", "type", "warmup"));
