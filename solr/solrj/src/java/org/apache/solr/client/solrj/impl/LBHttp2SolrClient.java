@@ -317,7 +317,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       RetryListener listener) {
     rsp.rsp = result;
     if (isZombie) {
-      zombieServers.remove(endpoint);
+      reviveZombieServer(endpoint);
     }
     listener.onSuccess(rsp);
   }
@@ -336,32 +336,32 @@ public class LBHttp2SolrClient extends LBSolrClient {
       // we retry on 404 or 403 or 503 or 500
       // unless it's an update - then we only retry on connect exception
       if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         // Server is alive but the request was likely malformed or invalid
         if (isZombie) {
-          zombieServers.remove(endpoint);
+          reviveZombieServer(endpoint);
         }
         listener.onFailure(e, false);
       }
     } catch (SocketException e) {
       if (!isNonRetryable || e instanceof ConnectException) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);
       }
     } catch (SocketTimeoutException e) {
       if (!isNonRetryable) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);
       }
     } catch (SolrServerException e) {
       Throwable rootCause = e.getRootCause();
       if (!isNonRetryable && rootCause instanceof IOException) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else if (isNonRetryable && rootCause instanceof ConnectException) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);
       }
