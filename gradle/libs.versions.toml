@@ -150,7 +150,7 @@ kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
 kotlinx-datetime = "0.6.1"
 kotlinx-serialization = "1.8.0"
-ktor = "3.0.3"
+ktor = "3.1.0"
 langchain4j = "0.35.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
