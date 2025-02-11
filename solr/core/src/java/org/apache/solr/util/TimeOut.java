@@ -24,9 +24,7 @@ import java.util.function.Supplier;
 import org.apache.solr.common.util.TimeSource;
 
 /**
- * Timeout tool to ease time unit conversion, to check time left or time elapsed, and to easily wait
- * on a {@link Supplier}. It is based on {@link TimeSource} to allow choosing the time source, and
- * to facilitate time control in tests.
+ * Timeout tool to ease checking time left, time elapsed, and waiting on a condition.
  */
 public class TimeOut {
 
@@ -35,18 +33,19 @@ public class TimeOut {
   private final TimeSource timeSource;
 
   /**
-   * Internally the timeout is stored in nanoseconds, so it cannot track more than {@link
-   * Long#MAX_VALUE} nanoseconds. Depending on the {@link TimeUnit} selected in this constructor,
-   * this means large {@code interval} can be truncated when converting to {@link Long#MAX_VALUE}
-   * nanoseconds.
+   * @param timeout after this maximum time, {@link #hasTimedOut()} will return true.
+   * @param unit the time unit of the timeout argument.
+   * @param timeSource the source of the time.
    */
-  public TimeOut(long interval, TimeUnit unit, TimeSource timeSource) {
+  public TimeOut(long timeout, TimeUnit unit, TimeSource timeSource) {
+    // Since timeout is stored in nanoseconds, it cannot track more than Long.MAX_VALUE nanoseconds.
+    // Depending on the time unit selected in this constructor, large timeout can be truncated when converting to Long.MAX_VALUE nanoseconds.
     this.timeSource = timeSource;
     startTime = timeSource.getTimeNs();
     // Consider negative interval as 0.
-    interval = Math.max(interval, 0L);
+    timeout = Math.max(timeout, 0L);
     // Detect long addition overflow.
-    long timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
+    long timeoutAt = startTime + NANOSECONDS.convert(timeout, unit);
     this.timeoutAt = timeoutAt < startTime ? Long.MAX_VALUE : timeoutAt;
   }
 
