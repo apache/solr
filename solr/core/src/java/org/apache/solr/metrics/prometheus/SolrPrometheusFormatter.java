@@ -21,6 +21,7 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.Exemplars;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricMetadata;
@@ -127,9 +128,9 @@ public abstract class SolrPrometheusFormatter {
                 new Quantile(0.99, MetricUtils.nsToMs(snapshot.get99thPercentile())),
                 new Quantile(0.999, MetricUtils.nsToMs(snapshot.get999thPercentile()))));
 
-    SummarySnapshot.SummaryDataPointSnapshot summary =
-        createSummaryDataPointSnapshot(count, sum, quantiles, labels);
-
+    var summary =
+        new SummarySnapshot.SummaryDataPointSnapshot(
+            count, sum, quantiles, labels, Exemplars.EMPTY, 0L);
     collectSummaryDatapoint(metricName, summary);
   }
 
@@ -203,25 +204,6 @@ public abstract class SolrPrometheusFormatter {
   }
 
   /**
-   * Create a {@link io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot}
-   * with labels
-   *
-   * @param count number of observations
-   * @param sum sum of all values
-   * @param quantiles quantile information
-   * @param labels set of name/values labels
-   */
-  public SummarySnapshot.SummaryDataPointSnapshot createSummaryDataPointSnapshot(
-      long count, double sum, Quantiles quantiles, Labels labels) {
-    return SummarySnapshot.SummaryDataPointSnapshot.builder()
-        .count(count)
-        .sum(sum)
-        .labels(labels)
-        .quantiles(quantiles)
-        .build();
-  }
-
-  /**
    * Collects {@link io.prometheus.metrics.model.snapshots.CounterSnapshot.CounterDataPointSnapshot}
    * and appends to existing metric or create new metric if name does not exist
    *
@@ -269,18 +251,25 @@ public abstract class SolrPrometheusFormatter {
    */
   public MetricSnapshots collect() {
     ArrayList<MetricSnapshot> snapshots = new ArrayList<>();
-    for (String metricName : metricCounters.keySet()) {
-      snapshots.add(
-          new CounterSnapshot(new MetricMetadata(metricName), metricCounters.get(metricName)));
-    }
-    for (String metricName : metricGauges.keySet()) {
-      snapshots.add(
-          new GaugeSnapshot(new MetricMetadata(metricName), metricGauges.get(metricName)));
-    }
-    for (String metricName : metricSummaries.keySet()) {
-      snapshots.add(
-          new SummarySnapshot(new MetricMetadata(metricName), metricSummaries.get(metricName)));
-    }
+
+    metricCounters
+        .entrySet()
+        .forEach(
+            entry ->
+                snapshots.add(
+                    new CounterSnapshot(new MetricMetadata(entry.getKey()), entry.getValue())));
+    metricGauges
+        .entrySet()
+        .forEach(
+            entry ->
+                snapshots.add(
+                    new GaugeSnapshot(new MetricMetadata(entry.getKey()), entry.getValue())));
+    metricSummaries
+        .entrySet()
+        .forEach(
+            entry ->
+                snapshots.add(
+                    new SummarySnapshot(new MetricMetadata(entry.getKey()), entry.getValue())));
 
     return new MetricSnapshots(snapshots);
   }
