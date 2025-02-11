@@ -881,7 +881,7 @@ public class JavaBinCodec implements PushWriter {
       Object key = readVal(dis);
       assert key instanceof String;
       Object val = readVal(dis);
-      entries.put((String) key, val);
+      entries.add((String) key, val); // using NL.add() since key won't repeat
     }
     return entries;
   }

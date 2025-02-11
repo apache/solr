@@ -73,7 +73,7 @@ public interface TextWriter extends PushWriter {
       writeBool(name, ((AtomicBoolean) val).get());
     } else if (val instanceof Date) {
       writeDate(name, (Date) val);
-    } else if (val instanceof NamedList) {
+    } else if (val instanceof NamedList && !(val instanceof SimpleOrderedMap)) {
       writeNamedList(name, (NamedList) val);
     } else if (val instanceof Path) {
       final String pathStr = ((Path) val).toAbsolutePath().toString();
@@ -84,11 +84,11 @@ public interface TextWriter extends PushWriter {
       }
     } else if (val instanceof IteratorWriter) {
       writeIterator(name, (IteratorWriter) val, raw);
-    } else if (val instanceof MapWriter) {
+    } else if (val instanceof MapWriter && !(val instanceof SimpleOrderedMap)) {
       writeMap(name, (MapWriter) val);
     } else if (val instanceof ReflectWritable) {
       writeVal(name, Utils.getReflectWriter(val));
-    } else if (val instanceof MapSerializable) {
+    } else if (val instanceof MapSerializable && !(val instanceof SimpleOrderedMap)) {
       // todo find a better way to reuse the map more efficiently
       writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
     } else if (val instanceof Map) {

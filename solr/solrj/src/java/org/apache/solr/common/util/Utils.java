@@ -290,7 +290,7 @@ public class Utils {
   }
 
   public static Object fromJSON(byte[] utf8, int offset, int length) {
-    return fromJSON(utf8, offset, length, STANDARDOBJBUILDER);
+    return fromJSON(utf8, offset, length, SIMPLEORDEREDMAPOBJBUILDER);
   }
 
   public static Object fromJSON(
@@ -358,6 +358,21 @@ public class Utils {
       jsonParser -> {
         try {
           return new ObjectBuilder(jsonParser);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      };
+
+  public static final Function<JSONParser, ObjectBuilder> SIMPLEORDEREDMAPOBJBUILDER =
+      jsonParser -> {
+        try {
+          return new ObjectBuilder(jsonParser) {
+            @Override
+            public Object newObject() {
+              return new SimpleOrderedMap<>();
+            }
+          };
+
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
