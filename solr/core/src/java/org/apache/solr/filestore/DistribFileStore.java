@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,13 +89,13 @@ public class DistribFileStore implements FileStore {
     return _getRealPath(path, solrHome);
   }
 
-  private static Path _getRealPath(String dir, Path solrHome) {
-    Path path = Path.of(dir);
-    SolrPaths.assertNotUnc(path);
-
-    if (path.isAbsolute()) {
-      // Strip the path of from being absolute to become relative to resolve with SolrHome
-      path = path.subpath(0, path.getNameCount());
+  private static Path _getRealPath(String path, Path solrHome) {
+    if (FileSystems.getDefault().getSeparator().equals("\\")) {
+      path = path.replace("/", FileSystems.getDefault().getSeparator());
+    }
+    SolrPaths.assertNotUnc(Path.of(path));
+    while (path.startsWith(FileSystems.getDefault().getSeparator())) { // Trim all leading slashes
+      path = path.substring(1);
     }
 
     var finalPath = getFileStoreDirPath(solrHome).resolve(path);
