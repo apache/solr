@@ -662,7 +662,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   private void checkAZombieServer(ServerWrapper zombieServer) {
     try {
-      log.debug("Checking zombie server {}", zombieServer.getBaseUrl());
+      log.debug("Checking zombie server {}", zombieServer);
       QueryRequest queryRequest = new QueryRequest(solrQuery);
       final var responseRaw = doRequest(zombieServer.getBaseUrl(), queryRequest, null);
       final var resp = new QueryResponse();
