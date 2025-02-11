@@ -23,9 +23,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.apache.solr.common.util.TimeSource;
 
-/**
- * Timeout tool to ease checking time left, time elapsed, and waiting on a condition.
- */
+/** Timeout tool to ease checking time left, time elapsed, and waiting on a condition. */
 public class TimeOut {
 
   // Internally, the time unit is nanosecond.
@@ -39,7 +37,8 @@ public class TimeOut {
    */
   public TimeOut(long timeout, TimeUnit unit, TimeSource timeSource) {
     // Since timeout is stored in nanoseconds, it cannot track more than Long.MAX_VALUE nanoseconds.
-    // Depending on the time unit selected in this constructor, large timeout can be truncated when converting to Long.MAX_VALUE nanoseconds.
+    // Depending on the time unit selected in this constructor, large timeout can be truncated when
+    // converting to Long.MAX_VALUE nanoseconds.
     this.timeSource = timeSource;
     startTime = timeSource.getTimeNs();
     // Consider negative interval as 0.
