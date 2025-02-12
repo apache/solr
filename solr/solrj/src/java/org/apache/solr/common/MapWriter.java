@@ -159,5 +159,6 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
     }
   }
 
+  @Deprecated // use SimpleOrderedMap.of()
   MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
 }
