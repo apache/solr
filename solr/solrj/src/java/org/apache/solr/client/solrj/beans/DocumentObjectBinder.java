@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -186,7 +185,7 @@ public class DocumentObjectBinder {
      * is set to <code>TRUE</code> as well as <code>isList</code> is set to <code>TRUE</code>
      */
     private boolean isContainedInMap;
-    private Pattern dynamicFieldNamePatternMatcher;
+    private DynamicFieldNameMatcher dynamicFieldNamePatternMatcher;
 
     public DocField(AccessibleObject member) {
       if (member instanceof java.lang.reflect.Field) {
@@ -235,10 +234,32 @@ public class DocumentObjectBinder {
       } else if (annotation.value().indexOf('*') >= 0) {
         // dynamic fields are annotated as @Field("categories_*")
         // if the field was annotated as a dynamic field, convert the name into a pattern
-        // the wildcard (*) is supposed to be either a prefix or a suffix, hence the use of
-        // replaceFirst
-        name = annotation.value().replaceFirst("\\*", "\\.*");
-        dynamicFieldNamePatternMatcher = Pattern.compile("^" + name + "$");
+        // the wildcard (*) is supposed to be either a prefix or a suffix
+
+        if (annotation.value().startsWith("*")) {
+          // handle suffix
+          name = annotation.value();
+          String pattern = annotation.value().substring(1);
+          dynamicFieldNamePatternMatcher = fieldName -> fieldName.endsWith(pattern);
+        } else if (annotation.value().endsWith("*")) {
+          // handle prefix
+          name = annotation.value();
+          String pattern = annotation.value().substring(0, annotation.value().length() - 1);
+          dynamicFieldNamePatternMatcher = fieldName -> fieldName.startsWith(pattern);
+        } else {
+          // fallback to old logic when * is in the middle of the Name.
+          // Should not happen, but was possible before that change
+          throw new IllegalArgumentException(
+              "Invalid dynamic field name: "
+                  + annotation.value()
+                  + ". The name should either start with a * or end with a *");
+
+          // Alternatively fallback to original logic?
+          // name = annotation.value().replaceFirst("\\*", "\\.*");
+          // Pattern compiledPattern = Pattern.compile("^" + name + "$");
+          // dynamicFieldNamePatternMatcher = fieldName ->
+          // compiledPattern.matcher(fieldName).find();
+        }
       } else {
         name = annotation.value();
       }
@@ -397,7 +418,7 @@ public class DocumentObjectBinder {
       }
 
       for (String field : solrDocument.getFieldNames()) {
-        if (dynamicFieldNamePatternMatcher.matcher(field).find()) {
+        if (dynamicFieldNamePatternMatcher.matches(field)) {
           Object val = solrDocument.getFieldValue(field);
           if (val == null) {
             continue;
@@ -508,4 +529,8 @@ public class DocumentObjectBinder {
   }
 
   public static final String DEFAULT = "#default";
+
+  private interface DynamicFieldNameMatcher {
+    boolean matches(String name);
+  }
 }
