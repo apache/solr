@@ -331,14 +331,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   public static class OutStream implements Closeable {
     private final String origCollection;
-    private final ModifiableSolrParams origParams;
+    private final SolrParams origParams;
     private final OutputStreamRequestContent content;
     private final InputStreamResponseListener responseListener;
     private final boolean isXml;
 
     public OutStream(
         String origCollection,
-        ModifiableSolrParams origParams,
+        SolrParams origParams,
         OutputStreamRequestContent content,
         InputStreamResponseListener responseListener,
         boolean isXml) {
@@ -380,7 +380,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
   public OutStream initOutStream(String baseUrl, UpdateRequest updateRequest, String collection)
       throws IOException {
     String contentType = requestWriter.getUpdateContentType();
-    final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
+    final SolrParams origParams = updateRequest.getParams();
     ModifiableSolrParams requestParams =
         initializeSolrParams(updateRequest, responseParser(updateRequest));
 
@@ -412,6 +412,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     if (outStream.isXml) {
       // check for commit or optimize
       SolrParams params = req.getParams();
+      assert params != null : "params should not be null";
       if (params != null) {
         String fmt = null;
         if (params.getBool(UpdateParams.OPTIMIZE, false)) {
