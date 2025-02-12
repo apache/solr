@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -104,7 +105,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         ranges = new ArrayList<>(rangesArr.length);
         for (String r : rangesArr) {
           try {
-            ranges.add(DocRouter.DEFAULT.fromString(r));
+            ranges.add(DocRouters.DEFAULT.fromString(r));
           } catch (Exception e) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
@@ -151,7 +152,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         DocCollection collection = clusterState.getCollection(collectionName);
         String sliceName = parentCore.getCoreDescriptor().getCloudDescriptor().getShardId();
         Slice slice = collection.getSlice(sliceName);
-        router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+        router = collection.getRouter() != null ? collection.getRouter() : DocRouters.DEFAULT;
         if (ranges == null) {
           DocRouter.Range currentRange = slice.getRange();
           ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
@@ -269,7 +270,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         Slice slice = collection.getSlice(sliceName);
         CompositeIdRouter router =
             (CompositeIdRouter)
-                (collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT);
+                (collection.getRouter() != null ? collection.getRouter() : DocRouters.DEFAULT);
         DocRouter.Range currentRange = slice.getRange();
 
         Object routerObj =

@@ -42,7 +42,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.ZkContainer;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -136,7 +136,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     // the core should no longer have a watch collection state since it was removed
     // the core should no longer have a watch collection state since it was removed
-    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeOut.waitFor(
         "Waiting for core's watcher to be removed",
         () -> {
@@ -288,13 +288,13 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         collectionName,
         collectionState -> collectionState.getSlice("shard1").getReplicas().size() == 2);
 
-    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeOut.waitFor(
         "Waiting for replica get unloaded",
         () -> replicaJetty.getCoreContainer().getCoreDescriptor(replica.getCoreName()) == null);
 
     // the core should no longer have a watch collection state since it was removed
-    timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeOut.waitFor(
         "Waiting for core's watcher to be removed",
         () -> {
@@ -376,7 +376,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
               }
 
               boolean replicaDeleted = false;
-              TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+              TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSources.NANO_TIME);
               while (!timeOut.hasTimedOut()) {
                 try {
                   ZkStateReader stateReader =
@@ -439,7 +439,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       ZkContainer.testing_beforeRegisterInZk = null;
     }
 
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeOut.waitFor(
         "Timeout adding replica to shard",
         () -> {
@@ -503,7 +503,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
    */
   private void waitForJettyInit(JettySolrRunner replica1Jetty, String replica1JettyNodeName)
       throws InterruptedException {
-    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (!replica1Jetty.isRunning()) {
       Thread.sleep(100);
       if (timeOut.hasTimedOut())

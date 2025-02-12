@@ -42,6 +42,7 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 
 /**
  * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce contention
@@ -71,7 +72,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
   private final Stats stats = new Stats();
   private int acceptableWaterMark;
   private long oldestEntry = 0; // not volatile, only accessed in the cleaning method
-  private final TimeSource timeSource = TimeSource.NANO_TIME;
+  private final TimeSource timeSource = TimeSources.NANO_TIME;
   private final AtomicLong oldestEntryNs = new AtomicLong(0);
   private long maxIdleTimeNs;
   private final EvictionListener<K, V> evictionListener;

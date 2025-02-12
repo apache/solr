@@ -64,7 +64,7 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
@@ -144,7 +144,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     CollectionHandlingUtils.validateConfigOrThrowSolrException(
         ccc.getCoreContainer().getConfigSetService(), configName);
 
-    String router = message.getStr("router.name", DocRouter.DEFAULT_NAME);
+    String router = message.getStr("router.name", DocRouters.DEFAULT_NAME);
 
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = populateShardNames(message, router);

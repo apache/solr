@@ -61,7 +61,7 @@ import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -74,7 +74,7 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandler;
@@ -260,7 +260,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(cloudDataProviderMock);
     objectCache.clear();
     when(cloudDataProviderMock.getObjectCache()).thenReturn(objectCache);
-    when(cloudDataProviderMock.getTimeSource()).thenReturn(TimeSource.NANO_TIME);
+    when(cloudDataProviderMock.getTimeSource()).thenReturn(TimeSources.NANO_TIME);
     reset(clusterStateProviderMock);
     reset(stateManagerMock);
     reset(cloudManagerMock);
@@ -529,7 +529,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             });
 
     when(cloudManagerMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
-    when(cloudManagerMock.getTimeSource()).thenReturn(new TimeSource.NanoTimeSource());
+    when(cloudManagerMock.getTimeSource()).thenReturn(new TimeSources.NanoTimeSource());
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
 
     when(overseerMock.getSolrCloudManager()).thenReturn(cloudManagerMock);
@@ -687,7 +687,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                       collName,
                       new HashMap<>(),
                       props.getProperties(),
-                      DocRouter.DEFAULT,
+                      DocRouters.DEFAULT,
                       0,
                       Instant.EPOCH,
                       distribStateManagerMock.getPrsSupplier(collName))));
@@ -910,7 +910,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   protected void waitForEmptyQueue() throws Exception {
-    final TimeOut timeout = new TimeOut(MAX_WAIT_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    final TimeOut timeout = new TimeOut(MAX_WAIT_MS, TimeUnit.MILLISECONDS, TimeSources.NANO_TIME);
     while (queue.peek() != null) {
       if (timeout.hasTimedOut()) fail("Queue not empty within " + MAX_WAIT_MS + " ms");
       Thread.sleep(100);

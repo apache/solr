@@ -27,7 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.cloud.Slice;
@@ -133,7 +133,7 @@ public class ClusterStateMockUtil {
                   collName = "collection" + (collectionStates.size() + 1),
                   slices,
                   collectionProps,
-                  DocRouter.DEFAULT);
+                  DocRouters.DEFAULT);
           collectionStates.put(docCollection.getName(), docCollection);
           break;
         case "s":

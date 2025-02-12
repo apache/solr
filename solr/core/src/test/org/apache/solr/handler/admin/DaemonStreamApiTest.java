@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -208,7 +208,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 
   // There can be some delay while threads stabilize, so we need to loop;
   private void checkAlive(String daemonName) throws InterruptedException, IOException {
-    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
 
     while (timeout.hasTimedOut() == false) {
       Tuple tuple = getTupleOfInterest(params("qt", "/stream", "action", "list"), daemonName);
@@ -228,7 +228,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   // a
   // stopped thread should be "TERMINATED"
   private void checkStopped() throws InterruptedException, IOException {
-    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
 
     while (timeout.hasTimedOut() == false) {
       Tuple tuple = getTupleOfInterest(params("qt", "/stream", "action", "list"), daemonOfInterest);
@@ -241,7 +241,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   }
 
   private void checkDaemonKilled(String daemon) throws IOException, InterruptedException {
-    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
 
     while (timeout.hasTimedOut() == false) {
       List<Tuple> tuples = getTuples(params("qt", "/stream", "action", "list"));

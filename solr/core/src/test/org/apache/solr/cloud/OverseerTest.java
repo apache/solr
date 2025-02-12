@@ -71,7 +71,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.ClusterSingletons;
 import org.apache.solr.core.CoreContainer;
@@ -1146,7 +1146,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ZkDistributedQueue q = getOpenOverseer().getStateUpdateQueue();
       q.offer(badMessage);
 
-      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       while (!timeOut.hasTimedOut()) {
         if (q.peek() == null) {
           break;
@@ -1210,7 +1210,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         mockController = new MockZKController(server.getZkAddress(), "node1:8983_", overseers);
 
-        TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             // We must only retry the enqueue to Overseer, not the collection znode creation (that
@@ -1235,7 +1235,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           }
         }
 
-        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.publishState(
@@ -1260,7 +1260,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         Thread.sleep(100);
 
-        timeout = new TimeOut(1, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout = new TimeOut(1, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.publishState(
@@ -1280,7 +1280,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         mockController2 = new MockZKController(server.getZkAddress(), "node2:8984_", overseers);
 
-        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.publishState(
@@ -1300,7 +1300,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         verifyShardLeader(reader, COLLECTION, "shard1", "core1");
 
-        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController2.publishState(
@@ -1324,7 +1324,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ZkController zkController = createMockZkController(server.getZkAddress(), null, reader);
         zkControllers.add(zkController);
 
-        TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         timeOut.waitFor(
             "Timed out waiting to see core4 as leader",
             () -> {

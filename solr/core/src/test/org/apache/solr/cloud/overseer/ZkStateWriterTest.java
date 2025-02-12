@@ -33,7 +33,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -169,7 +169,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                     "prs1",
                     new HashMap<>(),
                     prsProps,
-                    DocRouter.DEFAULT,
+                    DocRouters.DEFAULT,
                     0,
                     Instant.now(),
                     PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -244,7 +244,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                     "prs1",
                     new HashMap<>(),
                     prsProps,
-                    DocRouter.DEFAULT,
+                    DocRouters.DEFAULT,
                     0,
                     Instant.now(),
                     PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -502,7 +502,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
             new ZkWriteCommand(
                 "c2",
                 DocCollection.create(
-                    "c2", slices, new HashMap<>(), DocRouter.DEFAULT, 0, Instant.now(), null));
+                    "c2", slices, new HashMap<>(), DocRouters.DEFAULT, 0, Instant.now(), null));
 
         writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
         writer.writePendingUpdates();
@@ -525,6 +525,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
   private DocCollection createDocCollection(String name, Map<String, Object> props) {
     return DocCollection.create(
-        name, new HashMap<>(), props, DocRouter.DEFAULT, 0, Instant.now(), null);
+        name, new HashMap<>(), props, DocRouters.DEFAULT, 0, Instant.now(), null);
   }
 }

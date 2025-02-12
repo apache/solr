@@ -63,7 +63,7 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminOperation;
@@ -574,7 +574,7 @@ public class JettySolrRunner {
   }
 
   private void retryOnPortBindFailure(int portRetryTime, int port) throws Exception {
-    TimeOut timeout = new TimeOut(portRetryTime, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(portRetryTime, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     int tryCnt = 1;
     while (true) {
       try {
@@ -652,7 +652,7 @@ public class JettySolrRunner {
 
         rte.stop();
 
-        TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         timeout.waitFor("Timeout waiting for reserved executor to stop.", rte::isStopped);
       }
 

@@ -35,7 +35,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
@@ -169,7 +169,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("q", "*:*");
       if (useTlogReplicas()) {
-        TimeOut timeOut = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        TimeOut timeOut = new TimeOut(15, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         timeOut.waitFor(
             "Expected only 2 documents in the index",
             () -> {

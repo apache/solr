@@ -219,6 +219,11 @@ Other Changes
 * SOLR-17648: multiThreaded=true: changed queue implementation from unlimited to 1000 max, after
   which the caller thread will execute.  (David Smiley)
 
+* SOLR-16427: Address potential class initialization deadlocks reported by error-prone for TimeSource, DocRouter,
+  MapWriter, QParserPlugin, ValueSourceParser and TransformerFactory. Static members are therefore moved to the new
+  classes TimeSources, DocRouters, MapWriters, QParserPlugins, ValueSourceParsers and TransformerFactories accordingly.
+  (Christos Malliaridis, David Smiley)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
