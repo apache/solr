@@ -559,4 +559,14 @@ public abstract class SolrParams
   public int hashCode() {
     throw new UnsupportedOperationException();
   }
+
+  /** An empty, immutable SolrParams. */
+  public static SolrParams of() {
+    return EmptySolrParams.INSTANCE;
+  }
+
+  /** An immutable SolrParams holding one pair (not null). */
+  public static SolrParams of(String k, String v) {
+    return new MapSolrParams(Map.of(k, v));
+  }
 }

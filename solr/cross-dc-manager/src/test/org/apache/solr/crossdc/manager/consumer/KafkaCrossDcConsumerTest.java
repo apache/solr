@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
@@ -279,7 +278,7 @@ public class KafkaCrossDcConsumerTest {
     doc.addField("id", "1");
     UpdateRequest validRequest = new UpdateRequest();
     validRequest.add(doc);
-    validRequest.setParams(new ModifiableSolrParams().add("commit", "true"));
+    validRequest.getParams().set("commit", true);
     // Create a valid MirroredSolrRequest
     ConsumerRecord<String, MirroredSolrRequest<?>> record =
         new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest<>(validRequest));
@@ -453,7 +452,7 @@ public class KafkaCrossDcConsumerTest {
 
     UpdateRequest invalidRequest = new UpdateRequest();
     // no updates on request
-    invalidRequest.setParams(new ModifiableSolrParams().add("invalid_param", "invalid_value"));
+    invalidRequest.getParams().add("invalid_param", "invalid_value");
 
     ConsumerRecord<String, MirroredSolrRequest<?>> record =
         new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest<>(invalidRequest));
