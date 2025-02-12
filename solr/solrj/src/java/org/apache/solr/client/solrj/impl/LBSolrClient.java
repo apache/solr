@@ -796,11 +796,20 @@ public abstract class LBSolrClient extends SolrClient {
         if (e.getRootCause() instanceof IOException) {
           ex = e;
           makeServerAZombie(wrapper);
-          if (justFailed == null) justFailed = new HashMap<>();
+          if (justFailed == null) {
+            justFailed = new HashMap<>();
+          }
           justFailed.put(wrapper.getBaseUrl(), wrapper);
         } else {
           throw e;
         }
+      } catch (IOException e) {
+        ex = e;
+        makeServerAZombie(wrapper);
+        if (justFailed == null) {
+          justFailed = new HashMap<>();
+        }
+        justFailed.put(wrapper.getBaseUrl(), wrapper);
       } catch (Exception e) {
         throw new SolrServerException(e);
       }
