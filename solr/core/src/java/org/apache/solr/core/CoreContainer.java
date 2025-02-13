@@ -65,6 +65,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -741,7 +742,18 @@ public class CoreContainer {
     return caches.get(name);
   }
 
+  /**
+   * The {@link SolrClientCache} is mostly for streaming expressions. Prefer other clients for other
+   * use-cases.
+   *
+   * @see #getDefaultHttpSolrClient()
+   * @see ZkController#getSolrClient()
+   * @see Http2SolrClient#requestWithBaseUrl(String, String, SolrRequest)
+   * @deprecated likely to simply be moved to the ObjectCache so as to not be used
+   */
+  @Deprecated
   public SolrClientCache getSolrClientCache() {
+    // TODO put in the objectCache instead
     return solrClientCache;
   }
 
@@ -2543,12 +2555,12 @@ public class CoreContainer {
   }
 
   /**
-   * Provides the existing general-purpose HTTP/2 Solr client from {@link HttpSolrClientProvider}.
+   * A general-purpose HTTP/2 Solr client.
    *
-   * <p>The caller does not need to close the client, as its lifecycle is managed by {@link
-   * HttpSolrClientProvider}.
+   * <p>The caller does not need to close the client.
    *
    * @return the existing {@link Http2SolrClient}
+   * @see Http2SolrClient#requestWithBaseUrl(String, String, SolrRequest)
    */
   public Http2SolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();

@@ -192,6 +192,9 @@ Bug Fixes
 
 * SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
 
+* SOLR-17630: Added a node-wide CloudSolrClient to ZkController, and accessible via SolrCloudManager too.
+  Uses Jetty HttpClient.  Deprecated CloudSolrClient.getSolrClientCache.  Redirected some callers.  (David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
