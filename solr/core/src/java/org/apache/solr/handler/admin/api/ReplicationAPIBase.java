@@ -193,7 +193,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         fileMetaData.name = infos.getSegmentsFileName();
         fileMetaData.size = filteredDir.fileLength(infos.getSegmentsFileName());
         if (infos.getId() != null) {
-          try (final IndexInput in = filteredDir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
+          try (final IndexInput in =
+              filteredDir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
             try {
               fileMetaData.checksum = CodecUtil.retrieveChecksum(in);
             } catch (Exception e) {
@@ -246,9 +247,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return filesResponse;
   }
 
-  /**
-   * Potentially filters or unwraps the {@link Directory} to use to copy index files.
-   */
+  /** Potentially filters or unwraps the {@link Directory} to use to copy index files. */
   protected Directory filterDirectory(Directory directory) {
     return directory;
   }
@@ -384,7 +383,9 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       try {
         initWrite();
 
-        Directory dir = filterDirectory(solrCore.withSearcher(searcher -> searcher.getIndexReader().directory()));
+        Directory dir =
+            filterDirectory(
+                solrCore.withSearcher(searcher -> searcher.getIndexReader().directory()));
         in = dir.openInput(fileName, IOContext.READONCE);
         // if offset is mentioned move the pointer to that point
         if (offset != -1) in.seek(offset);

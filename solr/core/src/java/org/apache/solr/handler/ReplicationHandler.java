@@ -1611,7 +1611,8 @@ public class ReplicationHandler extends RequestHandlerBase
     return ReplicationHandlerConfig.class;
   }
 
-  protected CoreReplication createCoreReplication(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
+  protected CoreReplication createCoreReplication(
+      SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
     return new CoreReplication(solrCore, req, rsp);
   }
 
