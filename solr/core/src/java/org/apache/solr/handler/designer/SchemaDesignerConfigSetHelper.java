@@ -658,7 +658,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   protected CloudSolrClient cloudClient() {
-    return cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkServerAddress());
+    return cc.getZkController().getSolrClient();
   }
 
   protected ZkStateReader zkStateReader() {
