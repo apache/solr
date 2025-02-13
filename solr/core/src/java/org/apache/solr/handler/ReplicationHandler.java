@@ -274,7 +274,7 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp, req);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
-      final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
+      final CoreReplication coreReplicationAPI = createCoreReplication(core, req, rsp);
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
           rsp,
           coreReplicationAPI.fetchFileList(Long.parseLong(solrParams.required().get(GENERATION))));
@@ -319,7 +319,7 @@ public class ReplicationHandler extends RequestHandlerBase
    * @see IndexFetcher.DirectoryFileFetcher
    */
   private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp, SolrQueryRequest req) {
-    final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
+    final CoreReplication coreReplicationAPI = createCoreReplication(core, req, rsp);
     String fileName;
     String dirType;
 
@@ -1358,7 +1358,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(CoreReplication.class, SnapshotBackupAPI.class);
+    return List.of(getCoreReplicationClass(), SnapshotBackupAPI.class);
   }
 
   @Override
@@ -1609,5 +1609,13 @@ public class ReplicationHandler extends RequestHandlerBase
   @Override
   public Class<ReplicationHandlerConfig> getConfigClass() {
     return ReplicationHandlerConfig.class;
+  }
+
+  protected CoreReplication createCoreReplication(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
+    return new CoreReplication(solrCore, req, rsp);
+  }
+
+  protected Class<? extends CoreReplication> getCoreReplicationClass() {
+    return CoreReplication.class;
   }
 }
