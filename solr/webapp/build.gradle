@@ -145,14 +145,6 @@ task finalizeJsBundleDir(type: Sync) {
 war {
   webAppDirName = "web"
 
-  // Why are they in the source code at all if they're excluded from the distribution?
-  exclude "libs/angular-cookies.js"
-  exclude "libs/angular-route.js"
-  exclude "libs/angular-sanitize.js"
-  exclude "libs/angular-utf8-base.js"
-  exclude "libs/angular.js"
-  exclude "libs/chosen.jquery.js"
-
   from (configurations.generatedJSClientBundle, {
     into "libs/solr"
   })
