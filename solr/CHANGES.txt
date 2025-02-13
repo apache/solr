@@ -192,6 +192,8 @@ Bug Fixes
 
 * SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
 
+* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
