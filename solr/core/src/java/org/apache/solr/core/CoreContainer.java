@@ -749,7 +749,7 @@ public class CoreContainer {
    * @see #getDefaultHttpSolrClient()
    * @see ZkController#getSolrClient()
    * @see Http2SolrClient#requestWithBaseUrl(String, String, SolrRequest)
-   * @deprecated
+   * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
   @Deprecated
   public SolrClientCache getSolrClientCache() {
