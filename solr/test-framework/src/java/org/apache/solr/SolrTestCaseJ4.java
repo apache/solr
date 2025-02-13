@@ -327,6 +327,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty(URL_SCHEME);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
+      HttpClientUtil.resetHttpClientBuilder();
+      Http2SolrClient.resetSslContextFactory();
 
       clearNumericTypesProperties();
 
@@ -1029,8 +1031,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       }
       return response;
     } finally {
-      // restore the params
-      if (params != null && params != req.getParams()) req.setParams(params);
+      req.setParams(params); // restore in case we changed it
     }
   }
 

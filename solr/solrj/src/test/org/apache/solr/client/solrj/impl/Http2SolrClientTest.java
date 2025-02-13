@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -36,6 +35,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -515,8 +515,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     } finally {
       System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
       System.clearProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-      PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
-          new MapSolrParams(new HashMap<>()));
+      PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(SolrParams.of());
     }
   }
 
