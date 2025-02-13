@@ -190,6 +190,11 @@ Bug Fixes
 
 * SOLR-17652: Fix a bug that could cause long leader elections to leave PULL replicas in DOWN state forever. (hossman)
 
+* SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
+
+* SOLR-17630: Added a node-wide CloudSolrClient to ZkController, and accessible via SolrCloudManager too.
+  Uses Jetty HttpClient.  Deprecated CloudSolrClient.getSolrClientCache.  Redirected some callers.  (David Smiley)
+
 * SOLR-17673: Disable multi-threaded search execution by default at the node-level.
   Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
   (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)

@@ -90,7 +90,8 @@ public class TestRawTransformer extends SolrCloudTestCase {
           "stopwords.txt",
           "synonyms.txt",
           "protwords.txt",
-          "currency.xml"
+          "currency.xml",
+          "enumsConfig.xml"
         }) {
       Files.copy(Path.of(src_dir, file), confDir.resolve(file));
     }
