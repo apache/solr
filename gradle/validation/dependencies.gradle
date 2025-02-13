@@ -33,10 +33,12 @@ buildscript {
 allprojects {
 
     // Enable dependency locking in all modules and configurations
-    projects.configure {
-        dependencyLocking {
-            lockAllConfigurations()
-        }
+    dependencyLocking {
+        lockAllConfigurations()
+        // Ignore platform-specific dependencies (e.g. from Kotlin multiplatform module)
+        // that may cause different lock state depending on the OS
+        ignoredDependencies.add("org.jetbrains.compose.desktop:desktop-jvm-*")
+        ignoredDependencies.add("org.jetbrains.skiko:skiko-awt-runtime-*")
     }
 
     dependencies {

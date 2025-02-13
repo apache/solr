@@ -1031,8 +1031,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       }
       return response;
     } finally {
-      // restore the params
-      if (params != null && params != req.getParams()) req.setParams(params);
+      req.setParams(params); // restore in case we changed it
     }
   }
 
