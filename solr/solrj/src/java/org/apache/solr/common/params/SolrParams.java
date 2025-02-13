@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -37,7 +38,7 @@ import org.apache.solr.common.util.StrUtils;
  * SolrParams is designed to hold parameters to Solr, often from the request coming into Solr. It's
  * basically a MultiMap of String keys to one or more String values. Neither keys nor values may be
  * null. Unlike a general Map/MultiMap, the size is unknown without iterating over each parameter
- * name.
+ * name, if you want to count the different values for a key separately.
  */
 public abstract class SolrParams
     implements Serializable, MapWriter, Iterable<Map.Entry<String, String[]>> {
@@ -525,6 +526,38 @@ public abstract class SolrParams
       }
     }
     return sb.toString();
+  }
+
+  /**
+   * A SolrParams is equal to another if they have the same keys and values. The order of keys does
+   * not matter.
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) return true;
+    if (!(obj instanceof SolrParams b)) return false;
+
+    // iterating this params, see if other has the same values for each key
+    int count = 0;
+    for (Entry<String, String[]> thisEntry : this) {
+      String name = thisEntry.getKey();
+      if (!Arrays.equals(thisEntry.getValue(), b.getParams(name))) return false;
+      count++;
+    }
+    // does other params have the same number of keys?  It might have more but not less.
+    Iterator<String> bNames = b.getParameterNamesIterator();
+    while (bNames.hasNext()) {
+      bNames.next();
+      count--;
+      if (count < 0) return false;
+    }
+    assert count == 0;
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    throw new UnsupportedOperationException();
   }
 
   /** An empty, immutable SolrParams. */
