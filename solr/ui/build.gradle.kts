@@ -167,3 +167,20 @@ compose.desktop {
         }
     }
 }
+
+tasks.matching { task ->
+    task.name in listOf(
+        "allTests",
+        "desktopTest",
+        "wasmJsTest",
+        "wasmJsBrowserTest",
+    )
+}.configureEach {
+    // These kotlin multiplatform test tasks are not excluded on "gradlew ... -x test",
+    // so we disable them explicitly
+    onlyIf { !gradle.startParameter.excludedTaskNames.contains("test") }
+
+    // Note that "gradlew check -x test --dry-run" does not correctly resolve this exclusion rule,
+    // and you will see the test tasks being listed there as well, but they will be skipped as
+    // expected
+}
