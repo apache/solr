@@ -148,6 +148,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final boolean useExitableDirectoryReader =
       Boolean.getBoolean("solr.useExitableDirectoryReader");
 
+  public static final int EXECUTOR_MAX_CPU_THREADS = Runtime.getRuntime().availableProcessors();
+
   private final SolrCore core;
   private final IndexSchema schema;
   private final SolrDocumentFetcher docFetcher;
@@ -224,9 +226,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Shared across the whole node because it's a machine CPU resource.
    */
   public static ExecutorService initCollectorExecutor(NodeConfig cfg) {
-    final int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
-    if (0 >= indexSearcherExecutorThreads) {
+    int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
+    if (indexSearcherExecutorThreads == 0) {
       return null;
+    } else if (indexSearcherExecutorThreads < 0) {
+      // Treat a negative value as "unlimited" and set it to the value number of available CPU
+      // threads
+      indexSearcherExecutorThreads = EXECUTOR_MAX_CPU_THREADS;
     }
 
     // note that Lucene will catch a RejectedExecutionException to just run the task.
