@@ -428,7 +428,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   /**
    * Potentially filters or unwraps the cached {@link Directory} depending on the intended use
-   * defined by the {@link DirContext}.
+   * defined by the {@link org.apache.solr.core.DirectoryFactory.DirContext}.
    */
   protected Directory filterDirectory(Directory dir, DirContext dirContext) {
     // If the DirContext is REPLICATE or BACKUP, then unwrap the Directory to allow the caller to
