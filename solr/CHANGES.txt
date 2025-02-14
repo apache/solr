@@ -169,6 +169,13 @@ Improvements
   other v2 APIs.  SolrJ now offers (experimental) SolrRequest implementations for all v2 configset APIs in
   `org.apache.solr.client.solrj.request.ConfigsetsApi`. (Jason Gerlowski)
 
+* SOLR-17351: Solr's filestore "get-file" API has been decomposed into several separate endpoints.  Traditional file-fetching is now available at
+  `GET /api/cluster/filestore/files/some/path.txt` and metadata fetching (and directory listing) is now available at
+  `GET /api/cluster/filestore/metadata/some/path.txt`. SolrJ now offers request and response bindings for these APIs in
+  `org.apache.solr.client.solrj.request.FileStoreApi`. The older form of this endpoint (`GET /api/node/files`) is deprecated and will be
+  removed. (Jason Gerlowski)
+
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
