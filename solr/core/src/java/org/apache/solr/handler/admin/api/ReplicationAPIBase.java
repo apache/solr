@@ -160,13 +160,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       List<FileMetaData> result = new ArrayList<>();
       Directory dir = null;
       try {
-        dir =
-            solrCore
-                .getDirectoryFactory()
-                .get(
-                    solrCore.getNewIndexDir(),
-                    DirectoryFactory.DirContext.DEFAULT,
-                    solrCore.getSolrConfig().indexConfig.lockType);
+        dir = getDirectory();
         SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
@@ -244,6 +238,15 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       }
     }
     return filesResponse;
+  }
+
+  private Directory getDirectory() throws IOException {
+    return solrCore
+        .getDirectoryFactory()
+        .get(
+            solrCore.getNewIndexDir(),
+            DirectoryFactory.DirContext.REPLICATE,
+            solrCore.getSolrConfig().indexConfig.lockType);
   }
 
   /** This class is used to read and send files in the lucene index */
@@ -377,7 +380,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       try {
         initWrite();
 
-        Directory dir = solrCore.withSearcher(searcher -> searcher.getIndexReader().directory());
+        Directory dir = getDirectory();
         in = dir.openInput(fileName, IOContext.READONCE);
         // if offset is mentioned move the pointer to that point
         if (offset != -1) in.seek(offset);

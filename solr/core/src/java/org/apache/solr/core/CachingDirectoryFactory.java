@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -391,13 +392,13 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   public final Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException {
     String fullPath = normalize(path);
+    Directory directory = null;
     synchronized (this) {
       if (closed) {
         throw new AlreadyClosedException("Already closed");
       }
 
       final CacheValue cacheValue = byPathCache.get(fullPath);
-      Directory directory = null;
       if (cacheValue != null) {
         directory = cacheValue.directory;
       }
@@ -421,9 +422,21 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         cacheValue.refCnt++;
         log.debug("Reusing cached directory: {}", cacheValue);
       }
-
-      return directory;
     }
+    return filterDirectory(directory, dirContext);
+  }
+
+  /**
+   * Potentially filters or unwraps the cached {@link Directory} depending on the intended use
+   * defined by the {@link DirContext}.
+   */
+  protected Directory filterDirectory(Directory dir, DirContext dirContext) {
+    // If the DirContext is REPLICATE or BACKUP, then unwrap the Directory to allow the caller to
+    // copy raw bytes, skipping any additional logic that would be added by a FilterDirectory on
+    // top of the raw Directory.
+    return dirContext == DirContext.REPLICATE || dirContext == DirContext.BACKUP
+        ? FilterDirectory.unwrap(dir)
+        : dir;
   }
 
   /*

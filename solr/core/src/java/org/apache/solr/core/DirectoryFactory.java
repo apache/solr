@@ -55,10 +55,16 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   // Absolute.
   protected Path dataHomePath;
 
-  // hint about what the directory contains - default is index directory
+  /** Hint about what the directory contains or what the directory will be used for. */
   public enum DirContext {
+    /** Default is index directory. */
     DEFAULT,
-    META_DATA
+    /** Directory containing metadata. */
+    META_DATA,
+    /** Directory used to copy raw files during replication. */
+    REPLICATE,
+    /** Directory used to copy raw files during backup. */
+    BACKUP,
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
