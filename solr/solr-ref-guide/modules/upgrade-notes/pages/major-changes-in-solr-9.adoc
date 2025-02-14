@@ -72,6 +72,8 @@ Due to changes in Lucene 9, that isn't possible any more.
 In solrconfig.xml, the `indexSearcherExecutorThreads` now defaults to 0.
 Therefore, multi-threaded search execution is disabled at a node-level by default.
 It is currently recommended to only use an `indexSearcherExecutorThreads > 0` if all query requests sent to Solr opt-in to multiThreaded search.
+Additionally, `indexSearcherExecutorThreads = -1` can be given to use the number of available CPU threads available to Solr.
+This was the previous default.
 
 == Solr 9.8
 === Configuration
