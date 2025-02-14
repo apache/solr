@@ -18,8 +18,6 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
@@ -36,7 +34,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -50,11 +47,9 @@ import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -192,26 +187,31 @@ public class DistribFileStore implements FileStore {
       var solrClient = coreContainer.getDefaultHttpSolrClient();
 
       try {
-        GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + getMetaPath());
-        request.setResponseParser(new InputStreamResponseParser(null));
-        var response = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
-        is = (InputStream) response.get("stream");
+        final var metadataRequest = new FileStoreApi.GetFile(getMetaPath());
+        final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
+        final var response = metadataRequest.process(client);
         metadata =
-            Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
+            Utils.newBytesConsumer((int) MAX_PKG_SIZE)
+                .accept(response.getResponseStreamIfSuccessful());
         m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
-      } catch (SolrServerException | IOException e) {
+      } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       } finally {
         org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
 
+      ByteBuffer filedata = null;
       try {
-        GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + path);
-        request.setResponseParser(new InputStreamResponseParser(null));
-        var response = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
-        is = (InputStream) response.get("stream");
-        ByteBuffer filedata =
-            Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
+        final var fileRequest = new FileStoreApi.GetFile(path);
+        final var fileResponse = solrClient.requestWithBaseUrl(baseUrl, null, fileRequest);
+        try (final var stream = fileResponse.getResponseStreamIfSuccessful()) {
+          filedata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(stream);
+        }
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
+      }
+
+      try {
         filedata.mark();
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
         String expected = (String) m.get("sha512");
@@ -222,8 +222,6 @@ public class DistribFileStore implements FileStore {
         filedata.reset();
         persistToFile(filedata, metadata);
         return true;
-      } catch (SolrServerException e) {
-        throw new SolrException(SERVER_ERROR, "Error fetching data", e);
       } catch (IOException ioe) {
         throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
       } finally {
@@ -238,18 +236,12 @@ public class DistribFileStore implements FileStore {
         try {
           String baseUrl =
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
-          final var solrParams = new ModifiableSolrParams();
-          solrParams.add("meta", "true");
-          solrParams.add("omitHeader", "true");
+          final var metadataRequest = new FileStoreApi.GetMetadata(path);
+          final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
+          final var metadataResponse = metadataRequest.process(client).getParsed();
+          boolean nodeHasBlob =
+              metadataResponse.files != null && metadataResponse.files.containsKey(path);
 
-          final var request = new GenericSolrRequest(GET, "/node/files" + path, solrParams);
-          boolean nodeHasBlob = false;
-          var solrClient = coreContainer.getDefaultHttpSolrClient();
-          var resp = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
-
-          if (Utils.getObjectByPath(resp, false, Arrays.asList("files", path)) != null) {
-            nodeHasBlob = true;
-          }
           if (nodeHasBlob) {
             boolean success = fetchFileFromNodeAndPersist(liveNode);
             if (success) return true;
@@ -367,11 +359,13 @@ public class DistribFileStore implements FileStore {
       for (String node : nodes) {
         String baseUrl =
             coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
+
+        String nodeToFetchFrom;
         if (i < FETCHFROM_SRC) {
           // this is to protect very large clusters from overwhelming a single node
           // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
           // it's there in  the memory now. So , it must be served fast
-          getFrom = myNodeName;
+          nodeToFetchFrom = myNodeName;
         } else {
           if (i == FETCHFROM_SRC) {
             // This is just an optimization
@@ -382,19 +376,17 @@ public class DistribFileStore implements FileStore {
             } catch (Exception e) {
             }
           }
-          // trying to avoid the thundering herd problem when there are a very large no:of nodes
-          // others should try to fetch it from any node where it is available. By now,
+          // trying to avoid the thundering herd problem when there are a very large number of
+          // nodes others should try to fetch it from any node where it is available. By now,
           // almost FETCHFROM_SRC other nodes may have it
-          getFrom = "*";
+          nodeToFetchFrom = "*";
         }
         try {
-          var solrClient = coreContainer.getDefaultHttpSolrClient();
-          var solrParams = new ModifiableSolrParams();
-          solrParams.set("getFrom", getFrom);
-
-          var request = new GenericSolrRequest(GET, "/node/files" + info.path, solrParams);
+          final var pullFileRequest = new FileStoreApi.FetchFile(info.path);
+          pullFileRequest.setGetFrom(nodeToFetchFrom);
+          final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
           // fire and forget
-          solrClient.requestWithBaseUrl(baseUrl, request::process);
+          pullFileRequest.process(client);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception
@@ -510,9 +502,8 @@ public class DistribFileStore implements FileStore {
     deleteLocal(path);
     List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
 
-    final var solrParams = new ModifiableSolrParams();
-    solrParams.add("localDelete", "true");
-    final var solrRequest = new GenericSolrRequest(DELETE, "/cluster/files" + path, solrParams);
+    final var solrRequest = new FileStoreApi.DeleteFile(path);
+    solrRequest.setLocalDelete(Boolean.TRUE);
 
     for (String node : nodes) {
       String baseUrl =
