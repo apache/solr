@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -41,6 +40,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -182,27 +182,26 @@ public class PackageUtils {
   public static Manifest fetchManifest(
       SolrClient solrClient, String manifestFilePath, String expectedSHA512)
       throws IOException, SolrServerException {
-
-    final var manifestRequest = new FileStoreApi.GetFile(manifestFilePath);
-    final var manifestResponse = manifestRequest.process(solrClient);
-    try (final var manifestStream = manifestResponse.getResponseStreamIfSuccessful()) {
-      final var manifestJson = IOUtils.toString(manifestStream, StandardCharsets.UTF_8);
-      String calculatedSHA512 =
-          Utils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
-      if (!expectedSHA512.equals(calculatedSHA512)) {
-        throw new SolrException(
-            ErrorCode.UNAUTHORIZED,
-            "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
-                + "Expected: "
-                + expectedSHA512
-                + ", calculated: "
-                + calculatedSHA512
-                + ", manifest location: "
-                + manifestFilePath);
-      }
-      Manifest manifest = getMapper().readValue(manifestJson, Manifest.class);
-      return manifest;
+    GenericSolrRequest request =
+        new GenericV2SolrRequest(SolrRequest.METHOD.GET, "/api/node/files" + manifestFilePath);
+    request.setResponseParser(new JsonMapResponseParser());
+    NamedList<Object> response = solrClient.request(request);
+    String manifestJson = (String) response.get("response");
+    String calculatedSHA512 =
+        Utils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
+    if (expectedSHA512.equals(calculatedSHA512) == false) {
+      throw new SolrException(
+          ErrorCode.UNAUTHORIZED,
+          "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
+              + "Expected: "
+              + expectedSHA512
+              + ", calculated: "
+              + calculatedSHA512
+              + ", manifest location: "
+              + manifestFilePath);
     }
+    Manifest manifest = getMapper().readValue(manifestJson, Manifest.class);
+    return manifest;
   }
 
   /**

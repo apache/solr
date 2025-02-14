@@ -173,7 +173,7 @@ public class PackageManager implements Closeable {
         String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"));
     for (String filePath : filesToDelete) {
       DistribFileStore.deleteZKFileEntry(zkClient, filePath);
-      String path = "/api/cluster/filestore/files" + filePath;
+      String path = "/api/cluster/files" + filePath;
       printGreen("Deleting " + path);
       solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.DELETE, path));
     }

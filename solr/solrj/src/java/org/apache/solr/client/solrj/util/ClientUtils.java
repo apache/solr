@@ -97,8 +97,6 @@ public class ClientUtils {
   private static String buildReplacementV2Path(String existingPath) {
     if (existingPath.contains("/solr")) {
       return existingPath.replaceFirst("/solr", "/api");
-    } else if (existingPath.endsWith("/api")) {
-      return existingPath;
     } else {
       return existingPath + "/api";
     }

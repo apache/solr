@@ -23,11 +23,9 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -239,15 +237,6 @@ public class {{classname}} {
               }
               {{/queryParams}}
               return params;
-            }
-
-            @Override
-            public Set<String> getQueryParams() {
-              final var queryParams = new HashSet<String>();
-              {{#queryParams}}
-              queryParams.add("{{baseName}}");
-              {{/queryParams}}
-              return queryParams;
             }
 
             @Override

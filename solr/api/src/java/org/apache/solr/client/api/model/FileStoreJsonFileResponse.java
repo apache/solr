@@ -17,12 +17,14 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Map;
 
 /**
  * One of several possible responses from {@link
  * org.apache.solr.client.api.endpoint.NodeFileStoreApis#getFile(String, Boolean, String, Boolean)}
+ *
+ * <p>Typically used when 'wt=json' is specified while retrieving an individual file from the
+ * filestore
  */
-public class FileStoreDirectoryListingResponse extends SolrJerseyResponse {
-  @JsonProperty public Map<String, Object> files;
+public class FileStoreJsonFileResponse extends SolrJerseyResponse {
+  @JsonProperty public String response;
 }
