@@ -10,6 +10,10 @@ Bug Fixes
 * SOLR-17637: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
   This can cause the HttpShardHandler to indefinitely wait on a completed response that will never come. (Houston Putman)
 
+* SOLR-17673: Disable multi-threaded search execution by default at the node-level.
+  Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
+  (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
+
 Dependency Upgrades
 ---------------------
 (No changes)
