@@ -65,7 +65,8 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         canPost("/collections", """
                 {
                   "name": "testCollection",
-                  "numShards": 1
+                  "numShards": 1,
+                  "nrtReplicas": 2
                 }
                 """);
 
@@ -85,29 +86,45 @@ public class V2APISmokeTest extends SolrCloudTestCase {
                 }
                 """);
 
+// TODO Backups API
+//        canPost(collectionPath + "/backups/{backupName}/versions");
 
-//        canPost("/collections/{collectionName}/backups/{backupName}/versions");
-//
-//        canPost("/collections/{collectionName}/reload");
-//        canPut("/collections/{collectionName}/scale");
-//
-//        canPost("/collections/{collectionName}/shards");
-//        canDelete("/collections/{collectionName}/shards/{shardName}");
-//        canPost("/collections/{collectionName}/shards/{shardName}/force-leader");
-//        canPost("/collections/{collectionName}/shards/{shardName}/replicas");
-//        canDelete("/collections/{collectionName}/shards/{shardName}/replicas");
-//        canDelete("/collections/{collectionName}/shards/{shardName}/replicas/{replicaName}");
-//        canPost("/collections/{collectionName}/shards/{shardName}/sync");
-//
-//        canPost("/collections/{collName}/shards/{shardName}/install");
-//        canPut("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}");
-//        canDelete("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}");
+        canPost(collectionPath + "/reload", "{}");
+
+// TODO: Shard operations
+//        canPost(collectionPath + "/shards", """
+//                {
+//                    "name": "s1"
+//                }
+//                """);
+//        String shardPath = collectionPath + "/shards/s1";
+//        canPost(shardPath + "/force-leader");
+//        canPost(shardPath + "/replicas");
+//        canDelete(shardPath + "/replicas/{replicaName}");
+//        canDelete(shardPath + "/replicas");
+//        canPost(shardPath + "/sync");
+//        canPost(shardPath + "/install");
+//        canPut(shardPath + "/replicas/{replicaName}/properties/{propName}");
+//        canDelete(shardPath + "/replicas/{replicaName}/properties/{propName}");
+//        canDelete(shardPath);
 
         canGet(collectionPath + "/snapshots");
-        //  canPost("/collections/{collName}/snapshots/{snapshotName}"); canDelete("/collections/{collName}/snapshots/{snapshotName}");
+        //canPost(collectionPath + "/snapshots/snap123", "{}"); // TODO expected:<200> but was:<405>
+        canDelete(collectionPath + "/snapshots/snap123");
 
-        //  canPost("/collections/{collectionName}/rename");
         testCollectionsAndCoresApi("collections", "testCollection");
+
+        canPut(collectionPath + "/scale", """
+                {
+                    "count" : 1
+                }
+                """);
+        canPost(collectionPath + "/rename", """
+                {
+                  "to": "test123"
+                }
+                """);
+        canDelete("/aliases/test123");
         canDelete(collectionPath);
     }
 
@@ -148,6 +165,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
     @Test
     public void testBackupsApi() throws Exception {
+        // TODO: Need to create backup
 //        canPut("/backups/{backupName}/purgeUnused", "{}");
 //        canPost("/backups/{backupName}/restore", "{}");
 //        canGet("/backups/{backupName}/versions");
@@ -157,31 +175,52 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
     @Test
     public void testClusterApi() throws Exception {
+        // TODO
 //        canPut("/cluster/files{filePath}");
 //        canDelete("/cluster/files{path}");
+
+
+        canGet("/cluster/properties");
+        canPut("/cluster/properties", """
+                {
+                    "ext.foo": "bar",
+                    "ext.foo2": "bar2"
+                }
+                """);
+        canGet("/cluster/properties/ext.foo");
+        canPut("/cluster/properties/ext.foo", """
+                {
+                    "value": "car"
+                }
+                """);
+        canDelete("/cluster/properties/ext.foo");
+
+        canGet("/cluster/zookeeper/children/collections");
+        canGet("/cluster/zookeeper/data/clusterprops.json");
+        canGet("/cluster/zookeeper/data/security.json");
+
+        canPost("/cluster/replicas/balance", "{}");
+        // TODO: Node name?
 //        canPost("/cluster/nodes/{nodeName}/clear");
 //        canPost("/cluster/nodes/{sourceNodeName}/replace");
-//        canGet("/cluster/properties");
-//        canPut("/cluster/properties");
-//        canGet("/cluster/properties/{propertyName}");
-//        canPut("/cluster/properties/{propertyName}");
-//        canDelete("/cluster/properties/{propertyName}");
-//        canPost("/cluster/replicas/balance");
-//        canPost("/cluster/replicas/migrate");
-//        canGet("/cluster/zookeeper/children{zkPath}");
-//        canGet("/cluster/zookeeper/data{zkPath}");
-//        canGet("/cluster/zookeeper/data/security.json");
+//        canPost("/cluster/replicas/migrate", """
+//                {
+//                    "sourceNodes": ["node1"]
+//                }
+//                """);
     }
 
     @Test
     public void testConfigSetsApi() throws Exception {
         canGet("/configsets");
+        // TODO: need to add auth to clone _default
 //        canPost("/configsets", """
 //                {
 //                  "name": "cfg123",
 //                  "baseConfigSet": "_default"
 //                }
 //                """);
+        // TODO need data to upload
 //        canPut("/configsets/cfg123", """
 //                """);
 //        canPut("/configsets/cfg123/file345", """
@@ -191,6 +230,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
     @Test
     public void testCoresApi() throws Exception {
+        // TODO
 //        canPost("/cores/{coreName}/backups");
 //        canPost("/cores/{coreName}/install");
 //        canPost("/cores/{coreName}/merge-indices");
@@ -228,23 +268,24 @@ public class V2APISmokeTest extends SolrCloudTestCase {
     }
 
     private void testCollectionsAndCoresApi(String indexType, String indexName) throws Exception {
-
-//indexType = collections | cores
-//        canGet("/{indexType}/{indexName}/schema");
-//        canGet("/{indexType}/{indexName}/schema/copyfields");
-//        canGet("/{indexType}/{indexName}/schema/dynamicfields");
-//        canGet("/{indexType}/{indexName}/schema/dynamicfields/{fieldName}");
-//        canGet("/{indexType}/{indexName}/schema/fields");
-//        canGet("/{indexType}/{indexName}/schema/fields/{fieldName}");
-//        canGet("/{indexType}/{indexName}/schema/fieldtypes");
-//        canGet("/{indexType}/{indexName}/schema/fieldtypes/{fieldTypeName}");
-//        canGet("/{indexType}/{indexName}/schema/name");
-//        canGet("/{indexType}/{indexName}/schema/similarity");
-//        canGet("/{indexType}/{indexName}/schema/uniquekey");
-//        canGet("/{indexType}/{indexName}/schema/version");
-//        canGet("/{indexType}/{indexName}/schema/zkversion");
-//        canGet("/{indexType}/{indexName}/select");
-//        canPost("/{indexType}/{indexName}/select");
+        //indexType = collections | cores
+        String indexPath = "/" + indexType + "/" + indexName;
+        String schemaPath = indexPath+ "/schema"; 
+        canGet(schemaPath);
+        canGet(schemaPath + "/copyfields");
+        canGet(schemaPath + "/dynamicfields");
+//        canGet(schemaPath + "/dynamicfields/field123"); // TODO: Need a valid id
+        canGet(schemaPath + "/fields");
+//        canGet(schemaPath + "/fields/field123"); // TODO: Need a valid id
+        canGet(schemaPath + "/fieldtypes");
+//        canGet(schemaPath + "/fieldtypes/fieldType123"); // TODO: Need a valid id
+        canGet(schemaPath + "/name");
+        canGet(schemaPath + "/similarity");
+        canGet(schemaPath + "/uniquekey");
+        canGet(schemaPath + "/version");
+        canGet(schemaPath + "/zkversion");
+        canGet(indexPath + "/select");
+        canPost(indexPath + "/select", "{}");
     }
 
 
