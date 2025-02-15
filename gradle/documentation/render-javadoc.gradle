@@ -178,6 +178,7 @@ configure(subprojects.findAll {
       ':platform',
       ':solr:solr-ref-guide',
       ':solr:server',
+      ':solr:ui',
       ':solr:webapp']
 }) {
   project.tasks.withType(RenderJavadocTask) {
