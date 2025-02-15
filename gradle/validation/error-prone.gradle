@@ -36,11 +36,11 @@ if (skipReason) {
 }
 
 allprojects { prj ->
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     // LUCENE-9650: Errorprone does not work when running as a plugin inside a forked Javac process.
     // Javac running inside Gradle works, because we have additional module system opens in place.
     if (skipReason) {
-      tasks.withType(JavaCompile) { task -> task.dependsOn ":errorProneSkipped" }
+      tasks.withType(JavaCompile).configureEach { task -> task.dependsOn ":errorProneSkipped" }
 
       // Error prone plugin adds error prone to test classpath. We need to add it here too
       // (manually) so that lockfiles are consistent with or without error prone.
@@ -61,7 +61,7 @@ allprojects { prj ->
         errorprone libs.google.errorprone.core
       }
 
-      tasks.withType(JavaCompile) { task ->
+      tasks.withType(JavaCompile).configureEach { task ->
         task.dependsOn ":checkJdkInternalsExportedToGradle"
 
         options.errorprone.disableWarningsInGeneratedCode = true

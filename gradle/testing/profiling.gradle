@@ -18,7 +18,7 @@
 def recordings = files()
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.ext {
       testOptions += [
           [propName: 'tests.profile', value: false, description: "Enable java flight recorder profiling."]
@@ -27,7 +27,7 @@ allprojects {
 
     if (resolvedTestOption("tests.profile").toBoolean()) {
       allprojects {
-        tasks.withType(Test) {
+        tasks.withType(Test).configureEach {
           jvmArgs("-XX:StartFlightRecording=dumponexit=true,maxsize=250M,settings=" + rootProject.file("gradle/testing/profiling.jfc"),
               "-XX:+UnlockDiagnosticVMOptions",
               "-XX:+DebugNonSafepoints")

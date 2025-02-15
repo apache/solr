@@ -38,7 +38,7 @@ allprojects { prj ->
       JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME,
       JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME
   ]
-  configurations.matching { it.name in configNames }.all {
+  configurations.matching { it.name in configNames }.configureEach {
     exclude group: 'log4j', module: 'log4j' // use SLF4j
     exclude group: "ch.qos.logback" // use SLF4j
     exclude group: 'commons-logging', module: 'commons-logging' // use SLF4j

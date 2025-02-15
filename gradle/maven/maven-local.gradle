@@ -43,7 +43,7 @@ configure(rootProject) {
   }
 
   configure(subprojects.findAll { it.path in rootProject.published }) {
-    plugins.withType(PublishingPlugin) {
+    plugins.withType(PublishingPlugin).configureEach {
       publishing {
         repositories {
           maven {
@@ -53,11 +53,11 @@ configure(rootProject) {
         }
       }
 
-      tasks.matching { it.name == "publishJarsPublicationToMavenLocal" }.all { task ->
+      tasks.matching { it.name == "publishJarsPublicationToMavenLocal" }.configureEach { task ->
         mavenToLocalRepo.dependsOn task
       }
 
-      tasks.matching { it.name == "publishJarsPublicationToBuildRepository" }.all { task ->
+      tasks.matching { it.name == "publishJarsPublicationToBuildRepository" }.configureEach { task ->
         // Clean local repo prior to republishing artifacts.
         task.dependsOn mavenLocalClean
         // Attach to root project's mavenLocal task.

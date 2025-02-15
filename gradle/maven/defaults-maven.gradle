@@ -60,11 +60,11 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
   }
 
   // Do not generate gradle metadata files.
-  tasks.withType(GenerateModuleMetadata) {
+  tasks.withType(GenerateModuleMetadata).configureEach {
     enabled = false
   }
 
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     task sourcesJar(type: Jar, dependsOn: classes) {
       archiveClassifier = 'sources'
       from sourceSets.main.allJava

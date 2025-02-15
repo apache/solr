@@ -26,7 +26,7 @@
 def beastingMode = gradle.startParameter.taskNames.any{ name -> name == 'beast' || name.endsWith(':beast') }
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.ext {
       testOptions += [
           [propName: 'tests.dups', value: 0, description: "Reiterate runs of entire test suites ('beast' task)."]
@@ -41,7 +41,7 @@ if (beastingMode) {
   }
 
   allprojects {
-    plugins.withType(JavaPlugin) {
+    plugins.withType(JavaPlugin).configureEach {
       task beast(type: BeastTask) {
         description "Run a test suite (or a set of tests) many times over (duplicate 'test' task)."
         group "Verification"

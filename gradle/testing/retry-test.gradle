@@ -16,8 +16,8 @@
  */
 
 allprojects {
-    plugins.withType(JavaPlugin) {
-        tasks.withType(Test) {
+    plugins.withType(JavaPlugin).configureEach {
+        tasks.withType(Test).configureEach {
             develocity.testRetry {
                 if (isCIBuild) {
                     // For more info on params: https://github.com/gradle/test-retry-gradle-plugin

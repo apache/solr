@@ -30,7 +30,7 @@ configure(rootProject) {
 def resources = scriptResources(buildscript)
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     // Create a [sourceSetName]EcjLint task for each source set
     // with a non-empty java.srcDirs. These tasks are then
     // attached to project's "ecjLint" task.

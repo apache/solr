@@ -100,7 +100,7 @@ task buildPythonClient(type: org.openapitools.generator.gradle.plugin.tasks.Gene
   generateModelTests.set(false)
 }
 
-tasks.withType(org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+tasks.withType(org.openapitools.generator.gradle.plugin.tasks.GenerateTask).configureEach {
   dependsOn(resolve)
 }
 

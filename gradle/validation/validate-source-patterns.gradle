@@ -108,19 +108,19 @@ allprojects {
 }
 
 configure(project(':solr:core')) {
-  project.tasks.withType(ValidateSourcePatternsTask) {
+  project.tasks.withType(ValidateSourcePatternsTask).configureEach {
     sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
   }
 }
 
 configure(project(':solr:server')) {
-  project.tasks.withType(ValidateSourcePatternsTask) {
+  project.tasks.withType(ValidateSourcePatternsTask).configureEach {
     sourceFiles.exclude '**/configsets/**'
   }
 }
 
 configure(project(':solr:solr-ref-guide')) {
-  project.tasks.withType(ValidateSourcePatternsTask) {
+  project.tasks.withType(ValidateSourcePatternsTask).configureEach {
     sourceFiles.exclude 'modules/indexing-guide/examples/stemdict.txt' // requires tabs
     sourceFiles.exclude 'node_modules/**' // slightly hackish, this downloads all of the node deps
   }

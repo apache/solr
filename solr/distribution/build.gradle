@@ -181,6 +181,6 @@ task assembleRelease(type: Sync) {
 tasks.matching {it.name in [
     "assembleSourceTgz",
     "assembleRelease",
-]}.all {
+]}.configureEach {
   group "distribution"
 }
