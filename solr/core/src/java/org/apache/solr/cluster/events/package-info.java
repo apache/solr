@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Interfaces defining support for cluster-level event generation and processing.
- */
+
+/** Interfaces defining support for cluster-level event generation and processing. */
 package org.apache.solr.cluster.events;
-
-

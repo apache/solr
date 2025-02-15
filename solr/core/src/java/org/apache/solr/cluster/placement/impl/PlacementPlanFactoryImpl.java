@@ -17,24 +17,26 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import java.util.Set;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlanFactory;
+import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
 
-import java.util.Set;
-
-/**
- * Simple implementation of {@link PlacementPlanFactory}.
- */
+/** Simple implementation of {@link PlacementPlanFactory}. */
 public class PlacementPlanFactoryImpl implements PlacementPlanFactory {
   @Override
-  public PlacementPlan createPlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
+  public PlacementPlan createPlacementPlan(
+      PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
     return new PlacementPlanImpl(request, replicaPlacements);
   }
 
   @Override
-  public ReplicaPlacement createReplicaPlacement(SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType) {
+  public ReplicaPlacement createReplicaPlacement(
+      SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType) {
     return new ReplicaPlacementImpl(solrCollection, shardName, node, replicaType);
   }
 }

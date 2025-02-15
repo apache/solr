@@ -17,17 +17,17 @@
 package org.apache.solr.request;
 
 import java.util.function.Predicate;
-
 import org.apache.lucene.util.BytesRef;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * An implementation of {@link Predicate} which returns true if the BytesRef contains a given substring.
+ * An implementation of {@link Predicate} which returns true if the BytesRef contains a given
+ * substring.
  */
 public class SubstringBytesRefFilter implements Predicate<BytesRef> {
-  final private String contains;
-  final private boolean ignoreCase;
-  
+  private final String contains;
+  private final boolean ignoreCase;
+
   public SubstringBytesRefFilter(String contains, boolean ignoreCase) {
     this.contains = contains;
     this.ignoreCase = ignoreCase;
@@ -39,14 +39,19 @@ public class SubstringBytesRefFilter implements Predicate<BytesRef> {
 
   protected boolean includeString(String term) {
     if (ignoreCase) {
-      return StringUtils.containsIgnoreCase(term, contains);
+      return containsIgnoreCase(term, contains);
     }
 
-    return StringUtils.contains(term, contains);
+    return term.contains(contains);
   }
 
   @Override
   public boolean test(BytesRef term) {
     return includeString(term.utf8ToString());
+  }
+
+  @SuppressForbidden(reason = "Uses Stringutils.containsIgnoreCase")
+  private boolean containsIgnoreCase(final CharSequence str, final CharSequence searchStr) {
+    return org.apache.commons.lang3.StringUtils.containsIgnoreCase(str, searchStr);
   }
 }

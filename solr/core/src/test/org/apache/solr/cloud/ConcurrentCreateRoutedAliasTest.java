@@ -16,25 +16,22 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.zookeeper.KeeperException;
+import org.apache.solr.embedded.JettyConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12386") // "Can't find resource"
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12386")
 public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -48,7 +45,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(4, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(4, createTempDir(), JettyConfig.builder().build());
   }
 
   @Override
@@ -59,36 +56,40 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testConcurrentCreateRoutedAliasMinimal() throws IOException, KeeperException.NoNodeException {
-    // this is the test where be blow out a bunch of create commands all out at once.
-    // other tests are more functionality based, and just use a single thread.
+  public void testConcurrentCreateRoutedAliasMinimal() {
+    // This is the test where we blow out a bunch of create commands all out at once. Other tests
+    // are more functionality based, and just use a single thread.
 
-    // Failure of this test very occasionally due to overseer overload would not be worrisome (just bothersome).
-    // Any use case creating large numbers of time routed aliases concurrently would be an EXTREMELY odd
-    // if not fundamentally broken use case. This test method is just here to guard against any race
-    // conditions in the code that could crop up rarely in lower volume usage.
+    // Failure of this test occurs very occasionally due to overseer overload, and is not worrisome
+    // (just
+    // bothersome). Any use case creating large numbers of time routed aliases concurrently would be
+    // an EXTREMELY odd if not fundamentally broken use case. This test method is just here to guard
+    // against any race conditions in the code that could crop up rarely in lower volume usage.
 
-    // That said any failures involving about NPE's or missing parameters or oddities other than overwhelming
-    // the overseer queue with retry races emanating from this test should be investigated. Also if it fails
-    // frequently that needs to be investigated of course.
-
+    // That said any failures involving NullPointerException's or missing parameters or oddities
+    // other than
+    // overwhelming the overseer queue with retry races emanating from this test should be
+    // investigated. Also, if it fails frequently that needs to be investigated of course.
 
     final AtomicReference<Exception> failure = new AtomicReference<>();
 
-    // Note: this number of threads seems to work regularly with the up-tweaked number of retries (50) in
+    // Note: this number of threads seems to work regularly with the up-tweaked number of retries
+    // (50) in
     // org.apache.solr.common.cloud.ZkStateReader.AliasesManager.applyModificationAndExportToZk()
-    // with the original 5 retries this wouldn't reliably pass with 10 threads, but with 50 retries it seems
-    // to handle 50 threads about a dozen times without any failure (on a 32 thread processor)
-    // it also passed 3/3 at 150 threads and 2/3 with 250 threads on both 1 node and 4 nodes...
-    // the failure mode seems to be overseer tasks that are not found. I suspect this happens when enough
-    // threads get into retry races and the spam overwhelms the overseer. (that this can happen might imply
-    // an issue over there, but I'm not sure, since there is an intentional hard limit on the overseer queue
-    // and I haven't tried to count the retries up and figure out if the requests are actually exceeding that
-    // limit or not, but the speed of retries might indicate an effectively hot loop, but again, a separate issue.
+    // with the original 5 retries this wouldn't reliably pass with 10 threads, but with 50 retries
+    // it seems to handle 50 threads about a dozen times without any failure (on a 32 thread
+    // processor) it also passed 3/3 at 150 threads and 2/3 with 250 threads on both 1 node and 4
+    // nodes... the failure mode seems to be overseer tasks that are not found. I suspect this
+    // happens when enough threads get into retry races and the spam overwhelms the overseer. That
+    // this can happen might imply an issue over there, but I'm not sure, since there is an
+    // intentional hard limit on the overseer queue, and I haven't tried to count the retries up and
+    // figure out if the requests are actually exceeding that limit or not, but the speed of retries
+    // might indicate an effectively hot loop, but again, a separate issue.
 
-    // The hope is that the level of concurrency supported by create routed alias and the code it uses is such
-    // that this test wouldn't spuriously fail more than once a year. If that's true users should never see
-    // an issue in the wild unless they are doing something we probably don't want to support anyway
+    // The hope is that the level of concurrency supported by create routed alias and the code it
+    // uses is such that this test wouldn't spuriously fail more than once a year. If that's true
+    // users should never see an issue in the wild unless they are doing something we probably don't
+    // want to support anyway.
 
     final CreateRoutedAliasThread[] threads = new CreateRoutedAliasThread[4];
     int numStart = num;
@@ -97,10 +98,10 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
 
-
       int i = num - numStart;
-      threads[i] = new CreateRoutedAliasThread("create-delete-search-" + i, aliasName, "NOW/HOUR",
-          solrClient, failure, false);
+      threads[i] =
+          new CreateRoutedAliasThread(
+              "create-delete-search-" + i, aliasName, "NOW/HOUR", solrClient, failure);
     }
 
     startAll(threads);
@@ -109,23 +110,26 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     assertNull("concurrent alias creation failed " + failure.get(), failure.get());
   }
 
-
   @Test
   public void testConcurrentCreateRoutedAliasComplex() {
     final AtomicReference<Exception> failure = new AtomicReference<>();
 
     final CreateRoutedAliasThread[] threads = new CreateRoutedAliasThread[1];
     int numStart = num;
-    System.out.println("NUM ==> " +num);
+    System.out.println("NUM ==> " + num);
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAliasCplx" + num;
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
 
       int i = num - numStart;
-      threads[i] = new CreateRoutedAliasThread("create-routed-alias-cplx-" + i,
-          aliasName, "2017-12-25T23:24:25Z",
-          solrClient, failure, true);
+      threads[i] =
+          new CreateRoutedAliasThread(
+              "create-routed-alias-cplx-" + i,
+              aliasName,
+              "2017-12-25T23:24:25Z",
+              solrClient,
+              failure);
     }
 
     startAll(threads);
@@ -158,8 +162,11 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     protected final AtomicReference<Exception> failure;
 
     CreateRoutedAliasThread(
-        String name, String aliasName, String start, SolrClient solrClient,
-        AtomicReference<Exception> failure, boolean v2) {
+        String name,
+        String aliasName,
+        String start,
+        SolrClient solrClient,
+        AtomicReference<Exception> failure) {
       super(name);
       this.aliasName = aliasName;
       this.start = start;
@@ -169,7 +176,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
     @Override
     public void run() {
-        doWork();
+      doWork();
     }
 
     void doWork() {
@@ -189,14 +196,13 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
     private void createAlias() {
       try {
-        CollectionAdminRequest.CreateTimeRoutedAlias rq = CollectionAdminRequest
-            .createTimeRoutedAlias(
+        CollectionAdminRequest.CreateTimeRoutedAlias rq =
+            CollectionAdminRequest.createTimeRoutedAlias(
                 aliasName,
                 start,
                 "+12HOUR",
                 "routedFoo_dt",
-                CollectionAdminRequest.createCollection("_ignored_", "_default", 1, 1)
-            );
+                CollectionAdminRequest.createCollection("_ignored_", "_default", 1, 1));
 
         final CollectionAdminResponse response = rq.process(solrClient);
         if (response.getStatus() != 0) {
@@ -205,9 +211,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
       } catch (Exception e) {
         addFailure(e);
       }
-
     }
-
 
     void joinAndClose() throws InterruptedException {
       try {
@@ -217,6 +221,4 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
       }
     }
   }
-
-
 }

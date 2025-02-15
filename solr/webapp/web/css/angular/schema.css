@@ -574,9 +574,11 @@ limitations under the License.
 #content #schema .actions #addField span { background-image: url( ../../img/ico/document-list.png ); }
 #content #schema .actions #addDynamicField span { background-image: url( ../../img/ico/documents-stack.png ); }
 #content #schema .actions #addCopyField span { background-image: url( ../../img/ico/document-import.png ); }
+#content #schema .actions #manipulateFieldType span { background-image: url( ../../img/ico/property.png ); }
 
 #content #schema .actions div.action
 {
+  display: inline-table;
   width: 320px;
   background-color: #fff;
   border: 1px solid #f0f0f0;
@@ -588,6 +590,10 @@ limitations under the License.
   top: 50px;
   padding: 10px;
   z-index: 2;
+}
+
+#content #schema .actions div.action.field-type {
+  width: 450px;
 }
 
 #content #schema .actions p
@@ -603,7 +609,15 @@ limitations under the License.
   text-align: right;
   width: 25%;
 }
-
+#content #schema .actions .field-type label
+{
+  width: 30%;
+}
+#content #schema .actions .field-type textarea
+{
+  margin-left: 6px;
+  margin-top: 5px;
+}
 #content #schema .actions input,
 #content #schema .actions select,
 #content #schema .actions .buttons,
@@ -729,4 +743,19 @@ limitations under the License.
 #content #schema dd.similarity.ng-binding:hover::after {
   opacity: 90;
   bottom: -20px;
+}
+#content #schema .actions .field-type .help {
+  position: absolute;
+  left: 15px;
+  padding: 6px;
+  width: 340px;
+  z-index: 200;
+  background-color: #FCF0AD;
+  border: 1px solid #f0f0f0;
+}
+
+#content #schema .actions .field-type .help p a {
+  color: #003eff;
+  text-decoration-line: underline;
+  text-decoration-color: #003eff;
 }

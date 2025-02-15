@@ -19,9 +19,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.Writer;
 
-/** Single threaded BufferedWriter
- *  Internal Solr use only, subject to change.
- */
+/** Single threaded BufferedWriter Internal Solr use only, subject to change. */
 public class FastWriter extends Writer {
   // use default BUFSIZE of BufferedWriter so if we wrap that
   // it won't cause double buffering.
@@ -41,18 +39,18 @@ public class FastWriter extends Writer {
   }
 
   public static FastWriter wrap(Writer sink) {
-    return (sink instanceof FastWriter) ? (FastWriter)sink : new FastWriter(sink);
+    return (sink instanceof FastWriter) ? (FastWriter) sink : new FastWriter(sink);
   }
 
   @Override
   public void write(int c) throws IOException {
-    write((char)c); 
+    write((char) c);
   }
 
   public void write(char c) throws IOException {
     if (pos >= buf.length) {
-      flush(buf,0,pos);
-      pos=0;
+      flush(buf, 0, pos);
+      pos = 0;
     }
     buf[pos++] = c;
   }
@@ -60,8 +58,8 @@ public class FastWriter extends Writer {
   @Override
   public FastWriter append(char c) throws IOException {
     if (pos >= buf.length) {
-      flush(buf,0,pos);
-      pos=0;
+      flush(buf, 0, pos);
+      pos = 0;
     }
     buf[pos++] = c;
     return this;
@@ -69,7 +67,7 @@ public class FastWriter extends Writer {
 
   @Override
   public void write(char arr[], int off, int len) throws IOException {
-    for(;;) {
+    for (; ; ) {
       int space = buf.length - pos;
 
       if (len <= space) {
@@ -77,9 +75,9 @@ public class FastWriter extends Writer {
         pos += len;
         return;
       } else if (len > buf.length) {
-        if (pos>0) {
-          flush(buf,0,pos);  // flush
-          pos=0;
+        if (pos > 0) {
+          flush(buf, 0, pos); // flush
+          pos = 0;
         }
         // don't buffer, just write to sink
         flush(arr, off, len);
@@ -100,17 +98,17 @@ public class FastWriter extends Writer {
 
   @Override
   public void write(String str, int off, int len) throws IOException {
-    for(;;) {
+    for (; ; ) {
       int space = buf.length - pos;
 
       if (len <= space) {
-        str.getChars(off, off+len, buf, pos);
+        str.getChars(off, off + len, buf, pos);
         pos += len;
         return;
       } else if (len > buf.length) {
-        if (pos>0) {
-          flush(buf,0,pos);  // flush
-          pos=0;
+        if (pos > 0) {
+          flush(buf, 0, pos); // flush
+          pos = 0;
         }
         // don't buffer, just write to sink
         flush(str, off, len);
@@ -121,7 +119,7 @@ public class FastWriter extends Writer {
       // not big enough to warrant writing on its own.
       // write whatever we can fit, then flush and iterate.
 
-      str.getChars(off, off+space, buf, pos);
+      str.getChars(off, off + space, buf, pos);
       flush(buf, 0, buf.length);
       pos = 0;
       off += space;
@@ -132,7 +130,7 @@ public class FastWriter extends Writer {
   @Override
   public void flush() throws IOException {
     flush(buf, 0, pos);
-    pos=0;
+    pos = 0;
     if (sink != null) sink.flush();
   }
 
@@ -152,6 +150,6 @@ public class FastWriter extends Writer {
 
   public void flushBuffer() throws IOException {
     flush(buf, 0, pos);
-    pos=0;
+    pos = 0;
   }
 }

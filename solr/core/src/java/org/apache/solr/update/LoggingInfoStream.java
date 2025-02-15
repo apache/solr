@@ -16,16 +16,13 @@
  */
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import org.apache.lucene.util.InfoStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-
-/**
- * An {@link InfoStream} implementation which passes messages on to Solr's logging.
- */
+/** An {@link InfoStream} implementation which passes messages on to Solr's logging. */
 public class LoggingInfoStream extends InfoStream {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

@@ -16,36 +16,34 @@
  */
 package org.apache.solr.security;
 
-import org.apache.http.HttpHeaders;
-
+import java.security.cert.X509Certificate;
+import java.util.Map;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.security.cert.X509Certificate;
-import java.util.Map;
+import org.apache.http.HttpHeaders;
 
-/**
- * An authentication plugin that sets principal based on the certificate subject
- */
+/** An authentication plugin that sets principal based on the certificate subject */
 public class CertAuthPlugin extends AuthenticationPlugin {
-    @Override
-    public void init(Map<String, Object> pluginConfig) {
+  @Override
+  public void init(Map<String, Object> pluginConfig) {}
 
+  @Override
+  public boolean doAuthenticate(
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws Exception {
+    X509Certificate[] certs =
+        (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+    if (certs == null || certs.length == 0) {
+      numMissingCredentials.inc();
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Certificate");
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "require certificate");
+      return false;
     }
 
-    @Override
-    public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
-        X509Certificate[] certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
-        if (certs == null || certs.length == 0) {
-            numMissingCredentials.inc();
-            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Certificate");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "require certificate");
-            return false;
-        }
-
-        HttpServletRequest wrapped = wrapWithPrincipal(request, certs[0].getSubjectX500Principal());
-        numAuthenticated.inc();
-        filterChain.doFilter(wrapped, response);
-        return true;
-    }
+    HttpServletRequest wrapped = wrapWithPrincipal(request, certs[0].getSubjectX500Principal());
+    numAuthenticated.inc();
+    filterChain.doFilter(wrapped, response);
+    return true;
+  }
 }

@@ -25,43 +25,54 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- *
- */
+/** */
 public class MetricsDisabledCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void startCluster() throws Exception {
     System.setProperty("metricsEnabled", "false");
     configureCluster(2).configure();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("test",
-        "config", 1, 2);
+    CollectionAdminRequest.createCollection("test", "config", 1, 2);
   }
 
   @Test
-  public void testBasic() throws Exception {
+  public void testBasic() {
     NodeConfig cfg = cluster.getRandomJetty(random()).getCoreContainer().getNodeConfig();
     MetricsConfig metricsConfig = cfg.getMetricsConfig();
     assertFalse("metrics should be disabled", metricsConfig.isEnabled());
-    SolrMetricManager metricManager = cluster.getRandomJetty(random()).getCoreContainer().getMetricManager();
-    assertTrue("wrong type of supplier: " + metricManager.getCounterSupplier(),
+    SolrMetricManager metricManager =
+        cluster.getRandomJetty(random()).getCoreContainer().getMetricManager();
+    assertTrue(
+        "wrong type of supplier: " + metricManager.getCounterSupplier(),
         metricManager.getCounterSupplier() instanceof MetricSuppliers.NoOpCounterSupplier);
-    assertTrue("wrong type of supplier: " + metricManager.getHistogramSupplier(),
+    assertTrue(
+        "wrong type of supplier: " + metricManager.getHistogramSupplier(),
         metricManager.getHistogramSupplier() instanceof MetricSuppliers.NoOpHistogramSupplier);
-    assertTrue("wrong type of supplier: " + metricManager.getTimerSupplier(),
+    assertTrue(
+        "wrong type of supplier: " + metricManager.getTimerSupplier(),
         metricManager.getTimerSupplier() instanceof MetricSuppliers.NoOpTimerSupplier);
-    assertTrue("wrong type of supplier: " + metricManager.getMeterSupplier(),
+    assertTrue(
+        "wrong type of supplier: " + metricManager.getMeterSupplier(),
         metricManager.getMeterSupplier() instanceof MetricSuppliers.NoOpMeterSupplier);
     for (String registryName : metricManager.registryNames()) {
       if (!registryName.startsWith("solr.core.")) {
         continue;
       }
       MetricRegistry registry = metricManager.registry(registryName);
-      registry.getMetrics().forEach((name, metric) -> {
-        assertTrue("should be NoOpMetric but was: " + name + "=" +
-            metric + "(" + metric.getClass() + ")",
-            metric instanceof MetricSuppliers.NoOpMetric);
-      });
+      registry
+          .getMetrics()
+          .forEach(
+              (name, metric) -> {
+                assertTrue(
+                    "should be NoOpMetric but was: "
+                        + name
+                        + "="
+                        + metric
+                        + "("
+                        + metric.getClass()
+                        + ")",
+                    metric instanceof MetricSuppliers.NoOpMetric);
+              });
     }
   }
 

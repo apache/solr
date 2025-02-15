@@ -17,14 +17,11 @@
 
 package org.apache.solr.handler.designer;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
+import static org.apache.solr.handler.loader.CSVLoaderBase.SEPARATOR;
+
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
@@ -32,11 +29,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -59,39 +58,33 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
-import static org.apache.solr.handler.loader.CSVLoaderBase.SEPARATOR;
-
 public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   public static final String CSV_MULTI_VALUE_DELIM_PARAM = "csvMultiValueDelimiter";
   private static final int MAX_STREAM_SIZE = (5 * 1024 * 1024);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static byte[] streamAsBytes(final InputStream in) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    byte[] buf = new byte[1024];
-    int r;
-    try (in) {
-      while ((r = in.read(buf)) != -1) baos.write(buf, 0, r);
+  /** Reads all bytes from the stream. */
+  private static byte[] readAllBytes(ContentStream cs) throws IOException {
+    try (var is = cs.getStream()) {
+      return is.readAllBytes();
     }
-    return baos.toByteArray();
   }
 
   @Override
-  public SampleDocuments parseDocsFromStream(SolrParams params, ContentStream stream, final int maxDocsToLoad) throws IOException {
+  public SampleDocuments parseDocsFromStream(
+      SolrParams params, ContentStream stream, final int maxDocsToLoad) throws IOException {
     final String contentType = stream.getContentType();
     if (contentType == null) {
       return SampleDocuments.NONE;
     }
 
-    if (params == null) {
-      params = new ModifiableSolrParams();
-    }
-
     Long streamSize = stream.getSize();
     if (streamSize != null && streamSize > MAX_STREAM_SIZE) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Sample is too big! " + MAX_STREAM_SIZE + " bytes is the max upload size for sample documents.");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Sample is too big! "
+              + MAX_STREAM_SIZE
+              + " bytes is the max upload size for sample documents.");
     }
 
     String fileSource = "paste";
@@ -99,15 +92,19 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       fileSource = stream.getSourceInfo() != null ? stream.getSourceInfo() : "file";
     }
 
-    byte[] uploadedBytes = streamAsBytes(stream.getStream());
+    byte[] uploadedBytes = readAllBytes(stream);
     // recheck the upload size in case the stream returned null for getSize
     if (uploadedBytes.length > MAX_STREAM_SIZE) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Sample is too big! " + MAX_STREAM_SIZE + " bytes is the max upload size for sample documents.");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Sample is too big! "
+              + MAX_STREAM_SIZE
+              + " bytes is the max upload size for sample documents.");
     }
     // use a byte stream for the parsers in case they need to re-parse using a different strategy
     // e.g. JSON vs. JSON lines or different CSV strategies ...
-    ContentStreamBase.ByteArrayStream byteStream = new ContentStreamBase.ByteArrayStream(uploadedBytes, fileSource, contentType);
+    ContentStreamBase.ByteArrayStream byteStream =
+        new ContentStreamBase.ByteArrayStream(uploadedBytes, fileSource, contentType);
     String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
     if (charset == null) {
       charset = ContentStreamBase.DEFAULT_CHARSET;
@@ -116,15 +113,17 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     List<SolrInputDocument> docs = null;
     if (stream.getSize() > 0) {
       if (contentType.contains(JSON_MIME)) {
-        docs = loadJsonDocs(params, byteStream, maxDocsToLoad);
+        docs = loadJsonDocs(byteStream, maxDocsToLoad);
       } else if (contentType.contains("text/xml") || contentType.contains("application/xml")) {
-        docs = loadXmlDocs(params, byteStream, maxDocsToLoad);
+        docs = loadXmlDocs(byteStream, maxDocsToLoad);
       } else if (contentType.contains("text/csv") || contentType.contains("application/csv")) {
         docs = loadCsvDocs(params, fileSource, uploadedBytes, charset, maxDocsToLoad);
-      } else if (contentType.contains("text/plain") || contentType.contains("application/octet-stream")) {
-        docs = loadJsonLines(params, byteStream, maxDocsToLoad);
+      } else if (contentType.contains("text/plain")
+          || contentType.contains("application/octet-stream")) {
+        docs = loadJsonLines(byteStream, maxDocsToLoad);
       } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, contentType + " not supported yet!");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, contentType + " not supported yet!");
       }
 
       if (docs != null && maxDocsToLoad > 0 && docs.size() > maxDocsToLoad) {
@@ -135,7 +134,9 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     return new SampleDocuments(docs, contentType, fileSource);
   }
 
-  protected List<SolrInputDocument> loadCsvDocs(SolrParams params, String source, byte[] streamBytes, String charset, final int maxDocsToLoad) throws IOException {
+  protected List<SolrInputDocument> loadCsvDocs(
+      SolrParams params, String source, byte[] streamBytes, String charset, final int maxDocsToLoad)
+      throws IOException {
     ContentStream stream;
     if (params.get(SEPARATOR) == null) {
       String csvStr = new String(streamBytes, charset);
@@ -151,8 +152,9 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   }
 
   @SuppressWarnings("unchecked")
-  protected List<SolrInputDocument> loadJsonLines(SolrParams params, ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
-    List<Map<String, Object>> docs = new LinkedList<>();
+  protected List<SolrInputDocument> loadJsonLines(
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
+    List<Map<String, Object>> docs = new ArrayList<>();
     try (Reader r = stream.getReader()) {
       BufferedReader br = new BufferedReader(r);
       String line;
@@ -174,13 +176,15 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   }
 
   @SuppressWarnings("unchecked")
-  protected List<SolrInputDocument> loadJsonDocs(SolrParams params, ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
+  protected List<SolrInputDocument> loadJsonDocs(
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     Object json;
     try (Reader r = stream.getReader()) {
       json = ObjectBuilder.getVal(new JSONParser(r));
     }
     if (json == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Expected at least 1 JSON doc in the request body!");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Expected at least 1 JSON doc in the request body!");
     }
 
     List<Map<String, Object>> docs;
@@ -191,7 +195,9 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       // single doc ... see if this is a json lines file
       boolean isJsonLines = false;
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
-      String jsonStr = new String(streamAsBytes(stream.getStream()), charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
+      String jsonStr =
+          new String(
+              readAllBytes(stream), charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
       String[] lines = jsonStr.split("\n");
       if (lines.length > 1) {
         for (String line : lines) {
@@ -208,7 +214,9 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
         docs = Collections.singletonList((Map<String, Object>) json);
       }
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Expected one or more JSON docs in the request body!");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Expected one or more JSON docs in the request body!");
     }
     if (maxDocsToLoad > 0 && docs.size() > maxDocsToLoad) {
       docs = docs.subList(0, maxDocsToLoad);
@@ -216,8 +224,9 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     return docs.stream().map(JsonLoader::buildDoc).collect(Collectors.toList());
   }
 
-  protected List<SolrInputDocument> loadXmlDocs(SolrParams params, ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
-    String xmlString = readInputAsString(stream.getStream()).trim();
+  protected List<SolrInputDocument> loadXmlDocs(
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
+    String xmlString = new String(readAllBytes(stream), StandardCharsets.UTF_8).trim();
     List<SolrInputDocument> docs;
     if (xmlString.contains("<add>") && xmlString.contains("<doc>")) {
       XMLInputFactory inputFactory = XMLInputFactory.newInstance();
@@ -246,13 +255,15 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       }
       Element root = xmlDoc.getDocumentElement();
       // TODO: support other types of XML here
-      throw new IOException("TODO: XML documents with root " + root.getTagName() + " not supported yet!");
+      throw new IOException(
+          "TODO: XML documents with root " + root.getTagName() + " not supported yet!");
     }
     return docs;
   }
 
-  protected List<SolrInputDocument> parseXmlDocs(XMLStreamReader parser, final int maxDocsToLoad) throws XMLStreamException {
-    List<SolrInputDocument> docs = new LinkedList<>();
+  protected List<SolrInputDocument> parseXmlDocs(XMLStreamReader parser, final int maxDocsToLoad)
+      throws XMLStreamException {
+    List<SolrInputDocument> docs = new ArrayList<>();
     XMLLoader loader = new XMLLoader().init(null);
     while (true) {
       final int event;
@@ -296,10 +307,6 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     return docs;
   }
 
-  protected String readInputAsString(InputStream in) throws IOException {
-    return new String(streamAsBytes(in), StandardCharsets.UTF_8);
-  }
-
   protected char detectTSV(String csvStr) {
     char sep = ',';
     int endOfFirstLine = csvStr.indexOf('\n');
@@ -333,7 +340,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   }
 
   private static class SampleCSVLoader extends CSVLoaderBase {
-    List<SolrInputDocument> docs = new LinkedList<>();
+    List<SolrInputDocument> docs = new ArrayList<>();
     CSVRequest req;
     int maxDocsToLoad;
     String multiValueDelimiter;

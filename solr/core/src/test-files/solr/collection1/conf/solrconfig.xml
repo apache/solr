@@ -30,8 +30,6 @@
 
 <config>
 
-  <jmx />
-
   <!-- Used to specify an alternate directory to hold all index data.
        It defaults to "index" if not present, and should probably
        not be changed if replication is in use. -->
@@ -40,13 +38,13 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}">
     <double name="maxWriteMBPerSecDefault">1000000</double>
     <double name="maxWriteMBPerSecFlush">2000000</double>
     <double name="maxWriteMBPerSecMerge">3000000</double>
     <double name="maxWriteMBPerSecRead">4000000</double>
     <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
-    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool> 
+    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>
     <bool name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</bool>
     <bool name="solr.hdfs.blockcache.write.enabled">${solr.hdfs.blockcache.write.enabled:false}</bool>
     <int name="solr.hdfs.blockcache.blocksperbank">${solr.hdfs.blockcache.blocksperbank:10}</int>
@@ -61,7 +59,7 @@
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <updateHandler class="solr.DirectUpdateHandler2">
+  <updateHandler class="${solr.updateHandler:solr.DirectUpdateHandler2}">
 
     <autoCommit>
       <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>
@@ -73,11 +71,11 @@
       <maxTime>3600000</maxTime>
     </autoCommit>
     -->
-    
+
     <updateLog enable="${enable.update.log:true}">
       <str name="dir">${solr.ulog.dir:}</str>
-    </updateLog> 
-    
+    </updateLog>
+
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
@@ -91,13 +89,29 @@
     -->
     <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
+    <!-- Minimum acceptable prefix-size for prefix-based queries.
+
+         Prefix-based queries consume memory in proportion to the number of terms in the index
+         that start with that prefix.  Short prefixes tend to match many many more indexed-terms
+         and consume more memory as a result, sometimes causing stability issues on the node.
+
+         This setting allows administrators to require that prefixes meet or exceed a specified
+         minimum length requirement.  Prefix queries that don't meet this requirement return an
+         error to users.  The limit may be overridden on a per-query basis by specifying a
+         'minPrefixQueryTermLength' local-param value.
+
+         The flag value of '-1' can be used to disable enforcement of this limit.
+    -->
+    <minPrefixQueryTermLength>${solr.query.minPrefixLength:-1}</minPrefixQueryTermLength>
+
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
       -->
     <filterCache
       size="512"
       initialSize="512"
-      autowarmCount="2"/>
+      autowarmCount="2"
+      async="${solr.filterCache.async:false}"/>
 
     <queryResultCache
       size="512"
@@ -168,7 +182,7 @@
     <slowQueryThresholdMillis>2000</slowQueryThresholdMillis>
 
   </query>
-  
+
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
 
@@ -238,8 +252,15 @@
       <int name="minQueryLength">3</int>
     </lst>
     <lst name="spellchecker">
+      <str name="name">directMQF2</str>
+      <str name="classname">DirectSolrSpellChecker</str>
+      <str name="field">lowerfilt</str>
+      <int name="minQueryLength">3</int>
+      <int name="maxQueryFrequency">2</int>
+    </lst>
+    <lst name="spellchecker">
       <str name="name">wordbreak</str>
-      <str name="classname">solr.WordBreakSolrSpellChecker</str>      
+      <str name="classname">solr.WordBreakSolrSpellChecker</str>
       <str name="field">lowerfilt</str>
       <str name="combineWords">true</str>
       <str name="breakWords">true</str>
@@ -272,7 +293,7 @@
       <str name="name">freq</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellcheckerFreq</str>
-      <!-- comparatorClass be one of:
+      <!-- comparatorClass can be one of:
         1. score (default)
         2. freq (Frequency first, then score)
         3. A fully qualified class name
@@ -303,8 +324,8 @@
     </arr>
   </requestHandler>
   -->
-  
-  
+
+
   <!--
   The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
    to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
@@ -364,7 +385,7 @@
         <str>spellcheck</str>
       </arr>
  </requestHandler>
- 
+
   <requestHandler name="/mltrh" class="org.apache.solr.handler.component.SearchHandler">
 
   </requestHandler>
@@ -431,7 +452,7 @@
   </searchComponent>
 
   <requestDispatcher>
-    <requestParsers enableRemoteStreaming="true" enableStreamBody="true" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
@@ -451,11 +472,6 @@
       <str name="facet.query">foo_s:bar</str>
     </lst>
   </requestHandler>
-  
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
 
   <!-- test getting system property -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
@@ -469,10 +485,10 @@
         <str>uniq</str>
         <str>uniq2</str>
         <str>uniq3</str>
-      </arr>      
+      </arr>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
     <!-- explicit test using processors before and after distrib -->
@@ -488,7 +504,7 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-implicit">
     <!-- implicit test w/o distrib declared-->
@@ -503,10 +519,10 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <restManager>
-    <!-- 
+    <!--
     IMPORTANT: Due to the Lucene SecurityManager, tests can only write to their runtime directory or below.
     But it's easier to just keep everything in memory for testing so no remnants are left behind.
     -->
@@ -529,4 +545,3 @@
   </transformer>
 
 </config>
-

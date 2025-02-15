@@ -18,14 +18,19 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.InputStream;
 import java.io.Reader;
-
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * Simply puts the InputStream into an entry in a NamedList named "stream".
+ *
+ * @see org.apache.solr.client.solrj.InputStreamResponse
  */
 public class InputStreamResponseParser extends ResponseParser {
+
+  public static String STREAM_KEY = "stream";
+  public static String HTTP_STATUS_KEY = "responseStatus";
 
   private final String writerType;
 
@@ -48,5 +53,11 @@ public class InputStreamResponseParser extends ResponseParser {
     throw new UnsupportedOperationException();
   }
 
+  public static NamedList<Object> createInputStreamNamedList(
+      int httpStatus, InputStream inputStream) {
+    final var nl = new SimpleOrderedMap<>();
+    nl.add(STREAM_KEY, inputStream);
+    nl.add(HTTP_STATUS_KEY, httpStatus);
+    return nl;
+  }
 }
-

@@ -20,6 +20,7 @@ package org.apache.solr.cluster.api;
 import org.apache.solr.common.cloud.Replica;
 
 /** replica of a shard */
+@Deprecated
 public interface ShardReplica {
   /** Name of this replica */
   String name();
@@ -42,16 +43,16 @@ public interface ShardReplica {
   /** Is the replica alive now */
   boolean alive();
 
-  /**Size of the index in bytes. Keep in mind that this may result in a network call.
-   * Also keep in mind that the value that you get is at best an approximation.
-   * The exact size may vary from replica to replica
+  /**
+   * Size of the index in bytes. Keep in mind that this may result in a network call. Also keep in
+   * mind that the value that you get is at best an approximation. The exact size may vary from
+   * replica to replica
    */
   long indexSize();
 
-  /**Is this replica the leader */
+  /** Is this replica the leader */
   boolean isLeader();
 
-  /**Baseurl for this replica
-   */
+  /** Baseurl for this replica */
   String url(ApiType type);
 }

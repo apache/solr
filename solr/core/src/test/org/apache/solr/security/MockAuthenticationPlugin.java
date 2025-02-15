@@ -16,29 +16,29 @@
  */
 package org.apache.solr.security;
 
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
-
 import org.apache.http.auth.BasicUserPrincipal;
 
 public class MockAuthenticationPlugin extends AuthenticationPlugin {
   static Predicate<ServletRequest> predicate;
 
   @Override
-  public void init(Map<String, Object> pluginConfig) {
-  }
+  public void init(Map<String, Object> pluginConfig) {}
 
   @Override
-  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+  public boolean doAuthenticate(
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws IOException, ServletException {
     String user = null;
     if (predicate != null) {
       if (predicate.test(request)) {
@@ -48,16 +48,21 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
     }
 
     final AtomicBoolean requestContinues = new AtomicBoolean(false);
-    forward(user, request, response, (req, res) -> {
-      filterChain.doFilter(req, res);
-      requestContinues.set(true);
-    });
+    forward(
+        user,
+        request,
+        response,
+        (req, res) -> {
+          filterChain.doFilter(req, res);
+          requestContinues.set(true);
+        });
     return requestContinues.get();
   }
 
-  protected void forward(String user, HttpServletRequest req, ServletResponse rsp,
-                                    FilterChain chain) throws IOException, ServletException {
-    if(user != null) {
+  protected void forward(
+      String user, HttpServletRequest req, ServletResponse rsp, FilterChain chain)
+      throws IOException, ServletException {
+    if (user != null) {
       final Principal p = new BasicUserPrincipal(user);
       req = wrapWithPrincipal(req, p);
     }
@@ -65,7 +70,5 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
   }
 
   @Override
-  public void close() throws IOException {
-
-  }
+  public void close() {}
 }

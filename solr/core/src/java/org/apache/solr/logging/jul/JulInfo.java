@@ -18,22 +18,21 @@ package org.apache.solr.logging.jul;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.LoggerInfo;
 
 @SuppressForbidden(reason = "class is specific to java.util.logging")
 public class JulInfo extends LoggerInfo {
   private static final Level[] LEVELS = {
-      null, // aka unset
-      Level.FINEST,
-      Level.FINE,
-      Level.CONFIG,
-      Level.INFO,
-      Level.WARNING,
-      Level.SEVERE,
-      Level.OFF
-      // Level.ALL -- ignore. It is useless.
+    null, // aka unset
+    Level.FINEST,
+    Level.FINE,
+    Level.CONFIG,
+    Level.INFO,
+    Level.WARNING,
+    Level.SEVERE,
+    Level.OFF
+    // Level.ALL -- ignore. It is useless.
   };
 
   final Logger logger;
@@ -45,7 +44,7 @@ public class JulInfo extends LoggerInfo {
 
   @Override
   public String getLevel() {
-    if(logger==null) {
+    if (logger == null) {
       return null;
     }
     Level level = logger.getLevel();
@@ -64,9 +63,9 @@ public class JulInfo extends LoggerInfo {
     }
     return Level.OFF.getName();
   }
-  
+
   @Override
   public boolean isSet() {
-    return (logger!=null && logger.getLevel()!=null);
+    return (logger != null && logger.getLevel() != null);
   }
 }

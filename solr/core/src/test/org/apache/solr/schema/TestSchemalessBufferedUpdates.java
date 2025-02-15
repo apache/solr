@@ -19,23 +19,6 @@ package org.apache.solr.schema;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.TestInjection;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,8 +27,23 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.TestInjection;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
 
@@ -62,10 +60,16 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
     File tmpSolrHome = createTempDir().toFile();
     File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-schemaless.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-add-schema-fields-update-processor.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
-    initCore("solrconfig-schemaless.xml", "schema-add-schema-fields-update-processor.xml", tmpSolrHome.getPath());
+    FileUtils.copyFileToDirectory(
+        new File(testHomeConfDir, "solrconfig-schemaless.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(
+        new File(testHomeConfDir, "schema-add-schema-fields-update-processor.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(
+        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+    initCore(
+        "solrconfig-schemaless.xml",
+        "schema-add-schema-fields-update-processor.xml",
+        tmpSolrHome.getPath());
   }
 
   @Test
@@ -73,13 +77,14 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
     TestInjection.skipIndexWriterCommitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
-    UpdateLog.testing_logReplayHook = () -> {
-      try {
-        assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    };
+    UpdateLog.testing_logReplayHook =
+        () -> {
+          try {
+            assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        };
     UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
     SolrQueryRequest req = req();
@@ -90,23 +95,28 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       // Invalid date will be normalized by ParseDateField URP
-      updateJ(jsonAdd(processAdd(sdoc("id","1", "f_dt","2017-01-04"))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(
+          jsonAdd(processAdd(sdoc("id", "1", "f_dt", "2017-01-04"))),
+          params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
       assertU(commit());
       assertJQ(req("q", "*:*"), "/response/numFound==1");
 
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
 
-      // If the ParseDateField URP isn't ahead of the DUP, then the date won't be normalized in the buffered tlog entry,
-      // and the doc won't be indexed on the replaying replica - a warning is logged as follows:
-      // WARN [...] o.a.s.u.UpdateLog REYPLAY_ERR: IOException reading log
+      // If the ParseDateField URP isn't ahead of the DUP, then the date won't be normalized in the
+      // buffered tlog entry, and the doc won't be indexed on the replaying replica - a warning is
+      // logged as follows:
+      // WARN [...] o.a.s.u.UpdateLog REPLAY_ERR: IOException reading log
       //            org.apache.solr.common.SolrException: Invalid Date String:'2017-01-05'
       //              at org.apache.solr.util.DateMathParser.parseMath(DateMathParser.java:234)
-      updateJ(jsonAdd(processAdd(sdoc("id","2", "f_dt","2017-01-05"))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(
+          jsonAdd(processAdd(sdoc("id", "2", "f_dt", "2017-01-05"))),
+          params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
 
-      assertTrue(rinfoFuture != null);
+      assertNotNull(rinfoFuture);
 
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 
@@ -128,13 +138,13 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
   private SolrInputDocument processAdd(final SolrInputDocument docIn) throws IOException {
     UpdateRequestProcessorChain processorChain = h.getCore().getUpdateProcessingChain(UPDATE_CHAIN);
     assertNotNull("Undefined URP chain '" + UPDATE_CHAIN + "'", processorChain);
-    List <UpdateRequestProcessorFactory> factoriesUpToDUP = new ArrayList<>();
+    List<UpdateRequestProcessorFactory> factoriesUpToDUP = new ArrayList<>();
     for (UpdateRequestProcessorFactory urpFactory : processorChain.getProcessors()) {
       factoriesUpToDUP.add(urpFactory);
-      if (urpFactory.getClass().equals(DistributedUpdateProcessorFactory.class)) 
-        break;
+      if (urpFactory.getClass().equals(DistributedUpdateProcessorFactory.class)) break;
     }
-    UpdateRequestProcessorChain chainUpToDUP = new UpdateRequestProcessorChain(factoriesUpToDUP, h.getCore());
+    UpdateRequestProcessorChain chainUpToDUP =
+        new UpdateRequestProcessorChain(factoriesUpToDUP, h.getCore());
     assertNotNull("URP chain '" + UPDATE_CHAIN + "'", chainUpToDUP);
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
@@ -145,10 +155,14 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       UpdateRequestProcessor processor = chainUpToDUP.createProcessor(req, rsp);
       processor.processAdd(cmd);
       if (cmd.solrDoc.get("f_dt").getValue() instanceof Date) {
-        // Non-JSON types (Date in this case) aren't handled properly in noggit-0.6.  Although this is fixed in
-        // https://github.com/yonik/noggit/commit/ec3e732af7c9425e8f40297463cbe294154682b1 to call obj.toString(), 
-        // Date::toString produces a Date representation that Solr doesn't like, so we convert using Instant::toString
-        cmd.solrDoc.get("f_dt").setValue(((Date) cmd.solrDoc.get("f_dt").getValue()).toInstant().toString());
+        // Non-JSON types (Date in this case) aren't handled properly in noggit-0.6.  Although this
+        // is fixed in
+        // https://github.com/yonik/noggit/commit/ec3e732af7c9425e8f40297463cbe294154682b1 to call
+        // obj.toString(), Date::toString produces a Date representation that Solr doesn't like, so
+        // we convert using Instant::toString
+        cmd.solrDoc
+            .get("f_dt")
+            .setValue(((Date) cmd.solrDoc.get("f_dt").getValue()).toInstant().toString());
       }
       return cmd.solrDoc;
     } finally {

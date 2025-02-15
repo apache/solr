@@ -20,7 +20,6 @@ import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,17 +49,17 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
 
   @Before
   public void setupAppender() {
-    LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
 
     writer = new StringWriter();
-    appender = WriterAppender.createAppender(
-      PatternLayout
-        .newBuilder()
-        .withPattern("%-5p [%t]: %m%n")
-        .build(),
-        null, writer, "RequestLoggingTest", false, true);
+    appender =
+        WriterAppender.createAppender(
+            PatternLayout.newBuilder().withPattern("%-5p [%t]: %m%n").build(),
+            null,
+            writer,
+            "RequestLoggingTest",
+            false,
+            true);
     appender.start();
-
   }
 
   @Test

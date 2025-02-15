@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -30,10 +29,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
 
-/**
- *
- */
-
+/** */
 public class JSONResponseWriter implements QueryResponseWriter {
   public static String CONTENT_TYPE_JSON_UTF8 = "application/json; charset=UTF-8";
 
@@ -51,15 +47,16 @@ public class JSONResponseWriter implements QueryResponseWriter {
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final SolrParams params = req.getParams();
     final String wrapperFunction = params.get(JSONWriter.JSON_WRAPPER_FUNCTION);
-    final String namedListStyle = params.get(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_FLAT).intern();
+    final String namedListStyle =
+        params.get(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_FLAT).intern();
 
     final JSONWriter w;
     if (namedListStyle.equals(JsonTextWriter.JSON_NL_ARROFNTV)) {
-      w = new ArrayOfNameTypeValueJSONWriter(
-          writer, req, rsp, wrapperFunction, namedListStyle, true);
+      w =
+          new ArrayOfNameTypeValueJSONWriter(
+              writer, req, rsp, wrapperFunction, namedListStyle, true);
     } else {
-      w = new JSONWriter(
-          writer, req, rsp, wrapperFunction, namedListStyle);
+      w = new JSONWriter(writer, req, rsp, wrapperFunction, namedListStyle);
     }
 
     try {
@@ -74,208 +71,225 @@ public class JSONResponseWriter implements QueryResponseWriter {
     return contentType;
   }
 
-  public static PushWriter getPushWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+  public static PushWriter getPushWriter(
+      Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     return new JSONWriter(writer, req, rsp);
   }
 
+  /**
+   * Writes NamedLists directly as an array of NameTypeValue JSON objects...
+   * NamedList("a"=1,"b"=null,null=3,null=null) => [{"name":"a","type":"int","value":1},
+   * {"name":"b","type":"null","value":null}, {"name":null,"type":"int","value":3},
+   * {"name":null,"type":"null","value":null}] NamedList("a"=1,"bar"="foo",null=3.4f) =>
+   * [{"name":"a","type":"int","value":1}, {"name":"bar","type":"str","value":"foo"},
+   * {"name":null,"type":"float","value":3.4}]
+   */
+  static class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
+    protected boolean writeTypeAndValueKey = false;
+    private final boolean writeNullName;
 
-
-/**
- * Writes NamedLists directly as an array of NameTypeValue JSON objects...
- * NamedList("a"=1,"b"=null,null=3,null=null) =>
- *      [{"name":"a","type":"int","value":1},
- *       {"name":"b","type":"null","value":null},
- *       {"name":null,"type":"int","value":3},
- *       {"name":null,"type":"null","value":null}]
- * NamedList("a"=1,"bar"="foo",null=3.4f) =>
- *      [{"name":"a","type":"int","value":1},
- *      {"name":"bar","type":"str","value":"foo"},
- *      {"name":null,"type":"float","value":3.4}]
- */
-class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
-  protected boolean writeTypeAndValueKey = false;
-  private final boolean writeNullName;
-
-  public ArrayOfNameTypeValueJSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp,
-                                        String wrapperFunction, String namedListStyle, boolean writeNullName) {
-    super(writer, req, rsp, wrapperFunction, namedListStyle);
-    this.writeNullName = writeNullName;
-  }
-
-  @Override
-  public void writeNamedList(String name, NamedList<?> val) throws IOException {
-
-    if (val instanceof SimpleOrderedMap) {
-      super.writeNamedList(name, val);
-      return;
+    public ArrayOfNameTypeValueJSONWriter(
+        Writer writer,
+        SolrQueryRequest req,
+        SolrQueryResponse rsp,
+        String wrapperFunction,
+        String namedListStyle,
+        boolean writeNullName) {
+      super(writer, req, rsp, wrapperFunction, namedListStyle);
+      this.writeNullName = writeNullName;
     }
 
-    final int sz = val.size();
-    indent();
+    @Override
+    public void writeNamedList(String name, NamedList<?> val) throws IOException {
 
-    writeArrayOpener(sz);
-    incLevel();
-
-    boolean first = true;
-    for (int i=0; i<sz; i++) {
-      if (first) {
-        first = false;
-      } else {
-        writeArraySeparator();
+      if (val instanceof SimpleOrderedMap) {
+        super.writeNamedList(name, val);
+        return;
       }
 
+      final int sz = val.size();
       indent();
 
-      final String elementName = val.getName(i);
-      final Object elementVal = val.getVal(i);
+      writeArrayOpener(sz);
+      incLevel();
 
-      /*
-       * JSONWriter's writeNamedListAsArrMap turns NamedList("bar"="foo") into [{"foo":"bar"}]
-       * but we here wish to turn it into [ {"name":"bar","type":"str","value":"foo"} ] instead.
-       *
-       * So first we write the <code>{"name":"bar",</code> portion ...
-       */
-      writeMapOpener(-1);
-      if (elementName != null || writeNullName) {
-        writeKey("name", false);
-        writeVal("name", elementName);
-        writeMapSeparator();
+      boolean first = true;
+      for (int i = 0; i < sz; i++) {
+        if (first) {
+          first = false;
+        } else {
+          writeArraySeparator();
+        }
+
+        indent();
+
+        final String elementName = val.getName(i);
+        final Object elementVal = val.getVal(i);
+
+        /*
+         * JSONWriter's writeNamedListAsArrMap turns NamedList("bar"="foo") into [{"foo":"bar"}]
+         * but we here wish to turn it into [ {"name":"bar","type":"str","value":"foo"} ] instead.
+         *
+         * So first we write the <code>{"name":"bar",</code> portion ...
+         */
+        writeMapOpener(-1);
+        if (elementName != null || writeNullName) {
+          writeKey("name", false);
+          writeVal("name", elementName);
+          writeMapSeparator();
+        }
+
+        /*
+         * ... and then we write the <code>"type":"str","value":"foo"}</code> portion.
+         */
+        writeTypeAndValueKey = true;
+        // passing null since writeVal doesn't actually use name (and we already wrote elementName
+        // above)
+        writeVal(null, elementVal);
+        if (writeTypeAndValueKey) {
+          throw new RuntimeException(
+              "writeTypeAndValueKey should have been reset to false by writeVal('"
+                  + elementName
+                  + "','"
+                  + elementVal
+                  + "')");
+        }
+        writeMapCloser();
       }
 
-      /*
-       * ... and then we write the <code>"type":"str","value":"foo"}</code> portion.
-       */
-      writeTypeAndValueKey = true;
-      writeVal(null, elementVal); // passing null since writeVal doesn't actually use name (and we already wrote elementName above)
+      decLevel();
+      writeArrayCloser();
+    }
+
+    protected void ifNeededWriteTypeAndValueKey(String type) throws IOException {
       if (writeTypeAndValueKey) {
-        throw new RuntimeException("writeTypeAndValueKey should have been reset to false by writeVal('"+elementName+"','"+elementVal+"')");
+        writeTypeAndValueKey = false;
+        writeKey("type", false);
+        writeVal("type", type);
+        writeMapSeparator();
+        writeKey("value", false);
       }
-      writeMapCloser();
     }
 
-    decLevel();
-    writeArrayCloser();
-  }
-
-  protected void ifNeededWriteTypeAndValueKey(String type) throws IOException {
-    if (writeTypeAndValueKey) {
-      writeTypeAndValueKey = false;
-      writeKey("type", false);
-      writeVal("type", type);
-      writeMapSeparator();
-      writeKey("value", false);
+    @Override
+    public void writeInt(String name, String val) throws IOException {
+      ifNeededWriteTypeAndValueKey("int");
+      super.writeInt(name, val);
     }
-  }
 
-  @Override
-  public void writeInt(String name, String val) throws IOException {
-    ifNeededWriteTypeAndValueKey("int");
-    super.writeInt(name, val);
-  }
+    @Override
+    public void writeLong(String name, String val) throws IOException {
+      ifNeededWriteTypeAndValueKey("long");
+      super.writeLong(name, val);
+    }
 
-  @Override
-  public void writeLong(String name, String val) throws IOException {
-    ifNeededWriteTypeAndValueKey("long");
-    super.writeLong(name, val);
-  }
+    @Override
+    public void writeFloat(String name, String val) throws IOException {
+      ifNeededWriteTypeAndValueKey("float");
+      super.writeFloat(name, val);
+    }
 
-  @Override
-  public void writeFloat(String name, String val) throws IOException {
-    ifNeededWriteTypeAndValueKey("float");
-    super.writeFloat(name, val);
-  }
+    @Override
+    public void writeDouble(String name, String val) throws IOException {
+      ifNeededWriteTypeAndValueKey("double");
+      super.writeDouble(name, val);
+    }
 
-  @Override
-  public void writeDouble(String name, String val) throws IOException {
-    ifNeededWriteTypeAndValueKey("double");
-    super.writeDouble(name, val);
-  }
+    @Override
+    public void writeBool(String name, String val) throws IOException {
+      ifNeededWriteTypeAndValueKey("bool");
+      super.writeBool(name, val);
+    }
 
-  @Override
-  public void writeBool(String name, String val) throws IOException {
-    ifNeededWriteTypeAndValueKey("bool");
-    super.writeBool(name, val);
-  }
+    @Override
+    public void writeDate(String name, String val) throws IOException {
+      ifNeededWriteTypeAndValueKey("date");
+      super.writeDate(name, val);
+    }
 
-  @Override
-  public void writeDate(String name, String val) throws IOException {
-    ifNeededWriteTypeAndValueKey("date");
-    super.writeDate(name, val);
-  }
+    @Override
+    public void writeStrRaw(String name, String val) throws IOException {
+      if (writeTypeAndValueKey) {
+        throw new IllegalStateException("NamedList should never be a field value");
+        // and thus `writeTypeAndValueKey` should always have been cleared (set to false) by the
+        // time `writeStrRaw(...)` is called (at the level of individual SolrDocument fields).
+      }
+      super.writeStrRaw(name, val);
+    }
 
-  @Override
-  public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    ifNeededWriteTypeAndValueKey("str");
-    super.writeStr(name, val, needsEscaping);
-  }
+    @Override
+    public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
+      ifNeededWriteTypeAndValueKey("str");
+      super.writeStr(name, val, needsEscaping);
+    }
 
-  @Override
-  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException {
-    ifNeededWriteTypeAndValueKey("doc");
-    super.writeSolrDocument(name, doc, returnFields, idx);
-  }
-  
-  @Override
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
-    ifNeededWriteTypeAndValueKey("doclist");
-    super.writeStartDocumentList(name, start, size, numFound, maxScore, numFoundExact);
-  }
+    @Override
+    public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx)
+        throws IOException {
+      ifNeededWriteTypeAndValueKey("doc");
+      super.writeSolrDocument(name, doc, returnFields, idx);
+    }
 
+    @Override
+    public void writeStartDocumentList(
+        String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact)
+        throws IOException {
+      ifNeededWriteTypeAndValueKey("doclist");
+      super.writeStartDocumentList(name, start, size, numFound, maxScore, numFoundExact);
+    }
 
-  @Override
-  public void writeMap(String name, Map<?, ?> val,
-                       boolean excludeOuter, boolean isFirstVal) throws IOException {
-    ifNeededWriteTypeAndValueKey("map");
-    super.writeMap(name, val, excludeOuter, isFirstVal);
-  }
+    @Override
+    public void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal)
+        throws IOException {
+      ifNeededWriteTypeAndValueKey("map");
+      super.writeMap(name, val, excludeOuter, isFirstVal);
+    }
 
-  @Override
-  public void writeArray(String name, Iterator<?> val) throws IOException {
-    ifNeededWriteTypeAndValueKey("array");
-    super.writeArray(name, val);
-  }
+    @Override
+    public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
+      ifNeededWriteTypeAndValueKey("array");
+      super.writeArray(name, val, raw);
+    }
 
-  @Override
-  public void writeNull(String name) throws IOException {
-    ifNeededWriteTypeAndValueKey("null");
-    super.writeNull(name);
-  }
-}
-
-abstract static class NaNFloatWriter extends JSONWriter {
-
-  abstract protected String getNaN();
-
-  abstract protected String getInf();
-
-  public NaNFloatWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    super(writer, req, rsp);
-  }
-
-  @Override
-  public void writeFloat(String name, float val) throws IOException {
-    if (Float.isNaN(val)) {
-      writer.write(getNaN());
-    } else if (Float.isInfinite(val)) {
-      if (val < 0.0f)
-        writer.write('-');
-      writer.write(getInf());
-    } else {
-      writeFloat(name, Float.toString(val));
+    @Override
+    public void writeNull(String name) throws IOException {
+      ifNeededWriteTypeAndValueKey("null");
+      super.writeNull(name);
     }
   }
 
-  @Override
-  public void writeDouble(String name, double val) throws IOException {
-    if (Double.isNaN(val)) {
-      writer.write(getNaN());
-    } else if (Double.isInfinite(val)) {
-      if (val < 0.0)
-        writer.write('-');
-      writer.write(getInf());
-    } else {
-      writeDouble(name, Double.toString(val));
+  abstract static class NaNFloatWriter extends JSONWriter {
+
+    protected abstract String getNaN();
+
+    protected abstract String getInf();
+
+    public NaNFloatWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+      super(writer, req, rsp);
+    }
+
+    @Override
+    public void writeFloat(String name, float val) throws IOException {
+      if (Float.isNaN(val)) {
+        writer.write(getNaN());
+      } else if (Float.isInfinite(val)) {
+        if (val < 0.0f) writer.write('-');
+        writer.write(getInf());
+      } else {
+        writeFloat(name, Float.toString(val));
+      }
+    }
+
+    @Override
+    public void writeDouble(String name, double val) throws IOException {
+      if (Double.isNaN(val)) {
+        writer.write(getNaN());
+      } else if (Double.isInfinite(val)) {
+        if (val < 0.0) writer.write('-');
+        writer.write(getInf());
+      } else {
+        writeDouble(name, Double.toString(val));
+      }
     }
   }
-}
 }

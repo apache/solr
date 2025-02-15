@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
@@ -22,7 +23,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -41,8 +41,11 @@ import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 
 /**
  * Simple plain text format parser for {@link PreAnalyzedField}.
+ *
  * <h2>Serialization format</h2>
+ *
  * <p>The format of the serialization is as follows:
+ *
  * <pre>
  * content ::= version (stored)? tokens
  * version ::= digit+ " "
@@ -54,8 +57,10 @@ import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
  * name ::= text
  * value ::= text
  * </pre>
- * <p>Special characters in "text" values can be escaped
- * using the escape character \ . The following escape sequences are recognized:
+ *
+ * <p>Special characters in "text" values can be escaped using the escape character \ . The
+ * following escape sequences are recognized:
+ *
  * <pre>
  * "\ " - literal space character
  * "\," - literal , character
@@ -65,10 +70,13 @@ import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
  * "\r" - carriage return
  * "\t" - horizontal tab
  * </pre>
+ *
  * Please note that Unicode sequences (e.g. &#92;u0001) are not supported.
+ *
  * <h2>Supported attribute names</h2>
- * The following token attributes are supported, and identified with short
- * symbolic names:
+ *
+ * The following token attributes are supported, and identified with short symbolic names:
+ *
  * <pre>
  * i - position increment (integer)
  * s - token offset, start position (integer)
@@ -77,91 +85,98 @@ import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
  * f - token flags (hexadecimal integer)
  * p - payload (bytes in hexadecimal format; whitespace is ignored)
  * </pre>
- * Token offsets are tracked and implicitly added to the token stream -
- * the start and end offsets consider only the term text and whitespace,
- * and exclude the space taken by token attributes.
+ *
+ * Token offsets are tracked and implicitly added to the token stream - the start and end offsets
+ * consider only the term text and whitespace, and exclude the space taken by token attributes.
+ *
  * <h2>Example token streams</h2>
+ *
  * <pre>
  * 1 one two three
-  - version 1
-  - stored: 'null'
-  - tok: '(term=one,startOffset=0,endOffset=3)'
-  - tok: '(term=two,startOffset=4,endOffset=7)'
-  - tok: '(term=three,startOffset=8,endOffset=13)'
- 1 one  two   three 
-  - version 1
-  - stored: 'null'
-  - tok: '(term=one,startOffset=0,endOffset=3)'
-  - tok: '(term=two,startOffset=5,endOffset=8)'
-  - tok: '(term=three,startOffset=11,endOffset=16)'
-1 one,s=123,e=128,i=22  two three,s=20,e=22
-  - version 1
-  - stored: 'null'
-  - tok: '(term=one,positionIncrement=22,startOffset=123,endOffset=128)'
-  - tok: '(term=two,positionIncrement=1,startOffset=5,endOffset=8)'
-  - tok: '(term=three,positionIncrement=1,startOffset=20,endOffset=22)'
-1 \ one\ \,,i=22,a=\, two\=
-
-  \n,\ =\   \
-  - version 1
-  - stored: 'null'
-  - tok: '(term= one ,,positionIncrement=22,startOffset=0,endOffset=6)'
-  - tok: '(term=two=
-
-  
- ,positionIncrement=1,startOffset=7,endOffset=15)'
-  - tok: '(term=\,positionIncrement=1,startOffset=17,endOffset=18)'
-1 ,i=22 ,i=33,s=2,e=20 , 
-  - version 1
-  - stored: 'null'
-  - tok: '(term=,positionIncrement=22,startOffset=0,endOffset=0)'
-  - tok: '(term=,positionIncrement=33,startOffset=2,endOffset=20)'
-  - tok: '(term=,positionIncrement=1,startOffset=2,endOffset=2)'
-1 =This is the stored part with \= 
- \n    \t escapes.=one two three 
-  - version 1
-  - stored: 'This is the stored part with = 
- \n    \t escapes.'
-  - tok: '(term=one,startOffset=0,endOffset=3)'
-  - tok: '(term=two,startOffset=4,endOffset=7)'
-  - tok: '(term=three,startOffset=8,endOffset=13)'
-1 ==
-  - version 1
-  - stored: ''
-  - (no tokens)
-1 =this is a test.=
-  - version 1
-  - stored: 'this is a test.'
-  - (no tokens)
- * </pre> 
+ * - version 1
+ * - stored: 'null'
+ * - tok: '(term=one,startOffset=0,endOffset=3)'
+ * - tok: '(term=two,startOffset=4,endOffset=7)'
+ * - tok: '(term=three,startOffset=8,endOffset=13)'
+ * 1 one  two   three
+ * - version 1
+ * - stored: 'null'
+ * - tok: '(term=one,startOffset=0,endOffset=3)'
+ * - tok: '(term=two,startOffset=5,endOffset=8)'
+ * - tok: '(term=three,startOffset=11,endOffset=16)'
+ * 1 one,s=123,e=128,i=22  two three,s=20,e=22
+ * - version 1
+ * - stored: 'null'
+ * - tok: '(term=one,positionIncrement=22,startOffset=123,endOffset=128)'
+ * - tok: '(term=two,positionIncrement=1,startOffset=5,endOffset=8)'
+ * - tok: '(term=three,positionIncrement=1,startOffset=20,endOffset=22)'
+ * 1 \ one\ \,,i=22,a=\, two\=
+ *
+ * \n,\ =\   \
+ * - version 1
+ * - stored: 'null'
+ * - tok: '(term= one ,,positionIncrement=22,startOffset=0,endOffset=6)'
+ * - tok: '(term=two=
+ *
+ *
+ * ,positionIncrement=1,startOffset=7,endOffset=15)'
+ * - tok: '(term=\,positionIncrement=1,startOffset=17,endOffset=18)'
+ * 1 ,i=22 ,i=33,s=2,e=20 ,
+ * - version 1
+ * - stored: 'null'
+ * - tok: '(term=,positionIncrement=22,startOffset=0,endOffset=0)'
+ * - tok: '(term=,positionIncrement=33,startOffset=2,endOffset=20)'
+ * - tok: '(term=,positionIncrement=1,startOffset=2,endOffset=2)'
+ * 1 =This is the stored part with \=
+ * \n    \t escapes.=one two three
+ * - version 1
+ * - stored: 'This is the stored part with =
+ * \n    \t escapes.'
+ * - tok: '(term=one,startOffset=0,endOffset=3)'
+ * - tok: '(term=two,startOffset=4,endOffset=7)'
+ * - tok: '(term=three,startOffset=8,endOffset=13)'
+ * 1 ==
+ * - version 1
+ * - stored: ''
+ * - (no tokens)
+ * 1 =this is a test.=
+ * - version 1
+ * - stored: 'this is a test.'
+ * - (no tokens)
+ * </pre>
  */
 public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
   static final String VERSION = "1";
-  
+
   private static class Tok {
     StringBuilder token = new StringBuilder();
     Map<String, String> attr = new HashMap<>();
-    
+
     public boolean isEmpty() {
       return token.length() == 0 && attr.size() == 0;
     }
-    
+
     public void reset() {
       token.setLength(0);
       attr.clear();
     }
-    
+
     @Override
     public String toString() {
       return "tok='" + token + "',attr=" + attr;
     }
   }
-  
+
   // parser state
-  private static enum S {TOKEN, NAME, VALUE, UNDEF};
-  
+  private static enum S {
+    TOKEN,
+    NAME,
+    VALUE,
+    UNDEF
+  };
+
   private static final byte[] EMPTY_BYTES = new byte[0];
-  
+
   /** Utility method to convert a hex string to a byte array. */
   static byte[] hexToBytes(String hex) {
     if (hex == null) {
@@ -180,7 +195,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
         i++;
         low = charToNibble(hex.charAt(i));
       }
-      b = (byte)(high << 4 | low);
+      b = (byte) (high << 4 | low);
       baos.write(b);
     }
     return baos.toByteArray();
@@ -197,19 +212,16 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
       throw new RuntimeException("Not a hex character: '" + c + "'");
     }
   }
-  
+
   static String bytesToHex(byte bytes[], int offset, int length) {
     StringBuilder sb = new StringBuilder();
     for (int i = offset; i < offset + length; ++i) {
-      sb.append(Integer.toHexString(0x0100 + (bytes[i] & 0x00FF))
-                       .substring(1));
+      sb.append(Integer.toHexString(0x0100 + (bytes[i] & 0x00FF)).substring(1));
     }
     return sb.toString();
   }
-  
-  public SimplePreAnalyzedParser() {
-    
-  }
+
+  public SimplePreAnalyzedParser() {}
 
   @Override
   public ParseResult parse(Reader reader, AttributeSource parent) throws IOException {
@@ -287,24 +299,34 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
       if (c == ' ') {
         // collect leftovers
         switch (s) {
-        case VALUE :
-          if (attVal.length() == 0) {
-            throw new IOException("Unexpected character '" + c + "' at position " + i + " - empty value of attribute.");
-          }
-          if (attName.length() > 0) {
-            tok.attr.put(attName.toString(), attVal.toString());
-          }
-          break;
-        case NAME: // attr name without a value ?
-          if (attName.length() > 0) {
-            throw new IOException("Unexpected character '" + c + "' at position " + i + " - missing attribute value.");
-          } else {
-            // accept missing att name and value
-          }
-          break;
-        case TOKEN:
-        case UNDEF:
-          // do nothing, advance to next token
+          case VALUE:
+            if (attVal.length() == 0) {
+              throw new IOException(
+                  "Unexpected character '"
+                      + c
+                      + "' at position "
+                      + i
+                      + " - empty value of attribute.");
+            }
+            if (attName.length() > 0) {
+              tok.attr.put(attName.toString(), attVal.toString());
+            }
+            break;
+          case NAME: // attr name without a value ?
+            if (attName.length() > 0) {
+              throw new IOException(
+                  "Unexpected character '"
+                      + c
+                      + "' at position "
+                      + i
+                      + " - missing attribute value.");
+            } else {
+              // accept missing att name and value
+            }
+            break;
+          case TOKEN:
+          case UNDEF:
+            // do nothing, advance to next token
         }
         attName.setLength(0);
         attVal.setLength(0);
@@ -321,47 +343,47 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
       }
       StringBuilder tgt = null;
       switch (s) {
-      case TOKEN:
-        tgt = tok.token;
-        break;
-      case NAME:
-        tgt = attName;
-        break;
-      case VALUE:
-        tgt = attVal;
-        break;
-      case UNDEF:
-        tgt = tok.token;
-        s = S.TOKEN;
+        case TOKEN:
+          tgt = tok.token;
+          break;
+        case NAME:
+          tgt = attName;
+          break;
+        case VALUE:
+          tgt = attVal;
+          break;
+        case UNDEF:
+          tgt = tok.token;
+          s = S.TOKEN;
       }
       if (c == '\\') {
         if (s == S.TOKEN) lastPos++;
         if (i >= val.length() - 1) { // end
-          
+
           tgt.append(c);
           continue;
         } else {
           c = val.charAt(++i);
           switch (c) {
-          case '\\' :
-          case '=' :
-          case ',' :
-          case ' ' :
-            tgt.append(c);
-            break;
-          case 'n':
-            tgt.append('\n');
-            break;
-          case 'r':
-            tgt.append('\r');
-            break;
-          case 't':
-            tgt.append('\t');
-            break;
-          default:
-            tgt.append('\\');
-            tgt.append(c);
-            lastPos++;
+            case '\\':
+            case '=':
+            case ',':
+            case ' ':
+              tgt.append(c);
+              break;
+            case 'n':
+              tgt.append('\n');
+              break;
+            case 'r':
+              tgt.append('\r');
+              break;
+            case 't':
+              tgt.append('\t');
+              break;
+            default:
+              tgt.append('\\');
+              tgt.append(c);
+              lastPos++;
           }
         }
       } else {
@@ -371,7 +393,12 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
             s = S.NAME;
           } else if (s == S.VALUE) { // end of value, start of next attr
             if (attVal.length() == 0) {
-              throw new IOException("Unexpected character '" + c + "' at position " + i + " - empty value of attribute.");
+              throw new IOException(
+                  "Unexpected character '"
+                      + c
+                      + "' at position "
+                      + i
+                      + " - empty value of attribute.");
             }
             if (attName.length() > 0 && attVal.length() > 0) {
               tok.attr.put(attName.toString(), attVal.toString());
@@ -381,13 +408,23 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
             attVal.setLength(0);
             s = S.NAME;
           } else {
-            throw new IOException("Unexpected character '" + c + "' at position " + i + " - missing attribute value.");
+            throw new IOException(
+                "Unexpected character '"
+                    + c
+                    + "' at position "
+                    + i
+                    + " - missing attribute value.");
           }
         } else if (c == '=') {
           if (s == S.NAME) {
             s = S.VALUE;
           } else {
-            throw new IOException("Unexpected character '" + c + "' at position " + i + " - empty value of attribute.");
+            throw new IOException(
+                "Unexpected character '"
+                    + c
+                    + "' at position "
+                    + i
+                    + " - empty value of attribute.");
           }
         } else {
           tgt.append(c);
@@ -401,14 +438,14 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
       if (s == S.VALUE) {
         if (attName.length() > 0 && attVal.length() > 0) {
           tok.attr.put(attName.toString(), attVal.toString());
-        }        
+        }
       }
       AttributeSource.State state = createState(parent, tok, lastPos);
       if (state != null) res.states.add(state.clone());
     }
     return res;
   }
-  
+
   private static AttributeSource.State createState(AttributeSource a, Tok state, int tokenEnd) {
     a.clearAttributes();
     CharTermAttribute termAtt = a.addAttribute(CharTermAttribute.class);
@@ -459,7 +496,6 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
       String s = f.stringValue();
       if (s != null) {
         // encode the equals sign
-        s = s.replaceAll("=", "\\=");
         sb.append('=');
         sb.append(s);
         sb.append('=');
@@ -486,10 +522,10 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
             continue;
           }
           if (cl.isAssignableFrom(CharTermAttribute.class)) {
-            CharTermAttribute catt = (CharTermAttribute)att;
+            CharTermAttribute catt = (CharTermAttribute) att;
             cTerm = escape(catt.buffer(), catt.length());
           } else if (cl.isAssignableFrom(TermToBytesRefAttribute.class)) {
-            TermToBytesRefAttribute tatt = (TermToBytesRefAttribute)att;
+            TermToBytesRefAttribute tatt = (TermToBytesRefAttribute) att;
             char[] tTermChars = tatt.getBytesRef().utf8ToString().toCharArray();
             tTerm = escape(tTermChars, tTermChars.length);
           } else {
@@ -497,9 +533,12 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
             if (cl.isAssignableFrom(FlagsAttribute.class)) {
               tok.append("f=").append(Integer.toHexString(((FlagsAttribute) att).getFlags()));
             } else if (cl.isAssignableFrom(OffsetAttribute.class)) {
-              tok.append("s=").append(((OffsetAttribute) att).startOffset()).append(",e=").append(((OffsetAttribute) att).endOffset());
+              tok.append("s=")
+                  .append(((OffsetAttribute) att).startOffset())
+                  .append(",e=")
+                  .append(((OffsetAttribute) att).endOffset());
             } else if (cl.isAssignableFrom(PayloadAttribute.class)) {
-              BytesRef p = ((PayloadAttribute)att).getPayload();
+              BytesRef p = ((PayloadAttribute) att).getPayload();
               if (p != null && p.length > 0) {
                 tok.append("p=").append(bytesToHex(p.bytes, p.offset, p.length));
               } else if (tok.length() > 0) {
@@ -510,7 +549,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
             } else if (cl.isAssignableFrom(TypeAttribute.class)) {
               tok.append("y=").append(escape(((TypeAttribute) att).type()));
             } else {
-              
+
               tok.append(cl.getName()).append('=').append(escape(att.toString()));
             }
           }
@@ -533,11 +572,11 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
     }
     return sb.toString();
   }
-    
+
   String escape(String val) {
     return escape(val.toCharArray(), val.length());
   }
-  
+
   String escape(char[] val, int len) {
     if (val == null || len == 0) {
       return "";
@@ -545,30 +584,29 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < len; i++) {
       switch (val[i]) {
-      case '\\' :
-      case '=' :
-      case ',' :
-      case ' ' :
-        sb.append('\\');
-        sb.append(val[i]);
-        break;
-      case '\n' :
-        sb.append('\\');
-        sb.append('n');
-        break;
-      case '\r' :
-        sb.append('\\');
-        sb.append('r');
-        break;
-      case '\t' :
-        sb.append('\\');
-        sb.append('t');
-        break;
-      default:
-        sb.append(val[i]);
+        case '\\':
+        case '=':
+        case ',':
+        case ' ':
+          sb.append('\\');
+          sb.append(val[i]);
+          break;
+        case '\n':
+          sb.append('\\');
+          sb.append('n');
+          break;
+        case '\r':
+          sb.append('\\');
+          sb.append('r');
+          break;
+        case '\t':
+          sb.append('\\');
+          sb.append('t');
+          break;
+        default:
+          sb.append(val[i]);
       }
     }
     return sb.toString();
   }
-  
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -24,9 +23,9 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -35,25 +34,23 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-
-import org.apache.commons.io.FileUtils;
+import javax.xml.xpath.XPathExpressionException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -65,12 +62,12 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 @SolrTestCaseJ4.SuppressSSL
-//@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending","Asserting"})
+// @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending","Asserting"})
 public class SolrTestCaseHS extends SolrTestCaseJ4 {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @SafeVarargs
   public static <T> Set<T> set(T... a) {
     LinkedHashSet<T> s = new LinkedHashSet<>();
@@ -82,20 +79,20 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked"})
   public static <T> T rand(T... vals) {
-    return vals[ random().nextInt(vals.length) ];
+    return vals[random().nextInt(vals.length)];
   }
-
 
   public static ModifiableSolrParams params(SolrParams params, String... moreParams) {
     ModifiableSolrParams msp = new ModifiableSolrParams(params);
-    for (int i=0; i<moreParams.length; i+=2) {
-      msp.add(moreParams[i], moreParams[i+1]);
+    for (int i = 0; i < moreParams.length; i += 2) {
+      msp.add(moreParams[i], moreParams[i + 1]);
     }
     return msp;
   }
 
-  public static Map<String,Object> toObject(Doc doc, IndexSchema schema, Collection<String> fieldNames) {
-    Map<String,Object> result = new HashMap<>();
+  public static Map<String, Object> toObject(
+      Doc doc, IndexSchema schema, Collection<String> fieldNames) {
+    Map<String, Object> result = new HashMap<>();
     for (Fld fld : doc.fields) {
       if (fieldNames != null && !fieldNames.contains(fld.ftype.fname)) continue;
       SchemaField sf = schema.getField(fld.ftype.fname);
@@ -107,54 +104,57 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
     return result;
   }
-  
-  
+
   @SuppressWarnings({"unchecked"})
-  public static Object createDocObjects(@SuppressWarnings({"rawtypes"})Map<Comparable, Doc> fullModel,
-                                        @SuppressWarnings({"rawtypes"})Comparator sort, int rows,
-                                        Collection<String> fieldNames) {
+  public static Object createDocObjects(
+      @SuppressWarnings({"rawtypes"}) Map<Comparable, Doc> fullModel,
+      @SuppressWarnings({"rawtypes"}) Comparator sort,
+      int rows,
+      Collection<String> fieldNames) {
     List<Doc> docList = new ArrayList<>(fullModel.values());
-    Collections.sort(docList, sort);
+    docList.sort(sort);
     @SuppressWarnings({"rawtypes"})
     List sortedDocs = new ArrayList(rows);
     for (Doc doc : docList) {
       if (sortedDocs.size() >= rows) break;
-      Map<String,Object> odoc = toObject(doc, h.getCore().getLatestSchema(), fieldNames);
+      Map<String, Object> odoc = toObject(doc, h.getCore().getLatestSchema(), fieldNames);
       sortedDocs.add(toObject(doc, h.getCore().getLatestSchema(), fieldNames));
     }
     return sortedDocs;
   }
 
-
-  public static void compare(SolrQueryRequest req, String path, Object model,
-                             @SuppressWarnings({"rawtypes"})Map<Comparable, Doc> fullModel) throws Exception {
+  public static void compare(
+      SolrQueryRequest req,
+      String path,
+      Object model,
+      @SuppressWarnings({"rawtypes"}) Map<Comparable, Doc> fullModel)
+      throws Exception {
     String strResponse = h.query(req);
 
     Object realResponse = ObjectBuilder.fromJSON(strResponse);
     String err = JSONTestUtil.matchObj(path, realResponse, model);
     if (err != null) {
-      log.error("RESPONSE MISMATCH: {}\n\trequest={}\n\tresult={}" +
-          "\n\texpected={}\n\tmodel={}"
-          , err, req, strResponse, JSONUtil.toJSON(model), fullModel);
+      String msg = "RESPONSE MISMATCH: {}\n\trequest={}\n\tresult={}\n\texpected={}\n\tmodel={}";
+      log.error(msg, err, req, strResponse, JSONUtil.toJSON(model), fullModel);
 
       // re-execute the request... good for putting a breakpoint here for debugging
       String rsp = h.query(req);
 
       fail(err);
     }
-
   }
 
   /** Pass "null" for the client to query the local server */
-  public static void assertJQ(SolrClient client, SolrParams args, String... tests) throws Exception {
+  public static void assertJQ(SolrClient client, SolrParams args, String... tests)
+      throws Exception {
     String resp;
     resp = getJSON(client, args);
     matchJSON(resp, tests);
   }
 
   /**
-   * Pass "null" for the client to query to the local server.
-   * Fetches response in xml format and matches with the given set of xpaths
+   * Pass "null" for the client to query to the local server. Fetches response in xml format and
+   * matches with the given set of xpaths
    */
   public static void assertQ(SolrClient client, SolrParams args, String... tests) throws Exception {
     String resp;
@@ -162,9 +162,13 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     try {
       String results = TestHarness.validateXPath(resp, tests);
       if (null != results) {
-        String msg = "REQUEST FAILED: xpath=" + results
-            + "\n\txml response was: " + resp
-            + "\n\tparams were:" + args.toQueryString();
+        String msg =
+            "REQUEST FAILED: xpath="
+                + results
+                + "\n\txml response was: "
+                + resp
+                + "\n\tparams were:"
+                + args.toQueryString();
 
         log.error(msg);
         throw new RuntimeException(msg);
@@ -172,7 +176,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      SolrException.log(log,"REQUEST FAILED for params: " + args.toQueryString(), e2);
+      log.error("REQUEST FAILED for params: {}", args.toQueryString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
   }
@@ -181,34 +185,30 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     boolean failed = false;
 
     for (String test : tests) {
-      if (test == null || test.length()==0) continue;
+      if (test == null || test.length() == 0) continue;
 
       try {
         failed = true;
         String err = JSONTestUtil.match(response, test, JSONTestUtil.DEFAULT_DELTA);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}\n expected ={}\n response = {}"
-              , err, test, response
-          );
+          log.error(
+              "query failed JSON validation. error={}\n expected ={}\n response = {}",
+              err,
+              test,
+              response);
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception.\n expected ={}\n response = {}"
-                  , test, response
-          );
+          log.error(
+              "JSON query validation threw an exception.\n expected ={}\n response = {}",
+              test,
+              response);
         }
       }
     }
   }
-
-  /***
-  public static void clearNCache() {
-    SolrQueryRequest req = req();
-    req.getSearcher().getnCache().clear();  // OFF-HEAP
-    req.close();
-  }***/
 
   public static void clearQueryCache() {
     SolrQueryRequest req = req();
@@ -216,8 +216,8 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     req.close();
   }
 
-
-  public static String getQueryResponse(SolrClient client, String wt, SolrParams params) throws Exception {
+  public static String getQueryResponse(SolrClient client, String wt, SolrParams params)
+      throws Exception {
     if (client == null) {
       return getQueryResponse(wt, params);
     }
@@ -225,21 +225,21 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     p.set("wt", wt);
     String path = p.get("qt");
     p.remove("qt");
-    p.set("indent","true");
+    p.set("indent", "true");
 
-    QueryRequest query = new QueryRequest( p );
+    QueryRequest query = new QueryRequest(p);
     if (path != null) {
       query.setPath(path);
     }
 
     if ("json".equals(wt)) {
-      query.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      query.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> rsp = client.request(query);
       return Utils.toJSONString(rsp);
     } else {
       query.setResponseParser(new NoOpResponseParser(wt));
       NamedList<Object> rsp = client.request(query);
-      return  (String)rsp.get("response");
+      return (String) rsp.get("response");
     }
   }
 
@@ -248,37 +248,37 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     p.set("wt", wt);
     String path = p.get("qt");
     p.remove("qt");
-    p.set("indent","true");
+    p.set("indent", "true");
 
     DirectSolrConnection connection = new DirectSolrConnection(h.getCore());
     String raw = connection.request(path, p, null);
     return raw;
   }
 
-
   public static String getJSON(SolrClient client, SolrParams params) throws Exception {
     return getQueryResponse(client, "json", params);
   }
 
-  /** Adds a document using the specific client, or to the local test core if null.
-   * Returns the version.  TODO: work in progress... version not always returned.  */
-  public static Long add(SolrClient client, SolrInputDocument sdoc, ModifiableSolrParams params) throws Exception {
+  /**
+   * Adds a document using the specific client, or to the local test core if null. Returns the
+   * version. TODO: work in progress... version not always returned.
+   */
+  public static Long add(SolrClient client, SolrInputDocument sdoc, ModifiableSolrParams params)
+      throws Exception {
     if (client == null) {
-      Long version = addAndGetVersion( sdoc, params );
+      Long version = addAndGetVersion(sdoc, params);
       return version;
     } else {
       UpdateRequest updateRequest = new UpdateRequest();
       if (params != null) {
         updateRequest.setParams(params);
       }
-      updateRequest.add( sdoc );
-      UpdateResponse rsp = updateRequest.process( client );
+      updateRequest.add(sdoc);
+      UpdateResponse rsp = updateRequest.process(client);
       // TODO - return version
       return null;
     }
   }
-
-
 
   public static class Client {
     ClientProvider provider;
@@ -286,16 +286,17 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     public Tester tester = new Tester();
 
     public static class Tester {
-      public  void assertJQ(SolrClient client, SolrParams args, String... tests) throws Exception {
+      public void assertJQ(SolrClient client, SolrParams args, String... tests) throws Exception {
         SolrTestCaseHS.assertJQ(client, args, tests);
       }
 
-      public  void assertQ(SolrClient client, SolrParams args, String... tests) throws Exception {
+      public void assertQ(SolrClient client, SolrParams args, String... tests) throws Exception {
         SolrTestCaseHS.assertQ(client, args, tests);
       }
     }
 
     public static Client localClient = new Client(null, 1);
+
     public static Client localClient() {
       return new Client(null, 1);
     }
@@ -324,7 +325,10 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     public boolean local() {
       return provider == null;
     }
-    public ClientProvider getClientProvider() { return provider; }
+
+    public ClientProvider getClientProvider() {
+      return provider;
+    }
 
     public void testJQ(SolrParams args, String... tests) throws Exception {
       if (queryDefaults != null) {
@@ -332,25 +336,23 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         newParams.add(args);
         args = newParams;
       }
-      SolrClient client = provider==null ? null : provider.client(null, args);
+      SolrClient client = provider == null ? null : provider.client(null, args);
       tester.assertJQ(client, args, tests);
     }
 
-    /**
-     * tests are validated against xml response
-     */
+    /** tests are validated against xml response */
     public void testXQ(SolrParams args, String... tests) throws Exception {
       if (queryDefaults != null) {
         ModifiableSolrParams newParams = params(queryDefaults);
         newParams.add(args);
         args = newParams;
       }
-      SolrClient client = provider==null ? null : provider.client(null, args);
+      SolrClient client = provider == null ? null : provider.client(null, args);
       tester.assertQ(client, args, tests);
     }
 
     public Long add(SolrInputDocument sdoc, ModifiableSolrParams params) throws Exception {
-      SolrClient client = provider==null ? null : provider.client(sdoc, params);
+      SolrClient client = provider == null ? null : provider.client(sdoc, params);
       return SolrTestCaseHS.add(client, sdoc, params);
     }
 
@@ -365,9 +367,10 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
     }
 
-    public void deleteByQuery(String query, ModifiableSolrParams params) throws IOException, SolrServerException {
+    public void deleteByQuery(String query, ModifiableSolrParams params)
+        throws IOException, SolrServerException {
       if (local()) {
-        assertU(delQ(query));  // todo - handle extra params
+        assertU(delQ(query)); // todo - handle extra params
         return;
       }
 
@@ -375,9 +378,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         client.deleteByQuery(query); // todo - handle extra params
       }
     }
-
   }
-
 
   public static class ClientProvider {
     public static String idField = "id";
@@ -397,7 +398,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       String idStr = null;
       if (sdoc != null) {
         idStr = sdoc.getFieldValue(idField).toString();
-      } else if (params!=null) {
+      } else if (params != null) {
         idStr = params.get(idField);
       }
 
@@ -409,8 +410,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         hash = r.nextInt();
       }
 
-
-      return clients.get( (hash & Integer.MAX_VALUE) % clients.size() );
+      return clients.get((hash & Integer.MAX_VALUE) % clients.size());
     }
 
     public List<SolrClient> all() {
@@ -422,11 +422,11 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
   }
 
-
   //
   // Helper to run an internal Jetty instance.
   // Example:
-  //  SolrInstance s1 = new SolrInstance(createTempDir("s1"), "solrconfig-tlog.xml", "schema_latest.xml");
+  //  SolrInstance s1 = new SolrInstance(createTempDir("s1"), "solrconfig-tlog.xml",
+  // "schema_latest.xml");
   //  s1.start();
   //  SolrClient c1 = s1.getSolrJ();
   //  assertJQ(c1, params("q", "*:*"), "/response/numFound==3");
@@ -447,7 +447,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
     private boolean homeCreated = false;
 
-
     public SolrInstance(File homeDir, String solrconfigFile, String schemaFile) {
       this.baseDir = homeDir;
       this.solrconfigFile = solrconfigFile;
@@ -462,10 +461,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       return (SolrTestCaseJ4.isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + "/solr";
     }
 
-    public String getCollectionURL() {
-      return getBaseURL() + "/" + collection;
-    }
-
     /** string appropriate for passing in shards param (i.e. missing http://) */
     public String getShardURL() {
       return "127.0.0.1:" + port + "/solr" + "/" + collection;
@@ -473,7 +468,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
     public SolrClient getSolrJ() {
       if (solrj == null) {
-        solrj = getHttpSolrClient(getCollectionURL());
+        solrj = getHttpSolrClient(getBaseURL(), collection);
       }
       return solrj;
     }
@@ -484,13 +479,16 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
 
     public void createHome() throws Exception {
-      homeCreated=true;
+      homeCreated = true;
       SolrTestCaseJ4.copySolrHomeToTemp(baseDir, collection);
       copyConfFile(baseDir, collection, solrconfigFile);
       copyConfFile(baseDir, collection, schemaFile);
 
       File collDir = new File(baseDir, collection);
-      try (Writer w = new OutputStreamWriter(Files.newOutputStream(collDir.toPath().resolve("core.properties")), StandardCharsets.UTF_8)) {
+      try (Writer w =
+          new OutputStreamWriter(
+              Files.newOutputStream(collDir.toPath().resolve("core.properties")),
+              StandardCharsets.UTF_8)) {
         Properties coreProps = new Properties();
         coreProps.put("name", "collection1");
         coreProps.put("config", solrconfigFile);
@@ -499,19 +497,13 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
     }
 
-
     public void start() throws Exception {
       if (!homeCreated) {
         createHome();
       }
 
       if (jetty == null) {
-        JettyConfig jettyConfig = JettyConfig.builder()
-            .stopAtShutdown(true)
-            .setContext("/solr")
-            .setPort(port)
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
-            .build();
+        JettyConfig jettyConfig = JettyConfig.builder().stopAtShutdown(true).setPort(port).build();
         Properties nodeProperties = new Properties();
         nodeProperties.setProperty("solrconfig", solrconfigFile);
         nodeProperties.setProperty(CoreDescriptor.CORE_SCHEMA, schemaFile);
@@ -520,8 +512,8 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
       // silly stuff included from solrconfig.snippet.randomindexconfig.xml
       System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(100000));
-      
-      // If we want to run with whitelist list, this must be explicitly set to true for the test
+
+      // If we want to run with allowlist, this must be explicitly set to true for the test
       // otherwise we disable the check
       if (System.getProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST) == null) {
         systemSetPropertySolrDisableUrlAllowList("true");
@@ -543,10 +535,11 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       IOUtils.deleteFilesIfExist(baseDir.toPath());
     }
 
-    private static void copyConfFile(File dstRoot, String destCollection, String file) throws Exception {
-      File subHome = new File(dstRoot, destCollection + File.separator + "conf");
-      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-      FileUtils.copyFile(new File(top, file), new File(subHome, file));
+    private static void copyConfFile(File dstRoot, String destCollection, String file)
+        throws Exception {
+      Path subHome = dstRoot.toPath().resolve(destCollection).resolve("conf");
+      Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+      Files.copy(top.resolve(file), subHome.resolve(file));
     }
 
     public void copyConfigFile(File dstRoot, String destCollection, String file) throws Exception {
@@ -554,15 +547,12 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         createHome();
       }
 
-      File subHome = new File(dstRoot, destCollection + File.separator + "conf");
-      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-      FileUtils.copyFile(new File(top, file), new File(subHome, file));
+      SolrInstance.copyConfFile(dstRoot, destCollection, file);
     }
-
   }
 
-
-  //  Manages a number of Solr servers and provides a Client to partition documents and randomly assign query requests.
+  //  Manages a number of Solr servers and provides a Client to partition documents and randomly
+  // assign query requests.
   //  Example:
   //        SolrInstances servers = new SolrInstances(3, "solrconfig-tlog.xml","schema_latest.xml");
   //        Client = servers.getClient(0);
@@ -577,8 +567,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
     public SolrInstances(int numServers, String solrconfig, String schema) throws Exception {
       slist = new ArrayList<>(numServers);
-      for (int i=0; i<numServers; i++) {
-        SolrInstance instance = new SolrInstance(createTempDir("s"+ i).toFile(), solrconfig, schema);
+      for (int i = 0; i < numServers; i++) {
+        SolrInstance instance =
+            new SolrInstance(createTempDir("s" + i).toFile(), solrconfig, schema);
         slist.add(instance);
         instance.start();
       }
@@ -594,25 +585,11 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     public String getShards() {
       return getShardsParam(slist);
     }
-    
-    public String getWhitelistString() {
-      StringBuilder sb = new StringBuilder();
-      boolean first = true;
-      for (SolrInstance instance : slist) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(',');
-        }
-        sb.append( instance.getBaseURL().replace("/solr", ""));
-      }
-      return sb.toString();
-    }
 
     public List<SolrClient> getSolrJs() {
       List<SolrClient> solrjs = new ArrayList<>(slist.size());
       for (SolrInstance instance : slist) {
-        solrjs.add( instance.getSolrJ() );
+        solrjs.add(instance.getSolrJ());
       }
       return solrjs;
     }
@@ -633,13 +610,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         } else {
           sb.append(',');
         }
-        sb.append( instance.getShardURL() );
+        sb.append(instance.getShardURL());
       }
       return sb.toString();
     }
-
-
-
   }
-
 }

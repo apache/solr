@@ -23,56 +23,51 @@ import java.io.Reader;
 /**
  * ExtendedBufferedReader
  *
- * A special reader decorater which supports more
- * sophisticated access to the underlying reader object.
- * 
- * In particular the reader supports a look-ahead option,
- * which allows you to see the next char returned by
- * next().
- * Furthermore the skip-method supports skipping until
- * (but excluding) a given char. Similar functionality
- * is supported by the reader as well.
- * 
+ * <p>A special reader decorater which supports more sophisticated access to the underlying reader
+ * object.
+ *
+ * <p>In particular the reader supports a look-ahead option, which allows you to see the next char
+ * returned by next(). Furthermore the skip-method supports skipping until (but excluding) a given
+ * char. Similar functionality is supported by the reader as well.
  */
-class ExtendedBufferedReader extends BufferedReader  {
+class ExtendedBufferedReader extends BufferedReader {
 
-  
   /** the end of stream symbol */
   public static final int END_OF_STREAM = -1;
+
   /** undefined state for the lookahead char */
   public static final int UNDEFINED = -2;
-  
+
   /** the lookahead chars */
   private int lookaheadChar = UNDEFINED;
+
   /** the last char returned */
   private int lastChar = UNDEFINED;
+
   /** the line counter */
   private int lineCounter = 0;
+
   private CharBuffer line = new CharBuffer();
-  
-  /**
-   * Created extended buffered reader using default buffer-size
-   *
-   */
+
+  /** Created extended buffered reader using default buffer-size */
   public ExtendedBufferedReader(Reader r) {
     super(r);
     /* note uh: do not fetch the first char here,
      *          because this might block the method!
      */
   }
-    
-  /**
-   * Create extended buffered reader using the given buffer-size
-   */
+
+  /** Create extended buffered reader using the given buffer-size */
   public ExtendedBufferedReader(Reader r, int bufSize) {
     super(r, bufSize);
     /* note uh: do not fetch the first char here,
      *          because this might block the method!
      */
   }
-  
+
   /**
    * Reads the next char from the input stream.
+   *
    * @return the next char or END_OF_STREAM if end of stream has been reached.
    */
   @Override
@@ -89,29 +84,26 @@ class ExtendedBufferedReader extends BufferedReader  {
     }
     if (lastChar == '\n') {
       lineCounter++;
-    } 
+    }
     return lastChar;
   }
-  
+
   /**
    * Returns the last read character again.
-   * 
+   *
    * @return the last read char or UNDEFINED
    */
   public int readAgain() {
-    return lastChar;  
+    return lastChar;
   }
-  
+
   /**
-   * Non-blocking reading of len chars into buffer buf starting
-   * at bufferposition off.
-   * 
-   * performs an iterative read on the underlying stream
-   * as long as the following conditions hold:
-   *   - less than len chars have been read
-   *   - end of stream has not been reached
-   *   - next read is not blocking
-   * 
+   * Non-blocking reading of len chars into buffer buf starting at bufferposition off.
+   *
+   * <p>performs an iterative read on the underlying stream as long as the following conditions
+   * hold: - less than len chars have been read - end of stream has not been reached - next read is
+   * not blocking
+   *
    * @return nof chars actually read or END_OF_STREAM
    */
   @Override
@@ -119,15 +111,15 @@ class ExtendedBufferedReader extends BufferedReader  {
     // do not claim if len == 0
     if (len == 0) {
       return 0;
-    } 
-    
+    }
+
     // init lookahead, but do not block !!
     if (lookaheadChar == UNDEFINED) {
-        if (ready()) {
-         lookaheadChar = super.read();
-        } else {
-          return -1;
-        }
+      if (ready()) {
+        lookaheadChar = super.read();
+      } else {
+        return -1;
+      }
     }
     // 'first read of underlying stream'
     if (lookaheadChar == -1) {
@@ -143,7 +135,7 @@ class ExtendedBufferedReader extends BufferedReader  {
         buf[cOff++] = (char) lookaheadChar;
         if (lookaheadChar == '\n') {
           lineCounter++;
-        } 
+        }
         lastChar = lookaheadChar;
         lookaheadChar = super.read();
         len--;
@@ -151,44 +143,43 @@ class ExtendedBufferedReader extends BufferedReader  {
     }
     return cOff - off;
   }
- 
- /**
-  * Reads all characters up to (but not including) the given character.
-  * 
-  * @param c the character to read up to
-  * @return the string up to the character <code>c</code>
-  * @throws IOException If there is a low-level I/O error.
-  */
- public String readUntil(char c) throws IOException {
-   if (lookaheadChar == UNDEFINED) {
-     lookaheadChar = super.read();
-   }
-   line.clear(); // reuse
-   while (lookaheadChar != c && lookaheadChar != END_OF_STREAM) {
-     line.append((char) lookaheadChar);
-     if (lookaheadChar == '\n') {
-       lineCounter++;
-     } 
-     lastChar = lookaheadChar;
-     lookaheadChar = super.read();
-   }
-   return line.toString();    
- }
- 
- /**
-  * @return A String containing the contents of the line, not 
-  *         including any line-termination characters, or null 
-  *         if the end of the stream has been reached
-  */
+
+  /**
+   * Reads all characters up to (but not including) the given character.
+   *
+   * @param c the character to read up to
+   * @return the string up to the character <code>c</code>
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public String readUntil(char c) throws IOException {
+    if (lookaheadChar == UNDEFINED) {
+      lookaheadChar = super.read();
+    }
+    line.clear(); // reuse
+    while (lookaheadChar != c && lookaheadChar != END_OF_STREAM) {
+      line.append((char) lookaheadChar);
+      if (lookaheadChar == '\n') {
+        lineCounter++;
+      }
+      lastChar = lookaheadChar;
+      lookaheadChar = super.read();
+    }
+    return line.toString();
+  }
+
+  /**
+   * @return A String containing the contents of the line, not including any line-termination
+   *     characters, or null if the end of the stream has been reached
+   */
   @Override
   public String readLine() throws IOException {
-    
+
     if (lookaheadChar == UNDEFINED) {
-      lookaheadChar = super.read(); 
+      lookaheadChar = super.read();
     }
-    
-    line.clear(); //reuse
-    
+
+    line.clear(); // reuse
+
     // return null if end of stream has been reached
     if (lookaheadChar == END_OF_STREAM) {
       return null;
@@ -206,7 +197,7 @@ class ExtendedBufferedReader extends BufferedReader  {
       lineCounter++;
       return line.toString();
     }
-    
+
     // create the rest-of-line return and update the lookahead
     line.append(laChar);
     String restOfLine = super.readLine(); // TODO involves copying
@@ -218,31 +209,31 @@ class ExtendedBufferedReader extends BufferedReader  {
     lineCounter++;
     return line.toString();
   }
-  
+
   /**
    * Skips char in the stream
-   * 
-   * ATTENTION: invalidates the line-counter !!!!!
-   * 
+   *
+   * <p>ATTENTION: invalidates the line-counter !!!!!
+   *
    * @return nof skiped chars
    */
   @Override
-  public long skip(long n) throws IllegalArgumentException, IOException  {
-    
+  public long skip(long n) throws IllegalArgumentException, IOException {
+
     if (lookaheadChar == UNDEFINED) {
-      lookaheadChar = super.read();   
+      lookaheadChar = super.read();
     }
-    
+
     // illegal argument
     if (n < 0) {
-      throw new IllegalArgumentException("negative argument not supported");  
+      throw new IllegalArgumentException("negative argument not supported");
     }
-    
+
     // no skipping
     if (n == 0 || lookaheadChar == END_OF_STREAM) {
       return 0;
-    } 
-    
+    }
+
     // skip and reread the lookahead-char
     long skiped = 0;
     if (n > 1) {
@@ -253,34 +244,33 @@ class ExtendedBufferedReader extends BufferedReader  {
     lineCounter = Integer.MIN_VALUE;
     return skiped + 1;
   }
-  
+
   /**
    * Skips all chars in the input until (but excluding) the given char
-   * 
+   *
    * @return counter
    * @throws IOException If there is a low-level I/O error.
    */
   public long skipUntil(char c) throws IllegalArgumentException, IOException {
     if (lookaheadChar == UNDEFINED) {
-      lookaheadChar = super.read();   
+      lookaheadChar = super.read();
     }
     long counter = 0;
     while (lookaheadChar != c && lookaheadChar != END_OF_STREAM) {
       if (lookaheadChar == '\n') {
         lineCounter++;
-      } 
+      }
       lookaheadChar = super.read();
       counter++;
     }
     return counter;
   }
-  
+
   /**
    * Returns the next char in the stream without consuming it.
-   * 
-   * Remember the next char read by read(..) will always be
-   * identical to lookAhead().
-   * 
+   *
+   * <p>Remember the next char read by read(..) will always be identical to lookAhead().
+   *
    * @return the next char (without consuming it) or END_OF_STREAM
    */
   public int lookAhead() throws IOException {
@@ -289,14 +279,12 @@ class ExtendedBufferedReader extends BufferedReader  {
     }
     return lookaheadChar;
   }
-  
-  
+
   /**
-   * Returns the nof line read
-   * ATTENTION: the skip-method does invalidate the line-number counter
-   * 
+   * Returns the nof line read ATTENTION: the skip-method does invalidate the line-number counter
+   *
    * @return the current-line-number (or -1)
-   */ 
+   */
   public int getLineNumber() {
     if (lineCounter > -1) {
       return lineCounter;
@@ -304,6 +292,7 @@ class ExtendedBufferedReader extends BufferedReader  {
       return -1;
     }
   }
+
   @Override
   public boolean markSupported() {
     /* note uh: marking is not supported, cause we cannot
@@ -311,5 +300,4 @@ class ExtendedBufferedReader extends BufferedReader  {
      */
     return false;
   }
-  
 }

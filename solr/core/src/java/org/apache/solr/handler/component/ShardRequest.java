@@ -16,41 +16,36 @@
  */
 package org.apache.solr.handler.component;
 
-import io.opentracing.Tracer;
-import io.opentracing.util.GlobalTracer;
-import org.apache.solr.common.params.ModifiableSolrParams;
-
 import java.util.ArrayList;
 import java.util.List;
-
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 // todo... when finalized make accessors
 public class ShardRequest {
-  public final static String[] ALL_SHARDS = null;
+  public static final String[] ALL_SHARDS = null;
 
-  public final static int PURPOSE_PRIVATE         = 0x01;
-  public final static int PURPOSE_GET_TERM_DFS    = 0x02;
-  public final static int PURPOSE_GET_TOP_IDS     = 0x04;
-  public final static int PURPOSE_REFINE_TOP_IDS  = 0x08;
-  public final static int PURPOSE_GET_FACETS      = 0x10;
-  public final static int PURPOSE_REFINE_FACETS   = 0x20;
-  public final static int PURPOSE_GET_FIELDS      = 0x40;
-  public final static int PURPOSE_GET_HIGHLIGHTS  = 0x80;
-  public final static int PURPOSE_GET_DEBUG       =0x100;
-  public final static int PURPOSE_GET_STATS       =0x200;
-  public final static int PURPOSE_GET_TERMS       =0x400;
-  public final static int PURPOSE_GET_TOP_GROUPS  =0x800;
-  public final static int PURPOSE_GET_MLT_RESULTS =0x1000;
-  public final static int PURPOSE_REFINE_PIVOT_FACETS =0x2000;
-  public final static int PURPOSE_SET_TERM_STATS  =0x4000;
-  public final static int PURPOSE_GET_TERM_STATS  = 0x8000;
+  public static final int PURPOSE_PRIVATE = 0x01;
+  public static final int PURPOSE_GET_TERM_DFS = 0x02;
+  public static final int PURPOSE_GET_TOP_IDS = 0x04;
+  public static final int PURPOSE_REFINE_TOP_IDS = 0x08;
+  public static final int PURPOSE_GET_FACETS = 0x10;
+  public static final int PURPOSE_REFINE_FACETS = 0x20;
+  public static final int PURPOSE_GET_FIELDS = 0x40;
+  public static final int PURPOSE_GET_HIGHLIGHTS = 0x80;
+  public static final int PURPOSE_GET_DEBUG = 0x100;
+  public static final int PURPOSE_GET_STATS = 0x200;
+  public static final int PURPOSE_GET_TERMS = 0x400;
+  public static final int PURPOSE_GET_TOP_GROUPS = 0x800;
+  public static final int PURPOSE_GET_MLT_RESULTS = 0x1000;
+  public static final int PURPOSE_REFINE_PIVOT_FACETS = 0x2000;
+  public static final int PURPOSE_SET_TERM_STATS = 0x4000;
+  public static final int PURPOSE_GET_TERM_STATS = 0x8000;
 
-  public int purpose;  // the purpose of this request
+  public int purpose; // the purpose of this request
 
-  public String[] shards;  // the shards this request should be sent to, null for all
+  public String[] shards; // the shards this request should be sent to, null for all
 
   public ModifiableSolrParams params;
-
 
   /** list of responses... filled out by framework */
   public List<ShardResponse> responses = new ArrayList<>();
@@ -61,9 +56,6 @@ public class ShardRequest {
   /** may be null */
   public String nodeName;
 
-  /** Not null but may implement {@link io.opentracing.noop.NoopTracer}. */
-  public final Tracer tracer = GlobalTracer.get();
-
   // TODO: one could store a list of numbers to correlate where returned docs
   // go in the top-level response rather than looking up by id...
   // this would work well if we ever transitioned to using internal ids and
@@ -71,9 +63,12 @@ public class ShardRequest {
 
   @Override
   public String toString() {
-    return "ShardRequest:{params=" + params
-            + ", purpose=" + Integer.toHexString(purpose)
-            + ", nResponses =" + responses.size()
-            + "}";
+    return "ShardRequest:{params="
+        + params
+        + ", purpose="
+        + Integer.toHexString(purpose)
+        + ", nResponses ="
+        + responses.size()
+        + "}";
   }
 }

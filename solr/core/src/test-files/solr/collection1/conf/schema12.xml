@@ -50,6 +50,9 @@
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
   <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
 
+  <!-- Dense Vector Fields -->
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+  
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
@@ -100,6 +103,8 @@
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+
+  <fieldType name="binary" class="solr.BinaryField"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
@@ -553,17 +558,7 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
-  <!-- Poly field -->
-  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
-
-  <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-  <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
-  <!-- sub-centimeter accuracy for RPT; distance calcs -->
-  <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
-             geo="true" distErrPct="0.025" maxDistErr="0.00001" distanceUnits="kilometers"/>
+  <fieldType name="location" class="solr.LatLonPointSpatialField" />
 
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
 
@@ -661,12 +656,7 @@
   -->
   <field name="timestamp" type="date" indexed="true" stored="true"/>
 
-  <!-- Test a point field for distances -->
-  <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
-  <field name="store_rpt" type="location_rpt" indexed="true" stored="false"/>
+  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
 
   <!-- Test currency field -->
   <field name="amount_c" type="currency" indexed="true" stored="true" multiValued="false"/>
@@ -678,15 +668,15 @@
   
   <field name="shingle23" type="shingle23" indexed="true" stored="true"/>
 
-
+  <!-- Dense Vector-->
+  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+  
   <!--
      DO NOT INCLUDE _version_ in this schema file
      We explicitly want tests using this file to *NOT* have this field
      so we can verify that Solr behaves correctly w/o it in those sitautions
     -->
   <!-- <field name="_version_" type="long" indexed="true" stored="true"/> -->
-
-  <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
@@ -696,6 +686,7 @@
   <dynamicField name="t_as_same_term_boosted_*" type="text_as_same_term_boosted" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_*" type="text_as_distinct" indexed="true" stored="true"/>
 
+  <dynamicField name="*_bin" type="binary"/>
 
   <dynamicField name="t_*" type="text" indexed="true" stored="true"/>
   <dynamicField name="tv_*" type="text" indexed="true" stored="true"
@@ -807,6 +798,5 @@
   <copyField source="subject" dest="text"/>
 
   <copyField source="foo_copysource_*" dest="bar_copydest_*"/>
-  <copyField source="store" dest="store_rpt"/>
 
 </schema>

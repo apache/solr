@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 

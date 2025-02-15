@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Utilities for collecting statistics
- */
+
+/** Utilities for collecting statistics */
 package org.apache.solr.util.stats;
-
-

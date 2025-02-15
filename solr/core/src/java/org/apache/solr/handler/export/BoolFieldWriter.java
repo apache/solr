@@ -18,17 +18,22 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.search.DocValuesIteratorCache;
 
 class BoolFieldWriter extends StringFieldWriter {
-  public BoolFieldWriter(String field, FieldType fieldType) {
-    super(field, fieldType);
+  public BoolFieldWriter(
+      String field,
+      FieldType fieldType,
+      DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
+    super(field, fieldType, docValuesCache);
   }
 
-  protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType) throws IOException {
+  @Override
+  protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType)
+      throws IOException {
     fieldType.indexedToReadable(ref, cref);
     ew.put(this.field, "true".equals(cref.toString()));
   }

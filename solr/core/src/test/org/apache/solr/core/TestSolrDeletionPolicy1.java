@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.util.Map;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
@@ -23,16 +24,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Map;
-
-/**
- *
- */
+/** */
 public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-delpolicy1.xml","schema.xml");
+    initCore("solrconfig-delpolicy1.xml", "schema.xml");
   }
 
   @Override
@@ -41,49 +38,28 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
   }
-  
+
   private void addDocs() {
 
-    assertU(adoc("id", String.valueOf(1),
-            "name", "name" + String.valueOf(1)));
+    assertU(adoc("id", String.valueOf(1), "name", "name" + String.valueOf(1)));
     assertU(commit());
-    assertQ("return all docs",
-            req("id:[0 TO 1]"),
-            "*[count(//doc)=1]"
-    );
+    assertQ("return all docs", req("id:[0 TO 1]"), "*[count(//doc)=1]");
 
-    assertU(adoc("id", String.valueOf(2),
-            "name", "name" + String.valueOf(2)));
+    assertU(adoc("id", String.valueOf(2), "name", "name" + String.valueOf(2)));
     assertU(commit());
-    assertQ("return all docs",
-            req("id:[0 TO 2]"),
-            "*[count(//doc)=2]"
-    );
+    assertQ("return all docs", req("id:[0 TO 2]"), "*[count(//doc)=2]");
 
-    assertU(adoc("id", String.valueOf(3),
-            "name", "name" + String.valueOf(3)));
+    assertU(adoc("id", String.valueOf(3), "name", "name" + String.valueOf(3)));
     assertU(optimize());
-    assertQ("return all docs",
-            req("id:[0 TO 3]"),
-            "*[count(//doc)=3]"
-    );
+    assertQ("return all docs", req("id:[0 TO 3]"), "*[count(//doc)=3]");
 
-    assertU(adoc("id", String.valueOf(4),
-            "name", "name" + String.valueOf(4)));
+    assertU(adoc("id", String.valueOf(4), "name", "name" + String.valueOf(4)));
     assertU(optimize());
-    assertQ("return all docs",
-            req("id:[0 TO 4]"),
-            "*[count(//doc)=4]"
-    );
+    assertQ("return all docs", req("id:[0 TO 4]"), "*[count(//doc)=4]");
 
-    assertU(adoc("id", String.valueOf(5),
-            "name", "name" + String.valueOf(5)));
+    assertU(adoc("id", String.valueOf(5), "name", "name" + String.valueOf(5)));
     assertU(optimize());
-    assertQ("return all docs",
-            req("id:[0 TO 5]"),
-            "*[count(//doc)=5]"
-    );
-
+    assertQ("return all docs", req("id:[0 TO 5]"), "*[count(//doc)=5]");
   }
 
   @Test
@@ -94,8 +70,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     Map<Long, IndexCommit> commits = delPolicy.getCommits();
     IndexCommit latest = delPolicy.getLatestCommit();
     for (Long gen : commits.keySet()) {
-      if (commits.get(gen) == latest)
-        continue;
+      if (commits.get(gen).equals(latest)) continue;
       assertEquals(1, commits.get(gen).getSegmentCount());
     }
   }
@@ -105,32 +80,35 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     IndexDeletionPolicyWrapper delPolicy = h.getCore().getDeletionPolicy();
     addDocs();
     Map<Long, IndexCommit> commits = delPolicy.getCommits();
-    assertTrue(commits.size() <= ((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy())).getMaxOptimizedCommitsToKeep());
+    assertTrue(
+        commits.size()
+            <= ((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy()))
+                .getMaxOptimizedCommitsToKeep());
   }
 
   @Test
   public void testCommitAge() throws InterruptedException {
-    assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
-      Constants.WINDOWS);
-  
+    assumeFalse(
+        "This test is not working on Windows (or maybe machines with only 2 CPUs)",
+        Constants.WINDOWS);
+
     IndexDeletionPolicyWrapper delPolicy = h.getCore().getDeletionPolicy();
     addDocs();
     Map<Long, IndexCommit> commits = delPolicy.getCommits();
     IndexCommit ic = delPolicy.getLatestCommit();
-    String agestr = ((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy())).getMaxCommitAge().replaceAll("[a-zA-Z]", "").replaceAll("-", "");
+    String agestr =
+        ((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy()))
+            .getMaxCommitAge()
+            .replaceAll("[a-zA-Z]", "")
+            .replace("-", "");
     long age = Long.parseLong(agestr);
     Thread.sleep(age);
 
-    assertU(adoc("id", String.valueOf(6),
-            "name", "name" + String.valueOf(6)));
+    assertU(adoc("id", String.valueOf(6), "name", "name" + String.valueOf(6)));
     assertU(optimize());
-    assertQ("return all docs",
-            req("id:[0 TO 6]"),
-            "*[count(//doc)=6]"
-    );
+    assertQ("return all docs", req("id:[0 TO 6]"), "*[count(//doc)=6]");
 
     commits = delPolicy.getCommits();
-    assertTrue(!commits.containsKey(ic.getGeneration()));
+    assertFalse(commits.containsKey(ic.getGeneration()));
   }
-
 }

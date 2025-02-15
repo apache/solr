@@ -16,21 +16,19 @@
  */
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.Metric;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.codahale.metrics.Metric;
-
 /**
- * This class is used for keeping several partial named values and providing useful statistics over them.
+ * This class is used for keeping several partial named values and providing useful statistics over
+ * them.
  */
 public class AggregateMetric implements Metric {
 
-  /**
-   * Simple class to represent current value and how many times it was set.
-   */
+  /** Simple class to represent current value and how many times it was set. */
   public static class Update {
     public Object value;
     public final AtomicInteger updateCount = new AtomicInteger();
@@ -46,10 +44,7 @@ public class AggregateMetric implements Metric {
 
     @Override
     public String toString() {
-      return "Update{" +
-          "value=" + value +
-          ", updateCount=" + updateCount +
-          '}';
+      return "Update{" + "value=" + value + ", updateCount=" + updateCount + '}';
     }
   }
 
@@ -95,10 +90,9 @@ public class AggregateMetric implements Metric {
     }
     Double res = null;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
-      Number n = (Number)u.value;
       if (res == null) {
         res = n.doubleValue();
         continue;
@@ -119,10 +113,9 @@ public class AggregateMetric implements Metric {
     }
     Double res = null;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
-      Number n = (Number)u.value;
       if (res == null) {
         res = n.doubleValue();
         continue;
@@ -143,10 +136,9 @@ public class AggregateMetric implements Metric {
     }
     double total = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
-      Number n = (Number)u.value;
       total += n.doubleValue();
     }
     return total / values.size();
@@ -161,11 +153,10 @@ public class AggregateMetric implements Metric {
     double sum = 0;
     int count = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
       count++;
-      Number n = (Number)u.value;
       final double diff = n.doubleValue() - mean;
       sum += diff * diff;
     }
@@ -182,10 +173,9 @@ public class AggregateMetric implements Metric {
     }
     double res = 0;
     for (Update u : values.values()) {
-      if (!(u.value instanceof Number)) {
+      if (!(u.value instanceof Number n)) {
         continue;
       }
-      Number n = (Number)u.value;
       res += n.doubleValue();
     }
     return res;
@@ -193,14 +183,21 @@ public class AggregateMetric implements Metric {
 
   @Override
   public String toString() {
-    return "AggregateMetric{" +
-        "size=" + size() +
-        ", max=" + getMax() +
-        ", min=" + getMin() +
-        ", mean=" + getMean() +
-        ", stddev=" + getStdDev() +
-        ", sum=" + getSum() +
-        ", values=" + values +
-        '}';
+    return "AggregateMetric{"
+        + "size="
+        + size()
+        + ", max="
+        + getMax()
+        + ", min="
+        + getMin()
+        + ", mean="
+        + getMean()
+        + ", stddev="
+        + getStdDev()
+        + ", sum="
+        + getSum()
+        + ", values="
+        + values
+        + '}';
   }
 }

@@ -40,9 +40,6 @@ configure(subprojects.findAll { it.path.startsWith(':solr') }) {
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
 
-      // This task has no proper outputs.
-      setupDummyOutputs(task)
-
       sourceFiles = files(sourceSets*.java)
     }
  
@@ -52,10 +49,11 @@ configure(subprojects.findAll { it.path.startsWith(':solr') }) {
 }
 
 class ValidateLogCallsTask extends DefaultTask {
+  @Input
   def logLevels = ["log.trace", "log.debug", "log.info", "log.warn", "log.error", "log.fatal"]
 
-  def errsFound = 0;
-  def violations = new ArrayList();
+  private def errsFound = 0;
+  private def violations = new ArrayList();
 
   def reportViolation(String msg) {
     violations.add(System.lineSeparator + msg);
@@ -220,6 +218,7 @@ class ValidateLogCallsTask extends DefaultTask {
   }
 
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   FileCollection sourceFiles
 
   @TaskAction

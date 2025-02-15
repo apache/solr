@@ -30,8 +30,13 @@ public class BasicResultContext extends ResultContext {
   private Query query;
   private SolrQueryRequest req;
 
-  public BasicResultContext(DocList docList, ReturnFields returnFields, SolrIndexSearcher searcher, Query query, SolrQueryRequest req) {
-    assert docList!=null;
+  public BasicResultContext(
+      DocList docList,
+      ReturnFields returnFields,
+      SolrIndexSearcher searcher,
+      Query query,
+      SolrQueryRequest req) {
+    assert docList != null;
     this.docList = docList;
     this.returnFields = returnFields;
     this.searcher = searcher;

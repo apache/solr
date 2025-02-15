@@ -21,12 +21,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
-
+import java.util.Objects;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.EmptyEntityResolver;
@@ -39,57 +38,95 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
- * Some utility methods for parsing XML in a safe way. This class can be used to parse XML
- * coming from network (completely untrusted) or it can load a config file from a
- * {@link ResourceLoader}. In this case it allows external entities and xincludes, but only
- * referring to files reachable by the loader.
+ * Some utility methods for parsing XML in a safe way. This class can be used to parse XML coming
+ * from network (completely untrusted) or it can load a config file from a {@link ResourceLoader}.
+ * In this case it allows external entities and xincludes, but only referring to files reachable by
+ * the loader.
  */
-@SuppressForbidden(reason = "This class uses XML APIs directly that should not be used anywhere else in Solr code")
-public final class SafeXMLParsing  {
-  
+@SuppressForbidden(
+    reason = "This class uses XML APIs directly that should not be used anywhere else in Solr code")
+public final class SafeXMLParsing {
+
   public static final String SYSTEMID_UNTRUSTED = "untrusted://stream";
 
   private SafeXMLParsing() {}
-  
-  /** Parses a config file from ResourceLoader. Xinclude and external entities are enabled, but cannot escape the resource loader. */
-  public static Document parseConfigXML(Logger log, ResourceLoader loader, String file) throws SAXException, IOException {
+
+  /**
+   * Parses a config file from a Solr config based on ResourceLoader. Xinclude and external entities
+   * are enabled, but cannot escape the resource loader.
+   */
+  public static Document parseConfigXML(Logger log, ResourceLoader loader, String file)
+      throws SAXException, IOException {
     try (InputStream in = loader.openResource(file)) {
-      final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      dbf.setValidating(false);
-      dbf.setNamespaceAware(true);
-      trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
-      try {
-        dbf.setXIncludeAware(true);
-      } catch (UnsupportedOperationException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "XML parser doesn't support XInclude option", e);
-      }
-      
-      final DocumentBuilder db = dbf.newDocumentBuilder();
-      db.setEntityResolver(new SystemIdResolver(loader));
-      db.setErrorHandler(new XMLErrorLogger(log));
+      DocumentBuilder db = configDocumentBuilder(loader, log);
       return db.parse(in, SystemIdResolver.createSystemIdFromResourceName(file));
-    } catch (ParserConfigurationException pce) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "XML parser cannot be configured", pce);
     }
   }
 
-  /** Parses the given InputStream as XML, disabling any external entities with secure processing enabled.
-   * The given InputStream is not closed. */
-  public static Document parseUntrustedXML(Logger log, InputStream in) throws SAXException, IOException {
-    return getUntrustedDocumentBuilder(log).parse(new CloseShieldInputStream(in), SYSTEMID_UNTRUSTED);
+  /**
+   * Parses a config file from a Solr config based on InputSource. Xinclude and external entities
+   * are enabled, but cannot escape the resource loader.
+   */
+  public static Document parseConfigXML(Logger log, ResourceLoader loader, InputSource is)
+      throws SAXException, IOException {
+    return configDocumentBuilder(loader, log).parse(is);
   }
-  
-  /** Parses the given InputStream as XML, disabling any external entities with secure processing enabled.
-   * The given Reader is not closed. */
-  public static Document parseUntrustedXML(Logger log, Reader reader) throws SAXException, IOException {
-    final InputSource is = new InputSource(new FilterReader(reader) {
-      @Override public void close() {}
-    });
+
+  private static DocumentBuilder configDocumentBuilder(ResourceLoader loader, Logger log) {
+    try {
+      Objects.requireNonNull(loader);
+      final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      dbf.setNamespaceAware(true);
+      trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      // only enable xinclude, if systemId is available. this assumes it is the case as loader
+      // provides one.
+      try {
+        dbf.setXIncludeAware(true);
+      } catch (UnsupportedOperationException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "XML parser doesn't support XInclude option", e);
+      }
+      final DocumentBuilder db = dbf.newDocumentBuilder();
+      db.setEntityResolver(new SystemIdResolver(loader));
+      db.setErrorHandler(new XMLErrorLogger(log));
+      return db;
+    } catch (ParserConfigurationException pce) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "XML parser cannot be configured", pce);
+    } catch (UnsupportedOperationException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "XML parser doesn't support XInclude option", e);
+    }
+  }
+
+  /**
+   * Parses non-Solr configs as XML based on the given InputStream, disabling any external entities
+   * with secure processing enabled. The given InputStream is not closed.
+   */
+  public static Document parseUntrustedXML(Logger log, InputStream in)
+      throws SAXException, IOException {
+    return getUntrustedDocumentBuilder(log)
+        .parse(new CloseShieldInputStream(in), SYSTEMID_UNTRUSTED);
+  }
+
+  /**
+   * Parses the given InputStream as XML, disabling any external entities with secure processing
+   * enabled. The given Reader is not closed.
+   */
+  public static Document parseUntrustedXML(Logger log, Reader reader)
+      throws SAXException, IOException {
+    final InputSource is =
+        new InputSource(
+            new FilterReader(reader) {
+              @Override
+              public void close() {}
+            });
     is.setSystemId(SYSTEMID_UNTRUSTED);
     return getUntrustedDocumentBuilder(log).parse(is);
   }
-  
-  public static Document parseUntrustedXML(Logger log, String xml) throws SAXException, IOException {
+
+  public static Document parseUntrustedXML(Logger log, String xml)
+      throws SAXException, IOException {
     return parseUntrustedXML(log, new StringReader(xml));
   }
 
@@ -99,22 +136,23 @@ public final class SafeXMLParsing  {
       dbf.setValidating(false);
       dbf.setNamespaceAware(true);
       trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
-      
+
       final DocumentBuilder db = dbf.newDocumentBuilder();
       db.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
       db.setErrorHandler(new XMLErrorLogger(log));
       return db;
     } catch (ParserConfigurationException pce) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "XML parser cannot be configured", pce);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "XML parser cannot be configured", pce);
     }
   }
-  
-  private static void trySetDOMFeature(DocumentBuilderFactory factory, String feature, boolean enabled) {
+
+  private static void trySetDOMFeature(
+      DocumentBuilderFactory factory, String feature, boolean enabled) {
     try {
       factory.setFeature(feature, enabled);
     } catch (Exception ex) {
       // ignore
     }
   }
-  
 }

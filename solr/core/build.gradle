@@ -15,149 +15,196 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
 
 dependencies {
-  api "org.apache.lucene:lucene-core"
-  api "org.apache.lucene:lucene-analysis-common"
-  api "org.apache.lucene:lucene-analysis-kuromoji"
-  api "org.apache.lucene:lucene-analysis-nori"
-  api "org.apache.lucene:lucene-analysis-phonetic"
-  api "org.apache.lucene:lucene-backward-codecs"
-  api "org.apache.lucene:lucene-classification"
-  api "org.apache.lucene:lucene-codecs"
-  api "org.apache.lucene:lucene-expressions"
-  api "org.apache.lucene:lucene-grouping"
-  api "org.apache.lucene:lucene-highlighter"
-  api "org.apache.lucene:lucene-join"
-  api "org.apache.lucene:lucene-misc"
-  api "org.apache.lucene:lucene-queries"
-  api "org.apache.lucene:lucene-queryparser"
-  api "org.apache.lucene:lucene-sandbox"
-  api "org.apache.lucene:lucene-spatial-extras"
-  api "org.apache.lucene:lucene-suggest"
+  api platform(project(":platform"))
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly libs.spotbugs.annotations
+  testCompileOnly libs.spotbugs.annotations
+  permitUnusedDeclared libs.spotbugs.annotations
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
+  implementation libs.swagger3.annotations.jakarta
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
-  api ('com.google.guava:guava', {
-    exclude group: "org.codehaus.mojo", module: "animal-sniffer-annotations"
-    exclude group: "com.google.j2objc", module: "j2objc-annotations"
-    exclude group: "com.google.errorprone", module: "error_prone_annotations"
-    exclude group: "org.checkerframework", module: "checker-qual"
-    exclude group: "com.google.code.findbugs", module: "jsr305"
-  })
 
+  // These Lucene modules are the most significant to Solr
+  api libs.apache.lucene.core
+  api libs.apache.lucene.analysis.common
+  api libs.apache.lucene.queries
+
+  // We export logging api with dependencies, which is useful for all modules
+  api libs.slf4j.api
+
+  api project(':solr:api')
   api project(':solr:solrj')
-  api project(':solr:server')
+  api project(':solr:solrj-zookeeper')
+  api project(':solr:solrj-streaming')
 
-  api 'org.apache.commons:commons-lang3'
-  api 'com.carrotsearch:hppc'
-  api 'com.fasterxml.jackson.core:jackson-databind'
-  api 'commons-cli:commons-cli'
-  api 'commons-codec:commons-codec'
-  api 'commons-collections:commons-collections'
-  api 'org.apache.commons:commons-collections4'
-
-  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
-
-  implementation('com.github.ben-manes.caffeine:caffeine', {
-    exclude group: "org.checkerframework", module: "checker-qual"
-    exclude group: "com.google.errorprone", module: "error_prone_annotations"
+  api libs.dropwizard.metrics.core
+  implementation (libs.dropwizard.metrics.graphite, {
+    exclude group: "com.rabbitmq", module: "amqp-client"
   })
+  implementation libs.dropwizard.metrics.jmx
+  implementation libs.dropwizard.metrics.jvm
 
-  implementation 'com.github.zafarkhaja:java-semver'
-  implementation 'com.google.re2j:re2j'
+  implementation(libs.jersey.containers.jettyhttp, {
+    exclude group: "org.eclipse.jetty", module: "jetty-continuation"
+    exclude group: "org.glassfish.hk2.external", module: "jakarta.inject"
+  })
+  permitUnusedDeclared libs.jersey.containers.jettyhttp
+  implementation libs.jersey.inject.hk2
+  permitUnusedDeclared libs.jersey.inject.hk2
+  implementation (libs.jersey.media.jsonjackson, {
+    exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
+  })
+  permitUnusedDeclared libs.jersey.media.jsonjackson
+  implementation libs.jersey.core.common
+  implementation libs.jersey.core.server
+  implementation libs.hk2.api
+  implementation libs.jakarta.inject.api
+  implementation libs.jakarta.ws.rsapi
+  implementation libs.jakarta.annotation.api
 
-  implementation('com.jayway.jsonpath:json-path', {
+  // Non-API below; although there are exceptions
+
+  runtimeOnly libs.apache.lucene.analysis.kuromoji
+  runtimeOnly libs.apache.lucene.analysis.nori
+  runtimeOnly libs.apache.lucene.analysis.phonetic
+  runtimeOnly libs.apache.lucene.backward.codecs
+  implementation libs.apache.lucene.codecs
+  implementation libs.apache.lucene.backward.codecs
+  permitUnusedDeclared libs.apache.lucene.backward.codecs
+  implementation libs.apache.lucene.classification
+  implementation libs.apache.lucene.expressions
+  implementation libs.apache.lucene.grouping
+  implementation libs.apache.lucene.highlighter
+  implementation libs.apache.lucene.join
+  implementation libs.apache.lucene.misc
+  implementation libs.apache.lucene.queryparser
+  implementation libs.apache.lucene.spatialextras
+  implementation libs.apache.lucene.suggest
+
+
+  // Collections & lang utilities
+  implementation libs.google.guava
+  implementation libs.apache.commons.lang3
+  implementation libs.apache.commons.math3
+  implementation libs.commonsio.commonsio
+  implementation libs.carrotsearch.hppc
+
+  implementation(libs.benmanes.caffeine) { transitive = false }
+
+  implementation libs.commonscodec.commonscodec
+
+  implementation libs.commonscli.commonscli
+
+  implementation libs.locationtech.spatial4j
+
+  implementation libs.fasterxml.jackson.core.annotations
+  implementation libs.fasterxml.jackson.core.core
+  implementation libs.fasterxml.jackson.core.databind
+  implementation libs.fasterxml.jackson.dataformat.smile
+  implementation libs.fasterxml.jackson.dataformat.cbor
+
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
+
+  implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.http
+  implementation libs.eclipse.jetty.io
+  implementation libs.eclipse.jetty.toolchain.servletapi
+
+  // ZooKeeper
+
+  implementation(libs.apache.curator.framework, {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  implementation(libs.apache.curator.client, {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  testImplementation(libs.apache.curator.test, {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  implementation(libs.apache.zookeeper.zookeeper, {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
+  implementation(libs.apache.zookeeper.jute) {
+    exclude group: 'org.apache.yetus', module: 'audience-annotations'
+  }
+  testImplementation variantOf(libs.apache.zookeeper.zookeeper) { classifier 'tests' }
+
+  // required for instantiating a Zookeeper server (for embedding ZK or running tests)
+  runtimeOnly libs.xerial.snappy.java
+
+  implementation(libs.jayway.jsonpath, {
     exclude group: "net.minidev", module: "json-smart"
   })
 
-  implementation 'com.tdunning:t-digest'
+  // StatsComponents percentiles
+  implementation libs.tdunning.tdigest
 
-  api 'io.opentracing:opentracing-api' // Tracer is exposed on some methods
-  implementation 'io.opentracing:opentracing-noop'
-  implementation 'io.opentracing:opentracing-util'
-  implementation 'org.apache.commons:commons-exec'
-  implementation 'org.apache.commons:commons-text'
-  implementation("org.apache.commons:commons-configuration2", {
-    exclude group: "commons-logging", module: "commons-logging"
+  // Distributed Tracing
+  api libs.opentelemetry.api // Tracer is exposed on some methods
+  implementation libs.opentelemetry.context
+
+  implementation libs.apache.commons.exec
+
+  implementation libs.apache.log4j.api
+  implementation libs.apache.log4j.core
+  runtimeOnly libs.apache.log4j.slf4j2impl
+
+  // For the PrometheusResponseWriter
+  implementation libs.prometheus.metrics.model
+  implementation(libs.prometheus.metrics.expositionformats, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+    exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
-  implementation 'org.apache.htrace:htrace-core4'
-
-  implementation 'org.apache.logging.log4j:log4j-api'
-  implementation 'org.apache.logging.log4j:log4j-core'
-  implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-
-  api 'org.bitbucket.b_c:jose4j'
-  implementation 'org.codehaus.janino:commons-compiler'
-  implementation 'org.codehaus.janino:janino'
 
   // For faster XML processing than the JDK
-  implementation ('org.codehaus.woodstox:woodstox-core-asl', {
-    exclude group: "javax.xml.stream", module: "stax-api"
-  })
+  implementation libs.codehaus.woodstox.stax2api
+  implementation libs.fasterxml.woodstox.core
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
+  compileOnly libs.aqute.bnd.annotation
+  compileOnly libs.osgi.annotation
 
-  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
-  implementation ('org.apache.calcite:calcite-core') { transitive = false }
-  implementation ('org.checkerframework:checker-qual') { transitive = false }
-  implementation ('com.esri.geometry:esri-geometry-api') { transitive = false }
-  implementation ('org.apiguardian:apiguardian-api')  { transitive = false }
-  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
-  implementation ('org.apache.curator:curator-client') { transitive = false }
-  implementation ('org.apache.curator:curator-framework') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
-  testImplementation 'org.apache.commons:commons-compress' // required for customized hadoop classes
+  compileOnly libs.stephenc.jcip.annotations
 
-  implementation ('net.hydromatic:eigenbase-properties') { transitive = false }
+  implementation libs.j256.simplemagic
 
-  runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false }
-  runtimeOnly ('org.apache.kerby:kerb-core')
-  runtimeOnly ('org.apache.kerby:kerb-util')
-  runtimeOnly ('org.apache.kerby:kerby-asn1')
-  runtimeOnly ('org.apache.kerby:kerby-pkix')
-  runtimeOnly ('com.google.protobuf:protobuf-java')
+  // -- Test Dependencies
 
-  testImplementation "org.apache.lucene:lucene-analysis-icu"
+  testRuntimeOnly libs.slf4j.jcloverslf4j
 
-  testImplementation project(':solr:contrib:analysis-extras')
+  testRuntimeOnly libs.apache.lucene.analysis.icu
+
+  testRuntimeOnly project(':solr:modules:analysis-extras')
+
+  testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')
 
-  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
-  testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
+  testImplementation libs.apache.lucene.testframework
 
-  testImplementation ('org.apache.kerby:kerb-client') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-common') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-identity') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-server') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-simplekdc') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-admin') { transitive = false }
-  testImplementation ('org.apache.kerby:kerby-kdc') { transitive = false }
+  testImplementation libs.eclipse.jetty.server
+  testImplementation libs.eclipse.jetty.servlet
 
-  testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
 
-  // required for instantiating a Zookeeper server in tests or embedded
-  runtimeOnly ('org.xerial.snappy:snappy-java')
-  
-  testImplementation 'com.google.protobuf:protobuf-java'
-  testImplementation 'commons-logging:commons-logging'
-  testImplementation('org.mockito:mockito-core', {
+  testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testImplementation('no.nav.security:mock-oauth2-server', {
-    exclude group: "ch.qos.logback", module: "logback-core"
-    exclude group: "io.netty", module: "netty-all"
-    exclude group: "junit", module: "junit"
-    exclude group: "ch.qos.logback", module: "logback-classic"
-    exclude group: "org.slf4j", module: "slf4j-api"
+  testRuntimeOnly(libs.mockito.subclass, {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
 }
-

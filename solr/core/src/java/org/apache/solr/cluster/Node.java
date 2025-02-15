@@ -17,9 +17,7 @@
 
 package org.apache.solr.cluster;
 
-/**
- * Representation of a SolrCloud node or server in the SolrCloud cluster.
- */
+/** Representation of a SolrCloud node or server in the SolrCloud cluster. */
 public interface Node {
   String getName();
 }

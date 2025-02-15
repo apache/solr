@@ -17,15 +17,21 @@
 
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.response.HealthCheckResponse;
-import org.apache.solr.common.params.SolrParams;
-
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
+import java.util.OptionalInt;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.response.HealthCheckResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+
 public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
+  public static final String PARAM_MAX_GENERATION_LAG = "maxGenerationLag";
+
+  private OptionalInt maxLagAllowed = OptionalInt.empty();
 
   public HealthCheckRequest() {
     this(METHOD.GET, HEALTH_CHECK_HANDLER_PATH);
@@ -35,16 +41,24 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
     super(m, path);
   }
 
+  public void setMaxGenerationLag(int maxLagAllowed) {
+    this.maxLagAllowed = OptionalInt.of(maxLagAllowed);
+  }
+
   @Override
   public SolrParams getParams() {
-    return null;
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    if (maxLagAllowed.isPresent()) {
+      params.set(PARAM_MAX_GENERATION_LAG, maxLagAllowed.getAsInt());
+    }
+    return params;
   }
 
   @Override
   protected HealthCheckResponse createResponse(SolrClient client) {
-    // TODO: Accept requests w/ CloudSolrClient while ensuring that the request doesn't get routed to
-    // an unintended recepient.
-    assert client instanceof HttpSolrClient;
+    // TODO: Accept requests w/ CloudSolrClient while ensuring that the request doesn't get routed
+    // to an unintended recipient.
+    assert client instanceof BaseHttpSolrClient || client instanceof HttpSolrClientBase;
     return new HealthCheckResponse();
   }
 

@@ -16,7 +16,13 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.util.TestUtil;
+import java.io.File;
+import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
@@ -26,26 +32,17 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.CaffeineCache;
 import org.junit.BeforeClass;
-import java.io.File;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
 
-/**
- * A simple test used to increase code coverage for some standard things...
- */
-public class SolrInfoBeanTest extends SolrTestCaseJ4
-{
+/** A simple test used to increase code coverage for some standard things... */
+public class SolrInfoBeanTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   /**
-   * Gets a list of everything we can find in the classpath and makes sure it has
-   * a name, description, etc...
+   * Gets a list of everything we can find in the classpath and makes sure it has a name,
+   * description, etc...
    */
   public void testCallMBeanInfo() throws Exception {
     List<Class<?>> classes = new ArrayList<>();
@@ -54,40 +51,42 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
     classes.addAll(getClassesForPackage(LukeRequestHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(DefaultSolrHighlighter.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(CaffeineCache.class.getPackage().getName()));
-   // System.out.println(classes);
-    
+    // System.out.println(classes);
+
     int checked = 0;
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
-    for(Class<?> clazz : classes ) {
-      if( SolrInfoBean.class.isAssignableFrom( clazz ) ) {
+    for (Class<?> clazz : classes) {
+      if (SolrInfoBean.class.isAssignableFrom(clazz)) {
         try {
           SolrInfoBean info = clazz.asSubclass(SolrInfoBean.class).getConstructor().newInstance();
           info.initializeMetrics(solrMetricsContext, scope);
 
-          //System.out.println( info.getClass() );
-          assertNotNull( info.getClass().getCanonicalName(), info.getName() );
-          assertNotNull( info.getClass().getCanonicalName(), info.getDescription() );
-          assertNotNull( info.getClass().getCanonicalName(), info.getCategory() );
-          
-          if( info instanceof CaffeineCache ) {
+          // System.out.println( info.getClass() );
+          assertNotNull(info.getClass().getCanonicalName(), info.getName());
+          assertNotNull(info.getClass().getCanonicalName(), info.getDescription());
+          assertNotNull(info.getClass().getCanonicalName(), info.getCategory());
+
+          if (info instanceof CaffeineCache) {
             continue;
           }
-          
-          assertNotNull( info.toString() );
+
+          assertNotNull(info.toString());
           checked++;
-        }
-        catch( ReflectiveOperationException ex ) {
+        } catch (ReflectiveOperationException ex) {
           // expected...
-          //System.out.println( "unable to initialize: "+clazz );
+          // System.out.println( "unable to initialize: "+clazz );
         }
       }
     }
-    assertTrue( "there are at least 10 SolrInfoBean that should be found in the classpath, found " + checked, checked > 10 );
+    assertTrue(
+        "there are at least 10 SolrInfoBean that should be found in the classpath, found "
+            + checked,
+        checked > 10);
   }
-  
+
   private static List<Class<?>> getClassesForPackage(String pckgname) throws Exception {
     ArrayList<File> directories = new ArrayList<>();
     ClassLoader cld = h.getCore().getResourceLoader().getClassLoader();
@@ -95,29 +94,32 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
       final URI uri = resources.nextElement().toURI();
-      if (!"file".equalsIgnoreCase(uri.getScheme()))
-        continue;
+      if (!"file".equalsIgnoreCase(uri.getScheme())) continue;
       final File f = new File(uri);
       directories.add(f);
     }
-      
+
     ArrayList<Class<?>> classes = new ArrayList<>();
     for (File directory : directories) {
       if (directory.exists()) {
         String[] files = directory.list();
         for (String file : files) {
           if (file.endsWith(".class")) {
-             String clazzName = file.substring(0, file.length() - 6);
-             // exclude Test classes that happen to be in these packages.
-             // class.ForName'ing some of them can cause trouble.
-             if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
-               classes.add(Class.forName(pckgname + '.' + clazzName));
-             }
+            String clazzName = file.substring(0, file.length() - 6);
+            // exclude Test classes that happen to be in these packages.
+            // class.ForName'ing some of them can cause trouble.
+            if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
+              classes.add(Class.forName(pckgname + '.' + clazzName));
+            }
           }
         }
       }
     }
-    assertFalse("No classes found in package '"+pckgname+"'; maybe your test classes are packaged as JAR file?", classes.isEmpty());
+    assertFalse(
+        "No classes found in package '"
+            + pckgname
+            + "'; maybe your test classes are packaged as JAR file?",
+        classes.isEmpty());
     return classes;
   }
 }

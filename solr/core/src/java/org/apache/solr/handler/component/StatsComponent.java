@@ -19,16 +19,16 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Stats component calculates simple statistics on numeric field values
+ *
  * @since solr 1.4
  */
 public class StatsComponent extends SearchComponent {
@@ -42,8 +42,11 @@ public class StatsComponent extends SearchComponent {
       rb.doStats = true;
       rb._statsInfo = new StatsInfo(rb);
       for (StatsField statsField : rb._statsInfo.getStatsFields()) {
-        if (statsField.getSchemaField() != null && statsField.getSchemaField().getType().isPointField() && !statsField.getSchemaField().hasDocValues()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        if (statsField.getSchemaField() != null
+            && statsField.getSchemaField().getType().isPointField()
+            && !statsField.getSchemaField().hasDocValues()) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
               "Can't calculate stats on a PointField without docValues");
         }
       }
@@ -76,7 +79,6 @@ public class StatsComponent extends SearchComponent {
       sreq.purpose |= ShardRequest.PURPOSE_GET_STATS;
     } else {
 
-
       // turn off stats on other requests
       sreq.params.set(StatsParams.STATS, "false");
       // we could optionally remove stats params
@@ -84,23 +86,19 @@ public class StatsComponent extends SearchComponent {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (!rb.doStats || (sreq.purpose & ShardRequest.PURPOSE_GET_STATS) == 0) return;
 
     Map<String, StatsValues> allStatsValues = rb._statsInfo.getAggregateStatsValues();
 
     for (ShardResponse srsp : sreq.responses) {
-      NamedList<NamedList<NamedList<?>>> stats = null;
-      try {
-        stats = (NamedList<NamedList<NamedList<?>>>)
-            srsp.getSolrResponse().getResponse().get("stats");
-      } catch (Exception e) {
-        if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
-          continue; // looks like a shard did not return anything
-        }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to read stats info for shard: " + srsp.getShard(), e);
+      @SuppressWarnings("unchecked")
+      NamedList<NamedList<NamedList<?>>> stats =
+          (NamedList<NamedList<NamedList<?>>>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "stats", false);
+      ;
+      if (stats == null) {
+        continue;
       }
 
       NamedList<NamedList<?>> stats_fields = unwrapStats(stats);
@@ -124,12 +122,10 @@ public class StatsComponent extends SearchComponent {
     Map<String, StatsValues> allStatsValues = rb._statsInfo.getAggregateStatsValues();
     rb.rsp.add("stats", convertToResponse(allStatsValues));
 
-    rb._statsInfo = null; // free some objects 
+    rb._statsInfo = null; // free some objects
   }
 
-  /**
-   * Helper to pull the "stats_fields" out of the extra "stats" wrapper
-   */
+  /** Helper to pull the "stats_fields" out of the extra "stats" wrapper */
   public static NamedList<NamedList<?>> unwrapStats(NamedList<NamedList<NamedList<?>>> stats) {
     if (null == stats) return null;
 
@@ -137,12 +133,12 @@ public class StatsComponent extends SearchComponent {
   }
 
   /**
-   * Given a map of {@link StatsValues} using the appropriate response key,
-   * builds up the necessary "stats" data structure for including in the response --
-   * including the esoteric "stats_fields" wrapper.
+   * Given a map of {@link StatsValues} using the appropriate response key, builds up the necessary
+   * "stats" data structure for including in the response -- including the esoteric "stats_fields"
+   * wrapper.
    */
-  public static NamedList<NamedList<NamedList<?>>> convertToResponse
-  (Map<String, StatsValues> statsValues) {
+  public static NamedList<NamedList<NamedList<?>>> convertToResponse(
+      Map<String, StatsValues> statsValues) {
 
     NamedList<NamedList<NamedList<?>>> stats = new SimpleOrderedMap<>();
     NamedList<NamedList<?>> stats_fields = new SimpleOrderedMap<>();
@@ -165,4 +161,3 @@ public class StatsComponent extends SearchComponent {
     return "Calculate Statistics";
   }
 }
-

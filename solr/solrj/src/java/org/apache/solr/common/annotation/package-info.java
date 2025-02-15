@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Annotations mapping to Jackson
- */
+/** Annotations mapping to Jackson */
 package org.apache.solr.common.annotation;
-
-

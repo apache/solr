@@ -25,18 +25,15 @@ import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 
-public class GapFragmenter extends HighlightingPluginBase implements SolrFragmenter
-{
+public class GapFragmenter extends HighlightingPluginBase implements SolrFragmenter {
   @Override
-  public Fragmenter getFragmenter(String fieldName, SolrParams params )
-  {
+  public Fragmenter getFragmenter(String fieldName, SolrParams params) {
     numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
-    
-    int fragsize = params.getFieldInt( fieldName, HighlightParams.FRAGSIZE, 100 );
+
+    int fragsize = params.getFieldInt(fieldName, HighlightParams.FRAGSIZE, 100);
     return (fragsize <= 0) ? new NullFragmenter() : new LuceneGapFragmenter(fragsize);
   }
-  
 
   ///////////////////////////////////////////////////////////////////////
   //////////////////////// SolrInfoMBeans methods ///////////////////////
@@ -48,30 +45,29 @@ public class GapFragmenter extends HighlightingPluginBase implements SolrFragmen
   }
 }
 
-
 /**
- * A simple modification of SimpleFragmenter which additionally creates new
- * fragments when an unusually-large position increment is encountered
- * (this behaves much better in the presence of multi-valued fields).
+ * A simple modification of SimpleFragmenter which additionally creates new fragments when an
+ * unusually-large position increment is encountered (this behaves much better in the presence of
+ * multi-valued fields).
  */
 class LuceneGapFragmenter extends SimpleFragmenter {
-  /** 
-   * When a gap in term positions is observed that is at least this big, treat
-   * the gap as a fragment delimiter.
+  /**
+   * When a gap in term positions is observed that is at least this big, treat the gap as a fragment
+   * delimiter.
    */
   public static final int INCREMENT_THRESHOLD = 50;
+
   protected int fragOffset = 0;
-  
+
   private OffsetAttribute offsetAtt;
   private PositionIncrementAttribute posIncAtt;
-  
-  public LuceneGapFragmenter() {
-  }
-  
+
+  public LuceneGapFragmenter() {}
+
   public LuceneGapFragmenter(int fragsize) {
-     super(fragsize);
+    super(fragsize);
   }
-  
+
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
    */
@@ -88,11 +84,11 @@ class LuceneGapFragmenter extends SimpleFragmenter {
   @Override
   public boolean isNewFragment() {
     int endOffset = offsetAtt.endOffset();
-    boolean isNewFrag = 
-      endOffset >= fragOffset + getFragmentSize() ||
-      posIncAtt.getPositionIncrement() > INCREMENT_THRESHOLD;
-    if(isNewFrag) {
-        fragOffset = endOffset;
+    boolean isNewFrag =
+        endOffset >= fragOffset + getFragmentSize()
+            || posIncAtt.getPositionIncrement() > INCREMENT_THRESHOLD;
+    if (isNewFrag) {
+      fragOffset = endOffset;
     }
     return isNewFrag;
   }

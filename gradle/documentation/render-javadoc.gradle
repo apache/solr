@@ -1,4 +1,4 @@
-import javax.annotation.Nullable
+import org.gradle.internal.jvm.Jvm
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,7 +18,7 @@ import javax.annotation.Nullable
  */
 
 // generate javadocs by calling javadoc tool
-// see https://docs.oracle.com/en/java/javase/11/tools/javadoc.html
+// see https://docs.oracle.com/en/java/javase/21/javadoc/javadoc.html
 
 def resources = scriptResources(buildscript)
 
@@ -29,10 +29,10 @@ allprojects {
     }
 
     dependencies {
-      missingdoclet "org.apache.lucene.tools:missing-doclet"
+      missingdoclet "org.apache.solr.tools:missing-doclet"
     }
 
-    ext {
+    project.ext {
       relativeDocPath = project.path.replaceFirst(/:\w+:/, "").replace(':', '/')
     }
 
@@ -53,6 +53,7 @@ allprojects {
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath
       srcDirSet = sourceSets.main.java
+      releaseVersion = project.minJavaVersion
 
       outputDir = project.javadoc.destinationDir
     }
@@ -65,8 +66,11 @@ allprojects {
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath;
       srcDirSet = sourceSets.main.java;
+      releaseVersion = project.minJavaVersion
 
       relativeProjectLinks = true
+
+      enableSearch = true
 
       // Place the documentation under Lucene or Solr's documentation directory.
       // docroot is defined in 'documentation.gradle'
@@ -78,15 +82,13 @@ allprojects {
 // Set up titles and link up some offline docs for all documentation
 // (they may be unused but this doesn't do any harm).
 
-def javaJavadocPackages = rootProject.file("${resources}/java11/")
-def junitJavadocPackages = rootProject.file("${resources}/junit/")
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
     title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
-        "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
-        "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
+        "https://docs.oracle.com/en/java/javase/${project.minJavaVersion}/docs/api/": rootProject.file("${resources}/java${project.minJavaVersion}/"),
+        "https://junit.org/junit4/javadoc/4.12/": rootProject.file("${resources}/junit/")
     ]
 
     solrDocUrl = provider({ rootProject.solrDocUrl })
@@ -106,9 +108,9 @@ configure(project(":solr").allprojects) {
   }
 }
 
-configure(project(":solr:contrib:analysis-extras")) {
+configure(project(":solr:modules:analysis-extras")) {
   project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
+    // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = [
         "org.apache.solr.schema",
         "org.apache.solr.update.processor"
@@ -116,42 +118,52 @@ configure(project(":solr:contrib:analysis-extras")) {
   }
 }
 
-configure(project(":solr:contrib:analytics")) {
+configure(project(":solr:modules:langid")) {
   project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.solr.handler",
-        "org.apache.solr.handler.component",
-        "org.apache.solr.response"
-    ]
-  }
-}
-
-configure(project(":solr:contrib:langid")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
+    // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = ["org.apache.solr.update.processor"]
   }
 }
 
 configure(project(":solr:solrj")) {
   project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
+    // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
+  }
+}
+
+configure(project(":solr:solrj-zookeeper")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages SOLR-15604
+    javadocMissingIgnore = [
+            "org.apache.solr.common",
+            "org.apache.solr.common.cloud",
+            "org.apache.solr.client.solrj.impl",
+            "org.apache.solr.client.solrj.cloud"
+    ]
   }
 }
 
 configure(project(":solr:test-framework")) {
   project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
+    // TODO: clean up split packages SOLR-15604 or don't because it's test stuff
     javadocMissingIgnore = [
         "org.apache.solr",
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
+        "org.apache.solr.cloud.api.collections",
+        "org.apache.solr.common.cloud",
         "org.apache.solr.core",
+        "org.apache.solr.handler",
         "org.apache.solr.handler.component",
         "org.apache.solr.update.processor",
-        "org.apache.solr.util"
+        "org.apache.solr.util",
+        "org.apache.solr.search",
+        "org.apache.solr.search.similarities",
+        "org.apache.solr.search.function",
+        "org.apache.solr.search.facet",
+        "org.apache.solr.schema",
+        "org.apache.solr.spelling"
     ]
   }
 }
@@ -163,6 +175,7 @@ configure(project(":solr:test-framework")) {
 // Disable Javadoc rendering for these projects.
 configure(subprojects.findAll {
   it.path in [
+      ':platform',
       ':solr:solr-ref-guide',
       ':solr:server',
       ':solr:webapp']
@@ -181,16 +194,38 @@ configure(subprojects) {
       task.project.configurations.implementation.allDependencies.withType(ProjectDependency).collect { dep ->
         def otherProject = dep.dependencyProject
         return otherProject.tasks.findByName(task.name)
+      }.findAll {
+        // Do not depend on disabled tasks or tasks that do not exist
+        // :platform module does not have a renderJavaDoc and therefore task is null
+        it?.enabled == true
       }
     }
   }
 }
 
+class OfflineLink implements Serializable {
+  @Input
+  String url
+
+  @InputDirectory
+  @PathSensitive(PathSensitivity.RELATIVE)
+  @IgnoreEmptyDirectories
+  File location
+
+  OfflineLink(String url, File location) {
+    this.url = url
+    this.location = location
+  }
+}
+
+@CacheableTask
 class RenderJavadocTask extends DefaultTask {
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
+  @IgnoreEmptyDirectories
   @SkipWhenEmpty
   SourceDirectorySet srcDirSet;
-  
+
   @OutputDirectory
   File outputDir
 
@@ -207,14 +242,26 @@ class RenderJavadocTask extends DefaultTask {
   boolean linksource = false
 
   @Input
+  boolean enableSearch = false
+
+  @Input
   boolean relativeProjectLinks = false
 
   @Input
-  def offlineLinks = [:]
+  JavaVersion releaseVersion
+
+  @Internal
+  Map<String, File> offlineLinks = [:]
+
+  // Computes cacheable inputs from the map in offlineLinks.
+  @Nested
+  List<OfflineLink> getCacheableOfflineLinks() {
+    return offlineLinks.collect { url, location -> new OfflineLink(url, location) }
+  }
 
   @Input
   @Optional
-  Property<String> solrDocUrl = project.objects.property(String)
+  final Property<String> solrDocUrl = project.objects.property(String)
 
   // default is to require full javadocs
   @Input
@@ -232,22 +279,28 @@ class RenderJavadocTask extends DefaultTask {
   @Optional
   ListProperty<String> extraOpts = project.objects.listProperty(String)
 
-  @Nullable
   @Optional
   @Input
-  def executable
+  final Property<String> executable = project.objects.property(String).convention(
+      project.provider { Jvm.current().javadocExecutable.toString() })
 
-  @Input
-  def taskResources
+  @InputDirectory
+  @PathSensitive(PathSensitivity.RELATIVE)
+  @IgnoreEmptyDirectories
+  File taskResources
 
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {
     Set found = []
     def collectDeps
-    collectDeps = { task -> task.taskDependencies.getDependencies(task).findAll{ it.name == this.name && it.enabled && !found.contains(it) }.each{
-      found << it
-      collectDeps(it)
-    }}
+    collectDeps = { task ->
+      task.taskDependencies.getDependencies(task)
+              .findAll{ it.name == this.name && it.enabled && !found.contains(it) }
+              .each{
+                found << it
+                collectDeps(it)
+              }
+    }
     collectDeps(this)
     return found
   }
@@ -256,10 +309,11 @@ class RenderJavadocTask extends DefaultTask {
   public void render() {
     def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
-    
+
     // create the directory, so relative link calculation knows that it's a directory:
+    project.delete(outputDir);
     outputDir.mkdirs();
-    
+
     def opts = []
     opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
     opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
@@ -269,7 +323,9 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-encoding', 'UTF-8' ]
     opts << [ '-charset', 'UTF-8' ]
     opts << [ '-docencoding', 'UTF-8' ]
-    opts << '-noindex'
+    if (!enableSearch) {
+      opts << '-noindex'
+    }
     opts << '-author'
     opts << '-version'
     if (linksource) {
@@ -315,6 +371,7 @@ class RenderJavadocTask extends DefaultTask {
     // lucene-test-framework was first, or broken links to things like LuceneTestCase if lucene-core was first)
     if (project.path != ':solr:test-framework') {  //
       findRenderTasksInDependencies()
+          .findAll({it.project.path != ':solr:solrj' && it.project.path != ':solr:solrj-zookeeper'}) // split packages
           .sort(false, Comparator.comparing { (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing { it.path }))
           .each { otherTask ->
             def otherProject = otherTask.project
@@ -334,7 +391,7 @@ class RenderJavadocTask extends DefaultTask {
             }
           }
     }
-    
+
     // Add offline links.
     allOfflineLinks.each { url, dir ->
       // Some sanity check/ validation here to ensure dir/package-list or dir/element-list is present.
@@ -345,7 +402,7 @@ class RenderJavadocTask extends DefaultTask {
       opts << [ '-linkoffline', url, dir ]
     }
 
-    opts << [ '--release', 11 ]
+    opts << [ '--release', releaseVersion.toString() ]
     opts << '-Xdoclint:all,-missing'
 
     // Increase Javadoc's heap.
@@ -372,58 +429,14 @@ class RenderJavadocTask extends DefaultTask {
       }
     })
 
-    def javadocCmd = {
-      if (executable == null) {
-        JavaInstallationRegistry registry = project.extensions.getByType(JavaInstallationRegistry)
-        JavaInstallation currentJvm = registry.installationForCurrentVirtualMachine.get()
-        return currentJvm.jdk.get().javadocExecutable.asFile
-      } else {
-        return project.file(executable)
-      }
-    }()
-
+    def javadocCmd = project.file(executable.get())
     logger.info("Javadoc executable used: ${javadocCmd}")
 
-    def outputFile = project.file("${getTemporaryDir()}/javadoc-output.txt")
-    def result
-
-    outputFile.withOutputStream { output ->
-      result = project.exec {
+    project.quietExec {
         executable javadocCmd
-
-        // we want to capture both stdout and stderr to the same
-        // stream but gradle attempts to close these separately
-        // (it has two independent pumping threads) and it can happen
-        // that one still tries to write something when the other closed
-        // the underlying output stream.
-        def wrapped = new java.io.FilterOutputStream(output) {
-          public void close() { 
-            // no-op. we close this stream manually.
-          }
-        }
-        standardOutput = wrapped
-        errorOutput = wrapped
 
         args += [ "@${optionsFile}" ]
         args += jOpts
-
-        ignoreExitValue true
-      }
-    }
-
-    if (result.getExitValue() != 0) {
-      // Pipe the output to console. Intentionally skips any encoding conversion 
-      // and pumps raw bytes.
-      System.out.write(outputFile.bytes)
-      System.out.flush()
-
-      def cause
-      try {
-        result.rethrowFailure()
-      } catch (ex) {
-        cause = ex
-      }
-      throw new GradleException("Javadoc generation failed for ${project.path},\n  Options file at: ${optionsFile}\n  Command output at: ${outputFile}", cause)
     }
 
     // append some special table css, prettify css
@@ -434,7 +447,7 @@ class RenderJavadocTask extends DefaultTask {
 
     // append prettify to scripts
     ant.concat(destfile: "${outputDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.js inject-javadocs.js")
+      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.min.js inject-javadocs.js")
     }
 
     ant.fixcrlf(srcdir: outputDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")

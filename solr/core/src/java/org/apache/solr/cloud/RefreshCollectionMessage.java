@@ -17,13 +17,14 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 
 /**
- * Refresh the Cluster State for a given collection
+ * Refresh the ClusterState for a given collection. Useful for situations where updates to the
+ * cluster state happened outside of the overseer.
  */
 public class RefreshCollectionMessage implements Overseer.Message {
   public final String collection;
@@ -32,18 +33,34 @@ public class RefreshCollectionMessage implements Overseer.Message {
     this.collection = collection;
   }
 
-  public ClusterState run(ClusterState clusterState, Overseer overseer) throws Exception {
-    Stat stat = overseer.getZkStateReader().getZkClient().exists(ZkStateReader.getCollectionPath(collection), null, true);
+  @Override
+  public ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zkStateWriter)
+      throws Exception {
+    Stat stat =
+        overseer
+            .getZkStateReader()
+            .getZkClient()
+            .exists(DocCollection.getCollectionPath(collection), null, true);
     if (stat == null) {
-      //collection does not exist
+      // collection does not exist
       return clusterState.copyWith(collection, null);
     }
     DocCollection coll = clusterState.getCollectionOrNull(collection);
     if (coll != null && !coll.isModified(stat.getVersion(), stat.getCversion())) {
-      //our state is up to date
+      // our state is up to date
       return clusterState;
     } else {
-      coll = overseer.getZkStateReader().getCollectionLive(collection);
+      overseer.getZkStateReader().forceUpdateCollection(collection);
+      coll = overseer.getZkStateReader().getCollection(collection);
+
+      // During collection creation for a PRS collection, the cluster state (state.json) for the
+      // collection is written to ZK directly by the node (that received the CREATE request).
+      // Hence, we need the overseer's ZkStateWriter and the overseer's internal copy of the cluster
+      // state
+      // to be updated to contain that collection via this refresh.
+
+      zkStateWriter.updateClusterState(
+          it -> it.copyWith(collection, overseer.getZkStateReader().getCollection(collection)));
       return clusterState.copyWith(collection, coll);
     }
   }

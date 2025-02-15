@@ -17,31 +17,32 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
-
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 
-/**
- * Test-case for ByteBuffersDirectoryFactory
- */
+/** Test-case for ByteBuffersDirectoryFactory */
 public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
 
   public void testOpenReturnsTheSameForSamePath() throws IOException {
     final Directory directory = new ByteBuffersDirectory();
-    ByteBuffersDirectoryFactory factory = new ByteBuffersDirectoryFactory()  {
-      @Override
-      protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
-        return directory;
-      }
-    };
+    ByteBuffersDirectoryFactory factory =
+        new ByteBuffersDirectoryFactory() {
+          @Override
+          protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
+            return directory;
+          }
+        };
     String path = "/fake/path";
     Directory dir1 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     Directory dir2 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
-    assertEquals("ByteBuffersDirectoryFactory should not create new instance of ByteBuffersDirectory " +
-        "every time open() is called for the same path", dir1, dir2);
+    assertEquals(
+        "ByteBuffersDirectoryFactory should not create new instance of ByteBuffersDirectory "
+            + "every time open() is called for the same path",
+        dir1,
+        dir2);
 
     factory.release(dir1);
     factory.release(dir2);
@@ -50,19 +51,23 @@ public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
 
   public void testOpenSucceedForEmptyDir() throws IOException {
     ByteBuffersDirectoryFactory factory = new ByteBuffersDirectoryFactory();
-    Directory dir = factory.get("/fake/path", DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
-    assertNotNull("ByteBuffersDirectoryFactory should create ByteBuffersDirectory even if the path doesn't lead " +
-        "to index directory on the file system", dir);
+    Directory dir =
+        factory.get("/fake/path", DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
+    assertNotNull(
+        "ByteBuffersDirectoryFactory should create ByteBuffersDirectory even if the path doesn't lead "
+            + "to index directory on the file system",
+        dir);
     factory.release(dir);
     factory.close();
   }
 
   public void testIndexRetrieve() throws Exception {
     System.setProperty("solr.directoryFactory", "solr.ByteBuffersDirectoryFactory");
-    initCore("solrconfig-minimal.xml","schema-minimal.xml");
+    initCore("solrconfig-minimal.xml", "schema-minimal.xml");
     DirectoryFactory factory = h.getCore().getDirectoryFactory();
-    assertTrue("Found: " + factory.getClass().getName(), factory instanceof ByteBuffersDirectoryFactory);
-    for (int i = 0 ; i < 5 ; ++i) {
+    assertTrue(
+        "Found: " + factory.getClass().getName(), factory instanceof ByteBuffersDirectoryFactory);
+    for (int i = 0; i < 5; ++i) {
       assertU(adoc("id", "" + i, "a_s", "_" + i + "_"));
     }
     assertU(commit());

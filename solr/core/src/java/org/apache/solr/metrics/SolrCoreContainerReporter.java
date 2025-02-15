@@ -19,10 +19,8 @@ package org.apache.solr.metrics;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 
-/**
- * A {@link SolrMetricReporter} that has access to its {@link CoreContainer}.
- */
-abstract public class SolrCoreContainerReporter extends SolrMetricReporter {
+/** A {@link SolrMetricReporter} that has access to its {@link CoreContainer}. */
+public abstract class SolrCoreContainerReporter extends SolrMetricReporter {
 
   protected CoreContainer coreContainer;
 
@@ -31,8 +29,10 @@ abstract public class SolrCoreContainerReporter extends SolrMetricReporter {
   }
 
   @Override
-  final public void init(PluginInfo pluginInfo) {
-    throw new UnsupportedOperationException(getClass().getCanonicalName()+".init(PluginInfo) is not supported, use init(PluginInfo,CoreContainer) instead.");
+  public final void init(PluginInfo pluginInfo) {
+    throw new UnsupportedOperationException(
+        getClass().getCanonicalName()
+            + ".init(PluginInfo) is not supported, use init(PluginInfo,CoreContainer) instead.");
   }
 
   public void init(PluginInfo pluginInfo, CoreContainer coreContainer) {
@@ -43,5 +43,4 @@ abstract public class SolrCoreContainerReporter extends SolrMetricReporter {
   public CoreContainer getCoreContainer() {
     return coreContainer;
   }
-
 }

@@ -16,10 +16,18 @@
  */
 package org.apache.solr.handler.component;
 
+import com.google.common.hash.HashFunction;
+import com.tdunning.math.stats.AVLTreeDigest;
 import java.io.IOException;
-import java.util.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -29,41 +37,39 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.StatsField.Stat;
-import org.apache.solr.schema.*;
-
-import com.tdunning.math.stats.AVLTreeDigest;
-import com.google.common.hash.HashFunction;
-
+import org.apache.solr.schema.AbstractEnumField;
+import org.apache.solr.schema.DatePointField;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.PointField;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
+import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 
-/**
- * Factory class for creating instance of 
- * {@link org.apache.solr.handler.component.StatsValues}
- */
+/** Factory class for creating instance of {@link org.apache.solr.handler.component.StatsValues} */
 public class StatsValuesFactory {
 
   /**
-   * Creates an instance of StatsValues which supports values from the specified 
-   * {@link StatsField}
+   * Creates an instance of StatsValues which supports values from the specified {@link StatsField}
    *
-   * @param statsField
-   *          {@link StatsField} whose statistics will be created by the
-   *          resulting {@link StatsValues}
-   * @return Instance of {@link StatsValues} that will create statistics from
-   *         values from the specified {@link StatsField}
+   * @param statsField {@link StatsField} whose statistics will be created by the resulting {@link
+   *     StatsValues}
+   * @return Instance of {@link StatsValues} that will create statistics from values from the
+   *     specified {@link StatsField}
    */
   public static StatsValues createStatsValues(StatsField statsField) {
-    
+
     final SchemaField sf = statsField.getSchemaField();
-    
+
     if (null == sf) {
       // function stats
       return new NumericStatsValues(statsField);
     }
-    
+
     final FieldType fieldType = sf.getType(); // TODO: allow FieldType to provide impl.
-    
+
     if (TrieDateField.class.isInstance(fieldType) || DatePointField.class.isInstance(fieldType)) {
       DateStatsValues statsValues = new DateStatsValues(statsField);
       if (sf.multiValued()) {
@@ -71,7 +77,7 @@ public class StatsValuesFactory {
       }
       return statsValues;
     } else if (TrieField.class.isInstance(fieldType) || PointField.class.isInstance(fieldType)) {
-      
+
       NumericStatsValues statsValue = new NumericStatsValues(statsField);
       if (sf.multiValued()) {
         return new SortedNumericStatsValues(statsValue, statsField);
@@ -82,56 +88,56 @@ public class StatsValuesFactory {
     } else if (AbstractEnumField.class.isInstance(fieldType)) {
       return new EnumStatsValues(statsField);
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "Field type " + fieldType + " is not currently supported");
     }
   }
 
   /**
-   * Abstract implementation of
-   * {@link StatsValues} that provides the
-   * default behavior for most StatsValues implementations.
+   * Abstract implementation of {@link StatsValues} that provides the default behavior for most
+   * StatsValues implementations.
    *
-   * There are very few requirements placed on what statistics concrete
-   * implementations should collect, with the only required statistics being the
-   * minimum and maximum values.
+   * <p>There are very few requirements placed on what statistics concrete implementations should
+   * collect, with the only required statistics being the minimum and maximum values.
    */
   private abstract static class AbstractStatsValues<T> implements StatsValues {
     private static final String FACETS = "facets";
 
     /** Tracks all data about tthe stats we need to collect */
-    final protected StatsField statsField;
+    protected final StatsField statsField;
 
     /** may be null if we are collecting stats directly from a function ValueSource */
-    final protected SchemaField sf;
-    /**
-     * may be null if we are collecting stats directly from a function ValueSource
-     */
-    final protected FieldType ft;
+    protected final SchemaField sf;
+
+    /** may be null if we are collecting stats directly from a function ValueSource */
+    protected final FieldType ft;
 
     // final booleans from StatsField to allow better inlining & JIT optimizing
-    final protected boolean computeCount;
-    final protected boolean computeMissing;
-    final protected boolean computeCalcDistinct; // needed for either countDistinct or distinctValues
-    final protected boolean computeMin;
-    final protected boolean computeMax;
-    final protected boolean computeMinOrMax;
-    final protected boolean computeCardinality;
+    protected final boolean computeCount;
+    protected final boolean computeMissing;
+    protected final boolean
+        computeCalcDistinct; // needed for either countDistinct or distinctValues
+    protected final boolean computeMin;
+    protected final boolean computeMax;
+    protected final boolean computeMinOrMax;
+    protected final boolean computeCardinality;
 
     /**
-     * Either a function value source to collect from, or the ValueSource associated
-     * with a single valued field we are collecting from.  Will be null until/unless
-     * {@link #setNextReader} is called at least once
+     * Either a function value source to collect from, or the ValueSource associated with a single
+     * valued field we are collecting from. Will be null until/unless {@link #setNextReader} is
+     * called at least once
      */
     private ValueSource valueSource;
+
     /**
-     * Context to use when retrieving FunctionValues, will be null until/unless
-     * {@link #setNextReader} is called at least once
+     * Context to use when retrieving FunctionValues, will be null until/unless {@link
+     * #setNextReader} is called at least once
      */
-    private Map<Object,Object> vsContext;
+    private Map<Object, Object> vsContext;
+
     /**
-     * Values to collect, will be null until/unless {@link #setNextReader} is
-     * called at least once
+     * Values to collect, will be null until/unless {@link #setNextReader} is called at least once
      */
     protected FunctionValues values;
 
@@ -142,22 +148,22 @@ public class StatsValuesFactory {
     protected long countDistinct;
     protected final Set<T> distinctValues;
 
-    /**
-     * Hash function that must be used by implementations of {@link #hash}
-     */
+    /** Hash function that must be used by implementations of {@link #hash} */
     protected final HashFunction hasher;
+
     // if null, no HLL logic can be computed; not final because of "union" optimization (see below)
     private HLL hll;
 
     // facetField facetValue
-    protected Map<String,Map<String, StatsValues>> facets = new HashMap<>();
+    protected Map<String, Map<String, StatsValues>> facets = new HashMap<>();
 
     protected AbstractStatsValues(StatsField statsField) {
       this.statsField = statsField;
       this.computeCount = statsField.calculateStats(Stat.count);
       this.computeMissing = statsField.calculateStats(Stat.missing);
-      this.computeCalcDistinct = statsField.calculateStats(Stat.countDistinct)
-        || statsField.calculateStats(Stat.distinctValues);
+      this.computeCalcDistinct =
+          statsField.calculateStats(Stat.countDistinct)
+              || statsField.calculateStats(Stat.distinctValues);
       this.computeMin = statsField.calculateStats(Stat.min);
       this.computeMax = statsField.calculateStats(Stat.max);
       this.computeMinOrMax = computeMin || computeMax;
@@ -165,7 +171,7 @@ public class StatsValuesFactory {
       this.distinctValues = computeCalcDistinct ? new TreeSet<>() : null;
 
       this.computeCardinality = statsField.calculateStats(Stat.cardinality);
-      if ( computeCardinality ) {
+      if (computeCardinality) {
 
         hasher = statsField.getHllOptions().getHasher();
         hll = statsField.getHllOptions().newHLL();
@@ -286,7 +292,7 @@ public class StatsValuesFactory {
       if (computeCardinality) {
         if (null == hasher) {
           assert value instanceof Number : "pre-hashed value support only works with numeric longs";
-          hll.addRaw(((Number)value).longValue());
+          hll.addRaw(((Number) value).longValue());
         } else {
           hll.addRaw(hash(value));
         }
@@ -347,10 +353,10 @@ public class StatsValuesFactory {
 
         // add the facet stats
         NamedList<NamedList<?>> nl = new SimpleOrderedMap<>();
-        for (Map.Entry<String,Map<String,StatsValues>> entry : facets.entrySet()) {
+        for (Map.Entry<String, Map<String, StatsValues>> entry : facets.entrySet()) {
           NamedList<NamedList<?>> nl2 = new SimpleOrderedMap<>();
           nl.add(entry.getKey(), nl2);
-          for (Map.Entry<String,StatsValues> e2 : entry.getValue().entrySet()) {
+          for (Map.Entry<String, StatsValues> e2 : entry.getValue().entrySet()) {
             nl2.add(e2.getKey(), e2.getValue().getStatsValues());
           }
         }
@@ -361,12 +367,11 @@ public class StatsValuesFactory {
       return res;
     }
 
+    @Override
     public void setNextReader(LeafReaderContext ctx) throws IOException {
       if (valueSource == null) {
         // first time we've collected local values, get the right ValueSource
-        valueSource = (null == ft)
-          ? statsField.getValueSource()
-          : ft.getValueSource(sf, null);
+        valueSource = (null == ft) ? statsField.getValueSource() : ft.getValueSource(sf, null);
         vsContext = ValueSource.newContext(statsField.getSearcher());
       }
       values = valueSource.getValues(vsContext, ctx);
@@ -375,9 +380,9 @@ public class StatsValuesFactory {
     /**
      * Hash function to be used for computing cardinality.
      *
-     * This method will not be called in cases where the user has indicated the values
-     * are already hashed.  If this method is called, then {@link #hasher} will be non-null,
-     * and should be used to generate the appropriate hash value.
+     * <p>This method will not be called in cases where the user has indicated the values are
+     * already hashed. If this method is called, then {@link #hasher} will be non-null, and should
+     * be used to generate the appropriate hash value.
      *
      * @see Stat#cardinality
      * @see #hasher
@@ -387,44 +392,35 @@ public class StatsValuesFactory {
     /**
      * Updates the minimum and maximum statistics based on the given values
      *
-     * @param min
-     *          Value that the current minimum should be updated against
-     * @param max
-     *          Value that the current maximum should be updated against
+     * @param min Value that the current minimum should be updated against
+     * @param max Value that the current maximum should be updated against
      */
     protected abstract void updateMinMax(T min, T max);
 
     /**
      * Updates the type specific statistics based on the given value
      *
-     * @param value
-     *          Value the statistics should be updated against
-     * @param count
-     *          Number of times the value is being accumulated
+     * @param value Value the statistics should be updated against
+     * @param count Number of times the value is being accumulated
      */
     protected abstract void updateTypeSpecificStats(T value, int count);
 
     /**
      * Updates the type specific statistics based on the values in the given list
      *
-     * @param stv
-     *          List containing values the current statistics should be updated
-     *          against
+     * @param stv List containing values the current statistics should be updated against
      */
     protected abstract void updateTypeSpecificStats(NamedList<?> stv);
 
     /**
      * Add any type specific statistics to the given NamedList
      *
-     * @param res
-     *          NamedList to add the type specific statistics too
+     * @param res NamedList to add the type specific statistics too
      */
     protected abstract void addTypeSpecificStats(NamedList<Object> res);
   }
 
-  /**
-   * Implementation of StatsValues that supports Double values
-   */
+  /** Implementation of StatsValues that supports Double values */
   static class NumericStatsValues extends AbstractStatsValues<Number> {
 
     double sum;
@@ -435,9 +431,9 @@ public class StatsValuesFactory {
     double minD; // perf optimization, only valid if (null != this.min)
     double maxD; // perf optimization, only valid if (null != this.max)
 
-    final protected boolean computeSum;
-    final protected boolean computeSumOfSquares;
-    final protected boolean computePercentiles;
+    protected final boolean computeSum;
+    protected final boolean computeSumOfSquares;
+    protected final boolean computePercentiles;
 
     public NumericStatsValues(StatsField statsField) {
       super(statsField);
@@ -446,10 +442,9 @@ public class StatsValuesFactory {
       this.computeSumOfSquares = statsField.calculateStats(Stat.sumOfSquares);
 
       this.computePercentiles = statsField.calculateStats(Stat.percentiles);
-      if ( computePercentiles ) {
+      if (computePercentiles) {
         tdigest = new AVLTreeDigest(statsField.getTdigestCompression());
       }
-
     }
 
     @Override
@@ -470,8 +465,9 @@ public class StatsValuesFactory {
         return hasher.newHasher().putShort(v.shortValue()).hash().asLong();
       }
       // else...
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Unsupported Numeric Type ("+v.getClass()+") for hashing: " +statsField);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Unsupported Numeric Type (" + v.getClass() + ") for hashing: " + statsField);
     }
 
     @Override
@@ -525,7 +521,8 @@ public class StatsValuesFactory {
         if (null != min) {
           double minD = min.doubleValue();
           if (null == this.min || minD < this.minD) {
-            // Double for result & cached primitive double to minimize unboxing in future comparisons
+            // Double for result & cached primitive double to minimize unboxing in future
+            // comparisons
             this.min = this.minD = minD;
           }
         }
@@ -534,7 +531,8 @@ public class StatsValuesFactory {
         if (null != max) {
           double maxD = max.doubleValue();
           if (null == this.max || this.maxD < maxD) {
-            // Double for result & cached primitive double to minimize unboxing in future comparisons
+            // Double for result & cached primitive double to minimize unboxing in future
+            // comparisons
             this.max = this.maxD = maxD;
           }
         }
@@ -542,11 +540,9 @@ public class StatsValuesFactory {
     }
 
     /**
-     * Adds sum, sumOfSquares, mean, stddev, and percentiles to the given
-     * NamedList
+     * Adds sum, sumOfSquares, mean, stddev, and percentiles to the given NamedList
      *
-     * @param res
-     *          NamedList to add the type specific statistics too
+     * @param res NamedList to add the type specific statistics too
      */
     @Override
     protected void addTypeSpecificStats(NamedList<Object> res) {
@@ -567,10 +563,11 @@ public class StatsValuesFactory {
           // as of current t-digest version, smallByteSize() internally does a full conversion in
           // order to determine what the size is (can't be precomputed?) .. so rather then
           // serialize to a ByteBuffer twice, allocate the max possible size buffer,
-          // serialize once, and then copy only the byte[] subset that we need, and free up the buffer
+          // serialize once, and then copy only the byte[] subset that we need, and free up the
+          // buffer
           ByteBuffer buf = ByteBuffer.allocate(tdigest.byteSize()); // upper bound
           tdigest.asSmallBytes(buf);
-          res.add("percentiles", Arrays.copyOf(buf.array(), buf.position()) );
+          res.add("percentiles", Arrays.copyOf(buf.array(), buf.position()));
         } else {
           NamedList<Object> percentileNameList = new NamedList<Object>();
           for (Double percentile : statsField.getPercentilesList()) {
@@ -587,7 +584,6 @@ public class StatsValuesFactory {
       }
     }
 
-
     /**
      * Calculates the standard deviation statistic
      *
@@ -599,13 +595,10 @@ public class StatsValuesFactory {
       }
 
       return Math.sqrt(((count * sumOfSquares) - (sum * sum)) / (count * (count - 1.0D)));
-
     }
   }
 
-  /**
-   * Implementation of StatsValues that supports EnumField values
-   */
+  /** Implementation of StatsValues that supports EnumField values */
   private static class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
 
     public EnumStatsValues(StatsField statsField) {
@@ -629,6 +622,7 @@ public class StatsValuesFactory {
       }
     }
 
+    @Override
     protected void updateMinMax(EnumFieldValue min, EnumFieldValue max) {
       if (computeMin) { // nested if to encourage JIT to optimize aware final var?
         if (null != min) {
@@ -656,26 +650,21 @@ public class StatsValuesFactory {
       // No type specific stats
     }
 
-    /**
-     * Adds no type specific statistics
-     */
+    /** Adds no type specific statistics */
     @Override
     protected void addTypeSpecificStats(NamedList<Object> res) {
       // Add no statistics
     }
-
   }
 
-  /**
-   * /** Implementation of StatsValues that supports Date values
-   */
+  /** /** Implementation of StatsValues that supports Date values */
   static class DateStatsValues extends AbstractStatsValues<Date> {
 
     private double sum = 0.0;
     double sumOfSquares = 0;
 
-    final protected boolean computeSum;
-    final protected boolean computeSumOfSquares;
+    protected final boolean computeSum;
+    protected final boolean computeSumOfSquares;
 
     public DateStatsValues(StatsField statsField) {
       super(statsField);
@@ -711,7 +700,7 @@ public class StatsValuesFactory {
     public void updateTypeSpecificStats(Date v, int count) {
       long value = v.getTime();
       if (computeSumOfSquares) {
-        sumOfSquares += ((double)value * value * count); // for std deviation
+        sumOfSquares += ((double) value * value * count); // for std deviation
       }
       if (computeSum) {
         sum += value * count;
@@ -721,12 +710,12 @@ public class StatsValuesFactory {
     @Override
     protected void updateMinMax(Date min, Date max) {
       if (computeMin) { // nested if to encourage JIT to optimize aware final var?
-        if (null != min && (this.min==null || this.min.after(min))) {
+        if (null != min && (this.min == null || this.min.after(min))) {
           this.min = min;
         }
       }
       if (computeMax) { // nested if to encourage JIT to optimize aware final var?
-        if (null != max && (this.max==null || this.max.before(max))) {
+        if (null != max && (this.max == null || this.max.before(max))) {
           this.max = max;
         }
       }
@@ -735,8 +724,7 @@ public class StatsValuesFactory {
     /**
      * Adds sum and mean statistics to the given NamedList
      *
-     * @param res
-     *          NamedList to add the type specific statistics too
+     * @param res NamedList to add the type specific statistics too
      */
     @Override
     protected void addTypeSpecificStats(NamedList<Object> res) {
@@ -744,7 +732,7 @@ public class StatsValuesFactory {
         res.add("sum", sum);
       }
       if (statsField.includeInResponse(Stat.mean)) {
-        res.add("mean", (count > 0) ? new Date((long)(sum / count)) : null);
+        res.add("mean", (count > 0) ? new Date((long) (sum / count)) : null);
       }
       if (statsField.includeInResponse(Stat.sumOfSquares)) {
         res.add("sumOfSquares", sumOfSquares);
@@ -755,8 +743,7 @@ public class StatsValuesFactory {
     }
 
     /**
-     * Calculates the standard deviation. For dates, this is really the MS
-     * deviation
+     * Calculates the standard deviation. For dates, this is really the MS deviation
      *
      * @return Standard deviation statistic
      */
@@ -764,14 +751,11 @@ public class StatsValuesFactory {
       if (count <= 1) {
         return 0.0D;
       }
-      return Math.sqrt(((count * sumOfSquares) - (sum * sum))
-          / (count * (count - 1.0D)));
+      return Math.sqrt(((count * sumOfSquares) - (sum * sum)) / (count * (count - 1.0D)));
     }
   }
 
-  /**
-   * Implementation of StatsValues that supports String values
-   */
+  /** Implementation of StatsValues that supports String values */
   private static class StringStatsValues extends AbstractStatsValues<String> {
 
     public StringStatsValues(StatsField statsField) {
@@ -817,24 +801,19 @@ public class StatsValuesFactory {
       }
     }
 
-    /**
-     * Adds no type specific statistics
-     */
+    /** Adds no type specific statistics */
     @Override
     protected void addTypeSpecificStats(NamedList<Object> res) {
       // Add no statistics
     }
 
     /**
-     * Determines which of the given Strings is the maximum, as computed by
-     * {@link String#compareTo(String)}
+     * Determines which of the given Strings is the maximum, as computed by {@link
+     * String#compareTo(String)}
      *
-     * @param str1
-     *          String to compare against b
-     * @param str2
-     *          String compared against a
-     * @return str1 if it is considered greater by
-     *         {@link String#compareTo(String)}, str2 otherwise
+     * @param str1 String to compare against b
+     * @param str2 String compared against a
+     * @return str1 if it is considered greater by {@link String#compareTo(String)}, str2 otherwise
      */
     private static String max(String str1, String str2) {
       if (str1 == null) {
@@ -846,15 +825,12 @@ public class StatsValuesFactory {
     }
 
     /**
-     * Determines which of the given Strings is the minimum, as computed by
-     * {@link String#compareTo(String)}
+     * Determines which of the given Strings is the minimum, as computed by {@link
+     * String#compareTo(String)}
      *
-     * @param str1
-     *          String to compare against b
-     * @param str2
-     *          String compared against a
-     * @return str1 if it is considered less by {@link String#compareTo(String)},
-     *         str2 otherwise
+     * @param str1 String to compare against b
+     * @param str2 String compared against a
+     * @return str1 if it is considered less by {@link String#compareTo(String)}, str2 otherwise
      */
     private static String min(String str1, String str2) {
       if (str1 == null) {
@@ -866,4 +842,3 @@ public class StatsValuesFactory {
     }
   }
 }
-

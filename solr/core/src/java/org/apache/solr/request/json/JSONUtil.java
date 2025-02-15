@@ -21,9 +21,9 @@ import org.noggit.JSONParser;
 
 public class JSONUtil {
 
-
-  public static boolean advanceToMapKey(JSONParser parser, String key, boolean deepSearch) throws IOException {
-    for (;;) {
+  public static boolean advanceToMapKey(JSONParser parser, String key, boolean deepSearch)
+      throws IOException {
+    for (; ; ) {
       int event = parser.nextEvent();
       switch (event) {
         case JSONParser.STRING:
@@ -53,8 +53,9 @@ public class JSONUtil {
     }
   }
 
-  public static void skipArray(JSONParser parser, String key, boolean deepSearch) throws IOException {
-    for (;;) {
+  public static void skipArray(JSONParser parser, String key, boolean deepSearch)
+      throws IOException {
+    for (; ; ) {
       int event = parser.nextEvent();
       switch (event) {
         case JSONParser.OBJECT_START:
@@ -72,8 +73,11 @@ public class JSONUtil {
   public static void expect(JSONParser parser, int parserEventType) throws IOException {
     int event = parser.nextEvent();
     if (event != parserEventType) {
-      throw new IOException("JSON Parser: expected " + JSONParser.getEventString(parserEventType) + " but got " + JSONParser.getEventString(event) );
+      throw new IOException(
+          "JSON Parser: expected "
+              + JSONParser.getEventString(parserEventType)
+              + " but got "
+              + JSONParser.getEventString(event));
     }
   }
-
 }

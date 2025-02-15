@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
@@ -35,13 +34,15 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
   static class SweepIteratorAndCounts {
     final SweepDocIterator iter;
     final CountSlotAcc[] countAccs;
+
     public SweepIteratorAndCounts(SweepDocIterator iter, CountSlotAcc[] countAccs) {
       this.iter = iter;
       this.countAccs = countAccs;
     }
   }
 
-  static SweepIteratorAndCounts newInstance(SweepCountAccStruct base, List<SweepCountAccStruct> others) throws IOException {
+  static SweepIteratorAndCounts newInstance(
+      SweepCountAccStruct base, List<SweepCountAccStruct> others) throws IOException {
     final int activeCt;
     SweepCountAccStruct entry;
     if (base == null) {
@@ -53,13 +54,14 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
     }
     if (activeCt == 1) {
       final CountSlotAcc[] countAccs = new CountSlotAcc[] {entry.countAcc};
-      return new SweepIteratorAndCounts(new SingletonDocIterator(entry.docSet.iterator(), base != null), countAccs);
+      return new SweepIteratorAndCounts(
+          new SingletonDocIterator(entry.docSet.iterator(), base != null), countAccs);
     } else {
       final DocIterator[] subIterators = new DocIterator[activeCt];
       final CountSlotAcc[] countAccs = new CountSlotAcc[activeCt];
       Iterator<SweepCountAccStruct> othersIter = others.iterator();
       int i = 0;
-      for (;;) {
+      for (; ; ) {
         subIterators[i] = entry.docSet.iterator();
         countAccs[i] = entry.countAcc;
         if (++i == activeCt) {
@@ -67,7 +69,8 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
         }
         entry = othersIter.next();
       }
-      return new SweepIteratorAndCounts(new UnionDocIterator(subIterators, base == null ? -1 : 0), countAccs);
+      return new SweepIteratorAndCounts(
+          new UnionDocIterator(subIterators, base == null ? -1 : 0), countAccs);
     }
   }
 
@@ -83,5 +86,4 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
 
   @Override
   public abstract int registerCounts(SegCounter segCounts); // override to not throw IOException
-
 }

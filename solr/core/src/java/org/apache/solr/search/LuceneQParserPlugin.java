@@ -20,21 +20,25 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Parse Solr's variant on the Lucene QueryParser syntax.
- * <br>Other parameters:<ul>
- * <li>q.op - the default operator "OR" or "AND"</li>
- * <li>df - the default field name</li>
- * <li>sow - split on whitespace prior to analysis, boolean,
- *           default=<code>{@value org.apache.solr.search.SolrQueryParser#DEFAULT_SPLIT_ON_WHITESPACE}</code></li>
+ * Parse Solr's variant on the Lucene QueryParser syntax. <br>
+ * Other parameters:
+ *
+ * <ul>
+ *   <li>q.op - the default operator "OR" or "AND"
+ *   <li>df - the default field name
+ *   <li>sow - split on whitespace prior to analysis, boolean, default=<code>
+ *       {@value org.apache.solr.search.SolrQueryParser#DEFAULT_SPLIT_ON_WHITESPACE}</code>
  * </ul>
- * <br>Example: <code>{!lucene q.op=AND df=text sort='price asc'}myfield:foo +bar -baz</code>
+ *
+ * <br>
+ * Example: <code>{!lucene q.op=AND df=text sort='price asc'}myfield:foo +bar -baz</code>
  */
 public class LuceneQParserPlugin extends QParserPlugin {
   public static final String NAME = "lucene";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new LuceneQParser(qstr, localParams, params, req);
   }
 }
-

@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,48 +28,53 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardIndexReaderFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static volatile Trap trap;
-  private final static BlockingQueue<List<Object>> lastStacktraces = new LinkedBlockingQueue<List<Object>>();
-  private final static long startTime = ManagementFactory.getRuntimeMXBean().getStartTime();
+  private static final BlockingQueue<List<Object>> lastStacktraces =
+      new LinkedBlockingQueue<List<Object>>();
+  private static final long startTime = ManagementFactory.getRuntimeMXBean().getStartTime();
   private static final int keepStackTraceLines = 20;
   protected static final int maxTraces = 4;
 
-  
   private static Trap setTrap(Trap troll) {
-    trap = troll;  
+    trap = troll;
     return troll;
   }
-  
-  public static abstract class Trap implements Closeable{
+
+  public abstract static class Trap implements Closeable {
     protected abstract boolean shouldExit();
+
     public abstract boolean hasCaught();
+
     @Override
-    public final void close() throws IOException {
+    public final void close() {
       setTrap(null);
     }
+
     @Override
     public abstract String toString();
-    
+
     public static void dumpLastStackTraces(org.slf4j.Logger log) {
       ArrayList<List<Object>> stacks = new ArrayList<>();
       lastStacktraces.drainTo(stacks);
       StringBuilder out = new StringBuilder("the last caught stacktraces: \n");
-      for(List<Object> stack : stacks) {
-        int l=0;
+      for (List<Object> stack : stacks) {
+        int l = 0;
         for (Object line : stack) {
-          if (l++>0) {
+          if (l++ > 0) {
             out.append('\t');
           }
           out.append(line);
@@ -82,121 +88,127 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
 
   static final class CheckMethodName implements Predicate<StackTraceElement> {
     private final String methodName;
-  
+
     CheckMethodName(String methodName) {
       this.methodName = methodName;
     }
-  
+
     @Override
     public boolean test(StackTraceElement trace) {
       return trace.getMethodName().equals(methodName);
     }
-    
+
     @Override
     public String toString() {
-      return "hunting for "+methodName+"()";
+      return "hunting for " + methodName + "()";
     }
   }
 
   public static Trap catchClass(String className) {
-    return catchClass(className, ()->{});
+    return catchClass(className, () -> {});
   }
-  
+
   public static Trap catchClass(String className, Runnable onCaught) {
-    Predicate<StackTraceElement> judge = new Predicate<StackTraceElement>() {
-      @Override
-      public boolean test(StackTraceElement trace) {
-        return trace.getClassName().indexOf(className)>=0;
-      }
-      @Override
-      public String toString() {
-        return "className contains "+className;
-      }
-    };
-    return catchTrace(judge, onCaught) ;        
-  }
-  
-  public static Trap catchTrace(Predicate<StackTraceElement> judge, Runnable onCaught) {
-    return setTrap(new Trap() {
-      
-      private boolean trigered;
-
-      @Override
-      protected boolean shouldExit() {
-        Exception e = new Exception("stack sniffer"); 
-        e.fillInStackTrace();
-        StackTraceElement[] stackTrace = e.getStackTrace();
-        for(StackTraceElement trace : stackTrace) {
-          if (judge.test(trace)) {
-            trigered = true; 
-            recordStackTrace(stackTrace);
-            onCaught.run();
-            return true;
+    Predicate<StackTraceElement> judge =
+        new Predicate<StackTraceElement>() {
+          @Override
+          public boolean test(StackTraceElement trace) {
+            return trace.getClassName().contains(className);
           }
-        }
-        return false;
-      }
 
-      @Override
-      public boolean hasCaught() {
-        return trigered;
-      }
-
-      @Override
-      public String toString() {
-        return ""+judge;
-      }
-    });
+          @Override
+          public String toString() {
+            return "className contains " + className;
+          }
+        };
+    return catchTrace(judge, onCaught);
   }
-  
+
+  public static Trap catchTrace(Predicate<StackTraceElement> judge, Runnable onCaught) {
+    return setTrap(
+        new Trap() {
+
+          private boolean triggered;
+
+          @Override
+          protected boolean shouldExit() {
+            Exception e = new Exception("stack sniffer");
+            e.fillInStackTrace();
+            StackTraceElement[] stackTrace = e.getStackTrace();
+            for (StackTraceElement trace : stackTrace) {
+              if (judge.test(trace)) {
+                triggered = true;
+                recordStackTrace(stackTrace);
+                onCaught.run();
+                return true;
+              }
+            }
+            return false;
+          }
+
+          @Override
+          public boolean hasCaught() {
+            return triggered;
+          }
+
+          @Override
+          public String toString() {
+            return "" + judge;
+          }
+        });
+  }
+
   public static Trap catchCount(int boundary) {
-    return setTrap(new Trap() {
-      
-      private AtomicInteger count = new AtomicInteger();
-    
-      @Override
-      public String toString() {
-        return ""+count.get()+"th tick of "+boundary+" allowed";
-      }
-      
-      private boolean trigered;
+    return setTrap(
+        new Trap() {
 
-      @Override
-      protected boolean shouldExit() {
-        int now = count.incrementAndGet();
-        boolean trigger = now==boundary 
-            || (now>boundary && LuceneTestCase.rarely(LuceneTestCase.random()));
-        if (trigger) {
-          Exception e = new Exception("stack sniffer"); 
-          e.fillInStackTrace();
-          recordStackTrace(e.getStackTrace());
-          trigered = true;
-        } 
-        return trigger;
-      }
+          private AtomicInteger count = new AtomicInteger();
 
-      @Override
-      public boolean hasCaught() {
-        return trigered;
-      }
-    });
+          @Override
+          public String toString() {
+            return "" + count.get() + "th tick of " + boundary + " allowed";
+          }
+
+          private boolean triggered;
+
+          @Override
+          protected boolean shouldExit() {
+            int now = count.incrementAndGet();
+            boolean trigger =
+                now == boundary
+                    || (now > boundary && LuceneTestCase.rarely(LuceneTestCase.random()));
+            if (trigger) {
+              Exception e = new Exception("stack sniffer");
+              e.fillInStackTrace();
+              recordStackTrace(e.getStackTrace());
+              triggered = true;
+            }
+            return trigger;
+          }
+
+          @Override
+          public boolean hasCaught() {
+            return triggered;
+          }
+        });
   }
-  
+
   private static void recordStackTrace(StackTraceElement[] stackTrace) {
-    //keep the last n limited traces. 
-    //e.printStackTrace();
-    ArrayList<Object> stack = new ArrayList<Object>();
-    stack.add(""+ (new Date().getTime()-startTime)+" ("+Thread.currentThread().getName()+")");
-    for (int l=2; l<stackTrace.length && l<keepStackTraceLines; l++) {
+    // keep the last n limited traces.
+    ArrayList<Object> stack = new ArrayList<>();
+    stack.add(
+        "" + (new Date().getTime() - startTime) + " (" + Thread.currentThread().getName() + ")");
+    for (int l = 2; l < stackTrace.length && l < keepStackTraceLines; l++) {
       stack.add(stackTrace[l]);
     }
     lastStacktraces.add(stack);
-    // triming queue 
-    while(lastStacktraces.size()>maxTraces) {
+    // trimming queue
+    while (lastStacktraces.size() > maxTraces) {
       try {
         lastStacktraces.poll(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e1) {
-        e1.printStackTrace();
+        Thread.currentThread().interrupt();
+        log.error("interrupted", e1);
       }
     }
   }
@@ -208,17 +220,19 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
   }
 
   private ExitableDirectoryReader wrap(DirectoryReader newReader) throws IOException {
-    return new ExitableDirectoryReader(newReader, new QueryTimeout() {
-      @Override
-      public boolean shouldExit() {
-        return trap!=null && trap.shouldExit();
-      }
-      
-      @Override
-      public String toString() {
-        return ""+trap;
-      }
-    });
+    return new ExitableDirectoryReader(
+        newReader,
+        new QueryTimeout() {
+          @Override
+          public boolean shouldExit() {
+            return trap != null && trap.shouldExit();
+          }
+
+          @Override
+          public String toString() {
+            return "" + trap;
+          }
+        });
   }
 
   @Override

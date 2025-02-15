@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * SolrJ client implementations for embedded solr access.
- * <p>
- * See {@link org.apache.solr.client.solrj} for additional details.
+ *
+ * <p>See {@link org.apache.solr.client.solrj} for additional details.
  */
 package org.apache.solr.client.solrj.embedded;
-
-

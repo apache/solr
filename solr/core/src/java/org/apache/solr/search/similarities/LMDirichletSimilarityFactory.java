@@ -17,27 +17,28 @@
 package org.apache.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.LMDirichletSimilarity;
+import org.apache.lucene.search.similarities.LMSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 
 /**
  * Factory for {@link LMDirichletSimilarity}
- * <p>
- * Parameters:
+ *
+ * <p>Parameters:
+ *
  * <ul>
- *     <li>parameter mu (float): smoothing parameter &mu;. The default is
- *         <code>2000</code></li>
+ *   <li>parameter mu (float): smoothing parameter &mu;. The default is <code>2000</code>
  * </ul>
- * <p>
- * Optional settings:
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link LMDirichletSimilarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {link Similarity#getDiscountOverlaps()}
  * </ul>
+ *
  * @lucene.experimental
  */
-
 public class LMDirichletSimilarityFactory extends SimilarityFactory {
   private boolean discountOverlaps;
   private Float mu;
@@ -51,9 +52,13 @@ public class LMDirichletSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    LMDirichletSimilarity sim = (mu != null) ? new LMDirichletSimilarity(mu)
-                                             : new LMDirichletSimilarity();
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+
+    // Default μ is 2000 in Lucene. Unfortunately, there is no constant we can use
+    if (mu == null) {
+      mu = 2000f;
+    }
+
+    LMSimilarity.CollectionModel model = new LMSimilarity.DefaultCollectionModel();
+    return new LMDirichletSimilarity(model, discountOverlaps, mu);
   }
 }

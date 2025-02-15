@@ -1,0 +1,73 @@
+# How To Contribute
+
+The Apache Solr Github Repository is located here: https://github.com/apache/solr. Typically all contributions to Solr are developed on a fork of the Solr repository, then opened as PRs against the `main` branch in the solr repository. These PRs are then linked to an open JIRA issue and members of the community will review, comment, approve, and commit changes.
+
+Please keep in mind that the project is community driven, with many members taking their own personal time to help respond to issue and review PRs. Be open to feedback and discussions and maintain a respectful approach. Read our https://solr.apache.org/community.html#code-of-conduct[code of conduct] for more.
+
+## Getting Your Feet Wet: Where to Begin?
+
+New to Solr? Want to find JIRA issues that you can work on without taking on the whole world?
+
+The Solr developers use the **newdev** label to mark issues that developers new to Solr might be interested in working on. The rough criteria used to make this selection are:
+
+* Nobody has done any work on the issue yet.
+* The issue is likely not controversial.
+* The issue is likely self-contained with limited scope.
+
+To see a list of open issues with the **newdev** label, look at this link https://s.apache.org/newdevsolr
+
+Note: Fixing these issues may require asking questions on the developer list to figure out what they mean - there is no guarantee that any of these will be either quick or easy.
+
+Emailing individual committers with questions about specific Solr issues is discouraged. See http://people.apache.org/~hossman/#private_q.
+
+## Setup for Contributing
+In order to get setup you will need a fork of the Apache Solr repository and an account in the ASF Jira (usable for all Apache projects).
+
+1. Create a fork of the https://github.com/apache/solr[Solr repository] into your own personal account or a your corporate organization account using the Github instructions provided here: https://docs.github.com/en/get-started/quickstart/fork-a-repo.
+2. If you do not already have one, you will need to create an account in the ASF Jira: https://issues.apache.org/jira/login.jsp which you will use to create new issues. You can request a new account if you do not already have one by contacting the https://solr.apache.org/community.html[Solr users mailing list].
+
+
+## Making a New Contribution
+In order to make a new contribution to Solr you will use the fork you have created above.
+
+1. Create a new Jira issue in the Solr project: https://issues.apache.org/jira/projects/SOLR/issues
+2. Create a new branch in your Solr fork to provide a PR for your contribution on the newly created issue. Make any necessary changes for the given bug/feature in that branch. You can use additional information in these dev-docs to build and test your code as well as ensure it passes code quality checks.
+3. Once you are satisfied with your changes, get your branch ready for a PR by running `./gradlew tidy updateLicenses check -x test`. This will format your source code, update licenses of any dependency version changes and run all pre-commit tests. Commit the changes.
+* Note: the `check` command requires `perl` and `python3` to be present on your `PATH` to validate documentation.
+4. Open a PR of your branch against the `main` branch of the apache/solr repository. When you open a PR on your fork, this should be the default option.
+* The title of your PR should include the Solr Jira issue that you opened, i.e. `SOLR-12345: New feature`.
+* The PR description will automatically populate with a pre-set template that you will need to fill out.
+* The PR will run a gradle pre-commit task that will do some basic checks of your changes. This is run as a Github Action and the results can be viewed from your PR.
+* If you properly named your PR you will see it automatically linked to your Jira issue when you view the issue.
+* If your PR is still a work in progress, you can use the https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests[PR Draft feature] of Github to denote draft status.
+5. At this point, you will need a Solr committer to review your change and help to get it merged upstream. You can use the https://solr.apache.org/community.html[Solr Developers Mailing List] to get attention to your issue.
+
+## PR Do-s and Don't-s
+
+Please do not:
+
+* reformat code unrelated to the bug being fixed: formatting changes should be separate patches/commits.
+* comment out code that is now obsolete: just remove it.
+* insert comments around each change, marking the change: folks can use git to figure out what's changed and by whom.
+* make things public which are not required by end users.
+* Combine multiple issues into a single patch, especially if they are unrelated or only loosely related. This is true even if the changes affect the same files. In some rare cases it is warranted, but for the most part it makes it harder for committers to evaluate the patch.
+
+Please do:
+
+* try to adhere to the coding style of files you edit;
+* comment code whose function or rationale is not obvious;
+* update documentation (e.g., package.html files, this wiki, etc.)
+* try to provide a unit test that shows a bug was indeed fixed or the new functionality truly works
+* use the "draft state" for PRs which are work in progress
+
+## Getting Your Contribution Merged
+
+Please be patient.
+Committers are busy people too.
+If no one responds to your patch after a few days, please make friendly reminders.
+Please incorporate others suggestions into your patch if you think they're reasonable.
+Remember that even a patch/PR that is not committed is useful to the community.
+Supply your contribution as early as possible, and updates as often as possible during your work.
+This helps the rest of the community and committers to start understanding, help shaping, commenting on etc. your work throughout the entire process.
+Supplying a PR does not necessarily mean that it is complete and ready to be committed, it might also just be a way of communicating your idea and progress.
+It can be useful to set the PR to "Draft" status until you feel it is ready for broad review.

@@ -22,10 +22,9 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
-/**
- *
- */
-public class MockHistogramSupplier implements MetricRegistry.MetricSupplier<Histogram>, PluginInfoInitialized {
+/** */
+public class MockHistogramSupplier
+    implements MetricRegistry.MetricSupplier<Histogram>, PluginInfoInitialized {
   public PluginInfo info;
 
   @Override

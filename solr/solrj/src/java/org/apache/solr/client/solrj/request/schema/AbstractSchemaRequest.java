@@ -16,20 +16,22 @@
  */
 package org.apache.solr.client.solrj.request.schema;
 
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
-public abstract class AbstractSchemaRequest<T extends SolrResponse> extends SolrRequest<T> {
-  private SolrParams params = null;
+public abstract class AbstractSchemaRequest<T extends SolrResponse>
+    extends CollectionRequiringSolrRequest<T> {
+  private final SolrParams params;
 
   public AbstractSchemaRequest(METHOD m, String path) {
-    super(m, path);
+    this(m, path, null);
   }
 
   public AbstractSchemaRequest(METHOD m, String path, SolrParams params) {
-    this(m, path);
-    this.params = params;
+    super(m, path);
+    this.params = params != null ? params : new ModifiableSolrParams();
   }
 
   @Override

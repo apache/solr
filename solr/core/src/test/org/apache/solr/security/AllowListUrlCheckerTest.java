@@ -17,20 +17,22 @@
 
 package org.apache.solr.security;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 
 import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.junit.Test;
 
 /** Tests {@link AllowListUrlChecker}. */
 public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
@@ -55,14 +57,14 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
   @Test
   public void testSingleHost() throws Exception {
     AllowListUrlChecker checker = new AllowListUrlChecker(urls("http://abc-1.com:8983/solr"));
-    checker.checkAllowList(urls("http://abc-1.com:8983/solr"));
+    checker.checkAllowList(urls("http://Abc-1.Com:8983/solr"));
   }
 
   @Test
   public void testMultipleHosts() throws Exception {
     AllowListUrlChecker checker =
         new AllowListUrlChecker(
-            urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://abc-3.com:8983"));
+            urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://ABC-3.com:8983"));
     checker.checkAllowList(
         urls(
             "http://abc-3.com:8983/solr",
@@ -135,7 +137,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreSpecific() throws Exception {
-    // Cores are removed completely so it doesn't really matter if they were set in config.
+    // Cores are removed completely, so it doesn't really matter if they were set in config.
     AllowListUrlChecker checker =
         new AllowListUrlChecker(
             urls("http://abc-1.com:8983/solr/core1", "http://abc-2.com:8983/solr2/core2"));
@@ -195,6 +197,51 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
     assertThat(
         AllowListUrlChecker.parseHostPorts(urls("abc-1.com:8983/solr")),
         equalTo(AllowListUrlChecker.parseHostPorts(urls("https://abc-1.com:8983/solr"))));
+  }
+
+  @Test
+  public void testLiveNodesToHostUrlCache() throws Exception {
+    // Given some live nodes defined in the cluster state.
+    Set<String> liveNodes = Set.of("1.2.3.4:8983_solr", "1.2.3.4:9000_", "1.2.3.4:9001_solr-2");
+    ClusterState clusterState1 = new ClusterState(liveNodes, new HashMap<>());
+
+    // When we call the AllowListUrlChecker.checkAllowList method on both valid and invalid urls.
+    AtomicInteger callCount = new AtomicInteger();
+    AllowListUrlChecker checker =
+        new AllowListUrlChecker(List.of()) {
+          @Override
+          Set<String> buildLiveHostUrls(Set<String> liveNodes) {
+            callCount.incrementAndGet();
+            return super.buildLiveHostUrls(liveNodes);
+          }
+        };
+    for (int i = 0; i < 3; i++) {
+      checker.checkAllowList(
+          List.of("1.2.3.4:8983", "1.2.3.4:9000", "1.2.3.4:9001"), clusterState1);
+      SolrException exception =
+          expectThrows(
+              SolrException.class,
+              () -> checker.checkAllowList(List.of("1.1.3.4:8983"), clusterState1));
+      assertThat(exception.code(), equalTo(SolrException.ErrorCode.FORBIDDEN.code));
+    }
+    // Then we verify that the AllowListUrlChecker caches the live host urls and only builds them
+    // once.
+    assertThat(callCount.get(), equalTo(1));
+
+    // And when the ClusterState live nodes change.
+    liveNodes = Set.of("2.3.4.5:8983_solr", "2.3.4.5:9000_", "2.3.4.5:9001_solr-2");
+    ClusterState clusterState2 = new ClusterState(liveNodes, new HashMap<>());
+    for (int i = 0; i < 3; i++) {
+      checker.checkAllowList(
+          List.of("2.3.4.5:8983", "2.3.4.5:9000", "2.3.4.5:9001"), clusterState2);
+      SolrException exception =
+          expectThrows(
+              SolrException.class,
+              () -> checker.checkAllowList(List.of("1.1.3.4:8983"), clusterState2));
+      assertThat(exception.code(), equalTo(SolrException.ErrorCode.FORBIDDEN.code));
+    }
+    // Then the AllowListUrlChecker rebuilds the cache of live host urls.
+    assertThat(callCount.get(), equalTo(2));
   }
 
   private static List<String> urls(String... urls) {

@@ -17,25 +17,22 @@
 
 package org.apache.solr.common;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.noggit.JSONWriter;
 
-/**
- * Interface to help do push writing to an array
- */
-public interface IteratorWriter {
+/** Interface to help do push writing to an array */
+public interface IteratorWriter extends JSONWriter.Writable {
   /**
-   * @param iw after this method returns , the ItemWriter Object is invalid
-   *          Do not hold a reference to this object
+   * @param iw after this method returns , the ItemWriter Object is invalid Do not hold a reference
+   *     to this object
    */
   void writeIter(ItemWriter iw) throws IOException;
 
   interface ItemWriter {
-    /**The item could be any supported type
-     */
+    /** The item could be any supported type */
     ItemWriter add(Object o) throws IOException;
 
     default ItemWriter addNoEx(Object o) {
@@ -52,12 +49,10 @@ public interface IteratorWriter {
       return this;
     }
 
-
     default ItemWriter add(long v) throws IOException {
       add((Long) v);
       return this;
     }
-
 
     default ItemWriter add(float v) throws IOException {
       add((Float) v);
@@ -74,20 +69,48 @@ public interface IteratorWriter {
       return this;
     }
   }
-  default List<Object> toList(List<Object> l)  {
+
+  default List<Object> toList(List<Object> l) {
     try {
-      writeIter(new ItemWriter() {
-        @Override
-        public ItemWriter add(Object o) throws IOException {
-          if (o instanceof MapWriter) o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-          if (o instanceof IteratorWriter) o = ((IteratorWriter) o).toList(new ArrayList<>());
-          l.add(o);
-          return this;
-        }
-      });
+      writeIter(
+          new ItemWriter() {
+            @Override
+            public ItemWriter add(Object o) throws IOException {
+              if (o instanceof MapWriter) o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+              if (o instanceof IteratorWriter) o = ((IteratorWriter) o).toList(new ArrayList<>());
+              l.add(o);
+              return this;
+            }
+          });
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
     return l;
+  }
+
+  @Override
+  default void write(JSONWriter writer) {
+    writer.startArray();
+    try {
+      writeIter(
+          new IteratorWriter.ItemWriter() {
+            boolean first = true;
+
+            @Override
+            public IteratorWriter.ItemWriter add(Object o) {
+              if (first) {
+                first = false;
+              } else {
+                writer.writeValueSeparator();
+              }
+              writer.indent();
+              writer.write(o);
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException("this should never happen", e);
+    }
+    writer.endArray();
   }
 }

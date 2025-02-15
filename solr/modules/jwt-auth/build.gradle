@@ -1,0 +1,71 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java-library'
+
+description = 'JWT / OpenID Connect / OAuth2 authentication plugin'
+
+// This is a hacky way to use permitTestUnusedDeclared with bom declared dependencies.
+// See https://github.com/gradle-dependency-analyze/gradle-dependency-analyze/issues/108
+configurations {
+  constraintsOnly
+  permitTestUnusedDeclared.extendsFrom constraintsOnly
+  implementation.extendsFrom constraintsOnly
+}
+
+dependencies {
+  constraintsOnly platform(project(':platform'))
+  constraintsOnly platform(libs.fasterxml.jackson.bom)
+
+  implementation project(':solr:core')
+  implementation project(':solr:solrj')
+
+  implementation libs.bc.jose4j
+
+  implementation libs.dropwizard.metrics.core
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
+  implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.http
+  implementation libs.eclipse.jetty.toolchain.servletapi
+  implementation libs.google.guava
+  implementation libs.slf4j.api
+
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.junit.junit
+
+  testImplementation(libs.mockito.core, {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly(libs.mockito.subclass, {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testImplementation(libs.navsecurity.mockoauth2server, {
+    exclude group: "io.netty", module: "netty-all"
+  })
+  // required by mock-oauth2-server
+  testImplementation libs.fasterxml.jackson.core.databind
+  permitTestUnusedDeclared libs.fasterxml.jackson.core.databind
+
+  testImplementation libs.bouncycastle.bcpkix
+  testImplementation libs.bouncycastle.bcprov
+  testImplementation libs.nimbusds.josejwt
+  testImplementation libs.squareup.okhttp3.mockwebserver
+  testImplementation libs.squareup.okhttp3.okhttp
+  testRuntimeOnly libs.netty.codechttp
+}

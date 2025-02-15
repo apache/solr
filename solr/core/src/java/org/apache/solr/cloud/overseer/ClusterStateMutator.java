@@ -16,31 +16,34 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class ClusterStateMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,14 +66,16 @@ public class ClusterStateMutator {
     }
 
     Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
-    String routerName = routerSpec.get(NAME) == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get(NAME);
+    String routerName =
+        routerSpec.get(NAME) == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get(NAME);
     DocRouter router = DocRouter.getDocRouter(routerName);
 
     Object messageShardsObj = message.get("shards");
 
     Map<String, Slice> slices;
-    if (messageShardsObj instanceof Map) { // we are being explicitly told the slice data (e.g. coll restore)
-      slices = Slice.loadAllFromMap(cName, (Map<String, Object>)messageShardsObj);
+    // we are being explicitly told the slice data (e.g. coll restore)
+    if (messageShardsObj instanceof Map) {
+      slices = Slice.loadAllFromMap(cName, (Map<String, Object>) messageShardsObj);
     } else {
       List<String> shardNames = new ArrayList<>();
 
@@ -79,32 +84,36 @@ public class ClusterStateMutator {
       } else {
         int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
         if (numShards < 1)
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "numShards is a required parameter for 'compositeId' router");
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "numShards is a required parameter for 'compositeId' router");
         getShardNames(numShards, shardNames);
       }
-      List<DocRouter.Range> ranges = router.partitionRange(shardNames.size(), router.fullRange());//maybe null
+      List<DocRouter.Range> ranges =
+          router.partitionRange(shardNames.size(), router.fullRange()); // maybe null
 
       slices = new LinkedHashMap<>();
       for (int i = 0; i < shardNames.size(); i++) {
         String sliceName = shardNames.get(i);
 
-        Map<String, Object> sliceProps = new LinkedHashMap<>(1);
-        sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
+        Map<String, Object> sliceProps = CollectionUtil.newLinkedHashMap(1);
+        sliceProps.put(SliceStateProps.RANGE, ranges == null ? null : ranges.get(i));
 
-        slices.put(sliceName, new Slice(sliceName, null, sliceProps,cName));
+        slices.put(sliceName, new Slice(sliceName, null, sliceProps, cName));
       }
     }
 
     Map<String, Object> collectionProps = new HashMap<>();
 
-    for (Map.Entry<String, Object> e : CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.entrySet()) {
+    for (Map.Entry<String, Object> e :
+        CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.entrySet()) {
       Object val = message.get(e.getKey());
       if (val == null) {
         val = CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.get(e.getKey());
       }
       if (val != null) collectionProps.put(e.getKey(), val);
     }
-    collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
+    collectionProps.put(CollectionStateProps.DOC_ROUTER, routerSpec);
 
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");
@@ -117,8 +126,26 @@ public class ClusterStateMutator {
       collectionProps.put(ZkStateReader.CONFIGNAME_PROP, configName);
     }
 
+    // add user-defined properties
+    for (String prop : message.keySet()) {
+      if (prop.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
+        collectionProps.put(prop, message.get(prop));
+      }
+    }
+
     assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
-    DocCollection newCollection = new DocCollection(cName, slices, collectionProps, router, -1);
+
+    // This instance does not fully capture what will be persisted: the zkNodeVersion and
+    // creationTime will only be definitively set in ZK. Hence, the defaults passed here.
+    DocCollection newCollection =
+        DocCollection.create(
+            cName,
+            slices,
+            collectionProps,
+            router,
+            -1,
+            Instant.EPOCH,
+            stateManager.getPrsSupplier(cName));
 
     return new ZkWriteCommand(cName, newCollection);
   }
@@ -144,28 +171,30 @@ public class ClusterStateMutator {
 
   public static void getShardNames(Integer numShards, List<String> shardNames) {
     if (numShards == null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");
     for (int i = 0; i < numShards; i++) {
       final String sliceName = "shard" + (i + 1);
       shardNames.add(sliceName);
     }
-
   }
 
   public static void getShardNames(List<String> shardNames, String shards) {
     if (shards == null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
     for (String s : shards.split(",")) {
       if (s == null || s.trim().isEmpty()) continue;
       shardNames.add(s.trim());
     }
     if (shardNames.isEmpty())
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
   }
 
   /*
-       * Return an already assigned id or null if not assigned
-       */
+   * Return an already assigned id or null if not assigned
+   */
   public static String getAssignedId(final DocCollection collection, final String nodeName) {
     Collection<Slice> slices = collection != null ? collection.getSlices() : null;
     if (slices != null) {
@@ -178,7 +207,8 @@ public class ClusterStateMutator {
     return null;
   }
 
-  public static String getAssignedCoreNodeName(DocCollection collection, String forNodeName, String forCoreName) {
+  public static String getAssignedCoreNodeName(
+      DocCollection collection, String forNodeName, String forCoreName) {
     Collection<Slice> slices = collection != null ? collection.getSlices() : null;
     if (slices != null) {
       for (Slice slice : slices) {
@@ -195,4 +225,3 @@ public class ClusterStateMutator {
     return null;
   }
 }
-

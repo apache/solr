@@ -33,31 +33,36 @@ public class TestSimpleTextCodec extends SolrTestCaseJ4 {
 
   public void test() throws Exception {
     SolrConfig config = h.getCore().getSolrConfig();
-    String codecFactory =  config.get("codecFactory/@class");
-    assertEquals("Unexpected solrconfig codec factory", "solr.SimpleTextCodecFactory", codecFactory);
+    String codecFactory = config.get("codecFactory").attr("class");
+    assertEquals(
+        "Unexpected solrconfig codec factory", "solr.SimpleTextCodecFactory", codecFactory);
 
     assertEquals("Unexpected core codec", "SimpleText", h.getCore().getCodec().getName());
 
     RefCounted<IndexWriter> writerRef = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
     try {
       IndexWriter writer = writerRef.get();
-      assertEquals("Unexpected codec in IndexWriter config", 
-          "SimpleText", writer.getConfig().getCodec().getName()); 
+      assertEquals(
+          "Unexpected codec in IndexWriter config",
+          "SimpleText",
+          writer.getConfig().getCodec().getName());
     } finally {
       writerRef.decref();
     }
 
-    assertU(add(doc("id","1", "text","textual content goes here")));
+    assertU(add(doc("id", "1", "text", "textual content goes here")));
     assertU(commit());
 
-    h.getCore().withSearcher(searcher -> {
-      SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
-      SegmentInfo info = infos.info(infos.size() - 1).info;
-      assertEquals("Unexpected segment codec", "SimpleText", info.getCodec().getName());
-      return null;
-    });
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              SegmentInfos infos =
+                  SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
+              SegmentInfo info = infos.info(infos.size() - 1).info;
+              assertEquals("Unexpected segment codec", "SimpleText", info.getCodec().getName());
+              return null;
+            });
 
-    assertQ(req("q", "id:1"),
-        "*[count(//doc)=1]");
+    assertQ(req("q", "id:1"), "*[count(//doc)=1]");
   }
 }

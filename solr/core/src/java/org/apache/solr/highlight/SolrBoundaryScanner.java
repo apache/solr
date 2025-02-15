@@ -21,15 +21,15 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public abstract class SolrBoundaryScanner extends HighlightingPluginBase implements
-    SolrInfoBean, NamedListInitializedPlugin {
+public abstract class SolrBoundaryScanner extends HighlightingPluginBase
+    implements SolrInfoBean, NamedListInitializedPlugin {
 
-  public BoundaryScanner getBoundaryScanner(String fieldName, SolrParams params){
+  public BoundaryScanner getBoundaryScanner(String fieldName, SolrParams params) {
     numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
 
     return get(fieldName, params);
   }
-  
+
   protected abstract BoundaryScanner get(String fieldName, SolrParams params);
 }

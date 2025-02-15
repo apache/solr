@@ -18,19 +18,23 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 
-/** 
- * Cache regenerator that just populates the new cache
- * with the old items.
- * <p>
- * This is useful for e.g. CachingWrapperFilters that are not
- * invalidated by the creation of a new searcher.
+/**
+ * Cache regenerator that just populates the new cache with the old items.
+ *
+ * <p>This is useful for e.g. CachingWrapperFilters that are not invalidated by the creation of a
+ * new searcher.
  */
 public class NoOpRegenerator implements CacheRegenerator {
 
   @Override
-  public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache<K,V> newCache, SolrCache<K,V> oldCache, K oldKey, V oldVal) throws IOException {
+  public <K, V> boolean regenerateItem(
+      SolrIndexSearcher newSearcher,
+      SolrCache<K, V> newCache,
+      SolrCache<K, V> oldCache,
+      K oldKey,
+      V oldVal)
+      throws IOException {
     newCache.put(oldKey, oldVal);
     return true;
   }
-  
 }

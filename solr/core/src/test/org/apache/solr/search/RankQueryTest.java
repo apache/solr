@@ -16,8 +16,19 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.component.MergeStrategy;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,75 +50,131 @@ public class RankQueryTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-
   @Test
-  public void testPluggableCollector() throws Exception {
+  public void testPluggableCollector() {
 
-    String[] doc = {"id","1", "sort_i", "100"};
+    String[] doc = {"id", "1", "sort_i", "100"};
     assertU(adoc(doc));
     assertU(commit());
-    String[] doc1 = {"id","2", "sort_i", "50"};
+    String[] doc1 = {"id", "2", "sort_i", "50"};
     assertU(adoc(doc1));
 
-
-
-    String[] doc2 = {"id","3", "sort_i", "1000"};
+    String[] doc2 = {"id", "3", "sort_i", "1000"};
     assertU(adoc(doc2));
     assertU(commit());
-    String[] doc3 = {"id","4", "sort_i", "2000"};
+    String[] doc3 = {"id", "4", "sort_i", "2000"};
     assertU(adoc(doc3));
 
-
-    String[] doc4 = {"id","5", "sort_i", "2"};
+    String[] doc4 = {"id", "5", "sort_i", "2"};
     assertU(adoc(doc4));
     assertU(commit());
-    String[] doc5 = {"id","6", "sort_i","11"};
+    String[] doc5 = {"id", "6", "sort_i", "11"};
     assertU(adoc(doc5));
     assertU(commit());
-
 
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.add("q", "*:*");
     params.add("rq", "{!rank}");
-    params.add("sort","sort_i asc");
+    params.add("sort", "sort_i asc");
 
-    assertQ(req(params), "*[count(//doc)=6]",
+    assertQ(
+        req(params),
+        "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='3']",
         "//result/doc[3]/str[@name='id'][.='1']",
         "//result/doc[4]/str[@name='id'][.='2']",
         "//result/doc[5]/str[@name='id'][.='6']",
-        "//result/doc[6]/str[@name='id'][.='5']"
-    );
+        "//result/doc[6]/str[@name='id'][.='5']");
 
     params = new ModifiableSolrParams();
     params.add("q", "{!edismax bf=$bff}*:*");
     params.add("bff", "field(sort_i)");
     params.add("rq", "{!rank collector=1}");
 
-    assertQ(req(params), "*[count(//doc)=6]",
+    assertQ(
+        req(params),
+        "*[count(//doc)=6]",
         "//result/doc[6]/str[@name='id'][.='4']",
         "//result/doc[5]/str[@name='id'][.='3']",
         "//result/doc[4]/str[@name='id'][.='1']",
         "//result/doc[3]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='6']",
-        "//result/doc[1]/str[@name='id'][.='5']"
-    );
-
+        "//result/doc[1]/str[@name='id'][.='5']");
 
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
-    params.add("sort","sort_i asc");
+    params.add("sort", "sort_i asc");
 
-    assertQ(req(params), "*[count(//doc)=6]",
+    assertQ(
+        req(params),
+        "*[count(//doc)=6]",
         "//result/doc[6]/str[@name='id'][.='4']",
         "//result/doc[5]/str[@name='id'][.='3']",
         "//result/doc[4]/str[@name='id'][.='1']",
         "//result/doc[3]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='6']",
-        "//result/doc[1]/str[@name='id'][.='5']"
-    );
+        "//result/doc[1]/str[@name='id'][.='5']");
+  }
 
+  // The following static classes are intended to ensure that support of covariant
+  // ScoreDocs is supported in rank queries. MyRankQuery will fail to compile
+  // if covariant ScoreDocs are not supported because it returns a TopDocsCollector
+  // for MyScoreDoc (a subtype of ScoreDoc).
+  static class MyScoreDoc extends ScoreDoc {
+    public int someOtherField;
+
+    public MyScoreDoc(int doc, float score, int shardIndex, int someOtherField) {
+      super(doc, score, shardIndex);
+      this.someOtherField = someOtherField;
+    }
+  }
+
+  static class MyTopDocsCollector extends TopDocsCollector<MyScoreDoc> {
+    public MyTopDocsCollector(PriorityQueue<MyScoreDoc> pq) {
+      super(pq);
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      return null;
+    }
+  }
+
+  static class MyRankQuery extends RankQuery {
+    @Override
+    public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
+        int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+      return new MyTopDocsCollector(null);
+    }
+
+    @Override
+    public MergeStrategy getMergeStrategy() {
+      return null;
+    }
+
+    @Override
+    public RankQuery wrap(Query mainQuery) {
+      return this;
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {}
+
+    @Override
+    public int hashCode() {
+      return 1;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return true;
+    }
   }
 }

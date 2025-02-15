@@ -18,19 +18,15 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.FixedBitSet;
 
-/**
- *
- */
-
+/** */
 public class DocSetCollector extends SimpleCollector {
-  int pos=0;
+  int pos = 0;
   FixedBitSet bits;
   final int maxDoc;
   final int smallSetSize;
@@ -66,7 +62,7 @@ public class DocSetCollector extends SimpleCollector {
     } else {
       // this conditional could be removed if BitSet was preallocated, but that
       // would take up more memory, and add more GC time...
-      if (bits==null) bits = new FixedBitSet(maxDoc);
+      if (bits == null) bits = new FixedBitSet(maxDoc);
       bits.set(doc);
     }
 
@@ -79,21 +75,21 @@ public class DocSetCollector extends SimpleCollector {
   }
 
   public DocSet getDocSet() {
-    if (pos<=scratch.size()) {
+    if (pos <= scratch.size()) {
       // assumes docs were collected in sorted order!
       return new SortedIntDocSet(scratch.toArray(), pos);
-//    } else if (pos == maxDoc) {
-//      return new MatchAllDocSet(maxDoc);  // a bunch of code currently relies on BitDocSet (either explicitly, or implicitly for performance)
+      //    } else if (pos == maxDoc) {
+      //      return new MatchAllDocSet(maxDoc);  // a bunch of code currently relies on BitDocSet
+      // (either explicitly, or implicitly for performance)
     } else {
       // set the bits for ids that were collected in the array
       scratch.copyTo(bits);
-      return new BitDocSet(bits,pos);
+      return new BitDocSet(bits, pos);
     }
   }
 
   @Override
-  public void setScorer(Scorable scorer) throws IOException {
-  }
+  public void setScorer(Scorable scorer) throws IOException {}
 
   @Override
   public ScoreMode scoreMode() {
@@ -127,7 +123,8 @@ public class DocSetCollector extends SimpleCollector {
       }
       arrays.add(this.currentAddArray);
       indexForNextAddInCurrentAddArray = 0;
-      // System.out.println("### ALLOCATED " + this + " " + arrSize + " smallSetSize="+smallSetSize + " left=" + (smallSetSize-size));
+      // System.out.println("### ALLOCATED " + this + " " + arrSize + " smallSetSize="+smallSetSize
+      // + " left=" + (smallSetSize-size));
     }
 
     public void add(int index, int value) {
@@ -144,7 +141,8 @@ public class DocSetCollector extends SimpleCollector {
         int resultPos = 0;
         for (int i = 0; i < arrays.size(); i++) {
           int[] srcArray = arrays.get(i);
-          int intsToCopy = (i < (arrays.size() - 1)) ? srcArray.length : indexForNextAddInCurrentAddArray;
+          int intsToCopy =
+              (i < (arrays.size() - 1)) ? srcArray.length : indexForNextAddInCurrentAddArray;
           for (int j = 0; j < intsToCopy; j++) {
             bits.set(srcArray[j]);
           }
@@ -160,7 +158,8 @@ public class DocSetCollector extends SimpleCollector {
         int resultPos = 0;
         for (int i = 0; i < arrays.size(); i++) {
           int[] srcArray = arrays.get(i);
-          int intsToCopy = (i < (arrays.size() - 1)) ? srcArray.length : indexForNextAddInCurrentAddArray;
+          int intsToCopy =
+              (i < (arrays.size() - 1)) ? srcArray.length : indexForNextAddInCurrentAddArray;
           System.arraycopy(srcArray, 0, result, resultPos, intsToCopy);
           resultPos += intsToCopy;
         }

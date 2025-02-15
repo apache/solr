@@ -17,27 +17,28 @@
 package org.apache.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
+import org.apache.lucene.search.similarities.LMSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 
 /**
  * Factory for {@link LMJelinekMercerSimilarity}
- * <p>
- * Parameters:
+ *
+ * <p>Parameters:
+ *
  * <ul>
- *     <li>parameter lambda (float): smoothing parameter &lambda;. The default
- *         is <code>0.7</code></li>
+ *   <li>parameter lambda (float): smoothing parameter &lambda;. The default is <code>0.7</code>
  * </ul>
- * <p>
- * Optional settings:
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link LMJelinekMercerSimilarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {link Similarity#getDiscountOverlaps()}
  * </ul>
+ *
  * @lucene.experimental
  */
-
 public class LMJelinekMercerSimilarityFactory extends SimilarityFactory {
   private boolean discountOverlaps;
   private float lambda;
@@ -51,8 +52,7 @@ public class LMJelinekMercerSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    LMJelinekMercerSimilarity sim = new LMJelinekMercerSimilarity(lambda);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    LMSimilarity.CollectionModel model = new LMSimilarity.DefaultCollectionModel();
+    return new LMJelinekMercerSimilarity(model, discountOverlaps, lambda);
   }
 }

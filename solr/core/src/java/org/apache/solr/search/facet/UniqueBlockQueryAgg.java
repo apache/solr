@@ -17,15 +17,14 @@
 
 package org.apache.solr.search.facet;
 
+import static org.apache.solr.search.join.BlockJoinParentQParser.getCachedBitSetProducer;
+
 import java.io.IOException;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BitSet;
-
-import static org.apache.solr.search.join.BlockJoinParentQParser.getCachedBitSetProducer;
 
 public class UniqueBlockQueryAgg extends UniqueBlockAgg {
 
@@ -51,12 +50,12 @@ public class UniqueBlockQueryAgg extends UniqueBlockAgg {
         int ord = parentBitSet.nextSetBit(doc);
         if (ord != DocIdSetIterator.NO_MORE_DOCS) {
           collectOrdToSlot(slotNum, ord);
-        } 
+        }
       }
     }
   }
 
-  final private Query query;
+  private final Query query;
 
   public UniqueBlockQueryAgg(Query query) {
     super(null);
@@ -65,7 +64,8 @@ public class UniqueBlockQueryAgg extends UniqueBlockAgg {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     return new UniqueBlockQuerySlotAcc(fcontext, query, numSlots);
   }
 }

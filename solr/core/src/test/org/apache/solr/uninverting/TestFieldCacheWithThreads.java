@@ -24,8 +24,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -36,11 +34,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 
 // TODO: what happened to this test... its not actually uninverting?
@@ -48,13 +47,16 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
 
   public void test() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     final List<Long> numbers = new ArrayList<>();
     final List<BytesRef> binary = new ArrayList<>();
     final List<BytesRef> sorted = new ArrayList<>();
     final int numDocs = atLeast(100);
-    for(int i=0;i<numDocs;i++) {
+    for (int i = 0; i < numDocs; i++) {
       Document d = new Document();
       long number = random().nextLong();
       d.add(new NumericDocValuesField("number", number));
@@ -78,72 +80,81 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     int numThreads = TestUtil.nextInt(random(), 2, 5);
     List<Thread> threads = new ArrayList<>();
     final CountDownLatch startingGun = new CountDownLatch(1);
-    for(int t=0;t<numThreads;t++) {
+    for (int t = 0; t < numThreads; t++) {
       final Random threadRandom = new Random(random().nextLong());
-      Thread thread = new Thread() {
-          @Override
-          public void run() {
-            try {
-              startingGun.await();
-              int iters = atLeast(1000);
-              for(int iter=0;iter<iters;iter++) {
-                int docID = threadRandom.nextInt(numDocs);
-                switch(threadRandom.nextInt(4)) {
-                case 0:
-                  {
-                    NumericDocValues values = FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.INT_POINT_PARSER);
-                    assertEquals(docID, values.advance(docID));
-                    assertEquals(numbers.get(docID).longValue(), values.longValue());
+      Thread thread =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                startingGun.await();
+                int iters = atLeast(1000);
+                for (int iter = 0; iter < iters; iter++) {
+                  int docID = threadRandom.nextInt(numDocs);
+                  switch (threadRandom.nextInt(4)) {
+                    case 0:
+                      {
+                        NumericDocValues values =
+                            FieldCache.DEFAULT.getNumerics(
+                                ar, "number", FieldCache.INT_POINT_PARSER);
+                        assertEquals(docID, values.advance(docID));
+                        assertEquals(numbers.get(docID).longValue(), values.longValue());
+                      }
+                      break;
+                    case 1:
+                      {
+                        NumericDocValues values =
+                            FieldCache.DEFAULT.getNumerics(
+                                ar, "number", FieldCache.LONG_POINT_PARSER);
+                        assertEquals(docID, values.advance(docID));
+                        assertEquals(numbers.get(docID).longValue(), values.longValue());
+                      }
+                      break;
+                    case 2:
+                      {
+                        NumericDocValues values =
+                            FieldCache.DEFAULT.getNumerics(
+                                ar, "number", FieldCache.FLOAT_POINT_PARSER);
+                        assertEquals(docID, values.advance(docID));
+                        assertEquals(numbers.get(docID).longValue(), values.longValue());
+                      }
+                      break;
+                    case 3:
+                      {
+                        NumericDocValues values =
+                            FieldCache.DEFAULT.getNumerics(
+                                ar, "number", FieldCache.DOUBLE_POINT_PARSER);
+                        assertEquals(docID, values.advance(docID));
+                        assertEquals(numbers.get(docID).longValue(), values.longValue());
+                      }
+                      break;
                   }
-                  break;
-                case 1:
-                  {
-                    NumericDocValues values = FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.LONG_POINT_PARSER);
-                    assertEquals(docID, values.advance(docID));
-                    assertEquals(numbers.get(docID).longValue(), values.longValue());
-                  }
-                  break;
-                case 2:
-                  {
-                    NumericDocValues values = FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.FLOAT_POINT_PARSER);
-                    assertEquals(docID, values.advance(docID));
-                    assertEquals(numbers.get(docID).longValue(), values.longValue());
-                  }
-                  break;
-                case 3:
-                  {
-                    NumericDocValues values = FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOUBLE_POINT_PARSER);
-                    assertEquals(docID, values.advance(docID));
-                    assertEquals(numbers.get(docID).longValue(), values.longValue());
-                  }
-                  break;
+                  BinaryDocValues bdv = FieldCache.DEFAULT.getTerms(ar, "bytes");
+                  assertEquals(docID, bdv.advance(docID));
+                  assertEquals(binary.get(docID), bdv.binaryValue());
+                  SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
+                  assertEquals(docID, sdv.advance(docID));
+                  assertEquals(sorted.get(docID), sdv.lookupOrd(sdv.ordValue()));
                 }
-                BinaryDocValues bdv = FieldCache.DEFAULT.getTerms(ar, "bytes");
-                assertEquals(docID, bdv.advance(docID));
-                assertEquals(binary.get(docID), bdv.binaryValue());
-                SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
-                assertEquals(docID, sdv.advance(docID));
-                assertEquals(sorted.get(docID), sdv.lookupOrd(sdv.ordValue()));
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
-            } catch (Exception e) {
-              throw new RuntimeException(e);
             }
-          }
-        };
+          };
       thread.start();
       threads.add(thread);
     }
 
     startingGun.countDown();
 
-    for(Thread thread : threads) {
+    for (Thread thread : threads) {
       thread.join();
     }
 
     r.close();
     dir.close();
   }
-  
+
   public void test2() throws Exception {
     Random random = random();
     final int NUM_DOCS = atLeast(100);
@@ -177,7 +188,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
       if (VERBOSE) {
         System.out.println("  " + numDocs + ": s=" + s);
       }
-      
+
       final Document doc = new Document();
       doc.add(new SortedDocValuesField("stringdv", br));
       doc.add(new NumericDocValuesField("id", numDocs));
@@ -194,63 +205,65 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     writer.forceMerge(1);
     final DirectoryReader r = writer.getReader();
     writer.close();
-    
+
     final LeafReader sr = getOnlyLeafReader(r);
 
-    final long END_TIME = System.nanoTime() + TimeUnit.NANOSECONDS.convert((TEST_NIGHTLY ? 30 : 1), TimeUnit.SECONDS);
+    final long END_TIME =
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert((TEST_NIGHTLY ? 30 : 1), TimeUnit.SECONDS);
 
     final int NUM_THREADS = TestUtil.nextInt(random(), 1, 10);
     Thread[] threads = new Thread[NUM_THREADS];
-    for(int thread=0;thread<NUM_THREADS;thread++) {
-      threads[thread] = new Thread() {
-          @Override
-          public void run() {
-            Random random = random();            
-            final SortedDocValues stringDVDirect;
-            final NumericDocValues docIDToID;
-            try {
-              stringDVDirect = sr.getSortedDocValues("stringdv");
-              docIDToID = sr.getNumericDocValues("id");
-              assertNotNull(stringDVDirect);
-            } catch (IOException ioe) {
-              throw new RuntimeException(ioe);
-            }
-            int[] docIDToIDArray = new int[sr.maxDoc()];
-            for(int i=0;i<sr.maxDoc();i++) {
+    for (int thread = 0; thread < NUM_THREADS; thread++) {
+      threads[thread] =
+          new Thread() {
+            @Override
+            public void run() {
+              Random random = random();
+              final SortedDocValues stringDVDirect;
+              final NumericDocValues docIDToID;
               try {
-                assertEquals(i, docIDToID.nextDoc());
+                stringDVDirect = sr.getSortedDocValues("stringdv");
+                docIDToID = sr.getNumericDocValues("id");
+                assertNotNull(stringDVDirect);
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
               }
-              try {
-                docIDToIDArray[i] = (int) docIDToID.longValue();
-              } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-              }
-            }
-            while(System.nanoTime() < END_TIME) {
-              for(int iter=0;iter<100;iter++) {
-                final int docID = random.nextInt(sr.maxDoc());
+              int[] docIDToIDArray = new int[sr.maxDoc()];
+              for (int i = 0; i < sr.maxDoc(); i++) {
                 try {
-                  SortedDocValues dvs = sr.getSortedDocValues("stringdv");
-                  assertEquals(docID, dvs.advance(docID));
-                  assertEquals(docValues.get(docIDToIDArray[docID]), dvs.lookupOrd(dvs.ordValue()));
+                  assertEquals(i, docIDToID.nextDoc());
+                } catch (IOException ioe) {
+                  throw new RuntimeException(ioe);
+                }
+                try {
+                  docIDToIDArray[i] = (int) docIDToID.longValue();
                 } catch (IOException ioe) {
                   throw new RuntimeException(ioe);
                 }
               }
+              while (System.nanoTime() < END_TIME) {
+                for (int iter = 0; iter < 100; iter++) {
+                  final int docID = random.nextInt(sr.maxDoc());
+                  try {
+                    SortedDocValues dvs = sr.getSortedDocValues("stringdv");
+                    assertEquals(docID, dvs.advance(docID));
+                    assertEquals(
+                        docValues.get(docIDToIDArray[docID]), dvs.lookupOrd(dvs.ordValue()));
+                  } catch (IOException ioe) {
+                    throw new RuntimeException(ioe);
+                  }
+                }
+              }
             }
-          }
-        };
+          };
       threads[thread].start();
     }
 
-    for(Thread thread : threads) {
+    for (Thread thread : threads) {
       thread.join();
     }
 
     r.close();
     dir.close();
   }
-
 }

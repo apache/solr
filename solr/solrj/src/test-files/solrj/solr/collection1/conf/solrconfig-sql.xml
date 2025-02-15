@@ -45,7 +45,7 @@
   </requestHandler>
 
   <requestDispatcher>
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
   </requestDispatcher>
 
   <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" />
@@ -63,10 +63,4 @@
     <str name="healthcheckFile">server-enabled.txt</str>
   </requestHandler>
 
-  <!-- config for the admin interface -->
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-  </admin>
-
 </config>
-

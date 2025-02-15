@@ -25,29 +25,29 @@ import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * Factory which creates RegexBoostProcessors
- * <p>
- * The factory initializes a shared object cache which is passed to the processor
- * and this way reduces rules file parsing to the first time the UpdateChain
- * is initialized.
+ *
+ * <p>The factory initializes a shared object cache which is passed to the processor and this way
+ * reduces rules file parsing to the first time the UpdateChain is initialized.
+ *
  * @since 4.2.0
  */
 public class RegexpBoostProcessorFactory extends UpdateRequestProcessorFactory {
 
-    private SolrParams params;
-    private final Map<Object, Object> sharedObjectCache = new HashMap<>();
+  private SolrParams params;
+  private final Map<Object, Object> sharedObjectCache = new HashMap<>();
 
-    @Override
-    public void init(final NamedList<?> args) {
-        if (args != null) {
-          this.params = args.toSolrParams();
-        }
+  @Override
+  public void init(final NamedList<?> args) {
+    if (args != null) {
+      this.params = args.toSolrParams();
     }
+  }
 
-    @Override
-    public UpdateRequestProcessor getInstance(SolrQueryRequest request,
-            SolrQueryResponse response,
-            UpdateRequestProcessor nextProcessor) {
+  @Override
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest request, SolrQueryResponse response, UpdateRequestProcessor nextProcessor) {
 
-        return new RegexpBoostProcessor(this.params, request, response, nextProcessor, this.sharedObjectCache);
-    }
+    return new RegexpBoostProcessor(
+        this.params, request, response, nextProcessor, this.sharedObjectCache);
+  }
 }

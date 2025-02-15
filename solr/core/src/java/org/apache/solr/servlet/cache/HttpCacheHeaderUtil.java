@@ -22,24 +22,22 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.lucene.util.WeakIdentityMap;
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrConfig.HttpCachingConfig.LastModFrom;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrConfig.HttpCachingConfig.LastModFrom;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 
 public final class HttpCacheHeaderUtil {
-  
+
   public static void sendNotModified(HttpServletResponse res) {
     res.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
   }
@@ -47,38 +45,46 @@ public final class HttpCacheHeaderUtil {
   public static void sendPreconditionFailed(HttpServletResponse res) {
     res.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
   }
-  
+
   /**
-   * Weak Ref based cache for keeping track of core specific etagSeed
-   * and the last computed etag.
+   * Weak Ref based cache for keeping track of core specific etagSeed and the last computed etag.
    *
    * @see #calcEtag
    */
-  private static WeakIdentityMap<UUID, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
+  private static WeakIdentityMap<UUID, EtagCacheVal> etagCoreCache =
+      WeakIdentityMap.newConcurrentHashMap();
 
-  /** @see #etagCoreCache */
+  /**
+   * @see #etagCoreCache
+   */
   private static class EtagCacheVal {
     private final String etagSeed;
-    
+
     private String etagCache = null;
-    private long indexVersionCache=-1;
-    
+    private long indexVersionCache = -1;
+
     public EtagCacheVal(final String etagSeed) {
       this.etagSeed = etagSeed;
     }
 
     public String calcEtag(final long currentIndexVersion) {
       if (currentIndexVersion != indexVersionCache) {
-        indexVersionCache=currentIndexVersion;
-        etagCache = "\""
-            + new String(Base64.getEncoder().encode((Long.toHexString(Long.reverse(indexVersionCache)) + etagSeed)
-            .getBytes(StandardCharsets.US_ASCII)), StandardCharsets.US_ASCII) + "\"";
+        indexVersionCache = currentIndexVersion;
+        etagCache =
+            "\""
+                + new String(
+                    Base64.getEncoder()
+                        .encode(
+                            (Long.toHexString(Long.reverse(indexVersionCache)) + etagSeed)
+                                .getBytes(StandardCharsets.US_ASCII)),
+                    StandardCharsets.US_ASCII)
+                + "\"";
       }
-      
+
       return etagCache;
     }
   }
-  
+
   /**
    * Calculates a tag for the ETag header.
    *
@@ -86,33 +92,26 @@ public final class HttpCacheHeaderUtil {
    */
   public static String calcEtag(final SolrQueryRequest solrReq) {
     final SolrCore core = solrReq.getCore();
-    final long currentIndexVersion
-      = solrReq.getSearcher().getIndexReader().getVersion();
+    final long currentIndexVersion = solrReq.getSearcher().getIndexReader().getVersion();
 
     EtagCacheVal etagCache = etagCoreCache.get(core.uniqueId);
     if (null == etagCache) {
-      final String etagSeed
-        = core.getSolrConfig().getHttpCachingConfig().getEtagSeed();
+      final String etagSeed = core.getSolrConfig().getHttpCachingConfig().getEtagSeed();
       etagCache = new EtagCacheVal(etagSeed);
       etagCoreCache.put(core.uniqueId, etagCache);
     }
-    
+
     return etagCache.calcEtag(currentIndexVersion);
-    
   }
 
   /**
    * Checks if one of the tags in the list equals the given etag.
-   * 
-   * @param headerList
-   *            the ETag header related header elements
-   * @param etag
-   *            the ETag to compare with
-   * @return true if the etag is found in one of the header elements - false
-   *         otherwise
+   *
+   * @param headerList the ETag header related header elements
+   * @param etag the ETag to compare with
+   * @return true if the etag is found in one of the header elements - false otherwise
    */
-  public static boolean isMatchingEtag(final List<String> headerList,
-      final String etag) {
+  public static boolean isMatchingEtag(final List<String> headerList, final String etag) {
     for (String header : headerList) {
       final String[] headerEtags = header.split(",");
       for (String s : headerEtags) {
@@ -128,23 +127,23 @@ public final class HttpCacheHeaderUtil {
 
   /**
    * Calculate the appropriate last-modified time for Solr relative the current request.
-   * 
+   *
    * @return the timestamp to use as a last modified time.
    */
   public static long calcLastModified(final SolrQueryRequest solrReq) {
     final SolrCore core = solrReq.getCore();
     final SolrIndexSearcher searcher = solrReq.getSearcher();
-    
-    final LastModFrom lastModFrom
-      = core.getSolrConfig().getHttpCachingConfig().getLastModFrom();
+
+    final LastModFrom lastModFrom = core.getSolrConfig().getHttpCachingConfig().getLastModFrom();
 
     long lastMod;
     try {
       // assume default, change if needed (getOpenTime() should be fast)
       lastMod =
-        LastModFrom.DIRLASTMOD == lastModFrom
-        ? IndexDeletionPolicyWrapper.getCommitTimestamp(searcher.getIndexReader().getIndexCommit())
-        : searcher.getOpenTimeStamp().getTime();
+          LastModFrom.DIRLASTMOD == lastModFrom
+              ? IndexDeletionPolicyWrapper.getCommitTimestamp(
+                  searcher.getIndexReader().getIndexCommit())
+              : searcher.getOpenTimeStamp().getTime();
     } catch (IOException e) {
       // we're pretty freaking screwed if this happens
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -161,16 +160,16 @@ public final class HttpCacheHeaderUtil {
   }
 
   /**
-   * Set the Cache-Control HTTP header (and Expires if needed)
-   * based on the SolrConfig.
+   * Set the Cache-Control HTTP header (and Expires if needed) based on the SolrConfig.
+   *
    * @param conf The config of the SolrCore handling this request
    * @param resp The servlet response object to modify
    * @param method The request method (GET, POST, ...) used by this request
    */
-  public static void setCacheControlHeader(final SolrConfig conf,
-                                           final HttpServletResponse resp, final Method method) {
+  public static void setCacheControlHeader(
+      final SolrConfig conf, final HttpServletResponse resp, final Method method) {
     // We do not emit HTTP header for POST and OTHER request types
-    if (Method.POST==method || Method.OTHER==method) {
+    if (Method.POST == method || Method.OTHER == method) {
       return;
     }
     final String cc = conf.getHttpCachingConfig().getCacheControlHeader();
@@ -181,38 +180,33 @@ public final class HttpCacheHeaderUtil {
     if (null != maxAge) {
       resp.setDateHeader("Expires", timeNowForHeader() + (maxAge * 1000L));
     }
-
-    return;
   }
 
   /**
-   * Sets HTTP Response cache validator headers appropriately and
-   * validates the HTTP Request against these using any conditional
-   * request headers.
+   * Sets HTTP Response cache validator headers appropriately and validates the HTTP Request against
+   * these using any conditional request headers.
    *
-   * If the request contains conditional headers, and those headers
-   * indicate a match with the current known state of the system, this
-   * method will return "true" indicating that a 304 Status code can be
-   * returned, and no further processing is needed.
+   * <p>If the request contains conditional headers, and those headers indicate a match with the
+   * current known state of the system, this method will return "true" indicating that a 304 Status
+   * code can be returned, and no further processing is needed.
    *
-   * 
-   * @return true if the request contains conditional headers, and those
-   *         headers indicate a match with the current known state of the
-   *         system -- indicating that a 304 Status code can be returned to
-   *         the client, and no further request processing is needed.  
+   * @return true if the request contains conditional headers, and those headers indicate a match
+   *     with the current known state of the system -- indicating that a 304 Status code can be
+   *     returned to the client, and no further request processing is needed.
    */
-  public static boolean doCacheHeaderValidation(final SolrQueryRequest solrReq,
-                                                final HttpServletRequest req,
-                                                final Method reqMethod,
-                                                final HttpServletResponse resp) {
-    
-    if (Method.POST==reqMethod || Method.OTHER==reqMethod) {
+  public static boolean doCacheHeaderValidation(
+      final SolrQueryRequest solrReq,
+      final HttpServletRequest req,
+      final Method reqMethod,
+      final HttpServletResponse resp) {
+
+    if (Method.POST == reqMethod || Method.OTHER == reqMethod) {
       return false;
     }
-    
+
     final long lastMod = HttpCacheHeaderUtil.calcLastModified(solrReq);
     final String etag = HttpCacheHeaderUtil.calcEtag(solrReq);
-    
+
     resp.setDateHeader("Last-Modified", lastMod);
     resp.setHeader("ETag", etag);
 
@@ -226,22 +220,22 @@ public final class HttpCacheHeaderUtil {
 
     return false;
   }
-  
 
   /**
-   * Check for etag related conditional headers and set status 
-   * 
-   * @return true if no request processing is necessary and HTTP response status has been set, false otherwise.
+   * Check for etag related conditional headers and set status
+   *
+   * @return true if no request processing is necessary and HTTP response status has been set, false
+   *     otherwise.
    */
-  public static boolean checkETagValidators(final HttpServletRequest req,
-                                            final HttpServletResponse resp,
-                                            final Method reqMethod,
-                                            final String etag) {
-    
+  public static boolean checkETagValidators(
+      final HttpServletRequest req,
+      final HttpServletResponse resp,
+      final Method reqMethod,
+      final String etag) {
+
     // First check If-None-Match because this is the common used header
     // element by HTTP clients
-    final List<String> ifNoneMatchList = Collections.list(req
-        .getHeaders("If-None-Match"));
+    final List<String> ifNoneMatchList = Collections.list(req.getHeaders("If-None-Match"));
     if (ifNoneMatchList.size() > 0 && isMatchingEtag(ifNoneMatchList, etag)) {
       if (reqMethod == Method.GET || reqMethod == Method.HEAD) {
         sendNotModified(resp);
@@ -252,8 +246,7 @@ public final class HttpCacheHeaderUtil {
     }
 
     // Check for If-Match headers
-    final List<String> ifMatchList = Collections.list(req
-        .getHeaders("If-Match"));
+    final List<String> ifMatchList = Collections.list(req.getHeaders("If-Match"));
     if (ifMatchList.size() > 0 && !isMatchingEtag(ifMatchList, etag)) {
       sendPreconditionFailed(resp);
       return true;
@@ -263,13 +256,13 @@ public final class HttpCacheHeaderUtil {
   }
 
   /**
-   * Check for modify time related conditional headers and set status 
-   * 
-   * @return true if no request processing is necessary and HTTP response status has been set, false otherwise.
+   * Check for modify time related conditional headers and set status
+   *
+   * @return true if no request processing is necessary and HTTP response status has been set, false
+   *     otherwise.
    */
-  public static boolean checkLastModValidators(final HttpServletRequest req,
-                                               final HttpServletResponse resp,
-                                               final long lastMod) {
+  public static boolean checkLastModValidators(
+      final HttpServletRequest req, final HttpServletResponse resp, final long lastMod) {
 
     try {
       // First check for If-Modified-Since because this is the common
@@ -280,7 +273,7 @@ public final class HttpCacheHeaderUtil {
         sendNotModified(resp);
         return true;
       }
-      
+
       final long unmodifiedSince = req.getDateHeader("If-Unmodified-Since");
       if (unmodifiedSince != -1L && lastMod > unmodifiedSince) {
         // Send a "precondition failed"
@@ -294,16 +287,15 @@ public final class HttpCacheHeaderUtil {
     return false;
   }
 
-   /**
-   * Checks if the downstream request handler wants to avoid HTTP caching of
-   * the response.
-   * 
+  /**
+   * Checks if the downstream request handler wants to avoid HTTP caching of the response.
+   *
    * @param solrRsp The Solr response object
    * @param resp The HTTP servlet response object
    * @param reqMethod The HTTP request type
    */
-  public static void checkHttpCachingVeto(final SolrQueryResponse solrRsp,
-      HttpServletResponse resp, final Method reqMethod) {
+  public static void checkHttpCachingVeto(
+      final SolrQueryResponse solrRsp, HttpServletResponse resp, final Method reqMethod) {
     // For POST we do nothing. They never get cached
     if (Method.POST == reqMethod || Method.OTHER == reqMethod) {
       return;
@@ -313,7 +305,7 @@ public final class HttpCacheHeaderUtil {
     if (solrRsp.isHttpCaching() && solrRsp.getException() == null) {
       return;
     }
-    
+
     // Otherwise we tell the caches that we don't want to cache the response
     resp.setHeader("Cache-Control", "no-cache, no-store");
 
@@ -328,8 +320,8 @@ public final class HttpCacheHeaderUtil {
     // We signal "just modified" just in case some broken
     // proxy cache does not follow the above headers
     resp.setDateHeader("Last-Modified", timeNowForHeader);
-    
+
     // We override the ETag with something different
-    resp.setHeader("ETag", '"'+Long.toHexString(timeNowForHeader)+'"');
-  } 
+    resp.setHeader("ETag", '"' + Long.toHexString(timeNowForHeader) + '"');
+  }
 }

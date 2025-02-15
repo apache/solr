@@ -18,9 +18,7 @@ package org.apache.solr.cluster.events;
 
 import java.time.Instant;
 
-/**
- * Cluster-level event.
- */
+/** Cluster-level event. */
 public interface ClusterEvent {
 
   enum EventType {
@@ -41,7 +39,9 @@ public interface ClusterEvent {
   /** Get event type. */
   EventType getType();
 
-  /** Get event timestamp. This is the instant when the event was generated (not necessarily when
-   * the underlying condition first occurred). */
+  /**
+   * Get event timestamp. This is the instant when the event was generated (not necessarily when the
+   * underlying condition first occurred).
+   */
   Instant getTimestamp();
 }

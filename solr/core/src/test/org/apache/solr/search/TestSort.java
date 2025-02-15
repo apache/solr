@@ -19,12 +19,10 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,22 +33,27 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -65,7 +68,7 @@ public class TestSort extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema-minimal.xml");
+    initCore("solrconfig.xml", "schema-minimal.xml");
   }
 
   Random r;
@@ -73,8 +76,8 @@ public class TestSort extends SolrTestCaseJ4 {
   int ndocs = 77;
   int iter = 50;
   int qiter = 1000;
-  int commitCount = ndocs/5 + 1;
-  int maxval = ndocs*2;
+  int commitCount = ndocs / 5 + 1;
+  int maxval = ndocs * 2;
 
   @Override
   public void setUp() throws Exception {
@@ -89,11 +92,11 @@ public class TestSort extends SolrTestCaseJ4 {
 
     @Override
     public String toString() {
-      return "{id=" +doc + " val1="+val + " val2="+val2 + "}";
+      return "{id=" + doc + " val1=" + val + " val2=" + val2 + "}";
     }
   }
 
-  public void testRandomFieldNameSorts() throws Exception {
+  public void testRandomFieldNameSorts() {
     SolrQueryRequest req = lrf.makeRequest("q", "*:*");
 
     final int iters = atLeast(5000);
@@ -111,22 +114,27 @@ public class TestSort extends SolrTestCaseJ4 {
           names[j] = TestUtil.randomRealisticUnicodeString(r, 1, 100);
 
           // munge anything that might make this a function
-          names[j] = names[j].replaceFirst("\\{","\\}\\{");
-          names[j] = names[j].replaceFirst("\\(","\\)\\(");
-          names[j] = names[j].replaceFirst("(\\\"|\\')","$1$1z");
-          names[j] = names[j].replaceFirst("(\\d)","$1x");
+          names[j] = names[j].replaceFirst("\\{", "\\}\\{");
+          names[j] = names[j].replaceFirst("\\(", "\\)\\(");
+          names[j] = names[j].replaceFirst("(\\\"|\\')", "$1$1z");
+          names[j] = names[j].replaceFirst("(\\d)", "$1x");
 
           // eliminate pesky problem chars
-          names[j] = names[j].replaceAll("\\p{Cntrl}|\\p{javaWhitespace}","");
-          
+          names[j] = names[j].replaceAll("\\p{Cntrl}|\\p{javaWhitespace}", "");
+
           if (0 == names[j].length()) {
             names[j] = null;
           }
         }
         // with luck this bad, never go to vegas
         // alternatively: if (null == names[j]) names[j] = "never_go_to_vegas";
-        assertNotNull("Unable to generate a (non-blank) names["+j+"] after "
-                      + nonBlankAttempts + " attempts", names[j]);
+        assertNotNull(
+            "Unable to generate a (non-blank) names["
+                + j
+                + "] after "
+                + nonBlankAttempts
+                + " attempts",
+            names[j]);
 
         reverse[j] = r.nextBoolean();
 
@@ -135,7 +143,7 @@ public class TestSort extends SolrTestCaseJ4 {
         input.append(" ");
         input.append(reverse[j] ? "desc," : "asc,");
       }
-      input.deleteCharAt(input.length()-1);
+      input.deleteCharAt(input.length() - 1);
       SortField[] sorts = null;
       List<SchemaField> fields = null;
       try {
@@ -145,62 +153,65 @@ public class TestSort extends SolrTestCaseJ4 {
       } catch (RuntimeException e) {
         throw new RuntimeException("Failed to parse sort: " + input, e);
       }
-      assertEquals("parsed sorts had unexpected size", 
-                   names.length, sorts.length);
-      assertEquals("parsed sort schema fields had unexpected size", 
-                   names.length, fields.size());
+      assertEquals("parsed sorts had unexpected size", names.length, sorts.length);
+      assertEquals("parsed sort schema fields had unexpected size", names.length, fields.size());
       for (int j = 0; j < names.length; j++) {
-        assertEquals("sorts["+j+"] had unexpected reverse: " + input,
-                     reverse[j], sorts[j].getReverse());
+        assertEquals(
+            "sorts[" + j + "] had unexpected reverse: " + input, reverse[j], sorts[j].getReverse());
 
         final Type type = sorts[j].getType();
 
         if (Type.SCORE.equals(type)) {
-          assertEquals("sorts["+j+"] is (unexpectedly) type score : " + input,
-                       "score", names[j]);
+          assertEquals(
+              "sorts[" + j + "] is (unexpectedly) type score : " + input, "score", names[j]);
         } else if (Type.DOC.equals(type)) {
-          assertEquals("sorts["+j+"] is (unexpectedly) type doc : " + input,
-                       "_docid_", names[j]);
+          assertEquals(
+              "sorts[" + j + "] is (unexpectedly) type doc : " + input, "_docid_", names[j]);
         } else if (Type.CUSTOM.equals(type) || Type.REWRITEABLE.equals(type)) {
           log.error("names[{}] : {}", j, names[j]);
           log.error("sorts[{}] : {}", j, sorts[j]);
-          fail("sorts["+j+"] resulted in a '" + type.toString()
-               + "', either sort parsing code is broken, or func/query " 
-               + "semantics have gotten broader and munging in this test "
-               + "needs improved: " + input);
+          fail(
+              "sorts["
+                  + j
+                  + "] resulted in a '"
+                  + type
+                  + "', either sort parsing code is broken, or func/query "
+                  + "semantics have gotten broader and munging in this test "
+                  + "needs improved: "
+                  + input);
 
         } else {
-          assertEquals("sorts["+j+"] ("+type.toString()+
-                       ") had unexpected field in: " + input,
-                       names[j], sorts[j].getField());
-          assertEquals("fields["+j+"] ("+type.toString()+
-                       ") had unexpected name in: " + input,
-                       names[j], fields.get(j).getName());
+          assertEquals(
+              "sorts[" + j + "] (" + type.toString() + ") had unexpected field in: " + input,
+              names[j],
+              sorts[j].getField());
+          assertEquals(
+              "fields[" + j + "] (" + type + ") had unexpected name in: " + input,
+              names[j],
+              fields.get(j).getName());
         }
       }
     }
   }
-
-
 
   public void testSort() throws Exception {
     Directory dir = new ByteBuffersDirectory();
     Field f = new StringField("f", "0", Field.Store.NO);
     Field f2 = new StringField("f2", "0", Field.Store.NO);
 
-    for (int iterCnt = 0; iterCnt<iter; iterCnt++) {
-      IndexWriter iw = new IndexWriter(
-          dir,
-          new IndexWriterConfig(new SimpleAnalyzer()).
-              setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-      );
+    for (int iterCnt = 0; iterCnt < iter; iterCnt++) {
+      IndexWriter iw =
+          new IndexWriter(
+              dir,
+              new IndexWriterConfig(new SimpleAnalyzer())
+                  .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
       final MyDoc[] mydocs = new MyDoc[ndocs];
 
       int v1EmptyPercent = 50;
       int v2EmptyPercent = 50;
 
       int commitCountdown = commitCount;
-      for (int i=0; i< ndocs; i++) {
+      for (int i = 0; i < ndocs; i++) {
         MyDoc mydoc = new MyDoc();
         mydoc.doc = i;
         mydocs[i] = mydoc;
@@ -217,7 +228,6 @@ public class TestSort extends SolrTestCaseJ4 {
           document.add(f2);
         }
 
-
         iw.addDocument(document);
         if (--commitCountdown <= 0) {
           commitCountdown = commitCount;
@@ -226,7 +236,7 @@ public class TestSort extends SolrTestCaseJ4 {
       }
       iw.close();
 
-      Map<String,UninvertingReader.Type> mapping = new HashMap<>();
+      Map<String, UninvertingReader.Type> mapping = new HashMap<>();
       mapping.put("f", UninvertingReader.Type.SORTED);
       mapping.put("f2", UninvertingReader.Type.SORTED);
 
@@ -235,29 +245,52 @@ public class TestSort extends SolrTestCaseJ4 {
       // System.out.println("segments="+searcher.getIndexReader().getSequentialSubReaders().length);
       assertTrue(reader.leaves().size() > 1);
 
-      for (int i=0; i<qiter; i++) {
-        Filter filt = new Filter() {
-          @Override
-          public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-            return BitsFilteredDocIdSet.wrap(randSet(context.reader().maxDoc()), acceptDocs);
-          }
-          @Override
-          public String toString(String field) {
-            return "TestSortFilter";
-          }
+      for (int i = 0; i < qiter; i++) {
+        Query query =
+            new Query() {
+              @Override
+              public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+                return new Weight(this) {
 
-          @Override
-          public boolean equals(Object other) {
-            return other == this;
-          }
-          
-          @Override
-          public int hashCode() {
-            return System.identityHashCode(this);
-          }          
-        };
+                  @Override
+                  public Explanation explain(LeafReaderContext context, int doc) {
+                    return Explanation.match(0f, "No match on id " + doc);
+                  }
 
-        int top = r.nextInt((ndocs>>3)+1)+1;
+                  @Override
+                  public Scorer scorer(LeafReaderContext leafReaderContext) {
+                    return null;
+                  }
+
+                  @Override
+                  public boolean isCacheable(LeafReaderContext ctx) {
+                    return false;
+                  }
+                };
+              }
+
+              @Override
+              public String toString(String field) {
+                return "TestSortFilter";
+              }
+
+              @Override
+              public void visit(QueryVisitor queryVisitor) {
+                queryVisitor.visitLeaf(this);
+              }
+
+              @Override
+              public boolean equals(Object other) {
+                return other == this;
+              }
+
+              @Override
+              public int hashCode() {
+                return System.identityHashCode(this);
+              }
+            };
+
+        int top = r.nextInt((ndocs >> 3) + 1) + 1;
         final boolean luceneSort = r.nextBoolean();
         final boolean sortMissingLast = !luceneSort && r.nextBoolean();
         final boolean sortMissingFirst = !luceneSort && !sortMissingLast;
@@ -270,70 +303,79 @@ public class TestSort extends SolrTestCaseJ4 {
         final boolean sortMissingFirst2 = !luceneSort2 && !sortMissingLast2;
         final boolean reverse2 = r.nextBoolean();
 
-        if (r.nextBoolean()) sfields.add( new SortField(null, SortField.Type.SCORE));
+        if (r.nextBoolean()) sfields.add(new SortField(null, SortField.Type.SCORE));
         // hit both use-cases of sort-missing-last
-        sfields.add( getStringSortField("f", reverse, sortMissingLast, sortMissingFirst) );
+        sfields.add(getStringSortField("f", reverse, sortMissingLast, sortMissingFirst));
         if (secondary) {
-          sfields.add( getStringSortField("f2", reverse2, sortMissingLast2, sortMissingFirst2) );
+          sfields.add(getStringSortField("f2", reverse2, sortMissingLast2, sortMissingFirst2));
         }
-        if (r.nextBoolean()) sfields.add( new SortField(null, SortField.Type.SCORE));
+        if (r.nextBoolean()) sfields.add(new SortField(null, SortField.Type.SCORE));
 
-        Sort sort = new Sort(sfields.toArray(new SortField[sfields.size()]));
+        Sort sort = new Sort(sfields.toArray(new SortField[0]));
 
-        final String nullRep = luceneSort || sortMissingFirst && !reverse || sortMissingLast && reverse ? "" : "zzz";
-        final String nullRep2 = luceneSort2 || sortMissingFirst2 && !reverse2 || sortMissingLast2 && reverse2 ? "" : "zzz";
+        final String nullRep =
+            luceneSort || (sortMissingFirst && !reverse) || (sortMissingLast && reverse)
+                ? ""
+                : "zzz";
+        final String nullRep2 =
+            luceneSort2 || (sortMissingFirst2 && !reverse2) || (sortMissingLast2 && reverse2)
+                ? ""
+                : "zzz";
 
-        boolean scoreInOrder = r.nextBoolean();
-        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
+        final TopFieldCollector topCollector =
+            TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves
-        Collector myCollector = new FilterCollector(topCollector) {
+        Collector myCollector =
+            new FilterCollector(topCollector) {
 
-          @Override
-          public LeafCollector getLeafCollector(LeafReaderContext context)
-              throws IOException {
-            final int docBase = context.docBase;
-            return new FilterLeafCollector(super.getLeafCollector(context)) {
               @Override
-              public void collect(int doc) throws IOException {
-                super.collect(doc);
-                collectedDocs.add(mydocs[docBase + doc]);
+              public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+                final int docBase = context.docBase;
+                return new FilterLeafCollector(super.getLeafCollector(context)) {
+                  @Override
+                  public void collect(int doc) throws IOException {
+                    super.collect(doc);
+                    collectedDocs.add(mydocs[docBase + doc]);
+                  }
+                };
               }
             };
-          }
 
-        };
+        searcher.search(query, myCollector);
 
-        searcher.search(filt, myCollector);
+        collectedDocs.sort(
+            (o1, o2) -> {
+              String v1 = o1.val == null ? nullRep : o1.val;
+              String v2 = o2.val == null ? nullRep : o2.val;
+              int cmp = v1.compareTo(v2);
+              if (reverse) cmp = -cmp;
+              if (cmp != 0) return cmp;
 
-        Collections.sort(collectedDocs, (o1, o2) -> {
-          String v1 = o1.val == null ? nullRep : o1.val;
-          String v2 = o2.val == null ? nullRep : o2.val;
-          int cmp = v1.compareTo(v2);
-          if (reverse) cmp = -cmp;
-          if (cmp != 0) return cmp;
+              if (secondary) {
+                v1 = o1.val2 == null ? nullRep2 : o1.val2;
+                v2 = o2.val2 == null ? nullRep2 : o2.val2;
+                cmp = v1.compareTo(v2);
+                if (reverse2) cmp = -cmp;
+              }
 
-          if (secondary) {
-            v1 = o1.val2 == null ? nullRep2 : o1.val2;
-            v2 = o2.val2 == null ? nullRep2 : o2.val2;
-            cmp = v1.compareTo(v2);
-            if (reverse2) cmp = -cmp;
-          }
-
-          cmp = cmp == 0 ? o1.doc - o2.doc : cmp;
-          return cmp;
-        });
-
+              cmp = cmp == 0 ? o1.doc - o2.doc : cmp;
+              return cmp;
+            });
 
         TopDocs topDocs = topCollector.topDocs();
         ScoreDoc[] sdocs = topDocs.scoreDocs;
-        for (int j=0; j<sdocs.length; j++) {
+        for (int j = 0; j < sdocs.length; j++) {
           int id = sdocs[j].doc;
           if (id != collectedDocs.get(j).doc) {
-            log.error("Error at pos {}\n\tsortMissingFirst={} sortMissingLast={} reverse={}\n\tEXPECTED={}"
-                , j, sortMissingFirst, sortMissingLast, reverse, collectedDocs
-            );
+            log.error(
+                "Error at pos {}\n\tsortMissingFirst={} sortMissingLast={} reverse={}\n\tEXPECTED={}",
+                j,
+                sortMissingFirst,
+                sortMissingLast,
+                reverse,
+                collectedDocs);
           }
           assertEquals(id, collectedDocs.get(j).doc);
         }
@@ -341,27 +383,27 @@ public class TestSort extends SolrTestCaseJ4 {
       reader.close();
     }
     dir.close();
-
   }
 
   public DocIdSet randSet(int sz) {
     FixedBitSet obs = new FixedBitSet(sz);
     int n = r.nextInt(sz);
-    for (int i=0; i<n; i++) {
+    for (int i = 0; i < n; i++) {
       obs.set(r.nextInt(sz));
     }
     return new BitDocIdSet(obs);
-  }  
-  
-  private static SortField getStringSortField(String fieldName, boolean reverse, boolean nullLast, boolean nullFirst) {
+  }
+
+  private static SortField getStringSortField(
+      String fieldName, boolean reverse, boolean nullLast, boolean nullFirst) {
     SortField sortField = new SortField(fieldName, SortField.Type.STRING, reverse);
-    
+
     // 4 cases:
     // missingFirst / forward: default lucene behavior
     // missingFirst / reverse: set sortMissingLast
     // missingLast  / forward: set sortMissingLast
     // missingLast  / reverse: default lucene behavior
-    
+
     if (nullFirst && reverse) {
       sortField.setMissingValue(SortField.STRING_LAST);
     } else if (nullLast && !reverse) {

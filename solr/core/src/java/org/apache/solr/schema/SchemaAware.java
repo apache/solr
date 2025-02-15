@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 /**
-* An interface that can be extended to provide a callback mechanism for
-* informing an {@link IndexSchema} instance of changes to it, dynamically
-* performed at runtime.
-*
-* @since SOLR-1131
+ * An interface that can be extended to provide a callback mechanism for informing an {@link
+ * IndexSchema} instance of changes to it, dynamically performed at runtime.
  *
- **/
+ * @since SOLR-1131
+ */
 public interface SchemaAware {
   /**
-   * Informs the {@link IndexSchema} provided by the <code>schema</code>
-   * parameter of an event (e.g., a new {@link FieldType} was added, etc.
+   * Informs the {@link IndexSchema} provided by the <code>schema</code> parameter of an event
+   * (e.g., a new {@link FieldType} was added, etc.
    *
-   * @param schema
-   *          The {@link IndexSchema} instance that inform of the update to.
-   *
+   * @param schema The {@link IndexSchema} instance that inform of the update to.
    * @since SOLR-1131
    */
   public void inform(IndexSchema schema);

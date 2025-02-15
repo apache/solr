@@ -19,9 +19,8 @@ package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
@@ -30,33 +29,33 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.json.BucketBasedJsonFacet;
 import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
 import org.apache.solr.cloud.SolrCloudTestCase;
-
-import org.apache.lucene.util.IOUtils;
-
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
- * Tests the ability to use {@link SignatureUpdateProcessorFactory} to generate uniqueKeys for "duplicate" documents
- * in cloud mode.
+ * Tests the ability to use {@link SignatureUpdateProcessorFactory} to generate uniqueKeys for
+ * "duplicate" documents in cloud mode.
  */
 public class TestCloudDeduplication extends SolrCloudTestCase {
-  public final static String COLLECTION = "dedup_col";
-  
+  public static final String COLLECTION = "dedup_col";
+
   /** One client per node */
   private static final List<SolrClient> NODE_CLIENTS = new ArrayList<>(7);
-  /** clients (including cloud client) for easy randomization and looping of collection level requests */
+
+  /**
+   * clients (including cloud client) for easy randomization and looping of collection level
+   * requests
+   */
   private static final List<SolrClient> CLIENTS = new ArrayList<>(7);
-  
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     final int numShards = usually() ? 2 : 1;
     final int numReplicas = usually() ? 2 : 1;
-    final int numNodes = 1 + (numShards * numReplicas);  // at least one node w/o any replicas
-    configureCluster(numNodes) 
-      .addConfig("conf", configset("dedup"))
-      .configure();
+    final int numNodes = 1 + (numShards * numReplicas); // at least one node w/o any replicas
+    configureCluster(numNodes).addConfig("conf", configset("dedup")).configure();
 
     CLIENTS.add(cluster.getSolrClient());
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -64,18 +63,19 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
       NODE_CLIENTS.add(c);
       CLIENTS.add(c);
     }
-    
-    assertEquals("failed to create collection", 0,
-                 CollectionAdminRequest
-                 .createCollection(COLLECTION, "conf", numShards, numReplicas)
-                 .process(cluster.getSolrClient()).getStatus());
+
+    assertEquals(
+        "failed to create collection",
+        0,
+        CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
+            .process(cluster.getSolrClient())
+            .getStatus());
 
     cluster.waitForActiveCollection(COLLECTION, numShards, numShards * numReplicas);
-
   }
-  
+
   @AfterClass
-  private static void closeClients() throws Exception {
+  public static void closeClients() throws Exception {
     try {
       IOUtils.close(NODE_CLIENTS);
     } finally {
@@ -86,16 +86,16 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
 
   @After
   public void clearCollection() throws Exception {
-    assertEquals("DBQ failed", 0, cluster.getSolrClient().deleteByQuery(COLLECTION, "*:*").getStatus());
+    assertEquals(
+        "DBQ failed", 0, cluster.getSolrClient().deleteByQuery(COLLECTION, "*:*").getStatus());
     assertEquals("commit failed", 0, cluster.getSolrClient().commit(COLLECTION).getStatus());
   }
 
-  
   public void testRandomDocs() throws Exception {
 
     // index some random documents, using a mix-match of batches, to various SolrClients
-    
-    final int uniqueMod = atLeast(43);         // the number of unique sig values expected
+
+    final int uniqueMod = atLeast(43); // the number of unique sig values expected
     final int numBatches = atLeast(uniqueMod); // we'll add at least one doc per batch
     int docCounter = 0;
     for (int batchId = 0; batchId < numBatches; batchId++) {
@@ -103,42 +103,44 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
       final int batchSize = atLeast(2);
       for (int i = 0; i < batchSize; i++) {
         docCounter++;
-        ureq.add(sdoc(// NOTE: No 'id' field, SignatureUpdateProcessor fills it in for us
-                      "data_s", (docCounter % uniqueMod)));
+        ureq.add(
+            sdoc( // NOTE: No 'id' field, SignatureUpdateProcessor fills it in for us
+                "data_s", (docCounter % uniqueMod)));
       }
       assertEquals("add failed", 0, ureq.process(getRandClient(), COLLECTION).getStatus());
     }
     assertEquals("commit failed", 0, getRandClient().commit(COLLECTION).getStatus());
-    
-    assert docCounter > uniqueMod;
-    
+
+    assertTrue(docCounter > uniqueMod);
+
     // query our collection and confirm no duplicates on the signature field (using faceting)
     // Check every (node) for consistency...
-    final JsonQueryRequest req = new JsonQueryRequest()
-      .setQuery("*:*")
-      .setLimit(0)
-      .withFacet("data_facet", new TermsFacetMap("data_s").setLimit(uniqueMod + 1));
+    final JsonQueryRequest req =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .setLimit(0)
+            .withFacet("data_facet", new TermsFacetMap("data_s").setLimit(uniqueMod + 1));
     for (SolrClient client : CLIENTS) {
       final QueryResponse rsp = req.process(client, COLLECTION);
       try {
         assertEquals(0, rsp.getStatus());
         assertEquals(uniqueMod, rsp.getResults().getNumFound());
-        
-        final BucketBasedJsonFacet facet = rsp.getJsonFacetingResponse().getBucketBasedFacets("data_facet");
+
+        final BucketBasedJsonFacet facet =
+            rsp.getJsonFacetingResponse().getBucketBasedFacets("data_facet");
         assertEquals(uniqueMod, facet.getBuckets().size());
         for (BucketJsonFacet bucket : facet.getBuckets()) {
-          assertEquals("Bucket " + bucket.getVal(),
-                       1, bucket.getCount());
+          assertEquals("Bucket " + bucket.getVal(), 1, bucket.getCount());
         }
       } catch (AssertionError e) {
         throw new AssertionError(rsp + " + " + client + " => " + e.getMessage(), e);
       }
     }
   }
-  
-  /** 
-   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed 
-   * at a node in our cluster.
+
+  /**
+   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
+   * in our cluster.
    */
   private static SolrClient getRandClient() {
     return CLIENTS.get(random().nextInt(CLIENTS.size()));

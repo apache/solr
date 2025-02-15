@@ -16,11 +16,18 @@
  */
 package org.apache.solr.util;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -31,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
@@ -39,18 +45,18 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.QueryLimit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Allows random faults to be injected in running code during test runs.
- * 
- * Set static strings to "true" or "false" or "true:60" for true 60% of the time.
- * 
- * All methods are No-Ops unless <code>LuceneTestCase</code> is loadable via the ClassLoader used 
- * to load this class.  <code>LuceneTestCase.random()</code> is used as the source of all entropy.
- * 
+ *
+ * <p>Set static strings to "true" or "false" or "true:60" for true 60% of the time.
+ *
+ * <p>All methods are No-Ops unless <code>LuceneTestCase</code> is loadable via the ClassLoader used
+ * to load this class. <code>LuceneTestCase.random()</code> is used as the source of all entropy.
+ *
  * @lucene.internal
  */
 public class TestInjection {
@@ -60,22 +66,23 @@ public class TestInjection {
     public TestShutdownFailError(String msg) {
       super(msg);
     }
-    
   }
-  
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  private static final Pattern ENABLED_PERCENT = Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
-  
-  private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.util.LuceneTestCase";
 
-  /** 
-   * If null, then we are not being run as part of a test, and all TestInjection events should be No-Ops.
-   * If non-null, then this class should be used for accessing random entropy
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Pattern ENABLED_PERCENT =
+      Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
+
+  private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.tests.util.LuceneTestCase";
+
+  /**
+   * If null, then we are not being run as part of a test, and all TestInjection events should be
+   * No-Ops. If non-null, then this class should be used for accessing random entropy
+   *
    * @see #random
    */
   private static final Class<?> LUCENE_TEST_CASE;
-  
+
   static {
     Class<?> nonFinalTemp = null;
     try {
@@ -88,8 +95,8 @@ public class TestInjection {
   }
 
   /**
-   * Returns a random to be used by the current thread if available, otherwise
-   * returns null.
+   * Returns a random to be used by the current thread if available, otherwise returns null.
+   *
    * @see #LUCENE_TEST_CASE
    */
   static Random random() { // non-private for testing
@@ -100,70 +107,93 @@ public class TestInjection {
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {
-        throw new IllegalStateException("Unable to use reflection to invoke LuceneTestCase.random()", e);
+        throw new IllegalStateException(
+            "Unable to use reflection to invoke LuceneTestCase.random()", e);
       }
     }
   }
-  
-  public volatile static String nonGracefullClose = null;
-  
-  public volatile static String failReplicaRequests = null;
-  
-  public volatile static String failUpdateRequests = null;
 
-  public volatile static String leaderTragedy = null;
+  public static volatile String nonGracefullClose = null;
 
-  public volatile static String nonExistentCoreExceptionAfterUnload = null;
+  public static volatile String failReplicaRequests = null;
 
-  public volatile static String updateLogReplayRandomPause = null;
-  
-  public volatile static String updateRandomPause = null;
+  public static volatile String failUpdateRequests = null;
 
-  public volatile static String prepRecoveryOpPauseForever = null;
+  public static volatile String leaderTragedy = null;
 
-  public volatile static String randomDelayInCoreCreation = null;
-  
-  public volatile static int randomDelayMaxInCoreCreationInSec = 10;
+  public static volatile String nonExistentCoreExceptionAfterUnload = null;
 
-  public volatile static String splitFailureBeforeReplicaCreation = null;
+  public static volatile String updateLogReplayRandomPause = null;
 
-  public volatile static String splitFailureAfterReplicaCreation = null;
+  public static volatile String updateRandomPause = null;
 
-  public volatile static CountDownLatch splitLatch = null;
+  public static volatile String prepRecoveryOpPauseForever = null;
 
-  public volatile static CountDownLatch directUpdateLatch = null;
+  public static volatile String randomDelayInCoreCreation = null;
 
-  public volatile static CountDownLatch reindexLatch = null;
+  public static volatile int randomDelayMaxInCoreCreationInSec = 10;
 
-  public volatile static String reindexFailure = null;
+  public static volatile String splitFailureBeforeReplicaCreation = null;
 
-  public volatile static String failIndexFingerprintRequests = null;
+  public static volatile String splitFailureAfterReplicaCreation = null;
 
-  public volatile static String wrongIndexFingerprint = null;
-  
-  private volatile static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
+  public static volatile CountDownLatch splitLatch = null;
 
-  private volatile static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
+  public static volatile CountDownLatch directUpdateLatch = null;
 
-  public volatile static Integer delayBeforeFollowerCommitRefresh=null;
+  public static volatile CountDownLatch reindexLatch = null;
 
-  public volatile static Integer delayInExecutePlanAction=null;
+  public static volatile String reindexFailure = null;
 
-  public volatile static boolean failInExecutePlanAction = false;
+  public static volatile String failIndexFingerprintRequests = null;
+
+  public static volatile String wrongIndexFingerprint = null;
+
+  private static volatile Set<Timer> timers = Collections.synchronizedSet(new HashSet<>());
+
+  private static volatile AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
+
+  public static volatile Integer delayBeforeFollowerCommitRefresh = null;
+
+  public static volatile Integer delayInExecutePlanAction = null;
+
+  public static volatile Integer delayBeforeCreatingNewDocSet = null;
+
+  public static volatile AtomicInteger countDocSetDelays = new AtomicInteger(0);
+
+  public static volatile QueryLimit queryTimeout = null;
+
+  public static volatile boolean failInExecutePlanAction = false;
+
+  public static volatile AtomicInteger cpuTimerDelayInjectedNS = null;
+
+  private static final KeyPairGenerator kpg;
+
+  static {
+    KeyPairGenerator generator;
+    try {
+      generator = KeyPairGenerator.getInstance("RSA");
+    } catch (NoSuchAlgorithmException e) {
+      generator = null;
+    }
+    kpg = generator;
+  }
+
+  private static volatile AtomicDouble cpuLoadPerKey = null;
 
   /**
-   * Defaults to <code>false</code>, If set to <code>true</code>, 
-   * then {@link #injectSkipIndexWriterCommitOnClose} will return <code>true</code>
+   * Defaults to <code>false</code>, If set to <code>true</code>, then {@link
+   * #injectSkipIndexWriterCommitOnClose} will return <code>true</code>
    *
    * @see #injectSkipIndexWriterCommitOnClose
    * @see org.apache.solr.update.DirectUpdateHandler2#closeWriter
    */
-  public volatile static boolean skipIndexWriterCommitOnClose = false;
+  public static volatile boolean skipIndexWriterCommitOnClose = false;
 
-  public volatile static boolean uifOutOfMemoryError = false;
+  public static volatile boolean uifOutOfMemoryError = false;
 
-  private volatile static CountDownLatch notifyPauseForeverDone = new CountDownLatch(1);
-  
+  private static volatile CountDownLatch notifyPauseForeverDone = new CountDownLatch(1);
+
   public static void notifyPauseForeverDone() {
     notifyPauseForeverDone.countDown();
     notifyPauseForeverDone = new CountDownLatch(1);
@@ -190,9 +220,12 @@ public class TestInjection {
     wrongIndexFingerprint = null;
     delayBeforeFollowerCommitRefresh = null;
     delayInExecutePlanAction = null;
+    delayBeforeCreatingNewDocSet = null;
+    countDocSetDelays.set(0);
     failInExecutePlanAction = false;
     skipIndexWriterCommitOnClose = false;
     uifOutOfMemoryError = false;
+    queryTimeout = null;
     notifyPauseForeverDone();
     newSearcherHooks.clear();
     for (Timer timer : timers) {
@@ -201,11 +234,11 @@ public class TestInjection {
   }
 
   public static boolean injectWrongIndexFingerprint() {
-    if (wrongIndexFingerprint != null)  {
+    if (wrongIndexFingerprint != null) {
       Random rand = random();
       if (null == rand) return true;
 
-      Pair<Boolean,Integer> pair = parseValue(wrongIndexFingerprint);
+      Pair<Boolean, Integer> pair = parseValue(wrongIndexFingerprint);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -215,12 +248,12 @@ public class TestInjection {
     return false;
   }
 
-  public static boolean injectFailIndexFingerprintRequests()  {
+  public static boolean injectFailIndexFingerprintRequests() {
     if (failIndexFingerprintRequests != null) {
       Random rand = random();
       if (null == rand) return true;
 
-      Pair<Boolean,Integer> pair = parseValue(failIndexFingerprintRequests);
+      Pair<Boolean, Integer> pair = parseValue(failIndexFingerprintRequests);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -229,20 +262,20 @@ public class TestInjection {
     }
     return true;
   }
-  
+
   public static boolean injectRandomDelayInCoreCreation() {
     if (randomDelayInCoreCreation != null) {
       Random rand = random();
       if (null == rand) return true;
-      
-      Pair<Boolean,Integer> pair = parseValue(randomDelayInCoreCreation);
+
+      Pair<Boolean, Integer> pair = parseValue(randomDelayInCoreCreation);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
         int delay = rand.nextInt(randomDelayMaxInCoreCreationInSec);
         log.info("Inject random core creation delay of {}s", delay);
         try {
-          Thread.sleep(delay * 1000);
+          Thread.sleep(delay * 1000L);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -250,13 +283,13 @@ public class TestInjection {
     }
     return true;
   }
-  
+
   public static boolean injectNonGracefullClose(CoreContainer cc) {
     if (cc.isShutDown() && nonGracefullClose != null) {
       Random rand = random();
       if (null == rand) return true;
-      
-      Pair<Boolean,Integer> pair = parseValue(nonGracefullClose);
+
+      Pair<Boolean, Integer> pair = parseValue(nonGracefullClose);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -266,25 +299,26 @@ public class TestInjection {
           final Timer timer = new Timer();
           final Thread cthread = Thread.currentThread();
 
-          TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-              // as long as places that catch interruptedexception reset that
-              // interrupted status,
-              // we should only need to do it once
-              
-              try {
-                // call random() again to get the correct one for this thread
-                Random taskRand = random();
-                Thread.sleep(taskRand.nextInt(1000));
-              } catch (InterruptedException e) {
-              
-              }
-              
-              cthread.interrupt();
-              timers.remove(timer);
-            }
-          };
+          TimerTask task =
+              new TimerTask() {
+                @Override
+                public void run() {
+                  // as long as places that catch interruptedexception reset that
+                  // interrupted status,
+                  // we should only need to do it once
+
+                  try {
+                    // call random() again to get the correct one for this thread
+                    Random taskRand = random();
+                    Thread.sleep(taskRand.nextInt(1000));
+                  } catch (InterruptedException e) {
+
+                  }
+
+                  cthread.interrupt();
+                  timers.remove(timer);
+                }
+              };
 
           timers.add(timer);
           timer.schedule(task, rand.nextInt(500));
@@ -303,18 +337,20 @@ public class TestInjection {
    */
   public static boolean injectSkipIndexWriterCommitOnClose(Object indexWriter) {
     if (skipIndexWriterCommitOnClose) {
-      log.info("Inject failure: skipIndexWriterCommitOnClose={}: {}",
-               skipIndexWriterCommitOnClose, indexWriter);
+      log.info(
+          "Inject failure: skipIndexWriterCommitOnClose={}: {}",
+          skipIndexWriterCommitOnClose,
+          indexWriter);
     }
     return skipIndexWriterCommitOnClose;
   }
-  
+
   public static boolean injectFailReplicaRequests() {
     if (failReplicaRequests != null) {
       Random rand = random();
       if (null == rand) return true;
-      
-      Pair<Boolean,Integer> pair = parseValue(failReplicaRequests);
+
+      Pair<Boolean, Integer> pair = parseValue(failReplicaRequests);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -324,13 +360,13 @@ public class TestInjection {
 
     return true;
   }
-  
+
   public static boolean injectFailUpdateRequests() {
     if (failUpdateRequests != null) {
       Random rand = random();
       if (null == rand) return true;
-      
-      Pair<Boolean,Integer> pair = parseValue(failUpdateRequests);
+
+      Pair<Boolean, Integer> pair = parseValue(failUpdateRequests);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -350,7 +386,7 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
 
-      if (! core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
+      if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
         return true;
       }
 
@@ -373,13 +409,13 @@ public class TestInjection {
     }
     return true;
   }
-  
+
   public static boolean injectNonExistentCoreExceptionAfterUnload(String cname) {
     if (nonExistentCoreExceptionAfterUnload != null) {
       Random rand = random();
       if (null == rand) return true;
-      
-      Pair<Boolean,Integer> pair = parseValue(nonExistentCoreExceptionAfterUnload);
+
+      Pair<Boolean, Integer> pair = parseValue(nonExistentCoreExceptionAfterUnload);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -389,13 +425,13 @@ public class TestInjection {
 
     return true;
   }
-  
+
   public static boolean injectUpdateLogReplayRandomPause() {
     if (updateLogReplayRandomPause != null) {
       Random rand = random();
       if (null == rand) return true;
-      
-      Pair<Boolean,Integer> pair = parseValue(updateLogReplayRandomPause);
+
+      Pair<Boolean, Integer> pair = parseValue(updateLogReplayRandomPause);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -411,13 +447,13 @@ public class TestInjection {
 
     return true;
   }
-  
+
   public static boolean injectUpdateRandomPause() {
     if (updateRandomPause != null) {
       Random rand = random();
       if (null == rand) return true;
-      
-      Pair<Boolean,Integer> pair = parseValue(updateRandomPause);
+
+      Pair<Boolean, Integer> pair = parseValue(updateRandomPause);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -427,7 +463,7 @@ public class TestInjection {
         } else {
           rndTime = rand.nextInt(1000);
         }
-       
+
         log.info("inject random update delay of {}ms", rndTime);
         try {
           Thread.sleep(rndTime);
@@ -442,17 +478,19 @@ public class TestInjection {
 
   public static boolean injectPrepRecoveryOpPauseForever() {
     String val = prepRecoveryOpPauseForever;
-    if (val != null)  {
+    if (val != null) {
       Random rand = random();
       if (null == rand) return true;
-      Pair<Boolean,Integer> pair = parseValue(val);
+      Pair<Boolean, Integer> pair = parseValue(val);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       // Prevent for continuous pause forever
-      if (enabled && rand.nextInt(100) >= (100 - chanceIn100) && countPrepRecoveryOpPauseForever.get() < 1) {
+      if (enabled
+          && rand.nextInt(100) >= (100 - chanceIn100)
+          && countPrepRecoveryOpPauseForever.get() < 1) {
         countPrepRecoveryOpPauseForever.incrementAndGet();
         log.info("inject pause forever for prep recovery op");
-        
+
         try {
           notifyPauseForeverDone.await();
         } catch (InterruptedException e) {
@@ -467,11 +505,11 @@ public class TestInjection {
   }
 
   private static boolean injectSplitFailure(String probability, String label) {
-    if (probability != null)  {
+    if (probability != null) {
       Random rand = random();
       if (null == rand) return true;
 
-      Pair<Boolean,Integer> pair = parseValue(probability);
+      Pair<Boolean, Integer> pair = parseValue(probability);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -483,11 +521,13 @@ public class TestInjection {
   }
 
   public static boolean injectSplitFailureBeforeReplicaCreation() {
-    return injectSplitFailure(splitFailureBeforeReplicaCreation, "before creating replica for sub-shard");
+    return injectSplitFailure(
+        splitFailureBeforeReplicaCreation, "before creating replica for sub-shard");
   }
 
   public static boolean injectSplitFailureAfterReplicaCreation() {
-    return injectSplitFailure(splitFailureAfterReplicaCreation, "after creating replica for sub-shard");
+    return injectSplitFailure(
+        splitFailureAfterReplicaCreation, "after creating replica for sub-shard");
   }
 
   public static boolean injectSplitLatch() {
@@ -514,12 +554,61 @@ public class TestInjection {
     return true;
   }
 
+  public static void measureCpu() {
+    if (kpg == null || cpuLoadPerKey != null) {
+      return;
+    }
+    long start = System.nanoTime();
+    for (int i = 0; i < 100; i++) {
+      genKeyPairAndDiscard();
+    }
+    // note that this is potentially imprecise because our thread could get paused in the middle of
+    // this, but
+    // it should give us some notion
+    long end = System.nanoTime();
+    cpuLoadPerKey = new AtomicDouble((end - start) / 100.0);
+    log.info("CPU per key = {}", cpuLoadPerKey);
+  }
+
+  private static void genKeyPairAndDiscard() {
+    kpg.initialize(1024);
+    KeyPair kp = kpg.generateKeyPair();
+    // avoid this getting optimized away by logging it
+    if (log.isTraceEnabled()) {
+      log.trace("{}", kp.getPublic());
+    }
+  }
+
+  private static void wasteCpu(int nanos) {
+    double wasteMe = nanos;
+    double loadPerKey = cpuLoadPerKey.get();
+    if (loadPerKey > nanos) {
+      java.text.DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+
+      DecimalFormat formatter = new DecimalFormat("#,###.00", symbols);
+      // yes this is still wasting formatting when not warn, but not important here.
+      log.warn(
+          "Test requests smaller simulated cpu lag than a single keypair generation actual lag is {} ns",
+          formatter.format(loadPerKey));
+    }
+    do {
+      genKeyPairAndDiscard();
+    } while ((wasteMe = wasteMe - loadPerKey) > 0.0);
+  }
+
+  public static void injectCpuUseInSearcherCpuLimitCheck() {
+    if (LUCENE_TEST_CASE == null) return;
+    if (cpuTimerDelayInjectedNS != null) {
+      wasteCpu(cpuTimerDelayInjectedNS.get());
+    }
+  }
+
   public static boolean injectReindexFailure() {
-    if (reindexFailure != null)  {
+    if (reindexFailure != null) {
       Random rand = random();
       if (null == rand) return true;
 
-      Pair<Boolean,Integer> pair = parseValue(reindexFailure);
+      Pair<Boolean, Integer> pair = parseValue(reindexFailure);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
@@ -529,7 +618,6 @@ public class TestInjection {
     }
     return true;
   }
-
 
   public static boolean injectReindexLatch() {
     if (reindexLatch != null) {
@@ -543,7 +631,7 @@ public class TestInjection {
     return true;
   }
 
-  private static Pair<Boolean,Integer> parseValue(final String raw) {
+  private static Pair<Boolean, Integer> parseValue(final String raw) {
     if (raw == null) return new Pair<>(false, 0);
     Matcher m = ENABLED_PERCENT.matcher(raw);
     if (!m.matches()) {
@@ -558,7 +646,7 @@ public class TestInjection {
   }
 
   public static boolean injectDelayBeforeFollowerCommitRefresh() {
-    if (delayBeforeFollowerCommitRefresh!=null) {
+    if (delayBeforeFollowerCommitRefresh != null) {
       try {
         log.info("Pausing IndexFetcher for {}ms", delayBeforeFollowerCommitRefresh);
         Thread.sleep(delayBeforeFollowerCommitRefresh);
@@ -570,19 +658,37 @@ public class TestInjection {
   }
 
   public static boolean injectUIFOutOfMemoryError() {
-    if (uifOutOfMemoryError ) {
+    if (uifOutOfMemoryError) {
       throw new OutOfMemoryError("Test Injection");
     }
     return true;
   }
 
+  public static boolean injectDocSetDelay(Object query) {
+    if (delayBeforeCreatingNewDocSet != null) {
+      countDocSetDelays.incrementAndGet();
+      try {
+        log.info("Pausing DocSet for {}ms: {}", delayBeforeCreatingNewDocSet, query);
+        if (log.isDebugEnabled()) {
+          log.debug("", new Exception("Stack Trace"));
+        }
+        Thread.sleep(delayBeforeCreatingNewDocSet);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
   static Set<Hook> newSearcherHooks = ConcurrentHashMap.newKeySet();
-  
+
   public interface Hook {
     public void newSearcher(String collectionName);
-    public void waitForSearcher(String collection, int cnt, int timeoutms, boolean failOnTimeout) throws InterruptedException;
+
+    public void waitForSearcher(String collection, int cnt, int timeoutms, boolean failOnTimeout)
+        throws InterruptedException;
   }
-  
+
   public static boolean newSearcherHook(Hook hook) {
     newSearcherHooks.add(hook);
     return true;
@@ -594,6 +700,4 @@ public class TestInjection {
     }
     return true;
   }
-  
-  
 }

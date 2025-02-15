@@ -15,21 +15,22 @@
  * limitations under the License.
  */
 package org.apache.solr.search.function;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Split out from SortByFunctionTest due to codec support limitations for SortedSetSelector
  *
  * @see SortByFunctionTest
- **/
+ */
 @SuppressCodecs({"SimpleText"}) // see TestSortedSetSelector
 public class TestSortByMinMaxFunction extends SortByFunctionTest {
 
   @Override
   public String[] getFieldFunctionClausesToTest() {
-    return new String[] { "primary_tl1", "field(primary_tl1)",
-                          "field(multi_l_dv,max)", "field(multi_l_dv,min)" };
+    return new String[] {
+      "primary_tl1", "field(primary_tl1)",
+      "field(multi_l_dv,max)", "field(multi_l_dv,min)"
+    };
   }
 }

@@ -22,16 +22,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-
+import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * Field type for support of monetary values.
- * <p>
- * See <a href="http://wiki.apache.org/solr/CurrencyField">http://wiki.apache.org/solr/CurrencyField</a>
+ *
+ * <p>See <a
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/currencies-exchange-rates.html">https://solr.apache.org/guide/solr/latest/indexing-guide/currencies-exchange-rates.html</a>
+ *
  * @deprecated Use {@link CurrencyFieldType}
  */
 @Deprecated
@@ -45,21 +46,21 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
-    
+
     // Fail if amountLongSuffix or codeStrSuffix are specified
     List<String> unknownParams = new ArrayList<>();
     fieldSuffixAmountRaw = args.get(PARAM_FIELD_SUFFIX_AMOUNT_RAW);
     if (fieldSuffixAmountRaw != null) {
-      unknownParams.add(PARAM_FIELD_SUFFIX_AMOUNT_RAW); 
+      unknownParams.add(PARAM_FIELD_SUFFIX_AMOUNT_RAW);
     }
     fieldSuffixCurrency = args.get(PARAM_FIELD_SUFFIX_CURRENCY);
     if (fieldSuffixCurrency != null) {
       unknownParams.add(PARAM_FIELD_SUFFIX_CURRENCY);
     }
-    if ( ! unknownParams.isEmpty()) {
+    if (!unknownParams.isEmpty()) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unknown parameter(s): " + unknownParams);
     }
-    
+
     String precisionStepString = args.get(PARAM_PRECISION_STEP);
     if (precisionStepString == null) {
       precisionStepString = DEFAULT_PRECISION_STEP;
@@ -67,17 +68,18 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
       args.remove(PARAM_PRECISION_STEP);
     }
 
-    // NOTE: because we're not using the PluginLoader to register these field types, they aren't "real"
-    // field types and never get Schema default properties (based on schema.xml's version attribute)
-    // so only the properties explicitly set here (or on the SchemaField's we create from them) are used.
+    // NOTE: because we're not using the PluginLoader to register these field types, they aren't
+    // "real" field types and never get Schema default properties (based on schema.xml's version
+    // attribute) so only the properties explicitly set here (or on the SchemaField's we create from
+    // them) are used.
     //
-    // In theory we should fix this, but since this class is already deprecated, we'll leave it alone
-    // to simplify the risk of back-compat break for existing users.
-    
+    // In theory we should fix this, but since this class is already deprecated, we'll leave it
+    // alone to simplify the risk of back-compat break for existing users.
+
     // Initialize field type for amount
     fieldTypeAmountRaw = new TrieLongField();
     fieldTypeAmountRaw.setTypeName(FIELD_TYPE_AMOUNT_RAW);
-    Map<String,String> map = new HashMap<>(1);
+    Map<String, String> map = CollectionUtil.newHashMap(1);
     map.put("precisionStep", precisionStepString);
     fieldTypeAmountRaw.init(schema, map);
     fieldSuffixAmountRaw = FIELD_SUFFIX_AMOUNT_RAW;
@@ -104,15 +106,15 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
   }
 
   /**
-   * When index schema is informed, add dynamic fields "*____currency" and "*____amount_raw". 
+   * When index schema is informed, add dynamic fields "*____currency" and "*____amount_raw".
    *
-   * {@inheritDoc}
+   * <p>{@inheritDoc}
    *
    * @param schema {@inheritDoc}
    */
   @Override
   public void inform(IndexSchema schema) {
-    createDynamicCurrencyField(FIELD_SUFFIX_CURRENCY,   fieldTypeCurrency);
+    createDynamicCurrencyField(FIELD_SUFFIX_CURRENCY, fieldTypeCurrency);
     createDynamicCurrencyField(FIELD_SUFFIX_AMOUNT_RAW, fieldTypeAmountRaw);
     super.inform(schema);
   }

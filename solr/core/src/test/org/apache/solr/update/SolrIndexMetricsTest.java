@@ -16,25 +16,22 @@
  */
 package org.apache.solr.update;
 
-import java.util.Map;
-
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Test;
 
-/**
- * Test proper registration and collection of index and directory metrics.
- */
+/** Test proper registration and collection of index and directory metrics. */
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
   @After
-  public void afterMethod() throws Exception {
+  public void afterMethod() {
     deleteCore();
   }
 
@@ -62,21 +59,25 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     addDocs();
 
-    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    MetricRegistry registry =
+        h.getCoreContainer()
+            .getMetricManager()
+            .registry(h.getCore().getCoreMetricManager().getRegistryName());
     assertNotNull(registry);
 
     Map<String, Metric> metrics = registry.getMetrics();
 
-    assertEquals(13, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    assertEquals(
+        13, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
 
     // check basic index meters
-    Timer timer = (Timer)metrics.get("INDEX.merge.minor");
+    Timer timer = (Timer) metrics.get("INDEX.merge.minor");
     assertTrue("minorMerge: " + timer.getCount(), timer.getCount() >= 3);
-    timer = (Timer)metrics.get("INDEX.merge.major");
+    timer = (Timer) metrics.get("INDEX.merge.major");
     assertEquals("majorMerge: " + timer.getCount(), 0, timer.getCount());
     // check detailed meters
-    assertNull((Meter)metrics.get("INDEX.merge.major.docs"));
-    Meter meter = (Meter)metrics.get("INDEX.flush");
+    assertNull((Meter) metrics.get("INDEX.merge.major.docs"));
+    Meter meter = (Meter) metrics.get("INDEX.flush");
     assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
   }
 
@@ -88,12 +89,16 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     addDocs();
 
-    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    MetricRegistry registry =
+        h.getCoreContainer()
+            .getMetricManager()
+            .registry(h.getCore().getCoreMetricManager().getRegistryName());
     assertNotNull(registry);
 
     Map<String, Metric> metrics = registry.getMetrics();
     // INDEX.size, INDEX.sizeInBytes, INDEX.segmentCount
-    assertEquals(3, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    assertEquals(
+        3, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
   }
 
   @Test
@@ -104,23 +109,27 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     addDocs();
 
-    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    MetricRegistry registry =
+        h.getCoreContainer()
+            .getMetricManager()
+            .registry(h.getCore().getCoreMetricManager().getRegistryName());
     assertNotNull(registry);
 
     Map<String, Metric> metrics = registry.getMetrics();
 
-    assertTrue(metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count() >= 12);
+    assertTrue(
+        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count() >= 12);
 
     // check basic index meters
-    Timer timer = (Timer)metrics.get("INDEX.merge.minor");
+    Timer timer = (Timer) metrics.get("INDEX.merge.minor");
     assertTrue("minorMerge: " + timer.getCount(), timer.getCount() >= 3);
-    timer = (Timer)metrics.get("INDEX.merge.major");
+    timer = (Timer) metrics.get("INDEX.merge.major");
     assertEquals("majorMerge: " + timer.getCount(), 0, timer.getCount());
     // check detailed meters
-    Meter meter = (Meter)metrics.get("INDEX.merge.major.docs");
+    Meter meter = (Meter) metrics.get("INDEX.merge.major.docs");
     assertEquals("majorMergeDocs: " + meter.getCount(), 0, meter.getCount());
 
-    meter = (Meter)metrics.get("INDEX.flush");
+    meter = (Meter) metrics.get("INDEX.flush");
     assertTrue("flush: " + meter.getCount(), meter.getCount() > 10);
   }
 }

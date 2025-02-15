@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import com.codahale.metrics.Counter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,14 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-
-import com.codahale.metrics.Counter;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -41,14 +39,13 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase {
@@ -71,9 +68,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     testQueryAgainstDownReplica();
   }
 
-  /**
-   * Asserts that requests aren't always sent to the same poor node. See SOLR-7493
-   */
+  /** Asserts that requests aren't always sent to the same poor node. See SOLR-7493 */
   private void testRequestTracking() throws Exception {
 
     CollectionAdminRequest.createCollection("a1x2", "conf1", 1, 2)
@@ -87,10 +82,11 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     waitForRecoveriesToFinish("a1x2", true);
     waitForRecoveriesToFinish("b1x1", true);
 
-    cloudClient.getZkStateReader().forceUpdateCollection("b1x1");
+    ZkStateReader.from(cloudClient).forceUpdateCollection("b1x1");
 
-    // get direct access to the metrics counters for each core/replica we're interested to monitor them
-    final Map<String,Counter> counters = new LinkedHashMap<>();
+    // get direct access to the metrics counters for each core/replica we're interested to monitor
+    // them
+    final Map<String, Counter> counters = new LinkedHashMap<>();
     for (JettySolrRunner runner : jettys) {
       CoreContainer container = runner.getCoreContainer();
       SolrMetricManager metricManager = container.getMetricManager();
@@ -99,8 +95,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
           String registry = core.getCoreMetricManager().getRegistryName();
           Counter cnt = metricManager.counter(null, registry, "requests", "QUERY./select");
           // sanity check
-          assertEquals(core.getName() + " has already received some requests?",
-                       0, cnt.getCount());
+          assertEquals(core.getName() + " has already received some requests?", 0, cnt.getCount());
           counters.put(core.getName(), cnt);
         }
       }
@@ -108,44 +103,52 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     assertEquals("Sanity Check: we know there should be 2 replicas", 2, counters.size());
 
     // send queries to the node that doesn't host any core/replica and see where it routes them
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    ClusterState clusterState = cloudClient.getClusterState();
     DocCollection b1x1 = clusterState.getCollection("b1x1");
     Collection<Replica> replicas = b1x1.getSlice("shard1").getReplicas();
     assertEquals(1, replicas.size());
     String baseUrl = replicas.iterator().next().getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "a1x2", 2000, 5000)) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection("a1x2")
+            .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
+            .build()) {
 
       long expectedTotalRequests = 0;
       Set<String> uniqueCoreNames = new LinkedHashSet<>();
-      
+
       log.info("Making requests to {} a1x2", baseUrl);
       while (uniqueCoreNames.size() < counters.keySet().size() && expectedTotalRequests < 1000L) {
         expectedTotalRequests++;
         client.query(new SolrQuery("*:*"));
 
         long actualTotalRequests = 0;
-        for (Map.Entry<String,Counter> e : counters.entrySet()) {
+        for (Map.Entry<String, Counter> e : counters.entrySet()) {
           final long coreCount = e.getValue().getCount();
           actualTotalRequests += coreCount;
           if (0 < coreCount) {
             uniqueCoreNames.add(e.getKey());
           }
         }
-        assertEquals("Sanity Check: Num Queries So Far Doesn't Match Total????",
-                     expectedTotalRequests, actualTotalRequests);
+        assertEquals(
+            "Sanity Check: Num Queries So Far Doesn't Match Total????",
+            expectedTotalRequests,
+            actualTotalRequests);
       }
       log.info("Total requests: {}", expectedTotalRequests);
-      assertEquals("either request randomization code is broken of this test seed is really unlucky, " +
-                   "Gave up waiting for requests to hit every core at least once after " +
-                   expectedTotalRequests + " requests",
-                   uniqueCoreNames.size(), counters.size());
+      assertEquals(
+          "either request randomization code is broken of this test seed is really unlucky, "
+              + "Gave up waiting for requests to hit every core at least once after "
+              + expectedTotalRequests
+              + " requests",
+          uniqueCoreNames.size(),
+          counters.size());
     }
   }
 
-  /**
-   * Asserts that requests against a collection are only served by a 'active' local replica
-   */
+  /** Asserts that requests against a collection are only served by a 'active' local replica */
   private void testQueryAgainstDownReplica() throws Exception {
 
     log.info("Creating collection 'football' with 1 shard and 2 replicas");
@@ -155,12 +158,13 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     waitForRecoveriesToFinish("football", true);
 
-    cloudClient.getZkStateReader().forceUpdateCollection("football");
+    ZkStateReader.from(cloudClient).forceUpdateCollection("football");
 
     Replica leader = null;
     Replica notLeader = null;
 
-    Collection<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection("football").getSlice("shard1").getReplicas();
+    Collection<Replica> replicas =
+        cloudClient.getClusterState().getCollection("football").getSlice("shard1").getReplicas();
     for (Replica replica : replicas) {
       if (replica.getStr(ZkStateReader.LEADER_PROP) != null) {
         leader = replica;
@@ -169,37 +173,62 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       }
     }
 
-    //Simulate a replica being in down state.
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-        ZkStateReader.NODE_NAME_PROP, notLeader.getStr(ZkStateReader.NODE_NAME_PROP),
-        ZkStateReader.COLLECTION_PROP, "football",
-        ZkStateReader.SHARD_ID_PROP, "shard1",
-        ZkStateReader.CORE_NAME_PROP, notLeader.getStr(ZkStateReader.CORE_NAME_PROP),
-        ZkStateReader.ROLES_PROP, "",
-        ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
+    // Simulate a replica being in down state.
+    ZkNodeProps m =
+        new ZkNodeProps(
+            Overseer.QUEUE_OPERATION,
+            OverseerAction.STATE.toLower(),
+            ZkStateReader.NODE_NAME_PROP,
+            notLeader.getStr(ZkStateReader.NODE_NAME_PROP),
+            ZkStateReader.BASE_URL_PROP,
+            notLeader.getStr(ZkStateReader.BASE_URL_PROP),
+            ZkStateReader.COLLECTION_PROP,
+            "football",
+            ZkStateReader.SHARD_ID_PROP,
+            "shard1",
+            ZkStateReader.CORE_NAME_PROP,
+            notLeader.getStr(ZkStateReader.CORE_NAME_PROP),
+            ZkStateReader.ROLES_PROP,
+            "",
+            ZkStateReader.STATE_PROP,
+            Replica.State.DOWN.toString());
 
     if (log.isInfoEnabled()) {
-      log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
+      log.info(
+          "Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
     }
 
     final Overseer overseer = jettys.get(0).getCoreContainer().getZkController().getOverseer();
     if (overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      overseer.getDistributedClusterStateUpdater().doSingleStateUpdate(
-          DistributedClusterStateUpdater.MutatingCommand.ReplicaSetState, m, overseer.getSolrCloudManager(), overseer.getZkStateReader());
+      overseer
+          .getDistributedClusterStateUpdater()
+          .doSingleStateUpdate(
+              DistributedClusterStateUpdater.MutatingCommand.ReplicaSetState,
+              m,
+              overseer.getSolrCloudManager(),
+              overseer.getZkStateReader());
     } else {
       ZkDistributedQueue q = overseer.getStateUpdateQueue();
-      q.offer(Utils.toJSON(m));
+      q.offer(m);
     }
 
-    verifyReplicaStatus(cloudClient.getZkStateReader(), "football", "shard1", notLeader.getName(), Replica.State.DOWN);
+    verifyReplicaStatus(
+        ZkStateReader.from(cloudClient),
+        "football",
+        "shard1",
+        notLeader.getName(),
+        Replica.State.DOWN);
 
-    //Query against the node which hosts the down replica
+    // Query against the node which hosts the down replica
 
     String baseUrl = notLeader.getBaseUrl();
-    if (!baseUrl.endsWith("/")) baseUrl += "/";
-    String path = baseUrl + "football";
-    log.info("Firing queries against path={}", path);
-    try (HttpSolrClient client = getHttpSolrClient(path, 2000, 5000)) {
+    log.info("Firing queries against path={} and collection=football", baseUrl);
+    try (SolrClient client =
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection("football")
+            .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
+            .build()) {
 
       SolrCore leaderCore = null;
       for (JettySolrRunner jetty : jettys) {
@@ -217,11 +246,10 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       String leaderRegistry = leaderCore.getCoreMetricManager().getRegistryName();
       Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY./select");
 
-      // All queries should be served by the active replica
-      // To make sure that's true we keep querying the down replica
-      // If queries are getting processed by the down replica then the cluster state hasn't updated for that replica
-      // locally
-      // So we keep trying till it has updated and then verify if ALL queries go to the active replica
+      // All queries should be served by the active replica to make sure that's true we keep
+      // querying the down replica. If queries are getting processed by the down replica then the
+      // cluster state hasn't updated for that replica locally. So we keep trying till it has
+      // updated and then verify if ALL queries go to the active replica
       long count = 0;
       while (true) {
         count++;

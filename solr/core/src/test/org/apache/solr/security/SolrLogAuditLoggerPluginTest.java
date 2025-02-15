@@ -17,17 +17,15 @@
 
 package org.apache.solr.security;
 
-import java.io.IOException;
-import java.util.HashMap;
+import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_ANONYMOUS;
+import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_AUTHENTICATED;
 
+import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_ANONYMOUS;
-import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_AUTHENTICATED;
 
 public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
   private SolrLogAuditLoggerPlugin plugin;
@@ -43,11 +41,11 @@ public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test(expected = SolrException.class)
-  public void badConfig() throws IOException {
+  public void badConfig() {
     config.put("invalid", "parameter");
     plugin.init(config);
   }
-  
+
   @Test
   public void audit() {
     plugin.init(config);
@@ -57,9 +55,11 @@ public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
   @Test
   public void eventFormatter() {
     plugin.init(config);
-    assertEquals("type=\"ANONYMOUS\" message=\"Anonymous\" method=\"GET\" status=\"-1\" requestType=\"null\" username=\"null\" resource=\"/collection1\" queryString=\"null\" collections=null", 
+    assertEquals(
+        "type=\"ANONYMOUS\" message=\"Anonymous\" method=\"GET\" status=\"-1\" requestType=\"null\" username=\"null\" resource=\"/collection1\" queryString=\"null\" collections=null",
         plugin.formatter.formatEvent(EVENT_ANONYMOUS));
-    assertEquals("type=\"AUTHENTICATED\" message=\"Authenticated\" method=\"GET\" status=\"-1\" requestType=\"null\" username=\"Jan\" resource=\"/collection1\" queryString=\"null\" collections=null", 
+    assertEquals(
+        "type=\"AUTHENTICATED\" message=\"Authenticated\" method=\"GET\" status=\"-1\" requestType=\"null\" username=\"Jan\" resource=\"/collection1\" queryString=\"null\" collections=null",
         plugin.formatter.formatEvent(EVENT_AUTHENTICATED));
   }
 

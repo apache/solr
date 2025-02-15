@@ -20,8 +20,7 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.junit.BeforeClass;
 
 /**
- * This runs SolrServer test using 
- * 
+ * This runs SolrServer test using
  *
  * @since solr 1.3
  */

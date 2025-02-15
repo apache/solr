@@ -18,39 +18,38 @@
 package org.apache.solr.core;
 
 import java.util.Arrays;
-
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.Test;
 
-/**
- * Created by caomanhdat on 6/3/16.
- */
 public class TestCustomStream extends AbstractFullDistribZkTestBase {
 
   @Test
   public void testDynamicLoadingCustomStream() throws Exception {
     setupRestTestHarnesses();
-    String payload = "{\n" +
-        "'create-expressible' : { 'name' : 'hello', 'class': 'org.apache.solr.core.HelloStream' }\n" +
-        "}";
+    String payload =
+        "{\n"
+            + "'create-expressible' : { 'name' : 'hello', 'class': 'org.apache.solr.core.HelloStream' }\n"
+            + "}";
 
     RestTestHarness client = randomRestTestHarness();
-    TestSolrConfigHandler.runConfigCommand(client,"/config",payload);
-    TestSolrConfigHandler.testForResponseElement(client,
+    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
+    TestSolrConfigHandler.testForResponseElement(
+        client,
         null,
         "/config/overlay",
         null,
         Arrays.asList("overlay", "expressible", "hello", "class"),
-        "org.apache.solr.core.HelloStream",10);
+        "org.apache.solr.core.HelloStream",
+        10);
 
-    TestSolrConfigHandler.testForResponseElement(client,
+    TestSolrConfigHandler.testForResponseElement(
+        client,
         null,
         "/stream?expr=hello()",
         null,
         Arrays.asList("result-set", "docs[0]", "msg"),
-        "Hello World!",10);
+        "Hello World!",
+        10);
   }
-
-
 }

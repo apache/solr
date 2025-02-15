@@ -17,52 +17,52 @@
 
 package org.apache.solr.packagemanager;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-/**
- * Describes one instance of a package as it exists in Solr when installed.
- */
+/** Describes one instance of a package as it exists in Solr when installed. */
 public class SolrPackageInstance implements ReflectMapWriter {
   @JsonProperty("name")
-  final public String name;
+  public final String name;
 
-  final public String description;
+  public final String description;
 
   @JsonProperty("version")
-  final public String version;
+  public final String version;
 
-  final public Manifest manifest;
+  public final Manifest manifest;
 
-  final public List<Plugin> plugins;
+  public final List<Plugin> plugins;
 
-  final public Map<String, String> parameterDefaults;
+  public final Map<String, String> parameterDefaults;
 
   public List<String> files;
 
-    @JsonIgnore
-  private Object customData;
-  
+  @JsonIgnore private Object customData;
+
   @JsonIgnore
   public Object getCustomData() {
     return customData;
   }
-  
+
   @JsonIgnore
   public void setCustomData(Object customData) {
     this.customData = customData;
   }
-  
-  public SolrPackageInstance(String id, String description, String version, Manifest manifest,
-      List<Plugin> plugins, Map<String, String> params) {
+
+  public SolrPackageInstance(
+      String id,
+      String description,
+      String version,
+      Manifest manifest,
+      List<Plugin> plugins,
+      Map<String, String> params) {
     this.name = id;
     this.description = description;
     this.version = version;
@@ -74,7 +74,8 @@ public class SolrPackageInstance implements ReflectMapWriter {
   @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
-    return name.equals(((SolrPackageInstance)obj).name) && version.equals(((SolrPackageInstance)obj).version);
+    return name.equals(((SolrPackageInstance) obj).name)
+        && version.equals(((SolrPackageInstance) obj).version);
   }
 
   @Override

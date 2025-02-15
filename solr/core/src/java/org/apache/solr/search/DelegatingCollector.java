@@ -16,16 +16,13 @@
  */
 package org.apache.solr.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
-
 
 /** A simple delegating collector where one can set the delegate after creation */
 public class DelegatingCollector extends SimpleCollector {
@@ -50,7 +47,10 @@ public class DelegatingCollector extends SimpleCollector {
   /** Sets the last delegate in a chain of DelegatingCollectors */
   public void setLastDelegate(Collector delegate) {
     DelegatingCollector ptr = this;
-    for(; ptr.getDelegate() instanceof DelegatingCollector; ptr = (DelegatingCollector)ptr.getDelegate());
+    for (;
+        ptr.getDelegate() instanceof DelegatingCollector;
+        ptr = (DelegatingCollector) ptr.getDelegate())
+      ;
     ptr.setDelegate(delegate);
     setLastDelegateCount++;
   }
@@ -80,10 +80,23 @@ public class DelegatingCollector extends SimpleCollector {
     leafDelegate = delegate.getLeafCollector(context);
   }
 
-  public void finish() throws IOException {
-    if(delegate instanceof DelegatingCollector) {
-      ((DelegatingCollector) delegate).finish();
+  /**
+   * From Solr 9.4 using Lucene 9.8 onwards <code>DelegatingCollector.finish</code> clashes with the
+   * super class's <code>LeafCollector.finish</code> method. Please relocate any finishing logic
+   * into the <code>DelegatingCollector.complete</code> replacement completion method.
+   */
+  @Override
+  public final void finish() throws IOException {
+    if (leafDelegate != null) {
+      leafDelegate.finish();
+    }
+    super.finish();
+  }
+
+  /** since 9.4 */
+  public void complete() throws IOException {
+    if (delegate instanceof DelegatingCollector) {
+      ((DelegatingCollector) delegate).complete();
     }
   }
 }
-

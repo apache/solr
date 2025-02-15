@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -28,13 +27,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.NumberType;
 
 public class SortedNumericStatsValues implements StatsValues {
-  
+
   private final StatsValuesFactory.NumericStatsValues nsv;
   private final String fieldName;
   private final NumberType numberType;
   private SortedNumericDocValues sndv;
-  
-  
+
   public SortedNumericStatsValues(StatsValuesFactory.NumericStatsValues nsv, StatsField field) {
     this.nsv = nsv;
     this.fieldName = field.getSchemaField().getName();
@@ -45,7 +43,7 @@ public class SortedNumericStatsValues implements StatsValues {
   public void accumulate(NamedList<?> stv) {
     nsv.accumulate(stv);
   }
-  
+
   @Override
   public void accumulate(int docId) throws IOException {
     if (!sndv.advanceExact(docId)) {
@@ -55,16 +53,17 @@ public class SortedNumericStatsValues implements StatsValues {
         nsv.accumulate(toCorrectType(sndv.nextValue()), 1);
       }
     }
-    
   }
 
   private Number toCorrectType(long value) {
     switch (numberType) {
       case INTEGER:
+        return (int) value;
+      case DATE:
       case LONG:
         return value;
       case FLOAT:
-        return NumericUtils.sortableIntToFloat((int)value);
+        return NumericUtils.sortableIntToFloat((int) value);
       case DOUBLE:
         return NumericUtils.sortableLongToDouble(value);
       default:
@@ -88,7 +87,7 @@ public class SortedNumericStatsValues implements StatsValues {
   }
 
   @Override
-  public void addFacet(String facetName, Map<String,StatsValues> facetValues) {
+  public void addFacet(String facetName, Map<String, StatsValues> facetValues) {
     nsv.addFacet(facetName, facetValues);
   }
 
@@ -102,5 +101,4 @@ public class SortedNumericStatsValues implements StatsValues {
     sndv = DocValues.getSortedNumeric(ctx.reader(), fieldName);
     assert sndv != null;
   }
-
 }

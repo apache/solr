@@ -16,18 +16,16 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.stringContainsInOrder;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.stringContainsInOrder;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Test;
 
 public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
 
@@ -36,7 +34,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     Object obj = new Object();
     ObjectReleaseTracker.track(obj);
     ObjectReleaseTracker.release(obj);
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
 
     Object obj1 = new Object();
     ObjectReleaseTracker.track(obj1);
@@ -48,7 +46,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     ObjectReleaseTracker.release(obj3);
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
   }
 
   @Test
@@ -60,83 +58,100 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     ObjectReleaseTracker.track(obj1);
     ObjectReleaseTracker.track(obj2);
     ObjectReleaseTracker.track(obj3);
-    
+
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     // ObjectReleaseTracker.release(obj3);
 
-    assertNotNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNotNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
   }
 
   @Test
   public void testReleaseDifferentObject() {
     ObjectReleaseTracker.track(new Object());
     ObjectReleaseTracker.release(new Object());
-    assertNotNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNotNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
   }
 
   @Test
   public void testAnonymousClasses() {
     ObjectReleaseTracker.track(new Object() {});
-    String message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
-    MatcherAssert.assertThat(message, containsString("[Object]"));
+    String message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+    assertThat(message, containsString("[Object]"));
   }
 
   @Test
   public void testAsyncTracking() throws InterruptedException, ExecutionException {
-    ExecutorService es = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("TestExec"));
+    ExecutorService es =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("TestExec"));
     Object trackable = new Object();
 
-    Future<?> result = es.submit(() -> {
-      ObjectReleaseTracker.track(trackable);
-    });
+    Future<?> result =
+        es.submit(
+            () -> {
+              ObjectReleaseTracker.track(trackable);
+            });
 
     result.get(); // make sure that track has been called
-    String message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
-    MatcherAssert.assertThat(message, stringContainsInOrder(
-        ObjectReleaseTracker.ObjectTrackerException.class.getName(),
-        "Exception: Submitter stack trace",
-        getClassName() + "." + getTestName()));
+    String message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+    assertThat(
+        message,
+        stringContainsInOrder(
+            ObjectReleaseTracker.ObjectTrackerException.class.getName(),
+            "Exception: Submitter stack trace",
+            getClassName() + "." + getTestName()));
 
     // Test the grandparent submitter case
     AtomicReference<Future<?>> indirectResult = new AtomicReference<>();
-    result = es.submit(() ->
-      indirectResult.set(es.submit(() -> {
-        ObjectReleaseTracker.track(trackable);
-      }))
-    );
+    result =
+        es.submit(
+            () ->
+                indirectResult.set(
+                    es.submit(
+                        () -> {
+                          ObjectReleaseTracker.track(trackable);
+                        })));
 
     result.get();
     indirectResult.get().get();
-    message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
-    MatcherAssert.assertThat(message, stringContainsInOrder(
-        ObjectReleaseTracker.ObjectTrackerException.class.getName(),
-        "Exception: Submitter stack trace",
-        "Exception: Submitter stack trace",
-        getClassName() + "." + getTestName()));
+    message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+    assertThat(
+        message,
+        stringContainsInOrder(
+            ObjectReleaseTracker.ObjectTrackerException.class.getName(),
+            "Exception: Submitter stack trace",
+            "Exception: Submitter stack trace",
+            getClassName() + "." + getTestName()));
 
-    // Now test great-grandparent, which we don't explicitly account for, but should have been recursively set
+    // Now test great-grandparent, which we don't explicitly account for, but should have been
+    // recursively set
     AtomicReference<Future<?>> indirectIndirect = new AtomicReference<>();
-    result = es.submit(() ->
-      indirectResult.set(es.submit(() ->
-        indirectIndirect.set(es.submit(() -> {
-          ObjectReleaseTracker.track(trackable);
-        }))
-      ))
-    );
+    result =
+        es.submit(
+            () ->
+                indirectResult.set(
+                    es.submit(
+                        () ->
+                            indirectIndirect.set(
+                                es.submit(
+                                    () -> {
+                                      ObjectReleaseTracker.track(trackable);
+                                    })))));
 
     result.get();
     indirectResult.get().get();
     indirectIndirect.get().get();
-    message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
-    MatcherAssert.assertThat(message, stringContainsInOrder(
-        ObjectReleaseTracker.ObjectTrackerException.class.getName(),
-        "Exception: Submitter stack trace",
-        "Exception: Submitter stack trace",
-        "Exception: Submitter stack trace",
-        getClassName() + "." + getTestName()));
+    message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+    assertThat(
+        message,
+        stringContainsInOrder(
+            ObjectReleaseTracker.ObjectTrackerException.class.getName(),
+            "Exception: Submitter stack trace",
+            "Exception: Submitter stack trace",
+            "Exception: Submitter stack trace",
+            getClassName() + "." + getTestName()));
 
     es.shutdown();
     assertTrue(es.awaitTermination(1, TimeUnit.SECONDS));

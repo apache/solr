@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.designer;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,18 +27,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
 
-/**
- * Utility methods for comparing managed index schemas
- */
+/** Utility methods for comparing managed index schemas */
 public class ManagedSchemaDiff {
 
   private static final String UPDATED_KEY_STRING = "updated";
@@ -49,8 +47,8 @@ public class ManagedSchemaDiff {
   private static final String COPY_FIELDS_KEY_STRING = "copyFields";
 
   /**
-   * Compute difference between two managed schemas. The returned map consists of changed, new, removed
-   * elements in fields, field types, dynamic fields and copy fields between input schemas.
+   * Compute difference between two managed schemas. The returned map consists of changed, new,
+   * removed elements in fields, field types, dynamic fields and copy fields between input schemas.
    *
    * <pre> Output format when rendered to json will look like below:
    *   {@code
@@ -82,13 +80,24 @@ public class ManagedSchemaDiff {
    * @param newSchema instance of {@link ManagedIndexSchema}
    * @return the difference between two schemas
    */
-  public static Map<String, Object> diff(ManagedIndexSchema oldSchema, ManagedIndexSchema newSchema) {
+  public static Map<String, Object> diff(
+      ManagedIndexSchema oldSchema, ManagedIndexSchema newSchema) {
     Map<String, Object> diff = new HashMap<>();
 
-    Map<String, Object> fieldsDiff = diff(mapFieldsToPropertyValues(oldSchema.getFields()), mapFieldsToPropertyValues(newSchema.getFields()));
-    Map<String, Object> fieldTypesDiff = diff(mapFieldTypesToPropValues(oldSchema.getFieldTypes()), mapFieldTypesToPropValues(newSchema.getFieldTypes()));
-    Map<String, Object> dynamicFieldDiff = diff(mapDynamicFieldToPropValues(oldSchema.getDynamicFields()), mapDynamicFieldToPropValues(newSchema.getDynamicFields()));
-    Map<String, Object> copyFieldDiff = diff(getCopyFieldList(oldSchema), getCopyFieldList(newSchema));
+    Map<String, Object> fieldsDiff =
+        diff(
+            mapFieldsToPropertyValues(oldSchema.getFields()),
+            mapFieldsToPropertyValues(newSchema.getFields()));
+    Map<String, Object> fieldTypesDiff =
+        diff(
+            mapFieldTypesToPropValues(oldSchema.getFieldTypes()),
+            mapFieldTypesToPropValues(newSchema.getFieldTypes()));
+    Map<String, Object> dynamicFieldDiff =
+        diff(
+            mapDynamicFieldToPropValues(oldSchema.getDynamicFields()),
+            mapDynamicFieldToPropValues(newSchema.getDynamicFields()));
+    Map<String, Object> copyFieldDiff =
+        diff(getCopyFieldList(oldSchema), getCopyFieldList(newSchema));
 
     if (!fieldsDiff.isEmpty()) {
       diff.put(FIELDS_KEY_STRING, fieldsDiff);
@@ -144,8 +153,7 @@ public class ManagedSchemaDiff {
    * @return the difference between two Map
    */
   protected static Map<String, Object> diff(
-      Map<String, SimpleOrderedMap<Object>> map1,
-      Map<String, SimpleOrderedMap<Object>> map2) {
+      Map<String, SimpleOrderedMap<Object>> map1, Map<String, SimpleOrderedMap<Object>> map2) {
     Map<String, List<Map<String, Object>>> changedValues = new HashMap<>();
     Map<String, SimpleOrderedMap<Object>> newValues = new HashMap<>();
     Map<String, SimpleOrderedMap<Object>> removedValues = new HashMap<>();
@@ -208,13 +216,13 @@ public class ManagedSchemaDiff {
    * @param simpleOrderedMap2 Map to treat as "right" map
    * @return List containing the left diff and right diff
    */
-  @SuppressWarnings("unchecked")
+  @SuppressForbidden(reason = "Maps.difference")
   private static List<Map<String, Object>> getMapDifference(
-      SimpleOrderedMap<Object> simpleOrderedMap1,
-      SimpleOrderedMap<Object> simpleOrderedMap2) {
+      SimpleOrderedMap<Object> simpleOrderedMap1, SimpleOrderedMap<Object> simpleOrderedMap2) {
     Map<String, Object> map1 = simpleOrderedMap1.toMap(new HashMap<>());
     Map<String, Object> map2 = simpleOrderedMap2.toMap(new HashMap<>());
-    Map<String, MapDifference.ValueDifference<Object>> mapDiff = Maps.difference(map1, map2).entriesDiffering();
+    Map<String, MapDifference.ValueDifference<Object>> mapDiff =
+        Maps.difference(map1, map2).entriesDiffering();
     if (mapDiff.isEmpty()) {
       return Collections.emptyList();
     }
@@ -229,21 +237,26 @@ public class ManagedSchemaDiff {
     return Arrays.asList(leftMapDiff, rightMapDiff);
   }
 
-  protected static Map<String, Object> diff(List<SimpleOrderedMap<Object>> list1, List<SimpleOrderedMap<Object>> list2) {
-    List<SimpleOrderedMap<Object>> oldList = new ArrayList<>(); // ordered map changed in list1 compared to list2
-    List<SimpleOrderedMap<Object>> newList = new ArrayList<>(); // ordered map changed in list2 compared to list1
+  protected static Map<String, Object> diff(
+      List<SimpleOrderedMap<Object>> list1, List<SimpleOrderedMap<Object>> list2) {
+    List<SimpleOrderedMap<Object>> oldList =
+        new ArrayList<>(); // ordered map changed in list1 compared to list2
+    List<SimpleOrderedMap<Object>> newList =
+        new ArrayList<>(); // ordered map changed in list2 compared to list1
 
-    list1.forEach(som -> {
-      if (!list2.contains(som)) {
-        oldList.add(som);
-      }
-    });
+    list1.forEach(
+        som -> {
+          if (!list2.contains(som)) {
+            oldList.add(som);
+          }
+        });
 
-    list2.forEach(som -> {
-      if (!list1.contains(som)) {
-        newList.add(som);
-      }
-    });
+    list2.forEach(
+        som -> {
+          if (!list1.contains(som)) {
+            newList.add(som);
+          }
+        });
 
     Map<String, Object> mapDiff = new HashMap<>();
     if (!oldList.isEmpty()) {
@@ -255,23 +268,28 @@ public class ManagedSchemaDiff {
     return mapDiff;
   }
 
-  protected static Map<String, SimpleOrderedMap<Object>> mapFieldsToPropertyValues(Map<String, SchemaField> fields) {
+  protected static Map<String, SimpleOrderedMap<Object>> mapFieldsToPropertyValues(
+      Map<String, SchemaField> fields) {
     Map<String, SimpleOrderedMap<Object>> propValueMap = new HashMap<>();
     fields.forEach((k, v) -> propValueMap.put(k, v.getNamedPropertyValues(true)));
     return propValueMap;
   }
 
-  protected static Map<String, SimpleOrderedMap<Object>> mapFieldTypesToPropValues(Map<String, FieldType> fieldTypes) {
+  protected static Map<String, SimpleOrderedMap<Object>> mapFieldTypesToPropValues(
+      Map<String, FieldType> fieldTypes) {
     Map<String, SimpleOrderedMap<Object>> propValueMap = new HashMap<>();
     fieldTypes.forEach((k, v) -> propValueMap.put(k, v.getNamedPropertyValues(true)));
     return propValueMap;
   }
 
-  protected static Map<String, SimpleOrderedMap<Object>> mapDynamicFieldToPropValues(IndexSchema.DynamicField[] dynamicFields) {
-    return
-        Stream.of(dynamicFields)
-            .map(df -> Map.entry(df.getPrototype().getName(), df.getPrototype().getNamedPropertyValues(true)))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  protected static Map<String, SimpleOrderedMap<Object>> mapDynamicFieldToPropValues(
+      IndexSchema.DynamicField[] dynamicFields) {
+    return Stream.of(dynamicFields)
+        .map(
+            df ->
+                Map.entry(
+                    df.getPrototype().getName(), df.getPrototype().getNamedPropertyValues(true)))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   protected static List<SimpleOrderedMap<Object>> getCopyFieldList(ManagedIndexSchema indexSchema) {

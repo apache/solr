@@ -17,7 +17,6 @@
 
 package org.apache.solr.common.util;
 
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,11 +26,8 @@ import java.util.regex.Pattern;
 
 public class Template {
   public final String template;
-  public static final Pattern DOLLAR_BRACES_PLACEHOLDER_PATTERN = Pattern
-      .compile("[$][{](.*?)[}]");
-  public static final Pattern BRACES_PLACEHOLDER_PATTERN = Pattern
-      .compile("[{](.*?)[}]");
-
+  public static final Pattern DOLLAR_BRACES_PLACEHOLDER_PATTERN = Pattern.compile("[$][{](.*?)[}]");
+  public static final Pattern BRACES_PLACEHOLDER_PATTERN = Pattern.compile("[{](.*?)[}]");
 
   public Template(String template, Pattern pattern) {
     this.template = template;
@@ -44,7 +40,6 @@ public class Template {
       variables.add(variable);
     }
     this.variables = Collections.unmodifiableList(variables);
-
   }
 
   public String apply(Function<String, Object> valueSupplier) {
@@ -62,5 +57,5 @@ public class Template {
 
   private List<Integer> startIndexes = new ArrayList<>(2);
   private List<Integer> endOffsets = new ArrayList<>(2);
-  public final List<String> variables ;
+  public final List<String> variables;
 }

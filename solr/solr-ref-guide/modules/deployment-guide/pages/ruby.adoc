@@ -1,0 +1,58 @@
+= Ruby
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+
+== Ruby
+
+JSON is the preferred interchange format for Ruby users.
+
+[source,ruby]
+----
+require 'net/http'
+require 'json'
+
+h = Net::HTTP.new('localhost', 8983)
+http_response = h.get('/solr/techproducts/select?q=iPod&wt=json')
+
+# Parse the JSON response
+rsp = JSON.parse(http_response.body)
+
+puts 'Number of matches = ' + rsp['response']['numFound'].to_s
+
+# Print out the name field for each returned document
+rsp['response']['docs'].each do |doc|
+  puts 'Name field = ' + doc['name']
+end
+----
+
+You can even skip the `wt=json` as it's the default writer type.
+
+If you are building complex interactions with Solr, then consider these libraries:
+
+=== Active
+* link:http://rubygems.org/gems/rsolr[RSolr]: A lightweight, general purpose client library for Solr.
+  ** link:https://github.com/sunspot/sunspot[Sunspot]: A nice DSL framework for integrating Solr into your models. Built on top of RSolr.
+* link:http://projectblacklight.org[Blacklight]: A popular and well-maintained Ruby on Rails framework for building flexible and attractive front-ends to Solr.
+
+=== Inactive
+* link:http://rubygems.org/gems/solr-ruby[Solr-ruby]: Low-level access to Solr from Ruby.
+* link:http://rubygems.org/gems/flare[Flare]: A plugin adding faceted browsing, AJAX suggest, and more to Rails controllers.
+* link:http://acts_as_solr.railsfreaks.com/[acts_as_solr]: A plugin to add full-text search capabilities using Solr to ActiveRecord models. link:http://www.quarkruby.com/2007/8/12/acts_as_solr-for-search-and-faceting/[nice acts_as_solr tutorial]
+* link:http://rubyforge.org/projects/background-solr/[acts_as_background_solr]: An extension to acts_as_solr moving more processing to the background.
+* link:http://mojodna.net/searchable/ruby/[Searchable]: A Rails plugin that provides search integration with ActiveRecord. (an alternative to acts_as_solr)
+* link:http://delsolr.rubyforge.org/[DelSolr]: A Solr wrapper designed to simplify facet and filter queries.

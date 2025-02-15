@@ -18,7 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Map;
-
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -40,21 +40,21 @@ public abstract class AggValueSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    return this.getClass() == o.getClass() && name.equals(((AggValueSource) o).name);
+    return (o instanceof AggValueSource) && Objects.equals(name, ((AggValueSource) o).name);
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     // FUTURE
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
   // TODO: make abstract
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
   public abstract FacetMerger createFacetMerger(Object prototype);
-
 }
-

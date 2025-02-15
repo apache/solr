@@ -18,18 +18,20 @@
 package org.apache.solr.common;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
-
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 
-/**This class contains helper methods for navigating deeply nested Objects. Keep in mind that
- * it may be expensive depending on the underlying implementation. each level needs an extra lookup
- * and the lookup may be as expensive as O(log(n)) to O(n) depending on the underlying impl
- *
+/**
+ * This class contains helper methods for navigating deeply nested Objects. Keep in mind that it may
+ * be expensive depending on the underlying implementation. Each level needs an extra lookup and the
+ * lookup may be as expensive as O(log(n)) to O(n) depending on the underlying impl
  */
 public interface NavigableObject {
-  /**Get a child object value using json path. This usually ends up in String split operations
-   *  use a list of strings where performance is important
+  /**
+   * Get a child object value using json path. This usually ends up in String split operations use a
+   * list of strings where performance is important
    *
    * @param path the full path to that object such as a/b/c[4]/d etc
    * @param def the default
@@ -40,7 +42,8 @@ public interface NavigableObject {
     return v == null ? def : v;
   }
 
-  /**get the value as a String. useful in tests
+  /**
+   * get the value as a String. useful in tests
    *
    * @param path the full path
    * @param def default value
@@ -50,23 +53,26 @@ public interface NavigableObject {
     return v == null ? def : String.valueOf(v);
   }
 
-  /**Iterate through the entries of a navigable Object at a certain path
+  /**
+   * Iterate through the entries of a navigable Object at a certain path
+   *
    * @param path the json path
    */
-  default void _forEachEntry(String path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
+  default void _forEachEntry(String path, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
     Utils.forEachMapEntry(this, path, fun);
   }
 
-  /**Iterate through the entries of a navigable Object at a certain path
+  /**
+   * Iterate through the entries of a navigable Object at a certain path
+   *
    * @param path the json path
    */
-  default void _forEachEntry(List<String> path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
+  default void _forEachEntry(List<String> path, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
     Utils.forEachMapEntry(this, path, fun);
   }
 
-  /**Iterate through each entry in this object
-   */
-  default void _forEachEntry(@SuppressWarnings({"rawtypes"})BiConsumer fun) {
+  /** Iterate through each entry in this object */
+  default void _forEachEntry(@SuppressWarnings({"rawtypes"}) BiConsumer fun) {
     Utils.forEachMapEntry(this, fun);
   }
 
@@ -74,7 +80,7 @@ public interface NavigableObject {
    * Get a child object value using json path
    *
    * @param path the full path to that object such as ["a","b","c[4]","d"] etc
-   * @param def  the default
+   * @param def the default
    * @return the found value or default
    */
   default Object _get(List<String> path, Object def) {
@@ -91,5 +97,14 @@ public interface NavigableObject {
     int[] size = new int[1];
     _forEachEntry((k, v) -> size[0]++);
     return size[0];
+  }
+
+  /** Casts or wraps the argument into a NavigableObject if possible, never returning null. */
+  @SuppressWarnings("unchecked")
+  static NavigableObject wrap(Object obj) {
+    if (obj == null) return SimpleOrderedMap.of();
+    if (obj instanceof NavigableObject navObj) return navObj;
+    if (obj instanceof Map<?, ?> m) return new MapWriterMap((Map<String, Object>) m);
+    throw new IllegalArgumentException("Cannot wrap " + obj.getClass());
   }
 }

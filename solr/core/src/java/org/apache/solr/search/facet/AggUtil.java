@@ -17,47 +17,37 @@
 
 package org.apache.solr.search.facet;
 
-
 public class AggUtil {
 
-  private AggUtil() {
-  }
+  private AggUtil() {}
 
-  /**
-   * Computes and returns average for given sum and count
-   */
+  /** Computes and returns average for given sum and count */
   public static double avg(double sum, long count) {
     // todo: should we return NAN when count==0?
-    return count == 0? 0.0d: sum / count;
+    return count == 0 ? 0.0d : sum / count;
   }
 
-  /**
-   * Computes and returns uncorrected standard deviation for given values
-   */
+  /** Computes and returns uncorrected standard deviation for given values */
   public static double uncorrectedStdDev(double sumSq, double sum, long count) {
     // todo: should we return NAN when count==0?
     return count == 0 ? 0 : Math.sqrt((sumSq / count) - Math.pow(sum / count, 2));
   }
 
-  /**
-   * Computes and returns corrected standard deviation for given values
-   */
+  /** Computes and returns corrected standard deviation for given values */
   public static double stdDev(double sumSq, double sum, long count) {
     // todo: should we return NAN when count==0 or count==1?
-    return count <= 1 ? 0.0d : Math.sqrt(((count * sumSq) - (sum * sum)) / (count * (count - 1.0D)));
+    return count <= 1
+        ? 0.0d
+        : Math.sqrt(((count * sumSq) - (sum * sum)) / (count * (count - 1.0D)));
   }
 
-  /**
-   * Computes and returns uncorrected variance for given values
-   */
+  /** Computes and returns uncorrected variance for given values */
   public static double uncorrectedVariance(double sumSq, double sum, long count) {
     // todo: should we return NAN when count==0?
     return count == 0 ? 0 : (sumSq / count) - Math.pow(sum / count, 2);
   }
 
-  /**
-   * Computes and returns corrected variance for given values
-   */
+  /** Computes and returns corrected variance for given values */
   public static double variance(double sumSq, double sum, long count) {
     // todo: should we return NAN when count==0 or count==1?
     return count <= 1 ? 0.0d : ((count * sumSq) - (sum * sum)) / (count * (count - 1.0D));

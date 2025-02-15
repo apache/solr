@@ -16,23 +16,20 @@
  */
 package org.apache.solr.util.hll;
 
-/**
- * Writes 'words' of fixed width, in sequence, to a byte array.
- */
+/** Writes 'words' of fixed width, in sequence, to a byte array. */
 interface IWordSerializer {
 
-    /**
-     * Writes the word to the backing array.
-     *
-     * @param  word the word to write.
-     */
-    void writeWord(final long word);
+  /**
+   * Writes the word to the backing array.
+   *
+   * @param word the word to write.
+   */
+  void writeWord(final long word);
 
-    /**
-     * Returns the backing array of <code>byte</code>s that contain the serialized
-     * words.
-     * @return the serialized words as a <code>byte[]</code>.
-     */
-    byte[] getBytes();
-
+  /**
+   * Returns the backing array of <code>byte</code>s that contain the serialized words.
+   *
+   * @return the serialized words as a <code>byte[]</code>.
+   */
+  byte[] getBytes();
 }

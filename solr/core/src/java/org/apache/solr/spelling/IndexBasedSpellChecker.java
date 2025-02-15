@@ -15,31 +15,27 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+
+import java.io.IOException;
+import java.nio.file.Path;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
-
+import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import java.io.File;
-import java.io.IOException;
-
 /**
- * <p>
  * A spell checker implementation that loads words from Solr as well as arbitrary Lucene indices.
- * </p>
- * 
- * <p>
- * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ *
+ * <p>Refer to <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a>
  * for more details.
- * </p>
- * 
+ *
  * @since solr 1.3
- **/
+ */
 public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
 
   public static final String THRESHOLD_TOKEN_FREQUENCY = "thresholdTokenFrequency";
@@ -50,7 +46,9 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   @Override
   public String init(NamedList<?> config, SolrCore core) {
     super.init(config, core);
-    threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
+    threshold =
+        config.get(THRESHOLD_TOKEN_FREQUENCY) == null
+            ? 0.0f
             : (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
     initSourceReader();
     return name;
@@ -59,7 +57,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   private void initSourceReader() {
     if (sourceLocation != null) {
       try {
-        FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation).toPath());
+        FSDirectory luceneIndexDir = FSDirectory.open(Path.of(sourceLocation));
         this.reader = DirectoryReader.open(luceneIndexDir);
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -79,8 +77,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     }
 
     // Create the dictionary
-    dictionary = new HighFrequencyDictionary(reader, field,
-        threshold);
+    dictionary = new HighFrequencyDictionary(reader, field, threshold);
     // TODO: maybe whether or not to clear the index should be configurable?
     // an incremental update is faster (just adds new terms), but if you 'expunged'
     // old terms I think they might hang around.
@@ -105,7 +102,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   @Override
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     super.reload(core, searcher);
-    //reload the source
+    // reload the source
     initSourceReader();
   }
 

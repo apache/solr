@@ -23,11 +23,11 @@ import org.apache.solr.common.params.SolrParams;
 public class SimpleFragmentsBuilder extends SolrFragmentsBuilder {
 
   @Override
-  protected FragmentsBuilder getFragmentsBuilder( SolrParams params,
-      String[] preTags, String[] postTags, BoundaryScanner bs ) {
+  protected FragmentsBuilder getFragmentsBuilder(
+      SolrParams params, String[] preTags, String[] postTags, BoundaryScanner bs) {
     org.apache.lucene.search.vectorhighlight.SimpleFragmentsBuilder sfb =
-      new org.apache.lucene.search.vectorhighlight.SimpleFragmentsBuilder( preTags, postTags, bs );
-    sfb.setMultiValuedSeparator( getMultiValuedSeparatorChar( params ) );
+        new org.apache.lucene.search.vectorhighlight.SimpleFragmentsBuilder(preTags, postTags, bs);
+    sfb.setMultiValuedSeparator(getMultiValuedSeparatorChar(params));
     return sfb;
   }
 

@@ -25,9 +25,7 @@ public class SecurityPluginHolder<T> {
     this.plugin = plugin;
   }
 
-
   public int getZnodeVersion() {
     return znodeVersion;
   }
-
 }

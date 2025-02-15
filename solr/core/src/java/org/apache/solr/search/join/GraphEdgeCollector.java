@@ -20,14 +20,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
-
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
@@ -42,19 +41,20 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 
 /**
- * A graph hit collector.  This accumulates the edges for a given graph traversal.
- * On each collect method, the collector skips edge extraction for nodes that it has
- * already traversed.
+ * A graph hit collector. This accumulates the edges for a given graph traversal. On each collect
+ * method, the collector skips edge extraction for nodes that it has already traversed.
+ *
  * @lucene.internal
  */
 abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
-  // For graph traversal, the result set that has already been visited and thus can be skipped for during value collection.
+  // For graph traversal, the result set that has already been visited and thus can be skipped for
+  // during value collection.
   DocSet skipSet;
   // known leaf nodes
   DocSet leafNodes;
 
-  int numHits = 0;    // number of documents visited
-  BitSet bits;  // if not null, used to collect documents visited
+  int numHits = 0; // number of documents visited
+  BitSet bits; // if not null, used to collect documents visited
 
   int base;
 
@@ -78,6 +78,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     return numHits;
   }
 
+  @Override
   public void collect(int segDoc) throws IOException {
     int doc = segDoc + base;
     if (skipSet != null && skipSet.exists(doc)) {
@@ -90,11 +91,13 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     // increment the hit count so we know how many docs we traversed this time.
     numHits++;
 
-    // Optimization to not look up edges for a document that is a leaf node (i.e. has no outgoing edges)
+    // Optimization to not look up edges for a document that is a leaf node (i.e. has no outgoing
+    // edges)
     if (leafNodes == null || !leafNodes.exists(doc)) {
       addEdgeIdsToResult(segDoc);
     }
-    // Note: tracking links in for each result would be a huge memory hog... so not implementing at this time.
+    // Note: tracking links in for each result would be a huge memory hog... so not implementing at
+    // this time.
   }
 
   abstract void addEdgeIdsToResult(int doc) throws IOException;
@@ -118,12 +121,10 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     return ScoreMode.COMPLETE_NO_SCORES;
   }
 
-
   static class GraphTermsCollector extends GraphEdgeCollector {
     // all the collected terms
     private BytesRefHash collectorTerms;
     private SortedSetDocValues docTermOrds;
-
 
     GraphTermsCollector(SchemaField collectField, DocSet skipSet, DocSet leafNodes) {
       super(collectField, skipSet, leafNodes);
@@ -170,14 +171,15 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
           AutomatonQuery autnQuery = new AutomatonQuery(new Term(matchField.getName()), autn);
           q = autnQuery;
         } else {
-          List<BytesRef> termList = new ArrayList<>(collectorTerms.size());
+          List<BytesRef> termList = new ArrayList<BytesRef>(collectorTerms.size());
           for (int i = 0; i < collectorTerms.size(); i++) {
             BytesRef ref = new BytesRef();
             collectorTerms.get(i, ref);
             termList.add(ref);
           }
-          q = (matchField.hasDocValues() && !matchField.indexed())
-                  ? new DocValuesTermsQuery(matchField.getName(), termList)
+          q =
+              (matchField.hasDocValues() && !matchField.indexed())
+                  ? SortedDocValuesField.newSlowSetQuery(matchField.getName(), termList)
                   : new TermInSetQuery(matchField.getName(), termList);
         }
 
@@ -185,13 +187,10 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
       }
     }
 
-
-    /**
-     * Build an automaton to represent the frontier query
-     */
+    /** Build an automaton to represent the frontier query */
     private Automaton buildAutomaton(BytesRefHash termBytesHash) {
       // need top pass a sorted set of terms to the autn builder (maybe a better way to avoid this?)
-      final TreeSet<BytesRef> terms = new TreeSet<BytesRef>();
+      final TreeSet<BytesRef> terms = new TreeSet<>();
       for (int i = 0; i < termBytesHash.size(); i++) {
         BytesRef ref = new BytesRef();
         termBytesHash.get(i, ref);
@@ -200,8 +199,5 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
       final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
       return a;
     }
-
   }
 }
-
-

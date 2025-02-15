@@ -16,10 +16,7 @@
  */
 package org.apache.solr.common.params;
 
-/**
- * Parameters used with the QueryElevationComponent
- *
- **/
+/** Parameters used with the QueryElevationComponent */
 public interface QueryElevationParams {
 
   String ENABLE = "enableElevation";
@@ -27,39 +24,51 @@ public interface QueryElevationParams {
   String FORCE_ELEVATION = "forceElevation";
   String IDS = "elevateIds";
   String EXCLUDE = "excludeIds";
+
   /**
-   * The name of the field that editorial results will be written out as when using the QueryElevationComponent, which
-   * automatically configures the EditorialMarkerFactory.  The default name is "elevated"
-   * <br>
-   * See http://wiki.apache.org/solr/DocTransformers
+   * The name of the field that editorial results will be written out as when using the
+   * QueryElevationComponent, which automatically configures the EditorialMarkerFactory. The default
+   * name is "elevated" <br>
+   * See https://solr.apache.org/guide/solr/latest/query-guide/query-elevation-component.html
    */
   String EDITORIAL_MARKER_FIELD_NAME = "editorialMarkerFieldName";
 
   /**
-   * The name of the field that excluded editorial results will be written out as when using the QueryElevationComponent, which
-   * automatically configures the EditorialMarkerFactory.  The default name is "excluded".  This is only used
-   * when {@link #MARK_EXCLUDES} is set to true at query time.
+   * The name of the field that excluded editorial results will be written out as when using the
+   * QueryElevationComponent, which automatically configures the EditorialMarkerFactory. The default
+   * name is "excluded". This is only used when {@link #MARK_EXCLUDES} is set to true at query time.
    * <br>
-   * See http://wiki.apache.org/solr/DocTransformers
+   * See https://solr.apache.org/guide/solr/latest/query-guide/query-elevation-component.html
    */
   String EXCLUDE_MARKER_FIELD_NAME = "excludeMarkerFieldName";
 
   /**
-   * Instead of removing excluded items from the results, passing in this parameter allows you to get back the excluded items, but to mark them
-   * as excluded.
+   * Instead of removing excluded items from the results, passing in this parameter allows you to
+   * get back the excluded items, but to mark them as excluded.
    */
   String MARK_EXCLUDES = "markExcludes";
 
   /**
-   * When multiple docs are elevated, should their relative order be the order in the configuration file or should
-   * they be subject to whatever the sort criteria is?  True by default.
+   * When multiple docs are elevated, should their relative order be the order in the configuration
+   * file or should they be subject to whatever the sort criteria is? True by default.
    */
   String USE_CONFIGURED_ELEVATED_ORDER = "useConfiguredElevatedOrder";
 
   /**
-   * By default, the component will also elevate docs that aren't part of the search result (matching the query).
-   * If you only want to elevate the docs that are part of the search result, set this to true. False by default.
+   * By default, the component will also elevate docs that aren't part of the search result
+   * (matching the query). If you only want to elevate the docs that are part of the search result,
+   * set this to true. False by default.
    */
   String ELEVATE_ONLY_DOCS_MATCHING_QUERY = "elevateOnlyDocsMatchingQuery";
 
+  /**
+   * By default, the component respects the fq parameter. If you want to elevate documents that do
+   * not match the provided filters, tag the filters in question via the local parameter syntax
+   * fq={!tag=t1}field1:value1 and then specify the tags for exclusion via elevate.excludeTag=t1
+   *
+   * <p>Note: This is the first parameter to use a common prefix naming standard ("elevate.X") so it
+   * looks different from the other parameters. The other parameters should eventually be reworked
+   * to follow this standard, which is used by other SearchComponents.
+   */
+  String ELEVATE_EXCLUDE_TAGS = "elevate.excludeTags";
 }

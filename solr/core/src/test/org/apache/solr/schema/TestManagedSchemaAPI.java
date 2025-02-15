@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -31,6 +30,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -43,16 +43,20 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
+  }
+
+  @AfterClass
+  public static void tearDownClass() {
+    System.clearProperty("managed.schema.mutable");
   }
 
   @Test
   public void test() throws Exception {
     String collection = "testschemaapi";
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-
         .process(cluster.getSolrClient());
     testModifyField(collection);
     testReloadAndAddSimple(collection);
@@ -65,7 +69,8 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     String fieldName = "myNewField";
     addStringField(fieldName, collection, cloudClient);
 
-    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(collection);
+    CollectionAdminRequest.Reload reloadRequest =
+        CollectionAdminRequest.reloadCollection(collection);
     CollectionAdminResponse response = reloadRequest.process(cloudClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -90,12 +95,15 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     cloudClient.request(ureq, collection);
   }
 
-  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient) throws IOException, SolrServerException {
+  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient)
+      throws IOException, SolrServerException {
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", "string");
-    SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
-    SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(cloudClient, collection);
+    SchemaRequest.AddField addFieldUpdateSchemaRequest =
+        new SchemaRequest.AddField(fieldAttributes);
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(cloudClient, collection);
     assertEquals(0, addFieldResponse.getStatus());
     assertNull(addFieldResponse.getResponse().get("errors"));
 
@@ -113,21 +121,25 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
 
     String fieldName = "id";
     SchemaRequest.Field getFieldRequest = new SchemaRequest.Field(fieldName);
-    SchemaResponse.FieldResponse getFieldResponse = getFieldRequest.process(cloudClient, collection);
+    SchemaResponse.FieldResponse getFieldResponse =
+        getFieldRequest.process(cloudClient, collection);
     Map<String, Object> field = getFieldResponse.getField();
     field.put("uninvertible", false); // and because this field does not have docValues, can't sort.
     SchemaRequest.ReplaceField replaceRequest = new SchemaRequest.ReplaceField(field);
     SchemaResponse.UpdateResponse replaceResponse = replaceRequest.process(cloudClient, collection);
     assertNull(replaceResponse.getResponse().get("errors"));
-    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(collection);
+    CollectionAdminRequest.Reload reloadRequest =
+        CollectionAdminRequest.reloadCollection(collection);
     CollectionAdminResponse response = reloadRequest.process(cloudClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    Exception e = expectThrows(Exception.class, () -> {
-      cloudClient.query(collection, params("q", "*:*", "sort", "id asc"));
-    });
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              cloudClient.query(collection, params("q", "*:*", "sort", "id asc"));
+            });
     assertTrue("Should fail because needs docValues", e.getMessage().contains("docValues"));
   }
-
 }

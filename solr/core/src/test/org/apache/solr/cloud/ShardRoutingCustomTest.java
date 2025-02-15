@@ -17,17 +17,17 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
-
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
-  String collection = DEFAULT_COLLECTION;  // enable this to be configurable (more work needs to be done)
+  // enable this to be configurable (more work needs to be done)
+  String collection = DEFAULT_COLLECTION;
 
   @BeforeClass
   public static void beforeShardHashingTest() throws Exception {
@@ -35,7 +35,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
   }
 
   public ShardRoutingCustomTest() {
-    schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml"; // we need a string id
     sliceCount = 0;
   }
 
@@ -59,17 +59,22 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     File jettyDir = createTempDir("jetty").toFile();
     jettyDir.mkdirs();
     setupJettySolrHome(jettyDir);
-    JettySolrRunner j = createJetty(jettyDir, createTempDir().toFile().getAbsolutePath(), "shardA", "solrconfig.xml", null);
+    JettySolrRunner j =
+        createJetty(
+            jettyDir, createTempDir().toFile().getAbsolutePath(), "shardA", "solrconfig.xml", null);
     j.start();
-    assertEquals(0, CollectionAdminRequest
-        .createCollection(DEFAULT_COLLECTION, "conf1", 1, 1)
-        .setCreateNodeSet("")
-        .process(cloudClient).getStatus());
-    assertTrue(CollectionAdminRequest
-        .addReplicaToShard(collection,"shard1")
-        .setNode(j.getNodeName())
-        .setType(useTlogReplicas()? Replica.Type.TLOG: Replica.Type.NRT)
-        .process(cloudClient).isSuccess());
+    assertEquals(
+        0,
+        CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, "conf1", 1, 1)
+            .setCreateNodeSet("")
+            .process(cloudClient)
+            .getStatus());
+    assertTrue(
+        CollectionAdminRequest.addReplicaToShard(collection, "shard1")
+            .setNode(j.getNodeName())
+            .setType(useTlogReplicas() ? Replica.Type.TLOG : Replica.Type.NRT)
+            .process(cloudClient)
+            .isSuccess());
     jettys.add(j);
     SolrClient client = createNewSolrClient(j.getLocalPort());
     clients.add(client);
@@ -80,6 +85,4 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
     printLayout();
   }
-
-
 }

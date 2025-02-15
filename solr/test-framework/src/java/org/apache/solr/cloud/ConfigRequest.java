@@ -19,18 +19,19 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * A class for making a request to the config handler. Tests can use this
- * e.g. to add custom components, handlers, parsers, etc. to an otherwise
- * generic configset.
+ * A class for making a request to the config handler. Tests can use this e.g. to add custom
+ * components, handlers, parsers, etc. to an otherwise generic configset.
  */
 @SuppressWarnings({"rawtypes"})
-public class ConfigRequest extends SolrRequest {
+public class ConfigRequest extends CollectionRequiringSolrRequest {
 
   protected final String message;
 
@@ -41,12 +42,14 @@ public class ConfigRequest extends SolrRequest {
 
   @Override
   public SolrParams getParams() {
-    return null;
+    return new ModifiableSolrParams();
   }
 
   @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-    return message == null? null: new RequestWriter.StringPayloadContentWriter(message, CommonParams.JSON_MIME);
+    return message == null
+        ? null
+        : new RequestWriter.StringPayloadContentWriter(message, CommonParams.JSON_MIME);
   }
 
   @Override

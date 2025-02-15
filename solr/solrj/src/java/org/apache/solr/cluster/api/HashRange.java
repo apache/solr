@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-
 package org.apache.solr.cluster.api;
 
-/**
- * A range of hash that is stored in a shard
- */
+/** A range of hash that is stored in a shard */
+@Deprecated
 public interface HashRange {
 
   /** minimum value (inclusive) */
@@ -38,5 +36,4 @@ public interface HashRange {
   default boolean isSubset(HashRange subset) {
     return min() <= subset.min() && max() >= subset.max();
   }
-
 }

@@ -16,13 +16,12 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -44,21 +43,22 @@ import org.slf4j.LoggerFactory;
 public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   public static Class<? extends SimilarityFactory> simfac1;
   public static Class<? extends SimilarityFactory> simfac2;
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
 
     simfac1 = LMJelinekMercerSimilarityFactory.class;
     simfac2 = SchemaSimilarityFactory.class;
-    
+
     // sanity check our test...
-    assertTrue("Effectiveness of tets depends on SchemaSimilarityFactory being SolrCoreAware " + 
-               "something changed in the impl and now major portions of this test are useless",
-               SolrCoreAware.class.isAssignableFrom(simfac2));
-    
+    assertTrue(
+        "Effectiveness of tests depends on SchemaSimilarityFactory being SolrCoreAware, "
+            + "something changed in the impl and now major portions of this test are useless",
+        SolrCoreAware.class.isAssignableFrom(simfac2));
+
     // randomize the order these similarities are used in the changed schemas
     // to help test proper initialization in both code paths
     if (random().nextBoolean()) {
@@ -68,12 +68,12 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     }
     System.setProperty("solr.test.simfac1", simfac1.getName());
     System.setProperty("solr.test.simfac2", simfac2.getName());
-      
+
     initCore();
   }
 
-  private final File solrHomeDirectory = createTempDir().toFile();
-  private File schemaFile = null;
+  private final Path solrHomeDirectory = createTempDir();
+  private Path schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
@@ -83,17 +83,17 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    File changed = new File(solrHomeDirectory, "changed");
-    copyMinConf(changed, "name=changed");
+    Path changed = solrHomeDirectory.resolve("changed");
+    copyMinConf(changed.toFile(), "name=changed");
     // Overlay with my local schema
-    schemaFile = new File(new File(changed, "conf"), "schema.xml");
-    FileUtils.writeStringToFile(schemaFile, withWhich, StandardCharsets.UTF_8);
+    schemaFile = changed.resolve("conf").resolve("schema.xml");
+    Files.writeString(schemaFile, withWhich, StandardCharsets.UTF_8);
 
     String discoveryXml = "<solr></solr>";
-    File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, discoveryXml, StandardCharsets.UTF_8);
+    Path solrXml = solrHomeDirectory.resolve("solr.xml");
+    Files.writeString(solrXml, discoveryXml, StandardCharsets.UTF_8);
 
-    final CoreContainer cores = new CoreContainer(solrHomeDirectory.toPath(), new Properties());
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory, new Properties());
     cores.load();
     return cores;
   }
@@ -105,10 +105,9 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     broken.init(new ModifiableSolrParams());
     // NO INFORM
     IllegalStateException e = expectThrows(IllegalStateException.class, broken::getSimilarity);
-    assertTrue("GOT: " + e.getMessage(),
-        e.getMessage().contains("SolrCoreAware.inform"));
+    assertTrue("GOT: " + e.getMessage(), e.getMessage().contains("SolrCoreAware.inform"));
   }
-  
+
   @Test
   public void testOptimizeDiffSchemas() throws Exception {
     // load up a core (why not put it on disk?)
@@ -116,7 +115,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     try (SolrCore changed = cc.getCore("changed")) {
 
       assertSimilarity(changed, simfac1);
-                       
+
       // add some documents
       addDoc(changed, "id", "1", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "2", "which", "15", "text", "some stuff with which");
@@ -126,14 +125,15 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
 
       // write the new schema out and make it current
-      FileUtils.writeStringToFile(schemaFile, withoutWhich, StandardCharsets.UTF_8);
+      Files.writeString(schemaFile, withoutWhich, StandardCharsets.UTF_8);
 
-      IndexSchema iSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", changed.getSolrConfig());
+      IndexSchema iSchema =
+          IndexSchemaFactory.buildIndexSchema("schema.xml", changed.getSolrConfig());
       changed.setLatestSchema(iSchema);
-      
+
       assertSimilarity(changed, simfac2);
       // sanity check our sanity check
-      assertFalse("test is broken: both simfacs are the same", simfac1.equals(simfac2)); 
+      assertNotEquals("test is broken: both simfacs are the same", simfac1, simfac2);
 
       addDoc(changed, "id", "1", "text", "some stuff without which");
       addDoc(changed, "id", "5", "text", "some stuff without which");
@@ -141,8 +141,9 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, true));
     } catch (Throwable e) {
-      log.error("Test exception, logging so not swallowed if there is a (finally) shutdown exception: "
-          , e);
+      log.error(
+          "Test exception, logging so not swallowed if there is a (finally) shutdown exception: ",
+          e);
       throw e;
     } finally {
       if (cc != null) cc.shutdown();
@@ -157,39 +158,42 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     assertNotNull(actual.getSimilarity());
   }
 
-  private String withWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
-      "    <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\"/>\n" +
-      "    <field name=\"text\" type=\"text\" indexed=\"true\" stored=\"true\"/>\n" +
-      "    <field name=\"which\" type=\"int\" indexed=\"true\" stored=\"true\"/>\n" +
-      "  <uniqueKey>id</uniqueKey>\n" +
-      "\n" +
-      "    <fieldtype name=\"text\" class=\"solr.TextField\">\n" +
-      "      <analyzer>\n" +
-      "        <tokenizer class=\"solr.WhitespaceTokenizerFactory\"/>\n" +
-      "        <filter class=\"solr.LowerCaseFilterFactory\"/>\n" +
-      "      </analyzer>\n" +
+  private String withWhich =
+      "<schema name=\"tiny\" version=\"1.1\">\n"
+          + "    <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\"/>\n"
+          + "    <field name=\"text\" type=\"text\" indexed=\"true\" stored=\"true\"/>\n"
+          + "    <field name=\"which\" type=\"int\" indexed=\"true\" stored=\"true\"/>\n"
+          + "  <uniqueKey>id</uniqueKey>\n"
+          + "\n"
+          + "    <fieldtype name=\"text\" class=\"solr.TextField\">\n"
+          + "      <analyzer>\n"
+          + "        <tokenizer class=\"solr.WhitespaceTokenizerFactory\"/>\n"
+          + "        <filter class=\"solr.LowerCaseFilterFactory\"/>\n"
+          + "      </analyzer>\n"
+          + "    </fieldtype>\n"
+          + "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n"
+          + "    <fieldType name=\"int\" class=\""
+          + RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)
+          + "\" precisionStep=\"0\" positionIncrementGap=\"0\"/>"
+          + "  <similarity class=\"${solr.test.simfac1}\"/> "
+          + "</schema>";
 
-      "    </fieldtype>\n" +
-      "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n" +
-      "    <fieldType name=\"int\" class=\""+RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)+"\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
-      "  <similarity class=\"${solr.test.simfac1}\"/> " +
-      "</schema>";
-
-  private String withoutWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
-      "    <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\"/>\n" +
-      "    <field name=\"text\" type=\"text\" indexed=\"true\" stored=\"true\"/>\n" +
-      "  <uniqueKey>id</uniqueKey>\n" +
-      "\n" +
-      "    <fieldtype name=\"text\" class=\"solr.TextField\">\n" +
-      "      <analyzer>\n" +
-      "        <tokenizer class=\"solr.WhitespaceTokenizerFactory\"/>\n" +
-      "        <filter class=\"solr.LowerCaseFilterFactory\"/>\n" +
-      "      </analyzer>\n" +
-      "    </fieldtype>\n" +
-      "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n" +
-      "    <fieldType name=\"int\" class=\""+RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)+"\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
-      "  <similarity class=\"${solr.test.simfac2}\"/> " +
-      "</schema>";
-
-
+  private String withoutWhich =
+      "<schema name=\"tiny\" version=\"1.1\">\n"
+          + "    <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\"/>\n"
+          + "    <field name=\"text\" type=\"text\" indexed=\"true\" stored=\"true\"/>\n"
+          + "  <uniqueKey>id</uniqueKey>\n"
+          + "\n"
+          + "    <fieldtype name=\"text\" class=\"solr.TextField\">\n"
+          + "      <analyzer>\n"
+          + "        <tokenizer class=\"solr.WhitespaceTokenizerFactory\"/>\n"
+          + "        <filter class=\"solr.LowerCaseFilterFactory\"/>\n"
+          + "      </analyzer>\n"
+          + "    </fieldtype>\n"
+          + "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n"
+          + "    <fieldType name=\"int\" class=\""
+          + RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)
+          + "\" precisionStep=\"0\" positionIncrementGap=\"0\"/>"
+          + "  <similarity class=\"${solr.test.simfac2}\"/> "
+          + "</schema>";
 }

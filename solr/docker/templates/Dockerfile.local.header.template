@@ -30,10 +30,12 @@
 # available at https://hub.docker.com/_/solr -- however this file can be used to build docker images from
 # a Solr release artifact -- either from a remote TGZ file, or from an TGZ artifact you have downloaded
 # locally.
-#    Example:
+#    Examples:
 #      docker build -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
-#    Example:
+#      docker build -f solr-X.Y.Z-slim/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z-slim.tgz
+#    Examples:
 #      docker build -f solr-X.Y.Z/docker/Dockerfile - < solr-X.Y.Z.tgz
+#      docker build -f solr-X.Y.Z-slim/docker/Dockerfile - < solr-X.Y.Z-slim.tgz
 
 
 ARG BASE_IMAGE=_REPLACE_BASE_IMAGE_
@@ -42,3 +44,4 @@ FROM $BASE_IMAGE
 
 COPY / /opt/
 
+ARG SOLR_VERSION="_REPLACE_SOLR_VERSION_"

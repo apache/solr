@@ -1,0 +1,146 @@
+= Visualization
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+
+== Gallery
+
+=== Result Tables
+
+image::math-expressions/search-sort.png[]
+
+=== Random Sampling & Scatter Plots
+
+image::math-expressions/bivariate.png[]
+
+=== Correlation Matrices and Heat Maps
+
+image::math-expressions/corrmatrix.png[]
+
+=== Visualizing CSV Files
+
+image::math-expressions/csv.png[]
+
+=== Probability Distributions
+
+image::math-expressions/dist.png[]
+
+=== Histograms
+
+image::math-expressions/cumProb.png[]
+
+=== Frequency Tables
+
+image::math-expressions/freqTable1.png[]
+
+=== Quantile Plots
+
+image::math-expressions/quantiles.png[]
+
+=== Time Series Aggregation
+
+image::math-expressions/timeseries1.png[]
+
+=== Time Series With Moving Average
+
+image::math-expressions/movingavg.png[]
+
+=== Time Series Forecast
+
+image::math-expressions/forecast.png[]
+
+=== Multiple Time Lines
+
+image::math-expressions/timecompare.png[]
+
+=== Linear Regression
+
+image::math-expressions/linear.png[]
+
+=== Knn Regression
+
+image::math-expressions/knnRegress.png[]
+
+=== Multivariate, Non-linear Regression with Residual Plot
+
+image::math-expressions/redwine1.png[]
+
+=== Monte Carlo Simulations
+
+image::math-expressions/randomwalk5.png[]
+
+=== Random Walks
+
+image::math-expressions/randomwalk6.png[]
+
+=== Distance Matrices
+
+image::math-expressions/distance.png[]
+
+=== DBSCAN Clustering
+
+image::math-expressions/dbscan1.png[]
+
+=== KMeans Clustering
+
+image::math-expressions/2DCluster1.png[]
+
+=== Mapping Cluster Centroids
+
+image::math-expressions/centroidplot.png[]
+
+=== Convex Hulls
+
+image::math-expressions/convex2.png[]
+
+=== Significant Terms
+
+image::math-expressions/sterms.png[]
+
+=== Phrase Aggregation
+
+image::math-expressions/text-analytics.png[]
+
+=== Curve Fitting
+
+image::math-expressions/hfit.png[]
+
+=== Interpolation
+
+image::math-expressions/interpolate1.png[]
+
+=== Derivatives
+
+image::math-expressions/sined.png[]
+
+=== Integrals
+
+image::math-expressions/integral.png[]
+
+=== Convolutional Smoothing
+
+image::math-expressions/conv-smooth.png[]
+
+=== Autocorrelation
+
+image::math-expressions/noise-autocorrelation.png[]
+
+=== Fourier Transform
+
+image::math-expressions/signal-fft.png[]
+
+

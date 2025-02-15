@@ -1,0 +1,139 @@
+= Query Re-Ranking
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Query Re-Ranking allows you to run a simple query (A) for matching documents and then re-rank the top N documents using the scores from a more complex query (B).
+
+Since the more costly ranking from query B is only applied to the top _N_ documents, it will have less impact on performance then just using the complex query B by itself.
+The trade-off is that documents which score very low using the simple query A may not be considered during the re-ranking phase, even if they would score very highly using query B.
+
+== Specifying a Ranking Query
+
+A Ranking query can be specified using the `rq` request parameter.
+The `rq` parameter must specify a query string that when parsed, produces a {solr-javadocs}/core/org/apache/solr/search/RankQuery.html[RankQuery].
+
+Three rank queries are currently included in the Solr distribution.
+You can also configure a custom {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] you have written, but most users can just use a parser provided with Solr.
+
+[%autowidth.stretch,options="header"]
+|===
+|Parser |QParserPlugin class
+|rerank |{solr-javadocs}/core/org/apache/solr/search/ReRankQParserPlugin.html[ReRankQParserPlugin]
+|xport |{solr-javadocs}/core/org/apache/solr/search/ExportQParserPlugin.html[ExportQParserPlugin]
+|ltr |LTRQParserPlugin
+|===
+
+=== ReRank Query Parser
+
+The `rerank` parser wraps a query specified by a local parameter, along with additional parameters indicating how many documents should be re-ranked, and how the final scores should be computed:
+
+`reRankQuery`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The query string for your complex ranking query - in most cases xref:local-params.adoc[a variable] will be used to refer to another request parameter.
+
+`reRankDocs`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `200`
+|===
++
+The number of top _N_ documents from the original query that should be re-ranked.
+This number will be treated as a minimum, and may be increased internally automatically in order to rank enough documents to satisfy the query (i.e., start+rows).
+
+`reRankWeight`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2.0`
+|===
++
+A multiplicative factor that will be applied to the score from the reRankQuery for each of the top matching documents, before that score is combined with the original score.
+
+`reRankScale`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Scales the rerank scores between min and max values. The format of this parameter value is `min-max` where
+min and max are positive integers. Example `reRankScale=0-1` rescales the rerank scores between 0 and 1.
+
+`reRankMainScale`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Scales the main query scores between min and max values. The format of this parameter value is `min-max` where
+min and max are positive integers. Example `reRankMainScale=0-1` rescales the main query scores between 0 and 1.
+
+`reRankOperator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `add`
+|===
++
+By default, the score from the reRankQuery multiplied by the `reRankWeight` is added to the original score.
+
+In the example below using the default `add` behaviour, the top 1000 documents matching the query "greetings" will be re-ranked using the query "(hi hello hey hiya)".
+The resulting scores for each of those 1000 documents will be 3 times their score from the "(hi hello hey hiya)", plus the score from the original "greetings" query:
+
+[source,text]
+----
+q=greetings&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=3}&rqq=(hi+hello+hey+hiya)
+----
+
+If a document matches the original query, but does not match the re-ranking query, the document's original score will remain.
+
+Setting `reRankOperator` to `multiply` will multiply the three numbers instead. This means that other multiplying operations such as xref:edismax-query-parser.adoc#extended-dismax-parameters[eDisMax `boost` functions] can be converted to Re-Rank operations.
+
+In the example below, the scores for the top 1000 documents matching the query "phone" will be multiplied by a function of the `price` field.
+
+[source,text]
+----
+q=phone&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=1 reRankOperator=multiply}&rqq={!func v=div(1,sum(1,price))}
+----
+
+Setting `reRankOperator` to `replace` will replace the score, so the final scores can be independent of documents' original scores.
+
+In the example below, the scores for the top 1000 documents matching the query "phone" will be replaced with a function of the `price` field.
+
+[source,text]
+----
+q=phone&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=1 reRankOperator=replace}&rqq={!func v=div(1,sum(1,price))}
+----
+
+
+=== LTR Query Parser
+
+The `ltr` stands for Learning To Rank, please see xref:learning-to-rank.adoc[] for more detailed information.
+
+== Combining Ranking Queries with Other Solr Features
+
+The `rq` parameter and the re-ranking feature in general works well with other Solr features.
+For example, it can be used in conjunction with xref:collapse-and-expand-results.adoc[] to re-rank the group heads after they've been collapsed.
+It also preserves the order of documents elevated by the xref:query-elevation-component.adoc[].
+And it even has its own custom explain so you can see how the re-ranking scores were derived when looking at xref:common-query-parameters.adoc#debug-parameter[debug information].

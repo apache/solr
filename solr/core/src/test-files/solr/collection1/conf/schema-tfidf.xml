@@ -20,7 +20,7 @@
      See TestClassicSimilarityFactory
 -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
 
   <!-- testDefaults -->
   <field name="text" type="text" indexed="true" stored="false"/>

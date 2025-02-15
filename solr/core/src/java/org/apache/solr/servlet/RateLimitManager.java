@@ -17,60 +17,69 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.annotation.SolrThreadSafe;
-import org.apache.solr.common.cloud.ClusterPropertiesListener;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.servlet.http.HttpServletRequest;
+import net.jcip.annotations.ThreadSafe;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.cloud.ClusterPropertiesListener;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.core.RateLimiterConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * This class is responsible for managing rate limiting per request type. Rate limiters
- * can be registered with this class against a corresponding type. There can be only one
- * rate limiter associated with a request type.
+ * This class is responsible for managing rate limiting per request type. Rate limiters can be
+ * registered with this class against a corresponding type. There can be only one rate limiter
+ * associated with a request type.
  *
- * The actual rate limiting and the limits should be implemented in the corresponding RequestRateLimiter
- * implementation. RateLimitManager is responsible for the orchestration but not the specifics of how the
- * rate limiting is being done for a specific request type.
+ * <p>The actual rate limiting and the limits should be implemented in the corresponding
+ * RequestRateLimiter implementation. RateLimitManager is responsible for the orchestration but not
+ * the specifics of how the rate limiting is being done for a specific request type.
  */
-@SolrThreadSafe
+@ThreadSafe
 public class RateLimitManager implements ClusterPropertiesListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public final static int DEFAULT_CONCURRENT_REQUESTS= (Runtime.getRuntime().availableProcessors()) * 3;
-  public final static long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
-  private final Map<String, RequestRateLimiter> requestRateLimiterMap;
-
-  private final Map<HttpServletRequest, RequestRateLimiter.SlotMetadata> activeRequestsMap;
+  public static final String ERROR_MESSAGE =
+      "Too many requests for this request type. Please try after some time or increase the quota for this request type";
+  public static final int DEFAULT_CONCURRENT_REQUESTS =
+      (Runtime.getRuntime().availableProcessors()) * 3;
+  public static final long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
+  private final ConcurrentHashMap<String, RequestRateLimiter> requestRateLimiterMap;
 
   public RateLimitManager() {
-    this.requestRateLimiterMap = new HashMap<>();
-    this.activeRequestsMap = new ConcurrentHashMap<>();
+    this.requestRateLimiterMap = new ConcurrentHashMap<>();
   }
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
 
     // Hack: We only support query rate limiting for now
-    QueryRateLimiter queryRateLimiter = (QueryRateLimiter) requestRateLimiterMap.get(SolrRequest.SolrRequestType.QUERY);
-
-    if (queryRateLimiter != null) {
-      try {
-        queryRateLimiter.processConfigChange(properties);
-      } catch (IOException e) {
-        throw new RuntimeException("Encountered IOException: " + e.getMessage());
-      }
-    }
+    requestRateLimiterMap.compute(
+        SolrRequest.SolrRequestType.QUERY.toString(),
+        (k, v) -> {
+          try {
+            RateLimiterConfig newConfig =
+                QueryRateLimiter.processConfigChange(
+                    SolrRequest.SolrRequestType.QUERY,
+                    v == null ? null : v.getRateLimiterConfig(),
+                    properties);
+            if (newConfig == null) {
+              return v;
+            } else {
+              return new QueryRateLimiter(newConfig);
+            }
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
 
     return false;
   }
@@ -79,45 +88,39 @@ public class RateLimitManager implements ClusterPropertiesListener {
   // identify which (if any) rate limiter can handle this request. Internal requests will not be
   // rate limited
   // Returns true if request is accepted for processing, false if it should be rejected
-  public boolean handleRequest(HttpServletRequest request) throws InterruptedException {
+  public RequestRateLimiter.SlotReservation handleRequest(HttpServletRequest request)
+      throws InterruptedException {
     String requestContext = request.getHeader(SOLR_REQUEST_CONTEXT_PARAM);
     String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
 
     if (typeOfRequest == null) {
       // Cannot determine if this request should be throttled
-      return true;
+      return RequestRateLimiter.UNLIMITED;
     }
 
     // Do not throttle internal requests
-    if (requestContext != null && requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
-      return true;
+    if (requestContext != null
+        && requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
+      return RequestRateLimiter.UNLIMITED;
     }
 
     RequestRateLimiter requestRateLimiter = requestRateLimiterMap.get(typeOfRequest);
 
     if (requestRateLimiter == null) {
       // No request rate limiter for this request type
-      return true;
+      return RequestRateLimiter.UNLIMITED;
     }
 
-    RequestRateLimiter.SlotMetadata result = requestRateLimiter.handleRequest();
+    // slot borrowing should be fallback behavior, so if `slotAcquisitionTimeoutInMS`
+    // is configured it will be applied here (blocking if necessary), to make a best
+    // effort to draw from the request's own slot pool.
+    RequestRateLimiter.SlotReservation result = requestRateLimiter.handleRequest();
 
     if (result != null) {
-      // Can be the case if request rate limiter is disabled
-      if (result.isReleasable()) {
-        activeRequestsMap.put(request, result);
-      }
-      return true;
+      return result;
     }
 
-    RequestRateLimiter.SlotMetadata slotMetadata = trySlotBorrowing(typeOfRequest);
-
-    if (slotMetadata != null) {
-      activeRequestsMap.put(request, slotMetadata);
-      return true;
-    }
-
-    return false;
+    return trySlotBorrowing(typeOfRequest); // possibly null, if unable to borrow a slot
   }
 
   /* For a rejected request type, do the following:
@@ -127,9 +130,10 @@ public class RateLimitManager implements ClusterPropertiesListener {
    *
    * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
    */
-  private RequestRateLimiter.SlotMetadata trySlotBorrowing(String requestType) {
+  private RequestRateLimiter.SlotReservation trySlotBorrowing(String requestType) {
+    // TODO: randomly distributed slot borrowing over available RequestRateLimiters
     for (Map.Entry<String, RequestRateLimiter> currentEntry : requestRateLimiterMap.entrySet()) {
-      RequestRateLimiter.SlotMetadata result = null;
+      RequestRateLimiter.SlotReservation result = null;
       RequestRateLimiter requestRateLimiter = currentEntry.getValue();
 
       // Cant borrow from ourselves
@@ -139,8 +143,9 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
       if (requestRateLimiter.getRateLimiterConfig().isSlotBorrowingEnabled) {
         if (log.isWarnEnabled()) {
-          String msg = "WARN: Experimental feature slots borrowing is enabled for request rate limiter type " +
-              requestRateLimiter.getRateLimiterConfig().requestType.toString();
+          String msg =
+              "WARN: Experimental feature slots borrowing is enabled for request rate limiter type "
+                  + requestRateLimiter.getRateLimiterConfig().requestType.toString();
 
           log.warn(msg);
         }
@@ -151,11 +156,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
           Thread.currentThread().interrupt();
         }
 
-        if (result == null) {
-          throw new IllegalStateException("Returned metadata object is null");
-        }
-
-        if (result.isReleasable()) {
+        if (result != null) {
           return result;
         }
       }
@@ -164,17 +165,8 @@ public class RateLimitManager implements ClusterPropertiesListener {
     return null;
   }
 
-  // Decrement the active requests in the rate limiter for the corresponding request type.
-  public void decrementActiveRequests(HttpServletRequest request) {
-    RequestRateLimiter.SlotMetadata slotMetadata = activeRequestsMap.get(request);
-
-    if (slotMetadata != null) {
-      activeRequestsMap.remove(request);
-      slotMetadata.decrementRequest();
-    }
-  }
-
-  public void registerRequestRateLimiter(RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {
+  public void registerRequestRateLimiter(
+      RequestRateLimiter requestRateLimiter, SolrRequest.SolrRequestType requestType) {
     requestRateLimiterMap.put(requestType.toString(), requestRateLimiter);
   }
 
@@ -192,7 +184,8 @@ public class RateLimitManager implements ClusterPropertiesListener {
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
 
-      rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(solrZkClient), SolrRequest.SolrRequestType.QUERY);
+      rateLimitManager.registerRequestRateLimiter(
+          new QueryRateLimiter(solrZkClient), SolrRequest.SolrRequestType.QUERY);
 
       return rateLimitManager;
     }

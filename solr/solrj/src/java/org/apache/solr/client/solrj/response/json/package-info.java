@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Allows parsing of JSON query/faceting API responses
- */
+/** Allows parsing of JSON query/faceting API responses */
 package org.apache.solr.client.solrj.response.json;

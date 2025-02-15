@@ -20,7 +20,8 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.SourceEvaluator;
@@ -32,7 +33,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
-import org.apache.lucene.analysis.*;
 import org.apache.solr.core.SolrCore;
 
 public class AnalyzeEvaluator extends SourceEvaluator {
@@ -46,25 +46,29 @@ public class AnalyzeEvaluator extends SourceEvaluator {
     init(_fieldName, _analyzerField);
   }
 
-  public AnalyzeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public AnalyzeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     String _fieldName = factory.getValueOperand(expression, 0);
     String _analyzerField = factory.getValueOperand(expression, 1);
     init(_fieldName, _analyzerField);
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
     Object solrCoreObj = context.get("solr-core");
-    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
+    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore)) {
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE,
+          "StreamContext must have SolrCore in solr-core key");
     }
 
-    analyzer = ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
+    analyzer =
+        ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
   }
 
   private void init(String fieldName, String analyzerField) {
     this.fieldName = fieldName;
-    if(analyzerField == null) {
+    if (analyzerField == null) {
       this.analyzerField = fieldName;
     } else {
       this.analyzerField = analyzerField;
@@ -76,7 +80,7 @@ public class AnalyzeEvaluator extends SourceEvaluator {
     String value = null;
     Object obj = tuple.get(fieldName);
 
-    if(obj == null) {
+    if (obj == null) {
       value = fieldName;
     } else {
       value = obj.toString();
@@ -84,7 +88,7 @@ public class AnalyzeEvaluator extends SourceEvaluator {
 
     List<String> tokens = new ArrayList<>();
 
-    try(TokenStream tokenStream = analyzer.tokenStream(analyzerField, value)) {
+    try (TokenStream tokenStream = analyzer.tokenStream(analyzerField, value)) {
       CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
       tokenStream.reset();
       while (tokenStream.incrementToken()) {
@@ -107,5 +111,4 @@ public class AnalyzeEvaluator extends SourceEvaluator {
         .withImplementingClass(getClass().getName())
         .withExpression(toExpression(factory).toString());
   }
-
 }

@@ -20,7 +20,6 @@ package org.apache.solr.util;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.solr.SolrTestCase;
 
 public class DynamicMapsTest extends SolrTestCase {
@@ -35,7 +34,7 @@ public class DynamicMapsTest extends SolrTestCase {
       map.put(key, val);
     }
 
-    for (Map.Entry<Integer, Float> entry: standard.entrySet()) {
+    for (Map.Entry<Integer, Float> entry : standard.entrySet()) {
       assertEquals(entry.getValue(), map.get(entry.getKey()), 0.0001);
     }
     AtomicInteger size = new AtomicInteger(0);
@@ -56,8 +55,8 @@ public class DynamicMapsTest extends SolrTestCase {
       map.put(key, val);
     }
 
-    for (Map.Entry<Integer, Long> entry: standard.entrySet()) {
-      assertEquals((long)entry.getValue(), map.get(entry.getKey()));
+    for (Map.Entry<Integer, Long> entry : standard.entrySet()) {
+      assertEquals((long) entry.getValue(), map.get(entry.getKey()));
     }
     AtomicInteger size = new AtomicInteger(0);
     map.forEachValue(i -> size.incrementAndGet());
@@ -77,8 +76,8 @@ public class DynamicMapsTest extends SolrTestCase {
       map.put(key, val);
     }
 
-    for (Map.Entry<Integer, Integer> entry: standard.entrySet()) {
-      assertEquals((int)entry.getValue(), map.get(entry.getKey()));
+    for (Map.Entry<Integer, Integer> entry : standard.entrySet()) {
+      assertEquals((int) entry.getValue(), map.get(entry.getKey()));
     }
     AtomicInteger size = new AtomicInteger(0);
     map.forEachValue(i -> size.incrementAndGet());

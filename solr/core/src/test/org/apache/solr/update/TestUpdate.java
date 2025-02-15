@@ -16,9 +16,7 @@
  */
 package org.apache.solr.update;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -28,7 +26,7 @@ import org.junit.Test;
 public class TestUpdate extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-tlog.xml","schema15.xml");
+    initCore("solrconfig-tlog.xml", "schema15.xml");
   }
 
   @Test
@@ -39,13 +37,12 @@ public class TestUpdate extends SolrTestCaseJ4 {
     // do without commits
     doUpdateTest(() -> null);
 
-    // do with commits
-    doUpdateTest(() -> {
-      assertU(commit("softCommit","false"));
-      return null;
-    });
-
-
+    // do with commit operation
+    doUpdateTest(
+        () -> {
+          assertU(commit("softCommit", "false"));
+          return null;
+        });
   }
 
   public void doUpdateTest(Callable<Void> afterUpdate) throws Exception {
@@ -54,188 +51,250 @@ public class TestUpdate extends SolrTestCaseJ4 {
 
     long version;
 
-    version = addAndGetVersion(sdoc("id","1", "val_i",5, "copyfield_source","a"), null);
+    version = addAndGetVersion(sdoc("id", "1", "val_i", 5, "copyfield_source", "a"), null);
     afterUpdate.call();
-    version = addAndGetVersion(sdoc("id","1", "val_is",map("add",10), "copyfield_source",map("add","b")), null);
+    version =
+        addAndGetVersion(
+            sdoc("id", "1", "val_is", map("add", 10), "copyfield_source", map("add", "b")), null);
     afterUpdate.call();
-    version = addAndGetVersion(sdoc("id","1", "val_is",map("add",5)), null);
-    afterUpdate.call();
-
-    assertJQ(req("qt","/get", "id","1", "fl","id,*_i,*_is,copyfield_*")
-        ,"=={'doc':{'id':'1', 'val_i':5, 'val_is':[10,5], 'copyfield_source':['a','b']}}"     // real-time get should not return stored copyfield targets
-    );
-
-    version = addAndGetVersion(sdoc("id","1", "val_is",map("add",-1), "val_i",map("set",100)), null);
+    version = addAndGetVersion(sdoc("id", "1", "val_is", map("add", 5)), null);
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,*_i,*_is")
-        ,"=={'doc':{'id':'1', 'val_i':100, 'val_is':[10,5,-1]}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is,copyfield_*"),
+        "=={'doc':{'id':'1', 'val_i':5, 'val_is':[10,5], 'copyfield_source':['a','b']}}" // real-time get should not return stored copyfield targets
+        );
 
+    version =
+        addAndGetVersion(sdoc("id", "1", "val_is", map("add", -1), "val_i", map("set", 100)), null);
+    afterUpdate.call();
+
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is"),
+        "=={'doc':{'id':'1', 'val_i':100, 'val_is':[10,5,-1]}}");
 
     // Do a search to get all stored fields back and make sure that the stored copyfield target only
     // has one copy of the source.  This may not be supported forever!
-    assertU(commit("softCommit","true"));
-    assertJQ(req("q","*:*", "fl","id,*_i,*_is,copyfield_*")
-        ,"/response/docs/[0]=={'id':'1', 'val_i':100, 'val_is':[10,5,-1], 'copyfield_source':['a','b'], 'copyfield_dest_ss':['a','b']}"
-    );
+    assertU(commit("softCommit", "true"));
+    assertJQ(
+        req("q", "*:*", "fl", "id,*_i,*_is,copyfield_*"),
+        "/response/docs/[0]=={'id':'1', 'val_i':100, 'val_is':[10,5,-1], 'copyfield_source':['a','b'], 'copyfield_dest_ss':['a','b']}");
 
-
-    long version2;
-    SolrException se = expectThrows(SolrException.class,
-        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-100), "_version_",2), null));
+    SolrException se =
+        expectThrows(
+            SolrException.class,
+            () ->
+                addAndGetVersion(
+                    sdoc("id", "1", "val_is", map("add", -100), "_version_", 2), null));
     assertEquals(409, se.code());
 
     // try bad version added as a request param
-    se = expectThrows(SolrException.class,
-        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-100)), params("_version_","2")));
+    se =
+        expectThrows(
+            SolrException.class,
+            () ->
+                addAndGetVersion(
+                    sdoc("id", "1", "val_is", map("add", -100)), params("_version_", "2")));
     assertEquals(409, se.code());
 
     // try good version added as a field in the doc
-    version = addAndGetVersion(sdoc("id","1", "val_is",map("add",-100), "_version_",version), null);
+    version =
+        addAndGetVersion(sdoc("id", "1", "val_is", map("add", -100), "_version_", version), null);
     afterUpdate.call();
 
     // try good version added as a request parameter
-    version = addAndGetVersion(sdoc("id","1", "val_is",map("add",-200)), params("_version_",Long.toString(version)));
+    version =
+        addAndGetVersion(
+            sdoc("id", "1", "val_is", map("add", -200)),
+            params("_version_", Long.toString(version)));
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,*_i,*_is")
-        ,"=={'doc':{'id':'1', 'val_i':100, 'val_is':[10,5,-1,-100,-200]}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is"),
+        "=={'doc':{'id':'1', 'val_i':100, 'val_is':[10,5,-1,-100,-200]}}");
 
     // extra field should just be treated as a "set"
-    version = addAndGetVersion(sdoc("id","1", "val_is",map("add",-300), "val_i",2), null);
+    version = addAndGetVersion(sdoc("id", "1", "val_is", map("add", -300), "val_i", 2), null);
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,*_i,*_is")
-        ,"=={'doc':{'id':'1', 'val_i':2, 'val_is':[10,5,-1,-100,-200,-300]}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is"),
+        "=={'doc':{'id':'1', 'val_i':2, 'val_is':[10,5,-1,-100,-200,-300]}}");
 
     // a null value should be treated as "remove"
-    version = addAndGetVersion(sdoc("id","1", "val_is",map("add",-400), "val_i",null), null);
+    version = addAndGetVersion(sdoc("id", "1", "val_is", map("add", -400), "val_i", null), null);
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,*_i,*_is")
-        ,"=={'doc':{'id':'1', 'val_is':[10,5,-1,-100,-200,-300,-400]}}"
-    );
-
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,*_i,*_is"),
+        "=={'doc':{'id':'1', 'val_is':[10,5,-1,-100,-200,-300,-400]}}");
 
     version = deleteAndGetVersion("1", null);
     afterUpdate.call();
 
     // test that updating a non-existing doc fails if we set _version_=1
-    se = expectThrows(SolrException.class,
-        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-101), "_version_","1"), null));
+    se =
+        expectThrows(
+            SolrException.class,
+            () ->
+                addAndGetVersion(
+                    sdoc("id", "1", "val_is", map("add", -101), "_version_", "1"), null));
     assertEquals(409, se.code());
 
     // test that by default we can update a non-existing doc
-    version = addAndGetVersion(sdoc("id","1", "val_i",102, "val_is",map("add",-102)), null);
+    version = addAndGetVersion(sdoc("id", "1", "val_i", 102, "val_is", map("add", -102)), null);
     afterUpdate.call();
-    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
-        ,"=={'doc':{'id':'1', 'val_i':102, 'val_is':[-102]}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        "=={'doc':{'id':'1', 'val_i':102, 'val_is':[-102]}}");
 
-    version = addAndGetVersion(sdoc("id","1", "val_i",5), null);
-    afterUpdate.call();
-
-    version = addAndGetVersion(sdoc("id","1",
-        "val_is",map("inc",1),
-        "val2_i",map("inc","1"),
-        "val2_f",map("inc",1),
-        "val2_d",map("inc","1.0"),
-        "val2_l",map("inc",1)
-        ),
-        null);
+    version = addAndGetVersion(sdoc("id", "1", "val_i", 5), null);
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
-        ,"=={'doc':{'id':'1', 'val_i':5, 'val_is':[1], 'val2_i':1, 'val2_f':1.0, 'val2_d':1.0, 'val2_l':1}}"
-    );
-
-    version = addAndGetVersion(sdoc("id","1",
-        "val_is",map("inc","-5"),
-        "val2_i",map("inc",-5),
-        "val2_f",map("inc","-5.0"),
-        "val2_d",map("inc",-5),
-        "val2_l",map("inc","-5")
-    ),
-        null);
+    version =
+        addAndGetVersion(
+            sdoc(
+                "id",
+                "1",
+                "val_is",
+                map("inc", 1),
+                "val2_i",
+                map("inc", "1"),
+                "val2_f",
+                map("inc", 1),
+                "val2_d",
+                map("inc", "1.0"),
+                "val2_l",
+                map("inc", 1)),
+            null);
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
-        ,"=={'doc':{'id':'1', 'val_i':5, 'val_is':[-4], 'val2_i':-4, 'val2_f':-4.0, 'val2_d':-4.0, 'val2_l':-4}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        "=={'doc':{'id':'1', 'val_i':5, 'val_is':[1], 'val2_i':1, 'val2_f':1.0, 'val2_d':1.0, 'val2_l':1}}");
 
-    version = addAndGetVersion(sdoc("id","1",
-        "val_is",map("inc","2000000000"),
-        "val2_i",map("inc",-2000000000),
-        "val2_f",map("inc","1e+20"),
-        "val2_d",map("inc",-1.2345678901e+100),
-        "val2_l",map("inc","5000000000")
-    ),
-        null);
+    version =
+        addAndGetVersion(
+            sdoc(
+                "id",
+                "1",
+                "val_is",
+                map("inc", "-5"),
+                "val2_i",
+                map("inc", -5),
+                "val2_f",
+                map("inc", "-5.0"),
+                "val2_d",
+                map("inc", -5),
+                "val2_l",
+                map("inc", "-5")),
+            null);
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
-        ,"=={'doc':{'id':'1', 'val_i':5, 'val_is':[1999999996], 'val2_i':-2000000004, 'val2_f':1.0E20, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        "=={'doc':{'id':'1', 'val_i':5, 'val_is':[-4], 'val2_i':-4, 'val2_f':-4.0, 'val2_d':-4.0, 'val2_l':-4}}");
 
+    version =
+        addAndGetVersion(
+            sdoc(
+                "id",
+                "1",
+                "val_is",
+                map("inc", "2000000000"),
+                "val2_i",
+                map("inc", -2000000000),
+                "val2_f",
+                map("inc", "1e+20"),
+                "val2_d",
+                map("inc", -1.2345678901e+100),
+                "val2_l",
+                map("inc", "5000000000")),
+            null);
+    afterUpdate.call();
+
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        "=={'doc':{'id':'1', 'val_i':5, 'val_is':[1999999996], 'val2_i':-2000000004, 'val2_f':1.0E20, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}");
 
     // remove some fields
-    version = addAndGetVersion(sdoc(
-        "id", "1",
-        "val_is", map("set",null),
-        "val2_f", map("set",null)
-    ),
-        null);
+    version =
+        addAndGetVersion(
+            sdoc(
+                "id", "1",
+                "val_is", map("set", null),
+                "val2_f", map("set", null)),
+            null);
 
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
-        ,"=={'doc':{'id':'1', 'val_i':5, 'val2_i':-2000000004, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        "=={'doc':{'id':'1', 'val_i':5, 'val2_i':-2000000004, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}");
 
     // test that updating a unique id results in failure.
     ignoreException("Invalid update of id field");
-    se = expectThrows(SolrException.class,
-        () -> addAndGetVersion(
-            sdoc("id", map("set","1"), "val_is", map("inc","2000000000")), null)
-    );
+    se =
+        expectThrows(
+            SolrException.class,
+            () ->
+                addAndGetVersion(
+                    sdoc("id", map("set", "1"), "val_is", map("inc", "2000000000")), null));
     resetExceptionIgnores();
     assertEquals(400, se.code());
-    assertTrue(se.getMessage().contains("Updating unique key, version or route field is not allowed"));
+    assertTrue(
+        se.getMessage().contains("Updating unique key, version or route field is not allowed"));
 
     afterUpdate.call();
 
-    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
-        ,"=={'doc':{'id':'1', 'val_i':5, 'val2_i':-2000000004, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}"
-    );
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id,val*"),
+        "=={'doc':{'id':'1', 'val_i':5, 'val2_i':-2000000004, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}");
 
-   // nothing should have changed - check with a normal query that we didn't create a duplicate
-    assertU(commit("softCommit","false"));
-    assertJQ(req("q","id:1", "fl","id")
-        ,"/response/numFound==1"
-    );
-
+    // nothing should have changed - check with a normal query that we didn't create a duplicate
+    assertU(commit("softCommit", "false"));
+    assertJQ(req("q", "id:1", "fl", "id"), "/response/numFound==1");
   }
 
   @Test // SOLR-8866
-  public void testUpdateLogThrowsForUnknownTypes() throws IOException {
+  public void testUpdateLogThrowsForUnknownTypes() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "444");
-    doc.addField("text", new Object());//Object shouldn't be serialized later...
+    doc.addField("text", new Object()); // Object shouldn't be serialized later...
 
     AddUpdateCommand cmd = new AddUpdateCommand(req());
     cmd.solrDoc = doc;
-    try {
-      h.getCore().getUpdateHandler().addDoc(cmd); // should throw
-    } catch (SolrException e) {
-      if (e.getMessage().contains("serialize")) {
-        return;//passed test
-      }
-      throw e;
-    }
-    fail();
+
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> h.getCore().getUpdateHandler().addDoc(cmd));
+    assertEquals(
+        "TransactionLog doesn't know how to serialize class java.lang.Object; try implementing ObjectResolver?",
+        thrown.getMessage());
   }
 
+  @Test // SOLR-16363
+  public void testAddDocLargeFieldThrowsSolrExceptionWrappedIllegalArgumentException() {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", 555);
+    // use invalid String.format parameter in field name to test DirectUpdateHandler2#addDoc
+    // exception logging
+    doc.addField("t%)_s", "a".repeat(50000));
+
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = doc;
+
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> h.getCore().getUpdateHandler().addDoc(cmd));
+    assertEquals(IllegalArgumentException.class, thrown.getCause().getClass());
+    assertEquals(
+        "Exception writing document id 555 to the index; possible analysis error: "
+            + "Document contains at least one immense term in field=\"t%)_s\" "
+            + "(whose UTF8 encoding is longer than the max length 32766), all of which were skipped.  "
+            + "Please correct the analyzer to not produce such terms.  "
+            + "The prefix of the first immense term is: "
+            + "'[97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97]...', "
+            + "original message: bytes can be at most 32766 in length; got 50000. "
+            + "Perhaps the document has an indexed string field (solr.StrField) which is too large",
+        thrown.getMessage());
+  }
 }

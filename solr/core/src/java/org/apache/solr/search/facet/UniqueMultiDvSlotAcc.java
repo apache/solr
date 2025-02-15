@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
@@ -36,7 +35,9 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
   LongValues toGlobal;
   SortedSetDocValues subDv;
 
-  public UniqueMultiDvSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueMultiDvSlotAcc(
+      FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory)
+      throws IOException {
     super(fcontext, field, numSlots, factory);
   }
 
@@ -65,18 +66,19 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
       subDv = subDvs[readerContext.ord];
       toGlobal = ordMap.getGlobalOrds(readerContext.ord);
     } else {
-      assert readerContext.ord==0 || topLevel.getValueCount() == 0;
+      assert readerContext.ord == 0 || topLevel.getValueCount() == 0;
       subDv = topLevel;
     }
   }
 
   @Override
-  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext)
+      throws IOException {
     if (subDv.advanceExact(doc)) {
 
       int segOrd = (int) subDv.nextOrd();
       assert segOrd >= 0;
-      
+
       FixedBitSet bits = arr[slotNum];
       if (bits == null) {
         bits = new FixedBitSet(nTerms);

@@ -16,55 +16,50 @@
  */
 package org.apache.solr.util.hll;
 
-/**
- * The metadata and parameters associated with a HLL.
- */
+/** The metadata and parameters associated with a HLL. */
 interface IHLLMetadata {
-    /**
-     * @return the schema version of the HLL. This will never be <code>null</code>.
-     */
-    int schemaVersion();
+  /**
+   * @return the schema version of the HLL. This will never be <code>null</code>.
+   */
+  int schemaVersion();
 
-    /**
-     * @return the type of the HLL. This will never be <code>null</code>.
-     */
-    HLLType HLLType();
+  /**
+   * @return the type of the HLL. This will never be <code>null</code>.
+   */
+  HLLType HLLType();
 
-    /**
-     * @return the log-base-2 of the register count parameter of the HLL. This
-     *         will always be greater than or equal to 4 and less than or equal
-     *         to 31.
-     */
-    int registerCountLog2();
+  /**
+   * @return the log-base-2 of the register count parameter of the HLL. This will always be greater
+   *     than or equal to 4 and less than or equal to 31.
+   */
+  int registerCountLog2();
 
-    /**
-     * @return the register width parameter of the HLL. This will always be
-     *         greater than or equal to 1 and less than or equal to 8.
-     */
-    int registerWidth();
+  /**
+   * @return the register width parameter of the HLL. This will always be greater than or equal to 1
+   *     and less than or equal to 8.
+   */
+  int registerWidth();
 
-    /**
-     * @return the log-base-2 of the explicit cutoff cardinality. This will always
-     *         be greater than or equal to zero and less than 31, per the specification.
-     */
-    int log2ExplicitCutoff();
+  /**
+   * @return the log-base-2 of the explicit cutoff cardinality. This will always be greater than or
+   *     equal to zero and less than 31, per the specification.
+   */
+  int log2ExplicitCutoff();
 
-    /**
-     * @return <code>true</code> if the {@link HLLType#EXPLICIT} representation
-     *         has been disabled. <code>false</code> otherwise.
-     */
-    boolean explicitOff();
+  /**
+   * @return <code>true</code> if the {@link HLLType#EXPLICIT} representation has been disabled.
+   *     <code>false</code> otherwise.
+   */
+  boolean explicitOff();
 
-    /**
-     * @return <code>true</code> if the {@link HLLType#EXPLICIT} representation
-     *         cutoff cardinality is set to be automatically chosen,
-     *         <code>false</code> otherwise.
-     */
-    boolean explicitAuto();
+  /**
+   * @return <code>true</code> if the {@link HLLType#EXPLICIT} representation cutoff cardinality is
+   *     set to be automatically chosen, <code>false</code> otherwise.
+   */
+  boolean explicitAuto();
 
-    /**
-     * @return <code>true</code> if the {@link HLLType#SPARSE} representation
-     *         is enabled.
-     */
-    boolean sparseEnabled();
+  /**
+   * @return <code>true</code> if the {@link HLLType#SPARSE} representation is enabled.
+   */
+  boolean sparseEnabled();
 }

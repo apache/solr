@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -30,26 +29,28 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * <p>
  * The scripting update processor capability is something that is only allowed by a trusted
- * configSet.   The actual code lives in the /contrib/scripting project, however the test
- * for trusted configsets lives in TestConfigSetsAPI.   This class is meant to simulate the
+ * configSet. The actual code lives in the /modules/scripting project, however the test for trusted
+ * configsets lives in TestConfigSetsAPI. This class is meant to simulate the
  * ScriptUpdateProcessorFactory for this test.
- * </p>
-*/
-public class MockScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory implements SolrCoreAware {
+ */
+public class MockScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
+    implements SolrCoreAware {
 
   @Override
   public void inform(SolrCore core) {
     if (!core.getCoreDescriptor().isConfigSetTrusted()) {
-      throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
-          + " and this operation is not available for collections with untrusted configsets. To use this component, re-upload the configset"
-          + " after enabling authentication and authorization.");
+      throw new SolrException(
+          ErrorCode.UNAUTHORIZED,
+          "The configset for this collection was uploaded without any authentication in place,"
+              + " and this operation is not available for collections with untrusted configsets. To use this component, re-upload the configset"
+              + " after enabling authentication and authorization.");
     }
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new MockScriptUpdateRequestProcessor(next);
   }
 
@@ -58,19 +59,17 @@ public class MockScriptUpdateProcessorFactory extends UpdateRequestProcessorFact
     public MockScriptUpdateRequestProcessor(UpdateRequestProcessor next) {
       super(next);
     }
+
     /**
      * @param cmd the update command in input containing the Document to classify
      * @throws IOException If there is a low-level I/O error
      */
     @Override
-    public void processAdd(AddUpdateCommand cmd)
-        throws IOException {
+    public void processAdd(AddUpdateCommand cmd) throws IOException {
       SolrInputDocument doc = cmd.getSolrInputDocument();
 
       doc.setField("script_added_i", "42");
       super.processAdd(cmd);
     }
-
   }
-
 }

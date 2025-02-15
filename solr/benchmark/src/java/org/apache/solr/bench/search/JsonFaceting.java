@@ -16,10 +16,14 @@
  */
 package org.apache.solr.bench.search;
 
+import static org.apache.solr.bench.Docs.docs;
+import static org.apache.solr.bench.generators.SourceDSL.integers;
+import static org.apache.solr.bench.generators.SourceDSL.strings;
+
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.bench.DocMaker;
-import org.apache.solr.bench.FieldDef;
+import org.apache.solr.bench.BaseBenchState;
+import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -44,7 +48,7 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Threads(1)
-@Warmup(time = 5, iterations = 3)
+@Warmup(time = 10, iterations = 4)
 @Measurement(time = 15, iterations = 5)
 @Fork(value = 1)
 @Timeout(time = 60)
@@ -53,9 +57,9 @@ public class JsonFaceting {
   @State(Scope.Benchmark)
   public static class BenchState {
 
-    public String collection = "testCollection";
+    public static final String collection = "testCollection";
 
-    @Param({"100000"})
+    @Param({"500000"})
     public int docCount;
 
     @Param("2")
@@ -64,7 +68,7 @@ public class JsonFaceting {
     @Param("1")
     int numReplicas;
 
-    @Param("2")
+    @Param("4")
     int numShards;
 
     // DV,  // DocValues, collect into ordinal array
@@ -82,10 +86,10 @@ public class JsonFaceting {
     @Param({"smart"})
     String fm;
 
-    @Param({"5000"})
+    @Param({"15000"})
     int facetCard;
 
-    @Param({"1000"})
+    @Param({"3000"})
     int facetCard2;
 
     private ModifiableSolrParams params;
@@ -95,63 +99,37 @@ public class JsonFaceting {
         BenchmarkParams benchmarkParams, MiniClusterState.MiniClusterBenchState miniClusterState)
         throws Exception {
 
-      SplittableRandom random = miniClusterState.getRandom();
-
-      System.setProperty("maxMergeAtOnce", "20");
-      System.setProperty("segmentsPerTier", "20");
+      System.setProperty("maxMergeAtOnce", "30");
+      System.setProperty("segmentsPerTier", "30");
 
       miniClusterState.startMiniCluster(nodeCount);
 
       miniClusterState.createCollection(collection, numShards, numReplicas);
 
       // Define random documents
-      DocMaker docMaker = new DocMaker();
-      docMaker.addField(
-          "id", FieldDef.FieldDefBuilder.aFieldDef().withContent(DocMaker.Content.UNIQUE_INT));
-      docMaker.addField(
-          "facet_s",
-          FieldDef.FieldDefBuilder.aFieldDef()
-              .withContent(DocMaker.Content.ALPHEBETIC)
-              .withMaxLength(64)
-              .withMaxCardinality(facetCard, random));
-      docMaker.addField(
-          "facet2_s",
-          FieldDef.FieldDefBuilder.aFieldDef()
-              .withContent(DocMaker.Content.ALPHEBETIC)
-              .withMaxLength(16)
-              .withMaxCardinality(facetCard, random));
-      docMaker.addField(
-          "facet3_s",
-          FieldDef.FieldDefBuilder.aFieldDef()
-              .withContent(DocMaker.Content.UNICODE)
-              .withMaxLength(128)
-              .withMaxCardinality(facetCard2, random));
-      docMaker.addField(
-          "text",
-          FieldDef.FieldDefBuilder.aFieldDef()
-              .withContent(DocMaker.Content.ALPHEBETIC)
-              .withMaxLength(64)
-              .withTokenCount(random.nextInt(350, 512)));
-      docMaker.addField(
-          "int_i", FieldDef.FieldDefBuilder.aFieldDef().withContent(DocMaker.Content.INTEGER));
-      docMaker.addField(
-          "int2_i",
-          FieldDef.FieldDefBuilder.aFieldDef()
-              .withContent(DocMaker.Content.INTEGER)
-              .withMaxCardinality(facetCard2, random));
-      docMaker.addField(
-          "int3_i",
-          FieldDef.FieldDefBuilder.aFieldDef()
-              .withContent(DocMaker.Content.INTEGER)
-              .withMaxCardinality(facetCard2, random));
-      docMaker.addField(
-          "int4_i",
-          FieldDef.FieldDefBuilder.aFieldDef()
-              .withContent(DocMaker.Content.INTEGER)
-              .withMaxCardinality(facetCard2, random));
+      Docs docs =
+          docs()
+              .field("id", integers().incrementing())
+              .field(
+                  "facet_s",
+                  strings().basicLatinAlphabet().maxCardinality(facetCard).ofLengthBetween(1, 64))
+              .field(
+                  "facet2_s",
+                  strings().basicLatinAlphabet().maxCardinality(facetCard).ofLengthBetween(1, 32))
+              .field(
+                  "facet3_s",
+                  strings()
+                      .basicMultilingualPlaneAlphabet()
+                      .maxCardinality(facetCard2)
+                      .ofLengthBetween(1, 128))
+              .field(strings().basicLatinAlphabet().multi(512).ofLengthBetween(4, 16))
+              .field(integers().all())
+              .field(integers().allWithMaxCardinality(facetCard2))
+              .field(integers().allWithMaxCardinality(facetCard2))
+              .field(integers().allWithMaxCardinality(facetCard2));
 
-      miniClusterState.index(collection, docMaker, docCount);
-      miniClusterState.forceMerge(collection, 15);
+      miniClusterState.index(collection, docs, docCount);
+      miniClusterState.forceMerge(collection, 25);
 
       params = new ModifiableSolrParams();
 
@@ -162,10 +140,10 @@ public class JsonFaceting {
           "json.facet",
           "{f1:{method:'"
               + fm
-              + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'min(int3_i)'}  }"
+              + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'min(int3_i_dv)'}  }"
               + " , f2:{method:'"
               + fm
-              + "',, type:terms, field:'facet_s', sort:'x desc', facet:{x:'max(int3_i)'}  } "
+              + "',, type:terms, field:'facet_s', sort:'x desc', facet:{x:'max(int3_i_dv)'}  } "
               + " , f3:{method:'"
               + fm
               + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'unique(facet2_s)'}  } "
@@ -174,11 +152,11 @@ public class JsonFaceting {
               + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'hll(facet2_s)'}  } "
               + " , f5:{method:'"
               + fm
-              + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'variance(int3_i)'}  } "
-              + " , f6:{type:terms, field:'int3_i', limit:1, sort:'x desc', facet:{x:'hll(int2_i)'}  } "
-              + " , f7:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'missing(int4_i)'}  } "
-              + " , f8:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'countvals(int4_i)'}  } "
-              + "}");
+              + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'variance(int3_i_dv)'}  } "
+              + " , f6:{type:terms, field:'int3_i_dv', limit:1, sort:'x desc', facet:{x:'hll(int2_i_dv)'}  } "
+              + " , f7:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'missing(int4_i_dv)'}  } "
+              + " , f8:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'countvals(int4_i_dv)'}  } "
+              + '}');
 
       // MiniClusterState.log("params: " + params + "\n");
     }
@@ -189,10 +167,8 @@ public class JsonFaceting {
       private SplittableRandom random;
 
       @Setup(Level.Trial)
-      public void setup() throws Exception {
-        Long seed = Long.getLong("randomSeed");
-
-        this.random = new SplittableRandom(seed);
+      public void setup() {
+        this.random = new SplittableRandom(BaseBenchState.getRandomSeed());
       }
     }
   }
@@ -204,11 +180,13 @@ public class JsonFaceting {
       BenchState state,
       BenchState.ThreadState threadState)
       throws Exception {
+    final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
-    queryRequest.setBasePath(
-        miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount)));
-
-    NamedList<Object> result = miniClusterState.client.request(queryRequest, state.collection);
+    NamedList<Object> result =
+        miniClusterState
+            .client
+            .requestWithBaseUrl(url, state.collection, queryRequest)
+            .getResponse();
 
     // MiniClusterState.log("result: " + result);
 

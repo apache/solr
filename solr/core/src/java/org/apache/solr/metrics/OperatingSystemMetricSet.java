@@ -16,18 +16,17 @@
  */
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricSet;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricSet;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
- * This is an extended replacement for {@link com.codahale.metrics.jvm.FileDescriptorRatioGauge}
- * - that class uses reflection and doesn't work under Java 9. This implementation tries to retrieve
+ * This is an extended replacement for {@link com.codahale.metrics.jvm.FileDescriptorRatioGauge} -
+ * that class uses reflection and doesn't work under Java 9. This implementation tries to retrieve
  * bean properties from known implementations of {@link java.lang.management.OperatingSystemMXBean}.
  */
 public class OperatingSystemMetricSet implements MetricSet {
@@ -36,11 +35,15 @@ public class OperatingSystemMetricSet implements MetricSet {
   public Map<String, Metric> getMetrics() {
     final Map<String, Metric> metrics = new HashMap<>();
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-    MetricUtils.addMXBeanMetrics(os, MetricUtils.OS_MXBEAN_CLASSES, null, (k, v) -> {
-      if (!metrics.containsKey(k)) {
-        metrics.put(k, v);
-      }
-    });
+    MetricUtils.addMXBeanMetrics(
+        os,
+        MetricUtils.OS_MXBEAN_CLASSES,
+        null,
+        (k, v) -> {
+          if (!metrics.containsKey(k)) {
+            metrics.put(k, v);
+          }
+        });
     return metrics;
   }
 }

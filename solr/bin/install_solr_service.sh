@@ -29,8 +29,8 @@ print_usage() {
   echo ""
   echo "Usage: install_solr_service.sh <path_to_solr_distribution_archive> [OPTIONS]"
   echo ""
-  echo "  The first argument to the script must be a path to a Solr distribution archive, such as solr-5.0.0.tgz"
-  echo "    (only .tgz or .zip are supported formats for the archive)"
+  echo "  The first argument to the script must be a path to a Solr distribution archive, such as solr-10.0.0.tgz"
+  echo "    (only .tgz is supported format for the archive)"
   echo ""
   echo "  Supported OPTIONS include:"
   echo ""
@@ -73,6 +73,8 @@ for command in "grep -E \"^NAME=\" /etc/os-release" \
       distro=RedHat
     elif [[ ${distro_string,,} == *"centos"* ]]; then
       distro=CentOS
+    elif [[ ${distro_string,,} == *"rocky"* ]]; then
+      distro=CentOS
     elif [[ ${distro_string,,} == *"ubuntu"* ]]; then
       distro=Ubuntu
     elif [[ ${distro_string,,} == *"suse"* ]]; then
@@ -100,16 +102,16 @@ if [ ! -f "$SOLR_ARCHIVE" ]; then
   exit 1
 fi
 
+if [ -f "/etc/init.d/${SOLR_SERVICE}" ]; then
+  echo "WARNING: Found pre-existing /etc/init.d/${SOLR_SERVICE}, please remove!"
+fi
+
 # strip off path info
 SOLR_INSTALL_FILE=${SOLR_ARCHIVE##*/}
-is_tar=true
 if [ ${SOLR_INSTALL_FILE: -4} == ".tgz" ]; then
   SOLR_DIR=${SOLR_INSTALL_FILE%.tgz}
-elif [ ${SOLR_INSTALL_FILE: -4} == ".zip" ]; then
-  SOLR_DIR=${SOLR_INSTALL_FILE%.zip}
-  is_tar=false
 else
-  print_usage "Solr installation archive $SOLR_ARCHIVE is invalid, expected a .tgz or .zip file!"
+  print_usage "Solr installation archive $SOLR_ARCHIVE is invalid, expected a .tgz file!"
   exit 1
 fi
 
@@ -187,14 +189,10 @@ if [ $# -gt 1 ]; then
 fi
 
 # Test for availability of needed tools
-if [[ $is_tar ]] ; then
-  tar --version &>/dev/null     || print_error "Script requires the 'tar' command"
-else
-  unzip -hh &>/dev/null         || print_error "Script requires the 'unzip' command"
-fi
+tar --version &>/dev/null       || print_error "Script requires the 'tar' command"
 if [[ $SOLR_START == "true" ]] ; then
-  service --version &>/dev/null || service --help &>/dev/null || print_error "Script requires the 'service' command"
-  java -version &>/dev/null     || print_error "Solr requires java, please install or set JAVA_HOME properly"
+  systemctl --version &>/dev/null || print_error "Script requires the 'systemctl' command"
+  java -version &>/dev/null       || print_error "Solr requires java, please install or set JAVA_HOME properly"
 fi
 lsof -h &>/dev/null             || echo "We recommend installing the 'lsof' command for more stable start/stop of Solr"
 
@@ -229,21 +227,21 @@ if [ -z "$SOLR_UPGRADE" ]; then
 fi
 
 if [ ! "$SOLR_UPGRADE" = "YES" ]; then
-  if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
-    print_usage "/etc/init.d/$SOLR_SERVICE already exists! Perhaps Solr is already setup as a service on this host? To upgrade Solr use the -f option."
+  if [ -f "/etc/systemd/system/$SOLR_SERVICE.service" ]; then
+    print_usage "/etc/systemd/system/$SOLR_SERVICE.service already exists! Perhaps Solr is already setup as a service on this host? To upgrade Solr use the -f option."
     exit 1
   fi
 
-  if [ -e "$SOLR_EXTRACT_DIR/$SOLR_SERVICE" ]; then
-    print_usage "$SOLR_EXTRACT_DIR/$SOLR_SERVICE already exists! Please move this directory / link or choose a different service name using the -s option."
+  if [ -e "$SOLR_EXTRACT_DIR/$SOLR_SERVICE.service" ]; then
+    print_usage "$SOLR_EXTRACT_DIR/$SOLR_SERVICE.service already exists! Please move this directory / link or choose a different service name using the -s option."
     exit 1
   fi
 fi
 
 # stop running instance
-if [ -f "/etc/init.d/$SOLR_SERVICE" ]; then
+if [ -f "/etc/systemd/system/$SOLR_SERVICE.service" ]; then
   echo -e "\nStopping Solr instance if exists ...\n"
-  service "$SOLR_SERVICE" stop
+  systemctl stop "$SOLR_SERVICE.service"
 fi
 
 # create user if not exists
@@ -265,11 +263,7 @@ if [ ! -d "$SOLR_INSTALL_DIR" ]; then
 
   echo -e "\nExtracting $SOLR_ARCHIVE to $SOLR_EXTRACT_DIR\n"
 
-  if $is_tar ; then
-    tar zxf "$SOLR_ARCHIVE" -C "$SOLR_EXTRACT_DIR"
-  else
-    unzip -q "$SOLR_ARCHIVE" -d "$SOLR_EXTRACT_DIR"
-  fi
+  tar zxf "$SOLR_ARCHIVE" -C "$SOLR_EXTRACT_DIR"
 
   if [ ! -d "$SOLR_INSTALL_DIR" ]; then
     echo -e "\nERROR: Expected directory $SOLR_INSTALL_DIR not found after extracting $SOLR_ARCHIVE ... script fails.\n" 1>&2
@@ -296,17 +290,22 @@ else
   ln -s "$SOLR_INSTALL_DIR" "$SOLR_EXTRACT_DIR/$SOLR_SERVICE"
 fi
 
-# install init.d script
-echo -e "\nInstalling /etc/init.d/$SOLR_SERVICE script ...\n"
-cp "$SOLR_INSTALL_DIR/bin/init.d/solr" "/etc/init.d/$SOLR_SERVICE"
-chmod 0744 "/etc/init.d/$SOLR_SERVICE"
-chown root: "/etc/init.d/$SOLR_SERVICE"
-# do some basic variable substitution on the init.d script
-sed_expr1="s#SOLR_INSTALL_DIR=.*#SOLR_INSTALL_DIR=\"$SOLR_EXTRACT_DIR/$SOLR_SERVICE\"#"
-sed_expr2="s#SOLR_ENV=.*#SOLR_ENV=\"/etc/default/$SOLR_SERVICE.in.sh\"#"
-sed_expr3="s#RUNAS=.*#RUNAS=\"$SOLR_USER\"#"
-sed_expr4="s#Provides:.*#Provides: $SOLR_SERVICE#"
-sed -i -e "$sed_expr1" -e "$sed_expr2" -e "$sed_expr3" -e "$sed_expr4" "/etc/init.d/$SOLR_SERVICE"
+# install systemd service file
+echo -e "\nInstalling /etc/systemd/system/$SOLR_SERVICE.service ...\n"
+cp "$SOLR_INSTALL_DIR/bin/systemd/solr.service" "/etc/systemd/system/$SOLR_SERVICE.service"
+chmod 0644 "/etc/systemd/system/$SOLR_SERVICE.service"
+chown root "/etc/systemd/system/$SOLR_SERVICE.service"
+
+# do some basic variable substitution on the service file
+SAFE_SOLR_INSTALL_DIR="$SOLR_EXTRACT_DIR/$SOLR_SERVICE"
+SAFE_SOLR_SERVICE=$(systemd-escape --path "$SOLR_SERVICE")
+sed_expr1="s@{{SOLR_INSTALL_DIR}}@$SAFE_SOLR_INSTALL_DIR@g"
+sed_expr2="s/{{SOLR_SERVICE}}/$SAFE_SOLR_SERVICE/g"
+sed_expr3="s/{{SOLR_USER}}/$SOLR_USER/g"
+sed -i -e "$sed_expr1" -e "$sed_expr2" -e "$sed_expr3" "/etc/systemd/system/$SOLR_SERVICE.service"
+
+# we need to reload systemd after changing service files
+systemctl daemon-reload
 
 # install/move configuration
 if [ ! -d /etc/default ]; then
@@ -324,7 +323,8 @@ else
   cp "$SOLR_INSTALL_DIR/bin/solr.in.sh" "/etc/default/$SOLR_SERVICE.in.sh"
   mv "$SOLR_INSTALL_DIR/bin/solr.in.sh" "$SOLR_INSTALL_DIR/bin/solr.in.sh.orig"  
   mv "$SOLR_INSTALL_DIR/bin/solr.in.cmd" "$SOLR_INSTALL_DIR/bin/solr.in.cmd.orig"  
-  echo "SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
+  echo "
+SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
 SOLR_HOME=\"$SOLR_VAR_DIR/data\"
 LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j2.xml\"
 SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
@@ -337,11 +337,6 @@ chmod 0640 "/etc/default/$SOLR_SERVICE.in.sh"
 # install data directories and files
 mkdir -p "$SOLR_VAR_DIR/data"
 mkdir -p "$SOLR_VAR_DIR/logs"
-if [ -f "$SOLR_VAR_DIR/data/solr.xml" ]; then
-  echo -e "\n$SOLR_VAR_DIR/data/solr.xml already exists. Skipping install ...\n"
-else
-  cp "$SOLR_INSTALL_DIR/server/solr/"{solr.xml,zoo.cfg} "$SOLR_VAR_DIR/data/"
-fi
 if [ -f "$SOLR_VAR_DIR/log4j2.xml" ]; then
   echo -e "\n$SOLR_VAR_DIR/log4j2.xml already exists. Skipping install ...\n"
 else
@@ -352,19 +347,13 @@ find "$SOLR_VAR_DIR" -type d -print0 | xargs -0 chmod 0750
 find "$SOLR_VAR_DIR" -type f -print0 | xargs -0 chmod 0640
 
 # configure autostart of service
-if [[ "$distro" == "RedHat" || "$distro" == "CentOS" || "$distro" == "SUSE" ]]; then
-  chkconfig "$SOLR_SERVICE" on
-else
-  update-rc.d "$SOLR_SERVICE" defaults
-fi
+systemctl enable "$SOLR_SERVICE.service"
 echo "Service $SOLR_SERVICE installed."
 echo "Customize Solr startup configuration in /etc/default/$SOLR_SERVICE.in.sh"
 
 # start service
 if [[ $SOLR_START == "true" ]] ; then
-  service "$SOLR_SERVICE" start
-  sleep 5
-  service "$SOLR_SERVICE" status
+  systemctl start "$SOLR_SERVICE.service"
 else
-  echo "Not starting Solr service (option -n given). Start manually with 'service $SOLR_SERVICE start'"
+  echo "Not starting Solr service (option -n given). Start manually with 'systemctl start $SOLR_SERVICE'"
 fi

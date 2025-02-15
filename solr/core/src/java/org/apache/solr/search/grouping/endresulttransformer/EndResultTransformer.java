@@ -16,11 +16,10 @@
  */
 package org.apache.solr.search.grouping.endresulttransformer;
 
+import java.util.Map;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.handler.component.ResponseBuilder;
-
-import java.util.Map;
 
 /**
  * Responsible for transforming the grouped result into the final format for displaying purposes.
@@ -33,19 +32,18 @@ public interface EndResultTransformer {
    * Transforms the specified result into its final form and puts it into the specified response.
    *
    * @param result The map containing the grouping result (for grouping by field and query)
-   * @param rb The response builder containing the response used to render the result and the grouping specification
+   * @param rb The response builder containing the response used to render the result and the
+   *     grouping specification
    * @param solrDocumentSource The source of {@link SolrDocument} instances
    */
   void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource);
 
   /**
-   * Abstracts the source for {@link SolrDocument} instances.
-   * The source of documents is different for a distributed search than local search
+   * Abstracts the source for {@link SolrDocument} instances. The source of documents is different
+   * for a distributed search than local search
    */
   interface SolrDocumentSource {
 
     SolrDocument retrieve(ScoreDoc doc);
-
   }
-
 }

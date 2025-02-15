@@ -29,7 +29,7 @@ docker run --name "$container_name" -d -e VERBOSE=yes \
 wait_for_container_and_solr "$container_name"
 
 echo "Loading data"
-docker exec --user=solr "$container_name" bin/post -c gettingstarted example/exampledocs/manufacturers.xml
+docker exec --user=solr "$container_name" bin/solr post -c gettingstarted example/exampledocs/manufacturers.xml
 sleep 1
 echo "Checking data"
 data=$(docker exec --user=solr "$container_name" wget -q -O - 'http://localhost:8983/solr/gettingstarted/select?q=id%3Adell')
@@ -39,7 +39,12 @@ if ! grep -E -q 'One Dell Way Round Rock, Texas 78682' <<<"$data"; then
 fi
 data=$(docker exec --user=solr "$container_name" grep 'DEBUG (main)' /var/solr/logs/solr.log | wc -l)
 if (( data == 0 )); then
-  echo "missing DEBUG lines in the log"
+  echo "missing DEBUG lines in the solr.log"
+  exit 1
+fi
+data=$(docker exec --user=solr "$container_name" grep '"level":"DEBUG"' /var/solr/logs/solr.json.log | wc -l)
+if (( data == 0 )); then
+  echo "missing DEBUG lines in the solr.json.log"
   exit 1
 fi
 

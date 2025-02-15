@@ -14,8 +14,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Commonly used classes for Solr V2 API.
- */
+/** Commonly used classes for Solr V2 API. */
 package org.apache.solr.api;
-

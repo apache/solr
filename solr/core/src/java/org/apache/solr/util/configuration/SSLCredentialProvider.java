@@ -17,9 +17,7 @@
 
 package org.apache.solr.util.configuration;
 
-/**
- * Interface for different source of SSL configurations.
- */
+/** Interface for different source of SSL configurations. */
 public interface SSLCredentialProvider {
   enum CredentialType {
     SSL_KEY_STORE_PASSWORD,
@@ -32,5 +30,4 @@ public interface SSLCredentialProvider {
    * @return Credential for the given credential type
    */
   String getCredential(CredentialType type);
-
 }

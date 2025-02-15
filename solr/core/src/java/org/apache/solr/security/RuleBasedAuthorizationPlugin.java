@@ -16,20 +16,19 @@
  */
 package org.apache.solr.security;
 
+import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
+
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
-
 /**
- * Original implementation of Rule Based Authz plugin which configures user/role
- * mapping in the security.json configuration
+ * Original implementation of Rule Based Authz plugin which configures user/role mapping in the
+ * security.json configuration
  */
 public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBase {
   private final Map<String, Set<String>> usersVsRoles = new HashMap<>();
-  private boolean useShortName;
 
   @Override
   public void init(Map<String, Object> initInfo) {
@@ -41,16 +40,11 @@ public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBa
       String roleName = e.getKey();
       usersVsRoles.put(roleName, Permission.readValueAsSet(map, roleName));
     }
-    useShortName = Boolean.parseBoolean(initInfo.getOrDefault("useShortName", Boolean.FALSE).toString());
   }
 
   @Override
   public Set<String> getUserRoles(AuthorizationContext context) {
-    if (useShortName) {
-      return usersVsRoles.get(context.getUserName());
-    } else {
-      return getUserRoles(context.getUserPrincipal());
-    }
+    return getUserRoles(context.getUserPrincipal());
   }
 
   /**

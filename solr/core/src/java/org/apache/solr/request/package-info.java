@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * APIs and classes for dealing with Solr requests
- */
+
+/** APIs and classes for dealing with Solr requests */
 package org.apache.solr.request;
-
-

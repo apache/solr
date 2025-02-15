@@ -15,33 +15,32 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling.suggest;
+
+import java.io.IOException;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
-/**
- * Encapsulates shared fields for all types of dictionaryFactory classes
- */
+/** Encapsulates shared fields for all types of dictionaryFactory classes */
 public abstract class DictionaryFactory {
-  
+
   /** Default dictionary implementation to use for FileBasedDictionaries */
   public static String DEFAULT_FILE_BASED_DICT = FileDictionaryFactory.class.getName();
-  
+
   /** Default dictionary implementation to use for IndexBasedDictionaries */
-  public static String DEFAULT_INDEX_BASED_DICT = HighFrequencyDictionaryFactory.class.getName(); 
-  
+  public static String DEFAULT_INDEX_BASED_DICT = HighFrequencyDictionaryFactory.class.getName();
+
   protected NamedList<?> params;
-  
+
   /** Sets the parameters available to SolrSuggester for use in Dictionary creation */
   public void setParams(NamedList<?> params) {
     this.params = params;
   }
-  
+
   /**
-   * Create a Dictionary using options in <code>core</code> and optionally
-   * uses <code>searcher</code>, in case of index based dictionaries
+   * Create a Dictionary using options in <code>core</code> and optionally uses <code>searcher
+   * </code>, in case of index based dictionaries
    */
-  public abstract Dictionary create(SolrCore core, SolrIndexSearcher searcher);
-  
+  public abstract Dictionary create(SolrCore core, SolrIndexSearcher searcher) throws IOException;
 }

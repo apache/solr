@@ -17,46 +17,55 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Set;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
 
-import java.util.Set;
-
 /**
- * <p>Instances of this interface are used to fetch various attributes from nodes (and other sources) in the cluster.</p>
+ * Instances of this interface are used to fetch various attributes from nodes (and other sources)
+ * in the cluster.
  */
 public interface AttributeFetcher {
   /**
-   * Request a given system property on each node. To get the value use {@link AttributeValues#getSystemProperty(Node, String)}
+   * Request a given system property on each node. To get the value use {@link
+   * AttributeValues#getSystemProperty(Node, String)}
+   *
    * @param name system property name
    */
   AttributeFetcher requestNodeSystemProperty(String name);
 
   /**
-   * Request a node metric from each node. To get the value use {@link AttributeValues#getNodeMetric(Node, NodeMetric)}
+   * Request a node metric from each node. To get the value use {@link
+   * AttributeValues#getNodeMetric(Node, NodeMetric)}
+   *
    * @param metric metric to retrieve (see {@link NodeMetric})
    */
   AttributeFetcher requestNodeMetric(NodeMetric<?> metric);
 
   /**
-   * Request collection-level metrics. To get the values use {@link AttributeValues#getCollectionMetrics(String)}.
-   * Note that this request will fetch information from nodes that are relevant to the collection
-   * replicas and not the ones specified in {@link #fetchFrom(Set)} (though they may overlap).
+   * Request collection-level metrics. To get the values use {@link
+   * AttributeValues#getCollectionMetrics(String)}. Note that this request will fetch information
+   * from nodes that are relevant to the collection replicas and not the ones specified in {@link
+   * #fetchFrom(Set)} (though they may overlap).
+   *
    * @param solrCollection request metrics for this collection
    * @param metrics metrics to retrieve (see {@link ReplicaMetric})
    */
-  AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric<?>> metrics);
+  AttributeFetcher requestCollectionMetrics(
+      SolrCollection solrCollection, Set<ReplicaMetric<?>> metrics);
 
   /**
-   * The set of nodes from which to fetch all node related attributes. Calling this method is mandatory if any of the {@code requestNode*}
-   * methods got called.
+   * The set of nodes from which to fetch all node related attributes. Calling this method is
+   * mandatory if any of the {@code requestNode*} methods got called.
+   *
    * @param nodes nodes to fetch from
    */
   AttributeFetcher fetchFrom(Set<Node> nodes);
 
   /**
-   * Fetches all requested node attributes from all nodes passed to {@link #fetchFrom(Set)} as well as non-node attributes
-   * (those requested using e.g. {@link #requestCollectionMetrics(SolrCollection, Set)}.
+   * Fetches all requested node attributes from all nodes passed to {@link #fetchFrom(Set)} as well
+   * as non-node attributes (those requested using e.g. {@link
+   * #requestCollectionMetrics(SolrCollection, Set)}.
    *
    * @return An instance allowing retrieval of all attributes that could be fetched.
    */

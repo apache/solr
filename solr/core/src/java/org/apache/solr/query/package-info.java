@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Solr Queries
- */
+/** Solr Queries */
 package org.apache.solr.query;

@@ -16,23 +16,36 @@
  */
 package org.apache.solr.util;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-
 import org.apache.solr.common.util.TimeSource;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
+/** Timeout tool to ease checking time left, time elapsed, and waiting on a condition. */
 public class TimeOut {
 
+  // Internally, the time unit is nanosecond.
   private final long timeoutAt, startTime;
   private final TimeSource timeSource;
 
-  public TimeOut(long interval, TimeUnit unit, TimeSource timeSource) {
+  /**
+   * @param timeout after this maximum time, {@link #hasTimedOut()} will return true.
+   * @param unit the time unit of the timeout argument.
+   * @param timeSource the source of the time.
+   */
+  public TimeOut(long timeout, TimeUnit unit, TimeSource timeSource) {
+    // Since timeout is stored in nanoseconds, it cannot track more than Long.MAX_VALUE nanoseconds.
+    // Depending on the time unit selected in this constructor, large timeout can be truncated when
+    // converting to Long.MAX_VALUE nanoseconds.
     this.timeSource = timeSource;
     startTime = timeSource.getTimeNs();
-    this.timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
+    // Consider negative interval as 0.
+    timeout = Math.max(timeout, 0L);
+    // Detect long addition overflow.
+    long timeoutAt = startTime + NANOSECONDS.convert(timeout, unit);
+    this.timeoutAt = timeoutAt < startTime ? Long.MAX_VALUE : timeoutAt;
   }
 
   public boolean hasTimedOut() {
@@ -52,7 +65,9 @@ public class TimeOut {
   }
 
   /**
-   * Wait until the given {@link Supplier} returns true or the time out expires which ever happens first
+   * Wait until the given {@link Supplier} returns true or the timeout expires which ever happens
+   * first
+   *
    * @param messageOnTimeOut the exception message to be used in case a TimeoutException is thrown
    * @param supplier a {@link Supplier} that returns a {@link Boolean} value
    * @throws InterruptedException if any thread has interrupted the current thread
@@ -68,6 +83,12 @@ public class TimeOut {
 
   @Override
   public String toString() {
-    return "TimeOut [timeoutAt=" + timeoutAt + ", startTime=" + startTime + ", timeSource=" + timeSource + "]";
+    return "TimeOut [timeoutAt="
+        + timeoutAt
+        + ", startTime="
+        + startTime
+        + ", timeSource="
+        + timeSource
+        + "]";
   }
 }

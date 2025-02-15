@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
@@ -36,6 +37,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
  * {@code PointField} implementation for {@code Double} values.
+ *
  * @see PointField
  * @see DoublePoint
  */
@@ -49,12 +51,17 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   public Object toNativeType(Object val) {
     if (val == null) return null;
     if (val instanceof Number) return ((Number) val).doubleValue();
-    if (val instanceof CharSequence) return Double.parseDouble( val.toString());
+    if (val instanceof CharSequence) return Double.parseDouble(val.toString());
     return super.toNativeType(val);
   }
 
   @Override
-  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+  public Query getPointRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
       boolean maxInclusive) {
     double actualMin, actualMax;
     if (min == null) {
@@ -82,14 +89,16 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   public Object toObject(SchemaField sf, BytesRef term) {
     return DoublePoint.decodeDimension(term.bytes, term.offset);
   }
-  
+
   @Override
   public Object toObject(IndexableField f) {
     final Number val = f.numericValue();
     if (val != null) {
-      if (f.fieldType().stored() == false && f.fieldType().docValuesType() == DocValuesType.NUMERIC) {
+      if (f.fieldType().stored() == false
+          && f.fieldType().docValuesType() == DocValuesType.NUMERIC) {
         return Double.longBitsToDouble(val.longValue());
-      } else if (f.fieldType().stored() == false && f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
+      } else if (f.fieldType().stored() == false
+          && f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
         return NumericUtils.sortableLongToDouble(val.longValue());
       } else {
         return val;
@@ -101,7 +110,8 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return DoublePoint.newExactQuery(field.getName(), parseDoubleFromUser(field.getName(), externalVal));
+    return DoublePoint.newExactQuery(
+        field.getName(), parseDoubleFromUser(field.getName(), externalVal));
   }
 
   @Override
@@ -112,11 +122,15 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
     }
     double[] values = new double[externalVal.size()];
     int i = 0;
-    for (String val:externalVal) {
+    for (String val : externalVal) {
       values[i] = parseDoubleFromUser(field.getName(), val);
       i++;
     }
-    return DoublePoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      return DoubleField.newSetQuery(field.getName(), values);
+    } else {
+      return DoublePoint.newSetQuery(field.getName(), values);
+    }
   }
 
   @Override
@@ -145,7 +159,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
     field.checkFieldCacheSource();
     return new DoubleFieldSource(field.getName());
   }
-  
+
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
     return new MultiValuedDoubleFieldSource(f.getName(), choice);
@@ -153,7 +167,10 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    double doubleValue = (value instanceof Number) ? ((Number) value).doubleValue() : Double.parseDouble(value.toString());
+    double doubleValue =
+        (value instanceof Number)
+            ? ((Number) value).doubleValue()
+            : Double.parseDouble(value.toString());
     return new DoublePoint(field.getName(), doubleValue);
   }
 

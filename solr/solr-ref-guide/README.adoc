@@ -18,9 +18,37 @@
 
 This is the source for the Solr Reference Guide.
 
-Raw content is stored in Asciidoc (`.adoc`) formatted files in the `src/` directory.
+Raw content is stored in Asciidoc (`.adoc`) formatted files in the `modules/` directory.
 
-To build the Ref Guide, simply run `./gradlew checkSite`.
+To build the Ref Guide, run `./gradlew buildLocalSite`.
 This will build the HTML files and validate that page references and internal links work properly.
+You can find the home page of the generated site under `build/site/index.html`
 
 See the `../../dev-docs/ref-guide` directory for information about editing and publishing the Ref Guide.
+
+To ignore the Ref Guide steps when running gradle `assemble` or `check`, use either `-Prefguide.include=false` or `SOLR_REF_GUIDE_INCLUDE=false`.
+
+In order to build the official ref guide, run `./gradlew buildOfficialSite`. It will also be built under `build/site/`.
+Note, this will not include any local changes to the ref guide, just what is published to git.
+By default it will not include prerelease versions (the `main` and `branch_*x` branches), just the release versions (i.e. `branch_x_y`).
+You can include all prerelease versions by including `-Prefguide.official.includePrereleaseVersions=true` or `SOLR_REF_GUIDE_OFFICIAL_INCLUDE_PRERELEASE=true` when building the official ref guide.
+This is the option that is used when generating the nightlies refGuide release.
+
+**WARNING: NEVER run the "setOfficialAntoraYaml" task yourself. This is a job the release manager does as a part of the release process.
+The dependency versions in the antora.yml will be updated at release time, it is not meant to be kept up to date between releases.**
+
+== Changing the UI Bundle
+
+Antora uses a `ui-bundle` to create a website out of the asciidoctor pages.
+We use the https://gitlab.com/antora/antora-ui-default/[Default Antora UI] with overrides given in the `ui-src/` directory.
+
+If you want to test any changes for the Site UI files in `ui-src/`, then use either `-Prefguide.buildLocalUI=true` or `SOLR_REF_GUIDE_BUILD_LOCAL_UI=true` when building the local or official site locally.
+If you commit these changes to the `main` branch, then you must run a https://ci-builds.apache.org/job/Solr/job/Solr-reference-guide-ui-bundle/[Jenkins Job] to update this file in the nightlies server.
+Once you run this job, you need to run the jenkins job to rebuild the ref-guide as well.
+That job is run nightly, so you could also just wait.
+
+If you want to update, add or delete any file in `ui-src/`, please comment in-place that you are making a change.
+If you are changing a file that already exists in the default UI, but not in `ui-src/`, download the file from the default UI repo to the correct directory under `ui-src/` first.
+
+You can find examples throughout the existing files in the directory.
+Without these comments it will be extremely hard for us to rebase our local versions of the files with the upstream default Antora UI when the time comes.

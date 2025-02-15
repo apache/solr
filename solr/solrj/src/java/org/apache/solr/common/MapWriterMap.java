@@ -21,10 +21,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated // see NavigableMap.wrap.  May keep but use package scope.
 public class MapWriterMap implements MapWriter {
   private final Map<String, Object> delegate;
 
-  public MapWriterMap(Map<String,Object> delegate) {
+  public MapWriterMap(Map<String, Object> delegate) {
     this.delegate = delegate;
   }
 
@@ -45,14 +46,13 @@ public class MapWriterMap implements MapWriter {
     return MapWriter.super._get(path, def);
   }
 
-
   @Override
   public int _size() {
     return delegate.size();
   }
 
   @Override
-  public Map<String,Object> toMap(Map<String, Object> map) {
+  public Map<String, Object> toMap(Map<String, Object> map) {
     return delegate;
   }
 }

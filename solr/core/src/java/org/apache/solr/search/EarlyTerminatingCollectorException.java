@@ -17,45 +17,40 @@
 package org.apache.solr.search;
 
 /**
- * Thrown by {@link EarlyTerminatingCollector} when the maximum to abort
- * the scoring / collection process early, when the specified maximum number
- * of documents were collected.
+ * Thrown by {@link EarlyTerminatingCollector} when the maximum to abort the scoring / collection
+ * process early, when the specified maximum number of documents were collected.
  */
 public class EarlyTerminatingCollectorException extends RuntimeException {
-  private static final long serialVersionUID = 5939241340763428118L;  
+  private static final long serialVersionUID = 5939241340763428118L;
   private int numberScanned;
   private int numberCollected;
-  
+
   public EarlyTerminatingCollectorException(int numberCollected, int numberScanned) {
-    assert numberCollected <= numberScanned : numberCollected+"<="+numberScanned;
+    assert numberCollected <= numberScanned : numberCollected + "<=" + numberScanned;
     assert 0 < numberCollected;
     assert 0 < numberScanned;
 
     this.numberCollected = numberCollected;
     this.numberScanned = numberScanned;
   }
+
   /**
-   * The total number of documents in the index that were "scanned" by 
-   * the index when collecting the {@link #getNumberCollected()} documents 
-   * that triggered this exception.
-   * <p>
-   * This number represents the sum of:
-   * </p>
+   * The total number of documents in the index that were "scanned" by the index when collecting the
+   * {@link #getNumberCollected()} documents that triggered this exception.
+   *
+   * <p>This number represents the sum of:
+   *
    * <ul>
-   *  <li>The total number of documents in all LeafReaders
-   *      that were fully exhausted during collection
-   *  </li>
-   *  <li>The id of the last doc collected in the last LeafReader
-   *      consulted during collection.
-   *  </li>
+   *   <li>The total number of documents in all LeafReaders that were fully exhausted during
+   *       collection
+   *   <li>The id of the last doc collected in the last LeafReader consulted during collection.
    * </ul>
-   **/
+   */
   public int getNumberScanned() {
     return numberScanned;
   }
-  /**
-   * The number of documents collected that resulted in early termination
-   */
+
+  /** The number of documents collected that resulted in early termination */
   public int getNumberCollected() {
     return numberCollected;
   }
