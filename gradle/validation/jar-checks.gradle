@@ -82,7 +82,7 @@ subprojects {
 
   // For Java projects, add all dependencies from the following configurations
   // to jar validation
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.configurations {
       jarValidation {
         extendsFrom runtimeClasspath

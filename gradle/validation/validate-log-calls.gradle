@@ -35,7 +35,7 @@ import org.apache.tools.ant.BuildException
 // See the associated help task "gradlew helpValidateLogCalls"
 
 configure(subprojects.findAll { it.path.startsWith(':solr') }) {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     task validateLogCalls(type: ValidateLogCallsTask) { task ->
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"

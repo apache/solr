@@ -87,7 +87,7 @@ allprojects { prj ->
     }
 
     // Configure defaults for sourceSets.tools (if present).
-    tasks.matching { it.name == "forbiddenApisTools" }.all {
+    tasks.matching { it.name == "forbiddenApisTools" }.configureEach {
       bundledSignatures += [
           'jdk-unsafe',
           'jdk-deprecated',

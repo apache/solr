@@ -23,7 +23,7 @@ import org.gradle.internal.jvm.Jvm
 def resources = scriptResources(buildscript)
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     configurations {
       missingdoclet
     }
@@ -40,7 +40,7 @@ allprojects {
     // javadoc rendering task below. The default javadoc task
     // will just invoke 'renderJavadoc' (to allow people to call
     // conventional task name).
-    tasks.matching { it.name == "javadoc" }.all {
+    tasks.matching { it.name == "javadoc" }.configureEach {
       enabled = false
       dependsOn "renderJavadoc"
     }
@@ -83,7 +83,7 @@ allprojects {
 // (they may be unused but this doesn't do any harm).
 
 allprojects {
-  project.tasks.withType(RenderJavadocTask) {
+  project.tasks.withType(RenderJavadocTask).configureEach {
     title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
@@ -102,14 +102,14 @@ allprojects {
 // Configure project-specific tweaks and to-dos.
 
 configure(project(":solr").allprojects) {
-  project.tasks.withType(RenderJavadocTask) {
+  project.tasks.withType(RenderJavadocTask).configureEach {
     // TODO: fix missing javadocs
     javadocMissingLevel = "package"
   }
 }
 
 configure(project(":solr:modules:analysis-extras")) {
-  project.tasks.withType(RenderJavadocTask) {
+  project.tasks.withType(RenderJavadocTask).configureEach {
     // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = [
         "org.apache.solr.schema",
@@ -119,21 +119,21 @@ configure(project(":solr:modules:analysis-extras")) {
 }
 
 configure(project(":solr:modules:langid")) {
-  project.tasks.withType(RenderJavadocTask) {
+  project.tasks.withType(RenderJavadocTask).configureEach {
     // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = ["org.apache.solr.update.processor"]
   }
 }
 
 configure(project(":solr:solrj")) {
-  project.tasks.withType(RenderJavadocTask) {
+  project.tasks.withType(RenderJavadocTask).configureEach {
     // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
   }
 }
 
 configure(project(":solr:solrj-zookeeper")) {
-  project.tasks.withType(RenderJavadocTask) {
+  project.tasks.withType(RenderJavadocTask).configureEach {
     // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = [
             "org.apache.solr.common",
@@ -145,7 +145,7 @@ configure(project(":solr:solrj-zookeeper")) {
 }
 
 configure(project(":solr:test-framework")) {
-  project.tasks.withType(RenderJavadocTask) {
+  project.tasks.withType(RenderJavadocTask).configureEach {
     // TODO: clean up split packages SOLR-15604 or don't because it's test stuff
     javadocMissingIgnore = [
         "org.apache.solr",
@@ -181,7 +181,7 @@ configure(subprojects.findAll {
       ':solr:ui',
       ':solr:webapp']
 }) {
-  project.tasks.withType(RenderJavadocTask) {
+  project.tasks.withType(RenderJavadocTask).configureEach {
     enabled = false
   }
 }
@@ -190,7 +190,7 @@ configure(subprojects.findAll {
 // - each RenderJavaDocs task gets a dependency to all tasks with same name in its dependencies
 // - the dependency is using dependsOn with a closure to enable lazy evaluation
 configure(subprojects) {
-  project.tasks.withType(RenderJavadocTask) { task ->
+  project.tasks.withType(RenderJavadocTask).configureEach { task ->
     task.dependsOn {
       task.project.configurations.implementation.allDependencies.withType(ProjectDependency).collect { dep ->
         def otherProject = dep.dependencyProject
