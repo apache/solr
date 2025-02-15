@@ -5,5 +5,6 @@ org.apache.lucene:lucene-analysis-common:9.12.1=javadocs
 org.apache.lucene:lucene-analysis-stempel:9.12.1=javadocs
 org.apache.lucene:lucene-core:9.12.1=javadocs
 org.apache.lucene:lucene-queryparser:9.12.1=javadocs
+org.apache.lucene:lucene-queries:9.12.1=javadocs
 org.apache.lucene:lucene-spatial-extras:9.12.1=javadocs
 empty=changesHtml,jarValidation,minimalSite,site
