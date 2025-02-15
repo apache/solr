@@ -46,7 +46,7 @@ JvmMetadataDetector jvmDetector = project.services.get(JvmMetadataDetector)
 
 if (jvmGradle != jvmCurrent) {
   configure(rootProject) {
-    task altJvmWarning() {
+    tasks.register("altJvmWarning") {
       doFirst {
 
         def jvmInfo = { JavaInfo javaInfo ->

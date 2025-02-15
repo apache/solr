@@ -62,7 +62,7 @@ configure(rootProject) {
     projectSeedLong = rootSeedLong ^ project.path.hashCode()
   }
 
-  task randomizationInfo() {
+  tasks.register("randomizationInfo") {
     doFirst {
       logger.lifecycle("Running tests with randomization seed: tests.seed=${rootSeed}")
     }
@@ -175,7 +175,7 @@ allprojects {
       }
 
       // Append resolved test properties to the test task.
-      tasks.withType(Test) { task ->
+      tasks.withType(Test).configureEach { task ->
         // TODO: we could remove some options that are only relevant to the build environment
         // and not the test JVM itself.
         systemProperties testOptionsResolved
@@ -235,7 +235,7 @@ allprojects {
 // and descriptions.
 allprojects {
   plugins.withType(JavaPlugin).configureEach {
-    task testOpts() {
+    tasks.register("testOpts") {
       group = 'Help (developer guides and hints)'
       description = "Display values of randomization settings for a given seed"
 

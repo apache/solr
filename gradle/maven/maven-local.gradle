@@ -24,7 +24,7 @@ configure(rootProject) {
     mavenLocalDir = file("${buildDir}/maven-local")
   }
 
-  task mavenToLocalFolder() {
+  tasks.register("mavenToLocalFolder") {
     group "Publishing"
     description "Publish Maven JARs and POMs locally to " + mavenLocalDir
 
@@ -33,12 +33,12 @@ configure(rootProject) {
     }
   }
 
-  task mavenToLocalRepo() {
+  tasks.register("mavenToLocalRepo") {
     group "Publishing"
     description "Publish Maven JARs and POMs to current user's local maven repository."
   }
 
-  task mavenLocalClean(type: Delete) {
+  tasks.register("mavenLocalClean", Delete) {
     delete mavenLocalDir
   }
 

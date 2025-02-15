@@ -27,7 +27,7 @@ if (!propertyOrDefault("validation.errorprone", isCIBuild).asBoolean()) {
 
 if (skipReason) {
   configure(rootProject) {
-    task errorProneSkipped() {
+    tasks.register("errorProneSkipped") {
       doFirst {
         logger.warn("WARNING: errorprone disabled (${skipReason})")
       }

@@ -135,7 +135,7 @@ def checksum = { file ->
 }
 
 
-task assemblePackaging(type: Sync) {
+tasks.register("assemblePackaging", Sync) {
   description = 'Assemble docker scripts and Dockerfile for Solr Packaging'
   dependsOn configurations.packagingLocal
 
@@ -152,7 +152,7 @@ task assemblePackaging(type: Sync) {
   into packagingDir
 }
 
-task dockerBuild() {
+tasks.register("dockerBuild") {
   group = 'Docker'
   description = 'Build Solr docker image'
 
@@ -189,7 +189,8 @@ task dockerBuild() {
   outputs.files(imageIdFile)
 }
 
-task dockerTag(dependsOn: tasks.dockerBuild) {
+tasks.register("dockerTag") {
+  dependsOn tasks.dockerBuild
   group = 'Docker'
   description = 'Tag Solr docker image'
 
@@ -214,7 +215,8 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   }
 }
 
-task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
+tasks.register("testDocker", TestDockerImageTask) {
+  dependsOn tasks.dockerBuild
   group = 'Docker'
   description = 'Test Solr docker image built from the local Dockerfile'
 
@@ -227,7 +229,8 @@ task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   testCasesExclude.value(excludeCases)
 }
 
-task dockerPush(dependsOn: tasks.dockerTag) {
+tasks.register("dockerPush") {
+  dependsOn tasks.dockerTag
   group = 'Docker'
   description = 'Push Solr docker image'
 
@@ -251,7 +254,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
 }
 
 // One task to build and tag a Solr docker image
-task docker {
+tasks.register("docker") {
   dependsOn tasks.dockerBuild, tasks.dockerTag
 }
 
@@ -266,7 +269,7 @@ ext {
   }
   propReplacePattern = Pattern.compile('_REPLACE_((_|\\p{Upper})+)_')
 }
-task createBodySnippetDockerfile(type: Copy) {
+tasks.register("createBodySnippetDockerfile", Copy) {
   from 'templates/Dockerfile.body.template'
   into "$buildDir/snippets/"
   outputs.file("$buildDir/snippets/Dockerfile.body.snippet")
@@ -347,7 +350,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
   def outFile = file("$dockerfilesDirPath/${fileName}")
 
 
-  tasks.create("createDockerfile${details.name}", Copy) {
+  tasks.register("createDockerfile${details.name}", Copy) {
     description "Creates ${details.desc}"
 
     def props = [
@@ -401,7 +404,7 @@ tasks.createDockerfileOfficialFull.dependsOn configurations.solrFullTgz // to la
 tasks.createDockerfileOfficialSlim.dependsOn configurations.solrSlimTgz // to lazy compute SHA
 tasks.createDockerfileOfficialSlim.mustRunAfter tasks.createDockerfileOfficialFull // Eliminate a weird warning
 
-task createDockerfileOfficial {
+tasks.register("createDockerfileOfficial") {
   dependsOn tasks.createDockerfileOfficialFull
   dependsOn tasks.createDockerfileOfficialSlim
 }
@@ -418,7 +421,7 @@ if (''.equals(releaseGpgFingerprint)) {
 [ 'Full', 'Slim' ].each { variant ->
   def lowerVariant = variant.toLowerCase(Locale.ROOT)
 
-  tasks.create("testBuildDockerfileOfficial${variant}", Copy) {
+  tasks.register("testBuildDockerfileOfficial${variant}", Copy) {
     description = "Test 'docker build' works with our generated Dockerfile.official-${lowerVariant} using Mocked URLs"
 
     dependsOn tasks.named("createDockerfileOfficial${variant}")
@@ -518,12 +521,13 @@ if (''.equals(releaseGpgFingerprint)) {
   }
 }
 
-task testBuildDockerfileOfficial {
+tasks.register("testBuildDockerfileOfficial") {
   dependsOn tasks.testBuildDockerfileOfficialFull
   dependsOn tasks.testBuildDockerfileOfficialSlim
 }
 
-task testDockerfileOfficialFull(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialFullSmokeCheckImage) {
+tasks.register("testDockerfileOfficialFull", TestDockerImageTask) {
+  dependsOn configurations.dockerOfficialFullSmokeCheckImage
   description = 'Smoke Test Full Solr docker image built from the official Dockerfile'
 
   idFile = file(imageIdFileOfficial("Full"))
@@ -535,7 +539,8 @@ task testDockerfileOfficialFull(type: TestDockerImageTask, dependsOn: configurat
   testCasesExclude.empty()
 }
 
-task testDockerfileOfficialSlim(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSlimSmokeCheckImage) {
+tasks.register("testDockerfileOfficialSlim", TestDockerImageTask, ) {
+  dependsOn configurations.dockerOfficialSlimSmokeCheckImage
   description = 'Smoke Test Slim Solr docker image built from the official Slim Dockerfile'
 
   idFile = file(imageIdFileOfficial("Slim"))
@@ -546,7 +551,7 @@ task testDockerfileOfficialSlim(type: TestDockerImageTask, dependsOn: configurat
   testCasesInclude.empty()
 }
 
-task testDockerfileOfficial {
+tasks.register("testDockerfileOfficial") {
   dependsOn tasks.testDockerfileOfficialFull
   dependsOn tasks.testDockerfileOfficialSlim
 }

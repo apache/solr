@@ -16,7 +16,7 @@
  */
 
 configure(rootProject) {
-  task checkBrokenLinks {
+  tasks.register("checkBrokenLinks") {
     group 'Verification'
     description 'Check broken links in the entire documentation'
 
@@ -25,7 +25,9 @@ configure(rootProject) {
 }
 
 configure(project(':solr:documentation')) {
-  task checkBrokenLinks(type: CheckBrokenLinksTask, 'dependsOn': 'documentation')
+  tasks.register("checkBrokenLinks", CheckBrokenLinksTask) {
+    dependsOn 'documentation'
+  }
   check.dependsOn checkBrokenLinks
 }
 

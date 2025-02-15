@@ -65,18 +65,20 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
   }
 
   plugins.withType(JavaPlugin).configureEach {
-    task sourcesJar(type: Jar, dependsOn: classes) {
+    tasks.register("sourcesJar", Jar) {
+      dependsOn classes
       archiveClassifier = 'sources'
       from sourceSets.main.allJava
     }
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
+    tasks.register("javadocJar", Jar) {
+      dependsOn javadoc
       archiveClassifier = 'javadoc'
       from javadoc.destinationDir
     }
 
     // Add aliases of convention tasks with shorter names.
-    task mavenToApacheSnapshots() {
+    tasks.register("mavenToApacheSnapshots") {
       group "Publishing"
       description "Publish Maven JARs and POMs to Apache Snapshots repository: ${apacheNexusSnapshots}"
 

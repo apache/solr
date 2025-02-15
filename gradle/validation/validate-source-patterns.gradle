@@ -63,7 +63,7 @@ def extensions = [
 
 // Create source validation task local to each project
 allprojects {
-  task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
+  tasks.register("validateSourcePatterns", ValidateSourcePatternsTask) { task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
 

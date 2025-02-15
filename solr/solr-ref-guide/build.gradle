@@ -73,7 +73,7 @@ ext {
 /*
     Generating the Antora and Playbook YAML files
  */
-task buildLocalAntoraYaml {
+tasks.register("buildLocalAntoraYaml") {
     group = 'Site - Local'
     description "Creates a local antora.yml with all variables populated."
 
@@ -136,7 +136,7 @@ task buildLocalAntoraYaml {
     inputs.properties(props)
 }
 
-task buildLocalAntoraPlaybookYaml(type: Copy) {
+tasks.register("buildLocalAntoraPlaybookYaml", Copy) {
     group = 'Site - Local'
     description "Creates ${project.ext.localPlaybook} to build and test the site locally"
 
@@ -160,7 +160,7 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
     inputs.properties(props)
 }
 
-task buildOfficialAntoraPlaybookYaml(type: Copy) {
+tasks.register("buildOfficialAntoraPlaybookYaml", Copy) {
     group = 'Site - Official'
     description "Creates ${project.ext.officialPlaybook} to build the official Solr ref-guide"
 
@@ -204,7 +204,7 @@ dependencies {
     Downloading Build Tools
  */
 
-task downloadAntoraCli(type: NpmTask) {
+tasks.register("downloadAntoraCli", NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "@antora/cli@${libs.versions.antora.asProvider().get()}"]
 
@@ -212,7 +212,7 @@ task downloadAntoraCli(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/cli")
 }
 
-task downloadAntoraSiteGenerator(type: NpmTask) {
+tasks.register("downloadAntoraSiteGenerator", NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "@antora/site-generator-default@${libs.versions.antora.asProvider().get()}"]
 
@@ -220,7 +220,7 @@ task downloadAntoraSiteGenerator(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/site-generator-default")
 }
 
-task downloadAntoraLunrExtension(type: NpmTask) {
+tasks.register("downloadAntoraLunrExtension", NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "@antora/lunr-extension@${libs.versions.antora.lunr.extension.get()}"]
 
@@ -228,7 +228,7 @@ task downloadAntoraLunrExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
 }
 
-task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
+tasks.register("downloadAsciidoctorMathjaxExtension", NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "@djencks/asciidoctor-mathjax@${libs.versions.asciidoctor.mathjax.get()}"]
 
@@ -236,7 +236,7 @@ task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
 }
 
-task downloadAsciidoctorTabsExtension(type: NpmTask) {
+tasks.register("downloadAsciidoctorTabsExtension", NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "-D", "@asciidoctor/tabs@${libs.versions.asciidoctor.tabs.get()}"]
 
@@ -244,7 +244,7 @@ task downloadAsciidoctorTabsExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@asciidoctor/tabs")
 }
 
-task downloadAntora {
+tasks.register("downloadAntora") {
     group = 'Build Dependency Download'
     description "Download all Antora build dependencies for site generation."
 
@@ -255,7 +255,7 @@ task downloadAntora {
     dependsOn tasks.downloadAsciidoctorTabsExtension
 }
 
-task downloadLinkValidator(type: NpmTask) {
+tasks.register("downloadLinkValidator", NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "link-checker@${libs.versions.link.checker.get()}"]
 
@@ -263,7 +263,7 @@ task downloadLinkValidator(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/link-checker")
 }
 
-task downloadDefaultUITemplate(type: NpmTask) {
+tasks.register("downloadDefaultUITemplate", NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "gitlab:antora/antora-ui-default#${libs.versions.antora.default.ui.get()}", "--include=dev"]
 
@@ -271,7 +271,7 @@ task downloadDefaultUITemplate(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/ui-default")
 }
 
-task startUIBuildDir(type: Copy) {
+tasks.register("startUIBuildDir", Copy) {
     group = 'Site - UI'
     dependsOn tasks.downloadDefaultUITemplate
 
@@ -290,7 +290,7 @@ task startUIBuildDir(type: Copy) {
     into project.ext.uiBuildDir
 }
 
-task setupUIBuildDir(type: NpmTask) {
+tasks.register("setupUIBuildDir", NpmTask) {
     group = 'Site - UI'
     dependsOn tasks.startUIBuildDir
     workingDir = file(project.ext.uiBuildDir)
@@ -301,7 +301,7 @@ task setupUIBuildDir(type: NpmTask) {
 }
 
 // Note that Gulp must be installed in the UI Build Directory, not our project node_modules
-task downloadGulp(type: NpmTask) {
+tasks.register("downloadGulp", NpmTask) {
     group = 'Build Dependency Download'
     dependsOn tasks.startUIBuildDir
 
@@ -320,7 +320,7 @@ task downloadGulp(type: NpmTask) {
     Build and/or validate the Site
  */
 
-task buildUIBundle(type: NpxTask) {
+tasks.register("buildUIBundle", NpxTask) {
     group = 'Site - UI'
     description "Creates a local UI bundle using the 'ui-src' directory. This can be used to preview UI changes with a local or official ref-guide build."
 
@@ -353,7 +353,7 @@ task buildUIBundle(type: NpxTask) {
     }
 }
 
-task setupLocalSiteStagingDir(type: Sync) {
+tasks.register("setupLocalSiteStagingDir", Sync) {
     group = 'Site - Local'
     description "Creates a staging directory to build the local ref-guide."
 
@@ -374,7 +374,7 @@ task setupLocalSiteStagingDir(type: Sync) {
     into project.ext.siteStagingDir
 }
 
-task buildLocalAntoraSite(type: NpxTask) {
+tasks.register("buildLocalAntoraSite", NpxTask) {
     group = 'Site - Local'
     description "Creates a local build of the ref-guide."
 
@@ -412,7 +412,7 @@ task buildLocalAntoraSite(type: NpxTask) {
     outputs.dir(project.ext.siteDir)
 }
 
-task buildLocalSite {
+tasks.register("buildLocalSite") {
     group = 'Site - Local'
     description "Creates a local build of the ref-guide, with local javadocs to link to."
 
@@ -425,7 +425,7 @@ task buildLocalSite {
     }
 }
 
-task checkSiteLinks(type: NpxTask) {
+tasks.register("checkSiteLinks", NpxTask) {
     group = 'Verification'
     description "Check that all links in the ref-guide, both internal and java-docs, are correct."
 
@@ -459,7 +459,7 @@ task checkSiteLinks(type: NpxTask) {
 /*
     Build and setup the official Site
  */
-task setOfficialAntoraYaml {
+tasks.register("setOfficialAntoraYaml") {
     group = 'Site - Official'
     description "Setups the local antora.yml as the official antora.yml for this branch. Note: This will change the antora.yml in the repo, not a build folder."
 
@@ -476,7 +476,7 @@ task setOfficialAntoraYaml {
     }
 }
 
-task buildOfficialSite(type: NpxTask) {
+tasks.register("buildOfficialSite", NpxTask) {
     group = 'Site - Official'
     description "Creates a build of the official ref-guide. This will not include local changes."
 

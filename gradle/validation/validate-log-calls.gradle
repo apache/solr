@@ -36,7 +36,7 @@ import org.apache.tools.ant.BuildException
 
 configure(subprojects.findAll { it.path.startsWith(':solr') }) {
   plugins.withType(JavaPlugin).configureEach {
-    task validateLogCalls(type: ValidateLogCallsTask) { task ->
+    tasks.register("validateLogCalls", ValidateLogCallsTask) { task ->
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
 

@@ -24,7 +24,7 @@ def hasDefaults = rootProject.file("gradle.properties").exists()
 configure(rootProject) {
   // Add a task verifying that gradle process has access to JVM internals.
   // this is occasionally needed for certain tasks.
-  task checkJdkInternalsExportedToGradle() {
+  tasks.register("checkJdkInternalsExportedToGradle") {
     doFirst {
       def jdkCompilerModule = ModuleLayer.boot().findModule("jdk.compiler").orElseThrow()
       def gradleModule = getClass().module
@@ -47,6 +47,6 @@ configure(rootProject) {
   }
 }
 
-task localSettings() {
+tasks.register("localSettings") {
   // This is just a placeholder until all references to the localSettings task are removed #SOLR-16641
 }

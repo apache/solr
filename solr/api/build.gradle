@@ -1,3 +1,5 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -50,7 +52,7 @@ configurations {
 
 resolve {
   classpath = sourceSets.main.runtimeClasspath
-  buildClasspath = sourceSets.main.runtimeClasspath.plus(configurations.getByName("swaggerBuild"))
+  buildClasspath = sourceSets.main.runtimeClasspath + configurations.named("swaggerBuild").get()
   resourcePackages = ["org.apache.solr.client.api.util", "org.apache.solr.client.api.endpoint"]
   outputDir = file(project.openApiSpecDir)
   outputFileName = "solr-openapi-${version}"
@@ -82,7 +84,7 @@ dependencies {
 }
 
 // Non-Java client generation tasks below:
-task buildJSClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+tasks.register("buildJSClient", GenerateTask) {
   generatorName.set("javascript")
   inputSpec.set("$openApiSpecFile")
   outputDir.set("$jsClientDir")
@@ -91,7 +93,7 @@ task buildJSClient(type: org.openapitools.generator.gradle.plugin.tasks.Generate
   generateModelTests.set(false)
 }
 
-task buildPythonClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+tasks.register("buildPythonClient", GenerateTask) {
   generatorName.set("python")
   inputSpec.set("$openApiSpecFile")
   outputDir.set("$pythonClientDir")
@@ -100,7 +102,7 @@ task buildPythonClient(type: org.openapitools.generator.gradle.plugin.tasks.Gene
   generateModelTests.set(false)
 }
 
-tasks.withType(org.openapitools.generator.gradle.plugin.tasks.GenerateTask).configureEach {
+tasks.withType(GenerateTask).configureEach {
   dependsOn(resolve)
 }
 

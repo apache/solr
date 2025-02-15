@@ -31,7 +31,7 @@ allprojects {
   plugins.withType(JavaPlugin).configureEach {
     def temps = []
 
-    task wipeTaskTemp() {
+    tasks.register("wipeTaskTemp") {
       doLast {
         temps.each { temp ->
           project.delete fileTree(temp).matching {
