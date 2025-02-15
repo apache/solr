@@ -74,6 +74,7 @@ kotlin {
         // Shared multiplatform dependencies
         val commonMain by getting {
             dependencies {
+                implementation(project.dependencies.platform(project(":platform")))
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
