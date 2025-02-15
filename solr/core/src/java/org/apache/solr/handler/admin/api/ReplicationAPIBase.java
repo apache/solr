@@ -51,6 +51,7 @@ import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastOutputStream;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -161,14 +162,15 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       Directory dir = null;
       try {
         dir = getDirectory();
-        SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
+        Directory unwrappedDir = unwrap(dir);
+        SegmentInfos infos = SegmentInfos.readCommit(unwrappedDir, commit.getSegmentsFileName());
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
             FileMetaData metaData = new FileMetaData();
             metaData.name = file;
-            metaData.size = dir.fileLength(file);
+            metaData.size = unwrappedDir.fileLength(file);
 
-            try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
+            try (final IndexInput in = unwrappedDir.openInput(file, IOContext.READONCE)) {
               try {
                 long checksum = CodecUtil.retrieveChecksum(in);
                 metaData.checksum = checksum;
@@ -184,10 +186,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         // add the segments_N file
         FileMetaData fileMetaData = new FileMetaData();
         fileMetaData.name = infos.getSegmentsFileName();
-        fileMetaData.size = dir.fileLength(infos.getSegmentsFileName());
+        fileMetaData.size = unwrappedDir.fileLength(infos.getSegmentsFileName());
         if (infos.getId() != null) {
           try (final IndexInput in =
-              dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
+              unwrappedDir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
             try {
               fileMetaData.checksum = CodecUtil.retrieveChecksum(in);
             } catch (Exception e) {
@@ -245,8 +247,14 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         .getDirectoryFactory()
         .get(
             solrCore.getNewIndexDir(),
-            DirectoryFactory.DirContext.REPLICATE,
+            DirectoryFactory.DirContext.DEFAULT,
             solrCore.getSolrConfig().indexConfig.lockType);
+  }
+
+  private Directory unwrap(Directory dir) {
+    return solrCore
+        .getDirectoryFactory()
+        .unwrapFor(dir, DirectoryFactory.DirUseContext.REPLICATION);
   }
 
   /** This class is used to read and send files in the lucene index */
@@ -376,16 +384,18 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
 
+      Directory dir = null;
       IndexInput in = null;
       try {
         initWrite();
 
-        Directory dir = getDirectory();
-        in = dir.openInput(fileName, IOContext.READONCE);
+        dir = getDirectory();
+        Directory unwrappedDir = unwrap(dir);
+        in = unwrappedDir.openInput(fileName, IOContext.READONCE);
         // if offset is mentioned move the pointer to that point
         if (offset != -1) in.seek(offset);
 
-        long filelen = dir.fileLength(fileName);
+        long filelen = unwrappedDir.fileLength(fileName);
         long maxBytesBeforePause = 0;
 
         while (true) {
@@ -431,8 +441,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
             indexGen,
             useChecksum);
       } finally {
-        if (in != null) {
-          in.close();
+        IOUtils.closeQuietly(in);
+        if (dir != null) {
+          try {
+            solrCore.getDirectoryFactory().release(dir);
+          } catch (IOException e) {
+            log.error("Could not release directory after streaming file", e);
+          }
         }
         extendReserveAndReleaseCommitPoint();
       }
