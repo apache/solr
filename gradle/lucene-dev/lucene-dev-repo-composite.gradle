@@ -116,7 +116,7 @@ if (luceneDevRepo != null) {
       // important to have the names match.
       name = 'lucene-root'
       dependencySubstitution {
-        all {  DependencySubstitution dependency ->
+        configureEach {  DependencySubstitution dependency ->
           if (dependency.requested instanceof ModuleComponentSelector) {
             def moduleSelector = (ModuleComponentSelector) dependency.requested
             if (moduleSelector.group == "org.apache.lucene" && moduleSelector.version == luceneVersion) {

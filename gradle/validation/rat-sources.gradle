@@ -30,7 +30,7 @@ configure(rootProject) {
 
 // Configure the rat validation task and all scanned directories.
 allprojects {
-    task("rat", type: RatTask) {
+    tasks.register("rat", RatTask) {
         group = 'Verification'
         description = 'Runs Apache Rat checks.'
 

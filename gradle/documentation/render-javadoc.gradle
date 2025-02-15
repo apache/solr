@@ -45,7 +45,7 @@ allprojects {
       dependsOn "renderJavadoc"
     }
 
-    task renderJavadoc(type: RenderJavadocTask) {
+    tasks.register("renderJavadoc", RenderJavadocTask) {
       description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
       group "documentation"
 
@@ -58,7 +58,7 @@ allprojects {
       outputDir = project.javadoc.destinationDir
     }
 
-    task renderSiteJavadoc(type: RenderJavadocTask) {
+    tasks.register("renderSiteJavadoc", RenderJavadocTask) {
       description "Generates Javadoc API documentation for the site (relative links)."
       group "documentation"
 

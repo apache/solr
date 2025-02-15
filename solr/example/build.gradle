@@ -29,7 +29,7 @@ ext {
   packagingDir = file("${buildDir}/packaging")
 }
 
-task assemblePackaging(type: Sync) {
+tasks.register("assemblePackaging", Sync) {
   from(projectDir, {
     include "exampledocs/**"
     include "files/**"
