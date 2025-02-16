@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** A blockcache implementation. */
+/** A generic Directory layer/wrapper that caches data, on or off heap as desired. */
 package org.apache.solr.blockcache;
