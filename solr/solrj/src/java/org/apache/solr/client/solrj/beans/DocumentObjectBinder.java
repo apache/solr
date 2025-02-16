@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -247,18 +248,10 @@ public class DocumentObjectBinder {
           String pattern = annotation.value().substring(0, annotation.value().length() - 1);
           dynamicFieldNamePatternMatcher = fieldName -> fieldName.startsWith(pattern);
         } else {
-          // fallback to old logic when * is in the middle of the Name.
-          // Should not happen, but was possible before that change
-          throw new IllegalArgumentException(
-              "Invalid dynamic field name: "
-                  + annotation.value()
-                  + ". The name should either start with a * or end with a *");
-
-          // Alternatively fallback to original logic?
-          // name = annotation.value().replaceFirst("\\*", "\\.*");
-          // Pattern compiledPattern = Pattern.compile("^" + name + "$");
-          // dynamicFieldNamePatternMatcher = fieldName ->
-          // compiledPattern.matcher(fieldName).find();
+          // handle when wildcard is in the middle
+          name = annotation.value().replaceFirst("\\*", "\\.*");
+          Pattern compiledPattern = Pattern.compile("^" + name + "$");
+          dynamicFieldNamePatternMatcher = fieldName -> compiledPattern.matcher(fieldName).find();
         }
       } else {
         name = annotation.value();
