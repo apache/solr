@@ -142,15 +142,15 @@ jetbrains-annotations = "26.0.2"
 joda-time = "2.13.0"
 junit = "4.13.2"
 junit-jupiter = "5.8.1"
-kotlin = "2.1.0"
+kotlin = "2.1.10"
 # @keep for version alignment
 kotlinx-atomicfu = "0.27.0"
 # @keep for version alignment
 kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
-kotlinx-datetime = "0.6.1"
+kotlinx-datetime = "0.6.2"
 kotlinx-serialization = "1.8.0"
-ktor = "3.0.3"
+ktor = "3.1.0"
 langchain4j = "0.35.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -435,7 +435,6 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere", version.ref = "langchain4j" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core", version.ref = "langchain4j" }
