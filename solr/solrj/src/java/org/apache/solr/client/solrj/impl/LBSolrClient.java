@@ -55,7 +55,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -315,7 +314,9 @@ public abstract class LBSolrClient extends SolrClient {
       }
       // Skipping check time exceeded for the first request
       // Ugly string based hack but no live servers message here is VERY misleading :(
-      if ((previousEx != null && previousEx.getMessage().contains("Limits exceeded!"))
+      if ((previousEx != null
+              && previousEx.getMessage() != null
+              && previousEx.getMessage().contains("Limits exceeded!"))
           || (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime))) {
         throw new SolrServerException(
             "The processing limits for to this request were exceeded, see cause for details",
@@ -483,11 +484,8 @@ public abstract class LBSolrClient extends SolrClient {
    * @return time allowed in nanos, returns -1 if no time_allowed is specified.
    */
   private static long getTimeAllowedInNanos(final SolrRequest<?> req) {
-    SolrParams reqParams = req.getParams();
-    return reqParams == null
-        ? -1
-        : TimeUnit.NANOSECONDS.convert(
-            reqParams.getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
+    return TimeUnit.NANOSECONDS.convert(
+        req.getParams().getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
   }
 
   private static boolean isTimeExceeded(long timeAllowedNano, long timeOutTime) {
@@ -843,8 +841,7 @@ public abstract class LBSolrClient extends SolrClient {
   public void close() {
     synchronized (this) {
       if (aliveCheckExecutor != null) {
-        aliveCheckExecutor.shutdownNow();
-        ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
+        ExecutorUtil.shutdownNowAndAwaitTermination(aliveCheckExecutor);
       }
     }
     ObjectReleaseTracker.release(this);

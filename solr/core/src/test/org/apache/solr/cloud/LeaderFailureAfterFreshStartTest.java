@@ -38,7 +38,6 @@ import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -241,8 +240,6 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    ureq.setParams(params);
     ureq.process(cloudClient);
   }
 

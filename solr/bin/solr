@@ -310,6 +310,16 @@ if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=gzip")
 fi
 
+# Jetty configuration for new Admin UI
+if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ] ||
+   [ "${SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED:-false}" == "true" ]; then
+  # Do not enable new Admin UI
+  echo -e "New Admin UI not enabled"
+else
+  # Enable new Admin UI
+  SOLR_JETTY_CONFIG+=("--module=new-ui")
+fi
+
 # Authentication options
 if [ -z "${SOLR_AUTH_TYPE:-}" ] && [ -n "${SOLR_AUTHENTICATION_OPTS:-}" ]; then
   echo "WARNING: SOLR_AUTHENTICATION_OPTS environment variable configured without associated SOLR_AUTH_TYPE variable"

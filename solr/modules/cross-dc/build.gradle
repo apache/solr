@@ -28,6 +28,7 @@ ext {
 }
 
 dependencies {
+  implementation platform(project(':platform'))
   api project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')

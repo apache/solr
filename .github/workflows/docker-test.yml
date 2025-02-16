@@ -21,7 +21,7 @@ jobs:
     env:
       SOLR_DOCKER_IMAGE_REPO: github-pr/solr
       SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
 
     steps:
     # Setup
@@ -42,7 +42,7 @@ jobs:
       with:
         path: |
           ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-docker-${{ hashFiles('versions.lock') }}
+        key: ${{ runner.os }}-gradle-docker-${{ hashFiles('**/*.lockfile') }}
         restore-keys: |
           ${{ runner.os }}-gradle-docker-
           ${{ runner.os }}-gradle-

@@ -193,6 +193,16 @@ IF "%SOLR_GZIP_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=gzip"
 )
 
+REM Jetty configuration for new Admin UI
+IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
+  REM Do not load jetty-configuration if Admin UI explicitly disabled
+) ELSE IF "%SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED%"=="true" (
+  REM Do not load jetty-configuration if new Admin UI explicitly disabled
+) ELSE (
+  REM Enable new Admin UI by loading jetty-configuration
+  set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=new-ui"
+)
+
 REM Authentication options
 
 IF NOT DEFINED SOLR_AUTH_TYPE (
