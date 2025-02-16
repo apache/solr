@@ -104,6 +104,8 @@ grant {
   permission java.lang.RuntimePermission "closeClassLoader";
   // needed by HttpSolrClient
   permission java.lang.RuntimePermission "getFileSystemAttributes";
+  // need to lookup remote JMX
+  permission java.lang.RuntimePermission "getProtectionDomain";
   // needed by aws s3 sdk (Apache HTTP Client)
   permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
   // These two *have* to be spelled out a separate
