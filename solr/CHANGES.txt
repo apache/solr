@@ -105,6 +105,8 @@ Deprecation Removals
 
 * SOLR-17540: Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. (Eric Pugh)
 
+* SOLR-17609: Removd the HDFS module and therefore support for storing indexes in HDFS.  Existing "blockcache" code preserved by migrating it to core o.a.s.blackcache package.
+
 Dependency Upgrades
 ---------------------
 (No changes)
