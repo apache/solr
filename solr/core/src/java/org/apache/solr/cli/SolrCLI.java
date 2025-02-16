@@ -426,11 +426,9 @@ public class SolrCLI implements CLIO {
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
     print("");
-    print(
-            "  Start Solr in User Managed (aka standalone) mode:");
+    print("  Start Solr in User Managed (aka standalone) mode:");
     print("");
-    printGreen(
-            "    ./solr start --user-managed");
+    printGreen("    ./solr start --user-managed");
     print("");
     print("Global Options:");
     print("  -v,  --version           Print version information and quit");
