@@ -278,7 +278,6 @@ If the status is anything other than "success", an error message will explain wh
 
 When splitting a shard, a free disk space check is performed on the local file system of the leader shard.
 This can be disabled through the `solr.shardSplit.checkDiskSpace.enabled` system property (i.e. `-Dsolr.shardSplit.checkDiskSpace.enabled=false`).
-It is already disabled by default for xref:solr-on-hdfs.adoc[HDFS].
 
 [[createshard]]
 == CREATESHARD: Create a Shard
