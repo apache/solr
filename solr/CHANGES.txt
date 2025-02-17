@@ -77,6 +77,8 @@ Other Changes
 * SOLR-17648: multiThreaded=true: changed queue implementation from unlimited to 1000 max, after
   which the caller thread will execute.  (David Smiley)
 
+* SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
