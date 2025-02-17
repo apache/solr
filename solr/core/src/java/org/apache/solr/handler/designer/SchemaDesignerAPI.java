@@ -987,9 +987,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   protected CloudSolrClient cloudClient() {
-    return coreContainer
-        .getSolrClientCache()
-        .getCloudSolrClient(coreContainer.getZkController().getZkServerAddress());
+    return coreContainer.getZkController().getSolrClient();
   }
 
   protected ZkStateReader zkStateReader() {

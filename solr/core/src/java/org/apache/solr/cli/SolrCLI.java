@@ -685,10 +685,9 @@ public class SolrCLI implements CLIO {
   private static void printHelp() {
 
     print("Usage: solr COMMAND OPTIONS");
-    print("       where COMMAND is one of: start, stop, restart, status, ");
+    print("       where COMMAND is one of: start, stop, restart, status, healthcheck, ");
     print(
-        "                                healthcheck, create, delete, auth, assert, config, export, api, package, post, ");
-
+        "                                create, delete, auth, assert, config, cluster, export, api, package, post, stream,");
     print(
         "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(

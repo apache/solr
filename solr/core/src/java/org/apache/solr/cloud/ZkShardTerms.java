@@ -427,7 +427,12 @@ public class ZkShardTerms implements AutoCloseable {
           }
           // Some events may be missed during register a watcher, so it is safer to refresh terms
           // after registering watcher
-          refreshTerms();
+          try {
+            refreshTerms();
+          } catch (SolrException e) {
+            log.warn(
+                "Error refreshing shard terms for collection: {}, shard: {}", collection, shard, e);
+          }
         };
     try {
       // exists operation is faster than getData operation

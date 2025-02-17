@@ -1612,12 +1612,25 @@ public class ZkStateReader implements SolrCloseable {
 
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
-    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    final AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    final AtomicReference<SolrException> thrownException = new AtomicReference<>();
     CollectionStateWatcher watcher =
         (n, c) -> {
           docCollection.set(c);
-          boolean matches = predicate.matches(n, c);
-          if (matches) latch.countDown();
+          boolean matches = false;
+          try {
+            matches = predicate.matches(n, c);
+            if (matches) {
+              latch.countDown();
+              thrownException.set(null);
+            }
+          } catch (SolrException e) {
+            if (thrownException.getAndSet(e) != null) {
+              // Return if we have seen an exception twice
+              latch.countDown();
+              matches = true;
+            }
+          }
 
           return matches;
         };
@@ -1625,13 +1638,18 @@ public class ZkStateReader implements SolrCloseable {
     try {
       registerCollectionStateWatcher(collection, watcher);
       // wait for the watcher predicate to return true, or time out
-      if (!latch.await(wait, unit))
+      if (!latch.await(wait, unit)) {
         throw new TimeoutException(
             "Timeout waiting to see state for collection="
                 + collection
                 + " :"
                 + docCollection.get());
-
+      } else if (thrownException.get() != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error occurred while checking state",
+            thrownException.get());
+      }
     } finally {
       removeCollectionStateWatcher(collection, watcher);
       waitLatches.remove(latch);

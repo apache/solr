@@ -75,7 +75,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -518,12 +517,8 @@ public class Utils {
             o = idx < l.size() ? l.get(idx) : null;
           } else if (o instanceof IteratorWriter) {
             o = getValueAt((IteratorWriter) o, idx);
-          } else if (o instanceof MapWriter) {
+          } else if (o instanceof MapWriter || o instanceof Map<?, ?>) {
             o = getVal(o, null, idx);
-          } else if (o instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = (Map<String, Object>) o;
-            o = getVal(new MapWriterMap(map), null, idx);
           } else {
             return null;
           }
@@ -589,11 +584,23 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
-  private static Object getVal(Object obj, String key, int idx) {
-    if (obj instanceof MapWriter) {
+  /** Extract either the key or index from mapLike. */
+  private static Object getVal(Object mapLike, String key, int idx) {
+    assert (key == null && idx >= 0) || (key != null && idx == -1);
+    if (mapLike instanceof Map<?, ?>) {
+      var m = (Map<?, ?>) mapLike;
+      if (key != null) {
+        return m.get(key);
+      } else {
+        var optEntry = m.entrySet().stream().skip(idx).findFirst();
+        return optEntry
+            .map(entry -> new MapWriterEntry<>(entry.getKey().toString(), entry.getValue()))
+            .orElse(null);
+      }
+    } else if (mapLike instanceof MapWriter) {
       Object[] result = new Object[1];
       try {
-        ((MapWriter) obj)
+        ((MapWriter) mapLike)
             .writeMap(
                 new MapWriter.EntryWriter() {
                   int count = -1;
@@ -613,8 +620,7 @@ public class Utils {
         throw new RuntimeException(e);
       }
       return result[0];
-    } else if (obj instanceof Map) return ((Map<?, ?>) obj).get(key);
-    else throw new RuntimeException("must be a NamedList or Map");
+    } else throw new RuntimeException("must be a NamedList or Map");
   }
 
   /**
