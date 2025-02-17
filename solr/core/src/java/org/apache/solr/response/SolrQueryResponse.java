@@ -72,9 +72,11 @@ public class SolrQueryResponse {
   /**
    * Header to indicate that the search was terminated early because of hits exceeding the query
    * configured limit. Presence of this flag also indicates the partalResults, however in the
-   * absernce of <i>maxHitsTerminatedEarly</i> <i>partialResults</i> would be due to other limits like time/cpu.
+   * absernce of <i>maxHitsTerminatedEarly</i> <i>partialResults</i> would be due to other limits
+   * like time/cpu.
    */
-  public static final String RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY = "maxHitsTerminatedEarly";
+  public static final String RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY =
+      "maxHitsTerminatedEarly";
 
   public static final String RESPONSE_HEADER_KEY = "responseHeader";
   private static final String RESPONSE_KEY = "response";
