@@ -115,6 +115,8 @@ public class ClientUtils {
     final var v2Root = SolrRequest.ApiVersion.V2.getApiPrefix();
     if (existingPath.contains(v1Root)) {
       return existingPath.replaceFirst(v1Root, v2Root);
+    } else if (existingPath.endsWith("/api")) {
+      return existingPath;
     } else if (!existingPath.contains(v2Root)) {
       return existingPath + v2Root;
     } else {

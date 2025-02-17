@@ -1181,6 +1181,7 @@ public class CoreContainer {
                 protected void configure() {
                   bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
                       .to(DistribFileStore.class)
+                      .to(FileStore.class)
                       .in(Singleton.class);
                 }
               })

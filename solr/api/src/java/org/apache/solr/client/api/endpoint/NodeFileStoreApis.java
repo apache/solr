@@ -33,22 +33,28 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
  */
 @Path("/node")
 public interface NodeFileStoreApis {
+
+  /**
+   * @deprecated use {@link ClusterFileStoreApis} methods/APIs instead.
+   */
   @GET
   @Operation(
       summary = "Retrieve file contents or metadata from the filestore.",
       tags = {"file-store"},
+      deprecated = true,
       // The response of this v2 API is highly variable based on the parameters specified.  It can
       // return raw (potentially binary) file data, a JSON-ified representation of that file data,
       // metadata regarding one or multiple file store entries, etc.  This variability can be
       // handled on the Jersey server side, but would be prohibitively difficult to accommodate in
-      // our code-generation templates.  Ideally, cosmetic improvements (e.g. splitting it up into
-      // multiple endpoints) will make this unnecessary in the future.  But for now, the extension
-      // property below ensures that this endpoint is ignored entirely when doing code generation.
+      // our code-generation templates.  It has been split up to be more manageable in 10.0, but the
+      // extension property below is required in the interim to ensure that the endpoint is ignored
+      // entirely when doing code generation.
       extensions = {
         @Extension(
             properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
       })
   @Path("/files{path:.+}")
+  @Deprecated
   SolrJerseyResponse getFile(
       @Parameter(description = "Path to a file or directory within the filestore")
           @PathParam("path")
