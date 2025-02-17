@@ -91,6 +91,8 @@ Other Changes
 * SOLR-17671: Replication and backup have their DirectoryFactory.DirContext so the directory they use is unwrapped
   when copying files. (Bruno Roustant, David Smiley)
 
+* SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
