@@ -55,11 +55,11 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   // Absolute.
   protected Path dataHomePath;
 
-  /** Hint about what the directory contains or what the directory will be used for. */
+  /** Hint about what the directory will be used for. */
   public enum DirContext {
-    /** Default is index directory. */
+    /** Directory used to read or write the index. */
     DEFAULT,
-    /** Directory containing metadata. */
+    /** Directory used to read or write metadata. */
     META_DATA,
     /** Directory used to copy raw files during replication. */
     REPLICATION,
