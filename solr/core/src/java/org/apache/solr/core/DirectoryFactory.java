@@ -55,10 +55,16 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   // Absolute.
   protected Path dataHomePath;
 
-  // hint about what the directory contains - default is index directory
+  /** Hint about what the directory will be used for. */
   public enum DirContext {
+    /** Directory used to read or write the index. */
     DEFAULT,
-    META_DATA
+    /** Directory used to read or write metadata. */
+    META_DATA,
+    /** Directory used to copy raw files during replication. */
+    REPLICATION,
+    /** Directory used to copy raw files during backup. */
+    BACKUP,
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -96,6 +102,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
    *
    * @throws IOException If there is a low-level I/O error.
    */
+  // TODO: remove the DirContext param from this method and have the DirectoryFactory implementation
+  // extend the new CachingDirectoryFactory.filterDirectory if needed.
   protected abstract Directory create(String path, LockFactory lockFactory, DirContext dirContext)
       throws IOException;
 

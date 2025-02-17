@@ -239,6 +239,9 @@ Other Changes
 * SOLR-17648: multiThreaded=true: changed queue implementation from unlimited to 1000 max, after
   which the caller thread will execute.  (David Smiley)
 
+* SOLR-17671: Replication and backup have their DirectoryFactory.DirContext so the directory they use is unwrapped
+  when copying files. (Bruno Roustant, David Smiley)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------

@@ -29,10 +29,12 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -59,8 +61,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     private boolean deleteOnClose = false;
 
     public CacheValue(String path, Directory directory) {
-      this.path = path;
-      this.directory = directory;
+      this.path = Objects.requireNonNull(path);
+      this.directory = Objects.requireNonNull(directory);
       this.closeEntries.add(this);
       // for debug
       // this.originTrace = new RuntimeException("Originated from:");
@@ -391,25 +393,22 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   public final Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException {
     String fullPath = normalize(path);
+    Directory directory;
+    CacheValue cacheValue;
     synchronized (this) {
       if (closed) {
         throw new AlreadyClosedException("Already closed");
       }
 
-      final CacheValue cacheValue = byPathCache.get(fullPath);
-      Directory directory = null;
-      if (cacheValue != null) {
-        directory = cacheValue.directory;
-      }
-
-      if (directory == null) {
+      cacheValue = byPathCache.get(fullPath);
+      if (cacheValue == null) {
         directory = create(fullPath, createLockFactory(rawLockType), dirContext);
         assert ObjectReleaseTracker.track(directory);
         boolean success = false;
         try {
-          CacheValue newCacheValue = new CacheValue(fullPath, directory);
-          byDirectoryCache.put(directory, newCacheValue);
-          byPathCache.put(fullPath, newCacheValue);
+          cacheValue = new CacheValue(fullPath, directory);
+          byDirectoryCache.put(directory, cacheValue);
+          byPathCache.put(fullPath, cacheValue);
           log.debug("return new directory for {}", fullPath);
           success = true;
         } finally {
@@ -418,12 +417,34 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           }
         }
       } else {
+        directory = cacheValue.directory;
         cacheValue.refCnt++;
         log.debug("Reusing cached directory: {}", cacheValue);
       }
-
-      return directory;
     }
+
+    Directory filteredDir = filterDirectory(directory, dirContext);
+    // If the directory is filtered/unwrapped, we need to wrap it in a ReleasableDirectory
+    // form to be able to recognize it when release(Directory) is called.
+    return filteredDir == directory ? directory : new ReleasableDirectory(filteredDir, cacheValue);
+  }
+
+  /**
+   * Potentially filters or unwraps the cached {@link Directory} depending on the intended use
+   * defined by the {@link org.apache.solr.core.DirectoryFactory.DirContext}.
+   *
+   * @param dir the {@link Directory} cached by this {@link CachingDirectoryFactory}.
+   * @param dirContext the nature or the intended use of the directory.
+   * @return a filtered or unwrapped version of the directory parameter, or directly the directory
+   *     parameter if it does not need any filtering/unwrapping.
+   */
+  protected Directory filterDirectory(Directory dir, DirContext dirContext) {
+    // If the DirContext is REPLICATION or BACKUP, then unwrap the Directory to allow the caller to
+    // copy raw bytes, skipping any additional logic that would be added by a FilterDirectory on top
+    // of the raw Directory.
+    return dirContext == DirContext.REPLICATION || dirContext == DirContext.BACKUP
+        ? FilterDirectory.unwrap(dir)
+        : dir;
   }
 
   /*
@@ -484,8 +505,13 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
       CacheValue cacheValue = byDirectoryCache.get(directory);
       if (cacheValue == null) {
-        throw new IllegalArgumentException(
-            "Unknown directory: " + directory + " " + byDirectoryCache);
+        // The directory is not registered, it is a ReleasableDirectory wrapper.
+        try {
+          cacheValue = ((ReleasableDirectory) directory).cacheValue;
+        } catch (ClassCastException e) {
+          throw new IllegalArgumentException(
+              "Unknown directory: " + directory + " " + byDirectoryCache);
+        }
       }
       if (log.isDebugEnabled()) {
         log.debug(
@@ -587,5 +613,20 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   protected synchronized String getPath(Directory directory) {
     return byDirectoryCache.get(directory).path;
+  }
+
+  /**
+   * Delegates to a filtered or unwrapped directory, and allows this caching factory to release
+   * correctly the corresponding cached directory.
+   */
+  public static class ReleasableDirectory extends FilterDirectory {
+
+    private final CacheValue cacheValue;
+
+    private ReleasableDirectory(Directory filteredDir, CacheValue cacheValue) {
+      super(filteredDir);
+      assert cacheValue != null;
+      this.cacheValue = cacheValue;
+    }
   }
 }
