@@ -71,7 +71,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   public static final String UPDATE_LIVE_SERVER_MESSAGE = "Updated alive server list";
 
-  private static final String UPDATE_LIVE_SERVER_LOG = UPDATE_LIVE_SERVER_MESSAGE + ": {}";
+  private static final String UPDATE_LIVE_SERVER_LOG = UPDATE_LIVE_SERVER_MESSAGE + " for {}: {}";
 
   // defaults
   protected static final Set<Integer> RETRY_CODES =
@@ -431,7 +431,7 @@ public abstract class LBSolrClient extends SolrClient {
               .filter(server -> !zombieServers.containsKey(server.baseUrl))
               .toArray(ServerWrapper[]::new);
       if (log.isDebugEnabled()) {
-        log.debug(UPDATE_LIVE_SERVER_LOG, Arrays.toString(aliveServerList));
+        log.debug(UPDATE_LIVE_SERVER_LOG, this, Arrays.toString(aliveServerList));
       }
     }
   }
@@ -603,7 +603,7 @@ public abstract class LBSolrClient extends SolrClient {
     if (aliveCheckExecutor == null) {
       synchronized (this) {
         if (aliveCheckExecutor == null) {
-          log.debug("Starting aliveCheckExecutor");
+          log.debug("Starting aliveCheckExecutor for {}", this);
           aliveCheckExecutor =
               Executors.newSingleThreadScheduledExecutor(
                   new SolrNamedThreadFactory("aliveCheckExecutor"));
@@ -662,7 +662,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   private void checkAZombieServer(ServerWrapper zombieServer) {
     try {
-      log.debug("Checking zombie server {}", zombieServer);
+      log.debug("Checking zombie server {} for {}", zombieServer, this);
       QueryRequest queryRequest = new QueryRequest(solrQuery);
       final var responseRaw = doRequest(zombieServer.getBaseUrl(), queryRequest, null);
       final var resp = new QueryResponse();
