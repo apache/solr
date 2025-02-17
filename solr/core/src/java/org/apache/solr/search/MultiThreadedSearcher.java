@@ -196,11 +196,7 @@ public class MultiThreadedSearcher {
     private final Object[] result;
     final boolean isTerminatedEarly;
 
-    public SearchResult(ScoreMode scoreMode, Object[] result) {
-      this(scoreMode, result, false);
-    }
-
-    public SearchResult(ScoreMode scoreMode, Object[] result, boolean isTerminatedEarly) {
+    SearchResult(ScoreMode scoreMode, Object[] result, boolean isTerminatedEarly) {
       this.scoreMode = scoreMode;
       this.result = result;
       this.isTerminatedEarly = isTerminatedEarly;

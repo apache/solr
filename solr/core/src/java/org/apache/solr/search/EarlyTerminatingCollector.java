@@ -78,7 +78,8 @@ public class EarlyTerminatingCollector extends FilterCollector {
           terminatedEarly = overallCollectedDocCount >= maxDocsToCollect;
         }
         if (terminatedEarly) {
-          throw new EarlyTerminatingCollectorException(maxDocsToCollect, prevReaderCumulativeSize + (doc + 1));
+          throw new EarlyTerminatingCollectorException(
+              maxDocsToCollect, prevReaderCumulativeSize + (doc + 1));
         }
       }
     };
