@@ -102,6 +102,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
    *
    * @throws IOException If there is a low-level I/O error.
    */
+  // TODO: remove the DirContext param from this method and have the DirectoryFactory implementation
+  // extend the new CachingDirectoryFactory.filterDirectory if needed.
   protected abstract Directory create(String path, LockFactory lockFactory, DirContext dirContext)
       throws IOException;
 
