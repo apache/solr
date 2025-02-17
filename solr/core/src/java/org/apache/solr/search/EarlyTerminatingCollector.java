@@ -54,6 +54,8 @@ public class EarlyTerminatingCollector extends FilterCollector {
   public EarlyTerminatingCollector(
       Collector delegate, int maxDocsToCollect, LongAdder docsToCollect) {
     super(delegate);
+    assert 0 < maxDocsToCollect;
+    assert null != delegate;
     this.maxDocsToCollect = maxDocsToCollect;
     this.pendingDocsToCollect = docsToCollect;
   }
@@ -76,15 +78,10 @@ public class EarlyTerminatingCollector extends FilterCollector {
           terminatedEarly = overallCollectedDocCount >= maxDocsToCollect;
         }
         if (terminatedEarly) {
-          throw new EarlyTerminatingCollectorException(
-              maxDocsToCollect, prevReaderCumulativeSize + (doc + 1));
+          throw new EarlyTerminatingCollectorException(maxDocsToCollect, prevReaderCumulativeSize + (doc + 1));
         }
       }
     };
-  }
-
-  public boolean isTerminatedEarly() {
-    return terminatedEarly;
   }
 
   public Collector getDelegate() {
