@@ -162,15 +162,14 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       Directory dir = null;
       try {
         dir = getDirectory();
-        Directory unwrappedDir = unwrap(dir);
-        SegmentInfos infos = SegmentInfos.readCommit(unwrappedDir, commit.getSegmentsFileName());
+        SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
             FileMetaData metaData = new FileMetaData();
             metaData.name = file;
-            metaData.size = unwrappedDir.fileLength(file);
+            metaData.size = dir.fileLength(file);
 
-            try (final IndexInput in = unwrappedDir.openInput(file, IOContext.READONCE)) {
+            try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
               try {
                 long checksum = CodecUtil.retrieveChecksum(in);
                 metaData.checksum = checksum;
@@ -186,10 +185,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         // add the segments_N file
         FileMetaData fileMetaData = new FileMetaData();
         fileMetaData.name = infos.getSegmentsFileName();
-        fileMetaData.size = unwrappedDir.fileLength(infos.getSegmentsFileName());
+        fileMetaData.size = dir.fileLength(infos.getSegmentsFileName());
         if (infos.getId() != null) {
           try (final IndexInput in =
-              unwrappedDir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
+              dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
             try {
               fileMetaData.checksum = CodecUtil.retrieveChecksum(in);
             } catch (Exception e) {
@@ -247,14 +246,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         .getDirectoryFactory()
         .get(
             solrCore.getNewIndexDir(),
-            DirectoryFactory.DirContext.DEFAULT,
+            DirectoryFactory.DirContext.REPLICATION,
             solrCore.getSolrConfig().indexConfig.lockType);
-  }
-
-  private Directory unwrap(Directory dir) {
-    return solrCore
-        .getDirectoryFactory()
-        .unwrapFor(dir, DirectoryFactory.DirUseContext.REPLICATION);
   }
 
   /** This class is used to read and send files in the lucene index */
@@ -390,12 +383,11 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         initWrite();
 
         dir = getDirectory();
-        Directory unwrappedDir = unwrap(dir);
-        in = unwrappedDir.openInput(fileName, IOContext.READONCE);
+        in = dir.openInput(fileName, IOContext.READONCE);
         // if offset is mentioned move the pointer to that point
         if (offset != -1) in.seek(offset);
 
-        long filelen = unwrappedDir.fileLength(fileName);
+        long filelen = dir.fileLength(fileName);
         long maxBytesBeforePause = 0;
 
         while (true) {

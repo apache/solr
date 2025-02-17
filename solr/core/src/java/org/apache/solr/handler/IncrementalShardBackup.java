@@ -145,22 +145,21 @@ public class IncrementalShardBackup {
     details.startTime = Instant.now().toString();
 
     Collection<String> files = indexCommit.getFileNames();
-    DirectoryFactory directoryFactory = solrCore.getDirectoryFactory();
     Directory dir =
-        directoryFactory.get(
-            solrCore.getIndexDir(),
-            DirectoryFactory.DirContext.DEFAULT,
-            solrCore.getSolrConfig().indexConfig.lockType);
+        solrCore
+            .getDirectoryFactory()
+            .get(
+                solrCore.getIndexDir(),
+                DirectoryFactory.DirContext.BACKUP,
+                solrCore.getSolrConfig().indexConfig.lockType);
     try {
-      BackupStats stats =
-          incrementalCopy(
-              files, directoryFactory.unwrapFor(dir, DirectoryFactory.DirUseContext.BACKUP));
+      BackupStats stats = incrementalCopy(files, dir);
       details.indexFileCount = stats.fileCount;
       details.uploadedIndexFileCount = stats.uploadedFileCount;
       details.indexSizeMB = stats.getIndexSizeMB();
       details.uploadedIndexFileMB = stats.getTotalUploadedMB();
     } finally {
-      directoryFactory.release(dir);
+      solrCore.getDirectoryFactory().release(dir);
     }
 
     CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();

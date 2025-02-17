@@ -55,19 +55,15 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   // Absolute.
   protected Path dataHomePath;
 
-  /** Hint about what the directory contains. */
+  /** Hint about what the directory contains or what the directory will be used for. */
   public enum DirContext {
     /** Default is index directory. */
     DEFAULT,
     /** Directory containing metadata. */
     META_DATA,
-  }
-
-  /** Hint about what the directory will be used for. */
-  public enum DirUseContext {
-    /** Directory used to copy files during replication. */
+    /** Directory used to copy raw files during replication. */
     REPLICATION,
-    /** Directory used to copy files during backup. */
+    /** Directory used to copy raw files during backup. */
     BACKUP,
   }
 
@@ -463,18 +459,5 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
    */
   public UpdateLog newDefaultUpdateLog() {
     return new UpdateLog();
-  }
-
-  /**
-   * Unwraps the provided {@link Directory} depending on the intended use defined by the {@link
-   * org.apache.solr.core.DirectoryFactory.DirUseContext}.
-   */
-  @SuppressWarnings("unused")
-  public Directory unwrapFor(Directory dir, DirUseContext useContext) {
-    // By default, unwrap the Directory to allow the caller to copy raw bytes, skipping any
-    // additional logic that would be added by a FilterDirectory on top of the raw Directory.
-    // An extending DirectoryFactory can adapt how to unwrap depending on the intended use (e.g.
-    // encryption maybe does not unwrap for backup to compute checksum on cleartext).
-    return FilterDirectory.unwrap(dir);
   }
 }
