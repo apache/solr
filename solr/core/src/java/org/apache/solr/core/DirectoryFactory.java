@@ -90,7 +90,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   public abstract void addCloseListener(Directory dir, CloseListener closeListener);
 
   /**
-   * Close this factory and all of the Directories it contains.
+   * Close this factory and all the Directories it contains.
    *
    * @throws IOException If there is a low-level I/O error.
    */
@@ -102,9 +102,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
    *
    * @throws IOException If there is a low-level I/O error.
    */
-  // TODO: remove the DirContext param from this method and have the DirectoryFactory implementation
-  // extend the new CachingDirectoryFactory.filterDirectory if needed.
-  protected abstract Directory create(String path, LockFactory lockFactory, DirContext dirContext)
+  protected abstract Directory create(String path, LockFactory lockFactory)
       throws IOException;
 
   /**

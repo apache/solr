@@ -41,7 +41,7 @@ public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
   }
 
   @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
+  protected Directory create(String path, LockFactory lockFactory)
       throws IOException {
     return new ByteBuffersDirectory(lockFactory);
   }

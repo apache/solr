@@ -48,7 +48,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
+  protected Directory create(String path, LockFactory lockFactory)
       throws IOException {
     return FSDirectory.open(Path.of(path), lockFactory);
   }
