@@ -34,7 +34,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.QueryElevationComponent;
@@ -86,12 +87,15 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     if (sort == null) {
       this.sort = null;
       this.mainCollector =
-          TopScoreDocCollector.create(Math.max(this.reRankDocs, length), cmd.getMinExactCount());
+          new TopScoreDocCollectorManager(Math.max(this.reRankDocs, length), cmd.getMinExactCount())
+              .newCollector();
     } else {
       this.sort = sort = sort.rewrite(searcher);
       // scores are needed for Rescorer (regardless of whether sort needs it)
       this.mainCollector =
-          TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), cmd.getMinExactCount());
+          new TopFieldCollectorManager(
+                  sort, Math.max(this.reRankDocs, length), cmd.getMinExactCount())
+              .newCollector();
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
