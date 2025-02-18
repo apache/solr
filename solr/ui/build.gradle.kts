@@ -55,14 +55,9 @@ kotlin {
                 // Note that webpack.config.d/ contains additional configuration
             }
             testTask {
-                useKarma {
-                    useChromeHeadless()
-                    useConfigDirectory(
-                        project.projectDir
-                            .resolve("karma.config.d")
-                            .resolve("wasm")
-                    )
-                }
+                // Explicitly disable the wasmJs browser tests, as we do not have the suitable
+                // environments right now (running only tests for JVM)
+                enabled = false
             }
         }
         binaries.executable()
