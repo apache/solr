@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Contains the {@link org.apache.solr.rest.ManagedResource} that encapsulate the model stores. */
-package org.apache.solr.llm.texttovector.store.rest;
+/** Contains model store related classes. */
+package org.apache.solr.llm.textvectorisation.store;

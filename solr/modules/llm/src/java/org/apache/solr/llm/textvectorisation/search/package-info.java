@@ -16,4 +16,4 @@
  */
 
 /** APIs and classes for implementing text to vector QueryParsers. */
-package org.apache.solr.llm.texttovector.search;
+package org.apache.solr.llm.textvectorisation.search;
