@@ -211,7 +211,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
   private void startJettyAndWaitForAliveCheckQuery(SolrInstance solrInstance) throws Exception {
     try (LogListener logListener =
-        LogListener.debug().substring(LBSolrClient.UPDATE_LIVE_SERVER_MESSAGE)) {
+        LogListener.debug(LBSolrClient.class).substring(LBSolrClient.UPDATE_LIVE_SERVER_MESSAGE)) {
       solrInstance.startJetty();
       if (logListener.pollMessage(10, TimeUnit.SECONDS) == null) {
         fail("The alive check query was not logged within 10 seconds.");
