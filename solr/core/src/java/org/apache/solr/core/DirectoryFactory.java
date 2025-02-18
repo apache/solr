@@ -102,8 +102,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
    *
    * @throws IOException If there is a low-level I/O error.
    */
-  protected abstract Directory create(String path, LockFactory lockFactory)
-      throws IOException;
+  protected abstract Directory create(String path, LockFactory lockFactory) throws IOException;
 
   /**
    * Creates a new LockFactory for a given path.
