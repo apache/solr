@@ -21,7 +21,7 @@ antora = "3.1.4"
 antora-default-ui = "51ad811622394027afb4e182c2fdabc235ae04dd"
 # @keep Antora Lunr extensions version used in ref-guide
 antora-lunr-extension = "1.0.0-alpha.8"
-apache-calcite = "1.37.0"
+apache-calcite = "1.38.0"
 apache-calcite-avatica = "1.25.0"
 apache-commons-collections4 = "4.4"
 apache-commons-compress = "1.26.1"
