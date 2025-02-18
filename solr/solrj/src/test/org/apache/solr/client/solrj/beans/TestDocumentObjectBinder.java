@@ -188,10 +188,8 @@ public class TestDocumentObjectBinder extends SolrTestCase {
     @Field("sup_simple_*")
     Map<String, String> supplier_simple;
 
-
     @Field("supmiddle_*_middle")
     Map<String, String> supplier_middle;
-
 
     @Field("*_supbeginning")
     Map<String, String> sup_beginning;
@@ -207,7 +205,6 @@ public class TestDocumentObjectBinder extends SolrTestCase {
       return this.allSuppliers;
     }
 
-
     public Map<String, String> getSupplier_middle() {
       return supplier_middle;
     }
@@ -215,7 +212,6 @@ public class TestDocumentObjectBinder extends SolrTestCase {
     public void setSupplier_middle(Map<String, String> supplier_middle) {
       this.supplier_middle = supplier_middle;
     }
-
 
     public Map<String, String> getSup_beginning() {
       return sup_beginning;
