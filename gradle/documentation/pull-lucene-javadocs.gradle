@@ -49,6 +49,7 @@ configure(project(":solr:documentation")) {
     javadocs variantOf(libs.apache.lucene.analysis.common) { classifier 'javadoc' }
     javadocs variantOf(libs.apache.lucene.analysis.stempel) { classifier 'javadoc' }
     javadocs variantOf(libs.apache.lucene.queryparser) { classifier 'javadoc' }
+    javadocs variantOf(libs.apache.lucene.queries) { classifier 'javadoc' }
     javadocs variantOf(libs.apache.lucene.spatialextras) { classifier 'javadoc' }
   }
 
