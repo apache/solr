@@ -159,7 +159,7 @@ public class CoreStatus extends CoreAdminAPIBase implements CoreApis.GetStatus {
               RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
               try {
                 final var indexInfo =
-                    LukeRequestHandler.getIndexInfoTyped(searcher.get().getIndexReader());
+                    LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
                 long size = core.getIndexSize();
                 indexInfo.sizeInBytes = size;
                 indexInfo.size = NumberUtils.readableSize(size);

@@ -75,6 +75,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.CopyField;
@@ -137,8 +138,9 @@ public class LukeRequestHandler extends RequestHandlerBase {
     ShowStyle style = ShowStyle.get(params.get("show"));
 
     // If no doc is given, show all fields and top terms
-
-    rsp.add("index", getIndexInfo(reader));
+    final var indexVals = new SimpleOrderedMap<>();
+    V2ApiUtils.squashIntoNamedList(indexVals, getIndexInfo(reader));
+    rsp.add("index", indexVals);
 
     if (ShowStyle.INDEX == style) {
       return; // that's all we need
@@ -623,7 +625,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
   // This method just gets the top-most level of information. This was conflated with getting
   // detailed info for *all* the fields, called from CoreAdminHandler etc.
 
-  public static CoreStatusResponse.IndexDetails getIndexInfoTyped(DirectoryReader reader)
+  public static CoreStatusResponse.IndexDetails getIndexInfo(DirectoryReader reader)
       throws IOException {
     Directory dir = reader.directory();
     final var indexInfo = new CoreStatusResponse.IndexDetails();
@@ -646,34 +648,6 @@ public class LukeRequestHandler extends RequestHandlerBase {
     String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
     if (s != null) {
       indexInfo.lastModified = new Date(Long.parseLong(s));
-    }
-    return indexInfo;
-  }
-
-  // TODO NOCOMMIT Nuke this method and its usages, in favor of the typed version above that
-  // produces CoreStatusResponse.IndexInfo
-  public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader) throws IOException {
-    Directory dir = reader.directory();
-    SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<>();
-
-    indexInfo.add("numDocs", reader.numDocs());
-    indexInfo.add("maxDoc", reader.maxDoc());
-    indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
-    // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
-    indexInfo.add("version", reader.getVersion());
-    indexInfo.add("segmentCount", reader.leaves().size());
-    indexInfo.add("current", closeSafe(reader::isCurrent));
-    indexInfo.add("hasDeletions", reader.hasDeletions());
-    indexInfo.add("directory", dir);
-    IndexCommit indexCommit = reader.getIndexCommit();
-    String segmentsFileName = indexCommit.getSegmentsFileName();
-    indexInfo.add("segmentsFile", segmentsFileName);
-    indexInfo.add("segmentsFileSizeInBytes", getSegmentsFileLength(indexCommit));
-    Map<String, String> userData = indexCommit.getUserData();
-    indexInfo.add("userData", userData);
-    String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
-    if (s != null) {
-      indexInfo.add("lastModified", new Date(Long.parseLong(s)));
     }
     return indexInfo;
   }
