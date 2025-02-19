@@ -16,11 +16,11 @@
 adobe-testing-s3mock = "2.17.0"
 amazon-awssdk = "2.26.19"
 # @keep Antora version used in ref-guide
-antora = "3.1.4"
-# @keep Most recent commit as of 2022-06-24, this repo does not have tags
-antora-default-ui = "51ad811622394027afb4e182c2fdabc235ae04dd"
+antora = "3.1.10"
+# @keep Most recent commit as of 2025-02-19, this repo does not have tags
+antora-default-ui = "687202ae5a50bdd3bd96e666ec1badb5ca3ff143"
 # @keep Antora Lunr extensions version used in ref-guide
-antora-lunr-extension = "1.0.0-alpha.8"
+antora-lunr-extension = "1.0.0-alpha.10"
 apache-calcite = "1.37.0"
 apache-calcite-avatica = "1.25.0"
 apache-commons-collections4 = "4.4"
@@ -113,7 +113,7 @@ google-protobuf = "3.25.3"
 gradle = "8.10"
 grpc = "1.65.1"
 # @keep Gulp version used in ref-guide
-gulp-cli = "2.3.0"
+gulp-cli = "3.0.0"
 hamcrest = "3.0"
 hk2 = "3.1.1"
 hsqldb = "2.7.4"
