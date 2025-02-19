@@ -113,7 +113,7 @@ public class CollApiCmds {
    * Interface implemented by all Collection API commands. Collection API commands are defined in
    * classes whose names ends in {@code Cmd}.
    */
-  protected interface CollectionApiCommand {
+  public interface CollectionApiCommand {
     void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception;
   }
 
