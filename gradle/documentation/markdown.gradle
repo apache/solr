@@ -41,7 +41,7 @@ buildscript {
 }
 
 configure(project(':solr:documentation')) {
-  task markdownToHtml(type: Copy) {
+  tasks.register("markdownToHtml", Copy) {
     dependsOn copyDocumentationAssets
     
     filteringCharset = 'UTF-8'
@@ -60,7 +60,7 @@ configure(project(':solr:documentation')) {
     }
   }
 
-  task createDocumentationIndex(type: MarkdownTemplateTask) {
+  tasks.register("createDocumentationIndex", MarkdownTemplateTask) {
     dependsOn markdownToHtml
 
     outputFile = file("${project.docroot}/index.html")
@@ -74,7 +74,7 @@ configure(project(':solr:documentation')) {
     withProjectList()
   }
 
-  task createMiniDocumentationIndex(type: MarkdownTemplateTask) {
+  tasks.register("createMiniDocumentationIndex", MarkdownTemplateTask) {
     outputFile = file("${project.docrootMinimal}/index.html")
     templateFile = file("${project.markdownSrc}/online-link.template.md")
 

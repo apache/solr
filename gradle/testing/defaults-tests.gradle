@@ -23,7 +23,7 @@ def resources = scriptResources(buildscript)
 def verboseModeHookInstalled = false
 
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     project.ext {
       // This array will collect all test options, including default values and option description.
       // The actual values of these properties (defaults, project properties) are resolved lazily after evaluation
@@ -87,7 +87,7 @@ allprojects {
       }
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
       ext {
         testOutputsDir = file("${reports.junitXml.outputLocation.get()}/outputs")
       }
