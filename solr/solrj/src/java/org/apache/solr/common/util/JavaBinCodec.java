@@ -124,6 +124,9 @@ public class JavaBinCodec implements PushWriter {
   private boolean alreadyUnmarshalled;
   protected boolean readStringAsCharSeq = false;
 
+  private boolean mapAsNamedList =
+      EnvUtils.getPropertyAsBool("solr.solrj.javabin.mapAsNamedList", true);
+
   public JavaBinCodec() {
     resolver = null;
     writableDocFields = null;
@@ -848,9 +851,14 @@ public class JavaBinCodec implements PushWriter {
     return size < 0 ? new LinkedHashMap<>() : CollectionUtil.newLinkedHashMap(size);
   }
 
-  public Map<Object, Object> readMap(DataInputInputStream dis) throws IOException {
+  public Map<?, Object> readMap(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
-    return readMap(dis, sz);
+
+    if (mapAsNamedList) {
+      return readMapAsSimpleOrderedMapForStringKeys(dis, sz);
+    } else {
+      return readMap(dis, sz);
+    }
   }
 
   protected Map<Object, Object> readMap(DataInputInputStream dis, int sz) throws IOException {
@@ -861,6 +869,21 @@ public class JavaBinCodec implements PushWriter {
       m.put(key, val);
     }
     return m;
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  protected Map<?, Object> readMapAsSimpleOrderedMapForStringKeys(DataInputInputStream dis, int sz)
+      throws IOException {
+
+    SimpleOrderedMap<Object> entries = new SimpleOrderedMap<>(sz);
+
+    for (int i = 0; i < sz; i++) {
+      Object key = readVal(dis);
+      assert key instanceof String;
+      Object val = readVal(dis);
+      entries.add((String) key, val); // using NL.add() since key won't repeat
+    }
+    return entries;
   }
 
   public final ItemWriter itemWriter =
@@ -1435,5 +1458,9 @@ public class JavaBinCodec implements PushWriter {
     if (daos != null) {
       daos.flushBuffer();
     }
+  }
+
+  public void setMapAsNamedList(boolean mapAsNamedList) {
+    this.mapAsNamedList = mapAsNamedList;
   }
 }
