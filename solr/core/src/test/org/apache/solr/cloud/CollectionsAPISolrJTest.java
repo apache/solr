@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -449,9 +448,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     DocCollection testCollection = getCollectionState(collectionName);
 
     Replica replica1 = testCollection.getReplicas().iterator().next();
-    CoreStatus coreStatus = getCoreStatus(replica1);
+    final var coreStatus = getCoreStatus(replica1);
 
-    assertEquals(Paths.get(coreStatus.getDataDirectory()).toString(), dataDir.toString());
+    assertEquals(Paths.get(coreStatus.dataDir).toString(), dataDir.toString());
   }
 
   @Test
@@ -882,7 +881,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         ZkStateReader.from(solrClient).getLeaderRetry(collectionName, "shard1", DEFAULT_TIMEOUT);
 
     final AtomicReference<Long> coreStartTime =
-        new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
+        new AtomicReference<>(getCoreStatus(leader).startTime.getTime());
 
     // Check for value change
     CollectionAdminRequest.modifyCollection(
@@ -903,7 +902,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         () -> {
           long restartTime = 0;
           try {
-            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+            restartTime = getCoreStatus(leader).startTime.getTime();
           } catch (Exception e) {
             log.warn("Exception getting core start time: ", e);
             return false;
@@ -911,7 +910,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           return restartTime > coreStartTime.get();
         });
 
-    coreStartTime.set(getCoreStatus(leader).getCoreStartTime().getTime());
+    coreStartTime.set(getCoreStatus(leader).startTime.getTime());
 
     // check for docs - reloading should have committed the new docs
     // this also verifies that searching works in read-only mode
@@ -974,7 +973,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         () -> {
           long restartTime = 0;
           try {
-            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+            restartTime = getCoreStatus(leader).startTime.getTime();
           } catch (Exception e) {
             log.warn("Exception getting core start time: ", e);
             return false;

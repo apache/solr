@@ -14,34 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.client.solrj.request;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Date;
-import org.apache.solr.common.util.NamedList;
-
-public class CoreStatus {
-
-  private final NamedList<Object> response;
-
-  public CoreStatus(NamedList<Object> response) {
-    this.response = response;
-  }
-
-  public String getDataDirectory() {
-    return (String) response.get("dataDir");
-  }
-
-  public String getInstanceDirectory() {
-    return (String) response.findRecursive("instanceDir");
-  }
-
-  @Override
-  public String toString() {
-    return response.toString();
-  }
-
-  public Date getCoreStartTime() {
-    return (Date) response.get("startTime");
-  }
+/** Response for {@link org.apache.solr.client.api.endpoint.CoreApis} 'create' API */
+public class CreateCoreResponse extends SolrJerseyResponse {
+  @JsonProperty public String core;
 }

@@ -35,7 +35,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.CoreAdminOperation;
+import org.apache.solr.handler.admin.api.CreateCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.util.LogListener;
@@ -191,7 +191,7 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
   }
 
   private void verifyCollectionCreation(String collection) throws Exception {
-    try (LogListener reqLog = LogListener.info(CoreAdminOperation.class.getName())) {
+    try (LogListener reqLog = LogListener.info(CreateCore.class.getName())) {
       var a1 = CollectionAdminRequest.createCollection(collection, 2, 2);
       CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
       assertEquals(0, r1.getStatus());

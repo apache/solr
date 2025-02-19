@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.client.solrj.request.beans;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
 
-public class CreateCorePayload implements ReflectMapWriter {
+public class CreateCoreParams {
   @JsonProperty(required = true)
   public String name;
 
@@ -40,21 +39,21 @@ public class CreateCorePayload implements ReflectMapWriter {
 
   @JsonProperty public Boolean loadOnStartup;
 
-  // If our JsonProperty clone was more feature-rich here we could specify the property be called
-  // 'transient', but without that support it needs to be named something else to avoid conflicting
-  // with the 'transient' keyword in Java
-  @JsonProperty public Boolean isTransient;
+  @Schema(name = "isTransient")
+  @JsonProperty("transient")
+  public Boolean isTransient;
 
   @JsonProperty public String shard;
 
   @JsonProperty public String collection;
 
-  // TODO - what type is 'roles' expected to be?
   @JsonProperty public List<String> roles;
 
   @JsonProperty public String replicaType;
 
-  @JsonProperty public Map<String, Object> properties;
+  @JsonProperty public Map<String, String> properties;
+
+  @JsonProperty public Map<String, String> collectionProperties;
 
   @JsonProperty public String coreNodeName;
 

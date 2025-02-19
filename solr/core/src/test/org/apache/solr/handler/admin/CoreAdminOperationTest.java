@@ -35,6 +35,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   private CoreAdminHandler.CallInfo callInfo;
   private SolrQueryRequest mockRequest;
+  private CoreAdminHandler mockHandler;
 
   @BeforeClass
   public static void setUpClass() {
@@ -47,7 +48,8 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     super.setUp();
 
     mockRequest = mock(SolrQueryRequest.class);
-    callInfo = new CoreAdminHandler.CallInfo(null, mockRequest, null, null);
+    mockHandler = mock(CoreAdminHandler.class);
+    callInfo = new CoreAdminHandler.CallInfo(mockHandler, mockRequest, null, null);
   }
 
   @Override

@@ -29,6 +29,7 @@ description = 'Solrj - Solr Java Client'
 dependencies {
   implementation libs.fasterxml.jackson.core.databind
   implementation libs.fasterxml.jackson.core.annotations
+  implementation libs.fasterxml.jackson.core.core
   api project(":solr:api")
 
   implementation libs.slf4j.api
