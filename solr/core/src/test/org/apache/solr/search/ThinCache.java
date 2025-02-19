@@ -345,10 +345,25 @@ public class ThinCache<S, K, V> extends SolrCacheBase
 
   @Override
   public void onRemoval(K key, V value, RemovalCause cause) {
-    if (cause.wasEvicted()) {
-      evictions.increment();
-    }
-    local.remove(key);
+    // Only remove if the current value is the same as the removal.
+    // RemovalListener gives us no guarantee that onRemoval() will be called
+    // before the same key gets updated again.
+    // We are still not protecting against a removal then a put() with the
+    // same value in quick succession.
+    local.computeIfPresent(
+        key,
+        (keyEntry, valEntry) -> {
+          // Delete only if the value being deleted is the same as what we have locally
+          if (valEntry.ref.refersTo(value)) {
+            if (cause.wasEvicted()) {
+              evictions.increment();
+            }
+            return null;
+          } else {
+            // Otherwise keep the value in the map
+            return valEntry;
+          }
+        });
   }
 
   @Override
