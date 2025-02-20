@@ -16,7 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This module brings the power of *Large Language Models* (*LLM*s) to Solr.  More specifically, it provides a text-to-vector capability, used on documents or queries, via integrating with popular external services that do this.  The state-of-the-art of such services use an LLM, hence the name of this module. 
+This module brings the power of *Large Language Models* (*LLM*s) to Solr.  
+
+More specifically, it provides a text-to-vector capability, used on documents or queries, via integrating with popular external services that do this.
+
+The state-of-the-art of such services use an LLM, hence the name of this module. 
 _Without_ this module, vectors must be supplied _to_ Solr for indexing & searching, possibly coordinating with such services.
 
 
@@ -25,12 +29,17 @@ _Without_ this module, vectors must be supplied _to_ Solr for indexing & searchi
 === From Text to Vector
 
 The aim of encoding text to numerical vectors is to represent text in a way that semantically similar sentences are encoded to vectors close in a vector space.
+
+Often this process is called 'text embedding' as it projects a piece of text into a high-dimensional latent vector space and embeds the text with such vector.
+
 Vector distance metrics (algorithms) can then be used to compute a pairwise similarity, producing a score.
 
 
 === Large Language Models 
 
 Specific Large Language Models are able to encode text to a numerical vector.
+
+These models are often called Embedding Models as they encode text to vector embeddings.
 
 For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
 
