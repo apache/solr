@@ -17,8 +17,7 @@
 package org.apache.solr.llm.textvectorisation.update.processor;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.MultiMapSolrParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.llm.TestLlmBase;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -107,10 +106,9 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
 
     TextToVectorUpdateProcessorFactory factoryToTest =
             new TextToVectorUpdateProcessorFactory();
-    
-    Map<String, String[]> params = new HashMap<>();
-    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), params) {};
     factoryToTest.init(args);
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.getInstance(req,null,null));
     assertEquals("undefined field: \"notExistentOutput\"", e.getMessage());
@@ -127,9 +125,8 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     TextToVectorUpdateProcessorFactory factoryToTest =
             new TextToVectorUpdateProcessorFactory();
     
-    Map<String, String[]> params = new HashMap<>();
-    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), params) {};
     factoryToTest.init(args);
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.getInstance(req,null,null));
     assertEquals("only DenseVectorField is compatible with Vector Query Parsers: _text_", e.getMessage());
@@ -145,10 +142,9 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
 
     TextToVectorUpdateProcessorFactory factoryToTest =
             new TextToVectorUpdateProcessorFactory();
-    
-    Map<String, String[]> params = new HashMap<>();
-    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), params) {};
     factoryToTest.init(args);
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.getInstance(req,null,null));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
