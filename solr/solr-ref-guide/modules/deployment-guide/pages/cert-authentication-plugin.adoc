@@ -402,6 +402,10 @@ import org.apache.solr.security.cert.CertPrincipalResolver;
 
 public class CustomCertPrincipalResolver implements CertPrincipalResolver {
 
+  public CustomCertPrincipalResolver(Map<String, Object> params) {
+    // use the 'params' object for some initialization
+  }
+
   @Override
   public Principal resolvePrincipal(X509Certificate certificate) throws SSLPeerUnverifiedException {
     // Custom logic to extract the principal
@@ -424,7 +428,8 @@ Once the custom resolver class is implemented and available in your Solr classpa
   "authentication": {
     "class": "solr.CertAuthPlugin",
     "principalResolver": {
-      "class": "com.example.solr.CustomCertPrincipalResolver"
+      "class": "com.example.solr.CustomCertPrincipalResolver",
+      "params": {}
     }
   }
 }
