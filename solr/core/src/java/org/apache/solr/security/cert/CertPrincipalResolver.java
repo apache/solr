@@ -35,8 +35,7 @@ public interface CertPrincipalResolver {
    * object. The specific field or attribute of the certificate to be used as the principal, and the
    * logic for its extraction, is defined by the implementation.
    *
-   * <p>@param certificate The X509Certificate from which to resolve the principal.
-   *
+   * @param certificate The X509Certificate from which to resolve the principal.
    * @return A {@link Principal} object representing the resolved principal from the certificate.
    * @throws SSLPeerUnverifiedException If the peer's identity has not been verified.
    * @throws CertificateParsingException If an error occurs while parsing the certificate for

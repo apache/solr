@@ -137,7 +137,7 @@ public class PathBasedCertPrincipalResolver extends PathBasedCertResolverBase
     }
 
     String principal = extractPrincipal(basePrincipal);
-    log.info("Resolved principal: {}", principal);
+    log.debug("Resolved principal: {}", principal);
     return new BasicUserPrincipal(principal);
   }
 
