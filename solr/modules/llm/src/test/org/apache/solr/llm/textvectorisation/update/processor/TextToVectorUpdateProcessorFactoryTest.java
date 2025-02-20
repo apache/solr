@@ -31,12 +31,9 @@ import java.util.Map;
 
 
 public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
-  private TextToVectorUpdateProcessorFactory factoryToTest =
-      new TextToVectorUpdateProcessorFactory();
-  private NamedList<String> args = new NamedList<>();
   
   @BeforeClass
-  public static void initArgs() throws Exception {
+  public static void initSolr() throws Exception {
     setupTest("solrconfig-llm.xml", "schema.xml", false, false);
   }
 
@@ -47,9 +44,13 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
 
   @Test
   public void init_fullArgs_shouldInitAllParams() {
+    NamedList<String> args = new NamedList<>();
     args.add("inputField", "_text_");
     args.add("outputField", "vector");
     args.add("model", "model1");
+    
+    TextToVectorUpdateProcessorFactory factoryToTest =
+            new TextToVectorUpdateProcessorFactory();
     factoryToTest.init(args);
 
     assertEquals("_text_", factoryToTest.getInputField());
@@ -59,8 +60,12 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
 
   @Test
   public void init_nullInputField_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
     args.add("outputField", "vector");
     args.add("model", "model1");
+
+    TextToVectorUpdateProcessorFactory factoryToTest =
+            new TextToVectorUpdateProcessorFactory();
     
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
     assertEquals("Missing required parameter: inputField", e.getMessage());
@@ -68,8 +73,12 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
 
   @Test
   public void init_nullOutputField_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
     args.add("inputField", "_text_");
     args.add("model", "model1");
+
+    TextToVectorUpdateProcessorFactory factoryToTest =
+            new TextToVectorUpdateProcessorFactory();
     
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
     assertEquals("Missing required parameter: outputField", e.getMessage());
@@ -77,20 +86,28 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
   
   @Test
   public void init_nullModel_shouldThrowExceptionWithDetailedMessage() {
+    NamedList<String> args = new NamedList<>();
     args.add("inputField", "_text_");
     args.add("outputField", "vector");
+
+    TextToVectorUpdateProcessorFactory factoryToTest =
+            new TextToVectorUpdateProcessorFactory();
     
     SolrException e = assertThrows(SolrException.class, () -> factoryToTest.init(args));
     assertEquals("Missing required parameter: model", e.getMessage());
   }
 
-  /* Following tests depends on a real solr schema */
+  /* Following test depends on a real solr schema and depends on BeforeClass-AfterClass methods */
   @Test
   public void init_notExistentOutputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
+    NamedList<String> args = new NamedList<>();
     args.add("inputField", "_text_");
     args.add("outputField", "notExistentOutput");
     args.add("model", "model1");
 
+    TextToVectorUpdateProcessorFactory factoryToTest =
+            new TextToVectorUpdateProcessorFactory();
+    
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
@@ -99,12 +116,17 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     assertEquals("undefined field: \"notExistentOutput\"", e.getMessage());
   }
 
+  /* Following test depends on a real solr schema and depends on BeforeClass-AfterClass methods */
   @Test
   public void init_notDenseVectorOutputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
+    NamedList<String> args = new NamedList<>();
     args.add("inputField", "_text_");
     args.add("outputField", "_text_");
     args.add("model", "model1");
 
+    TextToVectorUpdateProcessorFactory factoryToTest =
+            new TextToVectorUpdateProcessorFactory();
+    
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
@@ -113,12 +135,17 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     assertEquals("only DenseVectorField is compatible with Vector Query Parsers: _text_", e.getMessage());
   }
 
+  /* Following test depends on a real solr schema and depends on BeforeClass-AfterClass methods */
   @Test
   public void init_notExistentInputField_shouldThrowExceptionWithDetailedMessage() throws Exception {
+    NamedList<String> args = new NamedList<>();
     args.add("inputField", "notExistentInput");
     args.add("outputField", "vector");
     args.add("model", "model1");
 
+    TextToVectorUpdateProcessorFactory factoryToTest =
+            new TextToVectorUpdateProcessorFactory();
+    
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     SolrQueryRequestBase req = new SolrQueryRequestBase(solrClientTestRule.getCoreContainer().getCore("collection1"), (SolrParams) mmparams) {};
