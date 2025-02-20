@@ -64,9 +64,9 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
       waitForState(
           "Waiting for inactive shard to be deleted",
           collectionName,
-          clusterShape(0, 0),
           5,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          clusterShape(0, 0));
     } finally {
       removePlugin();
     }
@@ -89,16 +89,16 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
       waitForState(
           "Expected shard " + sliceName + " to be in state " + Slice.State.INACTIVE,
           collectionName,
-          (n, c) -> c.getSlice(sliceName).getState() == Slice.State.INACTIVE);
+          c -> c.getSlice(sliceName).getState() == Slice.State.INACTIVE);
 
       final long ttlStart = timeSource.getTimeNs();
 
       waitForState(
           "Waiting for InactiveShardRemover to delete inactive shard",
           collectionName,
-          clusterShape(0, 0),
           ttlSeconds + 5,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          clusterShape(0, 0));
 
       final long ttlEnd = timeSource.getTimeNs();
       final long ttlPeriodSeconds = TimeUnit.NANOSECONDS.toSeconds(ttlEnd - ttlStart);
@@ -216,7 +216,7 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
                 waitForState(
                     "Expected shard " + s + " to be in state " + Slice.State.INACTIVE,
                     collection.getName(),
-                    (n, c) -> c.getSlice(s.getName()).getState() == Slice.State.INACTIVE);
+                    c -> c.getSlice(s.getName()).getState() == Slice.State.INACTIVE);
               } catch (Exception e) {
                 throw new RuntimeException(e);
               }

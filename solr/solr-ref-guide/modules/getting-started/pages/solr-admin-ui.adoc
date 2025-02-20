@@ -166,7 +166,8 @@ Here are sections throughout the Guide describing each screen of the Admin UI:
 | xref:query-guide:query-screen.adoc[]: Form-based query builder.
 | xref:query-guide:stream-screen.adoc[]: Submit streaming expressions and see results and parsing explanations.
 | xref:query-guide:sql-screen.adoc[]: SQL query runner with tabular results.
-| xref:query-guide:schema-browser-screen.adoc[]: Field-level schema details.
+| xref:indexing-guide:schema-browser-screen.adoc[]: Field-level schema details.
+|
 |===
 // end::ui-collection-tools[]
 ****

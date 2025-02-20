@@ -34,7 +34,7 @@ public class SolrPing extends CollectionRequiringSolrRequest<SolrPingResponse> {
   private static final long serialVersionUID = 5828246236669090017L;
 
   /** Request parameters. */
-  private ModifiableSolrParams params;
+  private final ModifiableSolrParams params;
 
   /** Create a new SolrPing object. */
   public SolrPing() {

@@ -82,7 +82,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Expected replica " + replica.getName() + " on down node to be removed from cluster state",
         collectionName,
-        (n, c) -> {
+        c -> {
           Replica r = c.getReplica(replica.getName());
           return r == null || r.getState() != Replica.State.ACTIVE;
         });
@@ -95,9 +95,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Expected deleted replica " + replica.getName() + " to be removed from cluster state",
         collectionName,
-        (n, c) -> {
-          return c.getReplica(replica.getName()) == null;
-        });
+        c -> c.getReplica(replica.getName()) == null);
 
     cluster.startJettySolrRunner(jetty);
     log.info("restarted jetty");

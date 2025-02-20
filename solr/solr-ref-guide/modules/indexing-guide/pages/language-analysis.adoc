@@ -3223,14 +3223,15 @@ With class name (legacy)::
 
 === Spanish
 
-Solr includes two stemmers for Spanish: one in the `solr.SnowballPorterFilterFactory language="Spanish"`, and a lighter stemmer called `solr.SpanishLightStemFilterFactory`.
+Solr includes three stemmers for Spanish: the `solr.SnowballPorterFilterFactory language="Spanish"`, a lighter stemmer called `solr.SpanishLightStemFilterFactory` and a plural stemmer called `solr.SpanishPluralStemFilter` (https://mices.co/mices2021/slides/Xavier-Sanchez_Spanish-Stemmers-Solr.pdf[slides], https://medium.com/inside-wallapop/spanish-plural-stemmer-matching-plural-and-singular-forms-in-spanish-using-lucene-93e005e38373[article]) that implements the rules described in http://www.wikilengua.org/index.php/Plural_(formación) and can be useful in conjunction with synonyms as it produces meaningful tokens in the singular form (e.g. `amigo`, not `amig`).
+
 Lucene includes an example stopword list.
 
 *Factory class:* `solr.SpanishStemFilterFactory`
 
 *Arguments:* None
 
-*Example:*
+*Example 1:*
 
 [tabs#lang-spanish]
 ======
@@ -3267,6 +3268,42 @@ With class name (legacy)::
 
 *Out:* "tor", "tor", "tor"
 
+*Example 2:*
+
+[tabs#lang-spanish-plural]
+======
+With name::
++
+====
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="lowercase"/>
+  <filter name="spanishPluralStem"/>
+</analyzer>
+----
+====
+
+With class name (legacy)::
++
+====
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
+  <filter class="solr.SpanishPluralStemFilterFactory"/>
+</analyzer>
+----
+====
+======
+
+*In:* "ases esprais paces bits amigos cantar caries"
+
+*Tokenizer to Filter:* "ases", "esprais", "paces", "bits", "amigos", "cantar", "caries"
+
+*Out:* "as", "espray", "paz", "bit", "amigo", "cantar", "caries"
 
 === Swedish
 

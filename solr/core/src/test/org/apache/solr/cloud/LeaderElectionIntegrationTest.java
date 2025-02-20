@@ -84,7 +84,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
       waitForState(
           "Leader should not be " + jettyNodeName,
           collection,
-          (n, c) ->
+          c ->
               c.getLeader("shard1") != null
                   && !jettyNodeName.equals(c.getLeader("shard1").getNodeName()));
     }

@@ -36,7 +36,7 @@ Likewise, committing changes using `openSearcher=false` may result in changes co
 Support for backups in SolrCloud is provided with the xref:collection-management.adoc#backup[Collections API].
 This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
 
-NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes, or HDFS.
+NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes.
 
 Four different API commands are supported:
 
@@ -382,8 +382,8 @@ If the status is anything other than "success", an error message will explain wh
 == Backup/Restore Storage Repositories
 
 Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
-For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
-Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed. It is also possible to create a `DelegatingBackupRepository` that delegates to another `BackupRepository` and adds or modifies some behavior on top of it.
+For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, or in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
+Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed. It is also possible to create a `DelegatingBackupRepository` that delegates to another `BackupRepository` and adds or modifies some behavior on top of it.
 
 Users can define any number of repositories in their `solr.xml` file.
 The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
@@ -437,67 +437,6 @@ An example configuration using this property can be found below.
 <backup>
   <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSystemRepository">
     <str name="location">/solr/backup_data</str>
-  </repository>
-</backup>
-----
-
-
-=== HdfsBackupRepository
-
-Stores and retrieves backup files from HDFS directories.
-
-This is provided via the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
-HdfsBackupRepository accepts the following configuration options:
-
-`solr.hdfs.buffer.size`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `4096` kilobytes
-|===
-+
-The size, in bytes, of the buffer used to transfer data to and from HDFS.
-Better throughput is often attainable with a larger buffer, where memory allows.
-
-`solr.hdfs.home`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-A HDFS URI in the format `hdfs://<host>:<port>/<hdfsBaseFilePath>` that points Solr to the HDFS cluster to store (or retrieve) backup files on.
-
-`solr.hdfs.permissions.umask-mode`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-A permission umask used when creating files in HDFS.
-
-`location`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-A valid directory path on the HDFS cluster to use for backup storage and retrieval.
-Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands.
-
-An example configuration using these properties can be found below:
-
-[source,xml]
-----
-<backup>
-  <repository name="hdfs" class="org.apache.solr.hdfs.backup.repository.HdfsBackupRepository" default="false">
-    <str name="solr.hdfs.home">hdfs://some_hdfs_host:1234/solr/backup/data</str>
-    <int name="solr.hdfs.buffer.size">8192</int>
-    <str name="solr.hdfs.permissions.umask-mode">0022</str>
-    <str name="location">/default/hdfs/backup/location</str>
   </repository>
 </backup>
 ----
@@ -726,13 +665,13 @@ When using the Backup & Restore Collections API Calls, the **`location`** option
 All the above options will resolve to the same directory in your S3 Bucket: `dir/in/bucket`.
 
 Pre-Creation::
-The location must already exist within your S3 bucket before you can preform any backup operations with that location.
+The location must already exist within your S3 bucket before you can perform any backup operations with that location.
 +
 **Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
 
 Empty Location::
 If you do not want to use a sub-directory within your bucket to store your backup, you can use any of the following location options: `/`, `s3:/`, `s3://`.
-However the location option is mandatory and you will recieve an error when trying to perform backup operations without it.
+However the location option is mandatory and you will receive an error when trying to perform backup operations without it.
 ====
 
 An example configuration to enable S3 backups and restore can be seen below:
