@@ -50,6 +50,7 @@ import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
 public class SolrReturnFields extends ReturnFields {
   // Special Field Keys
   public static final String SCORE = "score";
+  public static final String MATCH_SCORE = "matchScore";
 
   private final List<String> globs = new ArrayList<>(1);
 
@@ -107,7 +108,7 @@ public class SolrReturnFields extends ReturnFields {
     if (fl == null) {
       parseFieldList((String[]) null, req);
     } else {
-      if (fl.trim().length() == 0) {
+      if (fl.trim().isEmpty()) {
         // legacy thing to support fl='  ' => fl=*,score!
         // maybe time to drop support for this?
         // See ConvertedLegacyTest
