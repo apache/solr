@@ -105,6 +105,8 @@ Deprecation Removals
 
 * SOLR-17540: Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. (Eric Pugh)
 
+* SOLR-17609: Removd the HDFS module and therefore support for storing indexes in HDFS.  Existing "blockcache" code preserved by migrating it to core o.a.s.blackcache package.
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -155,6 +157,8 @@ New Features
 
 * SOLR-17626: Add RawTFSimilarityFactory class. (Christine Poerschke)
 
+* SOLR-17656: New 'skipLeaderRecovery' replica property allows PULL replicas with existing indexes to immediately become ACTIVE (hossman)
+
 Improvements
 ---------------------
 * SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
@@ -164,6 +168,13 @@ Improvements
 * SOLR-16396: All v2 configset APIs have been moved to the slightly different path: `/api/configsets`, to better align with the design of
   other v2 APIs.  SolrJ now offers (experimental) SolrRequest implementations for all v2 configset APIs in
   `org.apache.solr.client.solrj.request.ConfigsetsApi`. (Jason Gerlowski)
+
+* SOLR-17351: Solr's filestore "get-file" API has been decomposed into several separate endpoints.  Traditional file-fetching is now available at
+  `GET /api/cluster/filestore/files/some/path.txt` and metadata fetching (and directory listing) is now available at
+  `GET /api/cluster/filestore/metadata/some/path.txt`. SolrJ now offers request and response bindings for these APIs in
+  `org.apache.solr.client.solrj.request.FileStoreApi`. The older form of this endpoint (`GET /api/node/files`) is deprecated and will be
+  removed. (Jason Gerlowski)
+
 
 Optimizations
 ---------------------
@@ -191,6 +202,10 @@ Bug Fixes
 * SOLR-17652: Fix a bug that could cause long leader elections to leave PULL replicas in DOWN state forever. (hossman)
 
 * SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
+
+* SOLR-17673: Disable multi-threaded search execution by default at the node-level.
+  Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
+  (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
 
 Dependency Upgrades
 ---------------------
@@ -220,6 +235,14 @@ Other Changes
 
 * SOLR-17648: multiThreaded=true: changed queue implementation from unlimited to 1000 max, after
   which the caller thread will execute.  (David Smiley)
+
+* SOLR-17630: Added a node-wide CloudSolrClient to ZkController, and accessible via SolrCloudManager too.
+  Uses Jetty HttpClient.  Deprecated CloudSolrClient.getSolrClientCache.  Redirected some callers.  (David Smiley)
+
+* SOLR-17671: Replication and backup have their DirectoryFactory.DirContext so the directory they use is unwrapped
+  when copying files. (Bruno Roustant, David Smiley)
+
+* SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
 ==================  9.8.0 ==================
 New Features

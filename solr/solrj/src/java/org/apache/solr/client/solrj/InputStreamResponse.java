@@ -70,12 +70,11 @@ public class InputStreamResponse extends SimpleSolrResponse {
   /**
    * Access the server response as an {@link InputStream}, regardless of the HTTP status code
    *
-   * <p>Caller is responsible for consuming and closing the stream, and releasing it from the
-   * tracking done by {@link ObjectReleaseTracker}. No validation is done on the HTTP status code.
+   * <p>Caller is responsible for consuming and closing the stream. No validation is done on the
+   * HTTP status code.
    */
   public InputStream getResponseStream() {
     final NamedList<Object> resp = getResponse();
-
     return (InputStream) resp.get(STREAM_KEY);
   }
 
@@ -124,7 +123,6 @@ public class InputStreamResponse extends SimpleSolrResponse {
       inputStream.transferTo(baos);
       return baos.toString(Charset.defaultCharset());
     } finally {
-      ObjectReleaseTracker.release(inputStream);
       IOUtils.closeQuietly(baos);
       IOUtils.closeQuietly(inputStream);
     }
