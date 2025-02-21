@@ -284,11 +284,13 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
                 update(params()).deleteByQuery(queryStr).process(COLLECTION_CLIENT);
               });
       assertEquals("Unexpected status code for DBQ with query " + queryStr, 400, e.code());
-      final var expectedStr = "Query [" + queryStr + "] is not supported in delete-by-query operations";
+      final var expectedStr =
+          "Query [" + queryStr + "] is not supported in delete-by-query operations";
       assertThat(e.getMessage(), containsString(expectedStr));
     }
 
-    final var acceptableJoin = "{!join method=dvWithScore score=None from=expected_shard_s to=expected_shard_s v=\"expected_shard_s:5\"}";
+    final var acceptableJoin =
+        "{!join method=dvWithScore score=None from=expected_shard_s to=expected_shard_s v=\"expected_shard_s:5\"}";
     final var response = update(params()).deleteByQuery(acceptableJoin).process(COLLECTION_CLIENT);
     assertEquals(0, response.getStatus());
   }
