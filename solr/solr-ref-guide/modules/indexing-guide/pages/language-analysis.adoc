@@ -3270,7 +3270,7 @@ With class name (legacy)::
 
 *Example 2:*
 
-[tabs#lang-spanish]
+[tabs#lang-spanish-plural]
 ======
 With name::
 +

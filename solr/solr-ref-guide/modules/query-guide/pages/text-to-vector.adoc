@@ -129,7 +129,7 @@ Many are shared but for the full set of parameters of the model you are interest
 Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support text vectorisation.
 The models currently supported are:
 
-[tabs#supported-models]
+[tabs#supported-models-hugging-face]
 ======
 Hugging Face::
 +

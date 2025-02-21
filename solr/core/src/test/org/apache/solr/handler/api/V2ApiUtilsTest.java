@@ -22,6 +22,7 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import jakarta.ws.rs.core.MediaType;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
 public class V2ApiUtilsTest extends SolrTestCaseJ4 {
@@ -44,9 +45,7 @@ public class V2ApiUtilsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testConvertsWtToMediaTypeString() {
-    assertEquals(
-        "someDefault",
-        V2ApiUtils.getMediaTypeFromWtParam(new ModifiableSolrParams(), "someDefault"));
+    assertEquals("someDefault", V2ApiUtils.getMediaTypeFromWtParam(SolrParams.of(), "someDefault"));
 
     var params = new ModifiableSolrParams();
     params.add("wt", "json");
