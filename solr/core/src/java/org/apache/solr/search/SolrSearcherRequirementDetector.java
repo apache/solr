@@ -33,6 +33,7 @@ import org.apache.lucene.search.QueryVisitor;
  * <p>Instances should not be reused for multiple query-tree inspections.
  *
  * @see SolrSearcherRequirer
+ * @lucene.experimental
  */
 public class SolrSearcherRequirementDetector extends QueryVisitor {
 

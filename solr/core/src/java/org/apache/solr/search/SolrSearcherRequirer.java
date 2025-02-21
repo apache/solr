@@ -21,5 +21,7 @@ import org.apache.lucene.search.IndexSearcher;
 /**
  * Marker interface indicating that the tagged class assumes access to {@link SolrIndexSearcher}
  * functionality and cannot be used by a vanilla Lucene {@link IndexSearcher}
+ *
+ * @lucene.experimental
  */
 public interface SolrSearcherRequirer {}
