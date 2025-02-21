@@ -160,7 +160,6 @@ public final class LogListener implements Closeable, AutoCloseable {
   }
 
   // TODO: more factories for other levels?
-  // TODO: no-arg factory variants that use "" -- simpler syntax for ROOT logger?
 
   private static LogListener create(final Level level, final String logger) {
     final String name = createName(level);
