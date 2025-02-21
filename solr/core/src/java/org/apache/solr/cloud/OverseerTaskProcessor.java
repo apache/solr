@@ -502,8 +502,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     } catch (InterruptedException e) {
       success = false;
       Thread.currentThread().interrupt();
-    } catch (AlreadyClosedException ignored) {
-      success = false;
     } finally {
       timerContext.stop();
       if (success) {
