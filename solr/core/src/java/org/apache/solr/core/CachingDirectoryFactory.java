@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link DirectoryFactory} impl base class for caching Directory instances per path. Most
  * DirectoryFactory implementations will want to extend this class and simply implement {@link
- * DirectoryFactory#create(String, LockFactory, DirContext)}.
+ * DirectoryFactory#create(String, LockFactory)}.
  *
  * <p>This is an expert class and these API's are subject to change.
  */
@@ -402,7 +402,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
       cacheValue = byPathCache.get(fullPath);
       if (cacheValue == null) {
-        directory = create(fullPath, createLockFactory(rawLockType), dirContext);
+        directory = create(fullPath, createLockFactory(rawLockType));
         assert ObjectReleaseTracker.track(directory);
         boolean success = false;
         try {
