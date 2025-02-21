@@ -497,7 +497,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   private void waitForJettyInit(JettySolrRunner replica1Jetty, String replica1JettyNodeName)
       throws InterruptedException {
     TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!replica1Jetty.isRunning()) {
+    while (!replica1Jetty.isRunning() || replica1Jetty.getCoreContainer() == null) {
       Thread.sleep(100);
       if (timeOut.hasTimedOut())
         fail("Wait for " + replica1JettyNodeName + " replica to init failed!");

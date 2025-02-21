@@ -95,7 +95,11 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     standardPlugins = Collections.unmodifiableMap(map);
   }
 
-  /** return a {@link QParser} */
+  /**
+   * Creates the {@link QParser}.
+   *
+   * @see QParser#QParser(String, SolrParams, SolrParams, SolrQueryRequest)
+   */
   public abstract QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
 

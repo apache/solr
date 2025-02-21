@@ -51,7 +51,6 @@ import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.api.V2HttpCall.CompositeApi;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -258,7 +257,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
   private static SolrQueryResponse v2ApiInvoke(
       ApiBag bag, String uri, String method, SolrParams params, InputStream payload) {
-    if (params == null) params = new ModifiableSolrParams();
     SolrQueryResponse rsp = new SolrQueryResponse();
     HashMap<String, String> templateVals = new HashMap<>();
     Api[] currentApi = new Api[1];
@@ -339,7 +337,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, new MapSolrParams(new HashMap<>())) {
+        new LocalSolrQueryRequest(null, SolrParams.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             return Collections.emptyList();

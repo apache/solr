@@ -91,9 +91,6 @@ public class V2ApiUtils {
   }
 
   public static String getMediaTypeFromWtParam(SolrParams params, String defaultMediaType) {
-    if (params == null) {
-      return defaultMediaType;
-    }
     final String wtParam = params.get(WT);
     if (StrUtils.isBlank(wtParam)) return defaultMediaType;
 
