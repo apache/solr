@@ -99,6 +99,8 @@ Other Changes
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
+* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
