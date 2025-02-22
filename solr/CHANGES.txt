@@ -25,6 +25,8 @@ Bug Fixes
   doing distributed search (sharded collections). This could likely occur for fielded parameters such as
   f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
 
+* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
+
 Dependency Upgrades
 ---------------------
 (No changes)
