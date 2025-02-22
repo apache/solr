@@ -209,8 +209,6 @@ Bug Fixes
   Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
   (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
 
-* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
-
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
@@ -247,6 +245,8 @@ Other Changes
   when copying files. (Bruno Roustant, David Smiley)
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
+
+* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
 
 ==================  9.8.0 ==================
 New Features
