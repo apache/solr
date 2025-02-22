@@ -27,6 +27,9 @@ Bug Fixes
 
 * SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
 
+* SOLR-17677: Before attempting a delete by query ("DBQ"), Solr now checks whether the provided query can be run using a Lucene IndexSearcher,
+  and aborts the operation with a '400' error if it cannot. (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 (No changes)
