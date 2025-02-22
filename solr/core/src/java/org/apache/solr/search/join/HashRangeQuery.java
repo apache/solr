@@ -38,8 +38,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrSearcherRequirer;
 
-public class HashRangeQuery extends Query {
+public class HashRangeQuery extends Query implements SolrSearcherRequirer {
 
   protected final String field;
   protected final int lower;
