@@ -278,8 +278,8 @@ apache-lucene-queryparser = { module = "org.apache.lucene:lucene-queryparser", v
 apache-lucene-spatialextras = { module = "org.apache.lucene:lucene-spatial-extras", version.ref = "apache-lucene" }
 apache-lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.ref = "apache-lucene" }
 apache-lucene-testframework = { module = "org.apache.lucene:lucene-test-framework", version.ref = "apache-lucene" }
-apache-opennlp-tools = { module = "org.apache.opennlp:opennlp-tools", version.ref = "apache-opennlp" }
 apache-opennlp-dl = { module = "org.apache.opennlp:opennlp-dl", version.ref = "apache-opennlp" }
+apache-opennlp-tools = { module = "org.apache.opennlp:opennlp-tools", version.ref = "apache-opennlp" }
 apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-poi" }
 apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
 apache-rat-rat = { module = "org.apache.rat:apache-rat", version.ref = "apache-rat" }
