@@ -48,7 +48,7 @@ asciidoc:
     dep-version-commons-codec: '1.15'
     dep-version-dropwizard: '4.2.12'
     dep-version-log4j: '2.19.0'
-    dep-version-opennlp: '1.9.4'
+    dep-version-opennlp: '2.3.2'
     dep-version-tika: '1.28.4'
     dep-version-zookeeper: '3.8.0'
     dep-version-lucene: '9.4.2'

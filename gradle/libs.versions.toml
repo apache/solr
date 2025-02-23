@@ -38,7 +38,7 @@ apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.7.1"
 apache-log4j = "2.21.0"
 apache-lucene = "9.12.1"
-apache-opennlp = "1.9.4"
+apache-opennlp = "2.3.2"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
 apache-tika = "1.28.5"
@@ -279,6 +279,7 @@ apache-lucene-spatialextras = { module = "org.apache.lucene:lucene-spatial-extra
 apache-lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.ref = "apache-lucene" }
 apache-lucene-testframework = { module = "org.apache.lucene:lucene-test-framework", version.ref = "apache-lucene" }
 apache-opennlp-tools = { module = "org.apache.opennlp:opennlp-tools", version.ref = "apache-opennlp" }
+apache-opennlp-dl = { module = "org.apache.opennlp:opennlp-dl", version.ref = "apache-opennlp" }
 apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-poi" }
 apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
 apache-rat-rat = { module = "org.apache.rat:apache-rat", version.ref = "apache-rat" }
