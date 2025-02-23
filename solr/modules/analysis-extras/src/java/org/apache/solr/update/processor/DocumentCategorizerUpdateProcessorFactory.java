@@ -45,7 +45,8 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStore;
+import org.apache.solr.filestore.FileStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -429,8 +430,9 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
 
       {
         // Initialize the categorizer.
+        FileStore fs = req.getCoreContainer().getFileStore();
 
-        var path = solrHome.resolve(FileStoreAPI.FILESTORE_DIRECTORY);
+        var path = solrHome.resolve(ClusterFileStore.FILESTORE_DIRECTORY);
         File modelFile = new File(model);
         File vocabFile = new File(vocab);
 
