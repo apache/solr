@@ -89,7 +89,7 @@ public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAn
   // ===== Helper Methods =====
 
   /**
-   * Convers the given list of string to a comma-separated string.
+   * Converts the given list of strings to a comma-separated string.
    *
    * @param list The list of string.
    * @return The comma-separated string.
@@ -152,7 +152,7 @@ public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAn
 
   /**
    * Sets whether index time tokens that match query time tokens should be marked as a "match". By
-   * default this is set to {@code false}. Obviously, this flag is ignored if when the query is set
+   * default, this is set to {@code false}. Obviously, this flag is ignored if when the query is set
    * to {@code null}.
    *
    * @param showMatch Sets whether index time tokens that match query time tokens should be marked
@@ -236,7 +236,7 @@ public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAn
 
   /**
    * Returns a list of field types the analysis should be performed on. May return {@code null}
-   * indicating that no analysis will be peformed on field types.
+   * indicating that no analysis will be performed on field types.
    *
    * @return The field types the analysis should be performed on.
    */

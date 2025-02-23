@@ -405,8 +405,7 @@ public class StatsField {
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
       for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
+        if (!(o instanceof QParser qp)) continue;
         try {
           excludeSet.put(qp.getQuery(), Boolean.TRUE);
         } catch (SyntaxError e) {

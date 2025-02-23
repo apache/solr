@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="test" version="1.6">
+<schema name="test" version="1.7">
 
   <!-- field type definitions... note that the "name" attribute is
        just a label to be used by field definitions.  The "class"
@@ -40,17 +40,17 @@
   -->
 
 
-  <fieldType name="int" docValues="true" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true"
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="float" docValues="true" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true"
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="long" docValues="true" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
-  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
   <!-- numeric field types that manipulate the value into
      a string value that isn't human readable in it's internal form,
@@ -114,7 +114,7 @@
 
 
   <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-  <fieldtype name="string" class="solr.StrField" sortMissingLast="true" docValues="true"/>
+  <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.

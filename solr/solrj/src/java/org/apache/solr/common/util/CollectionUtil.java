@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Methods for creating collections with exact sizes, and other convenience methods
@@ -68,5 +69,13 @@ public final class CollectionUtil {
 
   public static boolean isNotEmpty(Collection<?> collection) {
     return !isEmpty(collection);
+  }
+
+  public static boolean isEmpty(Map<?, ?> map) {
+    return map == null || map.isEmpty();
+  }
+
+  public static boolean isNotEmpty(Map<?, ?> map) {
+    return !isEmpty(map);
   }
 }

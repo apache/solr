@@ -46,7 +46,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   }
 
   public void testResolving() throws Exception {
-    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
+    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     final ResourceLoader loader =
         new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
@@ -131,7 +131,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   public void testUnsafeResolving() throws Exception {
     System.setProperty(SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM, "true");
 
-    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
+    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     final ResourceLoader loader =
         new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);

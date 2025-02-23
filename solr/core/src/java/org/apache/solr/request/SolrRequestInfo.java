@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.http.HttpServletRequest;
@@ -66,6 +67,14 @@ public class SolrRequestInfo {
     return stack.peek();
   }
 
+  public static Optional<SolrRequestInfo> getReqInfo() {
+    return Optional.ofNullable(getRequestInfo());
+  }
+
+  public static Optional<SolrQueryRequest> getRequest() {
+    return getReqInfo().map(i -> i.req);
+  }
+
   /**
    * Adds the SolrRequestInfo onto a stack held in a {@link ThreadLocal}. Remember to call {@link
    * #clearRequestInfo()}!
@@ -79,10 +88,14 @@ public class SolrRequestInfo {
       log.error("SolrRequestInfo Stack is full");
     } else if (!stack.isEmpty() && info.req != null) {
       // New SRI instances inherit limits from prior SRI regardless of parameters.
-      // This ensures limits cannot be changed or removed for a given thread once set.
-      // if req is null limits will be an empty instance with no limits anyway.
+      // This ensures these two properties cannot be changed or removed for a given thread once set.
+      // if req is null then limits will be an empty instance with no limits anyway.
+
+      // protected by !stack.isEmpty()
+      // noinspection DataFlowIssue
       info.req.getContext().put(LIMITS_KEY, stack.peek().getLimits());
     }
+    // this creates both new QueryLimits and new ThreadCpuTime if not already set
     info.initQueryLimits();
     log.trace("{} {}", info, "setRequestInfo()");
     assert !info.isClosed() : "SRI is already closed (odd).";
@@ -236,12 +249,16 @@ public class SolrRequestInfo {
    * empty) {@link QueryLimits} object if it has not been created, and will then return the same
    * object on every subsequent invocation.
    *
-   * @return The {@code QueryLimits} object for the current requet.
+   * @return The {@code QueryLimits} object for the current request.
    */
   public QueryLimits getLimits() {
-    return req == null
-        ? QueryLimits.NONE
-        : (QueryLimits) req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req));
+    // make sure the ThreadCpuTime is always initialized
+    return req == null || rsp == null ? QueryLimits.NONE : getQueryLimits(req, rsp);
+  }
+
+  public static QueryLimits getQueryLimits(SolrQueryRequest request, SolrQueryResponse response) {
+    return (QueryLimits)
+        request.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(request, response));
   }
 
   public SolrDispatchFilter.Action getAction() {

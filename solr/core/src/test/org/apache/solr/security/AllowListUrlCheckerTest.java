@@ -24,12 +24,14 @@ import static org.hamcrest.CoreMatchers.is;
 import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.hamcrest.MatcherAssert;
+import org.apache.solr.common.cloud.ClusterState;
 import org.junit.Test;
 
 /** Tests {@link AllowListUrlChecker}. */
@@ -41,14 +43,14 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class, () -> checker.checkAllowList(urls("abc-1.com:8983/solr")));
-    MatcherAssert.assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
 
     AllowListUrlChecker.ALLOW_ALL.checkAllowList(urls("abc-1.com:8983/solr"));
   }
 
   @Test
   public void testNoInput() throws Exception {
-    MatcherAssert.assertThat(
+    assertThat(
         new AllowListUrlChecker(Collections.emptyList()).getHostAllowList().isEmpty(), is(true));
   }
 
@@ -86,8 +88,8 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class, () -> checker.checkAllowList(urls("http://abc-4.com:8983/solr")));
-    MatcherAssert.assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-    MatcherAssert.assertThat(e.getMessage(), containsString("http://abc-4.com:8983/solr"));
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    assertThat(e.getMessage(), containsString("http://abc-4.com:8983/solr"));
   }
 
   @Test
@@ -99,8 +101,8 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> checker.checkAllowList(urls("abc-1.com:8983/solr", "abc-4.com:8983/solr")));
-    MatcherAssert.assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-    MatcherAssert.assertThat(e.getMessage(), containsString("abc-4.com:8983/solr"));
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    assertThat(e.getMessage(), containsString("abc-4.com:8983/solr"));
   }
 
   @Test
@@ -118,7 +120,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
         expectThrows(
             MalformedURLException.class,
             () -> new AllowListUrlChecker(urls("http/abc-1.com:8983")));
-    MatcherAssert.assertThat(e.getMessage(), containsString("http/abc-1.com:8983"));
+    assertThat(e.getMessage(), containsString("http/abc-1.com:8983"));
   }
 
   @Test
@@ -130,7 +132,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
         expectThrows(
             MalformedURLException.class,
             () -> checker.checkAllowList(urls("http://abc-1.com:8983", "abc-2")));
-    MatcherAssert.assertThat(e.getMessage(), containsString("abc-2"));
+    assertThat(e.getMessage(), containsString("abc-2"));
   }
 
   @Test
@@ -144,20 +146,19 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingUnsetEmpty() throws Exception {
-    MatcherAssert.assertThat(
-        AllowListUrlChecker.parseHostPorts(Collections.emptyList()).isEmpty(), is(true));
+    assertThat(AllowListUrlChecker.parseHostPorts(Collections.emptyList()).isEmpty(), is(true));
   }
 
   @Test
   public void testHostParsingSingle() throws Exception {
-    MatcherAssert.assertThat(
+    assertThat(
         AllowListUrlChecker.parseHostPorts(urls("http://abc-1.com:8983/solr/core1")),
         equalTo(hosts("abc-1.com:8983")));
   }
 
   @Test
   public void testHostParsingMulti() throws Exception {
-    MatcherAssert.assertThat(
+    assertThat(
         AllowListUrlChecker.parseHostPorts(
             urls("http://abc-1.com:8983/solr/core1", "http://abc-1.com:8984/solr")),
         equalTo(hosts("abc-1.com:8983", "abc-1.com:8984")));
@@ -165,7 +166,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingIpv4() throws Exception {
-    MatcherAssert.assertThat(
+    assertThat(
         AllowListUrlChecker.parseHostPorts(
             urls("http://10.0.0.1:8983/solr/core1", "http://127.0.0.1:8984/solr")),
         equalTo(hosts("10.0.0.1:8983", "127.0.0.1:8984")));
@@ -173,7 +174,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingIpv6() throws Exception {
-    MatcherAssert.assertThat(
+    assertThat(
         AllowListUrlChecker.parseHostPorts(
             urls(
                 "http://[2001:abc:abc:0:0:123:456:1234]:8983/solr/core1",
@@ -183,19 +184,64 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingHttps() throws Exception {
-    MatcherAssert.assertThat(
+    assertThat(
         AllowListUrlChecker.parseHostPorts(urls("https://abc-1.com:8983/solr/core1")),
         equalTo(hosts("abc-1.com:8983")));
   }
 
   @Test
   public void testHostParsingNoProtocol() throws Exception {
-    MatcherAssert.assertThat(
+    assertThat(
         AllowListUrlChecker.parseHostPorts(urls("abc-1.com:8983/solr")),
         equalTo(AllowListUrlChecker.parseHostPorts(urls("http://abc-1.com:8983/solr"))));
-    MatcherAssert.assertThat(
+    assertThat(
         AllowListUrlChecker.parseHostPorts(urls("abc-1.com:8983/solr")),
         equalTo(AllowListUrlChecker.parseHostPorts(urls("https://abc-1.com:8983/solr"))));
+  }
+
+  @Test
+  public void testLiveNodesToHostUrlCache() throws Exception {
+    // Given some live nodes defined in the cluster state.
+    Set<String> liveNodes = Set.of("1.2.3.4:8983_solr", "1.2.3.4:9000_", "1.2.3.4:9001_solr-2");
+    ClusterState clusterState1 = new ClusterState(liveNodes, new HashMap<>());
+
+    // When we call the AllowListUrlChecker.checkAllowList method on both valid and invalid urls.
+    AtomicInteger callCount = new AtomicInteger();
+    AllowListUrlChecker checker =
+        new AllowListUrlChecker(List.of()) {
+          @Override
+          Set<String> buildLiveHostUrls(Set<String> liveNodes) {
+            callCount.incrementAndGet();
+            return super.buildLiveHostUrls(liveNodes);
+          }
+        };
+    for (int i = 0; i < 3; i++) {
+      checker.checkAllowList(
+          List.of("1.2.3.4:8983", "1.2.3.4:9000", "1.2.3.4:9001"), clusterState1);
+      SolrException exception =
+          expectThrows(
+              SolrException.class,
+              () -> checker.checkAllowList(List.of("1.1.3.4:8983"), clusterState1));
+      assertThat(exception.code(), equalTo(SolrException.ErrorCode.FORBIDDEN.code));
+    }
+    // Then we verify that the AllowListUrlChecker caches the live host urls and only builds them
+    // once.
+    assertThat(callCount.get(), equalTo(1));
+
+    // And when the ClusterState live nodes change.
+    liveNodes = Set.of("2.3.4.5:8983_solr", "2.3.4.5:9000_", "2.3.4.5:9001_solr-2");
+    ClusterState clusterState2 = new ClusterState(liveNodes, new HashMap<>());
+    for (int i = 0; i < 3; i++) {
+      checker.checkAllowList(
+          List.of("2.3.4.5:8983", "2.3.4.5:9000", "2.3.4.5:9001"), clusterState2);
+      SolrException exception =
+          expectThrows(
+              SolrException.class,
+              () -> checker.checkAllowList(List.of("1.1.3.4:8983"), clusterState2));
+      assertThat(exception.code(), equalTo(SolrException.ErrorCode.FORBIDDEN.code));
+    }
+    // Then the AllowListUrlChecker rebuilds the cache of live host urls.
+    assertThat(callCount.get(), equalTo(2));
   }
 
   private static List<String> urls(String... urls) {

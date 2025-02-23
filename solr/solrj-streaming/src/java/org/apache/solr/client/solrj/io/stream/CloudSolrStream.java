@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -106,14 +107,14 @@ public class CloudSolrStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
     // need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(
@@ -245,7 +246,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
 
-    // If the comparator is null then it was not explicitly set so we will create one using the sort
+    // If the comparator is null then it was not explicitly set, so we will create one using the
+    // sort
     // parameter of the query. While doing this we will also take into account any aliases such that
     // if we are sorting on fieldA but fieldA is aliased to alias.fieldA then the comparator will be
     // against alias.fieldA.
@@ -381,15 +383,20 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       final Stream<SolrStream> streamOfSolrStream;
       if (streamContext != null && streamContext.get("shards") != null) {
         // stream of shard url with core
-        streamOfSolrStream =
-            getShards(this.zkHost, this.collection, this.streamContext, mParams).stream()
-                .map(s -> new SolrStream(s, mParams));
+        final List<String> shards =
+            getShards(this.zkHost, this.collection, this.streamContext, mParams);
+        if (shards.isEmpty())
+          throw new IOException("No shards available from ZooKeeper: " + this.zkHost);
+        streamOfSolrStream = shards.stream().map(s -> new SolrStream(s, mParams));
       } else {
         // stream of replicas to reuse the same SolrHttpClient per baseUrl
         // avoids re-parsing data we already have in the replicas
+        final List<Replica> replicas =
+            getReplicas(this.zkHost, this.collection, this.streamContext, mParams);
+        if (replicas.isEmpty())
+          throw new IOException("No replicas available from ZooKeeper: " + this.zkHost);
         streamOfSolrStream =
-            getReplicas(this.zkHost, this.collection, this.streamContext, mParams).stream()
-                .map(r -> new SolrStream(r.getBaseUrl(), mParams, r.getCoreName()));
+            replicas.stream().map(r -> new SolrStream(r.getBaseUrl(), mParams, r.getCoreName()));
       }
 
       streamOfSolrStream.forEach(

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.SolrCloudTestCase.configurePrsDefault;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +39,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.BackupStatusChecker;
 import org.apache.solr.handler.ReplicationHandler;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -64,6 +67,11 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
   protected boolean useTlogReplicas() {
     return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug
     // and it's TestInjection use
+  }
+
+  @BeforeClass
+  public static void _setPrsDefault() {
+    configurePrsDefault();
   }
 
   @Test
@@ -141,6 +149,14 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
       // expire a session...
       CloudJettyRunner cloudJetty = shardToJetty.get(SHARD1).get(0);
       chaosMonkey.expireSession(cloudJetty.jetty);
+      // Wait until the jetty is reconnected, otherwise the following index command could fail
+      cloudJetty
+          .jetty
+          .getCoreContainer()
+          .getZkController()
+          .getZkClient()
+          .getCuratorFramework()
+          .blockUntilConnected(50, TimeUnit.MILLISECONDS);
 
       indexr("id", docId + 1, t1, "slip this doc in");
 
@@ -188,23 +204,11 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     SolrQuery query = new SolrQuery("*:*");
 
-    String collectionUrl = baseUrl + "/onenodecollection" + "core";
-    try (SolrClient client = getHttpSolrClient(baseUrl, "onenodecollectioncore")) {
-
-      // it might take a moment for the proxy node to see us in their cloud state
-      waitForNon403or404or503(client, collectionUrl);
-
+    try (SolrClient client = getHttpSolrClient(baseUrl, "onenodecollection")) {
       // add a doc
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", docs);
-      client.add(doc);
+      client.add(sdoc("id", docs));
       client.commit();
 
-      QueryResponse results = client.query(query);
-      assertEquals(docs - 1, results.getResults().getNumFound());
-    }
-
-    try (SolrClient client = getHttpSolrClient(baseUrl, "onenodecollection")) {
       QueryResponse results = client.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 

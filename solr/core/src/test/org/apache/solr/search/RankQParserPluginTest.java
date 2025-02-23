@@ -33,7 +33,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.RankField;
 import org.apache.solr.search.RankQParserPlugin.RankQParser;
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 public class RankQParserPluginTest extends SolrTestCaseJ4 {
@@ -58,7 +57,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
 
   public void testCreateParser() throws IOException {
     try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
-      QParser parser = rankQPPlugin.createParser("", new ModifiableSolrParams(), null, req());
+      QParser parser = rankQPPlugin.createParser("", SolrParams.of(), SolrParams.of(), req());
       assertNotNull(parser);
       assertTrue(parser instanceof RankQParser);
     }
@@ -313,7 +312,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
     QParser parser = getRankQParser(localParams, req());
     Query q = parser.parse();
     assertNotNull(q);
-    MatcherAssert.assertThat(q.toString(), CoreMatchers.equalTo(expectedToString));
+    assertThat(q.toString(), CoreMatchers.equalTo(expectedToString));
   }
 
   private String expectedFeatureQueryToString(String fieldName, String function, float boost) {
@@ -346,13 +345,13 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   private void assertSyntaxError(
       String assertionMsg, String expectedExceptionMsg, ThrowingRunnable runnable) {
     SyntaxError se = expectThrows(SyntaxError.class, assertionMsg, runnable);
-    MatcherAssert.assertThat(se.getMessage(), CoreMatchers.containsString(expectedExceptionMsg));
+    assertThat(se.getMessage(), CoreMatchers.containsString(expectedExceptionMsg));
   }
 
   private RankQParser getRankQParser(SolrParams localParams, SolrQueryRequest req)
       throws IOException {
     try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
-      return (RankQParser) rankQPPlugin.createParser("", localParams, null, req);
+      return (RankQParser) rankQPPlugin.createParser("", localParams, req.getParams(), req);
     }
   }
 }

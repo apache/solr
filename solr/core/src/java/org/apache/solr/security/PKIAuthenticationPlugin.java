@@ -17,6 +17,7 @@
 package org.apache.solr.security;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
@@ -41,16 +42,16 @@ import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponse;
 import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
@@ -141,19 +142,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     // Getting the received time must be the first thing we do, processing the request can take time
     long receivedTime = System.currentTimeMillis();
 
-    String requestURI = request.getRequestURI();
-    if (requestURI.endsWith(PublicKeyHandler.PATH)) {
-      assert false : "Should already be handled by SolrDispatchFilter.authenticateRequest";
-
-      numPassThrough.inc();
-      filterChain.doFilter(request, response);
-      return true;
-    }
-
     PKIHeaderData headerData = null;
     String headerV2 = request.getHeader(HEADER_V2);
     String headerV1 = request.getHeader(HEADER);
-    if (headerV2 != null) {
+    if (headerV1 == null && headerV2 == null) {
+      return sendError(response, true, "No PKI auth header was provided");
+    } else if (headerV2 != null) {
       // Try V2 first
       int nodeNameEnd = headerV2.indexOf(' ');
       if (nodeNameEnd <= 0) {
@@ -172,7 +166,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
 
     if (headerData == null) {
-      return sendError(response, true, "Could not load principal from SolrAuthV2 header.");
+      return sendError(response, true, "Could not validate PKI header.");
     }
     long elapsed = receivedTime - headerData.timestamp;
     if (elapsed > MAX_VALIDITY) {
@@ -218,13 +212,19 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
   }
 
-  private PKIHeaderData decipherHeaderV2(String header, String nodeName) {
+  private PublicKey getOrFetchPublicKey(String nodeName) {
     PublicKey key = keyCache.get(nodeName);
     if (key == null) {
       log.debug("No key available for node: {} fetching now ", nodeName);
-      key = getRemotePublicKey(nodeName);
+      key = fetchPublicKeyFromRemote(nodeName);
       log.debug("public key obtained {} ", key);
     }
+
+    return key;
+  }
+
+  private PKIHeaderData decipherHeaderV2(String header, String nodeName) {
+    PublicKey key = getOrFetchPublicKey(nodeName);
 
     int sigStart = header.lastIndexOf(' ');
 
@@ -233,7 +233,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     PKIHeaderData rv = validateSignature(data, sig, key, false);
     if (rv == null) {
       log.warn("Failed to verify signature, trying after refreshing the key ");
-      key = getRemotePublicKey(nodeName);
+      key = fetchPublicKeyFromRemote(nodeName);
       rv = validateSignature(data, sig, key, true);
     }
 
@@ -241,6 +241,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   private PKIHeaderData validateSignature(String data, byte[] sig, PublicKey key, boolean isRetry) {
+    if (key == null) {
+      log.warn("Key is null when attempting to validate signature; skipping...");
+      return null;
+    }
+
     try {
       if (CryptoKeys.verifySha256(data.getBytes(UTF_8), sig, key)) {
         int timestampStart = data.lastIndexOf(' ');
@@ -259,27 +264,23 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
         return null;
       }
     } catch (InvalidKeyException | SignatureException e) {
+      final String excMessage = e.getMessage();
       if (isRetry) {
-        log.error("Signature validation on retry failed, likely key error");
+        log.error("Signature validation on retry failed, likely key error: {}", excMessage);
       } else {
-        log.info("Signature validation failed first attempt, likely key error");
+        log.info("Signature validation failed first attempt, likely key error: {}", excMessage);
       }
       return null;
     }
   }
 
   private PKIHeaderData decipherHeader(String nodeName, String cipherBase64) {
-    PublicKey key = keyCache.get(nodeName);
-    if (key == null) {
-      log.debug("No key available for node: {} fetching now ", nodeName);
-      key = getRemotePublicKey(nodeName);
-      log.debug("public key obtained {} ", key);
-    }
+    PublicKey key = getOrFetchPublicKey(nodeName);
 
     PKIHeaderData header = parseCipher(cipherBase64, key, false);
     if (header == null) {
       log.warn("Failed to decrypt header, trying after refreshing the key ");
-      key = getRemotePublicKey(nodeName);
+      key = fetchPublicKeyFromRemote(nodeName);
       return parseCipher(cipherBase64, key, true);
     } else {
       return header;
@@ -320,6 +321,15 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
   }
 
+  private boolean isInLiveNodes(String nodeName) {
+    return cores
+        .getZkController()
+        .getZkStateReader()
+        .getClusterState()
+        .getLiveNodes()
+        .contains(nodeName);
+  }
+
   /**
    * Fetch the public key for a remote Solr node and store it in our key cache, replacing any
    * existing entries.
@@ -327,33 +337,33 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
    * @param nodename the node to fetch a key from
    * @return the public key
    */
-  PublicKey getRemotePublicKey(String nodename) {
-    if (!cores
-        .getZkController()
-        .getZkStateReader()
-        .getClusterState()
-        .getLiveNodes()
-        .contains(nodename)) return null;
+  PublicKey fetchPublicKeyFromRemote(String nodename) {
+    if (!isInLiveNodes(nodename)) {
+      log.warn(
+          "Unable to fetch public key for {} as it does not appear to be a Solr 'live node'",
+          nodename);
+      return null;
+    }
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     HttpEntity entity = null;
     try {
-      String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
-      log.debug("Fetching fresh public key from: {}", uri);
-      HttpResponse rsp =
-          cores
-              .getUpdateShardHandler()
-              .getDefaultHttpClient()
-              .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
-      entity = rsp.getEntity();
-      byte[] bytes = EntityUtils.toByteArray(entity);
-      Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(bytes);
-      String key = (String) m.get("key");
+      final var solrParams = new ModifiableSolrParams();
+      solrParams.add("wt", "json");
+      solrParams.add("omitHeader", "true");
+
+      final var request = new GenericSolrRequest(GET, PublicKeyHandler.PATH, solrParams);
+      log.debug("Fetching fresh public key from: {}", url);
+      var solrClient = cores.getDefaultHttpSolrClient();
+      NamedList<Object> resp = solrClient.requestWithBaseUrl(url, request::process).getResponse();
+
+      String key = (String) resp.get("key");
       if (key == null) {
         log.error("No key available from {}{}", url, PublicKeyHandler.PATH);
         return null;
       } else {
         log.info("New key obtained from node={}, key={}", nodename, key);
       }
+
       PublicKey pubKey = CryptoKeys.deserializeX509PublicKey(key);
       keyCache.put(nodename, pubKey);
       return pubKey;

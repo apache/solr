@@ -253,7 +253,7 @@ May be specified as a single value.
 
 `inc`::
 Increments or decrements a numeric field's value by a specific amount, specified as a single integer or float.
-Postive amounts increment the field's value, and negative decrement.
+Positive amounts increment the field's value, and negative decrement.
 
 [TIP]
 ====
@@ -271,6 +271,14 @@ If the price and popularity fields are defined in the schema as:
 `<field name="price" type="float" indexed="false" stored="false" docValues="true"/>`
 
 `<field name="popularity" type="float" indexed="false" stored="false" docValues="true"/>`
+
+[TIP]
+====
+.Doc Values Enabling
+
+
+`docValues="true"` is the default for schemas with version >= `1.7`, so it can be omitted.
+====
 
 If the following document exists in our collection:
 

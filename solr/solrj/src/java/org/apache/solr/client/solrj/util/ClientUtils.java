@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.util;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -44,6 +46,8 @@ public class ClientUtils {
   public static final String TEXT_XML = "application/xml; charset=UTF-8";
   public static final String TEXT_JSON = "application/json; charset=UTF-8";
 
+  public static final String DEFAULT_PATH = "/select";
+
   /** Take a string and make it an iterable ContentStream */
   public static Collection<ContentStream> toContentStreams(
       final String str, final String contentType) {
@@ -54,6 +58,50 @@ public class ClientUtils {
     ccc.setContentType(contentType);
     streams.add(ccc);
     return streams;
+  }
+
+  /**
+   * Create the full URL for a SolrRequest (excepting query parameters) as a String
+   *
+   * @param solrRequest the {@link SolrRequest} to build the URL for
+   * @param serverRootUrl the root URL of the Solr server being targeted.
+   * @param collection the collection to send the request to. May be null if no collection is
+   *     needed.
+   * @throws MalformedURLException if {@code serverRootUrl} contains a malformed URL string
+   */
+  public static String buildRequestUrl(
+      SolrRequest<?> solrRequest, String serverRootUrl, String collection)
+      throws MalformedURLException {
+
+    String basePath = serverRootUrl;
+    if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
+      basePath = addNormalV2ApiRoot(basePath);
+    }
+
+    if (solrRequest.requiresCollection() && collection != null) basePath += "/" + collection;
+
+    String path = solrRequest.getPath();
+    if (path == null || !path.startsWith("/")) {
+      path = DEFAULT_PATH;
+    }
+
+    return basePath + path;
+  }
+
+  private static String addNormalV2ApiRoot(String basePath) throws MalformedURLException {
+    final var oldURI = URI.create(basePath);
+    final var revisedPath = buildReplacementV2Path(oldURI.getPath());
+    return oldURI.resolve(revisedPath).toString();
+  }
+
+  private static String buildReplacementV2Path(String existingPath) {
+    if (existingPath.contains("/solr")) {
+      return existingPath.replaceFirst("/solr", "/api");
+    } else if (existingPath.endsWith("/api")) {
+      return existingPath;
+    } else {
+      return existingPath + "/api";
+    }
   }
 
   // ------------------------------------------------------------------------
@@ -72,12 +120,11 @@ public class ClientUtils {
         if (v instanceof SolrInputDocument) {
           writeVal(writer, name, v, null);
         } else if (v instanceof Map) {
-          // currently only supports a single value
+          // currently, only supports a single value
           for (Entry<Object, Object> entry : ((Map<Object, Object>) v).entrySet()) {
             update = entry.getKey().toString();
             v = entry.getValue();
-            if (v instanceof Collection) {
-              Collection<?> values = (Collection<?>) v;
+            if (v instanceof Collection<?> values) {
               for (Object value : values) {
                 writeVal(writer, name, value, update);
               }
@@ -104,11 +151,9 @@ public class ClientUtils {
       throws IOException {
     if (v instanceof Date) {
       v = ((Date) v).toInstant().toString();
-    } else if (v instanceof byte[]) {
-      byte[] bytes = (byte[]) v;
+    } else if (v instanceof byte[] bytes) {
       v = Base64.getEncoder().encodeToString(bytes);
-    } else if (v instanceof ByteBuffer) {
-      ByteBuffer bytes = (ByteBuffer) v;
+    } else if (v instanceof ByteBuffer bytes) {
       v =
           new String(
               Base64.getEncoder()
@@ -122,8 +167,7 @@ public class ClientUtils {
     }
 
     XML.Writable valWriter = null;
-    if (v instanceof SolrInputDocument) {
-      final SolrInputDocument solrDoc = (SolrInputDocument) v;
+    if (v instanceof SolrInputDocument solrDoc) {
       valWriter = (writer1) -> writeXML(solrDoc, writer1);
     } else if (v != null) {
       final Object val = v;
@@ -159,7 +203,7 @@ public class ClientUtils {
    * See: <a href="https://www.google.com/?gws_rd=ssl#q=lucene+query+parser+syntax">Lucene query
    * parser syntax</a> for more information on Escaping Special Characters
    */
-  // NOTE: its broken to link to any lucene-queryparser.jar docs, not in classpath!!!!!
+  // NOTE: It is a broken link to any lucene-queryparser.jar docs, not in classpath!!!!!
   public static String escapeQueryChars(String s) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < s.length(); i++) {
@@ -194,14 +238,16 @@ public class ClientUtils {
   }
 
   /**
-   * Returns the value encoded properly so it can be appended after a
+   * Returns the (literal) value encoded properly, so it can be appended after a <code>name=</code>
+   * local-param key.
    *
-   * <pre>name=</pre>
-   *
-   * local-param.
+   * <p>NOTE: This method assumes <code>$</code> is a literal character that must be quoted. (It
+   * does not assume strings starting <code>$</code> should be treated as param references)
    */
   public static String encodeLocalParamVal(String val) {
     int len = val.length();
+    if (0 == len) return "''"; // quoted empty string
+
     int i = 0;
     if (len > 0 && val.charAt(0) != '$') {
       for (; i < len; i++) {
@@ -243,7 +289,7 @@ public class ClientUtils {
   }
 
   /**
-   * Determines whether any SolrClient "default" collection should applied to the specified request
+   * Determines whether any SolrClient "default" collection should apply to the specified request
    *
    * @param providedCollection a collection/core explicitly provided to the SolrClient (typically
    *     through {@link org.apache.solr.client.solrj.SolrClient#request(SolrRequest, String)}

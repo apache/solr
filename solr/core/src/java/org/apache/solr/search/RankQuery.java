@@ -29,7 +29,7 @@ import org.apache.solr.handler.component.MergeStrategy;
  */
 public abstract class RankQuery extends ExtendedQueryBase {
 
-  public abstract TopDocsCollector<ScoreDoc> getTopDocsCollector(
+  public abstract TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
       int len, QueryCommand cmd, IndexSearcher searcher) throws IOException;
 
   public abstract MergeStrategy getMergeStrategy();

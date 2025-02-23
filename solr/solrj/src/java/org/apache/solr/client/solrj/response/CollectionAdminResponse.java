@@ -37,7 +37,7 @@ public class CollectionAdminResponse extends SolrResponseBase {
     return (String) getResponse().get("warning");
   }
 
-  // this messages are typically from individual nodes, since
+  // these messages are typically from individual nodes, since
   // all the failures at the router are propagated as exceptions
   @SuppressWarnings("unchecked")
   public NamedList<String> getErrorMessages() {

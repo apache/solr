@@ -44,7 +44,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
@@ -63,10 +62,10 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     req.setConfigSet("configset-2");
 
     CoreAdminResponse response = req.process(client);
-    MatcherAssert.assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
+    assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
 
     try (SolrCore core = cores.getCore("corewithconfigset")) {
-      MatcherAssert.assertThat(core, is(notNullValue()));
+      assertThat(core, is(notNullValue()));
     }
   }
 
@@ -96,8 +95,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       req.setIsTransient(true);
       req.process(client);
 
-      // Show that the newly-created core has values for load on startup and transient different
-      // than defaults due to the above.
+      // Show that the newly-created core has values for load on startup and transient that differ
+      // from defaults due to the above.
       File logDir;
       try (SolrCore coreProveIt = cores.getCore("collection1");
           SolrCore core = cores.getCore("newcore")) {
@@ -108,7 +107,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
         assertFalse(core.getCoreDescriptor().isLoadOnStartup());
         assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
 
-        logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
+        logDir = new File(core.getUpdateHandler().getUpdateLog().getTlogDir());
       }
 
       assertEquals(
@@ -265,7 +264,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     try {
       cores = CoreContainer.createAndLoad(SOLR_HOME);
 
-      String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
+      String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).dataDir;
       Path data = Paths.get(ddir, "index");
       assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 

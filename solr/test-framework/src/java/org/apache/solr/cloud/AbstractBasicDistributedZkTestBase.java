@@ -1115,16 +1115,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     }
   }
 
-  protected String getBaseUrl(SolrClient client) {
-    String url2 =
-        ((HttpSolrClient) client)
-            .getBaseURL()
-            .substring(
-                0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
-    return url2;
-  }
-
   @Override
   protected CollectionAdminResponse createCollection(
       Map<String, List<Integer>> collectionInfos,
@@ -1275,7 +1265,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .get(0)
             .request(
                 new StreamingUpdateRequest(
-                        "/update", getFile("books_numeric_ids.csv").toPath(), "application/csv")
+                        "/update", getFile("books_numeric_ids.csv"), "application/csv")
                     .setCommitWithin(900000)
                     .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
 

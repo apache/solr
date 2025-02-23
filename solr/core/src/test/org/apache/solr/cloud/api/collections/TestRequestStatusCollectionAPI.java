@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -34,7 +33,6 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,13 +170,13 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     duplicateRequestIdParams.set("collection.configName", "conf1");
     duplicateRequestIdParams.set(CommonAdminParams.ASYNC, "1002");
 
-    final BaseHttpSolrClient.RemoteSolrException thrown =
+    final SolrClient.RemoteSolrException thrown =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               sendRequest(duplicateRequestIdParams);
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(), containsString("Task with the same requestid already exists. (1002)"));
   }
 

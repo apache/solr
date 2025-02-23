@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
@@ -85,7 +86,7 @@ public class DocumentAnalysisRequest
   }
 
   @Override
-  public ModifiableSolrParams getParams() {
+  public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (query != null) {
       params.add(AnalysisParams.QUERY, query);
@@ -97,9 +98,9 @@ public class DocumentAnalysisRequest
   // ===== Helper Methods =====
 
   /**
-   * Returns the xml be be set as the request body.
+   * Returns the xml being set as the request body.
    *
-   * @return The xml be be set as the request body.
+   * @return The xml being set as the request body.
    * @throws IOException When constructing the xml fails
    */
   String getXML(Writer writer) throws IOException {
@@ -141,7 +142,7 @@ public class DocumentAnalysisRequest
   }
 
   /**
-   * Sets the query to be analyzed. By default the query is set to null, meaning no query analysis
+   * Sets the query to be analyzed. By default, the query is set to null, meaning no query analysis
    * will be performed.
    *
    * @param query The query to be analyzed.
@@ -154,7 +155,7 @@ public class DocumentAnalysisRequest
 
   /**
    * Sets whether index time tokens that match query time tokens should be marked as a "match". By
-   * default this is set to {@code false}. Obviously, this flag is ignored if when the query is set
+   * default, this is set to {@code false}. Obviously, this flag is ignored if when the query is set
    * to {@code null}.
    *
    * @param showMatch Sets whether index time tokens that match query time tokens should be marked

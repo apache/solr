@@ -270,9 +270,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       if (!isClosed) {
         try {
-          if (replicaType == Replica.Type.TLOG) {
+          if (replicaType.replicateFromLeader) {
             // stop replicate from old leader
             zkController.stopReplicationFromLeader(coreName);
+          }
+          if (replicaType == Replica.Type.TLOG) {
             if (weAreReplacement) {
               try (SolrCore core = cc.getCore(coreName)) {
                 Future<UpdateLog.RecoveryInfo> future =

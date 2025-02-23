@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,25 +27,29 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.TaskObject;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -223,8 +230,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Map<String, Exception> failures = (Map<String, Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
-    NamedList<?> status = (NamedList<?>) resp.getValues().get("status");
-    assertNotNull("core status is null", status);
+    final var statusByCore =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            resp.getValues().get("status"),
+            new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
+    assertNotNull("core status is null", statusByCore);
 
     assertEquals("wrong number of core failures", 1, failures.size());
     Exception fail = failures.get("bogus_dir_core");
@@ -233,10 +243,10 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "init failure doesn't mention problem: " + fail.getCause().getMessage(),
         0 < fail.getCause().getMessage().indexOf("dir_does_not_exist"));
 
-    assertEquals(
-        "bogus_dir_core status isn't empty",
-        0,
-        ((NamedList<?>) status.get("bogus_dir_core")).size());
+    assertTrue("bogus_dir_core status isn't empty", statusByCore.containsKey("bogus_dir_core"));
+    final var bogusDirCoreStatus = statusByCore.get("bogus_dir_core");
+    assertNull(bogusDirCoreStatus.name);
+    assertNull(bogusDirCoreStatus.config);
 
     // Try renaming the core, we should fail
     // First assert that the props core exists
@@ -301,7 +311,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Files.writeString(renamePropFile, "", StandardCharsets.UTF_8);
 
     JettySolrRunner runner =
-        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
+        new JettySolrRunner(
+            solrHomeDirectory.toAbsolutePath().toString(), JettyConfig.builder().build());
     runner.start();
 
     try (SolrClient client =
@@ -374,7 +385,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
-        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
+        new JettySolrRunner(
+            solrHomeDirectory.toAbsolutePath().toString(), JettyConfig.builder().build());
     runner.start();
 
     try (SolrClient client =
@@ -410,9 +422,9 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       req.process(client);
     }
 
-    BaseHttpSolrClient.RemoteSolrException rse =
+    SolrClient.RemoteSolrException rse =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               try (SolrClient client =
                   new HttpSolrClient.Builder(runner.getBaseUrl().toString())
@@ -438,7 +450,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
-        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
+        new JettySolrRunner(
+            solrHomeDirectory.toAbsolutePath().toString(), JettyConfig.builder().build());
     runner.start();
 
     try (SolrClient client =
@@ -455,8 +468,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
     Path dataDir = null;
     try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
-      CoreStatus status = CoreAdminRequest.getCoreStatus("corex", true, client);
-      String dataDirectory = status.getDataDirectory();
+      final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
+      String dataDirectory = status.dataDir;
       dataDir = Paths.get(dataDirectory);
       assertTrue(Files.exists(dataDir));
     }
@@ -527,5 +540,65 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "Missing required parameter: core",
         e.getMessage());
     admin.close();
+  }
+
+  @Test
+  public void testTrackedRequestExpiration() throws Exception {
+    // Create a tracker with controlled clock, relative to 0
+    AtomicLong clock = new AtomicLong(0L);
+    CoreAdminAsyncTracker asyncTracker = new CoreAdminAsyncTracker(clock::get, 100L, 10L);
+    try {
+      Set<TaskObject> tasks =
+          Set.of(
+              new TaskObject("id1", "ACTION", false, SolrQueryResponse::new),
+              new TaskObject("id2", "ACTION", false, SolrQueryResponse::new));
+
+      // Submit all tasks and wait for internal status to be COMPLETED
+      tasks.forEach(asyncTracker::submitAsyncTask);
+      while (!tasks.stream().allMatch(t -> COMPLETED.equals(t.getStatus()))) {
+        Thread.sleep(10L);
+      }
+
+      // Timeout for running tasks is 100n, so status can be retrieved after 20n.
+      // But timeout for complete tasks is 10n once we polled the status at least once, so status
+      // is not available anymore 20n later.
+      clock.set(20);
+      assertEquals(COMPLETED, asyncTracker.getAsyncRequestForStatus("id1").getStatus());
+      clock.set(40L);
+      assertNull(asyncTracker.getAsyncRequestForStatus("id1"));
+
+      // Move the clock after the running timeout.
+      // Status of second task is not available anymore, even if it wasn't retrieved yet
+      clock.set(110L);
+      assertNull(asyncTracker.getAsyncRequestForStatus("id2"));
+
+    } finally {
+      asyncTracker.shutdown();
+    }
+  }
+
+  /** Check we reject a task is the async ID already exists. */
+  @Test
+  public void testDuplicatedRequestId() {
+
+    // Different tasks but with same ID
+    TaskObject task1 = new TaskObject("id1", "ACTION", false, null);
+    TaskObject task2 = new TaskObject("id1", "ACTION", false, null);
+
+    CoreAdminAsyncTracker asyncTracker = new CoreAdminAsyncTracker();
+    try {
+      asyncTracker.submitAsyncTask(task1);
+      try {
+        asyncTracker.submitAsyncTask(task2);
+        fail("Task should have been rejected.");
+      } catch (SolrException e) {
+        assertEquals("Duplicate request with the same requestid found.", e.getMessage());
+      }
+
+      assertNotNull(task1.getStatus());
+      assertNull(task2.getStatus());
+    } finally {
+      asyncTracker.shutdown();
+    }
   }
 }

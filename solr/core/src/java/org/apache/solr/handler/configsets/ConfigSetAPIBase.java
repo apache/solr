@@ -24,11 +24,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue;
@@ -54,18 +54,26 @@ import org.slf4j.LoggerFactory;
  * <p>Contains utilities for tasks common in configset manipulation, including running configset
  * "commands" and checking configset "trusted-ness".
  */
-public class ConfigSetAPIBase {
+public class ConfigSetAPIBase extends JerseyResource {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
+
+  protected final SolrQueryRequest solrQueryRequest;
+  protected final SolrQueryResponse solrQueryResponse;
   protected final Optional<DistributedCollectionConfigSetCommandRunner>
       distributedCollectionConfigSetCommandRunner;
-
   protected final ConfigSetService configSetService;
 
-  public ConfigSetAPIBase(CoreContainer coreContainer) {
+  public ConfigSetAPIBase(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
     this.coreContainer = coreContainer;
+    this.solrQueryRequest = solrQueryRequest;
+    this.solrQueryResponse = solrQueryResponse;
+
     this.distributedCollectionConfigSetCommandRunner =
         coreContainer.getDistributedCollectionCommandRunner();
     this.configSetService = coreContainer.getConfigSetService();
@@ -97,7 +105,7 @@ public class ConfigSetAPIBase {
     }
   }
 
-  protected InputStream ensureNonEmptyInputStream(SolrQueryRequest req) throws IOException {
+  public static InputStream ensureNonEmptyInputStream(SolrQueryRequest req) throws IOException {
     Iterator<ContentStream> contentStreamsIterator = req.getContentStreams().iterator();
 
     if (!contentStreamsIterator.hasNext()) {
@@ -124,8 +132,6 @@ public class ConfigSetAPIBase {
       boolean requestIsTrusted,
       String configName)
       throws IOException {
-    Map<String, Object> metadata = Collections.singletonMap("trusted", requestIsTrusted);
-
     if (overwritesExisting) {
       if (!requestIsTrusted) {
         ensureOverwritingUntrustedConfigSet(configName);
@@ -133,7 +139,7 @@ public class ConfigSetAPIBase {
       // If the request is trusted and cleanup=true, then the configSet will be set to trusted after
       // the overwriting has been done.
     } else {
-      configSetService.setConfigMetadata(configName, metadata);
+      configSetService.setConfigSetTrust(configName, requestIsTrusted);
     }
   }
 

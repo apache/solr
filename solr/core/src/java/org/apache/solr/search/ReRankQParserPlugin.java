@@ -25,7 +25,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +65,40 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
   private static class ReRankQParser extends QParser {
 
+    private boolean isExplainResults() {
+      final SolrRequestInfo ri = SolrRequestInfo.getRequestInfo();
+      if (null != ri) {
+        final ResponseBuilder rb = ri.getResponseBuilder();
+        if (null != rb) {
+          return rb.isDebugResults();
+        }
+      }
+
+      // HACK: The code below should not be used. It is preserved for backcompat
+      // on the slim remote chance that someone is using ReRankQParserPlugin
+      // w/o using SearchHandler+ResponseBuilder
+      //
+      // (It's also wrong, and doesn't account for thigns like debug=true
+      // or debug=all ... but as stated: it's for esoteric backcompat purposes
+      // only, so we're not going to change it and start returning "true"
+      // if existing code doesn't expect it
+
+      boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
+
+      if (!debugQuery) {
+        String[] debugParams = params.getParams(CommonParams.DEBUG);
+        if (debugParams != null) {
+          for (String debugParam : debugParams) {
+            if ("true".equals(debugParam)) {
+              debugQuery = true;
+              break;
+            }
+          }
+        }
+      }
+      return debugQuery;
+    }
+
     public ReRankQParser(
         String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(query, localParams, params, req);
@@ -88,19 +124,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
       String mainScale = localParams.get(RERANK_MAIN_SCALE);
       String reRankScale = localParams.get(RERANK_SCALE);
-      boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
 
-      if (!debugQuery) {
-        String[] debugParams = params.getParams(CommonParams.DEBUG);
-        if (debugParams != null) {
-          for (String debugParam : debugParams) {
-            if ("true".equals(debugParam)) {
-              debugQuery = true;
-              break;
-            }
-          }
-        }
-      }
+      final boolean explainResults = isExplainResults();
 
       double reRankScaleWeight = reRankWeight;
 
@@ -111,7 +136,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
               reRankScaleWeight,
               reRankOperator,
               new ReRankQueryRescorer(reRankQuery, 1, ReRankOperator.REPLACE),
-              debugQuery);
+              explainResults);
 
       if (reRankScaler.scaleScores()) {
         // Scaler applies the weighting instead of the rescorer
@@ -119,7 +144,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       }
 
       return new ReRankQuery(
-          reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, debugQuery);
+          reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, explainResults);
     }
   }
 
@@ -165,7 +190,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
   private static final class ReRankQuery extends AbstractReRankQuery {
     private final Query reRankQuery;
     private final double reRankWeight;
-    private final boolean debugQuery;
+    private final boolean explainResults;
 
     @Override
     public int hashCode() {
@@ -198,7 +223,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
         double reRankWeight,
         ReRankOperator reRankOperator,
         ReRankScaler reRankScaler,
-        boolean debugQuery) {
+        boolean explainResults) {
       super(
           defaultQuery,
           reRankDocs,
@@ -207,7 +232,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
           reRankOperator);
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
-      this.debugQuery = debugQuery;
+      this.explainResults = explainResults;
     }
 
     @Override
@@ -246,13 +271,13 @@ public class ReRankQParserPlugin extends QParserPlugin {
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
       return new ReRankQuery(
-              reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, debugQuery)
+              reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, explainResults)
           .wrap(rewrittenMainQuery);
     }
 
     @Override
     public boolean getCache() {
-      if (reRankScaler.scaleScores() && debugQuery) {
+      if (reRankScaler.scaleScores() && explainResults) {
         // Caching breaks explain when reRankScaling is used.
         return false;
       } else {

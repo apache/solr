@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -83,7 +83,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   }
 
   private String attemptHttpGet(String getUrl) throws IOException {
-    Object obj = new URL(getUrl).getContent();
+    Object obj = URI.create(getUrl).toURL().getContent();
     if (obj instanceof InputStream) {
       try (InputStream inputStream = (InputStream) obj) {
         StringWriter strWriter = new StringWriter();

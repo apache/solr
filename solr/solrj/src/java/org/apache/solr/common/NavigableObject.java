@@ -18,12 +18,14 @@
 package org.apache.solr.common;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 
 /**
  * This class contains helper methods for navigating deeply nested Objects. Keep in mind that it may
- * be expensive depending on the underlying implementation. each level needs an extra lookup and the
+ * be expensive depending on the underlying implementation. Each level needs an extra lookup and the
  * lookup may be as expensive as O(log(n)) to O(n) depending on the underlying impl
  */
 public interface NavigableObject {
@@ -95,5 +97,14 @@ public interface NavigableObject {
     int[] size = new int[1];
     _forEachEntry((k, v) -> size[0]++);
     return size[0];
+  }
+
+  /** Casts or wraps the argument into a NavigableObject if possible, never returning null. */
+  @SuppressWarnings("unchecked")
+  static NavigableObject wrap(Object obj) {
+    if (obj == null) return SimpleOrderedMap.of();
+    if (obj instanceof NavigableObject navObj) return navObj;
+    if (obj instanceof Map<?, ?> m) return new MapWriterMap((Map<String, Object>) m);
+    throw new IllegalArgumentException("Cannot wrap " + obj.getClass());
   }
 }

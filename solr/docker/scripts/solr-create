@@ -75,4 +75,4 @@ else
     fi
 fi
 
-exec solr-fg
+exec solr-fg --user-managed

@@ -19,20 +19,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -51,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class SolrClientCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final CloudLegacySolrClient solrClient;
+  private final CloudHttp2SolrClient cloudSolrClient;
   private final ZkDistribStateManager stateManager;
   private final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
@@ -59,13 +45,9 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final boolean closeObjectCache;
   private volatile boolean isClosed;
 
-  public SolrClientCloudManager(CloudLegacySolrClient solrClient) {
-    this(solrClient, null);
-  }
-
-  public SolrClientCloudManager(CloudLegacySolrClient solrClient, ObjectCache objectCache) {
-    this.solrClient = solrClient;
-    this.zkStateReader = ZkStateReader.from(solrClient);
+  public SolrClientCloudManager(CloudHttp2SolrClient client, ObjectCache objectCache) {
+    this.cloudSolrClient = client;
+    this.zkStateReader = ZkStateReader.from(client);
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
     this.isClosed = false;
@@ -76,6 +58,11 @@ public class SolrClientCloudManager implements SolrCloudManager {
       this.objectCache = objectCache;
       this.closeObjectCache = false;
     }
+  }
+
+  @Override
+  public CloudSolrClient getSolrClient() {
+    return cloudSolrClient;
   }
 
   @Override
@@ -103,12 +90,12 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   @Override
   public ClusterStateProvider getClusterStateProvider() {
-    return solrClient.getClusterStateProvider();
+    return cloudSolrClient.getClusterStateProvider();
   }
 
   @Override
   public NodeStateProvider getNodeStateProvider() {
-    return new SolrClientNodeStateProvider(solrClient);
+    return new SolrClientNodeStateProvider(cloudSolrClient);
   }
 
   @Override
@@ -119,75 +106,13 @@ public class SolrClientCloudManager implements SolrCloudManager {
   @Override
   public <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException {
     try {
-      return req.process(solrClient);
+      return req.process(cloudSolrClient);
     } catch (SolrServerException e) {
       throw new IOException(e);
     }
   }
 
   private static final byte[] EMPTY = new byte[0];
-
-  @Override
-  public byte[] httpRequest(
-      String url,
-      SolrRequest.METHOD method,
-      Map<String, String> headers,
-      String payload,
-      int timeout,
-      boolean followRedirects)
-      throws IOException {
-    HttpClient client = solrClient.getHttpClient();
-    final HttpRequestBase req;
-    HttpEntity entity = null;
-    if (payload != null) {
-      entity = new StringEntity(payload, StandardCharsets.UTF_8);
-    }
-    switch (method) {
-      case GET:
-        req = new HttpGet(url);
-        break;
-      case POST:
-        req = new HttpPost(url);
-        if (entity != null) {
-          ((HttpPost) req).setEntity(entity);
-        }
-        break;
-      case PUT:
-        req = new HttpPut(url);
-        if (entity != null) {
-          ((HttpPut) req).setEntity(entity);
-        }
-        break;
-      case DELETE:
-        req = new HttpDelete(url);
-        break;
-      default:
-        throw new IOException("Unsupported method " + method);
-    }
-    if (headers != null) {
-      headers.forEach((k, v) -> req.addHeader(k, v));
-    }
-    RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
-    if (timeout > 0) {
-      requestConfigBuilder.setSocketTimeout(timeout);
-      requestConfigBuilder.setConnectTimeout(timeout);
-    }
-    requestConfigBuilder.setRedirectsEnabled(followRedirects);
-    req.setConfig(requestConfigBuilder.build());
-    HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
-    HttpResponse rsp = client.execute(req, httpClientRequestContext);
-    int statusCode = rsp.getStatusLine().getStatusCode();
-    if (statusCode != 200) {
-      throw new IOException(
-          "Error sending request to " + url + ", HTTP response: " + rsp.toString());
-    }
-    HttpEntity responseEntity = rsp.getEntity();
-    if (responseEntity != null && responseEntity.getContent() != null) {
-      return EntityUtils.toByteArray(responseEntity);
-    } else {
-      return EMPTY;
-    }
-  }
 
   public SolrZkClient getZkClient() {
     return zkClient;

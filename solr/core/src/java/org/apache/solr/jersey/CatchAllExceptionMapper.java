@@ -63,10 +63,10 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
     // success/failure for AuditLogging, and other logic.
     final SolrQueryResponse solrQueryResponse =
         (SolrQueryResponse) containerRequestContext.getProperty(SOLR_QUERY_RESPONSE);
+
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) containerRequestContext.getProperty(SOLR_QUERY_REQUEST);
-    if (exception instanceof WebApplicationException) {
-      final WebApplicationException wae = (WebApplicationException) exception;
+    if (exception instanceof WebApplicationException wae) {
       final SolrException solrException =
           new SolrException(getErrorCode(wae.getResponse().getStatus()), wae.getMessage());
       solrQueryResponse.setException(solrException);
@@ -116,7 +116,8 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
                 && solrQueryRequest.getCore().getCoreContainer().hideStackTrace());
     response.responseHeader.status = response.error.code;
     final String mediaType =
-        V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, MediaType.APPLICATION_JSON);
+        V2ApiUtils.getMediaTypeFromWtParam(
+            solrQueryRequest.getParams(), MediaType.APPLICATION_JSON);
     return Response.status(response.error.code).type(mediaType).entity(response).build();
   }
 

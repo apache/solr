@@ -138,8 +138,7 @@ abstract class AbstractMLTQParser extends QParser {
       for (BooleanClause clause : rawMLTQuery) {
         Query q = clause.getQuery();
         float originalBoost = 1f;
-        if (q instanceof BoostQuery) {
-          BoostQuery bq = (BoostQuery) q;
+        if (q instanceof BoostQuery bq) {
           q = bq.getQuery();
           originalBoost = bq.getBoost();
         }

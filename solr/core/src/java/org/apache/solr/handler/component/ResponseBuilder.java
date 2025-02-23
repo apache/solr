@@ -72,9 +72,9 @@ public class ResponseBuilder {
 
   private boolean isCancellation;
   private String cancellationUUID;
-
   private String taskStatusCheckUUID;
   private boolean isTaskListRequest;
+  private boolean isDistribStatsDisabled;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -122,13 +122,13 @@ public class ResponseBuilder {
    * public static final String LOCAL_SHARD = "local"; public static final String DOC_QUERY = "dq";
    * *
    */
-  public static int STAGE_START = 0;
+  public static final int STAGE_START = 0;
 
-  public static int STAGE_PARSE_QUERY = 1000;
-  public static int STAGE_TOP_GROUPS = 1500;
-  public static int STAGE_EXECUTE_QUERY = 2000;
-  public static int STAGE_GET_FIELDS = 3000;
-  public static int STAGE_DONE = Integer.MAX_VALUE;
+  public static final int STAGE_PARSE_QUERY = 1000;
+  public static final int STAGE_TOP_GROUPS = 1500;
+  public static final int STAGE_EXECUTE_QUERY = 2000;
+  public static final int STAGE_GET_FIELDS = 3000;
+  public static final int STAGE_DONE = Integer.MAX_VALUE;
 
   public int stage; // What stage is this current request at?
 
@@ -444,10 +444,10 @@ public class ResponseBuilder {
   /** Sets results from a SolrIndexSearcher.QueryResult. */
   public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
+    if (result.isPartialResultOmitted() || result.isPartialResults()) {
+      rsp.setPartialResults(req);
+    }
     if (result.isPartialResults()) {
-      rsp.getResponseHeader()
-          .asShallowMap()
-          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       if (getResults() != null && getResults().docList == null) {
         getResults().docList =
             new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
@@ -519,5 +519,13 @@ public class ResponseBuilder {
 
   public String getTaskStatusCheckUUID() {
     return taskStatusCheckUUID;
+  }
+
+  public void setDistribStatsDisabled(boolean isEnableDistribStats) {
+    this.isDistribStatsDisabled = isEnableDistribStats;
+  }
+
+  public boolean isDistribStatsDisabled() {
+    return isDistribStatsDisabled;
   }
 }

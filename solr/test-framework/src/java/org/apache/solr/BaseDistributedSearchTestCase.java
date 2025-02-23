@@ -348,9 +348,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClient));
 
-    customThreadPool.submit(
+    customThreadPool.execute(
         () -> {
           try {
             controlJetty.stop();
@@ -362,11 +362,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         });
 
     for (SolrClient client : clients) {
-      customThreadPool.submit(() -> IOUtils.closeQuietly(client));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
     }
 
     for (JettySolrRunner jetty : jettys) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             try {
               jetty.stop();
@@ -431,7 +431,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
                 .stopAtShutdown(true)
                 .withFilters(getExtraRequestFilters())
                 .withServlets(getExtraServlets())
-                .withSSLConfig(sslConfig.buildServerSSLConfig())
                 .build());
 
     return jetty;
@@ -939,10 +938,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
     if ((flags & FUZZY) != 0) {
-      if ((a instanceof Double && b instanceof Double)) {
-        double aaa = (Double) a;
-        double bbb = (Double) b;
-        if (aaa == bbb || (((Double) a).isNaN() && ((Double) b).isNaN())) {
+
+      if ((a instanceof Double aa && b instanceof Double bb)) {
+        double aaa = aa;
+        double bbb = bb;
+        if (aaa == bbb || (aa.isNaN() && bb.isNaN())) {
           return null;
         }
         if ((aaa == 0.0) || (bbb == 0.0)) {

@@ -31,6 +31,8 @@ import org.junit.Test;
 /** Unit tests for {@link Builder}. */
 public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
 
+  private static final String ANY_BASE_URL = "http://localhost:8983/solr";
+
   @Test(expected = IllegalArgumentException.class)
   public void testRejectsMissingBaseSolrUrl() {
     new Builder(null).build();
@@ -39,7 +41,7 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
   @Test
   @SuppressWarnings({"try"})
   public void testMissingQueueSize() {
-    try (ConcurrentUpdateSolrClient client = new Builder("someurl").build()) {
+    try (ConcurrentUpdateSolrClient client = new Builder(ANY_BASE_URL).build()) {
       // Do nothing as we just need to test that the only mandatory parameter for building the
       // client is the baseSolrUrl
     }
@@ -69,14 +71,14 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
       if (!(e.getCause() instanceof SocketTimeoutException)) {
         throw e;
       }
-      // else test passses
+      // else test passes
     }
   }
 
   @Test
   public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
     try (SolrClient createdClient =
-        new ConcurrentUpdateSolrClient.Builder("someurl")
+        new ConcurrentUpdateSolrClient.Builder(ANY_BASE_URL)
             .withDefaultCollection("aCollection")
             .build()) {
       assertEquals("aCollection", createdClient.getDefaultCollection());

@@ -43,6 +43,7 @@ import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.distributed.command.QueryCommand;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
@@ -71,12 +72,10 @@ public class TopGroupsResultTransformer
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     for (Command<?> command : data) {
       NamedList<Object> commandResult;
-      if (command instanceof TopGroupsFieldCommand) {
-        TopGroupsFieldCommand fieldCommand = (TopGroupsFieldCommand) command;
+      if (command instanceof TopGroupsFieldCommand fieldCommand) {
         SchemaField groupField = schema.getField(fieldCommand.getKey());
         commandResult = serializeTopGroups(fieldCommand.result(), groupField);
-      } else if (command instanceof QueryCommand) {
-        QueryCommand queryCommand = (QueryCommand) command;
+      } else if (command instanceof QueryCommand queryCommand) {
         commandResult = serializeTopDocs(queryCommand.result());
       } else {
         commandResult = null;
@@ -229,21 +228,21 @@ public class TopGroupsResultTransformer
         groupResult.add("maxScore", searchGroup.maxScore);
       }
 
+      SolrDocumentFetcher docFetcher = rb.req.getSearcher().getDocFetcher();
       List<NamedList<Object>> documents = new ArrayList<>();
       for (int i = 0; i < searchGroup.scoreDocs.length; i++) {
         NamedList<Object> document = new NamedList<>();
         documents.add(document);
 
-        Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc);
+        Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc, docFetcher);
         document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
         if (!Float.isNaN(searchGroup.scoreDocs[i].score)) {
           document.add("score", searchGroup.scoreDocs[i].score);
         }
-        if (!(searchGroup.scoreDocs[i] instanceof FieldDoc)) {
+        if (!(searchGroup.scoreDocs[i] instanceof FieldDoc fieldDoc)) {
           continue; // thus don't add sortValues below
         }
 
-        FieldDoc fieldDoc = (FieldDoc) searchGroup.scoreDocs[i];
         Object[] convertedSortValues = new Object[fieldDoc.fields.length];
         for (int j = 0; j < fieldDoc.fields.length; j++) {
           Object sortValue = fieldDoc.fields[j];
@@ -290,22 +289,22 @@ public class TopGroupsResultTransformer
     List<NamedList<?>> documents = new ArrayList<>();
     queryResult.add("documents", documents);
 
+    SolrDocumentFetcher docFetcher = rb.req.getSearcher().getDocFetcher();
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     SchemaField uniqueField = schema.getUniqueKeyField();
     for (ScoreDoc scoreDoc : result.getTopDocs().scoreDocs) {
       NamedList<Object> document = new NamedList<>();
       documents.add(document);
 
-      Document doc = retrieveDocument(uniqueField, scoreDoc.doc);
+      Document doc = retrieveDocument(uniqueField, scoreDoc.doc, docFetcher);
       document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
       if (!Float.isNaN(scoreDoc.score)) {
         document.add("score", scoreDoc.score);
       }
-      if (!(scoreDoc instanceof FieldDoc)) {
+      if (!(scoreDoc instanceof FieldDoc fieldDoc)) {
         continue; // thus don't add sortValues below
       }
 
-      FieldDoc fieldDoc = (FieldDoc) scoreDoc;
       Object[] convertedSortValues = new Object[fieldDoc.fields.length];
       for (int j = 0; j < fieldDoc.fields.length; j++) {
         Object sortValue = fieldDoc.fields[j];
@@ -322,7 +321,8 @@ public class TopGroupsResultTransformer
     return queryResult;
   }
 
-  private Document retrieveDocument(final SchemaField uniqueField, int doc) throws IOException {
-    return rb.req.getSearcher().doc(doc, Collections.singleton(uniqueField.getName()));
+  private Document retrieveDocument(
+      final SchemaField uniqueField, int doc, SolrDocumentFetcher docFetcher) throws IOException {
+    return docFetcher.doc(doc, Collections.singleton(uniqueField.getName()));
   }
 }

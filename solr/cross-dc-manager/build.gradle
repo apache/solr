@@ -1,0 +1,104 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java-library'
+// this is actually more of an 'application' but we don't want all of what Gradle adds
+
+description = 'Cross-DC Manager'
+
+dependencies {
+  implementation platform(project(':platform'))
+  implementation project(':solr:solrj')
+  implementation project(':solr:solrj-zookeeper')
+  implementation project(':solr:modules:cross-dc')
+
+  implementation libs.dropwizard.metrics.core
+  implementation libs.dropwizard.metrics.servlets
+  implementation libs.eclipse.jetty.server
+  implementation libs.eclipse.jetty.servlet
+  implementation libs.slf4j.api
+  runtimeOnly libs.google.protobuf.javautils
+  runtimeOnly libs.commonscodec.commonscodec
+
+  implementation libs.apache.kafka.clients
+  runtimeOnly libs.apache.kafka.kafka213
+  runtimeOnly libs.apache.kafka.streams
+
+  runtimeOnly libs.apache.log4j.api
+  runtimeOnly libs.apache.log4j.core
+  runtimeOnly libs.apache.log4j.slf4j2impl
+  runtimeOnly libs.lmax.disruptor
+
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.mockito.core
+
+  testImplementation(libs.apache.kafka.streams) {
+    artifact {
+      classifier = "test"
+    }
+  }
+  testImplementation(libs.apache.kafka.clients) {
+    artifact {
+      classifier = "test"
+    }
+  }
+  testRuntimeOnly(libs.apache.kafka.kafka213) {
+    artifact {
+      classifier = "test"
+    }
+  }
+  testRuntimeOnly(libs.apache.kafka.server.common) {
+    artifact {
+      classifier = "test"
+    }
+  }
+}
+
+ext {
+  mainClass = 'org.apache.solr.crossdc.manager.consumer.Consumer'
+
+  // Use of the security manager is not supported on windows.
+  // Mockito does not work with it enabled.
+  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+}
+
+task run(type: JavaExec) {
+  group = 'application'
+  description = 'Run the main class with JavaExecTask'
+  mainClass = project.ext.mainClass
+  classpath = sourceSets.main.runtimeClasspath
+  systemProperties = ["log4j.configurationFile":"file:conf/log4j2.xml"]
+}
+
+jar {
+  manifest {
+    attributes('Main-Class': project.ext.mainClass)
+  }
+}
+
+assemblePackaging {
+  // Add two folders to default packaging.
+  from(projectDir, {
+    include "bin/**"
+    include "conf/**"
+  })
+}

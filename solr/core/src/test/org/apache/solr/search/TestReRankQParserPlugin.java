@@ -1377,7 +1377,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + ReRankQParserPlugin.NAME
             + " "
             + ReRankQParserPlugin.RERANK_MAIN_SCALE
-            + "=10-20 "
+            + "=10-19 "
             + ReRankQParserPlugin.RERANK_SCALE
             + "=10-20 "
             + ReRankQParserPlugin.RERANK_WEIGHT
@@ -1400,7 +1400,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[1]/float[@name='score'][.='30.0']",
         "//result/doc[2]/str[@name='id'][.='5']",
-        "//result/doc[2]/float[@name='score'][.='30.0']");
+        "//result/doc[2]/float[@name='score'][.='29.0']");
 
     // Test reRank more than found
     params = new ModifiableSolrParams();
@@ -1410,7 +1410,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + ReRankQParserPlugin.NAME
             + " "
             + ReRankQParserPlugin.RERANK_MAIN_SCALE
-            + "=10-20 "
+            + "=10-19 "
             + ReRankQParserPlugin.RERANK_SCALE
             + "=10-20 "
             + ReRankQParserPlugin.RERANK_WEIGHT
@@ -1434,15 +1434,15 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[1]/float[@name='score'][.='30.0']",
         "//result/doc[2]/str[@name='id'][.='5']",
-        "//result/doc[2]/float[@name='score'][.='30.0']");
+        "//result/doc[2]/float[@name='score'][.='29.0']");
 
     String explainResponse = JQ(req(params));
     assertTrue(explainResponse.contains("30.0 = combined scaled first and second pass score"));
 
-    assertTrue(explainResponse.contains("10.0 = first pass score scaled between: 10-20"));
+    assertTrue(explainResponse.contains("10.0 = first pass score scaled between: 10-19"));
     assertTrue(explainResponse.contains("20.0 = second pass score scaled between: 10-20"));
 
-    assertTrue(explainResponse.contains("20.0 = first pass score scaled between: 10-20"));
+    assertTrue(explainResponse.contains("19.0 = first pass score scaled between: 10-19"));
 
     assertTrue(explainResponse.contains("10.0 = second pass score scaled between: 10-20"));
 

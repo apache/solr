@@ -57,7 +57,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -68,11 +67,13 @@ import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.TestDistribFileStore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.security.AuthorizationContext;
@@ -121,7 +122,7 @@ public class TestPackages extends SolrCloudTestCase {
     String FILE1 = "/mypkg/runtimelibs.jar";
     String COLLECTION_NAME = "testCoreReloadingPluginColl";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -190,7 +191,7 @@ public class TestPackages extends SolrCloudTestCase {
     String EXPR1 = "/mypkg/expressible.jar";
     String COLLECTION_NAME = "testPluginLoadingColl";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -538,12 +539,9 @@ public class TestPackages extends SolrCloudTestCase {
     try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
       TestDistribFileStore.assertResponseValues(
           10,
-          () -> {
-            Object o = Utils.executeGET(client.getHttpClient(), jetty.getBaseUrl() + uri, parser);
-            if (o instanceof NavigableObject) return (NavigableObject) o;
-            if (o instanceof Map) return new MapWriterMap((Map<String, Object>) o);
-            throw new RuntimeException("Unknown response");
-          },
+          () ->
+              NavigableObject.wrap(
+                  Utils.executeGET(client.getHttpClient(), jetty.getBaseUrl() + uri, parser)),
           expected);
     }
   }
@@ -609,7 +607,7 @@ public class TestPackages extends SolrCloudTestCase {
     expectError(req, cluster.getSolrClient(), errPath, FILE1 + " has no signature");
     // now we upload the keys
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
     // and upload the same file with a different name, but it has proper signature
     postFileAndWait(
         cluster,
@@ -632,10 +630,9 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         1,
         () ->
-            new MapWriterMap(
-                (Map<String, Object>)
-                    Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+            NavigableObject.wrap(
+                Utils.fromJSON(
+                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
         Map.of(":packages:test_pkg[0]:version", "0.12", ":packages:test_pkg[0]:files[0]", FILE2));
 
     // post a new jar with a proper signature
@@ -656,10 +653,9 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         1,
         () ->
-            new MapWriterMap(
-                (Map<String, Object>)
-                    Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+            NavigableObject.wrap(
+                Utils.fromJSON(
+                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
         Map.of(":packages:test_pkg[1]:version", "0.13", ":packages:test_pkg[1]:files[0]", FILE3));
 
     // Now we will just delete one version
@@ -682,17 +678,15 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         1,
         () ->
-            new MapWriterMap(
-                (Map<String, Object>)
-                    Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+            NavigableObject.wrap(
+                Utils.fromJSON(
+                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
         Map.of(":packages:test_pkg[0]:version", "0.13", ":packages:test_pkg[0]:files[0]", FILE3));
 
     // So far we have been verifying the details with  ZK directly
     // use the package read API to verify with each node that it has the correct data
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      String path =
-          jetty.getBaseUrl().toString().replace("/solr", "/api") + "/cluster/package?wt=javabin";
+      String path = jetty.getBaseURLV2().toString() + "/cluster/package?wt=javabin";
       TestDistribFileStore.assertResponseValues(
           10,
           new Callable<NavigableObject>() {
@@ -754,9 +748,11 @@ public class TestPackages extends SolrCloudTestCase {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");
 
+    IndexSchema[] schemas = new IndexSchema[2]; // tracks schemas for a selected core
+
     String FILE1 = "/schemapkg/schema-plugins.jar";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/schema-plugins.jar.bin",
@@ -770,6 +766,7 @@ public class TestPackages extends SolrCloudTestCase {
         FILE2,
         "gI6vYUDmSXSXmpNEeK1cwqrp4qTeVQgizGQkd8A4Prx2K8k7c5QlXbcs4lxFAAbbdXz9F4esBqTCiLMjVDHJ5Q==");
 
+    // upload package v1.0
     PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "schemapkg";
@@ -799,22 +796,23 @@ public class TestPackages extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
-    verifySchemaComponent(
-        cluster.getSolrClient(),
-        COLLECTION_NAME,
-        "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-        Map.of(
-            ":fieldType:analyzer:charFilters[0]:_packageinfo_:version",
-            "1.0",
-            ":fieldType:analyzer:tokenizer:_packageinfo_:version",
-            "1.0",
-            ":fieldType:_packageinfo_:version",
-            "1.0"));
+    // make note of the schema instance for one of the cores
+    SolrCore.Provider coreProvider =
+        cluster.getJettySolrRunners().stream()
+            .flatMap(
+                jetty ->
+                    jetty.getCoreContainer().getAllCoreNames().stream()
+                        .map(name -> new SolrCore.Provider(jetty.getCoreContainer(), name, null)))
+            .findFirst()
+            .orElseThrow();
 
+    coreProvider.withCore(core -> schemas[0] = core.getLatestSchema());
+
+    // upload package v2.0
     add = new PackagePayload.AddVersion();
     add.version = "2.0";
     add.pkg = "schemapkg";
-    add.files = Arrays.asList(FILE1);
+    add.files = Arrays.asList(FILE1, FILE2);
     req =
         new V2Request.Builder("/cluster/package")
             .forceV2(true)
@@ -836,28 +834,30 @@ public class TestPackages extends SolrCloudTestCase {
             ":result:packages:schemapkg[1]:files[0]",
             FILE1));
 
-    verifySchemaComponent(
-        cluster.getSolrClient(),
-        COLLECTION_NAME,
-        "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-        Map.of(
-            ":fieldType:analyzer:charFilters[0]:_packageinfo_:version",
-            "2.0",
-            ":fieldType:analyzer:tokenizer:_packageinfo_:version",
-            "2.0",
-            ":fieldType:_packageinfo_:version",
-            "2.0"));
-  }
+    // even though package version 2.0 uses exactly the same files
+    // as version 1.0, the core schema should still reload, and
+    // the core should be associated with a different schema instance
+    TestDistribFileStore.assertResponseValues(
+        10,
+        () -> {
+          coreProvider.withCore(core -> schemas[1] = core.getLatestSchema());
+          return params("schemaReloaded", (schemas[0] != schemas[1]) ? "yes" : "no");
+        },
+        Map.of("schemaReloaded", "yes"));
 
-  private void verifySchemaComponent(
-      SolrClient client, String COLLECTION_NAME, String path, Map<String, Object> expected)
-      throws Exception {
-    SolrParams params =
-        new MapSolrParams(Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "meta", "true"));
+    // after the reload, the custom field type class now comes from package v2.0
+    String fieldTypeName = "myNewTextFieldWithAnalyzerClass";
 
-    GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, path, params).setRequiresCollection(true);
-    TestDistribFileStore.assertResponseValues(10, client, req, expected);
+    FieldType fieldTypeV1 = schemas[0].getFieldTypeByName(fieldTypeName);
+    assertEquals("my.pkg.MyTextField", fieldTypeV1.getClass().getCanonicalName());
+
+    FieldType fieldTypeV2 = schemas[1].getFieldTypeByName(fieldTypeName);
+    assertEquals("my.pkg.MyTextField", fieldTypeV2.getClass().getCanonicalName());
+
+    assertNotEquals(
+        "my.pkg.MyTextField classes should be from different classloaders",
+        fieldTypeV1.getClass(),
+        fieldTypeV2.getClass());
   }
 
   public static void postFileAndWait(

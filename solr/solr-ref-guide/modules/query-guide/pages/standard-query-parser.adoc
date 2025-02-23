@@ -315,7 +315,7 @@ or
 
 === The Boolean Operator "+"
 
-The `+` symbol (also known as the "required" operator) requires that the term after the `+` symbol exist somewhere in a field in at least one document in order for the query to return a match.
+The `\+` symbol (also known as the "required" operator) requires that the term after the `+` symbol exist somewhere in a field in at least one document in order for the query to return a match.
 
 For example, to search for documents that must contain "jakarta" and that may or may not contain "lucene," use the following query:
 
@@ -438,7 +438,7 @@ There is no limitation on the number of terms that match (as there was in past v
 
 === Specifying Dates and Times
 
-Queries against date based fields must use the xref:indexing-guide:date-formatting-math.adoc[appropriate date formating].
+Queries against date based fields must use the xref:indexing-guide:date-formatting-math.adoc[appropriate date formatting].
 Queries for exact date values will require quoting or escaping since `:` is the parser syntax used to denote a field query:
 
 * `createdate:1976-03-06T23\:59\:59.999Z`

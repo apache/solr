@@ -544,6 +544,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   private void calculateNumBuckets(SimpleOrderedMap<Object> target) throws IOException {
     DocSet domain = fcontext.base;
     if (freq.prefix != null) {
+      // TODO - Should we enforce minPrefixLength here in the case of 'string' fields, or omit
+      //  since this is an "internal" request? If we want to enforce the limit in this case,
+      //  we should have StrField read the configured limit and cache it in 'init' so that it can
+      //  be read at 'getPrefixQuery' call-time without a QParser.
       Query prefixFilter = sf.getType().getPrefixQuery(null, sf, freq.prefix);
       domain = fcontext.searcher.getDocSet(prefixFilter, domain);
     }
@@ -891,8 +895,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * @see SweepingCountSlotAcc
    */
   protected boolean registerSweepingAccIfSupportedByCollectAcc() {
-    if (countAcc instanceof SweepingCountSlotAcc && collectAcc instanceof SweepableSlotAcc) {
-      final SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc) countAcc;
+    if (countAcc instanceof SweepingCountSlotAcc sweepingCountAcc
+        && collectAcc instanceof SweepableSlotAcc) {
       collectAcc = ((SweepableSlotAcc<?>) collectAcc).registerSweepingAccs(sweepingCountAcc);
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;

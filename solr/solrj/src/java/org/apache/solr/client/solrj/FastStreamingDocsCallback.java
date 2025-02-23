@@ -40,7 +40,7 @@ public interface FastStreamingDocsCallback {
   Object startDoc(Object docListObj);
 
   /**
-   * FOund a new field
+   * Found a new field
    *
    * @param field Read the appropriate value
    * @param docObj The object returned by {{@link #startDoc(Object)}} method
@@ -57,7 +57,7 @@ public interface FastStreamingDocsCallback {
   /**
    * A new child doc starts
    *
-   * @param parentDocObj an objec that will be shared across all the {{@link
+   * @param parentDocObj an object that will be shared across all the {{@link
    *     FastStreamingDocsCallback#field(DataEntry, Object)}}
    * @return any custom object that be shared with the fields in this child doc
    */

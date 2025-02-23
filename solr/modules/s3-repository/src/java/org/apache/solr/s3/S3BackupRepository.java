@@ -38,7 +38,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.repository.AbstractBackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
@@ -280,8 +279,8 @@ public class S3BackupRepository extends AbstractBackupRepository {
 
     try (IndexInput indexInput =
         shouldVerifyChecksum
-            ? sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)
-            : sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+            ? sourceDir.openChecksumInput(sourceFileName, IOContext.READONCE)
+            : sourceDir.openInput(sourceFileName, IOContext.READONCE)) {
       if (indexInput.length() <= CodecUtil.footerLength()) {
         throw new CorruptIndexException("file is too small:" + indexInput.length(), indexInput);
       }

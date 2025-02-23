@@ -79,8 +79,7 @@ public abstract class RecursiveTemporalEvaluator extends RecursiveEvaluator
     } else if (value instanceof Date) {
       // Convert to Instant and recurse in
       return normalizeInputType(((Date) value).toInstant());
-    } else if (value instanceof String) {
-      String valueStr = (String) value;
+    } else if (value instanceof String valueStr) {
       if (!valueStr.isEmpty()) {
         try {
           // Convert to Instant and recurse in

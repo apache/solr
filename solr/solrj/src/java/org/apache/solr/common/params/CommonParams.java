@@ -131,7 +131,8 @@ public interface CommonParams {
   String TRACK = "track";
 
   /**
-   * boolean indicating whether score explanations should structured (true), or plain text (false)
+   * boolean indicating whether score explanations should be structured (true), or plain text
+   * (false)
    */
   String EXPLAIN_STRUCT = "debug.explain.structured";
 
@@ -153,13 +154,34 @@ public interface CommonParams {
    */
   String STREAM_CONTENTTYPE = "stream.contentType";
 
-  /** Whether or not the search may be terminated early within a segment. */
+  /** Whether the search may be terminated early within a segment. */
   String SEGMENT_TERMINATE_EARLY = "segmentTerminateEarly";
 
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
-  /** Timeout value in milliseconds. If not set, or the value is &gt; 0, there is no timeout. */
+  /**
+   * If true then allow returning partial results. If false and full results can't be produced
+   * return no results / error.
+   */
+  String PARTIAL_RESULTS = "partialResults";
+
+  /** Timeout value in milliseconds. If not set, or the value is &lt; 0, there is no timeout. */
   String TIME_ALLOWED = "timeAllowed";
+
+  /** Whether the search may use the multi-threaded logic */
+  String MULTI_THREADED = "multiThreaded";
+
+  /**
+   * Maximum query CPU usage value in milliseconds. If not set, or the value is &lt; 0, there is no
+   * timeout.
+   */
+  String CPU_ALLOWED = "cpuAllowed";
+
+  /**
+   * Max query memory allocation value in mebibytes (float). If not set, or the value is &lt;= 0.0,
+   * there is no limit.
+   */
+  String MEM_ALLOWED = "memAllowed";
 
   /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";
@@ -264,8 +286,8 @@ public interface CommonParams {
 
   /**
    * Used as a local param on filter queries in conjunction with cache=false. Filters are checked in
-   * order, from smallest cost to largest. If cost&gt;=100 and the query implements PostFilter, then
-   * that interface will be used to do post query filtering.
+   * order, from the smallest cost to largest. If cost&gt;=100 and the query implements PostFilter,
+   * then that interface will be used to do post query filtering.
    */
   String COST = "cost";
 
@@ -288,6 +310,15 @@ public interface CommonParams {
    */
   @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
+
+  /**
+   * Parameter to control the distributed term statistics request for current query when distributed
+   * IDF is enabled in solrconfig
+   *
+   * <p>Defaults to 'true' if not specified. Distributed stats request will be disabled by setting
+   * to 'false'
+   */
+  String DISTRIB_STATS_CACHE = "distrib.statsCache";
 
   /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";

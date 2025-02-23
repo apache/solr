@@ -47,7 +47,6 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ModuleUtils;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -62,7 +61,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() {
     oldSolrHome = System.getProperty(SOLR_HOME_PROP);
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    System.setProperty("configsets", getFile("solr/configsets").toAbsolutePath().toString());
   }
 
   @AfterClass
@@ -288,7 +287,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
               () -> {
                 cores.unload("non_existent_core");
               });
-      MatcherAssert.assertThat(
+      assertThat(
           thrown.getMessage(),
           containsString("Cannot unload non-existent core [non_existent_core]"));
 
@@ -299,8 +298,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
               () -> {
                 cores.unload(null);
               });
-      MatcherAssert.assertThat(
-          thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
+      assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
     } finally {
       cores.shutdown();
     }
@@ -322,7 +320,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     MockCoresLocator cl = new MockCoresLocator();
 
     Path solrHome = createTempDir();
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    System.setProperty("configsets", getFile("solr/configsets").toAbsolutePath().toString());
 
     final CoreContainer cc =
         new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
@@ -334,16 +332,16 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     try {
       cc.load();
-      MatcherAssert.assertThat(cc.getCoreInitFailures().size(), is(1));
-      MatcherAssert.assertThat(
+      assertThat(cc.getCoreInitFailures().size(), is(1));
+      assertThat(
           cc.getCoreInitFailures().get("badcore").exception.getMessage(),
           containsString("nosuchconfigset"));
       cc.unload("badcore", true, true, true);
-      MatcherAssert.assertThat(cc.getCoreInitFailures().size(), is(0));
+      assertThat(cc.getCoreInitFailures().size(), is(0));
 
       // can we create the core now with a good config?
       SolrCore core = cc.create("badcore", Map.of("configSet", "minimal"));
-      MatcherAssert.assertThat(core, not(nullValue()));
+      assertThat(core, not(nullValue()));
 
     } finally {
       cc.shutdown();
@@ -570,14 +568,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     public void copyConfig(String fromConfig, String toConfig) {}
 
     @Override
-    public void uploadConfig(String configName, Path dir) {}
+    protected void uploadConfig(String configName, Path dir) {}
 
     @Override
     public void uploadFileToConfig(
         String configName, String fileName, byte[] data, boolean overwriteOnExists) {}
 
     @Override
-    public void setConfigMetadata(String configName, Map<String, Object> data) {}
+    protected void setConfigMetadata(String configName, Map<String, Object> data) {}
 
     @Override
     public Map<String, Object> getConfigMetadata(String configName) {
@@ -749,11 +747,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     CoreContainer cc = init(CUSTOM_HANDLERS_SOLR_XML);
     try {
-      MatcherAssert.assertThat(
-          cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
-      MatcherAssert.assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
-      MatcherAssert.assertThat(
-          cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
+      assertThat(cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
+      assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
+      assertThat(cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
     } finally {
       cc.shutdown();
     }
@@ -763,8 +759,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testCustomConfigSetService() throws Exception {
     CoreContainer cc = init(CUSTOM_CONFIG_SET_SERVICE_SOLR_XML);
     try {
-      MatcherAssert.assertThat(
-          cc.getConfigSetService(), is(instanceOf(CustomConfigSetService.class)));
+      assertThat(cc.getConfigSetService(), is(instanceOf(CustomConfigSetService.class)));
     } finally {
       cc.shutdown();
     }
@@ -944,7 +939,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     Path solrHome = createTempDir();
 
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    System.setProperty("configsets", getFile("solr/configsets").toAbsolutePath().toString());
 
     final CoreContainer cc =
         new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
@@ -991,11 +986,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Path confDir = Path.of(cc.getSolrHome(), "col_bad", "conf");
     Files.createDirectories(confDir);
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig-defaults.xml").toPath(),
+        getFile("solr/collection1/conf/solrconfig-defaults.xml"),
         confDir.resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     Files.copy(
-        getFile("solr/collection1/conf/schema-minimal.xml").toPath(),
+        getFile("solr/collection1/conf/schema-minimal.xml"),
         confDir.resolve("schema.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     cc.create("col_bad", Map.of());
@@ -1112,7 +1107,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // ----
     // fix col_bad's config (again) and RELOAD to fix failure
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig-defaults.xml").toPath(),
+        getFile("solr/collection1/conf/solrconfig-defaults.xml"),
         confDir.resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     cc.reload("col_bad");

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
@@ -51,10 +50,10 @@ public class SolrZkServer {
 
   private Thread zkThread; // the thread running a zookeeper server, only if zkRun is set
 
-  private File dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
+  private Path dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
   private String confHome;
 
-  public SolrZkServer(String zkRun, String zkHost, File dataHome, String confHome, int solrPort) {
+  public SolrZkServer(String zkRun, String zkHost, Path dataHome, String confHome, int solrPort) {
     this.zkRun = zkRun;
     this.zkHost = zkHost;
     this.dataHome = dataHome;
@@ -277,8 +276,8 @@ class SolrZkServerProps extends QuorumPeerConfig {
     return false;
   }
 
-  public void setDataDir(File dataDir) {
-    this.dataDir = dataDir;
+  public void setDataDir(Path dataDir) {
+    this.dataDir = dataDir.toFile();
   }
 
   /**

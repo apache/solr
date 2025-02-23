@@ -44,6 +44,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -68,6 +69,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -104,8 +106,6 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +159,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     public JettySolrRunner jetty;
     public String nodeName;
     public String coreNodeName;
+
+    /** Core or Collection URL */
     public String url;
+
     public CloudSolrServerClient client;
     public ZkNodeProps info;
 
@@ -174,8 +177,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof CloudJettyRunner)) return false;
-      CloudJettyRunner other = (CloudJettyRunner) obj;
+      if (!(obj instanceof CloudJettyRunner other)) return false;
       return Objects.equals(url, other.url);
     }
 
@@ -212,8 +214,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof CloudSolrServerClient)) return false;
-      CloudSolrServerClient other = (CloudSolrServerClient) obj;
+      if (!(obj instanceof CloudSolrServerClient other)) return false;
       return Objects.equals(solrClient, other.solrClient);
     }
   }
@@ -472,7 +473,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 Replica.Type.TLOG,
                 ((currentI % sliceCount) + 1)); // nowarn
           }
-          customThreadPool.submit(
+          customThreadPool.execute(
               () -> {
                 try {
                   JettySolrRunner j =
@@ -514,7 +515,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 ((currentI % sliceCount) + 1)); // nowarn
           }
 
-          customThreadPool.submit(
+          customThreadPool.execute(
               () -> {
                 try {
                   JettySolrRunner j =
@@ -551,7 +552,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             jettyDir,
             Replica.Type.PULL,
             ((currentI % sliceCount) + 1)); // nowarn
-        customThreadPool.submit(
+        customThreadPool.execute(
             () -> {
               try {
                 JettySolrRunner j =
@@ -589,7 +590,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             new SolrNamedThreadFactory("createReplicaRequests"));
 
     for (CollectionAdminRequest<CollectionAdminResponse> r : createReplicaRequests) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             CollectionAdminResponse response;
             try {
@@ -609,7 +610,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         ExecutorUtil.newMDCAwareCachedThreadPool(
             new SolrNamedThreadFactory("createPullReplicaRequests"));
     for (CollectionAdminRequest<CollectionAdminResponse> r : createPullReplicaRequests) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             CollectionAdminResponse response;
             try {
@@ -734,7 +735,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();
@@ -779,7 +779,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();
@@ -817,7 +816,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();
@@ -1813,7 +1811,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           "Could not find collection "
               + DEFAULT_COLLECTION
               + " in "
-              + clusterState.getCollectionsMap().keySet());
+              + clusterState.getCollectionNames());
     }
 
     for (CloudJettyRunner cjetty : cloudJettys) {
@@ -1981,29 +1979,21 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(commonCloudSolrClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(commonCloudSolrClient));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClient));
 
-    customThreadPool.submit(
-        () ->
-            coreClients.parallelStream()
-                .forEach(
-                    c -> {
-                      IOUtils.closeQuietly(c);
-                    }));
+    for (SolrClient client : coreClients) {
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
+    }
 
-    customThreadPool.submit(
-        () ->
-            solrClientByCollection.values().parallelStream()
-                .forEach(
-                    c -> {
-                      IOUtils.closeQuietly(c);
-                    }));
+    for (SolrClient client : solrClientByCollection.values()) {
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
+    }
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClientCloud));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClientCloud));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(cloudClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(cloudClient));
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
 
@@ -2225,83 +2215,60 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return sdoc(fields);
   }
 
-  private String checkCollectionExpectations(
-      String collectionName,
-      List<Integer> numShardsNumReplicaList,
-      List<String> nodesAllowedToRunShards)
-      throws IOException {
-    getCommonCloudSolrClient();
-    ClusterState clusterState = cloudClient.getClusterState();
-    int expectedSlices = numShardsNumReplicaList.get(0);
-    // The Math.min thing is here, because we expect replication-factor to be reduced to if there
-    // are not enough live nodes to spread all shards of a collection over different nodes
-    int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
-    int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
-
-    //      Map<String,DocCollection> collections = clusterState
-    //          .getCollectionStates();
-    if (clusterState.hasCollection(collectionName)) {
-      Map<String, Slice> slices = clusterState.getCollection(collectionName).getSlicesMap();
-      // did we find expectedSlices slices/shards?
-      if (slices.size() != expectedSlices) {
-        return "Found new collection "
-            + collectionName
-            + ", but mismatch on number of slices. Expected: "
-            + expectedSlices
-            + ", actual: "
-            + slices.size();
-      }
-      int totalShards = 0;
-      for (String sliceName : slices.keySet()) {
-        for (Replica replica : slices.get(sliceName).getReplicas()) {
-          if (nodesAllowedToRunShards != null
-              && !nodesAllowedToRunShards.contains(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
-            return "Shard "
-                + replica.getName()
-                + " created on node "
-                + replica.getNodeName()
-                + " not allowed to run shards for the created collection "
-                + collectionName;
-          }
-        }
-        totalShards += slices.get(sliceName).getReplicas().size();
-      }
-      if (totalShards != expectedTotalShards) {
-        return "Found new collection "
-            + collectionName
-            + " with correct number of slices, but mismatch on number of shards. Expected: "
-            + expectedTotalShards
-            + ", actual: "
-            + totalShards;
-      }
-      return null;
-    } else {
-      return "Could not find new collection " + collectionName;
-    }
-  }
-
-  protected void checkForCollection(
-      String collectionName,
-      List<Integer> numShardsNumReplicaList,
-      List<String> nodesAllowedToRunShards)
+  protected void checkForCollection(String collectionName, List<Integer> numShardsNumReplicaList)
       throws Exception {
     // check for an expectedSlices new collection - we poll the state
-    final TimeOut timeout = new TimeOut(120, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    boolean success = false;
-    String checkResult = "Didnt get to perform a single check";
-    while (!timeout.hasTimedOut()) {
-      checkResult =
-          checkCollectionExpectations(
-              collectionName, numShardsNumReplicaList, nodesAllowedToRunShards);
-      if (checkResult == null) {
-        success = true;
-        break;
-      }
-      Thread.sleep(500);
-    }
-    if (!success) {
-      super.printLayout();
-      fail(checkResult);
+    ZkStateReader reader = ZkStateReader.from(cloudClient);
+
+    AtomicReference<String> message = new AtomicReference<>();
+    try {
+      reader.waitForState(
+          collectionName,
+          120,
+          TimeUnit.SECONDS,
+          c -> {
+            int expectedSlices = numShardsNumReplicaList.get(0);
+            // The Math.min thing is here, because we expect replication-factor to be reduced to if
+            // there are not enough live nodes to spread all shards of a collection over different
+            // nodes.
+            int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
+            int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
+
+            if (c != null) {
+              Collection<Slice> slices = c.getSlices();
+              // did we find expectedSlices slices/shards?
+              if (slices.size() != expectedSlices) {
+                message.set(
+                    "Found new collection "
+                        + collectionName
+                        + ", but mismatch on number of slices. Expected: "
+                        + expectedSlices
+                        + ", actual: "
+                        + slices.size());
+                return false;
+              }
+              int totalShards = 0;
+              for (Slice slice : slices) {
+                totalShards += slice.getReplicas().size();
+              }
+              if (totalShards != expectedTotalShards) {
+                message.set(
+                    "Found new collection "
+                        + collectionName
+                        + " with correct number of slices, but mismatch on number of shards. Expected: "
+                        + expectedTotalShards
+                        + ", actual: "
+                        + totalShards);
+                return false;
+              }
+              return true;
+            } else {
+              message.set("Could not find new collection " + collectionName);
+              return false;
+            }
+          });
+    } catch (TimeoutException e) {
+      fail(message.get());
     }
   }
 
@@ -2569,10 +2536,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {
-      Map<String, DocCollection> map = clusterState.getCollectionsMap();
-      CharArr out = new CharArr();
-      new JSONWriter(out, 2).write(map);
-      cs = out.toString();
+      cs = ClusterStateUtil.toDebugAllStatesString(clusterState);
     }
     return cs;
   }

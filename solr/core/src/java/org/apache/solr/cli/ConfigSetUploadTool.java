@@ -19,11 +19,10 @@ package org.apache.solr.cli;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.nio.file.Paths;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
@@ -35,6 +34,24 @@ import org.slf4j.LoggerFactory;
 public class ConfigSetUploadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Option CONF_NAME_OPTION =
+      Option.builder("n")
+          .longOpt("conf-name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Configset name in ZooKeeper.")
+          .build();
+
+  private static final Option CONF_DIR_OPTION =
+      Option.builder("d")
+          .longOpt("conf-dir")
+          .hasArg()
+          .argName("DIR")
+          .required()
+          .desc("Local directory with configs.")
+          .build();
+
   public ConfigSetUploadTool() {
     this(CLIO.getOutStream());
   }
@@ -44,28 +61,12 @@ public class ConfigSetUploadTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("confname")
-            .argName("confname") // Comes out in help message
-            .hasArg() // Has one sub-argument
-            .required(true) // confname argument must be present
-            .desc("Configset name in ZooKeeper.")
-            .build(), // passed as -confname value
-        Option.builder("confdir")
-            .argName("confdir")
-            .hasArg()
-            .required(true)
-            .desc("Local directory with configs.")
-            .build(),
-        Option.builder("configsetsDir")
-            .argName("configsetsDir")
-            .hasArg()
-            .required(false)
-            .desc("Parent directory of example configsets.")
-            .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(CONF_NAME_OPTION)
+        .addOption(CONF_DIR_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -74,32 +75,30 @@ public class ConfigSetUploadTool extends ToolBase {
   }
 
   @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = SolrCLI.getZkHost(cli);
-    if (zkHost == null) {
-      throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("solrUrl")
-              + " is running in standalone server mode, upconfig can only be used when running in SolrCloud mode.\n");
-    }
+  public String getUsage() {
+    return "bin/solr zk upconfig [-d <DIR>] [-n <NAME>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+  }
 
-    String confName = cli.getOptionValue("confname");
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      Path confPath =
-          ConfigSetService.getConfigsetPath(
-              cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
+  @Override
+  public void runImpl(CommandLine cli) throws Exception {
+    String zkHost = CLIUtils.getZkHost(cli);
+
+    final String solrInstallDir = System.getProperty("solr.install.dir");
+    Path solrInstallDirPath = Paths.get(solrInstallDir);
+
+    String confName = cli.getOptionValue(CONF_NAME_OPTION);
+    String confDir = cli.getOptionValue(CONF_DIR_OPTION);
+
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+    try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
+      final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
+      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echo(
           "Uploading "
               + confPath.toAbsolutePath()
               + " for config "
-              + cli.getOptionValue("confname")
+              + confName
               + " to ZooKeeper at "
               + zkHost);
       FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);

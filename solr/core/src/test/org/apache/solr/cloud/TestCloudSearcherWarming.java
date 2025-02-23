@@ -21,12 +21,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -213,8 +213,8 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         "The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
     // the above call is not enough because we want to assert that the downed replica is not active
     // but clusterShape will also return true if replica is not live -- which we don't want
-    CollectionStatePredicate collectionStatePredicate =
-        (liveNodes, collectionState) -> {
+    Predicate<DocCollection> collectionStatePredicate =
+        collectionState -> {
           for (Replica r : collectionState.getReplicas()) {
             if (r.getNodeName().equals(oldNodeName.get())) {
               return r.getState() == Replica.State.DOWN;

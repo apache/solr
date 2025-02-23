@@ -67,6 +67,59 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.8.1
+=== Configuration
+In solrconfig.xml, the `indexSearcherExecutorThreads` now defaults to 0.
+Therefore, multi-threaded search execution is disabled at a node-level by default.
+It is currently recommended to only use an `indexSearcherExecutorThreads > 0` if all query requests sent to Solr opt-in to multiThreaded search.
+Additionally, `indexSearcherExecutorThreads = -1` can be given to use the number of available CPU threads available to Solr.
+This was the previous default.
+
+== Solr 9.8
+=== Configuration
+In solrconfig.xml, the `numVersionBuckets` and `versionBucketLockTimeoutMs` settings are now obsolete and ignored; a warning will be logged if specified.
+
+=== Partial Results
+When query limits are in use and partial results are not desirable (i.e. reporting or quantitative usages of search)
+users may pass `partialResults=false`.
+This feature has been improved to eliminate some wasted processing.
+In the presence of this parameter, queries encountering limits will return zero results, and to make it clear when this has happened, the `partialResults` response header will be set to `"omitted"`
+
+== Solr 9.7
+=== SchemaVersion upgraded to 1.7
+The default schemaVersion is now 1.7.
+With the new schema version, most fields and fieldTypes that support docValues will have docValues enabled by default.
+See the xref:indexing-guide:docvalues.adoc#enabling-docvalues[Enabling Doc Values Section] for a complete list.
+
+Also, fields will be unable to be uninverted by default. (`uninvertible=false`)
+
+In order to upgrade from schemaVersion 1.6 to 1.7, a re-index of all data will generally be required.
+**This re-index cannot be in-place**.
+https://issues.apache.org/jira/browse/LUCENE-9334[Lucene does not allow adding docValues to existing fields.]
+
+However, if any of the following is true, a re-index is not required:
+
+* All applicable fields already have docValues enabled in the original schema
+* The schema is updated to xref:indexing-guide:docvalues.adoc#disabling-docvalues[explicitly disable docValues] for all fields and fieldTypes that did not have an explicit `docValues` default provided.
+
+The `uninvertible=false` default has no impact on the index, so is unrelated to re-indexing concerns.
+
+== Solr 9.6
+=== Dependency upgrades
+Lucene is upgraded to 9.10.0 and a variety of library dependencies have been upgraded. See https://solr.apache.org/docs/9_6_0/changes/Changes.html for specific upgraded libraries.
+
+=== SolrJ
+* The `Http2SolrClient` classes powered by the Jetty Http library are no longer marked as experimental.
+* Solrj now offers a lightweight client based on java.net.http.HttpClient: `HttpJdkSolrClient`
+* SolrJ now offers an improved async request API
+
+=== Queries
+* Distributed stats can be disabled via request parameter
+* Query timeouts (limits) may now be based on either CPU time as well as wall clock
+
+=== Other
+* Inactive shards will now be cleaned up periodically
+
 == Solr 9.5
 === Dependency Upgrades
 <<#solr-8-2,Solr 8.2 recommended using Zookeeper 3.5.5>> and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.
@@ -207,7 +260,7 @@ TIP: Users who cannot upgrade their Docker engine will need to specify the docke
 * Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
 This change will only affect users that have used streaming expression classes in clients outside
 of Solr. Streaming expressions sent to the /stream handler will still operate exactly as before.
-External clients using streaming expression classes will need to update their depenencies to reference
+External clients using streaming expression classes will need to update their dependencies to reference
 the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
 
 === Deprecations
@@ -274,7 +327,7 @@ Administrators that need Solr exposed more broadly can change the `SOLR_JETTY_HO
 If you rely upon the previous behavior, then you can change the `clientPortAddress` in `solr/server/solr/zoo.cfg`
 * Jetty low level request-logging in NCSA format is now enabled by default, with a retention of 3 days worth of logs.
 This may require some more disk space for logs than was the case in version 8.x. See xref:deployment-guide:configuring-logging.adoc[Configuring Logging] for how to change this.
-* Hadoop authentication support has been moved to the new `hadoop-auth` module. Users need to add the module `hadoop-auth` to classpath. The plugins has also changed package name to `org.apache.solr.security.hadoop`, but can still be loaded as shortform `class="solr.HadoopAuthPlugin"`, `class="solr.ConfigurableInternodeAuthHadoopPlugin"` or `class="solr.KerberosPlugin"`  - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
+* Hadoop authentication support has been moved to the new `hadoop-auth` module. Users need to add the module `hadoop-auth` to classpath. The plugins has also changed package name to `org.apache.solr.security.hadoop`, but can still be loaded as shortform `class="solr.HadoopAuthPlugin"`, `class="solr.ConfigurableInternodeAuthHadoopPlugin"` or `class="solr.KerberosPlugin"`.
 * xref:deployment-guide:jwt-authentication-plugin.adoc[JWTAuthPlugin] has been moved to a module. Users need to add the module `jwt-auth` to classpath. The plugin has also
 changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 * Dependency updates - A lot of dependency updates removes several security issues from dependencies, and thus make Solr more secure.
@@ -335,16 +388,16 @@ Other relevant placement strategies should be used instead, such as autoscaling 
 ** The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
 ** Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
 If you plan on using SolrJ as a JDBC driver, please refer to the xref:query-guide:sql-query.adoc#generic-clients[JDBC documentation]
-** More information can be found in the xref:configuration-guide:libs.adoc#lib-directives-in-solrconfig[Libs documentation].
+** More information can be found in the xref:configuration-guide:libs.adoc[Libs documentation].
 
 * SolrJ class `CloudSolrClient` now supports HTTP2. It has a new Builder. See `CloudLegacySolrClient` for the 8.x version of this class.
 * In Backup request responses, the `response` key now uses a map to return information instead of a list. This is only applicable for users returning information in JSON format, which is the default behavior.
 * `SolrMetricProducer` / `SolrInfoBean` APIs have changed and third-party components that implement these APIs need to be updated.
 * Use of blacklist/whitelist terminology has been completely removed. JWTAuthPlugin parameter `algWhitelist` is now `algAllowlist`. The old parameter will still work in 9.x. Environment variables `SOLR_IP_WHITELIST` and `SOLR_IP_BLACKLIST` are no longer supported, but replaced with `SOLR_IP_ALLOWLIST` and `SOLR_IP_DENYLIST`.
 * Solr Backups - Async responses for backups now correctly aggregate and return information. For collection's snapshot backup request responses additional fields `indexVersion`, `indexFileCount`, etc. were added similar to incremental backup request responses.
-* If you are using the HDFS backup repository, you need to change the repository class to `org.apache.solr.hdfs.backup.repository.HdfsBackupRepository` - see the xref:deployment-guide:backup-restore.adoc#hdfsbackuprepository[HDFS Backup Repository] section.
+* If you are using the HDFS backup repository, you need to change the repository class to `org.apache.solr.hdfs.backup.repository.HdfsBackupRepository` - see the xref:deployment-guide:backup-restore.adoc[Backup and Restore] page for the "HDFS Backup Repository" section in a pre Solr 10 Ref Guide.
 * HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
-changes, however the module needs to be installed - see the section xref:deployment-guide:solr-on-hdfs.adoc[].
+changes, however the module needs to be installed - see the section Solr on HDFS in a pre Solr 10 Ref Guide.
 * The folder `$SOLR_HOME/userfiles`, used by the "cat" streaming expression, is no longer created automatically on startup. The user must create this folder.
 * Solr no longer requires a `solr.xml` in `$SOLR_HOME`. If one is not found, Solr will instead use the default one from `$SOLR_TIP/server/solr/solr.xml`. You can revert to the pre-9.0 behaviour by setting environment variable `SOLR_SOLRXML_REQUIRED=true` or system property `-Dsolr.solrxml.required=true`. Solr also does not require a `zoo.cfg` in `$SOLR_HOME` if started with embedded zookeeper.
 * `base_url` has been removed from stored cluster state. If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1) to better align the stored state in Zookeeper with future versions of Solr; as of Solr 9.x, the `base_url` will no longer be persisted in stored state.

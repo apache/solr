@@ -16,9 +16,6 @@
  */
 package org.apache.solr.common.params;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.INDENT;
-
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -54,7 +51,7 @@ public class ModifiableSolrParams extends SolrParams {
   }
 
   /**
-   * If the input params are of type MofifiableSolrParams, returns the input, otherwise, constructs
+   * If the input params are of type ModifiableSolrParams, returns the input, otherwise, constructs
    * a new ModifiableSolrParams, copying values from the given params. If params is null, returns an
    * empty ModifiableSolrParams instance.
    */
@@ -132,8 +129,8 @@ public class ModifiableSolrParams extends SolrParams {
   }
 
   /**
-   * Add all of the params provided in the parameter to <em>this</em> params. Any current value(s)
-   * for the same key will be overridden.
+   * Add all the params provided in the parameter to <em>this</em> params. Any current value(s) for
+   * the same key will be overridden.
    */
   public void add(SolrParams params) {
     for (Map.Entry<String, String[]> pair : params) {
@@ -178,16 +175,6 @@ public class ModifiableSolrParams extends SolrParams {
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
-
-  public void setShardAttributesToParams(int purpose) {
-    remove(ShardParams.SHARDS); // not a top-level request
-    set(DISTRIB, Boolean.FALSE.toString()); // not a top-level request
-    remove(INDENT);
-    remove(CommonParams.HEADER_ECHO_PARAMS);
-    set(ShardParams.IS_SHARD, true); // a sub (shard) request
-    set(ShardParams.SHARDS_PURPOSE, purpose);
-    set(CommonParams.OMIT_HEADER, false);
-  }
 
   @Override
   public String get(String param) {

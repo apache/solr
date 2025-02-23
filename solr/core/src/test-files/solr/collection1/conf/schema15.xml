@@ -45,6 +45,7 @@
 
   <!-- Dense Vector Fields -->
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+  <fieldType name="knn_vector_byte" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" vectorEncoding="BYTE" />
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -564,6 +565,7 @@
 
   <!-- Dense Vector-->
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+  <field name="vector_byte" type="knn_vector_byte" indexed="true" stored="true"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>

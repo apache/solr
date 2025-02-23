@@ -17,11 +17,18 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.STATUS;
+import static org.apache.solr.handler.component.ResponseBuilder.STAGE_DONE;
+import static org.apache.solr.handler.component.ResponseBuilder.STAGE_EXECUTE_QUERY;
+import static org.apache.solr.handler.component.ResponseBuilder.STAGE_GET_FIELDS;
+import static org.apache.solr.handler.component.ResponseBuilder.STAGE_PARSE_QUERY;
+import static org.apache.solr.handler.component.ResponseBuilder.STAGE_START;
+import static org.apache.solr.handler.component.ResponseBuilder.STAGE_TOP_GROUPS;
+import static org.apache.solr.request.SolrRequestInfo.getQueryLimits;
+import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY;
 
 import com.codahale.metrics.Counter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -33,6 +40,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -67,9 +76,10 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.ThreadStats;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -117,7 +127,7 @@ public class SearchHandler extends RequestHandlerBase
   private SolrCore core;
 
   protected List<String> getDefaultComponents() {
-    ArrayList<String> names = new ArrayList<>(8);
+    ArrayList<String> names = new ArrayList<>(9);
     names.add(QueryComponent.COMPONENT_NAME);
     names.add(FacetComponent.COMPONENT_NAME);
     names.add(FacetModule.COMPONENT_NAME);
@@ -324,9 +334,7 @@ public class SearchHandler extends RequestHandlerBase
       boolean requireZkConnected =
           shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
-      boolean zkConnected =
-          zkController != null
-              && !zkController.getZkClient().getConnectionManager().isLikelyExpired();
+      boolean zkConnected = zkController != null && zkController.getZkClient().isConnected();
       if (requireZkConnected && false == zkConnected) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper is not connected");
       } else {
@@ -380,15 +388,7 @@ public class SearchHandler extends RequestHandlerBase
         trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
       }
 
-      if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(
-            new SolrException(
-                CircuitBreaker.getExceptionErrorCode(),
-                "Circuit Breakers tripped " + errorMessage));
-        return true;
-      }
+      return CircuitBreakerUtils.reportErrorIfBreakersTripped(rsp, trippedCircuitBreakers);
     }
     return false;
   }
@@ -422,212 +422,9 @@ public class SearchHandler extends RequestHandlerBase
       return; // Circuit breaker tripped, return immediately
     }
 
-    // creates a ShardHandler object only if it's needed
-    final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
+    processComponents(req, rsp, rb, timer, components);
 
-    if (timer == null) {
-      // non-debugging prepare phase
-      for (SearchComponent c : components) {
-        c.prepare(rb);
-      }
-    } else {
-      // debugging prepare phase
-      RTimerTree subt = timer.sub("prepare");
-      for (SearchComponent c : components) {
-        rb.setTimer(subt.sub(c.getName()));
-        c.prepare(rb);
-        rb.getTimer().stop();
-      }
-      subt.stop();
-    }
-
-    { // Once all of our components have been prepared, check if this request involves a SortSpec.
-      // If it does, and if our request includes a cursorMark param, then parse & init the
-      // CursorMark state (This must happen after the prepare() of all components, because any
-      // component may have modified the SortSpec)
-      final SortSpec spec = rb.getSortSpec();
-      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
-      if (null != spec && null != cursorStr) {
-        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
-        cursorMark.parseSerializedTotem(cursorStr);
-        rb.setCursorMark(cursorMark);
-      }
-    }
-
-    if (!rb.isDistrib) {
-      // a normal non-distributed request
-
-      try {
-        // The semantics of debugging vs not debugging are different enough that
-        // it makes sense to have two control loops
-        if (!rb.isDebug()) {
-          // Process
-          for (SearchComponent c : components) {
-            c.process(rb);
-          }
-        } else {
-          // Process
-          RTimerTree subt = timer.sub("process");
-          for (SearchComponent c : components) {
-            rb.setTimer(subt.sub(c.getName()));
-            c.process(rb);
-            rb.getTimer().stop();
-          }
-          subt.stop();
-
-          // add the timing info
-          if (rb.isDebugTimings()) {
-            rb.addDebugInfo("timing", timer.asNamedList());
-          }
-        }
-      } catch (ExitableDirectoryReader.ExitingReaderException ex) {
-        log.warn("Query: {}; ", req.getParamString(), ex);
-        if (rb.rsp.getResponse() == null) {
-          rb.rsp.addResponse(new SolrDocumentList());
-
-          // If a cursorMark was passed, and we didn't progress, set
-          // the nextCursorMark to the same position
-          String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
-          if (null != cursorStr) {
-            rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, cursorStr);
-          }
-        }
-        if (rb.isDebug()) {
-          NamedList<Object> debug = new NamedList<>();
-          debug.add("explain", new NamedList<>());
-          rb.rsp.add("debug", debug);
-        }
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-      }
-    } else {
-      // a distributed request
-
-      if (rb.outgoing == null) {
-        rb.outgoing = new ArrayList<>();
-      }
-      rb.finished = new ArrayList<>();
-
-      int nextStage = 0;
-      long totalShardCpuTime = 0L;
-      do {
-        rb.stage = nextStage;
-        nextStage = ResponseBuilder.STAGE_DONE;
-
-        // call all components
-        for (SearchComponent c : components) {
-          // the next stage is the minimum of what all components report
-          nextStage = Math.min(nextStage, c.distributedProcess(rb));
-        }
-
-        // check the outgoing queue and send requests
-        while (rb.outgoing.size() > 0) {
-
-          // submit all current request tasks at once
-          while (rb.outgoing.size() > 0) {
-            ShardRequest sreq = rb.outgoing.remove(0);
-            sreq.actualShards = sreq.shards;
-            if (sreq.actualShards == ShardRequest.ALL_SHARDS) {
-              sreq.actualShards = rb.shards;
-            }
-            // presume we'll get a response from each shard we send to
-            sreq.responses = new ArrayList<>(sreq.actualShards.length);
-
-            // TODO: map from shard to address[]
-            for (String shard : sreq.actualShards) {
-              ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-              params.setShardAttributesToParams(sreq.purpose);
-
-              // Distributed request -- need to send queryID as a part of the distributed request
-              params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
-              if (rb.requestInfo != null) {
-                // we could try and detect when this is needed, but it could be tricky
-                params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
-              }
-              String shardQt = params.get(ShardParams.SHARDS_QT);
-              if (shardQt != null) {
-                params.set(CommonParams.QT, shardQt);
-              } else {
-                // for distributed queries that don't include shards.qt, use the original path
-                // as the default but operators need to update their luceneMatchVersion to enable
-                // this behavior since it did not work this way prior to 5.1
-                String reqPath = (String) req.getContext().get(PATH);
-                if (!"/select".equals(reqPath)) {
-                  params.set(CommonParams.QT, reqPath);
-                } // else if path is /select, then the qt gets passed thru if set
-              }
-              shardHandler1.submit(sreq, shard, params);
-            }
-          }
-
-          // now wait for replies, but if anyone puts more requests on
-          // the outgoing queue, send them out immediately (by exiting
-          // this loop)
-          boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
-          while (rb.outgoing.size() == 0) {
-            ShardResponse srsp =
-                tolerant
-                    ? shardHandler1.takeCompletedIncludingErrors()
-                    : shardHandler1.takeCompletedOrError();
-            if (srsp == null) break; // no more requests to wait for
-
-            // Was there an exception?
-            if (srsp.getException() != null) {
-              // If things are not tolerant, abort everything and rethrow
-              if (!tolerant) {
-                shardHandler1.cancelAll();
-                throwSolrException(srsp.getException());
-              } else {
-                // Check if the purpose includes 'PURPOSE_GET_TOP_IDS'
-                boolean includesTopIdsPurpose =
-                    (srsp.getShardRequest().purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0;
-                // Check if all responses have exceptions
-                boolean allResponsesHaveExceptions =
-                    srsp.getShardRequest().responses.stream()
-                        .allMatch(response -> response.getException() != null);
-                // Check if all shards have failed for PURPOSE_GET_TOP_IDS
-                boolean allShardsFailed = includesTopIdsPurpose && allResponsesHaveExceptions;
-                // if all shards fail, fail the request despite shards.tolerant
-                if (allShardsFailed) {
-                  throwSolrException(srsp.getException());
-                } else {
-                  rsp.getResponseHeader()
-                      .asShallowMap()
-                      .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-                }
-              }
-            }
-
-            rb.finished.add(srsp.getShardRequest());
-
-            // let the components see the responses to the request
-            for (SearchComponent c : components) {
-              c.handleResponses(rb, srsp.getShardRequest());
-            }
-
-            // Compute total CpuTime used by all shards.
-            if (publishCpuTime) {
-              totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
-            }
-          }
-        }
-
-        for (SearchComponent c : components) {
-          c.finishStage(rb);
-        }
-
-        // we are done when the next stage is MAX_VALUE
-      } while (nextStage != Integer.MAX_VALUE);
-
-      if (publishCpuTime) {
-        rsp.getResponseHeader().add(ThreadStats.CPU_TIME, totalShardCpuTime);
-        rsp.addToLog(ThreadStats.CPU_TIME, totalShardCpuTime);
-      }
-    }
-
-    // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
+    // SOLR-5550: still provide shards.info if requested even for a short-circuited distrib request
     if (!rb.isDistrib
         && req.getParams().getBool(ShardParams.SHARDS_INFO, false)
         && rb.shortCircuitedURL != null) {
@@ -666,6 +463,331 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
+  private void processComponents(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      ResponseBuilder rb,
+      RTimerTree timer,
+      List<SearchComponent> components)
+      throws IOException {
+    // creates a ShardHandler object only if it's needed
+    final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
+
+    if (!prepareComponents(req, rb, timer, components)) return;
+
+    { // Once all of our components have been prepared, check if this request involves a SortSpec.
+      // If it does, and if our request includes a cursorMark param, then parse & init the
+      // CursorMark state (This must happen after the prepare() of all components, because any
+      // component may have modified the SortSpec)
+      final SortSpec spec = rb.getSortSpec();
+      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+      if (null != spec && null != cursorStr) {
+        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
+        cursorMark.parseSerializedTotem(cursorStr);
+        rb.setCursorMark(cursorMark);
+      }
+    }
+
+    if (!rb.isDistrib) {
+      // a normal non-distributed request
+      try {
+        // The semantics of debugging vs not debugging are different enough that
+        // it makes sense to have two control loops
+        if (!rb.isDebug()) {
+          // Process
+          for (SearchComponent c : components) {
+            if (checkLimitsBefore(c, "process", rb.req, rb.rsp, components)) {
+              shortCircuitedResults(req, rb);
+              return;
+            }
+            c.process(rb);
+          }
+        } else {
+          // Process
+          RTimerTree subt = timer.sub("process");
+          for (SearchComponent c : components) {
+            if (checkLimitsBefore(c, "process debug", rb.req, rb.rsp, components)) {
+              shortCircuitedResults(req, rb);
+              return;
+            }
+            rb.setTimer(subt.sub(c.getName()));
+            c.process(rb);
+            rb.getTimer().stop();
+          }
+          subt.stop();
+
+          // add the timing info
+          if (rb.isDebugTimings()) {
+            rb.addDebugInfo("timing", timer.asNamedList());
+          }
+        }
+      } catch (ExitableDirectoryReader.ExitingReaderException ex) {
+        log.warn("Query: {}; ", req.getParamString(), ex);
+        shortCircuitedResults(req, rb);
+      }
+    } else {
+      // a distributed request
+
+      if (rb.outgoing == null) {
+        rb.outgoing = new ArrayList<>();
+      }
+      rb.finished = new ArrayList<>();
+
+      int nextStage = 0;
+      long totalShardCpuTime = 0L;
+      do {
+        rb.stage = nextStage;
+        nextStage = ResponseBuilder.STAGE_DONE;
+
+        // call all components
+        for (SearchComponent c : components) {
+          if (checkLimitsBefore(c, "distrib", rb.req, rb.rsp, components)) {
+            shortCircuitedResults(req, rb);
+            return;
+          } // the next stage is the minimum of what all components report
+          nextStage = Math.min(nextStage, c.distributedProcess(rb));
+        }
+
+        // check the outgoing queue and send requests
+        while (rb.outgoing.size() > 0) {
+
+          // submit all current request tasks at once
+          while (rb.outgoing.size() > 0) {
+            ShardRequest sreq = rb.outgoing.remove(0);
+            sreq.actualShards = sreq.shards;
+            if (sreq.actualShards == ShardRequest.ALL_SHARDS) {
+              sreq.actualShards = rb.shards;
+            }
+            // presume we'll get a response from each shard we send to
+            sreq.responses = new ArrayList<>(sreq.actualShards.length);
+
+            // TODO: map from shard to address[]
+            for (String shard : sreq.actualShards) {
+              ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
+              ShardHandler.setShardAttributesToParams(params, sreq.purpose);
+
+              // Distributed request -- need to send queryID as a part of the distributed request
+              params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
+              if (rb.requestInfo != null) {
+                // we could try and detect when this is needed, but it could be tricky
+                params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
+              }
+              String shardQt = params.get(ShardParams.SHARDS_QT);
+              if (shardQt != null) {
+                params.set(CommonParams.QT, shardQt);
+              } else {
+                // for distributed queries that don't include shards.qt, use the original path
+                // as the default but operators need to update their luceneMatchVersion to enable
+                // this behavior since it did not work this way prior to 5.1
+                String reqPath = (String) req.getContext().get(PATH);
+                if (!"/select".equals(reqPath)) {
+                  params.set(CommonParams.QT, reqPath);
+                } // else if path is /select, then the qt gets passed thru if set
+              }
+              shardHandler1.submit(sreq, shard, params);
+            }
+          }
+
+          // now wait for replies, but if anyone puts more requests on
+          // the outgoing queue, send them out immediately (by exiting
+          // this loop)
+          boolean tolerant = HttpShardHandler.getShardsTolerantAsBool(rb.req);
+          while (rb.outgoing.size() == 0) {
+            ShardResponse srsp =
+                tolerant
+                    ? shardHandler1.takeCompletedIncludingErrors()
+                    : shardHandler1.takeCompletedOrError();
+            if (srsp == null) break; // no more requests to wait for
+            AtomicReference<Object> detailMesg =
+                new AtomicReference<>(); // or perhaps new Object[1] ?
+
+            boolean anyResponsesPartial =
+                srsp.getShardRequest().responses.stream()
+                    .anyMatch(
+                        response -> {
+                          NamedList<Object> resp = response.getSolrResponse().getResponse();
+                          if (resp == null) {
+                            return false;
+                          }
+                          Object recursive = resp.findRecursive("responseHeader", "partialResults");
+                          if (recursive != null) {
+                            Object message =
+                                "[Shard:"
+                                    + response.getShardAddress()
+                                    + "]"
+                                    + resp.findRecursive(
+                                        "responseHeader",
+                                        RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY);
+                            detailMesg.compareAndSet(null, message); // first one, ingore rest
+                          }
+                          return recursive != null;
+                        });
+            if (anyResponsesPartial) {
+              rb.rsp.addPartialResponseDetail(detailMesg.get());
+              rsp.setPartialResults(rb.req);
+            }
+            // Was there an exception?
+            if (srsp.getException() != null) {
+              // If things are not tolerant, abort everything and rethrow
+              if (!tolerant) {
+                shardHandler1.cancelAll();
+                throwSolrException(srsp.getException());
+              } else {
+                // Check if the purpose includes 'PURPOSE_GET_TOP_IDS'
+                boolean includesTopIdsPurpose =
+                    (srsp.getShardRequest().purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0;
+                // Check if all responses have exceptions
+                boolean allResponsesHaveExceptions =
+                    srsp.getShardRequest().responses.stream()
+                        .allMatch(response -> response.getException() != null);
+                // Check if all shards have failed for PURPOSE_GET_TOP_IDS
+                boolean allShardsFailed = includesTopIdsPurpose && allResponsesHaveExceptions;
+                // if all shards fail, fail the request despite shards.tolerant
+                if (allShardsFailed) {
+                  throwSolrException(srsp.getException());
+                } else {
+                  rsp.setPartialResults(rb.req);
+                  if (publishCpuTime) {
+                    totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
+                    rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+                    rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+                  }
+                }
+              }
+            }
+
+            rb.finished.add(srsp.getShardRequest());
+
+            // let the components see the responses to the request
+            for (SearchComponent c : components) {
+              if (checkLimitsBefore(
+                  c,
+                  "handleResponses next stage:" + stageInEnglish(nextStage),
+                  rb.req,
+                  rb.rsp,
+                  components)) {
+                shortCircuitedResults(req, rb);
+                return;
+              }
+              c.handleResponses(rb, srsp.getShardRequest());
+            }
+
+            // Compute total CpuTime used by all shards.
+            if (publishCpuTime) {
+              totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
+            }
+          }
+        }
+
+        for (SearchComponent c : components) {
+          if (checkLimitsBefore(
+              c, "finishStage stage:" + stageInEnglish(nextStage), rb.req, rb.rsp, components)) {
+            return;
+          }
+          c.finishStage(rb);
+        }
+
+        // we are done when the next stage is MAX_VALUE
+      } while (nextStage != Integer.MAX_VALUE);
+
+      if (publishCpuTime) {
+        rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+        rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+      }
+    }
+  }
+
+  private static boolean prepareComponents(
+      SolrQueryRequest req, ResponseBuilder rb, RTimerTree timer, List<SearchComponent> components)
+      throws IOException {
+    if (timer == null) {
+      // non-debugging prepare phase
+      for (SearchComponent component : components) {
+        if (checkLimitsBefore(component, "prepare", rb.req, rb.rsp, components)) {
+          shortCircuitedResults(req, rb);
+          return false;
+        }
+        component.prepare(rb);
+      }
+    } else {
+      // debugging prepare phase
+      RTimerTree subt = timer.sub("prepare");
+      for (SearchComponent c : components) {
+        if (checkLimitsBefore(c, "prepare debug", rb.req, rb.rsp, components)) {
+          shortCircuitedResults(req, rb);
+          return false;
+        }
+        rb.setTimer(subt.sub(c.getName()));
+        c.prepare(rb);
+        rb.getTimer().stop();
+      }
+      subt.stop();
+    }
+    return true;
+  }
+
+  private static String stageInEnglish(int nextStage) {
+    // This should probably be a enum, but that change should be its own ticket.
+    switch (nextStage) {
+      case STAGE_START:
+        return "START";
+      case STAGE_PARSE_QUERY:
+        return "PARSE_QUERY";
+      case STAGE_TOP_GROUPS:
+        return "TOP_GROUPS";
+      case STAGE_EXECUTE_QUERY:
+        return "EXECUTE_QUERY";
+      case STAGE_GET_FIELDS:
+        return "GET_FIELDS";
+        // nobody wants to think it was DONE and canceled after it completed...
+      case STAGE_DONE:
+        return "FINISHING";
+      default:
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unrecognized stage:" + nextStage);
+    }
+  }
+
+  private static void shortCircuitedResults(SolrQueryRequest req, ResponseBuilder rb) {
+
+    if (rb.rsp.getResponse() == null) {
+      rb.rsp.addResponse(new SolrDocumentList());
+
+      // If a cursorMark was passed, and we didn't progress, set
+      // the nextCursorMark to the same position
+      String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+      if (null != cursorStr) {
+        rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, cursorStr);
+      }
+    }
+    if (rb.isDebug()) {
+      NamedList<Object> debug = new NamedList<>();
+      debug.add("explain", new NamedList<>());
+      rb.rsp.add("debug", debug);
+    }
+    rb.rsp.setPartialResults(rb.req);
+  }
+
+  private static boolean checkLimitsBefore(
+      SearchComponent c,
+      String when,
+      SolrQueryRequest req,
+      SolrQueryResponse resp,
+      List<SearchComponent> components) {
+
+    return getQueryLimits(req, resp)
+        .maybeExitWithPartialResults(
+            () ->
+                "["
+                    + when
+                    + "] Limit(s) exceeded prior to "
+                    + c.getName()
+                    + " in "
+                    + components.stream()
+                        .map(SearchComponent::getName)
+                        .collect(Collectors.toList()));
+  }
+
   private long computeShardCpuTime(List<ShardResponse> responses) {
     long totalShardCpuTime = 0;
     for (ShardResponse response : responses) {
@@ -677,7 +799,7 @@ public class SearchHandler extends RequestHandlerBase
             (SimpleOrderedMap<Object>)
                 response.getSolrResponse().getResponse().get(SolrQueryResponse.RESPONSE_HEADER_KEY);
         if (header != null) {
-          Long shardCpuTime = (Long) header.get(ThreadStats.CPU_TIME);
+          Long shardCpuTime = (Long) header.get(ThreadCpuTimer.CPU_TIME);
           if (shardCpuTime != null) {
             totalShardCpuTime += shardCpuTime;
           }

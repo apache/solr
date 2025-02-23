@@ -29,9 +29,12 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -44,7 +47,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link DirectoryFactory} impl base class for caching Directory instances per path. Most
  * DirectoryFactory implementations will want to extend this class and simply implement {@link
- * DirectoryFactory#create(String, LockFactory, DirContext)}.
+ * DirectoryFactory#create(String, LockFactory)}.
  *
  * <p>This is an expert class and these API's are subject to change.
  */
@@ -58,8 +61,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     private boolean deleteOnClose = false;
 
     public CacheValue(String path, Directory directory) {
-      this.path = path;
-      this.directory = directory;
+      this.path = Objects.requireNonNull(path);
+      this.directory = Objects.requireNonNull(directory);
       this.closeEntries.add(this);
       // for debug
       // this.originTrace = new RuntimeException("Originated from:");
@@ -70,13 +73,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     public boolean closeCacheValueCalled = false;
     public boolean doneWithDir = false;
     private boolean deleteAfterCoreClose = false;
-    public Set<CacheValue> removeEntries = new HashSet<>();
     public Set<CacheValue> closeEntries = new HashSet<>();
 
     public void setDeleteOnClose(boolean deleteOnClose, boolean deleteAfterCoreClose) {
-      if (deleteOnClose) {
-        removeEntries.add(this);
-      }
       this.deleteOnClose = deleteOnClose;
       this.deleteAfterCoreClose = deleteAfterCoreClose;
     }
@@ -141,7 +140,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       cacheValue.doneWithDir = true;
       log.debug("Done with dir: {}", cacheValue);
       if (cacheValue.refCnt == 0 && !closed) {
-        boolean cl = closeCacheValue(cacheValue);
+        boolean cl = closeCacheValue(cacheValue, null);
         if (cl) {
           removeFromCache(cacheValue);
         }
@@ -200,7 +199,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           for (CacheValue v : val.closeEntries) {
             assert v.refCnt == 0 : val.refCnt;
             log.debug("Closing directory when closing factory: {}", v.path);
-            boolean cl = closeCacheValue(v);
+            boolean cl = closeCacheValue(v, closedDirs);
             if (cl) {
               closedDirs.add(v);
             }
@@ -210,7 +209,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         }
       }
 
-      for (CacheValue val : removeEntries) {
+      for (CacheValue val : sorted(removeEntries)) {
         log.debug("Removing directory after core close: {}", val.path);
         try {
           removeDirectory(val);
@@ -233,7 +232,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   // be sure the method is called with the sync lock on this object
   // returns true if we closed the cacheValue, false if it will be closed later
-  private boolean closeCacheValue(CacheValue cacheValue) {
+  private boolean closeCacheValue(CacheValue cacheValue, Set<CacheValue> deferRemove) {
     log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries);
     List<CloseListener> listeners = closeListeners.remove(cacheValue.directory);
     if (listeners != null) {
@@ -246,47 +245,46 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
     cacheValue.closeCacheValueCalled = true;
-    if (cacheValue.deleteOnClose) {
-      // see if we are a subpath
-      Collection<CacheValue> values = byPathCache.values();
-
-      Collection<CacheValue> cacheValues = new ArrayList<>(values);
-      cacheValues.remove(cacheValue);
-      for (CacheValue otherCacheValue : cacheValues) {
-        // if we are a parent path and a sub path is not already closed, get a sub path to close us
-        // later
-        if (isSubPath(cacheValue, otherCacheValue) && !otherCacheValue.closeCacheValueCalled) {
-          // we let the sub dir remove and close us
-          if (!otherCacheValue.deleteAfterCoreClose && cacheValue.deleteAfterCoreClose) {
-            otherCacheValue.deleteAfterCoreClose = true;
-          }
-          otherCacheValue.removeEntries.addAll(cacheValue.removeEntries);
-          otherCacheValue.closeEntries.addAll(cacheValue.closeEntries);
-          cacheValue.closeEntries.clear();
-          cacheValue.removeEntries.clear();
-          return false;
-        }
-      }
+    if (cacheValue.deleteOnClose && maybeDeferClose(cacheValue)) {
+      // we will be closed by a child path
+      return false;
     }
 
     boolean cl = false;
-    for (CacheValue val : cacheValue.closeEntries) {
-      close(val);
+    for (CacheValue val : sorted(cacheValue.closeEntries)) {
+      if (!val.deleteOnClose) {
+        // just a simple close, do it unconditionally
+        close(val);
+      } else {
+        if (maybeDeferClose(val)) {
+          // parent path must have been arbitrarily associated with one of multiple
+          // subpaths; so, assuming this one of the subpaths, we now delegate to
+          // another live subpath.
+          assert val != cacheValue; // else would already have been deferred
+          continue;
+        }
+        close(val);
+        if (!val.deleteAfterCoreClose) {
+          log.debug("Removing directory before core close: {}", val.path);
+          try {
+            removeDirectory(val);
+          } catch (Exception e) {
+            log.error("Error removing directory {} before core close", val.path, e);
+          }
+        } else {
+          removeEntries.add(val);
+        }
+      }
       if (val == cacheValue) {
         cl = true;
-      }
-    }
-
-    for (CacheValue val : cacheValue.removeEntries) {
-      if (!val.deleteAfterCoreClose) {
-        log.debug("Removing directory before core close: {}", val.path);
-        try {
-          removeDirectory(val);
-        } catch (Exception e) {
-          log.error("Error removing directory {} before core close", val.path, e);
-        }
       } else {
-        removeEntries.add(val);
+        // this was a deferred close, so it's our responsibility to remove it from cache
+        assert val.closeEntries.isEmpty();
+        if (deferRemove == null) {
+          removeFromCache(val);
+        } else {
+          deferRemove.add(val);
+        }
       }
     }
 
@@ -300,6 +298,51 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
     return cl;
+  }
+
+  private static Iterable<CacheValue> sorted(Set<CacheValue> vals) {
+    if (vals.size() < 2) {
+      return vals;
+    }
+    // here we reverse-sort entries by path, in order to trivially ensure that
+    // subpaths are removed before parent paths.
+    return vals.stream().sorted((a, b) -> b.path.compareTo(a.path)).collect(Collectors.toList());
+  }
+
+  private boolean maybeDeferClose(CacheValue maybeDefer) {
+    assert maybeDefer.deleteOnClose;
+    for (CacheValue maybeChildPath : byPathCache.values()) {
+      // if we are a parent path and a sub path is not already closed, get a sub path to close us
+      // later
+      if (maybeDefer != maybeChildPath
+          && isSubPath(maybeDefer, maybeChildPath)
+          && !maybeChildPath.closeCacheValueCalled) {
+        // we let the sub dir remove and close us
+        if (maybeChildPath.deleteAfterCoreClose && !maybeDefer.deleteAfterCoreClose) {
+          // if we need to hold onto the child path until after core close, then don't allow
+          // the parent path to be deleted before!
+          maybeDefer.deleteAfterCoreClose = true;
+        }
+        if (maybeDefer.closeEntries.isEmpty()) {
+          // we've already been deferred
+          maybeChildPath.closeEntries.add(maybeDefer);
+        } else {
+          maybeChildPath.closeEntries.addAll(maybeDefer.closeEntries);
+          maybeDefer.closeEntries.clear();
+        }
+        return true;
+      }
+    }
+    if (!maybeDefer.deleteAfterCoreClose) {
+      // check whether we need to order ourselves after potential subpath `deleteAfterCoreClose`
+      for (CacheValue maybeChildPath : removeEntries) {
+        if (isSubPath(maybeDefer, maybeChildPath)) {
+          maybeDefer.deleteAfterCoreClose = true;
+          break;
+        }
+      }
+    }
+    return false;
   }
 
   private void close(CacheValue val) {
@@ -324,11 +367,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
   }
 
-  private boolean isSubPath(CacheValue cacheValue, CacheValue otherCacheValue) {
-    int one = cacheValue.path.lastIndexOf('/');
-    int two = otherCacheValue.path.lastIndexOf('/');
-
-    return otherCacheValue.path.startsWith(cacheValue.path + "/") && two > one;
+  private static boolean isSubPath(CacheValue cacheValue, CacheValue otherCacheValue) {
+    return Path.of(otherCacheValue.path).startsWith(Path.of(cacheValue.path));
   }
 
   @Override
@@ -353,25 +393,22 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   public final Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException {
     String fullPath = normalize(path);
+    Directory directory;
+    CacheValue cacheValue;
     synchronized (this) {
       if (closed) {
         throw new AlreadyClosedException("Already closed");
       }
 
-      final CacheValue cacheValue = byPathCache.get(fullPath);
-      Directory directory = null;
-      if (cacheValue != null) {
-        directory = cacheValue.directory;
-      }
-
-      if (directory == null) {
-        directory = create(fullPath, createLockFactory(rawLockType), dirContext);
+      cacheValue = byPathCache.get(fullPath);
+      if (cacheValue == null) {
+        directory = create(fullPath, createLockFactory(rawLockType));
         assert ObjectReleaseTracker.track(directory);
         boolean success = false;
         try {
-          CacheValue newCacheValue = new CacheValue(fullPath, directory);
-          byDirectoryCache.put(directory, newCacheValue);
-          byPathCache.put(fullPath, newCacheValue);
+          cacheValue = new CacheValue(fullPath, directory);
+          byDirectoryCache.put(directory, cacheValue);
+          byPathCache.put(fullPath, cacheValue);
           log.debug("return new directory for {}", fullPath);
           success = true;
         } finally {
@@ -380,12 +417,34 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           }
         }
       } else {
+        directory = cacheValue.directory;
         cacheValue.refCnt++;
         log.debug("Reusing cached directory: {}", cacheValue);
       }
-
-      return directory;
     }
+
+    Directory filteredDir = filterDirectory(directory, dirContext);
+    // If the directory is filtered/unwrapped, we need to wrap it in a ReleasableDirectory
+    // form to be able to recognize it when release(Directory) is called.
+    return filteredDir == directory ? directory : new ReleasableDirectory(filteredDir, cacheValue);
+  }
+
+  /**
+   * Potentially filters or unwraps the cached {@link Directory} depending on the intended use
+   * defined by the {@link org.apache.solr.core.DirectoryFactory.DirContext}.
+   *
+   * @param dir the {@link Directory} cached by this {@link CachingDirectoryFactory}.
+   * @param dirContext the nature or the intended use of the directory.
+   * @return a filtered or unwrapped version of the directory parameter, or directly the directory
+   *     parameter if it does not need any filtering/unwrapping.
+   */
+  protected Directory filterDirectory(Directory dir, DirContext dirContext) {
+    // If the DirContext is REPLICATION or BACKUP, then unwrap the Directory to allow the caller to
+    // copy raw bytes, skipping any additional logic that would be added by a FilterDirectory on top
+    // of the raw Directory.
+    return dirContext == DirContext.REPLICATION || dirContext == DirContext.BACKUP
+        ? FilterDirectory.unwrap(dir)
+        : dir;
   }
 
   /*
@@ -446,8 +505,13 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
       CacheValue cacheValue = byDirectoryCache.get(directory);
       if (cacheValue == null) {
-        throw new IllegalArgumentException(
-            "Unknown directory: " + directory + " " + byDirectoryCache);
+        // The directory is not registered, it is a ReleasableDirectory wrapper.
+        try {
+          cacheValue = ((ReleasableDirectory) directory).cacheValue;
+        } catch (ClassCastException e) {
+          throw new IllegalArgumentException(
+              "Unknown directory: " + directory + " " + byDirectoryCache);
+        }
       }
       if (log.isDebugEnabled()) {
         log.debug(
@@ -462,7 +526,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       assert cacheValue.refCnt >= 0 : cacheValue.refCnt;
 
       if (cacheValue.refCnt == 0 && cacheValue.doneWithDir && !closed) {
-        boolean cl = closeCacheValue(cacheValue);
+        boolean cl = closeCacheValue(cacheValue, null);
         if (cl) {
           removeFromCache(cacheValue);
         }
@@ -549,5 +613,20 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   protected synchronized String getPath(Directory directory) {
     return byDirectoryCache.get(directory).path;
+  }
+
+  /**
+   * Delegates to a filtered or unwrapped directory, and allows this caching factory to release
+   * correctly the corresponding cached directory.
+   */
+  public static class ReleasableDirectory extends FilterDirectory {
+
+    private final CacheValue cacheValue;
+
+    private ReleasableDirectory(Directory filteredDir, CacheValue cacheValue) {
+      super(filteredDir);
+      assert cacheValue != null;
+      this.cacheValue = cacheValue;
+    }
   }
 }

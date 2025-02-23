@@ -19,18 +19,18 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -168,7 +168,8 @@ public class SolrRequestParsers {
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams(req, streams);
 
-    SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
+    SolrQueryRequest sreq =
+        buildRequestFrom(core, params, streams, getRequestTimer(req), req, null);
 
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
@@ -184,16 +185,30 @@ public class SolrRequestParsers {
   /** For embedded Solr use; not related to HTTP. */
   public SolrQueryRequest buildRequestFrom(
       SolrCore core, SolrParams params, Collection<ContentStream> streams) throws Exception {
-    return buildRequestFrom(core, params, streams, new RTimerTree(), null);
+    return buildRequestFrom(core, params, streams, new RTimerTree(), null, null);
+  }
+
+  public SolrQueryRequest buildRequestFrom(
+      SolrCore core, SolrParams params, Collection<ContentStream> streams, Principal principal)
+      throws Exception {
+    return buildRequestFrom(core, params, streams, new RTimerTree(), null, principal);
   }
 
   private SolrQueryRequest buildRequestFrom(
       SolrCore core,
       SolrParams params,
-      Collection<ContentStream> streams,
+      Collection<ContentStream> streams, // might be added to but caller shouldn't depend on it
       RTimerTree requestTimer,
-      final HttpServletRequest req)
+      final HttpServletRequest req,
+      final Principal principal)
       throws Exception {
+    // ensure streams is non-null and mutable so we can easily add to it
+    if (streams == null) {
+      streams = new ArrayList<>();
+    } else if (!(streams instanceof ArrayList)) {
+      streams = new ArrayList<>(streams);
+    }
+
     // The content type will be applied to all streaming content
     String contentType = params.get(CommonParams.STREAM_CONTENTTYPE);
 
@@ -204,7 +219,7 @@ public class SolrRequestParsers {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Remote Streaming is disabled.");
       }
       for (final String url : strs) {
-        ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(url));
+        ContentStreamBase stream = new ContentStreamBase.URLStream(URI.create(url).toURL());
         if (contentType != null) {
           stream.setContentType(contentType);
         }
@@ -221,7 +236,7 @@ public class SolrRequestParsers {
             "Remote Streaming is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
       }
       for (final String file : strs) {
-        ContentStreamBase stream = new ContentStreamBase.FileStream(new File(file));
+        ContentStreamBase stream = new ContentStreamBase.FileStream(Path.of(file));
         if (contentType != null) {
           stream.setContentType(contentType);
         }
@@ -252,7 +267,11 @@ public class SolrRequestParsers {
         new SolrQueryRequestBase(core, params, requestTimer) {
           @Override
           public Principal getUserPrincipal() {
-            return req == null ? null : req.getUserPrincipal();
+            if (principal != null) {
+              return principal;
+            } else {
+              return req == null ? null : req.getUserPrincipal();
+            }
           }
 
           @Override
@@ -281,7 +300,7 @@ public class SolrRequestParsers {
             return httpSolrCall;
           }
         };
-    if (streams != null && streams.size() > 0) {
+    if (!streams.isEmpty()) {
       q.setContentStreams(streams);
     }
     return q;

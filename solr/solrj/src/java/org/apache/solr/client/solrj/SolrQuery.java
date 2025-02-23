@@ -615,7 +615,7 @@ public class SolrQuery extends ModifiableSolrParams {
   }
 
   /**
-   * Gets an a list of current sort clauses.
+   * Gets a list of current sort clauses.
    *
    * @return an immutable list of current sort clauses
    * @since 4.2
@@ -683,7 +683,7 @@ public class SolrQuery extends ModifiableSolrParams {
   /**
    * Updates or adds a single sort field specification to the current sort information. If the sort
    * field already exist in the sort information map, its position is unchanged and the sort order
-   * is set; if it does not exist, it is appended at the end with the specified order..
+   * is set; if it does not exist, it is appended at the end with the specified order.
    *
    * @return the modified SolrQuery object, for easy chaining
    * @since 4.2
@@ -1198,6 +1198,29 @@ public class SolrQuery extends ModifiableSolrParams {
     return this.getInt(CommonParams.TIME_ALLOWED);
   }
 
+  /**
+   * Set the maximum CPU time allowed for this query. If the thread that executes the query takes
+   * more CPU time than the specified milliseconds, a timeout occurs and partial (or no) results may
+   * be returned.
+   *
+   * <p>If given Integer is null, then this parameter is removed from the request
+   *
+   * @param milliseconds the CPU time in milliseconds allowed for this query
+   */
+  public SolrQuery setCpuAllowed(Integer milliseconds) {
+    if (milliseconds == null) {
+      this.remove(CommonParams.CPU_ALLOWED);
+    } else {
+      this.set(CommonParams.CPU_ALLOWED, milliseconds);
+    }
+    return this;
+  }
+
+  /** Get the maximum time allowed for this query. */
+  public Integer getCpuAllowed() {
+    return this.getInt(CommonParams.CPU_ALLOWED);
+  }
+
   ///////////////////////
   //  Utility functions
   ///////////////////////
@@ -1310,7 +1333,7 @@ public class SolrQuery extends ModifiableSolrParams {
     }
 
     /**
-     * Creates a decending SortClause for an item
+     * Creates a descending SortClause for an item
      *
      * @param item item to sort on
      */
@@ -1319,7 +1342,7 @@ public class SolrQuery extends ModifiableSolrParams {
     }
 
     /**
-     * Gets the item to sort, typically a function or a fieldname
+     * Gets the item to sort, typically a function or a field name
      *
      * @return item to sort
      */
@@ -1330,7 +1353,7 @@ public class SolrQuery extends ModifiableSolrParams {
     /**
      * Gets the order to sort
      *
-     * @return order to sort
+     * @return order to sort by
      */
     public ORDER getOrder() {
       return order;
@@ -1339,8 +1362,7 @@ public class SolrQuery extends ModifiableSolrParams {
     @Override
     public boolean equals(Object other) {
       if (this == other) return true;
-      if (!(other instanceof SortClause)) return false;
-      final SortClause that = (SortClause) other;
+      if (!(other instanceof SortClause that)) return false;
       return this.getItem().equals(that.getItem()) && this.getOrder().equals(that.getOrder());
     }
 
@@ -1350,7 +1372,7 @@ public class SolrQuery extends ModifiableSolrParams {
     }
 
     /**
-     * Gets a human readable description of the sort clause.
+     * Gets a human-readable description of the sort clause.
      *
      * <p>The returned string is not suitable for passing to Solr, but may be useful in debug output
      * and the like.

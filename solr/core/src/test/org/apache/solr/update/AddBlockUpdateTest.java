@@ -66,13 +66,15 @@ import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.apache.solr.util.RefCounted;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -95,6 +97,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -202,8 +207,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     final TopDocs docs = searcher.search(join(one("cd")), 10);
     assertEquals(2, docs.totalHits.value);
     final String pAct =
-        searcher.doc(docs.scoreDocs[0].doc).get(parent)
-            + searcher.doc(docs.scoreDocs[1].doc).get(parent);
+        searcher.getDocFetcher().doc(docs.scoreDocs[0].doc).get(parent)
+            + searcher.getDocFetcher().doc(docs.scoreDocs[1].doc).get(parent);
     assertTrue(pAct.contains(dubbed) && pAct.contains(overwritten) && pAct.length() == 2);
 
     assertQ(req("id:66", "//*[@numFound='6']"));
@@ -322,7 +327,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> indexSolrInputDocumentsDirectly(document1));
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         containsString("Anonymous child docs can only hang from others or the root"));
   }
@@ -1023,7 +1028,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       throws IOException {
     final TopDocs docs = searcher.search(join(childTerm), 10);
     assertEquals(1, docs.totalHits.value);
-    final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent);
+    final String pAct = searcher.getDocFetcher().doc(docs.scoreDocs[0].doc).get(parent);
     assertEquals(parentExp, pAct);
   }
 
