@@ -28,7 +28,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.schema.SchemaField;
 
-class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
+public class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
   SortedSetDocValues topLevel;
   SortedSetDocValues[] subDvs;
   OrdinalMap ordMap;

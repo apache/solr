@@ -104,7 +104,7 @@ public class FacetHeatmap extends FacetRequest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static class Parser extends FacetParser<FacetHeatmap> {
+  static abstract class Parser extends FacetParser<FacetHeatmap> {
     Parser(FacetParser<?> parent, String key) {
       super(parent, key);
     }
