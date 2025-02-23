@@ -150,7 +150,7 @@ Other Changes
 
 * SOLR-17675: Remove DirContext param from DirectoryFactory.create method. (Bruno Roustant, David Smiley)
 
-* SOLR-8282: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
+* SOLR-16903: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
 
 ==================  9.9.0 ==================
 New Features
