@@ -166,6 +166,7 @@ nimbusds-josejwt = "9.48"
 nodegradle-node = "7.0.1"
 # @keep Node JS version used in node.gradle (LTS)
 nodejs = "16.20.2"
+onnx = "1.16.3"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.46.0"
@@ -456,6 +457,7 @@ netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epo
 # @keep transitive dependency for version alignment
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
+onnxruntime = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnx" }
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
