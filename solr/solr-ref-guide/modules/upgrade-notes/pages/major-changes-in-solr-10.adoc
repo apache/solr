@@ -99,3 +99,5 @@ Users that need to vary JAR accessibility on a per-core basis can use Solr's xre
 Users who that don't need to vary JAR access on a per-core basis have several options, including the xref:configuration-guide:configuring-solr-xml.adoc[`<sharedLib/>` tag supported by solr.xml] or manipulation of Solr's classpath prior to JVM startup.
 
 * Kerberos based authentication has been removed.  This results in changes to SolrJ, the Solr Admin app, and the removal of the `hadoop-auth` module.
+
+* Storing indexes and snapshots in HDFS has been removed.  This results in changes to solrconfig.xml and related configuration files and removal of the `hdfs` module.

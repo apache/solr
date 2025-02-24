@@ -187,18 +187,6 @@
 #SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 #SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
-# Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
-# enables usage of credential store.
-# Credential provider should store the following keys:
-# * solr.jetty.keystore.password
-# * solr.jetty.truststore.password
-# Set the two below if you want to set specific store passwords for HTTP client
-# * javax.net.ssl.keyStorePassword
-# * javax.net.ssl.trustStorePassword
-# More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
-#SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-#SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
-
 # Settings for authentication
 # Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 #SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
@@ -256,12 +244,18 @@
 # Runs solr in java security manager sandbox. This can protect against some attacks.
 # Runtime properties are passed to the security policy file (server/etc/security.policy)
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
-# This is experimental! It may not work at all with Hadoop/HDFS features.
+# This is experimental!
 #SOLR_SECURITY_MANAGER_ENABLED=true
-# This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
+
+# This variable provides you with the option to disable the Admin UI. If you uncomment the variable below and
 # change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.
 # SOLR_ADMIN_UI_DISABLED=false
+
+# This variable provides you with the option to disable the new experimental Admin UI. If you uncomment the variable
+# below and change the value to true, Jetty will not load the new-ui module which update the CSP directive for the
+# new UI endpoints. This property is ignored if SOLR_ADMIN_UI_DISABLED is true.
+# SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED=false
 
 # Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 # Sometimes it may be necessary to place a core or a backup on a different location or a different disk
@@ -293,6 +287,6 @@
 # See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
 #SOLR_PLACEMENTPLUGIN_DEFAULT=simple
 
-# Solr internally doesn't use cookies other than for modules such as Kerberos/Hadoop Auth. If you don't need any of those
-# And you don't need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
+# Solr internally doesn't use cookies. If you don't need any of those, and you don't 
+# need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
 # SOLR_OPTS="$SOLR_OPTS -Dsolr.http.disableCookies=true"

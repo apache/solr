@@ -150,7 +150,7 @@ public class IncrementalShardBackup {
             .getDirectoryFactory()
             .get(
                 solrCore.getIndexDir(),
-                DirectoryFactory.DirContext.DEFAULT,
+                DirectoryFactory.DirContext.BACKUP,
                 solrCore.getSolrConfig().indexConfig.lockType);
     try {
       BackupStats stats = incrementalCopy(files, dir);

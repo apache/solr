@@ -188,6 +188,13 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   /** This method defines the type of this Solr request. */
   public abstract String getRequestType();
 
+  /**
+   * The parameters for this request; never null. The runtime type may be mutable but modifications
+   * <b>may</b> not affect this {@link SolrRequest} instance, as it may return a new instance here
+   * every time. If the subclass specifies the response type as {@link
+   * org.apache.solr.common.params.ModifiableSolrParams}, then one can expect it to change this
+   * request. If the subclass has a setter then one can expect this method to return the value set.
+   */
   public abstract SolrParams getParams();
 
   /**
@@ -270,7 +277,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   public String getCollection() {
-    return getParams() == null ? null : getParams().get("collection");
+    return getParams().get("collection");
   }
 
   public void addHeader(String key, String value) {

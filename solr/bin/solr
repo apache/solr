@@ -202,10 +202,6 @@ SOLR_URL_SCHEME=http
 SOLR_JETTY_CONFIG=()
 SOLR_SSL_OPTS=""
 
-if [ -n "${SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH:-}" ]; then
-  SOLR_SSL_OPTS+=" -Dhadoop.security.credential.provider.path=$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH"
-fi
-
 if [ -z "${SOLR_SSL_ENABLED:-}" ]; then
   if [ -n "${SOLR_SSL_KEY_STORE:-}" ]; then
     SOLR_SSL_ENABLED="true" # implicitly from earlier behaviour
@@ -312,6 +308,16 @@ fi
 # Jetty gzip module enabled by default
 if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=gzip")
+fi
+
+# Jetty configuration for new Admin UI
+if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ] ||
+   [ "${SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED:-false}" == "true" ]; then
+  # Do not enable new Admin UI
+  echo -e "New Admin UI not enabled"
+else
+  # Enable new Admin UI
+  SOLR_JETTY_CONFIG+=("--module=new-ui")
 fi
 
 # Authentication options

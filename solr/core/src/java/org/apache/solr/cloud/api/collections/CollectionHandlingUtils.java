@@ -250,7 +250,6 @@ public class CollectionHandlingUtils {
             .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {
       UpdateRequest ureq = new UpdateRequest();
-      ureq.setParams(new ModifiableSolrParams());
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
       return ureq.process(client);
     }
