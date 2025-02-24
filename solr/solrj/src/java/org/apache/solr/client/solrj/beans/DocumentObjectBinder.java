@@ -186,7 +186,7 @@ public class DocumentObjectBinder {
      * is set to <code>TRUE</code> as well as <code>isList</code> is set to <code>TRUE</code>
      */
     private boolean isContainedInMap;
-    private DynamicFieldNameMatcher dynamicFieldNamePatternMatcher;
+    private java.util.function.Predicate<String> dynamicFieldNamePatternMatcher;
 
     public DocField(AccessibleObject member) {
       if (member instanceof java.lang.reflect.Field) {
@@ -411,7 +411,7 @@ public class DocumentObjectBinder {
       }
 
       for (String field : solrDocument.getFieldNames()) {
-        if (dynamicFieldNamePatternMatcher.matches(field)) {
+        if (dynamicFieldNamePatternMatcher.test(field)) {
           Object val = solrDocument.getFieldValue(field);
           if (val == null) {
             continue;
@@ -522,8 +522,4 @@ public class DocumentObjectBinder {
   }
 
   public static final String DEFAULT = "#default";
-
-  private interface DynamicFieldNameMatcher {
-    boolean matches(String name);
-  }
 }
