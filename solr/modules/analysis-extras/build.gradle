@@ -29,7 +29,7 @@ dependencies {
   runtimeOnly libs.apache.lucene.analysis.morfologik
   implementation libs.apache.lucene.analysis.opennlp
   
-  runtimeOnly libs.onnxruntime
+  implementation libs.onnxruntime
   runtimeOnly libs.apache.lucene.analysis.smartcn
   runtimeOnly libs.apache.lucene.analysis.stempel
   implementation libs.apache.lucene.core
