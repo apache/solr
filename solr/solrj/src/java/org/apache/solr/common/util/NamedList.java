@@ -831,6 +831,9 @@ public class NamedList<T>
   @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof NamedList<?> nl)) return false;
+    if (obj instanceof SimpleOrderedMap<?>) {
+      return false;
+    }
     return this.nvPairs.equals(nl.nvPairs);
   }
 
