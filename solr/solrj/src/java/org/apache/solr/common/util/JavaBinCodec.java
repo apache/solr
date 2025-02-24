@@ -879,7 +879,7 @@ public class JavaBinCodec implements PushWriter {
 
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
-      assert key instanceof String;
+      assert key instanceof String : String.valueOf(key);
       Object val = readVal(dis);
       entries.add((String) key, val); // using NL.add() since key won't repeat
     }
@@ -1460,7 +1460,7 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
-  public void setMapAsNamedList(boolean mapAsNamedList) {
-    this.mapAsNamedList = mapAsNamedList;
+  public void readMapAsNamedList(boolean readMapAsNamedList) {
+    this.mapAsNamedList = readMapAsNamedList;
   }
 }

@@ -68,7 +68,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         jbcO.marshal(s, os);
         try (JavaBinCodec jbcI = new JavaBinCodec();
             ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
-          jbcI.setMapAsNamedList(false);
+          jbcI.readMapAsNamedList(false);
           Object o = jbcI.unmarshal(is);
           assertEquals(s, o);
         }
@@ -91,7 +91,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     types.put("1", "one");
 
     byte[] bytes = getBytes(types, true);
-    Object result = getObject(bytes, true);
+    Object result = getObjectWithMapAsNl(bytes, true);
 
     assertTrue(result instanceof SimpleOrderedMap);
     assertEquals("one", ((SimpleOrderedMap<?>) result).get("1"));
@@ -217,7 +217,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
                 return super.readIterator(fis);
               }
             }; ) {
-      javabin.setMapAsNamedList(false);
+      javabin.readMapAsNamedList(false);
       @SuppressWarnings({"unchecked"})
       List<Object> unmarshalledObj = (List<Object>) javabin.unmarshal(is);
       List<Object> matchObj = generateAllDataTypes();
@@ -292,7 +292,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
       Object data = generateAllDataTypes();
-      javabin.setMapAsNamedList(false);
+      javabin.readMapAsNamedList(false);
       javabin.marshal(data, os);
       byte[] newFormatBytes = os.toByteArray();
 
@@ -391,7 +391,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     try (InputStream is = getClass().getResourceAsStream(fileName)) {
       try (DataInputInputStream dis = new FastInputStream(is)) {
         try (JavaBinCodec javabin = new JavaBinCodec()) {
-          javabin.setMapAsNamedList(false);
+          javabin.readMapAsNamedList(false);
           return javabin.readMapEntry(dis);
         }
       }
@@ -419,15 +419,16 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
   }
 
-  private static Object getObject(byte[] bytes, boolean mapAsNamedList) throws IOException {
+  private static Object getObjectWithMapAsNl(byte[] bytes, boolean mapAsNamedList)
+      throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
-      jbc.setMapAsNamedList(mapAsNamedList);
+      jbc.readMapAsNamedList(mapAsNamedList);
       return jbc.unmarshal(new ByteArrayInputStream(bytes));
     }
   }
 
   private static Object getObject(byte[] bytes) throws IOException {
-    return getObject(bytes, false);
+    return getObjectWithMapAsNl(bytes, false);
   }
 
   @Test
