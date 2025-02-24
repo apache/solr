@@ -24,7 +24,7 @@ setup_file() {
 
 teardown_file() {
   common_setup
-  solr stop -all
+  solr stop --all
 }
 
 setup() {
@@ -44,9 +44,9 @@ teardown() {
 # like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
 @test "Check lifecycle of sentiment classification" {
   pip3 install transformers onnx onnxruntime torch
-  python3 -m transformers.onnx -m nlptown/bert-base-multilingual-uncased-sentiment --feature sequence-classification ${SOLR_TIP}/models/sentiment
+  python3 -m transformers.onnx --opset 14 -m nlptown/bert-base-multilingual-uncased-sentiment --feature sequence-classification ${SOLR_TIP}/models/sentiment
   
-  curl --insecure -o ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment/resolve/main/vocab.txt
+  curl --insecure --output ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment/resolve/main/vocab.txt
   
   run ls -alh ${SOLR_TIP}/modules/analysis-extras/lib  
   refute_output --partial "onnxruntime_gpu"
@@ -54,7 +54,7 @@ teardown() {
     # Can't figure out magic policy stuff to allow loading ONNX, so disable security manager.
   export SOLR_SECURITY_MANAGER_ENABLED=false
   
-  solr start -m 4g -c -Dsolr.modules=analysis-extras -Denable.packages=true
+  solr start -m 4g -Dsolr.modules=analysis-extras -Denable.packages=true
   solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
   
   run solr create -c COLL_NAME
@@ -74,10 +74,10 @@ teardown() {
       "stored":true }
   }' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/schema"
 
-  run curl --data-binary @${SOLR_TIP}/models/sentiment/vocab.txt -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/vocab.txt"
+  run curl --data-binary @${SOLR_TIP}/models/sentiment/vocab.txt -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/filestore/files/models/sentiment/vocab.txt"
   assert_output --partial '"status":0'
   
-  run curl --data-binary @${SOLR_TIP}/models/sentiment/model.onnx -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/model.onnx"
+  run curl --data-binary @${SOLR_TIP}/models/sentiment/model.onnx -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/filestore/files/models/sentiment/model.onnx"
   assert_output --partial '"status":0'
     
   run curl -X POST -H 'Content-type:application/json' -d '{
