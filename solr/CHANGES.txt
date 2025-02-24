@@ -148,6 +148,8 @@ Other Changes
 
 * SOLR-17548: Switch all public Java APIs from File to Path. (Matthew Biscocho via Eric Pugh)
 
+* SOLR-17675: Remove DirContext param from DirectoryFactory.create method. (Bruno Roustant, David Smiley)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -243,6 +245,8 @@ Other Changes
   when copying files. (Bruno Roustant, David Smiley)
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
+
+* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
 
 * SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
 

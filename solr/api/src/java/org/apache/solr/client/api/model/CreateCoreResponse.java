@@ -14,19 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
+package org.apache.solr.client.api.model;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NIOFSDirectory;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** Factory to instantiate {@link org.apache.lucene.store.NIOFSDirectory} */
-public class NIOFSDirectoryFactory extends StandardDirectoryFactory {
-
-  @Override
-  protected Directory create(String path, LockFactory lockFactory) throws IOException {
-    return new NIOFSDirectory(Path.of(path), lockFactory);
-  }
+/** Response for {@link org.apache.solr.client.api.endpoint.CoreApis} 'create' API */
+public class CreateCoreResponse extends SolrJerseyResponse {
+  @JsonProperty public String core;
 }
