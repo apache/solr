@@ -29,7 +29,12 @@ public class Constants {
 
   public static final String CORE_NAME_PATH_PARAMETER = "coreName";
 
+  // Annotation used on endpoints that should be skipped by code-generation
   public static final String OMIT_FROM_CODEGEN_PROPERTY = "omitFromCodegen";
+  // Annotation used to indicate that the specified API can return arbitrary, unparseable content
+  // such as ZK or filestore files
+  public static final String RAW_OUTPUT_PROPERTY = "rawOutput";
+
   public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
 
   public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";

@@ -129,7 +129,7 @@ Many are shared but for the full set of parameters of the model you are interest
 Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support text vectorisation.
 The models currently supported are:
 
-[tabs#supported-models]
+[tabs#supported-models-hugging-face]
 ======
 Hugging Face::
 +
@@ -218,27 +218,27 @@ To upload the model in a `/path/myModel.json` file, please run:
 
 [source,bash]
 ----
-curl -XPUT 'http://localhost:8983/solr/techproducts/schema/vectorisation-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+curl -XPUT 'http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
 ----
 
 
 To view all models:
 
 [source,text]
-http://localhost:8983/solr/techproducts/schema/vectorisation-model-store
+http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store
 
 To delete the `currentModel` model:
 
 [source,bash]
 ----
-curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/vectorisation-model-store/currentModel'
+curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store/currentModel'
 ----
 
 
 To view the model you just uploaded please open the following URL in a browser:
 
 [source,text]
-http://localhost:8983/solr/techproducts/schema/vectorisation-model-store
+http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store
 
 .Example: /path/myModel.json
 [source,json]

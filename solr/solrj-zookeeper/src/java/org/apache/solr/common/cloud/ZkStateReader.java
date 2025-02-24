@@ -159,7 +159,6 @@ public class ZkStateReader implements SolrCloseable {
   /** A view of the current state of all collections. */
   protected volatile ClusterState clusterState;
 
-  private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
   private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT =
       Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
 
@@ -1003,30 +1002,12 @@ public class ZkStateReader implements SolrCloseable {
 
   public List<ZkCoreNodeProps> getReplicaProps(
       String collection, String shardId, String thisCoreNodeName) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, null);
-  }
-
-  public List<ZkCoreNodeProps> getReplicaProps(
-      String collection,
-      String shardId,
-      String thisCoreNodeName,
-      Replica.State mustMatchStateFilter) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, mustMatchStateFilter, null);
-  }
-
-  public List<ZkCoreNodeProps> getReplicaProps(
-      String collection,
-      String shardId,
-      String thisCoreNodeName,
-      Replica.State mustMatchStateFilter,
-      Replica.State mustNotMatchStateFilter) {
-    // TODO: We don't need all these getReplicaProps method overloading. Also, it's odd that the
-    // default is to return replicas of type TLOG and NRT only
+    // TODO: It's odd that the default is to return replicas of type TLOG and NRT only
     return getReplicaProps(
         collection,
         shardId,
         thisCoreNodeName,
-        mustMatchStateFilter,
+        null,
         null,
         EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT));
   }
@@ -1638,12 +1619,25 @@ public class ZkStateReader implements SolrCloseable {
 
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
-    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    final AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    final AtomicReference<SolrException> thrownException = new AtomicReference<>();
     CollectionStateWatcher watcher =
         (n, c) -> {
           docCollection.set(c);
-          boolean matches = predicate.matches(n, c);
-          if (matches) latch.countDown();
+          boolean matches = false;
+          try {
+            matches = predicate.matches(n, c);
+            if (matches) {
+              latch.countDown();
+              thrownException.set(null);
+            }
+          } catch (SolrException e) {
+            if (thrownException.getAndSet(e) != null) {
+              // Return if we have seen an exception twice
+              latch.countDown();
+              matches = true;
+            }
+          }
 
           return matches;
         };
@@ -1651,13 +1645,18 @@ public class ZkStateReader implements SolrCloseable {
     try {
       registerCollectionStateWatcher(collection, watcher);
       // wait for the watcher predicate to return true, or time out
-      if (!latch.await(wait, unit))
+      if (!latch.await(wait, unit)) {
         throw new TimeoutException(
             "Timeout waiting to see state for collection="
                 + collection
                 + " :"
                 + docCollection.get());
-
+      } else if (thrownException.get() != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error occurred while checking state",
+            thrownException.get());
+      }
     } finally {
       removeCollectionStateWatcher(collection, watcher);
       waitLatches.remove(latch);

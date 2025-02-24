@@ -47,6 +47,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -73,7 +74,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
-      "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] 1.0";
+      "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
   protected HttpClient httpClient;
 
@@ -392,7 +393,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
     HttpRequest.Builder headReqB =
         HttpRequest.newBuilder(uriNoQueryParams)
-            .method("HEAD", HttpRequest.BodyPublishers.noBody());
+            .method("HEAD", HttpRequest.BodyPublishers.noBody())
+            .header("Content-Type", ClientUtils.TEXT_JSON);
     decorateRequest(headReqB, new QueryRequest());
     try {
       httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());

@@ -253,8 +253,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                       Update upd = update;
                       while (upd != null) {
                         UpdateRequest req = upd.getRequest();
-                        SolrParams currentParams = new ModifiableSolrParams(req.getParams());
-                        if (!origParams.toNamedList().equals(currentParams.toNamedList())
+                        if (!origParams.equals(req.getParams())
                             || !Objects.equals(origTargetCollection, upd.getCollection())) {
                           // Request has different params or destination core/collection, return to
                           // queue
@@ -339,7 +338,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           method.setConfig(requestConfigBuilder.build());
 
           method.setEntity(template);
-          method.addHeader("User-Agent", HttpSolrClient.AGENT);
+          method.addHeader("User-Agent", HttpSolrClient.USER_AGENT);
           method.addHeader("Content-Type", contentType);
 
           response =

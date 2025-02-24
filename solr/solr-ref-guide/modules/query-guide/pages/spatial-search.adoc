@@ -682,7 +682,7 @@ The entire value is null if there is no matching spatial data.
 If `format=png` then the output key is `counts_png`.
 It's a base-64 encoded string of a 4-byte PNG.
 The PNG logically holds exactly the same data that the ints2D format does.
-Note that the alpha channel byte is flipped to make it easier to view the PNG for diagnostic purposes, since otherwise counts would have to exceed 2^24 before it becomes non-opague.
+Note that the alpha channel byte is flipped to make it easier to view the PNG for diagnostic purposes, since otherwise counts would have to exceed 2^24 before it becomes non-opaque.
 Thus counts greater than this value will become opaque.
 
 == BBoxField

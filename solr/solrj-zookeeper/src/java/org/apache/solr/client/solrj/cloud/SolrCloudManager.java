@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.cloud;
 import java.io.IOException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;
@@ -28,12 +29,14 @@ import org.apache.solr.common.util.TimeSource;
 
 /**
  * This interface abstracts the access to a SolrCloud cluster, including interactions with
- * Zookeeper, Solr and generic HTTP calls.
+ * Zookeeper, Solr.
  *
  * <p>This abstraction should be used when possible instead of directly referencing ZK, Solr and
  * HTTP.
  */
 public interface SolrCloudManager extends SolrCloseable {
+
+  CloudSolrClient getSolrClient();
 
   ClusterStateProvider getClusterStateProvider();
 
@@ -49,7 +52,6 @@ public interface SolrCloudManager extends SolrCloseable {
 
   TimeSource getTimeSource();
 
-  // Solr-like methods
-
+  @Deprecated
   <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException;
 }

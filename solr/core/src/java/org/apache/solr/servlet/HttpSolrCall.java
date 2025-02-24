@@ -74,6 +74,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
@@ -1168,6 +1169,24 @@ public class HttpSolrCall {
 
   protected Object _getHandler() {
     return handler;
+  }
+
+  /**
+   * Gets the client (user-agent) SolrJ version, or null if isn't SolrJ. Note that older SolrJ
+   * clients prior to 9.9 present themselves as 1.0 or 2.0.
+   */
+  public SolrVersion getUserAgentSolrVersion() {
+    String header = req.getHeader("User-Agent");
+    if (header == null || !header.startsWith("Solr")) {
+      return null;
+    }
+    try {
+      return SolrVersion.valueOf(header.substring(header.lastIndexOf(' ') + 1));
+    } catch (Exception e) {
+      // unexpected but let's not freak out
+      assert false : e.toString();
+      return null;
+    }
   }
 
   private AuthorizationContext getAuthCtx() {

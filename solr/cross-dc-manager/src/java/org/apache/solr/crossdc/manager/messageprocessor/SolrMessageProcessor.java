@@ -331,7 +331,8 @@ public class SolrMessageProcessor extends MessageProcessor
       }
     } else {
       SolrParams params = mirroredSolrRequest.getSolrRequest().getParams();
-      String shouldMirror = (params == null ? null : params.get(CrossDcConstants.SHOULD_MIRROR));
+      assert params != null;
+      String shouldMirror = params.get(CrossDcConstants.SHOULD_MIRROR);
       if (shouldMirror == null) {
         if (params instanceof ModifiableSolrParams) {
           log.warn("{} param is missing - setting to false", CrossDcConstants.SHOULD_MIRROR);

@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -44,7 +45,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   @Override
   protected String expectedUserAgent() {
-    return "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
+    return "Solr[" + Http2SolrClient.class.getName() + "] " + SolrVersion.LATEST_STRING;
   }
 
   @Override
@@ -147,6 +148,8 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", MUST_ENCODE);
+    q.setParam("case_sensitive_param", "lowercase");
+    q.setParam("CASE_SENSITIVE_PARAM", "uppercase");
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE);
     if (rp != null) {
@@ -512,8 +515,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     } finally {
       System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
       System.clearProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-      PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
-          new MapSolrParams(new HashMap<>()));
+      PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(SolrParams.of());
     }
   }
 

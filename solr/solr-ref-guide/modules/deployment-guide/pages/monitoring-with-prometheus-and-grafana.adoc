@@ -618,7 +618,7 @@ Any metrics aggregations and/or filtering must be done on Grafana or the Prometh
 
 === Prometheus Configuration
 
-Like the Prometheus Exporter, the `prometheus.yml` needs to be configurated for the Prometheus Server to ingest metrics. 
+Like the Prometheus Exporter, the `prometheus.yml` needs to be configured for the Prometheus Server to ingest metrics.
 The difference is it must instead scrape the Metrics API with the `wt=prometheus` parameter directly from each host/port Solr is running on as in this example:
 
 [source,plain]

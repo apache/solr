@@ -24,9 +24,8 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 public class SolrCoreHighlighterMetric extends SolrCoreMetric {
   public static final String CORE_HIGHLIGHER_METRICS = "solr_metrics_core_highlighter_requests";
 
-  public SolrCoreHighlighterMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrCoreHighlighterMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   /*

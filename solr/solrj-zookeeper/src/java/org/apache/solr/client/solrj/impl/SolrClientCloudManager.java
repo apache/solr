@@ -61,6 +61,11 @@ public class SolrClientCloudManager implements SolrCloudManager {
   }
 
   @Override
+  public CloudSolrClient getSolrClient() {
+    return cloudSolrClient;
+  }
+
+  @Override
   public void close() {
     isClosed = true;
     if (closeObjectCache) {

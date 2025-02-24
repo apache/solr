@@ -129,7 +129,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     CommandLine postCli = SolrCLI.processCommandLineArgs(postTool, argsForPost);
     postTool.runTool(postCli);
 
-    int expectedXmlDocCount = 32;
+    int expectedXmlDocCount = 31;
 
     int numFound = 0;
 

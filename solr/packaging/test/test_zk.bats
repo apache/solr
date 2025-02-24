@@ -123,7 +123,7 @@ teardown() {
   refute_output --partial "ERROR"
 
   sleep 1
-  run curl "http://localhost:${SOLR_PORT}/api/cluster/configs?omitHeader=true"
+  run curl "http://localhost:${SOLR_PORT}/api/configsets"
   assert_output --partial '"configSets":["_default","techproducts2"]'
 }
 

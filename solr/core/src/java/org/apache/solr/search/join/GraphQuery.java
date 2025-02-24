@@ -46,6 +46,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrSearcherRequirer;
 
 /**
  * GraphQuery - search for nodes and traverse edges in an index.
@@ -58,7 +59,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  *
  * @lucene.experimental
  */
-public class GraphQuery extends Query {
+public class GraphQuery extends Query implements SolrSearcherRequirer {
 
   /** The inital node matching query */
   private Query q;

@@ -69,7 +69,7 @@ public class ConfUtil {
                   true);
 
           if (data == null) {
-            log.error(CrossDcConf.CROSSDC_PROPERTIES + " file in Zookeeper has no data");
+            log.error("{} file in Zookeeper has no data", CrossDcConf.CROSSDC_PROPERTIES);
             throw new SolrException(
                 SolrException.ErrorCode.SERVER_ERROR,
                 CrossDcConf.CROSSDC_PROPERTIES + " file in Zookeeper has no data");
