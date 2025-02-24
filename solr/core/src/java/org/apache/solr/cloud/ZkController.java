@@ -862,6 +862,7 @@ public class ZkController implements Closeable {
               .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
               .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
               .build();
+      cc.registerClient(http2SolrClient);
       cloudSolrClient =
           new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
               .withHttpClient(http2SolrClient)

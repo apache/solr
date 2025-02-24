@@ -49,6 +49,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -320,6 +321,17 @@ public class CoreContainer {
 
   private ExecutorService coreContainerAsyncTaskExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool("Core Container Async Task");
+  private final List<Http2SolrClient> clientsAwaitingSecurity = new CopyOnWriteArrayList<>();
+
+  public void registerClient(Http2SolrClient client) {
+    if (client != null) {
+      clientsAwaitingSecurity.add(client);
+    }
+  }
+
+  public boolean unregisterClient(Http2SolrClient client) {
+    return clientsAwaitingSecurity.remove(client);
+  }
 
   /**
    * Non-empty if the Collection API is executed in a distributed way and not on Overseer, once the
@@ -649,6 +661,9 @@ public class CoreContainer {
       shardHandlerFactory.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       updateShardHandler.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       solrClientProvider.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
+      for (Http2SolrClient client : clientsAwaitingSecurity) {
+        pkiAuthenticationSecurityBuilder.setup(client);
+      }
     }
   }
 
