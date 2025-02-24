@@ -49,8 +49,11 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -372,6 +375,32 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
       assertAuthMetricsMinimums(32, 20, 9, 1, 2, 0);
       assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
+
+      // This succeeds with auth enabled
+      CollectionAdminRequest.createCollection("c123", "conf", 3, 1)
+          .setBasicAuthCredentials("harry", "HarryIsUberCool")
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c123", 3, 3);
+
+      // Configure placement plugin
+      PluginMeta plugin = new PluginMeta();
+      plugin.name = PlacementPluginFactory.PLUGIN_NAME;
+      plugin.klass = MinimizeCoresPlacementFactory.class.getName();
+      V2Request v2Request =
+          new V2Request.Builder("/cluster/plugin")
+              .forceV2(true)
+              .POST()
+              .withPayload(singletonMap("add", plugin))
+              .build();
+      v2Request.setBasicAuthCredentials("harry", "HarryIsUberCool");
+      v2Request.process(cluster.getSolrClient());
+
+      // Now this will fail with a 401 !!
+      CollectionAdminRequest.createCollection("c456", "conf", 3, 1)
+          .setBasicAuthCredentials("harry", "HarryIsUberCool")
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c456", 3, 3);
+      /// /////////
 
       executeCommand(
           baseUrl + authcPrefix,
