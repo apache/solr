@@ -300,15 +300,18 @@ public class JavaBinUpdateRequestCodec {
             break;
           }
 
-          SolrInputDocument sdoc = null;
-          if (o instanceof List) {
+          SolrInputDocument sdoc;
+          if (o instanceof List) { // never really happens?
+            assert false : o.toString();
             @SuppressWarnings("unchecked")
             List<NamedList<?>> list = (List<NamedList<?>>) o;
             sdoc = listToSolrInputDocument(list);
-          } else if (o instanceof NamedList) {
+          } else if (o instanceof NamedList) { // never really happens? SOLR-2904
+            assert false : o.toString();
             UpdateRequest req = new UpdateRequest();
             req.setParams(new ModifiableSolrParams(((NamedList) o).toSolrParams()));
             handler.update(null, req, null, null);
+            continue;
           } else if (o instanceof Map.Entry) {
             @SuppressWarnings("unchecked")
             Map.Entry<SolrInputDocument, Map<?, ?>> entry =
@@ -321,8 +324,10 @@ public class JavaBinUpdateRequestCodec {
             }
           } else if (o instanceof SolrInputDocument) {
             sdoc = (SolrInputDocument) o;
-          } else if (o instanceof Map) {
+          } else if (o instanceof Map) { // never really happens? SOLR-13731
             sdoc = convertMapToSolrInputDoc((Map) o);
+          } else {
+            throw new IllegalStateException("Unexpected data type: " + o.getClass());
           }
 
           // peek at the next object to see if we're at the end
