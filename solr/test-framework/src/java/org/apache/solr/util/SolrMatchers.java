@@ -21,8 +21,24 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 
+/**
+ * A Utility class for extra Hamcrest {@link Matcher} implementations.
+ *
+ * <p>These may be directly related to Solr, or be filling gaps that the default Hamcrest Matchers
+ * do not cover.
+ */
 public class SolrMatchers {
 
+  /**
+   * Matches a segment of a list between two indices against a provided matcher, useful for checking
+   * ordered and unordered sub-sequences in a larger list
+   *
+   * @param fromIndex starting index of the desired sub-list (inclusive)
+   * @param toIndex ending index of the desired sub-list (exclusive)
+   * @param subListMatcher matcher for the resulting sub-list
+   * @return a Matcher for the original super-list
+   * @param <T> The type that the list being matched against will contain
+   */
   public static <T> Matcher<List<? extends T>> subListMatches(
       int fromIndex, int toIndex, Matcher<? super List<? super T>> subListMatcher) {
     return new SubListMatcher<>(fromIndex, toIndex, subListMatcher);

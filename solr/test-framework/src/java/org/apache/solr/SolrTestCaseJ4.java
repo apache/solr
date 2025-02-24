@@ -1047,9 +1047,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @SuppressWarnings("unchecked")
   public static <T> String assertThatJQ(SolrQueryRequest req, String message, Matcher<T> test)
       throws Exception {
-    SolrParams params = null;
+    final SolrParams params = req.getParams();
     try {
-      params = req.getParams();
       if (!"json".equals(params.get("wt", "xml")) || params.get("indent") == null) {
         ModifiableSolrParams newParams = new ModifiableSolrParams(params);
         newParams.set("wt", "json");
