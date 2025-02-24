@@ -43,9 +43,11 @@ public abstract class RequestWriter {
   }
 
   /**
-   * Use this to do a push writing instead of pull. If this method returns null {@link
-   * org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is invoked
-   * to do a pull write.
+   * To be implemented by subclasses to serialize update requests into the appropriate format.
+   *
+   * <p>If this method returns null, {@link
+   * org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is then
+   * invoked to get content.
    */
   public abstract ContentWriter getContentWriter(SolrRequest<?> req);
 

@@ -71,9 +71,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
     super(METHOD.POST, url);
   }
 
-  // ---------------------------------------------------------------------------
-  // ---------------------------------------------------------------------------
-
   /** clear the pending documents and delete commands */
   public void clear() {
     if (documents != null) {
@@ -86,9 +83,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
       deleteQuery.clear();
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // ---------------------------------------------------------------------------
 
   /**
    * Add a SolrInputDocument to this request
@@ -365,9 +359,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
     this.deleteQuery = deleteQuery;
   }
 
-  // --------------------------------------------------------------------------
-  // --------------------------------------------------------------------------
-
   /**
    * @deprecated Method will be removed in Solr 10.0. Use {@link XMLRequestWriter} instead.
    */
@@ -400,10 +391,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
     requestWriter.writeXML(this, writer);
     return this;
   }
-
-  // --------------------------------------------------------------------------
-  //
-  // --------------------------------------------------------------------------
 
   public List<SolrInputDocument> getDocuments() {
     if (documents == null) return null;

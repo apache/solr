@@ -41,11 +41,6 @@ import org.apache.solr.common.util.XML;
 
 public class XMLRequestWriter extends RequestWriter {
 
-  /**
-   * Use this to do a push writing instead of pull. If this method returns null {@link
-   * org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is invoked
-   * to do a pull write.
-   */
   @Override
   public RequestWriter.ContentWriter getContentWriter(SolrRequest<?> req) {
     if (req instanceof UpdateRequest updateRequest) {
