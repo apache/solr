@@ -38,7 +38,6 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,6 +122,7 @@ public class JavaBinUpdateRequestCodec {
     List<String> delByQ;
     final NamedList<?>[] namedList = new NamedList<?>[1];
     try (JavaBinCodec codec = new StreamingCodec(namedList, updateRequest, handler)) {
+      codec.readMapAsNamedList(false);
       codec.unmarshal(is);
     }
 
