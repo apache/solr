@@ -47,7 +47,9 @@ import org.slf4j.LoggerFactory;
  * org.apache.solr.handler.admin.MetricsHandler}
  */
 @SuppressWarnings(value = "unchecked")
-public class PrometheusResponseWriter extends RawResponseWriter {
+public class PrometheusResponseWriter implements QueryResponseWriter {
+  // not TextQueryResponseWriter because Prometheus libs work with an OutputStream
+
   private static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
