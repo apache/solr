@@ -64,14 +64,8 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings("removal")
   @Test
   public void testPathConstructorZipFS() throws Exception {
-    assumeTrue(
-        "Test only works without Security Manager due to SecurityConfHandlerLocal " +
-                "missing permission to read /1/2/3/4/security.json file",
-        System.getSecurityManager() == null);
-
     Path dataDir = createTempDir("data-dir");
     Path archive = createTempFile("configset", ".zip");
     Files.delete(archive);
