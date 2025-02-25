@@ -197,12 +197,12 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       assertEquals("Score doc count" + type, count, sd.length);
-      Document doc = searcher.doc(sd[0].doc);
+      Document doc = searcher.storedFields().document(sd[0].doc);
       assertEquals(
           "First doc" + type,
           2 * distance + startOffset,
           doc.getField(field).numericValue().longValue());
-      doc = searcher.doc(sd[sd.length - 1].doc);
+      doc = searcher.storedFields().document(sd[sd.length - 1].doc);
       assertEquals(
           "Last doc" + type,
           (1 + count) * distance + startOffset,
@@ -251,9 +251,9 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length);
-    Document doc = searcher.doc(sd[0].doc);
+    Document doc = searcher.storedFields().document(sd[0].doc);
     assertEquals("First doc", startOffset, doc.getField(field).numericValue().longValue());
-    doc = searcher.doc(sd[sd.length - 1].doc);
+    doc = searcher.storedFields().document(sd[sd.length - 1].doc);
     assertEquals(
         "Last doc",
         (count - 1) * distance + startOffset,
@@ -264,9 +264,9 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length);
-    doc = searcher.doc(sd[0].doc);
+    doc = searcher.storedFields().document(sd[0].doc);
     assertEquals("First doc", startOffset, doc.getField(field).numericValue().longValue());
-    doc = searcher.doc(sd[sd.length - 1].doc);
+    doc = searcher.storedFields().document(sd[sd.length - 1].doc);
     assertEquals(
         "Last doc",
         (count - 1) * distance + startOffset,
@@ -303,12 +303,12 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs - count, sd.length);
-    Document doc = searcher.doc(sd[0].doc);
+    Document doc = searcher.storedFields().document(sd[0].doc);
     assertEquals(
         "First doc",
         count * distance + startOffset,
         doc.getField(field).numericValue().longValue());
-    doc = searcher.doc(sd[sd.length - 1].doc);
+    doc = searcher.storedFields().document(sd[sd.length - 1].doc);
     assertEquals(
         "Last doc",
         (noDocs - 1) * distance + startOffset,
@@ -319,12 +319,12 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs - count, sd.length);
-    doc = searcher.doc(sd[0].doc);
+    doc = searcher.storedFields().document(sd[0].doc);
     assertEquals(
         "First doc",
         count * distance + startOffset,
         doc.getField(field).numericValue().longValue());
-    doc = searcher.doc(sd[sd.length - 1].doc);
+    doc = searcher.storedFields().document(sd[sd.length - 1].doc);
     assertEquals(
         "Last doc",
         (noDocs - 1) * distance + startOffset,

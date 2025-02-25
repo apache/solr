@@ -283,11 +283,9 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ModifiableSolrParams params = new ModifiableSolrParams();
     for (CloudJettyRunner skip : skipServers) {
-      params.add("test.distrib.skip.servers", skip.url + "/");
+      ureq.getParams().add("test.distrib.skip.servers", skip.url + "/");
     }
-    ureq.setParams(params);
     ureq.process(cloudClient);
   }
 

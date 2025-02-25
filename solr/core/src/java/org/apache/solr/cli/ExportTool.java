@@ -75,8 +75,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -251,7 +251,7 @@ public class ExportTool extends ToolBase {
               new GenericSolrRequest(
                       SolrRequest.METHOD.GET,
                       "/schema/uniquekey",
-                      new MapSolrParams(Collections.singletonMap("collection", coll)))
+                      SolrParams.of("collection", coll))
                   .setRequiresCollection(true));
       uniqueKey = (String) response.get("uniqueKey");
     }

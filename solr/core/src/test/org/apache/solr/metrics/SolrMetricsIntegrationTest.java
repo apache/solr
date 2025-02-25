@@ -220,7 +220,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.version.specification"));
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>) metrics.get("CONTAINER.fs.path");
-    assertEquals(g.getValue(), cc.getSolrHome());
+    assertEquals(g.getValue(), cc.getSolrHome().toString());
   }
 
   @Test

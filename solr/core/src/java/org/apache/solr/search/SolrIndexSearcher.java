@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -97,6 +97,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -147,6 +148,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // If you find this useful, let us know in dev@solr.apache.org.  Likely to be removed eventually.
   private static final boolean useExitableDirectoryReader =
       Boolean.getBoolean("solr.useExitableDirectoryReader");
+
+  public static final int EXECUTOR_MAX_CPU_THREADS = Runtime.getRuntime().availableProcessors();
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -224,30 +227,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Shared across the whole node because it's a machine CPU resource.
    */
   public static ExecutorService initCollectorExecutor(NodeConfig cfg) {
-    final int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
-    if (0 >= indexSearcherExecutorThreads) {
+    int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
+    if (indexSearcherExecutorThreads == 0) {
       return null;
+    } else if (indexSearcherExecutorThreads < 0) {
+      // Treat a negative value as "unlimited" and set it to the value number of available CPU
+      // threads
+      indexSearcherExecutorThreads = EXECUTOR_MAX_CPU_THREADS;
     }
 
+    // note that Lucene will catch a RejectedExecutionException to just run the task.
+    //  Therefore, we shouldn't worry too much about the queue size.
     return new MDCAwareThreadPoolExecutor(
         indexSearcherExecutorThreads,
         indexSearcherExecutorThreads,
         0L,
         TimeUnit.MILLISECONDS,
-        new SynchronousQueue<>(true) { // fairness
-          // a hack to force ThreadPoolExecutor to block if threads are busy
-          // -- otherwise it will throw RejectedExecutionException; unacceptable
-          @Override
-          public boolean offer(Runnable runnable) { // is supposed to not block, but we do anyway
-            try {
-              put(runnable); // blocks
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              throw new RuntimeException("interrupted submitting to search multi-threaded pool", e);
-            }
-            return true;
-          }
-        },
+        new LinkedBlockingQueue<>(
+            EnvUtils.getPropertyAsInteger("solr.search.multiThreaded.queueSize", 1000)),
         new SolrNamedThreadFactory("searcherCollector")) {
 
       @Override

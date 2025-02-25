@@ -60,8 +60,9 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrSearcherRequirer;
 
-public class CrossCollectionJoinQuery extends Query {
+public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequirer {
 
   protected final String query;
   protected final String zkHost;
