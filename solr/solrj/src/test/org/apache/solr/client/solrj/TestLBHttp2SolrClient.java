@@ -50,6 +50,8 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 @LogLevel("org.apache.solr.client.solrj.impl=DEBUG")
+// SSL Currently interacts with this test in a way that makes starting the server too slow
+@SolrTestCaseJ4.SuppressSSL()
 public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
