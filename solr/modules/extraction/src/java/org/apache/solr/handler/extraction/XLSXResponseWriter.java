@@ -48,10 +48,12 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.ReturnFields;
 
+/** A .XLSX spreadsheet format {@link org.apache.solr.response.QueryResponseWriter}. */
 public class XLSXResponseWriter extends RawResponseWriter {
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp)
+  public void write(
+      OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp, String contentType)
       throws IOException {
     // throw away arraywriter just to satisfy super requirements; we're grabbing
     // all writes before they go to it anyway

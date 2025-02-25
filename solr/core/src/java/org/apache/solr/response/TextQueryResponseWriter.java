@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.response;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -27,50 +28,51 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.request.SolrQueryRequest;
 
-/** Static utility methods relating to {@link QueryResponseWriter}s */
-public final class QueryResponseWriterUtil {
-  private QueryResponseWriterUtil() {
-    /* static helpers only */
-  }
+/** A writer supporting character streams ({@link Writer} based). */
+public interface TextQueryResponseWriter extends QueryResponseWriter {
 
   /**
-   * Writes the response writer's result to the given output stream. This method inspects the
-   * specified writer to determine if it is a {@link BinaryQueryResponseWriter} or not to delegate
-   * to the appropriate method.
+   * Write a SolrQueryResponse in a textual manner.
    *
-   * @see BinaryQueryResponseWriter#write(OutputStream,SolrQueryRequest,SolrQueryResponse)
-   * @see BinaryQueryResponseWriter#write(Writer,SolrQueryRequest,SolrQueryResponse)
+   * <p>Information about the request (in particular: formatting options) may be obtained from
+   * <code>req</code> but the dominant source of information should be <code>rsp</code>.
+   *
+   * <p>There are no mandatory actions that write must perform. An empty write implementation would
+   * fulfill all interface obligations.
    */
-  public static void writeQueryResponse(
+  void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException;
+
+  @Override
+  default String writeToString(SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
+    StringWriter sw = new StringWriter(32000);
+    write(sw, request, response);
+    return sw.toString();
+  }
+
+  @Override
+  default void write(
       OutputStream outputStream,
-      QueryResponseWriter responseWriter,
-      SolrQueryRequest solrRequest,
-      SolrQueryResponse solrResponse,
+      SolrQueryRequest request,
+      SolrQueryResponse response,
       String contentType)
       throws IOException {
-
-    if (responseWriter instanceof JacksonJsonWriter binWriter) {
-      BufferedOutputStream bos = new BufferedOutputStream(new NonFlushingStream(outputStream));
-      binWriter.write(bos, solrRequest, solrResponse);
-      bos.flush();
-    } else if (responseWriter instanceof BinaryQueryResponseWriter binWriter) {
-      binWriter.write(outputStream, solrRequest, solrResponse);
-    } else {
-      OutputStream out = new NonFlushingStream(outputStream);
-      Writer writer = buildWriter(out, ContentStreamBase.getCharsetFromContentType(contentType));
-      responseWriter.write(writer, solrRequest, solrResponse);
-      writer.flush();
-    }
+    OutputStream out = new NonFlushingStream(outputStream);
+    Writer writer = buildWriter(out, ContentStreamBase.getCharsetFromContentType(contentType));
+    write(writer, request, response);
+    writer.flush();
   }
 
   private static Writer buildWriter(OutputStream outputStream, String charset)
       throws UnsupportedEncodingException {
+    // note: OutputStreamWriter has an internal buffer; flush is needed
     Writer writer =
         (charset == null)
             ? new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)
             : new OutputStreamWriter(outputStream, charset);
 
-    return new FastWriter(writer);
+    return new FastWriter(writer); // note: buffered; therefore we need to call flush()
   }
 
   /**
@@ -81,7 +83,8 @@ public final class QueryResponseWriterUtil {
    *
    * <p>See SOLR-8669.
    */
-  private static class NonFlushingStream extends OutputStream {
+  // nocommit discuss moving to SolrDispatchFilter wrapper.  If keep them move?
+  class NonFlushingStream extends OutputStream {
     private final OutputStream outputStream;
 
     public NonFlushingStream(OutputStream outputStream) {

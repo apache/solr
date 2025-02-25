@@ -58,7 +58,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -276,8 +275,7 @@ public class EmbeddedSolrServer extends SolrClient {
         };
 
     if (callback == null) {
-      QueryResponseWriterUtil.writeQueryResponse(
-          byteBuffer, req.getResponseWriter(), req, rsp, null);
+      req.getResponseWriter().write(byteBuffer, req, rsp);
     } else {
       // mostly stream results to the callback; rest goes into the byteBuffer
       if (!(responseParser instanceof BinaryResponseParser))

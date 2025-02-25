@@ -23,7 +23,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,24 +44,20 @@ import org.apache.solr.search.ReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BinaryResponseWriter implements BinaryQueryResponseWriter {
+/** Solr's "javabin" format. TODO rename accordingly. */
+public class BinaryResponseWriter implements QueryResponseWriter {
   //  public static boolean useUtf8CharSeq = true;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+  public void write(
+      OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
       throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) response.removeResponseHeader();
     try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
       jbc.setWritableDocFields(resolver).marshal(response.getValues(), out);
     }
-  }
-
-  @Override
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
-      throws IOException {
-    throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
   }
 
   @Override

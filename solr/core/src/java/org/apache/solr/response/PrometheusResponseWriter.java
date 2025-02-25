@@ -52,7 +52,8 @@ public class PrometheusResponseWriter extends RawResponseWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
+  public void write(
+      OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
     NamedList<Object> prometheusRegistries =
         (NamedList<Object>) response.getValues().get("metrics");
