@@ -830,7 +830,7 @@ public class NamedList<T>
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == this)  return true;
+    if (obj == this) return true;
     if (!(obj instanceof NamedList<?> nl)) return false;
     if (obj instanceof SimpleOrderedMap<?>) {
       return false;
