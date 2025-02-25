@@ -43,6 +43,7 @@ dependencies {
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
+  testImplementation 'org.hamcrest:hamcrest'
 
   // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
