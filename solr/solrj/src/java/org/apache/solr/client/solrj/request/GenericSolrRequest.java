@@ -109,7 +109,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.UNSPECIFIED.toString();
+  public SolrRequestType getRequestType() {
+    return SolrRequestType.UNSPECIFIED;
   }
 }

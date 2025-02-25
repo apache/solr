@@ -126,8 +126,8 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.UPDATE.toString();
+  public SolrRequestType getRequestType() {
+    return SolrRequestType.UPDATE;
   }
 
   public boolean isWaitSearcher() {

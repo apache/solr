@@ -199,7 +199,7 @@ public class DocumentAnalysisRequest
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
+  public SolrRequestType getRequestType() {
+    return SolrRequestType.QUERY;
   }
 }

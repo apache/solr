@@ -71,7 +71,7 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
+  public SolrRequestType getRequestType() {
+    return SolrRequestType.QUERY;
   }
 }

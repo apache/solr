@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
@@ -52,6 +51,7 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -800,7 +800,7 @@ public abstract class CloudSolrClient extends SolrClient {
     if (request instanceof V2Request) {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
-    boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
+    boolean isAdmin = request.getRequestType().equals(SolrRequestType.ADMIN);
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
@@ -1045,7 +1045,7 @@ public abstract class CloudSolrClient extends SolrClient {
         requestEndpoints.add(new LBSolrClient.Endpoint(chosenNodeUrl));
       }
 
-    } else if (ADMIN_PATHS.contains(request.getPath())) {
+    } else if (SolrRequestType.ADMIN.equals(request.getRequestType())) {
       for (String liveNode : liveNodes) {
         final var nodeBaseUrl = Utils.getBaseUrlForNodeName(liveNode, urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl));

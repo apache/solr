@@ -40,7 +40,7 @@ public abstract class AbstractSchemaRequest<T extends SolrResponse>
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
+  public SolrRequestType getRequestType() {
+    return SolrRequestType.ADMIN;
   }
 }

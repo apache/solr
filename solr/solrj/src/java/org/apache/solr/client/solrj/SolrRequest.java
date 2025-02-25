@@ -195,7 +195,7 @@ public abstract class SolrRequest<T> implements Serializable {
   }
 
   /** This method defines the type of this Solr request. */
-  public abstract String getRequestType();
+  public abstract SolrRequestType getRequestType();
 
   /**
    * The parameters for this request; never null. The runtime type may be mutable but modifications

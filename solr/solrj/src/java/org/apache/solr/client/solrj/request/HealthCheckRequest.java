@@ -60,7 +60,7 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
+  public SolrRequestType getRequestType() {
+    return SolrRequestType.ADMIN;
   }
 }
