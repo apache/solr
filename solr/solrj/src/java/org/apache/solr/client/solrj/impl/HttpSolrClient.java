@@ -752,7 +752,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         new BasicHeader(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
 
     contextHeaders[1] =
-        new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType());
+        new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType().toString());
 
     return contextHeaders;
   }
