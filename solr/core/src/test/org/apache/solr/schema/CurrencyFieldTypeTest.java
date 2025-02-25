@@ -45,13 +45,11 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     this.expectedProviderClass = expectedProviderClass;
   }
 
+  // remove cft later
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(
         new Object[][] {
-          {"amount", FileExchangeRateProvider.class}, // CurrencyField
-          {"mock_amount", MockExchangeRateProvider.class}, // CurrencyField
-          {"oer_amount", OpenExchangeRatesOrgProvider.class}, // CurrencyField
           {"amount_CFT", FileExchangeRateProvider.class}, // CurrencyFieldType
           {"mock_amount_CFT", MockExchangeRateProvider.class}, // CurrencyFieldType
           {"oer_amount_CFT", OpenExchangeRatesOrgProvider.class} // CurrencyFieldType
@@ -87,14 +85,8 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     assertTrue(amount.isPolyField());
 
     CurrencyFieldType type = (CurrencyFieldType) amount.getType();
-    String currencyDynamicField =
-        "*"
-            + (type instanceof CurrencyField ? FieldType.POLY_FIELD_SEPARATOR : "")
-            + type.fieldSuffixCurrency;
-    String amountDynamicField =
-        "*"
-            + (type instanceof CurrencyField ? FieldType.POLY_FIELD_SEPARATOR : "")
-            + type.fieldSuffixAmountRaw;
+    String currencyDynamicField = "*" + type.fieldSuffixCurrency;
+    String amountDynamicField = "*" + type.fieldSuffixAmountRaw;
 
     SchemaField[] dynFields = schema.getDynamicFieldPrototypes();
     boolean seenCurrency = false;
