@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import jakarta.inject.Named;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.HashMap;
@@ -89,6 +90,7 @@ import org.apache.solr.search.TermsQParserPlugin;
  * [subquery]</code> could include the older (committed) version of that document, with different
  * field values, in the subquery results.
  */
+@Named("subquery")
 public class SubQueryAugmenterFactory extends TransformerFactory {
 
   @Override

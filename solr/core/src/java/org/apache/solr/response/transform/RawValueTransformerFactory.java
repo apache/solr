@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -33,7 +34,22 @@ import org.apache.solr.response.QueryResponseWriter;
  */
 public class RawValueTransformerFactory extends TransformerFactory
     implements TransformerFactory.FieldRenamer {
-  String applyToWT = null;
+
+  @Named("json")
+  public static class JsonFactory extends RawValueTransformerFactory {
+    public JsonFactory() {
+      super("json");
+    }
+  }
+
+  @Named("xml")
+  public static class XmlFactory extends RawValueTransformerFactory {
+    public XmlFactory() {
+      super("xml");
+    }
+  }
+
+  private String applyToWT = null;
 
   public RawValueTransformerFactory() {}
 
