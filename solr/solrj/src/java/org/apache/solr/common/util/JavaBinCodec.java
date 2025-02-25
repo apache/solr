@@ -1460,6 +1460,9 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
+  /**
+   * If set, Maps will be deserialized as {@link SimpleOrderedMap} instead of {@link LinkedHashMap}
+   */
   public void readMapAsNamedList(boolean readMapAsNamedList) {
     this.mapAsNamedList = readMapAsNamedList;
   }
