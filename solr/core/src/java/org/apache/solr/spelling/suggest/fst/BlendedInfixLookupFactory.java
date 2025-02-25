@@ -16,7 +16,6 @@
  */
 package org.apache.solr.spelling.suggest.fst;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -77,11 +76,12 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
 
     // optional parameters
 
-    String indexPath =
-        params.get(INDEX_PATH) != null ? params.get(INDEX_PATH).toString() : DEFAULT_INDEX_PATH;
-    if (!Path.of(indexPath).isAbsolute()) {
-      indexPath = core.getDataDir() + File.separator + indexPath;
-    }
+    Path indexPath =
+        params.get(INDEX_PATH) != null
+            ? Path.of(params.get(INDEX_PATH).toString())
+            : Path.of(DEFAULT_INDEX_PATH);
+
+    indexPath = Path.of(core.getDataDir()).resolve(indexPath);
 
     int minPrefixChars =
         params.get(MIN_PREFIX_CHARS) != null
@@ -110,7 +110,7 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
 
     try {
       return new BlendedInfixSuggester(
-          FSDirectory.open(Path.of(indexPath)),
+          FSDirectory.open(indexPath),
           indexAnalyzer,
           queryAnalyzer,
           minPrefixChars,

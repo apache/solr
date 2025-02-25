@@ -20,7 +20,6 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -203,9 +202,8 @@ public abstract class ManagedResourceStorage {
 
     @Override
     public boolean delete(String storedResourceId) throws IOException {
-      // TODO SOLR-8282 move to PATH
-      File storedFile = new File(storageDir, storedResourceId);
-      return deleteIfFile(storedFile.toPath());
+      Path storedFile = Path.of(storageDir, storedResourceId);
+      return deleteIfFile(storedFile);
     }
 
     // TODO: this interface should probably be changed, this simulates the old behavior,

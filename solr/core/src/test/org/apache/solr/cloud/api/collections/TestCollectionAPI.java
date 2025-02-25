@@ -131,10 +131,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
               .getResponse();
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
-      assertEquals("25", collections._getStr(List.of(COLLECTION_NAME, "replicationFactor"), null));
+      Map<?, ?> collectionProperties = (Map<?, ?>) collections.get(COLLECTION_NAME);
+      assertEquals("25", collectionProperties.get("replicationFactor"));
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
@@ -153,10 +154,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       System.out.println(rsp);
       cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      collections = (NamedList<?>) cluster.get("collections");
+      collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
-      assertNull(collections._getStr(List.of(COLLECTION_NAME, "replicationFactor"), null));
+      collectionProperties = (Map<?, ?>) collections.get(COLLECTION_NAME);
+      assertNull(collectionProperties.get("replicationFactor"));
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
@@ -255,7 +257,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<?> rsp = client.request(req);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(
           "Testing to insure collections are returned", collections.get(COLLECTION_NAME1));
@@ -282,7 +284,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     NamedList<Object> rsp = client.request(request);
     NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
     assertNotNull("Cluster state should not be null", cluster);
-    NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+    Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
     assertNotNull("Collections should not be null in cluster state", collections);
     assertEquals(1, collections.size());
     @SuppressWarnings({"unchecked"})
@@ -304,7 +306,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
@@ -330,7 +332,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> rsp = request.process(client).getResponse();
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
@@ -465,7 +467,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME1));
       assertEquals(4, collections.size());
@@ -487,7 +489,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
       @SuppressWarnings({"unchecked"})
@@ -517,7 +519,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> rsp = client.request(request);
       NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
       Map<String, Object> collection = (Map<String, Object>) collections.get(cname);
@@ -533,7 +535,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       rsp = client.request(request);
       cluster = (NamedList<Object>) rsp.get("cluster");
-      collections = (NamedList<Object>) cluster.get("collections");
+      collections = (Map<?, ?>) cluster.get("collections");
       collection = (Map<String, Object>) collections.get(cname);
       Integer newVersion = (Integer) collection.get("znodeVersion");
       assertNotNull(newVersion);
@@ -560,7 +562,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
       @SuppressWarnings({"unchecked"})
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(DEFAULT_COLLECTION));
       assertEquals(1, collections.size());
@@ -607,7 +609,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           DEFAULT_COLLECTION + "," + COLLECTION_NAME,
           aliases.get("myalias"));
 
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(DEFAULT_COLLECTION));
       Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_COLLECTION);
@@ -627,7 +629,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      collections = (NamedList<Object>) cluster.get("collections");
+      collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(DEFAULT_COLLECTION));
       assertNotNull(collections.get(COLLECTION_NAME));

@@ -136,7 +136,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertAddsSucceedWithErrors(
         "tolerant-chain-max-errors-10",
         Arrays.asList(new SolrInputDocument[] {invalidDoc1}),
-        null,
+        SolrParams.of(),
         "(unknown)");
 
     // a valid doc
@@ -149,7 +149,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
             () ->
                 add(
                     "not-tolerant",
-                    null,
+                    SolrParams.of(),
                     Arrays.asList(new SolrInputDocument[] {invalidDoc1, validDoc1})));
     assertTrue(e.getMessage().contains("Document is missing mandatory uniqueKey field"));
 
@@ -159,7 +159,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertAddsSucceedWithErrors(
         "tolerant-chain-max-errors-10",
         Arrays.asList(new SolrInputDocument[] {invalidDoc1, validDoc1}),
-        null,
+        SolrParams.of(),
         "(unknown)");
     assertU(commit());
 
@@ -176,7 +176,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
             () ->
                 add(
                     "not-tolerant",
-                    null,
+                    SolrParams.of(),
                     Arrays.asList(new SolrInputDocument[] {invalidDoc2, validDoc2})));
     assertTrue(e.getMessage().contains("Error adding field"));
 
@@ -186,7 +186,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertAddsSucceedWithErrors(
         "tolerant-chain-max-errors-10",
         Arrays.asList(new SolrInputDocument[] {invalidDoc2, validDoc2}),
-        null,
+        SolrParams.of(),
         "2");
     assertU(commit());
 
@@ -201,7 +201,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public void testMaxErrorsDefault() throws IOException {
     // by default the TolerantUpdateProcessor accepts all errors, so this batch should succeed with
     // 10 errors.
-    assertAddsSucceedWithErrors("tolerant-chain-max-errors-not-set", docs, null, badIds);
+    assertAddsSucceedWithErrors("tolerant-chain-max-errors-not-set", docs, SolrParams.of(), badIds);
     assertU(commit());
     assertQ(req("q", "*:*"), "//result[@numFound='10']");
   }
@@ -240,7 +240,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public void testMaxErrorsInfinite() throws IOException {
     ModifiableSolrParams requestParams = new ModifiableSolrParams();
     requestParams.add("maxErrors", "-1");
-    assertAddsSucceedWithErrors("tolerant-chain-max-errors-not-set", docs, null, badIds);
+    assertAddsSucceedWithErrors("tolerant-chain-max-errors-not-set", docs, SolrParams.of(), badIds);
 
     assertU(commit());
     assertQ(req("q", "*:*"), "//result[@numFound='10']");
@@ -421,7 +421,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
   protected SolrQueryResponse add(final String chain, final SolrInputDocument doc)
       throws IOException {
-    return add(chain, null, Arrays.asList(new SolrInputDocument[] {doc}));
+    return add(chain, SolrParams.of(), Arrays.asList(new SolrInputDocument[] {doc}));
   }
 
   protected SolrQueryResponse add(
@@ -434,10 +434,6 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.add("responseHeader", new SimpleOrderedMap<>());
-
-    if (requestParams == null) {
-      requestParams = new ModifiableSolrParams();
-    }
 
     SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
     UpdateRequestProcessor processor = null;

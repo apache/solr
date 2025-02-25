@@ -450,7 +450,7 @@ public class ReplicationHandler extends RequestHandlerBase
   private volatile IndexFetcher currentIndexFetcher;
 
   public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
-    String leaderUrl = solrParams == null ? null : solrParams.get(LEADER_URL, null);
+    String leaderUrl = solrParams.get(LEADER_URL, null);
     if (!indexFetchLock.tryLock()) return IndexFetchResult.LOCK_OBTAIN_FAILED;
     if (core.getCoreContainer().isShutDown()) {
       log.warn("I was asked to replicate but CoreContainer is shutting down");
@@ -1196,7 +1196,7 @@ public class ReplicationHandler extends RequestHandlerBase
           try {
             log.debug("Polling for index modifications");
             markScheduledExecutionStart();
-            IndexFetchResult fetchResult = doFetch(null, false);
+            IndexFetchResult fetchResult = doFetch(SolrParams.of(), false);
             if (pollListener != null) pollListener.onComplete(core, fetchResult);
           } catch (Exception e) {
             log.error("Exception in fetching index", e);

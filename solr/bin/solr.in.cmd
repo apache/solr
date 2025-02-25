@@ -171,18 +171,6 @@ REM set SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 REM set SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
-REM Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
-REM enables usage of credential store.
-REM Credential provider should store the following keys:
-REM * solr.jetty.keystore.password
-REM * solr.jetty.truststore.password
-REM Set the two below if you want to set specific store passwords for HTTP client
-REM * javax.net.ssl.keyStorePassword
-REM * javax.net.ssl.trustStorePassword
-REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
-REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.ssl.credential.provider.chain=hadoop
-
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory
@@ -230,12 +218,18 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.sharedLib=/path/to/lib
 REM Runs solr in a java security manager sandbox. This can protect against some attacks.
 REM Runtime properties are passed to the security policy file (server\etc\security.policy)
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
-REM This is experimental! It may not work at all with Hadoop/HDFS features.
+REM This is experimental!
 REM set SOLR_SECURITY_MANAGER_ENABLED=true
+
 REM This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
 REM change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 REM scripts.
 REM set SOLR_ADMIN_UI_DISABLED=false
+
+REM This variable provides you with the option to disable the new experimental Admin UI. If you uncomment the variable
+REM below and change the value to true, Jetty will not load the new-ui module which update the CSP directive for the
+REM new UI endpoints. This property is ignored if SOLR_ADMIN_UI_DISABLED is true.
+REM set SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED=false
 
 REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk

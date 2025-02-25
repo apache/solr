@@ -1012,9 +1012,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     SolrParams reqParams = request.getParams();
-    if (reqParams == null) { // TODO fix getParams to never return null!
-      reqParams = new ModifiableSolrParams();
-    }
+    assert reqParams != null;
 
     ReplicaListTransformer replicaListTransformer =
         requestRLTGenerator.getReplicaListTransformer(reqParams);

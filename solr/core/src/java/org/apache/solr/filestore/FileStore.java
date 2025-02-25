@@ -50,7 +50,7 @@ public interface FileStore {
   void syncToAllNodes(String path) throws IOException;
 
   /** get the real path on filesystem */
-  Path getRealpath(String path);
+  Path getRealPath(String path);
 
   /** The type of the resource */
   FileType getType(String path, boolean fetchMissing);

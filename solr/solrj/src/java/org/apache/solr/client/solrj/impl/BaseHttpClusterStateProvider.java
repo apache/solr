@@ -29,7 +29,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -46,7 +45,6 @@ import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
@@ -160,15 +158,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       liveNodesTimestamp = System.nanoTime();
     }
 
-    var collectionsNl = (NamedList<Map<String, Object>>) cluster.get("collections");
+    var collectionsMap = (Map<String, Map<String, Object>>) cluster.get("collections");
 
     Map<String, DocCollection> collStateByName =
-        CollectionUtil.newLinkedHashMap(collectionsNl.size());
-    for (Entry<String, Map<String, Object>> entry : collectionsNl) {
-      collStateByName.put(
-          entry.getKey(), getDocCollectionFromObjects(entry.getKey(), entry.getValue()));
-    }
-
+        CollectionUtil.newLinkedHashMap(collectionsMap.size());
+    collectionsMap.forEach(
+        (key, value) -> collStateByName.put(key, getDocCollectionFromObjects(key, value)));
     return new ClusterState(this.liveNodes, collStateByName);
   }
 
@@ -205,7 +200,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     SimpleOrderedMap<?> cluster =
         submitClusterStateRequest(client, collection, ClusterStateRequestType.FETCH_COLLECTION);
 
-    var collStateMap = (Map<String, Object>) cluster.findRecursive("collections", collection);
+    var collStateMap = (Map<String, Object>) cluster._get(List.of("collections", collection), null);
     if (collStateMap == null) {
       throw new NotACollectionException(); // probably an alias
     }
