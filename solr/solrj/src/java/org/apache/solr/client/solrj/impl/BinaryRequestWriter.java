@@ -63,7 +63,7 @@ public class BinaryRequestWriter extends RequestWriter {
       if (isEmpty(updateRequest)) return null;
       throw new RuntimeException("This Should not happen");
     } else {
-      return super.getContentStreams(req);
+      return req.getContentStreams();
     }
   }
 
