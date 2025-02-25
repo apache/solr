@@ -560,6 +560,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     } else {
       copyConfig(mutableId, configSet);
     }
+    settings.setDisabled(req.getParams().getBool(DISABLE_DESIGNER_PARAM, false));
+    settingsDAO.persistIfChanged(configSet, settings);
 
     boolean reloadCollections = req.getParams().getBool(RELOAD_COLLECTIONS_PARAM, false);
     if (reloadCollections) {
@@ -595,9 +597,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
         log.warn("Failed to clean-up temp collection {} due to: {}", mutableId, excStr);
       }
     }
-
-    settings.setDisabled(req.getParams().getBool(DISABLE_DESIGNER_PARAM, false));
-    settingsDAO.persistIfChanged(configSet, settings);
 
     Map<String, Object> response = new HashMap<>();
     response.put(CONFIG_SET_PARAM, configSet);
