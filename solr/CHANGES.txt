@@ -250,6 +250,8 @@ Other Changes
 
 * SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
 
+* SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
