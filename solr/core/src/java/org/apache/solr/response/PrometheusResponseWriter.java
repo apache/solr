@@ -63,6 +63,7 @@ public class PrometheusResponseWriter extends RawResponseWriter {
     }
   }
 
+  // nocommit test gradle continue
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return CONTENT_TYPE_PROMETHEUS;
