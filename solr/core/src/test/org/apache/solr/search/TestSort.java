@@ -324,7 +324,7 @@ public class TestSort extends SolrTestCaseJ4 {
                 : "zzz";
 
         final TopFieldCollector topCollector =
-            new TopFieldCollectorManager(sort, top, Integer.MAX_VALUE).newCollector();
+            new TopFieldCollectorManager(sort, top, null, Integer.MAX_VALUE, false).newCollector();
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves

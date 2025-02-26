@@ -1860,14 +1860,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
-      return new TopScoreDocCollectorManager(len, minNumFound).newCollector();
+      return new TopScoreDocCollectorManager(len, null, minNumFound, false).newCollector();
     } else {
       // we have a sort
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound)
+      return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound, false)
           .newCollector();
     }
   }

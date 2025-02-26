@@ -826,9 +826,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if (limit == 0) {
         collector = new TotalHitCountCollector();
       } else if (sort == null) {
-        collector = new TopScoreDocCollectorManager(limit, Integer.MAX_VALUE).newCollector();
+        collector =
+            new TopScoreDocCollectorManager(limit, null, Integer.MAX_VALUE, false).newCollector();
       } else {
-        collector = new TopFieldCollectorManager(sort, limit, Integer.MAX_VALUE).newCollector();
+        collector =
+            new TopFieldCollectorManager(sort, limit, null, Integer.MAX_VALUE, false)
+                .newCollector();
       }
       return collector;
     }

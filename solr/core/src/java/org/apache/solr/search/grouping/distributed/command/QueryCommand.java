@@ -168,10 +168,12 @@ public class QueryCommand implements Command<QueryCommandResult> {
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
       subCollector =
           topDocsCollector =
-              new TopScoreDocCollectorManager(docsToCollect, Integer.MAX_VALUE).newCollector();
+              new TopScoreDocCollectorManager(docsToCollect, null, Integer.MAX_VALUE, false)
+                  .newCollector();
     } else {
       topDocsCollector =
-          new TopFieldCollectorManager(sort, docsToCollect, Integer.MAX_VALUE).newCollector();
+          new TopFieldCollectorManager(sort, docsToCollect, null, Integer.MAX_VALUE, false)
+              .newCollector();
       if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         subCollector = MultiCollector.wrap(topDocsCollector, maxScoreCollector);

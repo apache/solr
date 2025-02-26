@@ -907,12 +907,16 @@ public class Grouping {
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         subCollector =
             topCollector =
-                new TopScoreDocCollectorManager(groupDocsToCollect, Integer.MAX_VALUE)
+                new TopScoreDocCollectorManager(groupDocsToCollect, null, Integer.MAX_VALUE, false)
                     .newCollector();
       } else {
         topCollector =
             new TopFieldCollectorManager(
-                    searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE)
+                    searcher.weightSort(withinGroupSort),
+                    groupDocsToCollect,
+                    null,
+                    Integer.MAX_VALUE,
+                    false)
                 .newCollector();
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();

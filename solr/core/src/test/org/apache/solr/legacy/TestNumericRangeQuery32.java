@@ -166,7 +166,8 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
         LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
     for (byte i = 0; i < 2; i++) {
       TopFieldCollector collector =
-          new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, Integer.MAX_VALUE).newCollector();
+          new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, null, Integer.MAX_VALUE, false)
+              .newCollector();
       String type;
       switch (i) {
         case 0:
@@ -277,7 +278,8 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     LegacyNumericRangeQuery<Integer> q =
         LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, true);
     TopFieldCollector collector =
-        new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, Integer.MAX_VALUE).newCollector();
+        new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, null, Integer.MAX_VALUE, false)
+            .newCollector();
     searcher.search(q, collector);
     TopDocs topDocs = collector.topDocs();
     ScoreDoc[] sd = topDocs.scoreDocs;
@@ -294,7 +296,8 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
 
     q = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, false);
     collector =
-        new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, Integer.MAX_VALUE).newCollector();
+        new TopFieldCollectorManager(Sort.INDEXORDER, noDocs, null, Integer.MAX_VALUE, false)
+            .newCollector();
     searcher.search(q, collector);
     topDocs = collector.topDocs();
     sd = topDocs.scoreDocs;
@@ -421,7 +424,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
       Query tq =
           LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
       TopScoreDocCollector collector =
-          new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+          new TopScoreDocCollectorManager(1, null, Integer.MAX_VALUE, false).newCollector();
       searcher.search(tq, collector);
       TopDocs tTopDocs = collector.topDocs();
       assertEquals(
@@ -430,7 +433,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
           tTopDocs.totalHits.value);
       // test exclusive range
       tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, false);
-      collector = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+      collector = new TopScoreDocCollectorManager(1, null, Integer.MAX_VALUE, false).newCollector();
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals(
@@ -439,7 +442,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
           tTopDocs.totalHits.value);
       // test left exclusive range
       tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, true);
-      collector = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+      collector = new TopScoreDocCollectorManager(1, null, Integer.MAX_VALUE, false).newCollector();
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals(
@@ -448,7 +451,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
           tTopDocs.totalHits.value);
       // test right exclusive range
       tq = LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, false);
-      collector = new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+      collector = new TopScoreDocCollectorManager(1, null, Integer.MAX_VALUE, false).newCollector();
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals(
@@ -487,7 +490,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
             true,
             true);
     TopScoreDocCollector collector =
-        new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+        new TopScoreDocCollectorManager(1, null, Integer.MAX_VALUE, false).newCollector();
     searcher.search(tq, collector);
     TopDocs tTopDocs = collector.topDocs();
     assertEquals(

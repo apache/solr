@@ -89,12 +89,14 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     if (sort == null) {
       this.sort = null;
       this.mainCollector =
-          new TopScoreDocCollectorManager(numHits, cmd.getMinExactCount()).newCollector();
+          new TopScoreDocCollectorManager(numHits, null, cmd.getMinExactCount(), false)
+              .newCollector();
     } else {
       this.sort = sort = sort.rewrite(searcher);
       // scores are needed for Rescorer (regardless of whether sort needs it)
       this.mainCollector =
-          new TopFieldCollectorManager(sort, numHits, cmd.getMinExactCount()).newCollector();
+          new TopFieldCollectorManager(sort, numHits, null, cmd.getMinExactCount(), false)
+              .newCollector();
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;

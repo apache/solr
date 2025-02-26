@@ -98,7 +98,7 @@ public class TestCancellableCollector extends SolrTestCase {
   private CancellableCollector buildCancellableCollector(
       final int numHits, boolean delayStart, boolean delayCollection) {
     TopScoreDocCollector topScoreDocCollector =
-        new TopScoreDocCollectorManager(numHits, null, 1).newCollector();
+        new TopScoreDocCollectorManager(numHits, null, 1, false).newCollector();
     CancellableCollector collector = new CancellableCollector(topScoreDocCollector);
 
     return new DummyCancellableCollector(collector, delayStart, delayCollection);

@@ -81,9 +81,9 @@ public class TestMultiValuedNumericRangeQuery extends SolrTestCase {
       LegacyNumericRangeQuery<Integer> tq =
           LegacyNumericRangeQuery.newIntRange("trie", lower, upper, true, true);
       TopScoreDocCollector trCollector =
-          new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+          new TopScoreDocCollectorManager(1, null, Integer.MAX_VALUE, false).newCollector();
       TopScoreDocCollector nrCollector =
-          new TopScoreDocCollectorManager(1, Integer.MAX_VALUE).newCollector();
+          new TopScoreDocCollectorManager(1, null, Integer.MAX_VALUE, false).newCollector();
       searcher.search(cq, trCollector);
       searcher.search(tq, nrCollector);
       TopDocs trTopDocs = trCollector.topDocs();
