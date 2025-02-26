@@ -409,11 +409,11 @@ public class SolrCLI implements CLIO {
     print(
         "                                healthcheck, create, delete, auth, assert, config, export, api, package, post, stream,");
     print(
-        "                                zk ls, zk cp, zk rm , zk mvStandalone server example, zk mkroot, zk upconfig, zk downconfig,");
+        "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(
         "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
     print("");
-    print("  Start Solr running in the background on port 8984:");
+    print("  Start Solr on port 8984:");
     print("");
     printGreen("    ./solr start -p 8984");
     print("");
