@@ -27,7 +27,9 @@ import org.apache.solr.common.params.SolrParams;
  * Send arbitrary XML to a request handler
  *
  * @since solr 1.3
+ * @deprecated Use {@link GenericSolrRequest}.
  */
+@Deprecated
 public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
 
