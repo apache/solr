@@ -1,0 +1,33 @@
+[
+  {
+    "group": "jmh",
+    "name": "jmh",
+    "className": "org.apache.jmh.JMHInterpreter",
+    "defaultInterpreter": true,
+    "remote": false,
+    "perNote": "shared",
+    "perUser": "shared",
+    "setPermission": false,
+    "owners": [],
+    "isUserImpersonate": false,
+    "properties": {
+      "jmh.workdir": {
+        "envName": null,
+        "propertyName": "jmh.workdir",
+        "defaultValue": "",
+        "description": "JMH Module root path"
+      },
+      "jmh.command.timeout": {
+        "envName": null,
+        "propertyName": "jmh.command.timeout",
+        "defaultValue": "600000",
+        "description": "jmh command timeout"
+      }
+    },
+    "editor": {
+      "language": "sh",
+      "editOnDblClick": false,
+      "completionSupport": true
+    }
+  }
+]
