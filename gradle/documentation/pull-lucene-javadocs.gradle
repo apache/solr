@@ -54,7 +54,7 @@ configure(project(":solr:documentation")) {
   }
 
 
-  task collectLuceneJavadocs() {
+  tasks.register("collectLuceneJavadocs") {
     description "Collect and unpack javadoc artifacts from 'javadocs' configuration"
 
     dependsOn configurations.javadocs
