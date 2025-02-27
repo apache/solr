@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -320,7 +319,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
+      PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getSolrHome());
 
       final var syncReq = new FileStoreApi.SyncFile(path);
       final var syncRsp = syncReq.process(client);
