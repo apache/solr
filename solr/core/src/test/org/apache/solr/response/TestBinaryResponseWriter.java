@@ -73,10 +73,8 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     assertU(commit());
     LocalSolrQueryRequest req = lrf.makeRequest("q", "*:*");
     SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
-    BinaryQueryResponseWriter writer =
-        (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    writer.write(baos, req, rsp);
+    h.getCore().getQueryResponseWriter("javabin").write(baos, req, rsp);
     NamedList<?> res;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       res = (NamedList<?>) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));

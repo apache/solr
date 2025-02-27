@@ -39,7 +39,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
@@ -141,8 +140,7 @@ public class MessageBodyWriters {
           (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE);
 
       V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, toWrite);
-      QueryResponseWriterUtil.writeQueryResponse(
-          entityStream, responseWriter, solrQueryRequest, solrQueryResponse, mediaType.toString());
+      responseWriter.write(entityStream, solrQueryRequest, solrQueryResponse, mediaType.toString());
     }
   }
 }

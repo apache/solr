@@ -54,9 +54,9 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleJson() throws IOException {
-    SolrQueryRequest req = req("q", "dummy", "indent", "off");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    QueryResponseWriter w = new JSONResponseWriter();
+    var req = req("q", "dummy", "indent", "off");
+    var rsp = new SolrQueryResponse();
+    var w = new JSONResponseWriter();
 
     StringWriter buf = new StringWriter();
 

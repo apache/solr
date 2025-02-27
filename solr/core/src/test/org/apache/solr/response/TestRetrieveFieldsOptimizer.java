@@ -314,10 +314,8 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     SolrQueryRequest req = lrf.makeRequest("q", "*:*", CommonParams.FL, fl);
     SolrQueryResponse rsp = h.queryAndResponse("", req);
 
-    BinaryQueryResponseWriter writer =
-        (BinaryQueryResponseWriter) core.getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    writer.write(baos, req, rsp);
+    core.getQueryResponseWriter("javabin").write(baos, req, rsp);
 
     // This is really the main point!
     assertEquals(
