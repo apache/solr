@@ -161,7 +161,7 @@ mvikotlin = "4.3.0"
 navsecurity = "0.5.10"
 netty = "4.1.114.Final"
 # @keep for version alignment
-netty-tcnative = "2.0.66.Final"
+netty-tcnative = "2.0.70.Final"
 nimbusds-josejwt = "9.48"
 nodegradle-node = "7.0.1"
 # @keep Node JS version used in node.gradle (LTS)
