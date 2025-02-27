@@ -49,7 +49,7 @@ setup() {
   solr stop --all
 }
 
-@test "enable auth via zookeeper" {
+@test "enable auth connects via zookeeper" {
   solr start
   solr auth enable --type basicAuth --credentials name:password -z localhost:${ZK_PORT}
   run curl -u name:password --basic "http://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
