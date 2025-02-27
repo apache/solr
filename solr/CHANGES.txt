@@ -215,6 +215,8 @@ Bug Fixes
   Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
   (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
 
+* SOLR-17599: CrossDC should not use the MirroringUpdateHandler when replaying updates from the transaction log or when doing PeerSync. (Mark Miller)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
