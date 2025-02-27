@@ -65,7 +65,7 @@ public class CurrencyValue implements Comparable<CurrencyValue> {
       return null;
     }
 
-    Currency currency = CurrencyField.getCurrency(code);
+    Currency currency = CurrencyFieldType.getCurrency(code);
 
     if (currency == null) {
       throw new SolrException(
