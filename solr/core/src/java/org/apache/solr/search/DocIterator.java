@@ -43,4 +43,13 @@ public interface DocIterator extends Iterator<Integer> {
    * instance was retrieved.
    */
   public float score();
+
+  /**
+   * Returns the query match score in case of rerank queries
+   *
+   * @return the query match score in case of a rerank query, null otherwise.
+   */
+  public default Float matchScore() {
+    return null;
+  }
 }
