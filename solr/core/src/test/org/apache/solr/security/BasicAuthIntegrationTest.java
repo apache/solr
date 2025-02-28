@@ -382,7 +382,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection("c123", 3, 3);
 
-      // Configure placement plugin
+      // SOLR-17644
+      // Test Collection creation when replica placement plugin and basic auth are enabled
       PluginMeta plugin = new PluginMeta();
       plugin.name = PlacementPluginFactory.PLUGIN_NAME;
       plugin.klass = MinimizeCoresPlacementFactory.class.getName();
@@ -395,12 +396,10 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       v2Request.setBasicAuthCredentials("harry", "HarryIsUberCool");
       v2Request.process(cluster.getSolrClient());
 
-      // Now this will fail with a 401 !!
       CollectionAdminRequest.createCollection("c456", "conf", 3, 1)
           .setBasicAuthCredentials("harry", "HarryIsUberCool")
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection("c456", 3, 3);
-      /// /////////
 
       executeCommand(
           baseUrl + authcPrefix,
