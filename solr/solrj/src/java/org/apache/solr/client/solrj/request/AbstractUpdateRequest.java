@@ -160,6 +160,11 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     return sendToLeaders;
   }
 
+  @Override
+  public boolean shouldSendToLeaders() {
+    return sendToLeaders;
+  }
+
   public AbstractUpdateRequest setSendToLeaders(final boolean sendToLeaders) {
     this.sendToLeaders = sendToLeaders;
     return this;

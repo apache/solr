@@ -32,9 +32,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Test the behavior of {@link CloudSolrClient#isUpdatesToLeaders} and {@link
- * IsUpdateRequest#isSendToLeaders}.
+ * SolrRequest#shouldSendToLeaders}.
  *
  * <p>This class uses {@link TrackingUpdateProcessorFactory} instances (configured both before, and
  * after the <code>distrib</code> processor) to inspect which replicas receive various {@link
@@ -481,7 +481,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   }
 
   /**
-   * Given a SolrClient, sends various updates were {@link IsUpdateRequest#isSendToLeaders} returns
+   * Given a SolrClient, sends various updates were {@link SolrRequest#shouldSendToLeaders} returns
    * false, and asserts expectations that requests using {@link #prefPull} are all sent to PULL
    * replicas, regardless of how the client is configured.
    */
