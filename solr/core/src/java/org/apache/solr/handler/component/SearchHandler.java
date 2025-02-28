@@ -726,7 +726,7 @@ public class SearchHandler extends RequestHandlerBase
     return true;
   }
 
-  private static String stageInEnglish(int nextStage) {
+  protected String stageInEnglish(int nextStage) {
     // This should probably be a enum, but that change should be its own ticket.
     switch (nextStage) {
       case STAGE_START:
@@ -743,8 +743,7 @@ public class SearchHandler extends RequestHandlerBase
       case STAGE_DONE:
         return "FINISHING";
       default:
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Unrecognized stage:" + nextStage);
+        return "CUSTOM_STAGE_" + String.valueOf(nextStage);
     }
   }
 
