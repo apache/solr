@@ -215,6 +215,9 @@ Bug Fixes
   Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
   (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
 
+* SOLR-17644: Fixes collection creation failure when using a replica placement plugin with basic auth. SolrCloudManager
+  now directly uses HttpSolrClientProvider's client, resolving missing auth listeners. (Sanjay Dutt, David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
