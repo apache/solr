@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
@@ -195,8 +196,30 @@ public abstract class SolrRequest<T> implements Serializable {
     this.queryParams = queryParams;
   }
 
-  /** This method defines the type of this Solr request. */
-  public abstract SolrRequestType getRequestType();
+  /**
+   * This method defines the intended type of this Solr request.
+   *
+   * Subclasses should override this method instead of
+   * @see SolrRequest#getRequestType
+   */
+  protected SolrRequestType getBaseRequestType() {
+    return SolrRequestType.UNSPECIFIED;
+  }
+
+  /**
+   * Returns the <i>actual</i> type of this SolrRequest.
+   *
+   * Pattern matches on {@link SolrRequest#getPath} to identify ADMIN
+   * requests and other special cases. If no special case is identified,
+   * {@link SolrRequest#getBaseRequestType()} is returned.
+   */
+  public SolrRequestType getRequestType() {
+    if (CommonParams.ADMIN_PATHS.contains(getPath())) {
+      return SolrRequestType.ADMIN;
+    } else {
+      return getBaseRequestType();
+    }
+  }
 
   /**
    * The parameters for this request; never null. The runtime type may be mutable but modifications
