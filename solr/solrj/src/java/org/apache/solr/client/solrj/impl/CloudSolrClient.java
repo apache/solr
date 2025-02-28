@@ -53,7 +53,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -787,7 +786,7 @@ public abstract class CloudSolrClient extends SolrClient {
     if (request instanceof V2Request) {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
-    boolean isAdmin = request.getRequestType().equals(SolrRequestType.ADMIN);
+    boolean isAdmin = request.getRequestType() == SolrRequestType.ADMIN;
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
@@ -988,8 +987,8 @@ public abstract class CloudSolrClient extends SolrClient {
 
     boolean sendToLeaders = false;
 
-    if (request instanceof IsUpdateRequest) {
-      sendToLeaders = ((IsUpdateRequest) request).isSendToLeaders() && this.isUpdatesToLeaders();
+    if (request.getRequestType() == SolrRequestType.UPDATE) {
+      sendToLeaders = request.shouldSendToLeaders() && this.isUpdatesToLeaders();
 
       // Check if we can do a "directUpdate" ...
       if (sendToLeaders && request instanceof UpdateRequest) {
@@ -1032,7 +1031,7 @@ public abstract class CloudSolrClient extends SolrClient {
         requestEndpoints.add(new LBSolrClient.Endpoint(chosenNodeUrl));
       }
 
-    } else if (SolrRequestType.ADMIN.equals(request.getRequestType())) {
+    } else if (request.getRequestType() == SolrRequestType.ADMIN) {
       for (String liveNode : liveNodes) {
         final var nodeBaseUrl = Utils.getBaseUrlForNodeName(liveNode, urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl));
@@ -1160,9 +1159,9 @@ public abstract class CloudSolrClient extends SolrClient {
 
   /**
    * If true, this client has been configured such that it will generally prefer to send {@link
-   * IsUpdateRequest} requests to a shard leader, if and only if {@link
-   * IsUpdateRequest#isSendToLeaders} is also true. If false, then this client has been configured
-   * to obey normal routing preferences when dealing with {@link IsUpdateRequest} requests.
+   * SolrRequestType#UPDATE} requests to a shard leader, if and only if {@link
+   * SolrRequest#shouldSendToLeaders} is also true. If false, then this client has been configured
+   * to obey normal routing preferences when dealing with {@link SolrRequestType#UPDATE} requests.
    *
    * @see #isDirectUpdatesToLeadersOnly
    */
@@ -1174,7 +1173,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * If true, this client has been configured such that "direct updates" will <em>only</em> be sent
    * to the current leader of the corresponding shard, and will not be retried with other replicas.
    * This method has no effect if {@link #isUpdatesToLeaders()} or {@link
-   * IsUpdateRequest#isSendToLeaders} returns false.
+   * SolrRequest#shouldSendToLeaders} returns false.
    *
    * <p>A "direct update" is any update that can be sent directly to a single shard, and does not
    * need to be broadcast to every shard. (Example: document updates or "delete by id" when using

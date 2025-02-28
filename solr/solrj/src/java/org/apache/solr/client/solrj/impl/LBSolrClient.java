@@ -47,7 +47,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -457,7 +457,7 @@ public abstract class LBSolrClient extends SolrClient {
     Rsp rsp = new Rsp();
     Exception ex = null;
     boolean isNonRetryable =
-        req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
+      req.request.getRequestType() == SolrRequestType.UPDATE || req.request.getRequestType() == SolrRequestType.ADMIN;
     EndpointIterator endpointIterator = new EndpointIterator(req, zombieServers);
     Endpoint serverStr;
     while ((serverStr = endpointIterator.nextOrError(ex)) != null) {
