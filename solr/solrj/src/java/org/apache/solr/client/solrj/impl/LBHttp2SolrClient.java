@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -138,8 +138,8 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
   public CompletableFuture<Rsp> requestAsync(Req req) {
     CompletableFuture<Rsp> apiFuture = new CompletableFuture<>();
     Rsp rsp = new Rsp();
-    boolean isNonRetryable =
-        req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
+    boolean isNonRetryable = req.request.getRequestType() == SolrRequestType.UPDATE ||
+      req.request.getRequestType() == SolrRequestType.ADMIN;
     EndpointIterator it = new EndpointIterator(req, zombieServers);
     AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture = new AtomicReference<>();
     RetryListener retryListener =
