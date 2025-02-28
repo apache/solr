@@ -30,6 +30,9 @@ Bug Fixes
 * SOLR-17677: Before attempting a delete by query ("DBQ"), Solr now checks whether the provided query can be run using a Lucene IndexSearcher,
   and aborts the operation with a '400' error if it cannot. (Jason Gerlowski)
 
+* SOLR-17644: Fixes collection creation failure when using a replica placement plugin with basic auth. SolrCloudManager
+  now directly uses HttpSolrClientProvider's client, resolving missing auth listeners. (Sanjay Dutt, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
