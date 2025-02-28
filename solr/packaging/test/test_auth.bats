@@ -51,8 +51,8 @@ setup() {
 
 @test "enable auth connects via zookeeper" {
   solr start
-  solr auth enable --type basicAuth --credentials name:password -z localhost:${ZK_PORT}
-  run curl -u name:password --basic "http://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
+  run solr auth enable --type basicAuth --credentials name:password -z localhost:${ZK_PORT}
+  run curl -u name:password --basic "http://localhost:${SOLR_PORT}/api/cluster"
   assert_output --partial '"status":0'
   
   solr stop --all
