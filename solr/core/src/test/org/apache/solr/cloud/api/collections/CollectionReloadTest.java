@@ -82,7 +82,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
 
     final int initialStateVersion = getCollectionState(testCollectionName).getZNodeVersion();
 
-    cluster.expireZkSession(cluster.getReplicaJetty(leader));
+    cluster.expireZkSession(cluster.getReplicaJetty(leader), true);
 
     waitForState(
         "Timed out waiting for core to re-register as ACTIVE after session expiry",
