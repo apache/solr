@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
