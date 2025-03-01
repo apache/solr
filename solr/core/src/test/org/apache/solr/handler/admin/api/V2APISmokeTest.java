@@ -17,13 +17,17 @@
 
 package org.apache.solr.handler.admin.api;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.After;
@@ -31,24 +35,36 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class V2APISmokeTest extends SolrCloudTestCase {
 
+    // TODO: How is this normally done in these tests?
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private URL baseUrl;
     private String baseUrlV2;
 
     @BeforeClass
     public static void setupCluster() throws Exception {
-        configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+        System.setProperty("enable.packages", "true"); // for file upload
+        configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
     }
 
     @Before
     @Override
     public void setUp() throws Exception {
         super.setUp();
-
         baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
         baseUrlV2 = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
     }
@@ -175,10 +191,9 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
     @Test
     public void testClusterApi() throws Exception {
-        // TODO
-//        canPut("/cluster/files{filePath}");
-//        canDelete("/cluster/files{path}");
-
+        String tetFilePath = "/cluster/files/testFile-" + Instant.now().toEpochMilli();
+        canPut(tetFilePath, createTempFile().toFile());
+//        canDelete(tetFilePath); // TODO: 500 because delete cluster file calls delete local, which fails if file exists in cluster
 
         canGet("/cluster/properties");
         canPut("/cluster/properties", """
@@ -200,55 +215,79 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         canGet("/cluster/zookeeper/data/security.json");
 
         canPost("/cluster/replicas/balance", "{}");
-        // TODO: Node name?
-//        canPost("/cluster/nodes/{nodeName}/clear");
-//        canPost("/cluster/nodes/{sourceNodeName}/replace");
-//        canPost("/cluster/replicas/migrate", """
-//                {
-//                    "sourceNodes": ["node1"]
-//                }
-//                """);
+        String nodeName = getNodeName();
+        canPost("/cluster/nodes/" + nodeName + "/clear", "");
+        canPost("/cluster/nodes/" + nodeName + "/replace", "");
+        canPost("/cluster/replicas/migrate", String.format(Locale.ROOT, """
+                {
+                    "sourceNodes": ["%s"]
+                }
+                """, nodeName));
+    }
+
+    private String getNodeName() throws Exception {
+        NodesResponse nodesResponse = canGet("/cluster/nodes/", NodesResponse.class); // TODO: Missing from OA Spec
+        String nodeName = nodesResponse.nodes.get(0);
+        return nodeName;
     }
 
     @Test
     public void testConfigSetsApi() throws Exception {
         canGet("/configsets");
-        // TODO: need to add auth to clone _default
-//        canPost("/configsets", """
-//                {
-//                  "name": "cfg123",
-//                  "baseConfigSet": "_default"
-//                }
-//                """);
-        // TODO need data to upload
-//        canPut("/configsets/cfg123", """
-//                """);
-//        canPut("/configsets/cfg123/file345", """
-//                """);
-//        canDelete("/configsets/cfg123");
+        File zipFile = createTempZipFile("solr/configsets/upload/regular");
+        canPut("/configsets/cfg123", zipFile);
+        canPut("/configsets/cfg123/file345", """
+                """);
+        canPost("/configsets", """
+                {
+                  "name": "cfg456",
+                  "baseConfigSet": "cfg123"
+                }
+                """);
+        canDelete("/configsets/cfg123");
     }
 
     @Test
     public void testCoresApi() throws Exception {
-        // TODO
-//        canPost("/cores/{coreName}/backups");
-//        canPost("/cores/{coreName}/install");
-//        canPost("/cores/{coreName}/merge-indices");
-//        canPost("/cores/{coreName}/reload");
-//        canPost("/cores/{coreName}/rename");
-//        canPost("/cores/{coreName}/replication/backups");
-//        canGet("/cores/{coreName}/replication/files");
-//        canGet("/cores/{coreName}/replication/files/{filePath}");
-//        canGet("/cores/{coreName}/replication/indexversion");
-//        canPost("/cores/{coreName}/restore");
-//        canGet("/cores/{coreName}/segments");
-//        canGet("/cores/{coreName}/snapshots");
-//        canPost("/cores/{coreName}/snapshots/{snapshotName}");
-//        canDelete("/cores/{coreName}/snapshots/{snapshotName}");
-//        canPost("/cores/{coreName}/swap");
-//        canPost("/cores/{coreName}/unload");
+        // TODO /cores is missing from OA Spec
+        canPost("/collections", """
+                {
+                  "name": "testCore",
+                  "numShards": 1
+                }
+                """);
+        canGet("/cores");
+//        final String nodeNode = getNodeName();
+//        canPost("/cores", String.format(Locale.ROOT, """
+//                  {
+//                    "create": {
+//                      "name": "testCore",
+//                      "coreNodeName": "%s",
+//                      "configSet": "_default"
+//                    }
+//                  }
+//                """, nodeNode));
+//        String corePath = "/cores/testCore";
+//        canGet(corePath);
+//        canPost(corePath + "/reload", """
+//                """);
+//        canPost(corePath + "/backups");
+//        canPost(corePath + "/install");
+//        canPost(corePath + "/merge-indices");
+//        canPost(corePath + "/rename");
+//        canPost(corePath + "/replication/backups");
+//        canGet(corePath + "/replication/files");
+//        canGet(corePath + "/replication/files/{filePath}");
+//        canGet(corePath + "/replication/indexversion");
+//        canPost(corePath + "/restore");
+//        canGet(corePath + "/segments");
+//        canGet(corePath + "/snapshots");
+//        canPost(corePath + "/snapshots/{snapshotName}");
+//        canDelete(corePath + "/snapshots/{snapshotName}");
+//        canPost(corePath + "/swap");
+//        canPost(corePath + "/unload");
 
-        testCollectionsAndCoresApi("cores", "testCore");
+//        testCollectionsAndCoresApi("cores", "testCore");
     }
 
 
@@ -274,11 +313,11 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         canGet(schemaPath);
         canGet(schemaPath + "/copyfields");
         canGet(schemaPath + "/dynamicfields");
-//        canGet(schemaPath + "/dynamicfields/field123"); // TODO: Need a valid id
+        canGet(schemaPath + "/dynamicfields/*_txt_en");
         canGet(schemaPath + "/fields");
-//        canGet(schemaPath + "/fields/field123"); // TODO: Need a valid id
+        canGet(schemaPath + "/fields/id");
         canGet(schemaPath + "/fieldtypes");
-//        canGet(schemaPath + "/fieldtypes/fieldType123"); // TODO: Need a valid id
+        canGet(schemaPath + "/fieldtypes/boolean");
         canGet(schemaPath + "/name");
         canGet(schemaPath + "/similarity");
         canGet(schemaPath + "/uniquekey");
@@ -309,10 +348,28 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         }
     }
 
+
+    private void canPut(String url, File content) throws Exception {
+        try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+            HttpPut httpPut = new HttpPut(baseUrlV2 + url);
+            httpPut.setEntity(new FileEntity(content));
+            HttpResponse httpResponse = client.getHttpClient().execute(httpPut);
+            assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+        }
+    }
+
     private void canGet(String url) throws Exception {
+        canGet(url, null);
+    }
+
+    private <T> T canGet(String url, Class<T> responseType) throws Exception {
         try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
             HttpResponse httpResponse = client.getHttpClient().execute(new HttpGet(baseUrlV2 + url));
             assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+            if (responseType == null) {
+                return null;
+            }
+            return objectMapper.readValue(httpResponse.getEntity().getContent(), responseType);
         }
     }
 
@@ -320,6 +377,50 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
             HttpResponse httpResponse = client.getHttpClient().execute(new HttpDelete(baseUrlV2 + url));
             assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+        }
+    }
+
+    private static class NodesResponse {
+        public List<String> nodes;
+    }
+
+
+    // TODO Duplicated from TestConfigSetsAPI... should the configset v2 tests be there instead?
+    private File createTempZipFile(String directoryPath) {
+        try {
+            final File zipFile = createTempFile("configset", "zip").toFile();
+            final File directory = SolrTestCaseJ4.getFile(directoryPath).toFile();
+            zip(directory, zipFile);
+            return zipFile;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private static void zip(File directory, File zipfile) throws IOException {
+        URI base = directory.toURI();
+        Deque<File> queue = new ArrayDeque<>();
+        queue.push(directory);
+        OutputStream out = new FileOutputStream(zipfile);
+        try (ZipOutputStream zout = new ZipOutputStream(out)) {
+            while (!queue.isEmpty()) {
+                directory = queue.pop();
+                for (File kid : directory.listFiles()) {
+                    String name = base.relativize(kid.toURI()).getPath();
+                    if (kid.isDirectory()) {
+                        queue.push(kid);
+                        name = name.endsWith("/") ? name : name + "/";
+                        zout.putNextEntry(new ZipEntry(name));
+                    } else {
+                        zout.putNextEntry(new ZipEntry(name));
+
+                        try (InputStream in = new FileInputStream(kid)) {
+                            in.transferTo(zout);
+                        }
+
+                        zout.closeEntry();
+                    }
+                }
+            }
         }
     }
 }
