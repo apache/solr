@@ -3053,7 +3053,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private static BinaryResponseWriter getFileStreamWriter() {
     return new BinaryResponseWriter() {
       @Override
-      public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+      public void write(
+          OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
           throws IOException {
         RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {

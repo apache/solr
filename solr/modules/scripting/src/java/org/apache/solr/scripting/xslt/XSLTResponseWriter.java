@@ -33,8 +33,8 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.TextQueryResponseWriter;
 import org.apache.solr.response.XMLWriter;
 
 /**
@@ -44,7 +44,7 @@ import org.apache.solr.response.XMLWriter;
  * <p>QueryResponseWriter captures the output of the XMLWriter (in memory for now, not optimal
  * performance-wise), and applies an XSLT transform to it.
  */
-public class XSLTResponseWriter implements QueryResponseWriter {
+public class XSLTResponseWriter implements TextQueryResponseWriter {
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
 
   private Integer xsltCacheLifetimeSeconds = null;
