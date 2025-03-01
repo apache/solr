@@ -125,12 +125,6 @@ public abstract class ServletUtils {
                 : CLOSE_STREAM_MSG;
             stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
           }
-
-          @Override
-          public void flush() throws IOException {
-            // nocommit discuss
-            // don't flush the underlying stream; avoid
-          }
         };
       }
     };

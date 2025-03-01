@@ -83,7 +83,7 @@ public interface TextQueryResponseWriter extends QueryResponseWriter {
    *
    * <p>See SOLR-8669.
    */
-  // nocommit discuss moving to SolrDispatchFilter wrapper.  If keep them move?
+  // TODO instead do in ServletUtils.closeShield(HttpServletResponse)
   class NonFlushingStream extends OutputStream {
     private final OutputStream outputStream;
 

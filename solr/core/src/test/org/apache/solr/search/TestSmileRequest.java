@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
