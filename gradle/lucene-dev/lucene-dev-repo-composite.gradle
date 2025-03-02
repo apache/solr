@@ -53,12 +53,12 @@ if (forcedLuceneVersion != null) {
         mavenLocal()
       }
 
-      tasks.withType(Test) {
+      tasks.withType(Test).configureEach {
         def userHome = System.properties.get('user.home')
         systemProperty READ_ACCESS_PROPERTY, file("${userHome}/.m2/repository/org/apache/lucene").absolutePath
       }
 
-      configurations.all {
+      configurations.configureEach {
         resolutionStrategy.eachDependency {
           if (requested.group == "org.apache.lucene") {
             useVersion(forcedLuceneVersion)
@@ -116,7 +116,7 @@ if (luceneDevRepo != null) {
       // important to have the names match.
       name = 'lucene-root'
       dependencySubstitution {
-        all {  DependencySubstitution dependency ->
+        configureEach {  DependencySubstitution dependency ->
           if (dependency.requested instanceof ModuleComponentSelector) {
             def moduleSelector = (ModuleComponentSelector) dependency.requested
             if (moduleSelector.group == "org.apache.lucene" && moduleSelector.version == luceneVersion) {
@@ -154,10 +154,9 @@ if (luceneDevRepo != null) {
 
     // Security policy requires read access to the repo path.
     allprojects {
-      tasks.withType(Test) {
+      tasks.withType(Test).configureEach {
         systemProperty READ_ACCESS_PROPERTY, luceneDevRepo.absolutePath
       }
     }
   }
 }
-

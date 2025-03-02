@@ -19,7 +19,7 @@
 // Prepare the "source" distribution artifact. We use raw git export, no additional complexity needed.
 
 configure(project(":solr:distribution")) {
-  task assembleSourceTgz() {
+  tasks.register("assembleSourceTgz") {
     description "Assemble source Solr artifact as a .tgz file."
 
     // Make sure no unstaged/ dirty files are present.

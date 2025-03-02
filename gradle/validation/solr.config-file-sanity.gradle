@@ -18,7 +18,7 @@
 // An equivalent of ant's "check-example-lucene-match-version"
 
 configure(project(":solr")) {
-  task validateConfigFileSanity() {
+  tasks.register("validateConfigFileSanity") {
     doFirst {
       def (major, minor) = rootProject.luceneBaseVersionProvider.get().tokenize('.')
       def matchVersion = "${major}.${minor}"
