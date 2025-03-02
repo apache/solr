@@ -233,7 +233,6 @@ public class JavaBinUpdateRequestCodec {
               (Map.Entry<SolrInputDocument, Map<?, ?>>) o;
           sdoc = entry.getKey();
           Map<?, ?> p = entry.getValue();
-          assert p != null;
           if (p != null) {
             commitWithin = (Integer) p.get(UpdateRequest.COMMIT_WITHIN);
             overwrite = (Boolean) p.get(UpdateRequest.OVERWRITE);
