@@ -46,7 +46,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.crossdc.common.CrossDcConf;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
@@ -259,7 +258,6 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         partitionWork.partitionQueue.add(workUnit);
         try {
           ModifiableSolrParams lastUpdateParams = null;
-          NamedList<?> lastUpdateParamsAsNamedList = null;
           for (ConsumerRecord<String, MirroredSolrRequest<?>> requestRecord : partitionRecords) {
             if (log.isTraceEnabled()) {
               log.trace(
@@ -291,8 +289,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             if (type == MirroredSolrRequest.Type.UPDATE
                 && (
                 // different params
-                (lastUpdateParams != null
-                        && !lastUpdateParams.toNamedList().equals(params.toNamedList()))
+                (lastUpdateParams != null && !lastUpdateParams.equals(params))
                     ||
                     // no collapsing
                     (collapseUpdates == CrossDcConf.CollapseUpdates.NONE)
@@ -310,7 +307,6 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
                 sendBatch(updateReqBatch, type, lastRecord, workUnit);
               }
               updateReqBatch = null;
-              lastUpdateParamsAsNamedList = null;
               currentCollapsed = 0;
               workUnit = new PartitionManager.WorkUnit(partition);
               workUnit.nextOffset = PartitionManager.getOffsetForPartition(partitionRecords);
@@ -334,9 +330,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               }
               UpdateRequest update = (UpdateRequest) solrReq;
               MirroredSolrRequest.setParams(updateReqBatch, params);
-              if (lastUpdateParamsAsNamedList == null) {
-                lastUpdateParamsAsNamedList = lastUpdateParams.toNamedList();
-              }
+
               // merge
               List<SolrInputDocument> docs = update.getDocuments();
               if (docs != null) {

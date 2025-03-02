@@ -55,14 +55,9 @@ kotlin {
                 // Note that webpack.config.d/ contains additional configuration
             }
             testTask {
-                useKarma {
-                    useChromeHeadless()
-                    useConfigDirectory(
-                        project.projectDir
-                            .resolve("karma.config.d")
-                            .resolve("wasm")
-                    )
-                }
+                // Explicitly disable the wasmJs browser tests, as we do not have the suitable
+                // environments right now (running only tests for JVM)
+                enabled = false
             }
         }
         binaries.executable()
@@ -74,6 +69,7 @@ kotlin {
         // Shared multiplatform dependencies
         val commonMain by getting {
             dependencies {
+                implementation(project.dependencies.platform(project(":platform")))
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
@@ -96,6 +92,7 @@ kotlin {
                 implementation(libs.mvikotlin.logging)
 
                 implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.contentNegotiation)
                 implementation(libs.ktor.client.serialization.json)
 
@@ -116,14 +113,7 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
-                implementation(libs.ktor.client.cio)
                 implementation(libs.kotlinx.coroutines.swing)
-            }
-        }
-
-        val wasmJsMain by getting {
-            dependencies {
-                implementation(libs.ktor.client.js)
             }
         }
     }
@@ -166,4 +156,21 @@ compose.desktop {
             }
         }
     }
+}
+
+tasks.matching { task ->
+    task.name in listOf(
+        "allTests",
+        "desktopTest",
+        "wasmJsTest",
+        "wasmJsBrowserTest",
+    )
+}.configureEach {
+    // These kotlin multiplatform test tasks are not excluded on "gradlew ... -x test",
+    // so we disable them explicitly
+    onlyIf { !gradle.startParameter.excludedTaskNames.contains("test") }
+
+    // Note that "gradlew check -x test --dry-run" does not correctly resolve this exclusion rule,
+    // and you will see the test tasks being listed there as well, but they will be skipped as
+    // expected
 }
