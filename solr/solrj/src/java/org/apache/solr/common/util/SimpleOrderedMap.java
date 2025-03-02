@@ -80,6 +80,17 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     return new SimpleOrderedMap<>(newList);
   }
 
+  @SuppressWarnings("EqualsDoesntCheckParameterClass")
+  @Override
+  public boolean equals(Object obj) {
+    return obj == this || new InnerMap().equals(obj); // Use AbstractMap's code
+  }
+
+  @Override
+  public int hashCode() {
+    return new InnerMap().hashCode(); // Use AbstractMap's code
+  }
+
   @Override
   public boolean isEmpty() {
     return nvPairs.isEmpty();
