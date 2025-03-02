@@ -25,6 +25,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrReturnFields;
 
 /** A class to hold the QueryResult and the Query */
 public abstract class ResultContext {
@@ -58,6 +59,13 @@ public abstract class ResultContext {
   public boolean wantsScores() {
     return getReturnFields() != null
         && getReturnFields().wantsScore()
+        && getDocList() != null
+        && getDocList().hasScores();
+  }
+
+  public boolean wantsMatchScores() {
+    return getReturnFields() != null
+        && getReturnFields().wantsField(SolrReturnFields.MATCH_SCORE)
         && getDocList() != null
         && getDocList().hasScores();
   }
