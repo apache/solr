@@ -38,6 +38,7 @@ import org.apache.solr.common.util.NamedList;
  * Simple mock client that collects added documents and supports simple search by id (both <code>
  * {!term f=id}</code> and <code>id:</code> syntax is supported) or *:*.
  */
+@Deprecated
 public class MockSearchableSolrClient extends SolrClient {
   public Map<String, Map<String, SolrInputDocument>> docs = new ConcurrentHashMap<>();
 
