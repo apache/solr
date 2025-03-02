@@ -46,7 +46,6 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -377,8 +376,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   @Override
   public void setup(Http2SolrClient client) {
-    final HttpListenerFactory.RequestResponseListener listener =
-        new HttpListenerFactory.RequestResponseListener() {
+    final var listener =
+        new Request.Listener() {
           private static final String CACHED_REQUEST_USER_KEY = "cachedRequestUser";
 
           @Override
@@ -432,7 +431,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
                 (String) request.getAttributes().get(CACHED_REQUEST_USER_KEY));
           }
         };
-    client.addListenerFactory(() -> listener);
+    client.getHttpClient().getRequestListeners().add(listener);
   }
 
   @Override

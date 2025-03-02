@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.CookieStore;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -47,7 +46,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -64,13 +62,11 @@ import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.Origin.Protocol;
-import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -94,15 +90,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
- * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
+ * A {@link SolrClient} based on Jetty {@link HttpClient}. The class name is unfortunate, as it
+ * supports both HTTP/1.1 AND HTTP/2.
  *
- * <ul>
- *   <li>{@link Http2SolrClient} sends requests in HTTP/2
- *   <li>{@link Http2SolrClient} can point to multiple urls
- *   <li>{@link Http2SolrClient} does not expose its internal httpClient like {@link
- *       HttpSolrClient#getHttpClient()}, sharing connection pools should be done by {@link
- *       Http2SolrClient.Builder#withHttpClient(Http2SolrClient)}
- * </ul>
+ * <p>Use {@link Builder#Builder(String)} to create one.
  */
 public class Http2SolrClient extends HttpSolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -114,7 +105,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private final HttpClient httpClient;
 
-  private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   protected AsyncTracker asyncTracker = new AsyncTracker();
 
   private final boolean closeClient;
@@ -140,9 +130,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-    if (builder.listenerFactory != null) {
-      this.listenerFactory.addAll(builder.listenerFactory);
-    }
+
     updateDefaultMimeTypeForParser();
 
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
@@ -158,24 +146,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
   }
 
-  @Deprecated(since = "9.7")
-  public void addListenerFactory(HttpListenerFactory factory) {
-    this.listenerFactory.add(factory);
-  }
-
-  // internal usage only
-  HttpClient getHttpClient() {
+  /** internal use only */
+  public HttpClient getHttpClient() {
     return httpClient;
   }
 
-  // internal usage only
-  ProtocolHandlers getProtocolHandlers() {
-    return httpClient.getProtocolHandlers();
-  }
-
   private HttpClient createHttpClient(Builder builder) {
-    HttpClient httpClient;
-
     executor = builder.executor;
     if (executor == null) {
       BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
@@ -224,6 +200,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     clientConnector.setSelectors(2);
 
     HttpClientTransport transport;
+    HttpClient httpClient;
     if (builder.useHttp1_1) {
       if (log.isDebugEnabled()) {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
@@ -264,6 +241,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
 
     setupProxy(builder, httpClient);
+
+    if (builder.requestListeners != null) {
+      httpClient.getRequestListeners().addAll(builder.requestListeners);
+    }
 
     try {
       httpClient.start();
@@ -465,16 +446,16 @@ public class Http2SolrClient extends HttpSolrClientBase {
                       try {
                         NamedList<Object> body =
                             processErrorsAndResponse(solrRequest, response, is, url);
-                        mdcCopyHelper.onBegin(null);
+                        mdcCopyHelper.onBegin();
                         log.debug("response processing success");
                         future.complete(body);
                       } catch (SolrClient.RemoteSolrException | SolrServerException e) {
-                        mdcCopyHelper.onBegin(null);
+                        mdcCopyHelper.onBegin();
                         log.debug("response processing failed", e);
                         future.completeExceptionally(e);
                       } finally {
                         log.debug("response processing completed");
-                        mdcCopyHelper.onComplete(null);
+                        mdcCopyHelper.onComplete();
                       }
                     });
               }
@@ -632,12 +613,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     setBasicAuthHeader(solrRequest, req);
-    for (HttpListenerFactory factory : listenerFactory) {
-      HttpListenerFactory.RequestResponseListener listener = factory.get();
-      listener.onQueued(req);
-      req.onRequestBegin(listener);
-      req.onComplete(listener);
-    }
 
     if (isAsync) {
       req.onRequestQueued(asyncTracker.queuedListener);
@@ -900,7 +875,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
-    private List<HttpListenerFactory> listenerFactory;
+    private List<Request.Listener> requestListeners;
 
     public Builder() {
       super();
@@ -926,8 +901,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.baseSolrUrl = baseSolrUrl;
     }
 
-    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
-      this.listenerFactory = listenerFactory;
+    public Http2SolrClient.Builder withRequestListeners(List<Request.Listener> requestListeners) {
+      this.requestListeners = requestListeners;
       return this;
     }
 
@@ -1103,10 +1078,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
       }
-      if (this.listenerFactory == null) {
-        this.listenerFactory = new ArrayList<HttpListenerFactory>();
-        http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
-      }
       if (this.executor == null) {
         this.executor = http2SolrClient.executor;
       }
@@ -1165,22 +1136,19 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   /**
-   * Helper class in change of copying MDC context across all threads involved in processing a
-   * request. This does not strictly need to be a RequestResponseListener, but using it since it
-   * already provides hooks into the request processing lifecycle.
+   * Helper class in charge of copying MDC context across all threads involved in processing a
+   * request.
    */
-  private static class MDCCopyHelper extends RequestResponseListener {
+  private static class MDCCopyHelper {
     private final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
     private Map<String, String> threadContext;
 
-    @Override
-    public void onBegin(Request request) {
+    void onBegin() {
       threadContext = MDC.getCopyOfContextMap();
       updateContextMap(submitterContext);
     }
 
-    @Override
-    public void onComplete(Result result) {
+    void onComplete() {
       updateContextMap(threadContext);
     }
 

@@ -23,20 +23,21 @@ import com.codahale.metrics.Timer;
 import io.opentelemetry.api.trace.Span;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 
 /**
- * A HttpListenerFactory tracking metrics and distributed tracing. The Metrics are inspired and
+ * A Jetty request listener tracking metrics and distributed tracing. The Metrics are inspired and
  * partially copied from dropwizard httpclient library.
  */
-public class InstrumentedHttpListenerFactory implements SolrMetricProducer, HttpListenerFactory {
+public class InstrumentedHttpListenerFactory implements Request.Listener, SolrMetricProducer {
+  // TODO rename to maybe InstrumentionJettyRequestListener
 
   public interface NameStrategy {
     String getNameFor(String scope, Request request);
@@ -86,38 +87,44 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   }
 
   @Override
-  public RequestResponseListener get() {
-    return new RequestResponseListener() {
-      Timer.Context timerContext;
-      Span span = Span.getInvalid();
+  public final void onQueued(Request req) {
+    var listener = new PerRequestListener(req);
+    req.onRequestBegin(listener);
+    req.onComplete(listener);
+  }
 
-      @Override
-      public void onQueued(Request request) {
-        // do tracing onQueued because it's called from Solr's thread
-        span = Span.current();
-        TraceUtils.injectTraceContext(request);
-      }
+  /** A per-request instantiated listener. */
+  private class PerRequestListener implements Request.BeginListener, Response.CompleteListener {
 
-      @Override
-      public void onBegin(Request request) {
-        if (solrMetricsContext != null) {
-          timerContext = timer(request).time();
-        }
-        if (span.isRecording()) {
-          span.addEvent("Client Send"); // perhaps delayed a bit after the span started in enqueue
-        }
-      }
+    final Span span;
+    Timer.Context timerContext;
 
-      @Override
-      public void onComplete(Result result) {
-        if (timerContext != null) {
-          timerContext.stop();
-        }
-        if (result.isFailed() && span.isRecording()) {
-          span.addEvent(result.toString()); // logs failure info and interesting stuff
-        }
+    // called onQueued
+    PerRequestListener(Request request) {
+      // do tracing onQueued because it's called from Solr's thread
+      span = Span.current();
+      TraceUtils.injectTraceContext(request);
+    }
+
+    @Override
+    public void onBegin(Request request) {
+      if (solrMetricsContext != null) {
+        timerContext = timer(request).time();
       }
-    };
+      if (span.isRecording()) {
+        span.addEvent("Client Send"); // perhaps delayed a bit after the span started in enqueue
+      }
+    }
+
+    @Override
+    public void onComplete(Result result) {
+      if (timerContext != null) {
+        timerContext.stop();
+      }
+      if (result.isFailed() && span.isRecording()) {
+        span.addEvent(result.toString()); // logs failure info and interesting stuff
+      }
+    }
   }
 
   private Timer timer(Request request) {
