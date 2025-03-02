@@ -57,7 +57,7 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertEquals(map2, map3); // but still equals despite different order
     assertEquals(map2.hashCode(), map3.hashCode());
 
-    var nl2 = new NamedList<>(map2);
+    var nl2 = new NamedList<Object>(map2);
     assertNotEquals(map2, nl2);
     assertNotEquals(nl2, map2);
   }
