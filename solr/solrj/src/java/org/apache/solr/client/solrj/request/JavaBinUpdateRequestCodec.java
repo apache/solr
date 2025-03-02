@@ -25,6 +25,8 @@ import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -242,7 +244,7 @@ public class JavaBinUpdateRequestCodec {
         } else if (o instanceof Map<?, ?> m) { // doc.  To imitate JSON style.  SOLR-13731
           sdoc = convertMapToSolrInputDoc(m);
         } else {
-          throw new IllegalStateException("Unexpected data type: " + o.getClass());
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Unexpected data type: " + o.getClass());
         }
 
         // peek at the next object to see if we're at the end
