@@ -60,6 +60,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   private final org.apache.solr.response.ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
   private final DocList docs;
+  private boolean doScore;
+  private boolean doMatchScore;
 
   private final DocTransformer transformer;
   private final DocIterator docIterator;
@@ -77,6 +79,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     solrReturnFields = (SolrReturnFields) rctx.getReturnFields();
 
     if (transformer != null) transformer.setContext(rctx);
+
+    doScore = rctx.wantsScores();
+    doMatchScore = rctx.wantsMatchScores();
   }
 
   public int currentIndex() {
@@ -95,10 +100,15 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);
 
     if (transformer != null) {
-      boolean doScore = rctx.wantsScores();
       try {
         if (doScore) {
           transformer.transform(sdoc, id, docIterator.score());
+          if (doMatchScore) {
+            final Float matchScore = docIterator.matchScore();
+            if (matchScore != null) {
+              sdoc.addField(SolrReturnFields.MATCH_SCORE, matchScore);
+            }
+          }
         } else {
           transformer.transform(sdoc, id);
         }
