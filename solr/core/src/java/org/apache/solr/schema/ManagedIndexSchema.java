@@ -414,7 +414,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     @Override
-    public SolrRequest.SolrRequestType getRequestType() {
+    public SolrRequest.SolrRequestType getBaseRequestType() {
       return SolrRequest.SolrRequestType.ADMIN;
     }
   }

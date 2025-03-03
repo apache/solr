@@ -1033,7 +1033,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     }
 
     @Override
-    public SolrRequest.SolrRequestType getRequestType() {
+    public SolrRequest.SolrRequestType getBaseRequestType() {
       return SolrRequest.SolrRequestType.ADMIN;
     }
   }
