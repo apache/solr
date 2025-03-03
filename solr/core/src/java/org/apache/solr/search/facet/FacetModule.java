@@ -368,7 +368,7 @@ public class FacetModule extends SearchComponent {
   }
 
   // base class for facet functions that can be used in a sort
-  abstract static class FacetSortableMerger extends FacetMerger {
+  public abstract static class FacetSortableMerger extends FacetMerger {
     public void prepareSort() {}
 
     @Override
@@ -384,7 +384,7 @@ public class FacetModule extends SearchComponent {
     public abstract int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction);
   }
 
-  abstract static class FacetDoubleMerger extends FacetSortableMerger {
+  public abstract static class FacetDoubleMerger extends FacetSortableMerger {
     @Override
     public abstract void merge(Object facetResult, Context mcontext);
 
@@ -420,8 +420,8 @@ public class FacetModule extends SearchComponent {
     }
   }
 
-  static class FacetLongMerger extends FacetSortableMerger {
-    long val;
+  public static class FacetLongMerger extends FacetSortableMerger {
+    private long val;
 
     @Override
     public void merge(Object facetResult, Context mcontext) {
@@ -440,8 +440,9 @@ public class FacetModule extends SearchComponent {
   }
 
   // base class for facets that create buckets (and can hence have sub-facets)
-  abstract static class FacetBucketMerger<FacetRequestT extends FacetRequest> extends FacetMerger {
-    FacetRequestT freq;
+  public abstract static class FacetBucketMerger<FacetRequestT extends FacetRequest>
+      extends FacetMerger {
+    protected final FacetRequestT freq;
 
     public FacetBucketMerger(FacetRequestT freq) {
       this.freq = freq;
@@ -481,8 +482,8 @@ public class FacetModule extends SearchComponent {
     }
   }
 
-  static class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
-    FacetBucket bucket;
+  public static class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
+    private FacetBucket bucket;
 
     public FacetQueryMerger(FacetQuery freq) {
       super(freq);
