@@ -22,8 +22,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 /**
  * Marker class so that we can determine which requests are updates.
  *
- * @deprecated Use {@link SolrRequest#shouldSendToLeaders} and
- * {@link SolrRequest#getRequestType}.
+ * @deprecated Use {@link SolrRequest#shouldSendToLeaders} and {@link SolrRequest#getRequestType}.
  */
 @Deprecated
 public interface IsUpdateRequest {
