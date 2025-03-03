@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets
 // don't fork a daemon subprocess on the initial run.
 
 configure(rootProject) {
-  task gradlewScriptsTweaked() { task ->
+  tasks.register("gradlewScriptsTweaked") { task ->
     def scripts = [
         file("gradlew"),
         file("gradlew.bat")
