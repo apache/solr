@@ -726,9 +726,9 @@ public class SearchHandler extends RequestHandlerBase
     return true;
   }
 
-  protected String stageToString(int nextStage) {
+  protected String stageToString(int stage) {
     // This should probably be a enum, but that change should be its own ticket.
-    switch (nextStage) {
+    switch (stage) {
       case STAGE_START:
         return "START";
       case STAGE_PARSE_QUERY:
@@ -743,7 +743,7 @@ public class SearchHandler extends RequestHandlerBase
       case STAGE_DONE:
         return "FINISHING";
       default:
-        return "CUSTOM_STAGE_" + String.valueOf(nextStage);
+        return "CUSTOM_STAGE_" + String.valueOf(stage);
     }
   }
 
