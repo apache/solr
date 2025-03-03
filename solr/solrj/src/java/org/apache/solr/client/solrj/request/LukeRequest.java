@@ -126,7 +126,7 @@ public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
   }
 
   @Override
-  public SolrRequestType getRequestType() {
+  public SolrRequestType getBaseRequestType() {
     return SolrRequestType.ADMIN;
   }
 }
