@@ -199,7 +199,8 @@ public abstract class SolrRequest<T> implements Serializable {
   /**
    * This method defines the intended type of this Solr request.
    *
-   * Subclasses should override this method instead of
+   * <p>Subclasses should override this method instead of
+   *
    * @see SolrRequest#getRequestType
    */
   protected SolrRequestType getBaseRequestType() {
@@ -209,9 +210,9 @@ public abstract class SolrRequest<T> implements Serializable {
   /**
    * Returns the <i>actual</i> type of this SolrRequest.
    *
-   * Pattern matches on {@link SolrRequest#getPath} to identify ADMIN
-   * requests and other special cases. If no special case is identified,
-   * {@link SolrRequest#getBaseRequestType()} is returned.
+   * Pattern matches on the underlying {@link SolrRequest} to identify ADMIN requests and other
+   * special cases. If no special case is identified, {@link SolrRequest#getBaseRequestType()} is
+   * returned.
    */
   public SolrRequestType getRequestType() {
     if (CommonParams.ADMIN_PATHS.contains(getPath())) {
