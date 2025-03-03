@@ -135,7 +135,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   }
 
   @Override
-  public SolrRequestType getRequestType() {
+  public SolrRequestType getBaseRequestType() {
     return SolrRequestType.ADMIN;
   }
 

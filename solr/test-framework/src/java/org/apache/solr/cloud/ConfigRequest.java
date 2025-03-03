@@ -58,7 +58,7 @@ public class ConfigRequest extends CollectionRequiringSolrRequest {
   }
 
   @Override
-  public SolrRequest.SolrRequestType getRequestType() {
+  public SolrRequest.SolrRequestType getBaseRequestType() {
     return SolrRequest.SolrRequestType.ADMIN;
   }
 }
