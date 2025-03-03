@@ -24,7 +24,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 
-class UniqueMultivaluedSlotAcc extends UniqueSlotAcc implements UnInvertedField.Callback {
+public class UniqueMultivaluedSlotAcc extends UniqueSlotAcc implements UnInvertedField.Callback {
   private UnInvertedField uif;
   private UnInvertedField.DocToTerm docToTerm;
 
