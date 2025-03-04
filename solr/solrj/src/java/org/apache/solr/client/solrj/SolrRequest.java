@@ -198,13 +198,11 @@ public abstract class SolrRequest<T> implements Serializable {
   }
 
   /**
-   * This method defines the intended type of this Solr request.
+   * Defines the intended type of this Solr request.
    *
-   * Subclasses should typically override this method instead of
-   * {@link SolrRequest#getRequestType}.
-   *
-   * Note that changing request type can break/impact request routing within
-   * various clients (i.e. {@link CloudSolrClient}).
+   * <p>Subclasses should typically override this method instead of {@link
+   * SolrRequest#getRequestType}. Note that changing request type can break/impact request routing
+   * within various clients (i.e. {@link CloudSolrClient}).
    */
   protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.UNSPECIFIED;
