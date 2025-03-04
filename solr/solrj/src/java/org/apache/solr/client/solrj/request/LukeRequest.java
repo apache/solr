@@ -126,7 +126,8 @@ public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
   }
 
   @Override
+  /** This request is not processed as an ADMIN request. */
   protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.ADMIN;
+    return SolrRequestType.UNSPECIFIED;
   }
 }

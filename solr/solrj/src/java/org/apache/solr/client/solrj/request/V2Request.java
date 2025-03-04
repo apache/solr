@@ -134,11 +134,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     return super.getResponseParser();
   }
 
-  @Override
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.ADMIN;
-  }
-
   public static class Builder {
     private String resource;
     private METHOD method = METHOD.GET;

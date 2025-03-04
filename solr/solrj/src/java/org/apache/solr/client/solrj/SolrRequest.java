@@ -193,6 +193,9 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    *
    * Subclasses should typically override this method instead of
    * {@link SolrRequest#getRequestType}.
+   *
+   * Note that changing request type can break/impact request routing within
+   * various clients (i.e. {@link CloudSolrClient}).
    */
   protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.UNSPECIFIED;
