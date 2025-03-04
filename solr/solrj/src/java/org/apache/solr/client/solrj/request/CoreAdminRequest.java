@@ -46,7 +46,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   protected CoreAdminParams.CoreAdminAction action = null;
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.ADMIN;
   }
 

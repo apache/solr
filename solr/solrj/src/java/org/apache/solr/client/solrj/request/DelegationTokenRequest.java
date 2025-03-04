@@ -84,7 +84,7 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public SolrRequestType getBaseRequestType() {
+    protected SolrRequestType getBaseRequestType() {
       return SolrRequestType.ADMIN;
     }
   }
@@ -118,7 +118,7 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public SolrRequestType getBaseRequestType() {
+    protected SolrRequestType getBaseRequestType() {
       return SolrRequestType.ADMIN;
     }
   }
@@ -153,7 +153,7 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public SolrRequestType getBaseRequestType() {
+    protected SolrRequestType getBaseRequestType() {
       return SolrRequestType.ADMIN;
     }
   }

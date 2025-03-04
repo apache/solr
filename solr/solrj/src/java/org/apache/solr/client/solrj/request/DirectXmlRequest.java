@@ -57,7 +57,7 @@ public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateRespo
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.UPDATE;
   }
 

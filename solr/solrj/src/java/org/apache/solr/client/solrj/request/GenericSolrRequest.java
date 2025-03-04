@@ -109,7 +109,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.UNSPECIFIED;
   }
 }

@@ -126,7 +126,7 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.UPDATE;
   }
 
