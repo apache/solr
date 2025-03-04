@@ -71,7 +71,7 @@ public class SolrSearcherRequirementDetectorTest extends SolrTestCase {
   }
 
   @Test
-  public void testDeteectsWhenQueriesDoRequireSolrSearcher_Nested() {
+  public void testDetectsWhenQueriesRequireSolrSearcher_Nested() {
     final var termQuery = new TermQuery(new Term("someField", "someFieldValue"));
     final var termQuery2 = new TermQuery(new Term("someField", "someOtherFieldValue"));
     final var joinQuery = new JoinQuery("fromField", "toField", "someCoreName", termQuery);

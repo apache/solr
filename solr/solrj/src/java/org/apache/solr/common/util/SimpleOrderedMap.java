@@ -56,12 +56,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   /**
    * Creates an instance backed by an explicitly specified list of pairwise names/values.
    *
-   * <p>TODO: this method was formerly public, now that it's not we can change the impl details of
-   * this class to be based on a Map.Entry[]
-   *
    * @param nameValuePairs underlying List which should be used to implement a SimpleOrderedMap;
    *     modifying this List will affect the SimpleOrderedMap.
-   * @lucene.internal
    */
   private SimpleOrderedMap(List<Object> nameValuePairs) {
     super(nameValuePairs);
@@ -90,6 +86,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   public int hashCode() {
     return new InnerMap().hashCode(); // Use AbstractMap's code
   }
+
+  // toString is inherited and implements the Map contract (and this is tested)
 
   @Override
   public boolean isEmpty() {

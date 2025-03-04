@@ -48,6 +48,8 @@ import org.apache.solr.util.RefCounted;
  */
 public class CoreStatus extends CoreAdminAPIBase implements CoreApis.GetStatus {
 
+  private static boolean INDEX_INFO_DEFAULT_VALUE = true;
+
   @Inject
   public CoreStatus(
       CoreContainer coreContainer,
@@ -60,13 +62,15 @@ public class CoreStatus extends CoreAdminAPIBase implements CoreApis.GetStatus {
   @Override
   @PermissionName(CORE_READ_PERM)
   public CoreStatusResponse getAllCoreStatus(Boolean indexInfo) throws IOException {
-    return fetchStatusInfo(coreContainer, null, indexInfo);
+    final var indexInfoNeeded = indexInfo == null ? INDEX_INFO_DEFAULT_VALUE : indexInfo;
+    return fetchStatusInfo(coreContainer, null, indexInfoNeeded);
   }
 
   @Override
   @PermissionName(CORE_READ_PERM)
   public CoreStatusResponse getCoreStatus(String coreName, Boolean indexInfo) throws IOException {
-    return fetchStatusInfo(coreContainer, coreName, indexInfo);
+    final var indexInfoNeeded = indexInfo == null ? INDEX_INFO_DEFAULT_VALUE : indexInfo;
+    return fetchStatusInfo(coreContainer, coreName, indexInfoNeeded);
   }
 
   public static CoreStatusResponse fetchStatusInfo(
