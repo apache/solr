@@ -199,7 +199,7 @@ public class DocumentAnalysisRequest
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.QUERY;
   }
 }

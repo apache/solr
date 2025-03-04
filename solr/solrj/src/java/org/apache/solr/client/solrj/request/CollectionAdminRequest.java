@@ -124,7 +124,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.ADMIN;
   }
 
