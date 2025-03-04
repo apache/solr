@@ -61,7 +61,7 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
     }
 
     @Override
-    public SolrRequest.SolrRequestType getBaseRequestType() {
+    protected SolrRequest.SolrRequestType getBaseRequestType() {
       return SolrRequest.SolrRequestType.ADMIN;
     }
   }

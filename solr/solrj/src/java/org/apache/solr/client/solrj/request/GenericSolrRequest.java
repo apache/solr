@@ -107,9 +107,4 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   protected SimpleSolrResponse createResponse(NamedList<Object> namedList) {
     return response;
   }
-
-  @Override
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.UNSPECIFIED;
-  }
 }

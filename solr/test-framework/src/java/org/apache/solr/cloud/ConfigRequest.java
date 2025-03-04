@@ -55,9 +55,4 @@ public class ConfigRequest extends CollectionRequiringSolrRequest<SolrResponse> 
   public SolrResponse createResponse(NamedList<Object> client) {
     return new SolrResponseBase();
   }
-
-  @Override
-  public SolrRequest.SolrRequestType getBaseRequestType() {
-    return SolrRequest.SolrRequestType.ADMIN;
-  }
 }

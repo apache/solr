@@ -61,6 +61,11 @@ public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateRespo
     return SolrRequestType.UPDATE;
   }
 
+  @Override
+  public boolean shouldSendToLeaders() {
+    return true;
+  }
+
   public void setParams(SolrParams params) {
     this.params = params;
   }

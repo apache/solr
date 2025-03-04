@@ -731,11 +731,6 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     protected SchemaResponse.UpdateResponse createResponse(NamedList<Object> namedList) {
       return new SchemaResponse.UpdateResponse();
     }
-
-    @Override
-    protected SolrRequestType getBaseRequestType() {
-      return SolrRequestType.UPDATE;
-    }
   }
 
   private abstract static class SingleUpdate extends Update {

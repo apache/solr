@@ -38,9 +38,4 @@ public abstract class AbstractSchemaRequest<T extends SolrResponse>
   public SolrParams getParams() {
     return params;
   }
-
-  @Override
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.ADMIN;
-  }
 }
