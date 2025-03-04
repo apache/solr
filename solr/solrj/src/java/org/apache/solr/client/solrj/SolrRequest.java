@@ -211,8 +211,6 @@ public abstract class SolrRequest<T> implements Serializable {
   }
 
   /**
-   * Returns the <i>actual</i> type of this SolrRequest.
-   *
    * Pattern matches on the underlying {@link SolrRequest} to identify ADMIN requests and other
    * special cases. If no special case is identified, {@link SolrRequest#getBaseRequestType()} is
    * returned.
