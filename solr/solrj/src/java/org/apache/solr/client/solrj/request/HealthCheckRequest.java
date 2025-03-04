@@ -63,7 +63,7 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.ADMIN;
   }
 }

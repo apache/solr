@@ -105,7 +105,7 @@ public abstract class ConfigSetAdminRequest<
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.ADMIN;
   }
 

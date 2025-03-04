@@ -40,7 +40,7 @@ public abstract class AbstractSchemaRequest<T extends SolrResponse>
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.ADMIN;
   }
 }
