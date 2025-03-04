@@ -17,18 +17,12 @@
  */
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.ExternalPaths;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,35 +42,9 @@ public class UsingPingRefGuideExamplesTest extends SolrCloudTestCase {
         .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
 
-    CollectionAdminResponse response =
-        CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
-            .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("techproducts", 1, 1);
-  }
-
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    final SolrClient client = getSolrClient();
-
-    final List<TechProduct> products = new ArrayList<>();
-    products.add(new TechProduct("1", "Fitbit Alta"));
-    products.add(new TechProduct("2", "Sony Walkman"));
-    products.add(new TechProduct("3", "Garmin GPS"));
-
-    client.addBeans("techproducts", products);
-    client.commit("techproducts");
-  }
-
-  @After
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-
-    final SolrClient client = getSolrClient();
-    client.deleteByQuery("techproducts", "*:*");
-    client.commit("techproducts");
   }
 
   private SolrClient getSolrClient() {
@@ -112,17 +80,5 @@ public class UsingPingRefGuideExamplesTest extends SolrCloudTestCase {
     // end::solrj-example-with-solrclient[]
 
     assertEquals("OK", status);
-  }
-
-  public static class TechProduct {
-    @Field public String id;
-    @Field public String name;
-
-    public TechProduct(String id, String name) {
-      this.id = id;
-      this.name = name;
-    }
-
-    public TechProduct() {}
   }
 }
