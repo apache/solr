@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -190,9 +191,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   /**
    * This method defines the intended type of this Solr request.
    *
-   * <p>Subclasses should override this method instead of
-   *
-   * @see SolrRequest#getRequestType
+   * Subclasses should typically override this method instead of
+   * {@link SolrRequest#getRequestType}.
    */
   protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.UNSPECIFIED;
@@ -208,6 +208,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public SolrRequestType getRequestType() {
     if (CommonParams.ADMIN_PATHS.contains(getPath())) {
       return SolrRequestType.ADMIN;
+    } else if (this instanceof IsUpdateRequest) {
+      return SolrRequestType.UPDATE;
     } else {
       return getBaseRequestType();
     }

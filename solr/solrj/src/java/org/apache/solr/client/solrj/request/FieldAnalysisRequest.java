@@ -82,7 +82,7 @@ public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAn
   }
 
   @Override
-  public SolrRequestType getBaseRequestType() {
+  protected SolrRequestType getBaseRequestType() {
     return SolrRequestType.QUERY;
   }
 
