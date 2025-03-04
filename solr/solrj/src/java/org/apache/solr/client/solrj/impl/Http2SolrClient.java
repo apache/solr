@@ -901,6 +901,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.baseSolrUrl = baseSolrUrl;
     }
 
+    /** These Jetty {@link Request.Listener}s are registered on the internal {@link HttpClient}. */
     public Http2SolrClient.Builder withRequestListeners(List<Request.Listener> requestListeners) {
       this.requestListeners = requestListeners;
       return this;
