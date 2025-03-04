@@ -1032,11 +1032,6 @@ public class SolrConfigHandler extends RequestHandlerBase
     protected SolrResponse createResponse(SolrClient client) {
       return null;
     }
-
-    @Override
-    public SolrRequest.SolrRequestType getBaseRequestType() {
-      return SolrRequest.SolrRequestType.ADMIN;
-    }
   }
 
   @Override
