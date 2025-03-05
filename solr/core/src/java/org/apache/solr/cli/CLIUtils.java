@@ -226,6 +226,11 @@ public final class CLIUtils {
       return zkHost;
     }
 
+//    zkHost = EnvUtils.getProperty("zkHost");
+//    if (zkHost != null && !zkHost.isBlank()) {
+//      return zkHost;
+//    }
+
     try (SolrClient solrClient = getSolrClient(cli)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
