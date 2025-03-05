@@ -34,7 +34,6 @@ ext {
   jsClientWorkspace = layout.buildDirectory.dir("jsClientWorkspace").get()
   jsClientBuildDir = layout.buildDirectory.dir("jsClientBuild").get()
   jsClientBundleDir = layout.buildDirectory.dir("jsClientBundle").get()
-  browserifyVersion = "17.0.0"
 }
 
 dependencies {
@@ -89,10 +88,28 @@ task jsClientBuild(type: NpmTask) {
 
 task downloadBrowserify(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "browserify@${browserifyVersion}"]
+  args = ["install", "browserify@${libs.versions.browserify.get()}"]
 
-  inputs.property("browserify version", browserifyVersion)
+  inputs.property("browserify version", libs.versions.browserify.get())
   outputs.dir("${nodeProjectDir}/node_modules/browserify")
+}
+
+tasks.register("generateUiDevFiles") {
+  description = "Generate new UI for development and add files to outputs for later referencing."
+  group = "build"
+
+  // Development files are larger in size but have shorter compile times.
+  dependsOn project(":solr:ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
+  outputs.dir(project(":solr:ui").file("build/dist/wasmJs/developmentExecutable/"))
+}
+
+tasks.register("generateUiProdFiles") {
+  description = "Generate new UI for production and add files to outputs for later referencing"
+  group = "build"
+
+  // Production files are smaller in size but have longer compile times.
+  dependsOn project(":solr:ui").tasks.wasmJsBrowserDistribution
+  outputs.dir(project(":solr:ui").file("build/dist/wasmJs/productionExecutable/"))
 }
 
 task generateJsClientBundle(type: NpxTask) {
@@ -105,7 +122,7 @@ task generateJsClientBundle(type: NpxTask) {
   workingDir = file(jsClientWorkspace)
 
   inputs.dir(jsClientWorkspace)
-  inputs.property("browserify version", browserifyVersion)
+  inputs.property("browserify version", libs.versions.browserify.get())
 
   outputs.file("${jsClientBuildDir}/index.js")
 }
@@ -126,17 +143,23 @@ task finalizeJsBundleDir(type: Sync) {
 }
 
 war {
-  // Why are they in the source code at all if they're excluded from the distribution?
-  exclude "libs/angular-cookies.js"
-  exclude "libs/angular-route.js"
-  exclude "libs/angular-sanitize.js"
-  exclude "libs/angular-utf8-base.js"
-  exclude "libs/angular.js"
-  exclude "libs/chosen.jquery.js"
+  webAppDirName = "web"
 
   from (configurations.generatedJSClientBundle, {
     into "libs/solr"
   })
+
+  // Include new Admin UI files in webapp
+  // By default, we always build dev that does not optimize generated files for release to reduce build times.
+  if (rootProject.ext.development) {
+    from (tasks.generateUiDevFiles) {
+      into "ui"
+    }
+  } else {
+    from (tasks.generateUiProdFiles) {
+      into "ui"
+    }
+  }
 }
 
 // Expose 'war' archive as an artifact so that it can be packaged in the distribution.

@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.CreateTool;
 import org.apache.solr.cli.DeleteTool;
 import org.apache.solr.cli.HealthcheckTool;
@@ -115,8 +116,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     String[] argsForPost =
         new String[] {
-          "--solr-update-url",
-          solrUrl + "/" + testCollectionName + "/update",
+          "--solr-url",
+          solrUrl,
+          "--name",
+          testCollectionName,
           "--filetypes",
           "xml",
           exampleDocsDir.toAbsolutePath().toString()
@@ -126,7 +129,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     CommandLine postCli = SolrCLI.processCommandLineArgs(postTool, argsForPost);
     postTool.runTool(postCli);
 
-    int expectedXmlDocCount = 32;
+    int expectedXmlDocCount = 31;
 
     int numFound = 0;
 
@@ -172,7 +175,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(
-        SolrCLI.safeCheckCollectionExists(
+        CLIUtils.safeCheckCollectionExists(
             solrUrl, testCollectionName, null)); // it should not exist anymore
   }
 }

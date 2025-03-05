@@ -1,0 +1,74 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java-library'
+
+description = 'Cross-DC Replication Plugins'
+
+ext {
+  // Use of the security manager is not supported on windows.
+  // Mockito does not work with it enabled.
+  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+}
+
+dependencies {
+  implementation platform(project(':platform'))
+  api project(':solr:core')
+  implementation project(':solr:solrj')
+  implementation project(':solr:solrj-zookeeper')
+
+  implementation libs.slf4j.api
+  implementation libs.apache.kafka.clients
+  implementation libs.google.guava
+  implementation libs.dropwizard.metrics.core
+  implementation libs.apache.zookeeper.zookeeper
+  implementation libs.apache.zookeeper.jute
+
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.junit.junit
+  testImplementation libs.commonsio.commonsio
+  testImplementation libs.mockito.core
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+
+  testImplementation(libs.apache.kafka.clients) {
+    artifact {
+      classifier = "test"
+    }
+  }
+}
+
+// Make sure that the cloud-minimal.zip artifact is up-to-date with cloud-minimal/conf
+// We keep this checked into github, so that the unit tests can be run in intelliJ without gradle
+task zipCloudConfigSet(type: Zip) {
+  from "${projectDir}/src/test-files/configs/cloud-minimal/conf/"
+  getArchiveFileName().set("cloud-minimal.zip")
+  setDestinationDirectory(file("${projectDir.toString()}/src/test-files/configs"))
+
+  // Make the zip reproducable
+  includeEmptyDirs = false
+  preserveFileTimestamps = false
+  reproducibleFileOrder = true
+}
+
+sourceSets {
+  test.resources.setSrcDirs(files("${projectDir}/src/test-files") {
+    builtBy tasks.zipCloudConfigSet
+  })
+}

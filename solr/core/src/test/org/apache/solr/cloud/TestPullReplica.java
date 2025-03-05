@@ -27,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.http.HttpResponse;
@@ -694,7 +695,138 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForNumDocsInAllActiveReplicas(2);
   }
 
-  public void testSearchWhileReplicationHappens() {}
+  public void testSkipLeaderRecoveryProperty() throws Exception {
+    final int numDocsAdded = 13;
+
+    assertTrue(
+        "Test has been broken, not enough jetties", cluster.getJettySolrRunners().size() >= 2);
+
+    // Track the two jetty instances we're going to (re)use w/specific replica types
+    final JettySolrRunner tlogLeaderyJetty = cluster.getJettySolrRunners().get(0);
+    final JettySolrRunner pullFollowerJetty = cluster.getJettySolrRunners().get(1);
+    assertNotEquals(tlogLeaderyJetty, pullFollowerJetty);
+
+    // Start with a single tlog replic on the leader jetty
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 0, 1, 0)
+        .setCreateNodeSet(tlogLeaderyJetty.getNodeName())
+        // NOTE: we restart the leader, so we need a non-ephemeral index
+        .setProperties(Map.of("solr.directoryFactory", "solr.StandardDirectoryFactory"))
+        .process(cluster.getSolrClient());
+
+    // Add 2 PULL replicas on the follower jetty
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL)
+        .setCreateNodeSet(pullFollowerJetty.getNodeName())
+        .setPullReplicas(2)
+        .process(cluster.getSolrClient());
+
+    waitForState("Collection init never finished?", collectionName, activeReplicaCount(0, 1, 2));
+
+    assertEquals(
+        2, getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+
+    // set our 'skip' property on one of the PULL replicas, and keep track of this replica
+    final String pullThatSkipsRecovery =
+        getCollectionState(collectionName)
+            .getReplicas(EnumSet.of(Replica.Type.PULL))
+            .get(0)
+            .getName();
+    CollectionAdminRequest.addReplicaProperty(
+            collectionName,
+            "shard1",
+            pullThatSkipsRecovery,
+            ZkController.SKIP_LEADER_RECOVERY_PROP,
+            "true")
+        .process(cluster.getSolrClient());
+
+    // index a few docs and wait to ensure everything is in sync with our expectations
+    addDocs(numDocsAdded);
+    waitForNumDocsInAllReplicas(numDocsAdded, getCollectionState(collectionName).getReplicas());
+    waitForState(
+        "Replica prop never added?",
+        collectionName,
+        (liveNodes, docState) -> {
+          return docState
+              .getReplica(pullThatSkipsRecovery)
+              .getBool(ZkController.SKIP_LEADER_RECOVERY_PROP_KEY, false);
+        });
+
+    // Now shutdown our leader node and confirm all our PULL replicas are still active and serving
+    // requests
+    tlogLeaderyJetty.stop();
+    cluster.waitForJettyToStop(tlogLeaderyJetty);
+    waitForState(
+        "Leader should be down, PULLs should be active",
+        collectionName,
+        activeReplicaCount(0, 0, 2));
+    waitForNumDocsInAllReplicas(
+        numDocsAdded,
+        getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)));
+
+    // Add yetanother PULL replica while the leader is down.
+    // This new replica will immediately stall going into recoveery, since the leader is down.
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL)
+        .setCreateNodeSet(pullFollowerJetty.getNodeName())
+        .process(cluster.getSolrClient());
+    waitForState(
+        "3rd PULL replica should be down",
+        collectionName,
+        (liveNodes, colState) -> {
+          int active = 0;
+          int down = 0;
+          for (Replica r : colState.getReplicas(EnumSet.of(Replica.Type.PULL))) {
+            if (r.getState().equals(Replica.State.ACTIVE)) {
+              active++;
+            } else if (r.getState().equals(Replica.State.DOWN)) {
+              down++;
+            }
+          }
+          return ((2 == active) && (1 == down));
+        });
+
+    // But even if when set our 'skip' property on this new PULL replica, it's *next* (re)start
+    // should still block waiting for RECOVERY since it won't have an active index.
+    final String pullThatWantsToSkipRecoveryButMustRecoverOnce =
+        getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+            .filter(r -> r.getState().equals(Replica.State.DOWN))
+            .map(r -> r.getName())
+            .findFirst()
+            .get();
+    CollectionAdminRequest.addReplicaProperty(
+            collectionName,
+            "shard1",
+            pullThatWantsToSkipRecoveryButMustRecoverOnce,
+            ZkController.SKIP_LEADER_RECOVERY_PROP,
+            "true")
+        .process(cluster.getSolrClient());
+
+    // Restart the node all of our PULL replicas are one, and confirm that our special REPLICA goes
+    // ACTIVE while the others all stay DOWN
+    // (Note: Other PULL replica can't start RECOVERING until the leader comes back)
+    pullFollowerJetty.stop();
+    cluster.waitForJettyToStop(pullFollowerJetty);
+    pullFollowerJetty.start();
+    waitForState(
+        "Special PULL should be ACTIVE, all others should be DOWN",
+        collectionName,
+        (liveNodes, colState) -> {
+          for (Replica r : colState.getReplicas()) {
+            if (r.getName().equals(pullThatSkipsRecovery)) {
+              if (!r.getState().equals(Replica.State.ACTIVE)) {
+                return false;
+              }
+            } else if (!r.getState().equals(Replica.State.DOWN)) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+    // Restart our leader, eventually all replicas should be ACTIVE and happy
+    tlogLeaderyJetty.start();
+    waitForState(
+        "Leader should be back, all replicas active", collectionName, activeReplicaCount(0, 1, 3));
+    waitForNumDocsInAllReplicas(numDocsAdded, getCollectionState(collectionName).getReplicas());
+  }
 
   private void waitForNumDocsInAllActiveReplicas(int numDocs)
       throws IOException, SolrServerException, InterruptedException {
@@ -749,20 +881,13 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
   }
 
-  static void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
-      log.info("Collection not yet deleted");
-      try {
-        Thread.sleep(100);
-        if (t.hasTimedOut()) {
-          fail("Timed out waiting for collection " + collection + " to be deleted.");
-        }
-        cluster.getZkStateReader().forceUpdateCollection(collection);
-      } catch (SolrException e) {
-        return;
-      }
-    }
+  static void waitForDeletion(String collection) {
+    waitForState(
+        "Waiting for collection " + collection + " to be deleted",
+        collection,
+        10,
+        TimeUnit.SECONDS,
+        Objects::isNull);
   }
 
   private DocCollection assertNumberOfReplicas(

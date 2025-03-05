@@ -418,7 +418,7 @@ public class TestMinHashQParser extends SolrTestCaseJ4 {
         h.getCore()
             .getQueryPlugin("minhash")
             .createParser(
-                "1, 2, 3, 4, 5, 6, 7, 8, 9, 10", SolrParams.toSolrParams(par), null, null);
+                "1, 2, 3, 4, 5, 6, 7, 8, 9, 10", par.toSolrParams(), SolrParams.of(), null);
     Query query = qparser.getQuery();
 
     BooleanQuery bq = (BooleanQuery) query;
@@ -436,7 +436,7 @@ public class TestMinHashQParser extends SolrTestCaseJ4 {
     par.add("rows", "30");
     par.add("fl", "id,score");
     par.remove("qt");
-    SolrParams newp = SolrParams.toSolrParams(par);
+    SolrParams newp = par.toSolrParams();
     qr.setParams(newp);
     return qr;
   }

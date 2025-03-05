@@ -16,7 +16,7 @@
  */
 
 configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(":solr:webapp")]) {
-    apply plugin: "com.github.node-gradle.node"
+    apply plugin: libs.plugins.nodegradle.node.get().pluginId
 
     def npmRegistry = "${ -> propertyOrEnvOrDefault("solr.npm.registry", "SOLR_NPM_REGISTRY", '') }"
     if (!npmRegistry.isEmpty()) {
@@ -34,14 +34,13 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
         }
     }
 
-    ext {
-        rootNodeDir = "$rootDir/.gradle/node"
-        nodeProjectDir = file("$rootNodeDir/$project.name")
+    project.ext {
+        nodeProjectDir = layout.projectDirectory.dir(".gradle/node")
     }
 
     node {
         download = true
-        version = "16.20.2" // LTS
+        version = libs.versions.nodejs.get()
 
         def nodeDistUrl = "${ -> propertyOrEnvOrDefault("solr.node.distUrl", "SOLR_NODE_DIST_URL", '') }"
         if (!nodeDistUrl.isEmpty()) {
@@ -49,10 +48,10 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
         }
 
         // The directory where Node.js is unpacked (when download is true)
-        workDir = file("${project.ext.rootNodeDir}/nodejs")
+        workDir = file("${project.ext.nodeProjectDir.getAsFile().path}/nodejs")
 
         // The directory where npm is installed (when a specific version is defined)
-        npmWorkDir = file("${project.ext.rootNodeDir}/npm")
+        npmWorkDir = file("${project.ext.nodeProjectDir.getAsFile().path}/npm")
 
         // The Node.js project directory location
         // This is where the package.json file and node_modules directory are located

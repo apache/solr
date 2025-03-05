@@ -115,8 +115,7 @@ public class SortSpecParsing {
           QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, optionalReq);
           Query q = null;
           try {
-            if (parser instanceof FunctionQParser) {
-              FunctionQParser fparser = (FunctionQParser) parser;
+            if (parser instanceof FunctionQParser fparser) {
               fparser.setParseMultipleSources(false);
               fparser.setParseToEnd(false);
 

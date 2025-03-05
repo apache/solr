@@ -406,8 +406,7 @@ public class JDBCStream extends TupleStream implements Expressible {
               if (resultSet.wasNull()) {
                 return null;
               }
-              if (obj instanceof String) {
-                String s = (String) obj;
+              if (obj instanceof String s) {
                 if (s.contains(sep)) {
                   s = s.substring(1);
                   return s.split(sep);

@@ -52,6 +52,21 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
+  public enum ApiVersion {
+    V1("/solr"),
+    V2("/api");
+
+    private final String apiPrefix;
+
+    ApiVersion(String apiPrefix) {
+      this.apiPrefix = apiPrefix;
+    }
+
+    public String getApiPrefix() {
+      return apiPrefix;
+    }
+  }
+
   public enum SolrRequestType {
     QUERY,
     UPDATE,
@@ -173,6 +188,13 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   /** This method defines the type of this Solr request. */
   public abstract String getRequestType();
 
+  /**
+   * The parameters for this request; never null. The runtime type may be mutable but modifications
+   * <b>may</b> not affect this {@link SolrRequest} instance, as it may return a new instance here
+   * every time. If the subclass specifies the response type as {@link
+   * org.apache.solr.common.params.ModifiableSolrParams}, then one can expect it to change this
+   * request. If the subclass has a setter then one can expect this method to return the value set.
+   */
   public abstract SolrParams getParams();
 
   /**
@@ -186,6 +208,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    */
   public boolean requiresCollection() {
     return false;
+  }
+
+  /**
+   * Indicates which API version this request will make
+   *
+   * <p>Defaults implementation returns 'V1'.
+   */
+  public ApiVersion getApiVersion() {
+    return ApiVersion.V1;
   }
 
   /**
@@ -226,7 +257,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
       throws SolrServerException, IOException {
     long startNanos = System.nanoTime();
     T res = createResponse(client);
-    res.setResponse(client.request(this, collection));
+    var namedList = client.request(this, collection);
+    res.setResponse(namedList);
     long endNanos = System.nanoTime();
     res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;
@@ -245,19 +277,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   public String getCollection() {
-    return getParams() == null ? null : getParams().get("collection");
-  }
-
-  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
-  public void setBasePath(String path) {
-    if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
-
-    this.basePath = path;
-  }
-
-  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
-  public String getBasePath() {
-    return basePath;
+    return getParams().get("collection");
   }
 
   public void addHeader(String key, String value) {

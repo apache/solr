@@ -40,6 +40,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
@@ -47,6 +48,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -171,7 +173,7 @@ public class PackageManager implements Closeable {
         String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"));
     for (String filePath : filesToDelete) {
       DistribFileStore.deleteZKFileEntry(zkClient, filePath);
-      String path = "/api/cluster/files" + filePath;
+      String path = "/api/cluster/filestore/files" + filePath;
       printGreen("Deleting " + path);
       solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.DELETE, path));
     }
@@ -237,7 +239,7 @@ public class PackageManager implements Closeable {
     try {
       NamedList<Object> result =
           solrClient.request(
-              new GenericSolrRequest(
+              new GenericV2SolrRequest(
                       SolrRequest.METHOD.GET,
                       PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS")
                   .setRequiresCollection(
@@ -278,7 +280,7 @@ public class PackageManager implements Closeable {
     try {
       NamedList<Object> response =
           solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
+              new GenericV2SolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
       Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
       if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
@@ -421,7 +423,7 @@ public class PackageManager implements Closeable {
         boolean packageParamsExist =
             solrClient
                 .request(
-                    new GenericSolrRequest(
+                    new GenericV2SolrRequest(
                             SolrRequest.METHOD.GET,
                             PackageUtils.getCollectionParamsPath(collection) + "/packages")
                         .setRequiresCollection(
@@ -679,7 +681,7 @@ public class PackageManager implements Closeable {
     boolean shouldExecute = true;
     if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
       PackageUtils.print(
-          SolrCLI.YELLOW,
+          CLIUtils.YELLOW,
           "Execute this command. (If you choose no, you can manually deploy/undeploy this plugin later) (y/n): ");
       try (Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8)) {
         String userInput = scanner.next();
@@ -723,7 +725,7 @@ public class PackageManager implements Closeable {
     try {
       NamedList<Object> response =
           solrClient.request(
-              new GenericSolrRequest(
+              new GenericV2SolrRequest(
                       SolrRequest.METHOD.GET,
                       PackageUtils.getCollectionParamsPath(collection) + "/packages")
                   .setRequiresCollection(
@@ -953,7 +955,7 @@ public class PackageManager implements Closeable {
             shouldInstallClusterPlugins,
             parameters);
     PackageUtils.print(
-        res ? SolrCLI.GREEN : SolrCLI.RED, res ? "Deployment successful" : "Deployment failed");
+        res ? CLIUtils.GREEN : CLIUtils.RED, res ? "Deployment successful" : "Deployment failed");
   }
 
   /** Undeploys a package from given collections. */

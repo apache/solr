@@ -382,8 +382,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         for (BooleanClause clause : boostedQuery) {
           Query q = clause.getQuery();
           float originalBoost = 1f;
-          if (q instanceof BoostQuery) {
-            BoostQuery bq = (BoostQuery) q;
+          if (q instanceof BoostQuery bq) {
             q = bq.getQuery();
             originalBoost = bq.getBoost();
           }
@@ -481,8 +480,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         }
         Query q = o.getQuery();
         float boost = 1f;
-        if (q instanceof BoostQuery) {
-          BoostQuery bq = (BoostQuery) q;
+        if (q instanceof BoostQuery bq) {
           q = bq.getQuery();
           boost = bq.getBoost();
         }

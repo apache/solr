@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -194,8 +195,7 @@ public class QueryComponent extends SearchComponent {
       if (rankQueryString != null) {
         QParser rqparser = QParser.getParser(rankQueryString, req);
         Query rq = rqparser.getQuery();
-        if (rq instanceof RankQuery) {
-          RankQuery rankQuery = (RankQuery) rq;
+        if (rq instanceof RankQuery rankQuery) {
           rb.setRankQuery(rankQuery);
           MergeStrategy mergeStrategy = rankQuery.getMergeStrategy();
           if (mergeStrategy != null) {
@@ -614,17 +614,23 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected int regularDistributedProcess(ResponseBuilder rb) {
-    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) return ResponseBuilder.STAGE_PARSE_QUERY;
+    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
+      return ResponseBuilder.STAGE_PARSE_QUERY;
+    }
     if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
       createDistributedStats(rb);
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) return ResponseBuilder.STAGE_EXECUTE_QUERY;
+    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+      return ResponseBuilder.STAGE_EXECUTE_QUERY;
+    }
     if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       createMainQuery(rb);
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) return ResponseBuilder.STAGE_GET_FIELDS;
+    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+      return ResponseBuilder.STAGE_GET_FIELDS;
+    }
     if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
       createRetrieveDocs(rb);
       return ResponseBuilder.STAGE_DONE;
@@ -1338,10 +1344,8 @@ public class QueryComponent extends SearchComponent {
                   (NamedList<?>)
                       SolrResponseUtil.getSubsectionFromShardResponse(
                           rb, srsp, "responseHeader", false));
-          if (Boolean.TRUE.equals(
-              responseHeader.getBooleanArg(
-                  SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            rb.rsp.setPartialResults();
+          if (!haveCompleteResults(responseHeader)) { // partial or omitted partials
+            rb.rsp.setPartialResults(rb.req);
             rb.rsp.addPartialResponseDetail(
                 responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY));
           }

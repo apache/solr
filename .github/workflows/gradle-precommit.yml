@@ -8,22 +8,22 @@ on:
 
 jobs:
   test:
-    name: gradle check w/ Java 11
+    name: gradle check
 
     runs-on: ubuntu-latest
 
     env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
 
     steps:
     # Setup
     - uses: actions/checkout@v4
 
-    - name: Set up JDK 11
+    - name: Set up JDK
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: 11
+        java-version: 21
         java-package: jdk
 
     - name: Setup Gradle
@@ -36,12 +36,12 @@ jobs:
       with:
         path: |
           ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('versions.lock') }}
+        key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('**/*.lockfile') }}
         restore-keys: |
           ${{ runner.os }}-gradle-precommit-
           ${{ runner.os }}-gradle-
 
     - name: Run gradle check (without tests)
-      run: ./gradlew check -x test -Ptask.times=true
+      run: ./gradlew check -x test -Ptask.times=true --continue
 
     - uses: gradle/wrapper-validation-action@v3

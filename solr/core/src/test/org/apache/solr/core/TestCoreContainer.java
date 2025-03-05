@@ -61,7 +61,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() {
     oldSolrHome = System.getProperty(SOLR_HOME_PROP);
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    System.setProperty("configsets", getFile("solr/configsets").toAbsolutePath().toString());
   }
 
   @AfterClass
@@ -95,7 +95,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     try {
 
       // instance dir & resource loader for the CC
-      assertEquals(realSolrHome.toString(), cc.getSolrHome());
+      assertEquals(realSolrHome, cc.getSolrHome());
       assertEquals(realSolrHome, cc.getResourceLoader().getInstancePath());
 
     } finally {
@@ -320,7 +320,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     MockCoresLocator cl = new MockCoresLocator();
 
     Path solrHome = createTempDir();
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    System.setProperty("configsets", getFile("solr/configsets").toAbsolutePath().toString());
 
     final CoreContainer cc =
         new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
@@ -939,7 +939,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     Path solrHome = createTempDir();
 
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    System.setProperty("configsets", getFile("solr/configsets").toAbsolutePath().toString());
 
     final CoreContainer cc =
         new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
@@ -983,14 +983,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // -----
     // "fix" the bad collection
-    Path confDir = Path.of(cc.getSolrHome(), "col_bad", "conf");
+    Path confDir = cc.getSolrHome().resolve("col_bad").resolve("conf");
     Files.createDirectories(confDir);
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig-defaults.xml").toPath(),
+        getFile("solr/collection1/conf/solrconfig-defaults.xml"),
         confDir.resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     Files.copy(
-        getFile("solr/collection1/conf/schema-minimal.xml").toPath(),
+        getFile("solr/collection1/conf/schema-minimal.xml"),
         confDir.resolve("schema.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     cc.create("col_bad", Map.of());
@@ -1059,7 +1059,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     final long col_bad_old_start = getCoreStartTime(cc, "col_bad");
 
     Files.writeString(
-        Path.of(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"),
+        cc.getSolrHome().resolve("col_bad").resolve("conf").resolve("solrconfig.xml"),
         "This is giberish, not valid XML <",
         StandardCharsets.UTF_8);
 
@@ -1107,7 +1107,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // ----
     // fix col_bad's config (again) and RELOAD to fix failure
     Files.copy(
-        getFile("solr/collection1/conf/solrconfig-defaults.xml").toPath(),
+        getFile("solr/collection1/conf/solrconfig-defaults.xml"),
         confDir.resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     cc.reload("col_bad");

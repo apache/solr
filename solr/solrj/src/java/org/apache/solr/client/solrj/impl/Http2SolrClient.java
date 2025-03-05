@@ -39,11 +39,14 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -69,7 +72,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
@@ -84,7 +86,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -104,16 +105,17 @@ import org.slf4j.MDC;
  * </ul>
  */
 public class Http2SolrClient extends HttpSolrClientBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
+  private static final String USER_AGENT =
+      "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
   private static volatile SSLConfig defaultSSLConfig;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
 
   private final HttpClient httpClient;
 
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
-  private final AsyncTracker asyncTracker = new AsyncTracker();
+  protected AsyncTracker asyncTracker = new AsyncTracker();
 
   private final boolean closeClient;
   private ExecutorService executor;
@@ -128,6 +130,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
+      if (this.executor == null) {
+        this.executor = builder.executor;
+      }
+
+      initAuthStoreFromExistingClient(httpClient);
       this.closeClient = false;
     } else {
       this.httpClient = createHttpClient(builder);
@@ -141,6 +148,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
 
     assert ObjectReleaseTracker.track(this);
+  }
+
+  private void initAuthStoreFromExistingClient(HttpClient httpClient) {
+    // Since we don't allow users to provide arbitrary Jetty clients, all parameters to this method
+    // must originate from the 'createHttpClient' method, which uses AuthenticationStoreHolder.
+    // Verify this assumption and copy the existing instance to avoid unnecessary wrapping.
+    assert httpClient.getAuthenticationStore() instanceof AuthenticationStoreHolder;
+    this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
   }
 
   @Deprecated(since = "9.7")
@@ -236,7 +251,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setFollowRedirects(false);
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
-    httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
+    httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setIdleTimeout(idleTimeoutMillis);
 
     if (builder.cookieStore != null) {
@@ -316,14 +331,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   public static class OutStream implements Closeable {
     private final String origCollection;
-    private final ModifiableSolrParams origParams;
+    private final SolrParams origParams;
     private final OutputStreamRequestContent content;
     private final InputStreamResponseListener responseListener;
     private final boolean isXml;
 
     public OutStream(
         String origCollection,
-        ModifiableSolrParams origParams,
+        SolrParams origParams,
         OutputStreamRequestContent content,
         InputStreamResponseListener responseListener,
         boolean isXml) {
@@ -335,8 +350,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     boolean belongToThisStream(SolrRequest<?> solrRequest, String collection) {
-      ModifiableSolrParams solrParams = new ModifiableSolrParams(solrRequest.getParams());
-      return origParams.toNamedList().equals(solrParams.toNamedList())
+      return origParams.equals(solrRequest.getParams())
           && Objects.equals(origCollection, collection);
     }
 
@@ -365,7 +379,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
   public OutStream initOutStream(String baseUrl, UpdateRequest updateRequest, String collection)
       throws IOException {
     String contentType = requestWriter.getUpdateContentType();
-    final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
+    final SolrParams origParams = updateRequest.getParams();
     ModifiableSolrParams requestParams =
         initializeSolrParams(updateRequest, responseParser(updateRequest));
 
@@ -397,6 +411,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     if (outStream.isXml) {
       // check for commit or optimize
       SolrParams params = req.getParams();
+      assert params != null : "params should not be null";
       if (params != null) {
         String fmt = null;
         if (params.getBool(UpdateParams.OPTIMIZE, false)) {
@@ -453,7 +468,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing success");
                         future.complete(body);
-                      } catch (RemoteSolrException | SolrServerException e) {
+                      } catch (SolrClient.RemoteSolrException | SolrServerException e) {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing failed", e);
                         future.completeExceptionally(e);
@@ -530,6 +545,41 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (abortCause != null && req != null) {
         req.abort(abortCause);
       }
+    }
+  }
+
+  /**
+   * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently
+   * used by this client
+   *
+   * @param baseUrl a URL to a root Solr path (i.e. "/solr") that should be used for this request
+   * @param collection an optional collection or core name used to override the client's "default
+   *     collection". May be 'null' for any requests that don't require a collection or wish to rely
+   *     on the client's default
+   * @param req the SolrRequest to send
+   */
+  public final <R extends SolrResponse> R requestWithBaseUrl(
+      String baseUrl, String collection, SolrRequest<R> req)
+      throws SolrServerException, IOException {
+    return requestWithBaseUrl(baseUrl, (c) -> req.process(c, collection));
+  }
+
+  /**
+   * Temporarily modifies the client to use a different base URL and runs the provided lambda
+   *
+   * @param baseUrl the base URL to use on any requests made within the 'clientFunction' lambda
+   * @param clientFunction a Function that consumes a Http2SolrClient and returns an arbitrary value
+   * @return the value returned after invoking 'clientFunction'
+   * @param <R> the type returned by the provided function (and by this method)
+   */
+  public <R> R requestWithBaseUrl(
+      String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
+      throws SolrServerException, IOException {
+
+    // Despite the name, try-with-resources used here to avoid IDE and ObjectReleaseTracker
+    // complaints
+    try (final var derivedClient = new NoCloseHttp2SolrClient(baseUrl, this)) {
+      return clientFunction.apply(derivedClient);
     }
   }
 
@@ -734,18 +784,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
     } else {
       // application/x-www-form-urlencoded
-      Fields fields = new Fields();
-      Iterator<String> iter = wparams.getParameterNamesIterator();
-      while (iter.hasNext()) {
-        String key = iter.next();
-        String[] vals = wparams.getParams(key);
-        if (vals != null) {
-          for (String val : vals) {
-            fields.add(key, val);
-          }
-        }
-      }
-      req.body(new FormRequestContent(fields, FALLBACK_CHARSET));
+      String queryString = wparams.toQueryString();
+      // remove the leading "?" if there is any
+      queryString = queryString.startsWith("?") ? queryString.substring(1) : queryString;
+      req.body(
+          new StringRequestContent(
+              "application/x-www-form-urlencoded", queryString, FALLBACK_CHARSET));
     }
 
     return req;
@@ -781,8 +825,27 @@ public class Http2SolrClient extends HttpSolrClientBase {
         .collect(Collectors.joining(", "));
   }
 
-  protected RequestWriter getRequestWriter() {
-    return requestWriter;
+  /**
+   * An Http2SolrClient that doesn't close or cleanup any resources
+   *
+   * <p>Only safe to use as a derived copy of an existing instance which retains responsibility for
+   * closing all involved resources.
+   *
+   * @see #requestWithBaseUrl(String, SolrClientFunction)
+   */
+  private static class NoCloseHttp2SolrClient extends Http2SolrClient {
+
+    public NoCloseHttp2SolrClient(String baseUrl, Http2SolrClient parentClient) {
+      super(baseUrl, new Http2SolrClient.Builder(baseUrl).withHttpClient(parentClient));
+
+      this.asyncTracker = parentClient.asyncTracker;
+    }
+
+    @Override
+    public void close() {
+      /* Intentional no-op */
+      ObjectReleaseTracker.release(this);
+    }
   }
 
   private static class AsyncTracker {
@@ -1043,6 +1106,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.listenerFactory == null) {
         this.listenerFactory = new ArrayList<HttpListenerFactory>();
         http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
+      }
+      if (this.executor == null) {
+        this.executor = http2SolrClient.executor;
       }
       return this;
     }

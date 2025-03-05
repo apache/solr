@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,17 +33,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -230,8 +230,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Map<String, Exception> failures = (Map<String, Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
-    NamedList<?> status = (NamedList<?>) resp.getValues().get("status");
-    assertNotNull("core status is null", status);
+    final var statusByCore =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            resp.getValues().get("status"),
+            new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
+    assertNotNull("core status is null", statusByCore);
 
     assertEquals("wrong number of core failures", 1, failures.size());
     Exception fail = failures.get("bogus_dir_core");
@@ -240,10 +243,10 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "init failure doesn't mention problem: " + fail.getCause().getMessage(),
         0 < fail.getCause().getMessage().indexOf("dir_does_not_exist"));
 
-    assertEquals(
-        "bogus_dir_core status isn't empty",
-        0,
-        ((NamedList<?>) status.get("bogus_dir_core")).size());
+    assertTrue("bogus_dir_core status isn't empty", statusByCore.containsKey("bogus_dir_core"));
+    final var bogusDirCoreStatus = statusByCore.get("bogus_dir_core");
+    assertNull(bogusDirCoreStatus.name);
+    assertNull(bogusDirCoreStatus.config);
 
     // Try renaming the core, we should fail
     // First assert that the props core exists
@@ -419,9 +422,9 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       req.process(client);
     }
 
-    BaseHttpSolrClient.RemoteSolrException rse =
+    SolrClient.RemoteSolrException rse =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               try (SolrClient client =
                   new HttpSolrClient.Builder(runner.getBaseUrl().toString())
@@ -465,8 +468,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
     Path dataDir = null;
     try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
-      CoreStatus status = CoreAdminRequest.getCoreStatus("corex", true, client);
-      String dataDirectory = status.getDataDirectory();
+      final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
+      String dataDirectory = status.dataDir;
       dataDir = Paths.get(dataDirectory);
       assertTrue(Files.exists(dataDir));
     }

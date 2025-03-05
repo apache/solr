@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
+
 import com.codahale.metrics.Gauge;
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,6 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,9 +96,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -115,6 +123,7 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.IOFunction;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,6 +147,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // If you find this useful, let us know in dev@solr.apache.org.  Likely to be removed eventually.
   private static final boolean useExitableDirectoryReader =
       Boolean.getBoolean("solr.useExitableDirectoryReader");
+
+  public static final int EXECUTOR_MAX_CPU_THREADS = Runtime.getRuntime().availableProcessors();
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -208,6 +219,38 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       reader = ExitableDirectoryReader.wrap(reader, QueryLimits.getCurrentLimits());
     }
     return reader;
+  }
+
+  /**
+   * Create an {@link ExecutorService} to be used by the Lucene {@link IndexSearcher#getExecutor()}.
+   * Shared across the whole node because it's a machine CPU resource.
+   */
+  public static ExecutorService initCollectorExecutor(NodeConfig cfg) {
+    int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
+    if (indexSearcherExecutorThreads == 0) {
+      return null;
+    } else if (indexSearcherExecutorThreads < 0) {
+      // Treat a negative value as "unlimited" and set it to the value number of available CPU
+      // threads
+      indexSearcherExecutorThreads = EXECUTOR_MAX_CPU_THREADS;
+    }
+
+    // note that Lucene will catch a RejectedExecutionException to just run the task.
+    //  Therefore, we shouldn't worry too much about the queue size.
+    return new MDCAwareThreadPoolExecutor(
+        indexSearcherExecutorThreads,
+        indexSearcherExecutorThreads,
+        0L,
+        TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<>(
+            EnvUtils.getPropertyAsInteger("solr.search.multiThreaded.queueSize", 1000)),
+        new SolrNamedThreadFactory("searcherCollector")) {
+
+      @Override
+      protected void beforeExecute(Thread t, Runnable r) {
+        ThreadCpuTimer.reset(TIMING_CONTEXT);
+      }
+    };
   }
 
   /**
@@ -336,7 +379,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       boolean reserveDirectory,
       DirectoryFactory directoryFactory)
       throws IOException {
-    super(wrapReader(core, r), core.getCoreContainer().getCollectorExecutor());
+    super(wrapReader(core, r), core.getCoreContainer().getIndexSearcherExecutor());
 
     this.path = path;
     this.directoryFactory = directoryFactory;
@@ -1184,8 +1227,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int end = 0; // size of "sets" and "neg"; parallel arrays
 
     for (Query q : queries) {
-      if (q instanceof ExtendedQuery) {
-        ExtendedQuery eq = (ExtendedQuery) q;
+      if (q instanceof ExtendedQuery eq) {
         if (!eq.getCache()) {
           if (eq.getCost() >= 100 && eq instanceof PostFilter) {
             if (postFilters == null) postFilters = new ArrayList<>(sets.length - end);
@@ -1562,8 +1604,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     int flags = cmd.getFlags();
     Query q = cmd.getQuery();
-    if (q instanceof ExtendedQuery) {
-      ExtendedQuery eq = (ExtendedQuery) q;
+    if (q instanceof ExtendedQuery eq) {
       if (!eq.getCache()) {
         flags |= (NO_CHECK_QCACHE | NO_SET_QCACHE | NO_CHECK_FILTERCACHE);
       }
@@ -1812,8 +1853,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       throws IOException {
     int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
-    if (q instanceof RankQuery) {
-      RankQuery rq = (RankQuery) q;
+    if (q instanceof RankQuery rq) {
       return rq.getTopDocsCollector(len, cmd, this);
     }
 
