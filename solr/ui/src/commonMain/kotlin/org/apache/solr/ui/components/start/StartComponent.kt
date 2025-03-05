@@ -15,27 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.theme
+package org.apache.solr.ui.components.start
 
-import androidx.compose.foundation.shape.CutCornerShape
-import androidx.compose.material3.Shapes
-import androidx.compose.ui.unit.dp
-
-/*
- * This file holds shape values that are used for customizing the shapes of the material theme
- * to match the Solr theme.
- *
- * In general, the Solr theme follows a more edgy theme and therefore the default round corners
- * from the Material theme are overridden.
- */
+import kotlinx.coroutines.flow.StateFlow
+import org.jetbrains.compose.resources.StringResource
 
 /**
- * Custom shapes that do not use rounded corners for elements.
+ * Component interface that represents the start screen.
  */
-internal val SolrShapes = Shapes(
-    extraSmall = CutCornerShape(0.dp),
-    small = CutCornerShape(0.dp),
-    medium = CutCornerShape(0.dp),
-    large = CutCornerShape(0.dp),
-    extraLarge = CutCornerShape(0.dp),
-)
+interface StartComponent {
+
+    val model: StateFlow<Model>
+
+    /**
+     * Function for when the input value for the Solr URL changes.
+     *
+     * @param url The new URL value
+     */
+    fun onSolrUrlChange(url: String)
+
+    /**
+     * Called when the user wants to connect with the current [Model.url].
+     */
+    fun onConnect()
+
+    /**
+     * State class that holds values of the [StartComponent]'s sate.
+     */
+    data class Model(
+        val url: String = "",
+        val error: StringResource? = null,
+    )
+}

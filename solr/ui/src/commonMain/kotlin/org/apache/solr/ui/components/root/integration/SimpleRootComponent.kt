@@ -27,6 +27,8 @@ import kotlinx.serialization.Serializable
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.main.integration.DefaultMainComponent
 import org.apache.solr.ui.components.root.RootComponent
+import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.components.start.integration.DefaultStartComponent
 import org.apache.solr.ui.utils.AppComponentContext
 
 /**
@@ -39,6 +41,7 @@ import org.apache.solr.ui.utils.AppComponentContext
 class SimpleRootComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
+    private val startComponent: (AppComponentContext) -> StartComponent,
     private val mainComponent: (AppComponentContext) -> MainComponent,
 ) : RootComponent, AppComponentContext by componentContext {
 
@@ -46,7 +49,7 @@ class SimpleRootComponent(
     private val stack = childStack(
         source = navigation,
         serializer = Configuration.serializer(),
-        initialStack = { listOf(Configuration.Main) },
+        initialStack = { listOf(Configuration.Start) },
         handleBackButton = true,
         childFactory = ::createChild
     )
@@ -61,6 +64,13 @@ class SimpleRootComponent(
     ) : this(
         componentContext = componentContext,
         storeFactory = storeFactory,
+        startComponent = { childContext ->
+            DefaultStartComponent(
+                componentContext = childContext,
+                storeFactory = storeFactory,
+                httpClient = httpClient,
+            )
+        },
         mainComponent = { childContext ->
             DefaultMainComponent(
                 componentContext = childContext,
@@ -75,11 +85,15 @@ class SimpleRootComponent(
         configuration: Configuration,
         componentContext: AppComponentContext,
     ): RootComponent.Child = when (configuration) {
+        Configuration.Start -> RootComponent.Child.Start(startComponent(componentContext))
         Configuration.Main -> RootComponent.Child.Main(mainComponent(componentContext))
     }
 
     @Serializable
     private sealed interface Configuration {
+
+        @Serializable
+        data object Start : Configuration
 
         @Serializable
         data object Main : Configuration
