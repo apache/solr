@@ -294,12 +294,14 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   gpgLogFile = '%s/solr.gpg.import.log' % tmpDir
   run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile), gpgLogFile)
 
+  logfile = '%s/solr.assertions.log' % tmpDir
+
   if mavenURL is None:
-    stopGpgAgent(gpgHomeDir, logFile)
+    stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing maven')
 
   if dockerURL is None:
-    stopGpgAgent(gpgHomeDir, logFile)
+    stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing docker')
 
   if changesURL is None:
