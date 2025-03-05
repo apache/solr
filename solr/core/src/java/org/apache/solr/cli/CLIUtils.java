@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -190,7 +191,7 @@ public final class CLIUtils {
     String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
 
     if (solrUrl == null) {
-      String zkHost = getZkHostFromCliOrEnv(cli);
+      String zkHost = getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
       if (zkHost == null) {
         solrUrl = getDefaultSolrUrl();
         CLIO.err(
@@ -216,18 +217,21 @@ public final class CLIUtils {
   }
 
   /**
-   * Get the ZooKeeper connection string from either the zk-host command-line option or if not
-   * configured, from the 'zkHost' system property aka the 'ZK_HOST' environment variable.
+   * Get the value of the specified CLI option with fallback to system property and default value.
    *
    * @param cli the command line
-   * @return the ZooKeeper connection string or null if not configured
+   * @param option the commons cli {@link Option}
+   * @param sysprop the system property to fall back to
+   * @param defaultValue the default value. Use null if no default value is desired
+   * @return the value of the option or system property or the default value
    */
-  public static String getZkHostFromCliOrEnv(CommandLine cli) {
-    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
-    if (zkHost != null && !zkHost.isBlank()) {
-      return zkHost;
+  public static String getCliOptionOrPropValue(
+      CommandLine cli, Option option, String sysprop, String defaultValue) {
+    String value = cli.getOptionValue(option);
+    if (value == null) {
+      value = EnvUtils.getProperty(sysprop, defaultValue);
     }
-    return EnvUtils.getProperty("zkHost");
+    return value;
   }
 
   /**
@@ -238,7 +242,7 @@ public final class CLIUtils {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost = getZkHostFromCliOrEnv(cli);
+    String zkHost = getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
