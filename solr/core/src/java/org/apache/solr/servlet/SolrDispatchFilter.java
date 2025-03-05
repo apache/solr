@@ -23,6 +23,13 @@ import static org.apache.solr.util.tracing.TraceUtils.getSpan;
 import static org.apache.solr.util.tracing.TraceUtils.setTracer;
 
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -30,13 +37,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpFilter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
@@ -321,7 +321,7 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
         }
         // For legacy reasons, upon successful authentication this wants to call the chain's next
         // filter, which obfuscates the layout of the code since one usually expects to be able to
-        // find the call to doFilter() in the implementation of javax.servlet.Filter. Supplying a
+        // find the call to doFilter() in the implementation of jakarta.servlet.Filter. Supplying a
         // trivial impl here to keep existing code happy while making the flow clearer. Chain will
         // be called after this method completes. Eventually auth all moves to its own filter
         // (hopefully). Most auth plugins simply return true after calling this anyway, so they
