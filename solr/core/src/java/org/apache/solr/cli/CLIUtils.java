@@ -190,7 +190,7 @@ public final class CLIUtils {
     String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
 
     if (solrUrl == null) {
-      String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
+      String zkHost = getZkHostFromCliOrEnv(cli);
       if (zkHost == null) {
         solrUrl = getDefaultSolrUrl();
         CLIO.err(
@@ -216,20 +216,32 @@ public final class CLIUtils {
   }
 
   /**
-   * Get the ZooKeeper connection string from either the zk-host command-line option or by looking
-   * it up from a running Solr instance based on the solr-url option.
+   * Get the ZooKeeper connection string from either the zk-host command-line option or if not
+   * configured, from the 'zkHost' system property aka the 'ZK_HOST' environment variable.
+   *
+   * @param cli the command line
+   * @return the ZooKeeper connection string or null if not configured
    */
-  public static String getZkHost(CommandLine cli) throws Exception {
-
+  public static String getZkHostFromCliOrEnv(CommandLine cli) {
     String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
+    return EnvUtils.getProperty("zkHost");
+  }
 
-//    zkHost = EnvUtils.getProperty("zkHost");
-//    if (zkHost != null && !zkHost.isBlank()) {
-//      return zkHost;
-//    }
+  /**
+   * Get the ZooKeeper connection string from either the zk-host command-line option or if not
+   * configured, from the 'zkHost' system property aka the 'ZK_HOST' environment variable. If
+   * neither is configured, we attempt looking it up from a running Solr instance based on the
+   * solr-url option.
+   */
+  public static String getZkHost(CommandLine cli) throws Exception {
+
+    String zkHost = getZkHostFromCliOrEnv(cli);
+    if (zkHost != null && !zkHost.isBlank()) {
+      return zkHost;
+    }
 
     try (SolrClient solrClient = getSolrClient(cli)) {
       // hit Solr to get system info
