@@ -540,7 +540,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     Path toSet = solrHomeDirectory.resolve("cantReadDir");
     try {
-      Files.createDirectories(toSet); // TODO Fix directory changes for overwrite
+      Files.createDirectories(toSet); // SOLR-16903 TODO Fix directory changes for overwrite
     } catch (IOException e) {
       throw new RuntimeException("Should have been able to make directory '" + toSet.toAbsolutePath() + "' ", e);
     }
@@ -582,7 +582,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     Path toSet = solrHomeDirectory.resolve("cantReadFile");
 
     try {
-      Files.createFile(toSet); // TODO Fix directory changes for overwrite
+      Files.createFile(toSet); // SOLR-16903 TODO Fix directory changes for overwrite
     } catch (IOException e) {
       throw new RuntimeException("Should have been able to make file '" + toSet.toAbsolutePath() + "' ", e);
     }

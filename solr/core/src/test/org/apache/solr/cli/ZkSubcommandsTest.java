@@ -423,7 +423,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         String relativePathofFile =
                 sourceFile
                         .toAbsolutePath().toString()
-                        .substring(indexOfRelativePath + 33); // Check again if this is right
+                        .substring(indexOfRelativePath + 33); // SOLR-16903 Check again if this is right
         Path downloadedFile = confSetDir.resolve(relativePathofFile);
 
         if (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
