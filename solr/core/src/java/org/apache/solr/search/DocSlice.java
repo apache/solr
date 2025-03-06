@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.util.Collection;
 import java.util.Collections;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -33,16 +32,16 @@ public class DocSlice implements DocList, Accountable {
       RamUsageEstimator.shallowSizeOfInstance(DocSlice.class)
           + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
-  private final int offset; // starting position of the docs (zero based)
-  private final int len; // number of positions used in arrays
+  protected final int offset; // starting position of the docs (zero based)
+  protected final int len; // number of positions used in arrays
+  protected final long matches;
+  protected final TotalHits.Relation matchesRelation;
+  protected final float maxScore;
+  protected int docLength; // number of documents in the result
+
   private final int[] docs; // a slice of documents (docs 0-100 of the query)
   private final float[] scores; // optional score list
-  private final int docLength; // number of documents in the result
-  private final long matches;
-  private final TotalHits.Relation matchesRelation;
-  private final float maxScore;
   private final long ramBytesUsed; // cached value
-  private final TopDocs topDocs;
 
   /**
    * Primary constructor for a DocSlice instance.
@@ -54,12 +53,11 @@ public class DocSlice implements DocList, Accountable {
    * @param matches total number of matches for the query
    * @param matchesRelation Indicates if {@code matches} is exact or an approximation
    */
-  private DocSlice(
+  public DocSlice(
       int offset,
       int len,
       int[] docs,
       float[] scores,
-      TopDocs topDocs,
       long matches,
       float maxScore,
       TotalHits.Relation matchesRelation) {
@@ -68,16 +66,6 @@ public class DocSlice implements DocList, Accountable {
     this.docs = docs;
     this.scores = scores;
     this.matches = matches;
-    this.topDocs = topDocs;
-    if (docs == null) {
-      if (topDocs != null && topDocs.scoreDocs != null) {
-        docLength = topDocs.scoreDocs.length;
-      } else {
-        docLength = 0;
-      }
-    } else {
-      this.docLength = docs.length;
-    }
     this.maxScore = maxScore;
     this.ramBytesUsed =
         BASE_RAM_BYTES_USED
@@ -86,56 +74,26 @@ public class DocSlice implements DocList, Accountable {
                 ? 0
                 : ((long) scores.length << 2) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
     this.matchesRelation = matchesRelation;
-  }
-
-  public DocSlice(
-      int offset,
-      int len,
-      int[] docs,
-      float[] scores,
-      long matches,
-      float maxScore,
-      TotalHits.Relation matchesRelation) {
-    this(offset, len, docs, scores, null, matches, maxScore, matchesRelation);
-  }
-
-  /**
-   * Construct a slice off topDocs
-   *
-   * @param offset starting offset for this range of docs
-   * @param len length of results
-   * @param matches total number of matches for the query
-   */
-  public DocSlice(
-      int offset,
-      int len,
-      TopDocs topDocs,
-      long matches,
-      float maxScore,
-      TotalHits.Relation matchesRelation) {
-
-    this(offset, len, null, null, topDocs, matches, maxScore, matchesRelation);
+    this.docLength = docs == null ? 0 : docs.length;
   }
 
   @Override
   public DocList subset(int offset, int len) {
-    if (this.offset == offset && this.len == len) {
-      return this;
-    }
+    if (this.offset == offset && this.len == len) return this;
 
     // if we didn't store enough (and there was more to store)
     // then we can't take a subset.
     int requestedEnd = offset + len;
-    if (requestedEnd > docLength && this.matches > docLength) return null;
-    int realEndDoc = Math.min(requestedEnd, docLength);
+    if (requestedEnd > docs.length && this.matches > docs.length) return null;
+    int realEndDoc = Math.min(requestedEnd, docs.length);
     int realLen = Math.max(realEndDoc - offset, 0);
     if (this.offset == offset && this.len == realLen) return this;
-    return new DocSlice(offset, realLen, docs, scores, topDocs, matches, maxScore, matchesRelation);
+    return new DocSlice(offset, realLen, docs, scores, matches, maxScore, matchesRelation);
   }
 
   @Override
   public boolean hasScores() {
-    return topDocs != null || scores != null;
+    return scores != null;
   }
 
   @Override
@@ -185,32 +143,12 @@ public class DocSlice implements DocList, Accountable {
 
       @Override
       public int nextDoc() {
-        if (topDocs != null) {
-          return topDocs.scoreDocs[pos++].doc;
-        } else {
-          return docs[pos++];
-        }
+        return docs[pos++];
       }
 
       @Override
       public float score() {
-        if (topDocs != null) {
-          return topDocs.scoreDocs[pos - 1].score;
-        } else {
-          return scores[pos - 1];
-        }
-      }
-
-      @Override
-      public Float matchScore() {
-        if (topDocs == null) {
-          return null;
-        }
-        if (topDocs.scoreDocs[pos - 1] instanceof ReRankCollector.RescoreDoc) {
-          return ((ReRankCollector.RescoreDoc) topDocs.scoreDocs[pos - 1]).matchScore;
-        } else {
-          return null;
-        }
+        return scores[pos - 1];
       }
     };
   }

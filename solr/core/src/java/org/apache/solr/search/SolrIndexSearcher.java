@@ -1994,7 +1994,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
         docList = new DocSlice(0, sliceLen, ids, null, totalHits, maxScore, hitsRelation);
       } else {
-        docList = new DocSlice(0, sliceLen, topDocs, totalHits, maxScore, hitsRelation);
+        docList = new TopDocsSlice(0, sliceLen, topDocs, totalHits, maxScore, hitsRelation);
       }
     }
     qr.setDocList(docList);
@@ -2114,7 +2114,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
       nDocsReturned = topDocs.scoreDocs.length;
       int sliceLen = Math.min(lastDocRequested, nDocsReturned);
-      docList = new DocSlice(0, sliceLen, topDocs, totalHits, maxScore, relation);
+      docList = new TopDocsSlice(0, sliceLen, topDocs, totalHits, maxScore, relation);
     }
 
     qr.setDocList(docList);
