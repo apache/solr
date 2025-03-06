@@ -528,12 +528,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty.stop();
 
     // set up a subdirectory /foo/ in order to force subdir file replication
-    File leaderFooDir = new File(leader.getConfDir() + File.separator + "foo");
+    File leaderFooDir = new File(leader.getConfDir() + FileSystems.getDefault().getSeparator() + "foo");
     File leaderBarFile = new File(leaderFooDir, "bar.txt");
     assertTrue("could not make dir " + leaderFooDir, leaderFooDir.mkdirs());
     assertTrue(leaderBarFile.createNewFile());
 
-    File followerFooDir = new File(follower.getConfDir() + File.separator + "foo");
+    File followerFooDir = new File(follower.getConfDir() + FileSystems.getDefault().getSeparator() + "foo");
     File followerBarFile = new File(followerFooDir, "bar.txt");
     assertFalse(followerFooDir.exists());
 

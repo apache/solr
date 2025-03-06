@@ -567,12 +567,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Call initCore in @BeforeClass to instantiate a solr core in your test class. deleteCore will be
    * called for you via SolrTestCaseJ4 @AfterClass
    */
-  public static void initCore(String config, String schema, String solrHome) throws Exception {
+  public static void initCore(String config, String schema, Path solrHome) throws Exception {
     assertNotNull(solrHome);
     configString = config;
     schemaString = schema;
-    testSolrHome = Paths.get(solrHome);
-    System.setProperty("solr.solr.home", solrHome);
+    testSolrHome = solrHome;
+    System.setProperty("solr.solr.home", solrHome.toString());
     initCore();
   }
 
@@ -580,7 +580,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Call initCore in @BeforeClass to instantiate a solr core in your test class. deleteCore will be
    * called for you via SolrTestCaseJ4 @AfterClass
    */
-  public static void initCore(String config, String schema, String solrHome, String pCoreName)
+  public static void initCore(String config, String schema, Path solrHome, String pCoreName)
       throws Exception {
     coreName = pCoreName;
     initCore(config, schema, solrHome);
@@ -2155,8 +2155,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             + new File(name).getAbsolutePath());
   }
 
-  public static String TEST_HOME() {
-    return getFile("solr/collection1").getParent().toString();
+  public static Path TEST_HOME() {
+    return getFile("solr/collection1").getParent();
   }
 
   public static Path TEST_PATH() {

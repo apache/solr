@@ -96,7 +96,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
     final String configName = "solrCloudCollectionConfig";
     final File configDir =
-        new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+        new File(TEST_HOME() + FileSystems.getDefault().getSeparator() + "collection1" + FileSystems.getDefault().getSeparator() + "conf");
 
     configureCluster(NUM_SERVERS).addConfig(configName, configDir.toPath()).configure();
 

@@ -380,7 +380,7 @@ class RenderJavadocTask extends DefaultTask {
             if (relativeProjectLinks && !crossLuceneSolr) {
               def pathTo = otherTask.outputDir.toPath().toAbsolutePath()
               def pathFrom = outputDir.toPath().toAbsolutePath()
-              def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
+              def relative = pathFrom.relativize(pathTo).toString().replace(FileSystems.getDefault().getSeparator(), '/')
               opts << ['-link', relative]
             } else {
               // For absolute links, we determine the target URL by assembling the full URL.

@@ -38,7 +38,7 @@ public class TestManagedFileStorage extends SolrTestCaseJ4 {
     File instanceDir = createTempDir("json-storage").toFile();
     try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir.toPath())) {
       NamedList<String> initArgs = new NamedList<>();
-      String managedDir = instanceDir.getAbsolutePath() + File.separator + "managed";
+      String managedDir = instanceDir.getAbsolutePath() + FileSystems.getDefault().getSeparator() + "managed";
       initArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, managedDir);
       FileStorageIO fileStorageIO = new FileStorageIO();
       fileStorageIO.configure(loader, initArgs);

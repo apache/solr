@@ -896,7 +896,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private static String makePath(String... args) {
-    return String.join(File.separator, args);
+    return String.join(FileSystems.getDefault().getSeparator(), args);
   }
 
   @Test

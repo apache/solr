@@ -16,9 +16,9 @@
  */
 package org.apache.solr;
 
-import java.io.File;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -95,7 +95,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
     while (resources.hasMoreElements()) {
       final URI uri = resources.nextElement().toURI();
       if (!"file".equalsIgnoreCase(uri.getScheme())) continue;
-      final File f = new File(uri);
+      final Path f = Path.of(uri);
       directories.add(f);
     }
 

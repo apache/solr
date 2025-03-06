@@ -28,7 +28,7 @@ import org.junit.Test;
 /** Tests that defaults are set for Primitive (non-analyzed) fields */
 public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
   private final String testConfHome =
-      TEST_HOME() + File.separator + "collection1" + File.separator + "conf" + File.separator;
+      TEST_HOME() + FileSystems.getDefault().getSeparator() + "collection1" + FileSystems.getDefault().getSeparator() + "conf" + FileSystems.getDefault().getSeparator();
   protected SolrConfig config;
   protected IndexSchema schema;
   protected HashMap<String, String> initMap;

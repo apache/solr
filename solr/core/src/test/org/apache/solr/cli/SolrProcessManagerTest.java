@@ -17,13 +17,13 @@
 package org.apache.solr.cli;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -84,9 +84,9 @@ public class SolrProcessManagerTest extends SolrTestCase {
   private static Pair<Integer, Process> createProcess(int port, boolean https) throws IOException {
     // Get the path to the java executable from the current JVM
     String classPath =
-        Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
+        Arrays.stream(System.getProperty("java.class.path").split(FileSystems.getDefault().getSeparator()))
             .filter(p -> p.contains("solr") && p.contains("core") && p.contains("build"))
-            .collect(Collectors.joining(File.pathSeparator));
+            .collect(Collectors.joining(FileSystems.getDefault().getSeparator()));
     ProcessBuilder processBuilder =
         new ProcessBuilder(
             System.getProperty("java.home") + "/bin/java",

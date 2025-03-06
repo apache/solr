@@ -35,7 +35,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   protected static JettySolrRunner createAndStartJetty(
-      String solrHome,
+      Path solrHome,
       String configFile,
       String schemaFile,
       String context,
@@ -60,22 +60,22 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   protected static JettySolrRunner createAndStartJetty(
-      String solrHome, String configFile, String context) throws Exception {
+      Path solrHome, String configFile, String context) throws Exception {
     return createAndStartJetty(solrHome, configFile, null, context, true, null);
   }
 
-  protected static JettySolrRunner createAndStartJetty(String solrHome, JettyConfig jettyConfig)
+  protected static JettySolrRunner createAndStartJetty(Path solrHome, JettyConfig jettyConfig)
       throws Exception {
 
     return createAndStartJetty(solrHome, new Properties(), jettyConfig);
   }
 
-  protected static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
+  protected static JettySolrRunner createAndStartJetty(Path solrHome) throws Exception {
     return createAndStartJetty(solrHome, new Properties(), JettyConfig.builder().build());
   }
 
   protected static JettySolrRunner createAndStartJetty(
-      String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
+      Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
     Path coresDir = createTempDir().resolve("cores");
 
@@ -89,9 +89,9 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
     Properties nodeProps = new Properties(nodeProperties);
     nodeProps.setProperty("coreRootDirectory", coresDir.toString());
-    nodeProps.setProperty("configSetBaseDir", solrHome);
+    nodeProps.setProperty("configSetBaseDir", solrHome.toString());
 
-    solrClientTestRule.startSolr(Path.of(solrHome), nodeProps, jettyConfig);
+    solrClientTestRule.startSolr(solrHome, nodeProps, jettyConfig);
     return getJetty();
   }
 

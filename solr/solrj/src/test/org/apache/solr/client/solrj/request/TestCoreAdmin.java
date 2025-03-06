@@ -85,7 +85,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("newcore");
-      req.setInstanceDir(newCoreInstanceDir.getAbsolutePath() + File.separator + "newcore");
+      req.setInstanceDir(newCoreInstanceDir.getAbsolutePath() + FileSystems.getDefault().getSeparator() + "newcore");
       req.setDataDir(dataDir.getAbsolutePath());
       req.setUlogDir(new File(dataDir, "ulog").getAbsolutePath());
       req.setConfigSet("shared");
@@ -111,7 +111,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       }
 
       assertEquals(
-          new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(),
+          new File(dataDir, "ulog" + FileSystems.getDefault().getSeparator() + "tlog").getAbsolutePath(),
           logDir.getAbsolutePath());
     }
   }

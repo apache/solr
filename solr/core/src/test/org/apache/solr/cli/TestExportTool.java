@@ -20,12 +20,14 @@ package org.apache.solr.cli;
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +66,7 @@ public class TestExportTool extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
       String tmpFileLoc =
-          new File(cluster.getBaseDir().toFile().getAbsolutePath() + File.separator).getPath();
+          cluster.getBaseDir().toAbsolutePath() + FileSystems.getDefault().getSeparator();
 
       UpdateRequest ur = new UpdateRequest();
       ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -156,7 +158,7 @@ public class TestExportTool extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLLECTION_NAME, 8, 8);
 
       String tmpFileLoc =
-          new File(cluster.getBaseDir().toFile().getAbsolutePath() + File.separator).getPath();
+          cluster.getBaseDir().toAbsolutePath() + FileSystems.getDefault().getSeparator();
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
 
       int docCount = 0;
@@ -239,7 +241,7 @@ public class TestExportTool extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
-      File outFile = File.createTempFile("output", ".json");
+      Path outFile = Files.createTempFile("output", ".json");
 
       String[] args = {
         "export",
@@ -250,7 +252,7 @@ public class TestExportTool extends SolrCloudTestCase {
         "--credentials",
         SecurityJson.USER_PASS,
         "--output",
-        outFile.getAbsolutePath(),
+        outFile.toAbsolutePath().toString(),
         "--verbose"
       };
 

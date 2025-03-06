@@ -65,8 +65,8 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     // create and configure cluster
     configureCluster(1)
-        .addConfig(COLL_A, configset("different-stopwords" + File.separator + COLL_A))
-        .addConfig(COLL_B, configset("different-stopwords" + File.separator + COLL_B))
+        .addConfig(COLL_A, configset("different-stopwords" + FileSystems.getDefault().getSeparator() + COLL_A))
+        .addConfig(COLL_B, configset("different-stopwords" + FileSystems.getDefault().getSeparator() + COLL_B))
         .configure();
 
     try {

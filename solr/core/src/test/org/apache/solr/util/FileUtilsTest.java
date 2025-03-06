@@ -64,7 +64,7 @@ public class FileUtilsTest extends SolrTestCase {
     for (int i = 0; i < pathSegments.length; i++) {
       sb.append(pathSegments[i]);
       if (i < pathSegments.length - 1) {
-        sb.append(File.separator);
+        sb.append(FileSystems.getDefault().getSeparator());
       }
     }
     return sb.toString();

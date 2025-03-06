@@ -73,8 +73,8 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     // surface validation errors to enable bulk uploading
     final var invalidFilePaths =
         List.of(
-            ".." + File.separator + "escapePath",
-            "foo" + File.separator + ".." + File.separator + ".." + File.separator + "bar");
+            ".." + FileSystems.getDefault().getSeparator() + "escapePath",
+            "foo" + FileSystems.getDefault().getSeparator() + ".." + FileSystems.getDefault().getSeparator() + ".." + FileSystems.getDefault().getSeparator() + "bar");
     for (String invalidFilePath : invalidFilePaths) {
       fileSystemConfigSetService.uploadFileToConfig(configName, invalidFilePath, testdata, true);
       assertFalse(Files.exists(specificConfigSetBase.resolve(invalidFilePath)));

@@ -50,7 +50,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   SolrClient leaderClient;
 
   private static final String CONF_DIR =
-      "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf" + File.separator;
+      "solr" + FileSystems.getDefault().getSeparator() + DEFAULT_TEST_CORENAME + FileSystems.getDefault().getSeparator() + "conf" + FileSystems.getDefault().getSeparator();
 
   private static long docsSeed; // see indexDocs()
 

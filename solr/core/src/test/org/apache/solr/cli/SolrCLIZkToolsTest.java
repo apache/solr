@@ -18,15 +18,10 @@
 package org.apache.solr.cli;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +50,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
             .withUrl(zkAddr)
             .withTimeout(30000, TimeUnit.MILLISECONDS)
             .build();
-    System.setProperty("solr.solr.home", TEST_HOME());
+    System.setProperty("solr.solr.home", TEST_HOME().toString());
   }
 
   @AfterClass
@@ -83,10 +78,10 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // Now just use a name in the configsets directory, do we find it?
     configSet = TEST_PATH().resolve("configsets");
 
-    File confDir = new File(configSet.toFile(), "cloud-subdirs");
+    Path confDir = configSet.resolve("cloud-subdirs");
     String[] args =
         new String[] {
-          "--conf-name", "upconfig2", "--conf-dir", confDir.getAbsolutePath(), "-z", zkAddr
+          "--conf-name", "upconfig2", "--conf-dir", confDir.toAbsolutePath().toString(), "-z", zkAddr
         };
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();
@@ -234,7 +229,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // copy to local ending in separator
     // src and cp3 and cp4 are valid
-    String localSlash = tmp.normalize() + File.separator + "cpToLocal" + File.separator;
+    String localSlash = tmp.normalize() + FileSystems.getDefault().getSeparator() + "cpToLocal" + FileSystems.getDefault().getSeparator();
     args = new String[] {"--zk-host", zkAddr, "zk:/cp3/schema.xml", localSlash};
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
@@ -249,7 +244,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
         new String[] {
           "--zk-host",
           zkAddr,
-          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
+          "file:" + srcPathCheck.normalize().toAbsolutePath() + FileSystems.getDefault().getSeparator() + "solrconfig.xml",
           "zk:/powerup/"
         };
 
@@ -265,7 +260,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
         new String[] {
           "--zk-host",
           zkAddr,
-          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
+          "file:" + srcPathCheck.normalize().toAbsolutePath() + FileSystems.getDefault().getSeparator() + "solrconfig.xml",
           "zk:/copyUpFile.xml"
         };
 
@@ -279,7 +274,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // src and cp3 are valid
 
     String localNamed =
-        tmp.normalize() + File.separator + "localnamed" + File.separator + "renamed.txt";
+        tmp.normalize() + FileSystems.getDefault().getSeparator() + "localnamed" + FileSystems.getDefault().getSeparator() + "renamed.txt";
     args = new String[] {"--zk-host", zkAddr, "zk:/cp4/solrconfig.xml", "file:" + localNamed};
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
@@ -446,7 +441,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // Files are in mv2
     // Now fail if we specify "file:". Everything should still be in /mv2
-    args = new String[] {"--zk-host", zkAddr, "file:" + File.separator + "mv2", "/mv3"};
+    args = new String[] {"--zk-host", zkAddr, "file:" + FileSystems.getDefault().getSeparator() + "mv2", "/mv3"};
 
     // Still in mv2
     res = mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool, args));

@@ -62,7 +62,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   SolrClient leaderClient;
 
   private static final String CONF_DIR =
-      "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
+      "solr" + FileSystems.getDefault().getSeparator() + "collection1" + FileSystems.getDefault().getSeparator() + "conf" + FileSystems.getDefault().getSeparator();
 
   boolean addNumberToKeepInRequest = true;
   String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
