@@ -840,7 +840,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     @Override
     public SolrParams getParams() {
       SolrParams params = (SolrParams) values.get("params");
-      return params == null ? new MapSolrParams(new HashMap<>()) : params;
+      return params == null ? SolrParams.of() : params;
     }
 
     @Override

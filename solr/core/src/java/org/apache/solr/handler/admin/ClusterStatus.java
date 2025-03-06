@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -34,7 +35,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -101,7 +101,7 @@ public class ClusterStatus {
     collection = params.get(ZkStateReader.COLLECTION_PROP);
   }
 
-  public void getClusterStatus(NamedList<Object> results)
+  public void getClusterStatus(NamedList<Object> results, SolrVersion solrVersion)
       throws KeeperException, InterruptedException {
     NamedList<Object> clusterStatus = new SimpleOrderedMap<>();
 
@@ -127,7 +127,7 @@ public class ClusterStatus {
 
     if (withCollection) {
       assert liveNodes != null;
-      fetchClusterStatusForCollOrAlias(clusterStatus, liveNodes, aliases);
+      fetchClusterStatusForCollOrAlias(clusterStatus, liveNodes, aliases, solrVersion);
     }
 
     if (withAliases) {
@@ -158,7 +158,10 @@ public class ClusterStatus {
   }
 
   private void fetchClusterStatusForCollOrAlias(
-      NamedList<Object> clusterStatus, List<String> liveNodes, Aliases aliases) {
+      NamedList<Object> clusterStatus,
+      List<String> liveNodes,
+      Aliases aliases,
+      SolrVersion solrVersion) {
 
     // read aliases
     Map<String, List<String>> collectionVsAliases = new HashMap<>();
@@ -206,19 +209,7 @@ public class ClusterStatus {
       }
     }
 
-    // Because of back-compat for SolrJ, create the whole response into a NamedList
-    // Otherwise stream with MapWriter to save memory
-    if (CommonParams.JAVABIN.equals(solrParams.get(CommonParams.WT))) {
-      NamedList<Object> collectionProps = new SimpleOrderedMap<>();
-      collectionStream.forEach(
-          collectionState -> {
-            collectionProps.add(
-                collectionState.getName(),
-                buildResponseForCollection(
-                    collectionState, collectionVsAliases, routeKey, liveNodes, requestedShards));
-          });
-      clusterStatus.add("collections", collectionProps);
-    } else {
+    if (solrVersion == null || solrVersion.greaterThanOrEqualTo(SolrVersion.valueOf("9.9.0"))) {
       MapWriter collectionPropsWriter =
           ew -> {
             collectionStream.forEach(
@@ -234,6 +225,16 @@ public class ClusterStatus {
                 });
           };
       clusterStatus.add("collections", collectionPropsWriter);
+    } else {
+      NamedList<Object> collectionProps = new SimpleOrderedMap<>();
+      collectionStream.forEach(
+          collectionState -> {
+            collectionProps.add(
+                collectionState.getName(),
+                buildResponseForCollection(
+                    collectionState, collectionVsAliases, routeKey, liveNodes, requestedShards));
+          });
+      clusterStatus.add("collections", collectionProps);
     }
   }
 

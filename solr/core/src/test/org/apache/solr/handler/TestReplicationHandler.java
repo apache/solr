@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -63,14 +64,12 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.security.AllowListUrlChecker;
@@ -1037,8 +1036,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                   @Override
                   public boolean accept(File dir, String name) {
                     File f = new File(dir, name);
-                    return f.isDirectory()
-                        && !SolrSnapshotMetaDataManager.SNAPSHOT_METADATA_DIR.equals(name);
+                    return f.isDirectory() && !name.startsWith("snapshot");
                   }
                 });
     return list.length;
@@ -1678,18 +1676,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     long timeSlept = 0;
 
     try (SolrClient adminClient = adminClient(jettySolrRunner)) {
-      SolrParams p = params("action", "status", "core", "collection1");
+      final var statusRequest = new CoresApi.GetCoreStatus("collection1");
       while (timeSlept < TIMEOUT) {
-        QueryRequest req = new QueryRequest(p);
-        req.setPath("/admin/cores");
         try {
-          NamedList<Object> data = adminClient.request(req);
-          for (String k : new String[] {"status", "collection1"}) {
-            Object o = data.get(k);
-            assertNotNull("core status rsp missing key: " + k, o);
-            data = (NamedList<Object>) o;
-          }
-          Date startTime = (Date) data.get("startTime");
+          final var statusResponse = statusRequest.process(adminClient).getParsed();
+          assertNotNull(statusResponse.status);
+          assertTrue(statusResponse.status.containsKey("collection1"));
+          final var coreStatus = statusResponse.status.get("collection1");
+          Date startTime = coreStatus.startTime;
+
           assertNotNull("core has null startTime", startTime);
           if (null == min || startTime.after(min)) {
             return startTime;
