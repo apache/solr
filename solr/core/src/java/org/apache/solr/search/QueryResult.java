@@ -25,6 +25,7 @@ public class QueryResult {
   private Boolean terminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
+  private Boolean maxHitsTerminatedEarly;
 
   public Object groupedResults; // TODO: currently for testing
 
@@ -93,5 +94,13 @@ public class QueryResult {
 
   public void setTerminatedEarly(boolean terminatedEarly) {
     this.terminatedEarly = terminatedEarly;
+  }
+
+  public Boolean getMaxHitsTerminatedEarly() {
+    return maxHitsTerminatedEarly;
+  }
+
+  public void setMaxHitsTerminatedEarly(Boolean maxHitsTerminatedEarly) {
+    this.maxHitsTerminatedEarly = maxHitsTerminatedEarly;
   }
 }

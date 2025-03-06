@@ -195,8 +195,11 @@ public class QueryCommand {
   }
 
   public boolean getTerminateEarly() {
-    return (flags & SolrIndexSearcher.TERMINATE_EARLY) != 0
-        || maxHitsTerminateEarly < Integer.MAX_VALUE;
+    return (flags & SolrIndexSearcher.TERMINATE_EARLY) != 0;
+  }
+
+  public boolean shouldEarlyTerminateSearch() {
+    return getTerminateEarly() || getMaxHitsTerminateEarly() < Integer.MAX_VALUE;
   }
 
   public QueryCommand setTerminateEarly(boolean segmentTerminateEarly) {

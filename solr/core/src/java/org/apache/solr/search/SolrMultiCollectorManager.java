@@ -51,7 +51,7 @@ public class SolrMultiCollectorManager
       throw new IllegalArgumentException("There must be at least one collector");
     }
     this.collectorManagers = (CollectorManager[]) collectorManagers;
-    if (queryCommand.getTerminateEarly()) {
+    if (queryCommand.shouldEarlyTerminateSearch()) {
       maxHits = new LongAdder();
       maxDocsToCollect = queryCommand.getMaxHitsTerminateEarly();
     }
