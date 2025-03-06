@@ -105,7 +105,9 @@ Deprecation Removals
 
 * SOLR-17540: Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. (Eric Pugh)
 
-* SOLR-17609: Removd the HDFS module and therefore support for storing indexes in HDFS.  Existing "blockcache" code preserved by migrating it to core o.a.s.blackcache package.
+* SOLR-17609: Removed the HDFS module and therefore support for storing indexes in HDFS.  Existing "blockcache" code preserved by migrating it to core o.a.s.blackcache package.
+
+* SOLR-17518: Removed deprecated methods `getXml()` and `writeXml()` from `UpdateRequest`. (Pierre Salagnac)
 
 Dependency Upgrades
 ---------------------
@@ -148,6 +150,10 @@ Other Changes
 
 * SOLR-17548: Switch all public Java APIs from File to Path. (Matthew Biscocho via Eric Pugh)
 
+* SOLR-17675: Remove DirContext param from DirectoryFactory.create method. (Bruno Roustant, David Smiley)
+
+* SOLR-16903: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -180,6 +186,8 @@ Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
+* SOLR-17669: Reduced memory usage in SolrJ getBeans() method when handling dynamic fields with wildcards. (Martin Anzinger)
+
 Bug Fixes
 ---------------------
 * SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
@@ -206,6 +214,9 @@ Bug Fixes
 * SOLR-17673: Disable multi-threaded search execution by default at the node-level.
   Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
   (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
+
+* SOLR-17644: Fixes collection creation failure when using a replica placement plugin with basic auth. SolrCloudManager
+  now directly uses HttpSolrClientProvider's client, resolving missing auth listeners. (Sanjay Dutt, David Smiley)
 
 Dependency Upgrades
 ---------------------
@@ -243,6 +254,10 @@ Other Changes
   when copying files. (Bruno Roustant, David Smiley)
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
+
+* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
+
+* SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
 
 ==================  9.8.0 ==================
 New Features
