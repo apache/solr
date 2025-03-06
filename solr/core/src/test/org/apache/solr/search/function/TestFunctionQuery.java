@@ -896,7 +896,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   /**
    * some platforms don't allow quote characters in filenames, test a field name with quotes in it.
-   * //nocommit I think this maybe can be remove?
    */
   @Test
   public void testFieldValueSourceParser() {
