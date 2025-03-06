@@ -84,13 +84,13 @@ class Version(object):
     return other.major + 1 >= self.major
 
 
-"""
-A class to resolve a commiter's committer's PGP key from ASF records.
-The class looks up the committer's ASF id in a json file downloaded from
-https://whimsy.apache.org/public/public_ldap_people.json
-and if the committer has a PGP key, it's fingerprint is made available.
-"""
 class CommitterPgp():
+    """
+    A class to resolve a commiter's committer's PGP key from ASF records.
+    The class looks up the committer's ASF id in a json file downloaded from
+    https://whimsy.apache.org/public/public_ldap_people.json
+    and if the committer has a PGP key, it's fingerprint is made available.
+    """
     def __init__(self, asf_id, json_content = None):
         self.asf_id = asf_id
         self.fingerprint = None
@@ -112,8 +112,8 @@ class CommitterPgp():
             raise Exception(f'Failed to load {self.ldap_url}: {e}')
 
 
-    """ Resolve the PGP key fingerprint for the committer's ASF id """
     def resolve(self):
+        """ Resolve the PGP key fingerprint for the committer's ASF id """
         try:
             self.fingerprint = self.ldap_json['people'][self.asf_id]['key_fingerprints'][0].replace(" ", "").upper()
             self.fingerprint_short = self.fingerprint[-8:]
