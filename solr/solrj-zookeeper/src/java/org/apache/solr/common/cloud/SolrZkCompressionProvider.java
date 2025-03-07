@@ -52,7 +52,7 @@ public class SolrZkCompressionProvider implements CompressionProvider {
   @Override
   public byte[] decompress(String path, byte[] compressedData) throws SolrException {
     if (compressor.isCompressedBytes(compressedData)) {
-      log.info("Zookeeper data at path {} is compressed", path);
+      log.debug("Zookeeper data at path {} is compressed", path);
       try {
         return compressor.decompressBytes(compressedData);
       } catch (Exception e) {
