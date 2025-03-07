@@ -425,6 +425,11 @@ public class SearchHandler extends RequestHandlerBase
 
     processComponents(req, rsp, rb, timer, components);
 
+    if (rb.queryID != null) {
+      // Remove the current queryID from the active list
+      rb.req.getCore().getCancellableQueryTracker().releaseQueryID(rb.queryID);
+    }
+
     // SOLR-5550: still provide shards.info if requested even for a short-circuited distrib request
     if (!rb.isDistrib
         && req.getParams().getBool(ShardParams.SHARDS_INFO, false)
