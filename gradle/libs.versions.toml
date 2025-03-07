@@ -85,7 +85,7 @@ eclipse-jettytoolchain = "4.0.6"
 eclipse-jgit = "6.7.0.202309050840-r"
 essenty = "2.4.0"
 fasterxml = "2.18.2"
-fasterxml-woodstox = "7.0.0"
+fasterxml-woodstox = "7.1.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
 google-api-gax = "2.33.0"
