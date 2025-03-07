@@ -273,7 +273,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
                     Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
                     false,
                     List.of("metrics", "solr.node:CONTAINER.zkClient"));
-        System.out.println(zkMmetricsNew);
 
         assertThat(
             findDelta(zkMmetrics, zkMmetricsNew, "childFetches"),
