@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,12 +49,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ZLibCompressor;
@@ -64,7 +61,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
@@ -90,9 +86,7 @@ public class SolrZkClient implements Closeable {
   private Compressor compressor;
   private int minStateByteLenForCompression;
 
-  // Allow method reference to return a reference to a functional interface (Mapwriter),
-  // rather than a reference to a ZkMetrics object
-  @SuppressWarnings("UnnecessaryMethodReference")
+  // The metrics collector is shared across all SolrZkClient objects
   public MapWriter getMetrics() {
     return metricsListener;
   }
@@ -204,6 +198,9 @@ public class SolrZkClient implements Closeable {
             .retryPolicy(retryPolicy)
             .runSafeService(curatorSafeServiceExecutor)
             .build();
+    // This will collect metrics for foreground curator commands
+    client.getZookeeperClient().setTracerDriver(metricsListener);
+    // This will collect metrics for background curator commands
     client.getCuratorListenable().addListener(metricsListener);
     if (onReconnect != null) {
       client

@@ -1,5 +1,7 @@
 package org.apache.solr.common.cloud;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.curator.drivers.AdvancedTracerDriver;
 import org.apache.curator.drivers.EventTrace;
 import org.apache.curator.drivers.OperationTrace;
@@ -10,11 +12,8 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.LongAdder;
-
-public class SolrZKMetricsListener extends AdvancedTracerDriver implements ReflectMapWriter, CuratorListener {
+public class SolrZKMetricsListener extends AdvancedTracerDriver
+    implements ReflectMapWriter, CuratorListener {
   // all fields of this class are public because ReflectMapWriter requires them to be.
   // however the object itself is private and only this class can modify it
 
@@ -56,15 +55,11 @@ public class SolrZKMetricsListener extends AdvancedTracerDriver implements Refle
       }
       case "GetChildrenBuilderImpl-Foreground" -> {
         childFetches.increment();
-        if (event.getChildren() != null) {
-          cumulativeChildrenFetched.add(event.getChildren().size());
-        }
+        cumulativeChildrenFetched.add(trace.getResponseChildrenCount());
       }
       case "CuratorMultiTransactionImpl-Foreground" -> {
         multiOps.increment();
-        if (event.getOpResults() != null) {
-          cumulativeMultiOps.add(event.getOpResults().size());
-        }
+        cumulativeMultiOps.add(trace.getRequestTransactionCount());
       }
     }
   }
@@ -74,7 +69,7 @@ public class SolrZKMetricsListener extends AdvancedTracerDriver implements Refle
   We currently do not record metrics for either.
    */
   @Override
-  public void addEvent(EventTrace trace) { }
+  public void addEvent(EventTrace trace) {}
 
   /*
   This is used for Background operations and Watch firing.

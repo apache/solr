@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
-import org.apache.lucene.tests.search.AssertingMatches;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -45,8 +44,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.number.OrderingComparison;
 import org.junit.After;
 import org.junit.Before;
@@ -278,9 +275,15 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
                     List.of("metrics", "solr.node:CONTAINER.zkClient"));
         System.out.println(zkMmetricsNew);
 
-        //assertThat(findDelta(zkMmetrics, zkMmetricsNew, "childFetches"), OrderingComparison.greaterThanOrEqualTo(1L));
-        //assertThat(findDelta(zkMmetrics, zkMmetricsNew, "cumulativeChildrenFetched"), OrderingComparison.greaterThanOrEqualTo(3L));
-        assertThat(findDelta(zkMmetrics, zkMmetricsNew, "existsChecks"), OrderingComparison.greaterThanOrEqualTo(4L));
+        assertThat(
+            findDelta(zkMmetrics, zkMmetricsNew, "childFetches"),
+            OrderingComparison.greaterThanOrEqualTo(1L));
+        assertThat(
+            findDelta(zkMmetrics, zkMmetricsNew, "cumulativeChildrenFetched"),
+            OrderingComparison.greaterThanOrEqualTo(3L));
+        assertThat(
+            findDelta(zkMmetrics, zkMmetricsNew, "existsChecks"),
+            OrderingComparison.greaterThanOrEqualTo(4L));
       }
     } finally {
       cluster.shutdown();
