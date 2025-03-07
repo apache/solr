@@ -116,6 +116,11 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     // param encoding
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    // case sensitive param
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
   }
 
   public void testQueryPost() throws Exception {
@@ -128,10 +133,14 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
     // this validates that URI encoding has been applied - the content-length is smaller if not
-    assertEquals("41", DebugServlet.headers.get("content-length"));
+    assertEquals("103", DebugServlet.headers.get("content-length"));
   }
 
   public void testQueryPut() throws Exception {
@@ -144,9 +153,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
-    assertEquals("41", DebugServlet.headers.get("content-length"));
+    assertEquals("103", DebugServlet.headers.get("content-length"));
   }
 
   public void testQueryXmlGet() throws Exception {
@@ -159,6 +172,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
   }
 
@@ -172,6 +189,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
   }
@@ -186,6 +207,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
   }
@@ -264,6 +289,9 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     req.add(doc);
     // non-ASCII characters and curly quotes should be URI-encoded
     req.setParam("a", MUST_ENCODE);
+    // params should be case sensitive
+    req.setParam("case_sensitive_param", "lowercase");
+    req.setParam("CASE_SENSITIVE_PARAM", "uppercase");
 
     try {
       client.request(req);
@@ -281,6 +309,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(contentType, DebugServlet.headers.get("content-type"));
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
 
     if (wt == WT.XML) {
       String requestBody = new String(DebugServlet.requestBody, StandardCharsets.UTF_8);
@@ -427,7 +459,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     final var req = new QueryRequest(params("q", "*:*"));
     req.setResponseParser(new InputStreamResponseParser("xml"));
     final var rsp = req.process(client);
-    Object stream = rsp.getResponse().get("stream");
+    Object stream = rsp.getResponse().get(InputStreamResponseParser.STREAM_KEY);
     assertNotNull(stream);
     assertThat(stream, instanceOf(InputStream.class));
     InputStream is = (InputStream) stream;

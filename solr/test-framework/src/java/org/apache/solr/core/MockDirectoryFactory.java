@@ -44,8 +44,7 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
   }
 
   @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
-      throws IOException {
+  protected Directory create(String path, LockFactory lockFactory) throws IOException {
     Directory dir;
     if (useMockDirectoryWrapper) dir = LuceneTestCase.newMockDirectory();
     else dir = LuceneTestCase.newDirectory(); // we ignore the given lock factory
@@ -54,8 +53,7 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
     cdir = reduce(cdir);
     cdir = reduce(cdir);
 
-    if (cdir instanceof MockDirectoryWrapper) {
-      MockDirectoryWrapper mockDirWrapper = (MockDirectoryWrapper) cdir;
+    if (cdir instanceof MockDirectoryWrapper mockDirWrapper) {
 
       // we can't currently do this check because of how
       // Solr has to reboot a new Directory sometimes when replicating

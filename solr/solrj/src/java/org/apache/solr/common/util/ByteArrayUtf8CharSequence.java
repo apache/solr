@@ -124,9 +124,8 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   public boolean equals(Object other) {
     if (other instanceof Utf8CharSequence) {
       if (size() != ((Utf8CharSequence) other).size()) return false;
-      if (other instanceof ByteArrayUtf8CharSequence) {
-        if (this.length != ((ByteArrayUtf8CharSequence) other).length) return false;
-        ByteArrayUtf8CharSequence that = (ByteArrayUtf8CharSequence) other;
+      if (other instanceof ByteArrayUtf8CharSequence that) {
+        if (this.length != that.length) return false;
         return _equals(
             this.buf,
             this.offset,

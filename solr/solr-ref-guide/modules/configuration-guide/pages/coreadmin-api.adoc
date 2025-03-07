@@ -120,7 +120,7 @@ V1 API::
 Assuming you are using an existing configSet to create your new core:
 [source,bash]
 ----
-http://localhost:8983/solr/admin/cores?action=CREATE&&name=techproducts_v2&configSet=sample_techproducts_configs
+http://localhost:8983/solr/admin/cores?action=CREATE&name=techproducts_v2&configSet=sample_techproducts_configs
 
 ----
 
@@ -138,10 +138,8 @@ V2 API::
 ----
 curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json' -d '
   {
-    "create": {
-      "name": "techproducts_v2",
-      "configSet": "sample_techproducts_configs"
-    }
+    "name": "techproducts_v2",
+    "configSet": "sample_techproducts_configs"
   }
 '
 ----
@@ -247,6 +245,7 @@ For more information, see the section xref:config-sets.adoc[].
 The name of the collection to which this core belongs.
 The default is the name of the core.
 `collection._param_=_value_` causes a property of `_param_=_value_` to be set if a new collection is being created.
+(For v2 API calls, these collection properties may be specified in the request body as an object or map under the key, `collectionProperties`.)
 Use `collection.configName=_config-name_` to point to the configuration for a new collection.
 +
 WARNING: While it's possible to create a core for a non-existent collection, this approach is not supported and not recommended.
@@ -270,6 +269,7 @@ This should only be required in special circumstances; normally you want to be a
 |===
 +
 Sets the core property _name_ to _value_.
+(For v2 API calls, these properties may be specified in the request body as an object or map under the key, `properties`.)
 See the section on defining xref:core-discovery.adoc#defining-core-properties-files[core.properties file contents].
 
 `async`::
@@ -828,7 +828,7 @@ http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=1
 [[coreadmin-requestrecovery]]
 == REQUESTRECOVERY
 
-The `REQUESTRECOVERY` action manually asks a core to recover by synching with the leader.
+The `REQUESTRECOVERY` action manually asks a core to recover by syncing with the leader.
 This should be considered an "expert" level command and should be used in situations where the node (SorlCloud replica) is unable to become active automatically.
 
 `admin/cores?action=REQUESTRECOVERY&core=_core-name_`

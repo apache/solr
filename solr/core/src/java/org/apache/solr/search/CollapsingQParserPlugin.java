@@ -249,8 +249,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(final Object other) {
-      if (other instanceof GroupHeadSelector) {
-        final GroupHeadSelector that = (GroupHeadSelector) other;
+      if (other instanceof GroupHeadSelector that) {
         return (this.type == that.type) && this.selectorText.equals(that.selectorText);
       }
       return false;
@@ -2132,7 +2131,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         } else {
           SolrParams params = new ModifiableSolrParams();
           try (SolrQueryRequest request = new LocalSolrQueryRequest(searcher.getCore(), params)) {
-            FunctionQParser functionQParser = new FunctionQParser(text, null, null, request);
+            FunctionQParser functionQParser = new FunctionQParser(text, null, params, request);
             funcQuery = (FunctionQuery) functionQParser.parse();
           } catch (SyntaxError e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);

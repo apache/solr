@@ -157,8 +157,7 @@ public class CoreSorter {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof CountsForEachShard)) return false;
-      CountsForEachShard that = (CountsForEachShard) o;
+      if (!(o instanceof CountsForEachShard that)) return false;
       return totalReplicasInDownNodes == that.totalReplicasInDownNodes
           && myReplicas == that.myReplicas
           && totalReplicasInLiveNodes == that.totalReplicasInLiveNodes;

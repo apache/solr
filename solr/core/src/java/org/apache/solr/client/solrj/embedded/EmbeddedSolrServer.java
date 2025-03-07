@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrDocument;
@@ -78,8 +79,8 @@ public class EmbeddedSolrServer extends SolrClient {
 
   @SuppressWarnings("ImmutableEnumChecker")
   public enum RequestWriterSupplier {
-    JavaBin(() -> new BinaryRequestWriter()),
-    XML(() -> new RequestWriter());
+    JavaBin(BinaryRequestWriter::new),
+    XML(XMLRequestWriter::new);
 
     private final Supplier<RequestWriter> supplier;
 
@@ -308,10 +309,7 @@ public class EmbeddedSolrServer extends SolrClient {
 
     if (responseParser instanceof InputStreamResponseParser) {
       // SPECIAL CASE
-      NamedList<Object> namedList = new NamedList<>();
-      namedList.add("stream", byteBuffer.toInputStream());
-      namedList.add("responseStatus", 200); // always by this point
-      return namedList;
+      return InputStreamResponseParser.createInputStreamNamedList(200, byteBuffer.toInputStream());
     }
 
     // note: don't bother using the Reader variant; it often throws UnsupportedOperationException
@@ -321,8 +319,7 @@ public class EmbeddedSolrServer extends SolrClient {
   /** A list of streams, non-null. */
   private List<ContentStream> getContentStreams(SolrRequest<?> request) throws IOException {
     if (request.getMethod() == SolrRequest.METHOD.GET) return List.of();
-    if (request instanceof ContentStreamUpdateRequest) {
-      final ContentStreamUpdateRequest csur = (ContentStreamUpdateRequest) request;
+    if (request instanceof ContentStreamUpdateRequest csur) {
       final Collection<ContentStream> cs = csur.getContentStreams();
       if (cs != null) return new ArrayList<>(cs);
     }

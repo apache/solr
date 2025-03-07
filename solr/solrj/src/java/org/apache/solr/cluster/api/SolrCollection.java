@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.api;
 
 /** Represents a collection in Solr */
+@Deprecated
 public interface SolrCollection {
 
   String name();

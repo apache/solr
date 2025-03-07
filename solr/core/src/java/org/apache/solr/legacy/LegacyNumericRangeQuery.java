@@ -422,8 +422,7 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
   public final boolean equals(final Object o) {
     if (o == this) return true;
     if (!super.equals(o)) return false;
-    if (o instanceof LegacyNumericRangeQuery) {
-      final LegacyNumericRangeQuery<?> q = (LegacyNumericRangeQuery<?>) o;
+    if (o instanceof LegacyNumericRangeQuery<?> q) {
       return Objects.equals(q.min, min)
           && Objects.equals(q.max, max)
           && minInclusive == q.minInclusive

@@ -16,30 +16,56 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr has lots of 3rd party dependencies, defined mainly in `versions.props`.
+Solr has lots of 3rd party dependencies, defined in `gradle/libs.versions.toml`.
 Keeping them up-to-date is crucial for a number of reasons:
 
 * minimizing the risk of critical CVE vulnerabilities by staying on a recent and supported version
 * avoiding "dependency hell", that can arise from falling too far behind
 
-Read the https://github.com/apache/solr/blob/main/help/dependencies.txt[help/dependencies.txt] file for an in-depth explanation of how gradle is deployed in Solr, using
-https://github.com/palantir/gradle-consistent-versions[Gradle consistent-versions] plugin.
+Read the https://github.com/apache/solr/blob/main/help/dependencies.txt[help/dependencies.txt] file for an in-depth
+explanation of how dependencies are managed.
 
 == Manual dependency upgrades
-In order to upgrade a dependency, you need to run through a number of steps:
+To upgrade a dependency, you need to run through a number of steps:
 
 1. Identify the available versions from e.g. https://search.maven.org[Maven Central]
-2. Update the version in `versions.props` file
-3. Run `./gradlew --write-locks` to re-generate `versions.lock`. Note that this may cause a cascading effect where
-   the locked version of other dependencies also change.
-4. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
-5. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
+2. Update the version in `gradle/libs.versions.toml` file
+3. Run `./gradlew resolveAndLockAll --write-locks` to re-generate lockfiles. Note that this may cause a cascading effect
+   where the locked version of other dependencies also changes.
+4. Run `./gradlew kotlinUpgradeYarnLock` to update the kotlin-js-store lockfile used for the new UI.
+   Most of the cases it will not have any changes.
+5. In case of a conflict, resolve the conflict according to `help/dependencies.txt`
+6. Update the license and notice files of the changed dependencies. See `help/dependencies.txt` for details.
+7. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
+8. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
    You'll need to decide whether to keep or exclude them. See `help/dependencies.txt` for details.
 
+=== Constraints and Version Alignment
+
+To sync the version of direct and transitive dependencies across the project, we iterate in the `:platform` module
+over the libraries defined in `gradle/libs.version.toml` and add them as constraints. Then, we use the module in
+main modules like `:solr:api` and `:solr:core` and transitively pass down to all other modules the constraints.
+
+If a new module does not depend on another module that already includes `:platform` as a platform dependency, it should
+explicitly add it to sync the versions with the rest of the project. `:solr:server` is one case where this is necessary.
+
+=== Addressing Security Vulnerabilities
+
+When it comes to security vulnerabilities that are found in direct or transitive dependencies, the recommended way to
+address them is to update the specific library if there is a new release that solves this issue. For both direct and
+transitive dependencies, we simply have to update the version as described above.
+
+In case it is a transitive dependency that is not directly used, you can simply add it to `libs.versions.toml` as you
+would with any other dependency. The dependency resolution approach defined in `:platform` will handle the rest.
+Don't forget to add a `# @keep` note with a reference to the vulnerable version and CVE that is fixed with the explicit
+definition of the library and new version. This way it is easier to keep track of unreferenced dependencies in our
+libraries toml file, and we can clean them up once the libraries using the modules are updated.
+
 == Renovate bot Pull Requests
+
 A member of the Solr community operates a Github bot running https://github.com/renovatebot/renovate[Renovate], which
 files Pull Requests to Solr with dependency upgrade proposals. The PRs are labeled `dependencies` and do include
-changes resulting from `gradle --write-locks` and `updateLicenses`.
+changes resulting from the gradle tasks `resolveAndLockAll` and `updateLicenses`.
 
 Community members and committers can then review, and if manual changes are needed, help bring the PR to completion.
 For many dependencies, a changelog is included in the PR text, which may help guide the upgrade decision.
@@ -51,9 +77,13 @@ that will get its own separate Pull Request, so you can choose.
 If an upgrade is decided, simply merge (and backport) the PR. To skip an upgrade, close the PR. If a PR is left open,
 it will be re-used and auto updated whenever a newer patch- or minor version gets available. Thus, one can reduce
 churn from frequently-updated dependencies by delaying merge until a few weeks before a new release. One can also
-choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`
+choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`.
+
+Please note that Solr version prior to 10.X use a versions resolution plugin that uses `versions.lock` instead of
+`libs.version.toml`. Therefore, changes cannot be backported via cherry-pick.
 
 === Configuring renovate.json
+
 While the bot runs on a https://github.com/solrbot/renovate-github-action[GitHub repo external to the project],
 the bot behavior can be tailored by editing `.github/renovate.json` in this project.
 See https://docs.renovatebot.com[Renovatebot docs] for available options.

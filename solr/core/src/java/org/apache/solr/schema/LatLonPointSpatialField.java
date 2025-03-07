@@ -138,12 +138,11 @@ public class LatLonPointSpatialField
 
     @Override
     public Field[] createIndexableFields(Shape shape) {
-      if (!(shape instanceof Point)) {
+      if (!(shape instanceof Point point)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             getClass().getSimpleName() + " only supports indexing points; got: " + shape);
       }
-      Point point = (Point) shape;
 
       int fieldsLen = (indexed ? 1 : 0) + (docValues ? 1 : 0);
       Field[] fields = new Field[fieldsLen];
@@ -179,17 +178,14 @@ public class LatLonPointSpatialField
     // Uses LatLonPoint
     protected Query makeQueryFromIndex(Shape shape) {
       // note: latitude then longitude order for LLP's methods
-      if (shape instanceof Circle) {
-        Circle circle = (Circle) shape;
+      if (shape instanceof Circle circle) {
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
         return LatLonPoint.newDistanceQuery(
             getFieldName(), circle.getCenter().getY(), circle.getCenter().getX(), radiusMeters);
-      } else if (shape instanceof Rectangle) {
-        Rectangle rect = (Rectangle) shape;
+      } else if (shape instanceof Rectangle rect) {
         return LatLonPoint.newBoxQuery(
             getFieldName(), rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
-      } else if (shape instanceof Point) {
-        Point point = (Point) shape;
+      } else if (shape instanceof Point point) {
         return LatLonPoint.newDistanceQuery(getFieldName(), point.getY(), point.getX(), 0);
       } else {
         throw new UnsupportedOperationException(
@@ -204,17 +200,14 @@ public class LatLonPointSpatialField
     // Uses DocValuesField  (otherwise identical to above)
     protected Query makeQueryFromDocValues(Shape shape) {
       // note: latitude then longitude order for LLP's methods
-      if (shape instanceof Circle) {
-        Circle circle = (Circle) shape;
+      if (shape instanceof Circle circle) {
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
         return LatLonDocValuesField.newSlowDistanceQuery(
             getFieldName(), circle.getCenter().getY(), circle.getCenter().getX(), radiusMeters);
-      } else if (shape instanceof Rectangle) {
-        Rectangle rect = (Rectangle) shape;
+      } else if (shape instanceof Rectangle rect) {
         return LatLonDocValuesField.newSlowBoxQuery(
             getFieldName(), rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
-      } else if (shape instanceof Point) {
-        Point point = (Point) shape;
+      } else if (shape instanceof Point point) {
         return LatLonDocValuesField.newSlowDistanceQuery(
             getFieldName(), point.getY(), point.getX(), 0);
       } else {
@@ -258,8 +251,7 @@ public class LatLonPointSpatialField
       @Override
       public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof DistanceSortValueSource)) return false;
-        DistanceSortValueSource that = (DistanceSortValueSource) o;
+        if (!(o instanceof DistanceSortValueSource that)) return false;
         return Double.compare(that.multiplier, multiplier) == 0
             && Objects.equals(fieldName, that.fieldName)
             && Objects.equals(queryPoint, that.queryPoint);

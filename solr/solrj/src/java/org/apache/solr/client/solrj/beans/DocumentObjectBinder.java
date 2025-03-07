@@ -112,8 +112,7 @@ public class DocumentObjectBinder {
   private void addChild(Object obj, DocField field, SolrInputDocument doc) {
     Object val = field.get(obj);
     if (val == null) return;
-    if (val instanceof Collection) {
-      Collection<?> collection = (Collection<?>) val;
+    if (val instanceof Collection<?> collection) {
       for (Object o : collection) {
         SolrInputDocument child = toSolrInputDocument(o);
         doc.addChildDocument(child);
@@ -187,7 +186,7 @@ public class DocumentObjectBinder {
      * is set to <code>TRUE</code> as well as <code>isList</code> is set to <code>TRUE</code>
      */
     private boolean isContainedInMap;
-    private Pattern dynamicFieldNamePatternMatcher;
+    private java.util.function.Predicate<String> dynamicFieldNamePatternMatcher;
 
     public DocField(AccessibleObject member) {
       if (member instanceof java.lang.reflect.Field) {
@@ -236,10 +235,24 @@ public class DocumentObjectBinder {
       } else if (annotation.value().indexOf('*') >= 0) {
         // dynamic fields are annotated as @Field("categories_*")
         // if the field was annotated as a dynamic field, convert the name into a pattern
-        // the wildcard (*) is supposed to be either a prefix or a suffix, hence the use of
-        // replaceFirst
-        name = annotation.value().replaceFirst("\\*", "\\.*");
-        dynamicFieldNamePatternMatcher = Pattern.compile("^" + name + "$");
+        // the wildcard (*) is supposed to be either a prefix or a suffix
+
+        if (annotation.value().startsWith("*")) {
+          // handle suffix
+          name = annotation.value();
+          String pattern = annotation.value().substring(1);
+          dynamicFieldNamePatternMatcher = fieldName -> fieldName.endsWith(pattern);
+        } else if (annotation.value().endsWith("*")) {
+          // handle prefix
+          name = annotation.value();
+          String pattern = annotation.value().substring(0, annotation.value().length() - 1);
+          dynamicFieldNamePatternMatcher = fieldName -> fieldName.startsWith(pattern);
+        } else {
+          // handle when wildcard is in the middle
+          name = annotation.value().replaceFirst("\\*", "\\.*");
+          Pattern compiledPattern = Pattern.compile("^" + name + "$");
+          dynamicFieldNamePatternMatcher = fieldName -> compiledPattern.matcher(fieldName).find();
+        }
       } else {
         name = annotation.value();
       }
@@ -285,9 +298,8 @@ public class DocumentObjectBinder {
         // assigned a default type
         type = Object.class;
         if (field != null) {
-          if (field.getGenericType() instanceof ParameterizedType) {
+          if (field.getGenericType() instanceof ParameterizedType parameterizedType) {
             // check what are the generic values
-            ParameterizedType parameterizedType = (ParameterizedType) field.getGenericType();
             Type[] types = parameterizedType.getActualTypeArguments();
             if (types != null && types.length == 2 && types[0] == String.class) {
               // the key should always be String
@@ -399,7 +411,7 @@ public class DocumentObjectBinder {
       }
 
       for (String field : solrDocument.getFieldNames()) {
-        if (dynamicFieldNamePatternMatcher.matcher(field).find()) {
+        if (dynamicFieldNamePatternMatcher.test(field)) {
           Object val = solrDocument.getFieldValue(field);
           if (val == null) {
             continue;

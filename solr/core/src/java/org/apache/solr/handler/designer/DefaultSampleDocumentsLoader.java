@@ -78,10 +78,6 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       return SampleDocuments.NONE;
     }
 
-    if (params == null) {
-      params = new ModifiableSolrParams();
-    }
-
     Long streamSize = stream.getSize();
     if (streamSize != null && streamSize > MAX_STREAM_SIZE) {
       throw new SolrException(
@@ -117,14 +113,14 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     List<SolrInputDocument> docs = null;
     if (stream.getSize() > 0) {
       if (contentType.contains(JSON_MIME)) {
-        docs = loadJsonDocs(params, byteStream, maxDocsToLoad);
+        docs = loadJsonDocs(byteStream, maxDocsToLoad);
       } else if (contentType.contains("text/xml") || contentType.contains("application/xml")) {
-        docs = loadXmlDocs(params, byteStream, maxDocsToLoad);
+        docs = loadXmlDocs(byteStream, maxDocsToLoad);
       } else if (contentType.contains("text/csv") || contentType.contains("application/csv")) {
         docs = loadCsvDocs(params, fileSource, uploadedBytes, charset, maxDocsToLoad);
       } else if (contentType.contains("text/plain")
           || contentType.contains("application/octet-stream")) {
-        docs = loadJsonLines(params, byteStream, maxDocsToLoad);
+        docs = loadJsonLines(byteStream, maxDocsToLoad);
       } else {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, contentType + " not supported yet!");
@@ -157,8 +153,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
 
   @SuppressWarnings("unchecked")
   protected List<SolrInputDocument> loadJsonLines(
-      SolrParams params, ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad)
-      throws IOException {
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     List<Map<String, Object>> docs = new ArrayList<>();
     try (Reader r = stream.getReader()) {
       BufferedReader br = new BufferedReader(r);
@@ -182,8 +177,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
 
   @SuppressWarnings("unchecked")
   protected List<SolrInputDocument> loadJsonDocs(
-      SolrParams params, ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad)
-      throws IOException {
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     Object json;
     try (Reader r = stream.getReader()) {
       json = ObjectBuilder.getVal(new JSONParser(r));
@@ -231,8 +225,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   }
 
   protected List<SolrInputDocument> loadXmlDocs(
-      SolrParams params, ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad)
-      throws IOException {
+      ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     String xmlString = new String(readAllBytes(stream), StandardCharsets.UTF_8).trim();
     List<SolrInputDocument> docs;
     if (xmlString.contains("<add>") && xmlString.contains("<doc>")) {

@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.FieldType;
@@ -78,7 +79,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertNotNull(cluster);
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     assertNotNull(cc);
-    helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester(cc));
+    helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesignerAPI.newSchemaSuggester());
   }
 
   @Test
@@ -283,10 +284,9 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     Map<String, Object> analysis =
         helper.analyzeField(configSet, "title", "The Pillars of the Earth");
 
-    Map<String, Object> title =
-        (Map<String, Object>) ((Map<String, Object>) analysis.get("field_names")).get("title");
-    assertNotNull(title);
-    List<Object> index = (List<Object>) title.get("index");
+    var index =
+        (List<Object>)
+            Utils.getObjectByPath(analysis, false, List.of("field_names", "title", "index"));
     assertNotNull(index);
     assertFalse(index.isEmpty());
   }

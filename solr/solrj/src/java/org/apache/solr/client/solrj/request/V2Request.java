@@ -65,7 +65,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
   @Override
   public SolrParams getParams() {
-    return solrParams;
+    return solrParams != null ? solrParams : SolrParams.of();
   }
 
   @Override
@@ -78,8 +78,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        if (payload instanceof ByteBuffer) {
-          ByteBuffer b = (ByteBuffer) payload;
+        if (payload instanceof ByteBuffer b) {
           os.write(b.array(), b.arrayOffset(), b.limit());
           return;
         }

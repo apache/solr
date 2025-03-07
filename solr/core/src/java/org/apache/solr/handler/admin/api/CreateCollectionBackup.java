@@ -38,7 +38,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.client.api.endpoint.CreateCollectionBackupApi;
+import org.apache.solr.client.api.endpoint.CollectionBackupApi;
 import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionBackupResponseBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -58,7 +58,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.common.StringUtils;
 
 /** V2 API for creating a new "backup" of a specified collection */
-public class CreateCollectionBackup extends BackupAPIBase implements CreateCollectionBackupApi {
+public class CreateCollectionBackup extends BackupAPIBase implements CollectionBackupApi.Create {
   private final ObjectMapper objectMapper;
 
   @Inject
