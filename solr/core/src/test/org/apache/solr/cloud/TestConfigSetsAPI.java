@@ -287,7 +287,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
       throws Exception {
-    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
     tmpConfigDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(configDir, tmpConfigDir);
@@ -1422,48 +1422,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUploadWithLibDirective() throws Exception {
-    final String untrustedSuffix = "-untrusted";
-    uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null);
-    // try to create a collection with the uploaded configset
-    ignoreException("without any authentication in place");
-    Throwable thrown =
-        expectThrows(
-            SolrClient.RemoteSolrException.class,
-            () -> {
-              createCollection(
-                  "newcollection3",
-                  "with-lib-directive" + untrustedSuffix,
-                  1,
-                  1,
-                  cluster.getSolrClient());
-            });
-    unIgnoreException("without any authentication in place");
-
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
-
-    // Authorization on
-    final String trustedSuffix = "-trusted";
-    uploadConfigSetWithAssertions("with-lib-directive", trustedSuffix, "solr");
-    // try to create a collection with the uploaded configset
-    CollectionAdminResponse resp =
-        createCollection(
-            "newcollection3", "with-lib-directive" + trustedSuffix, 1, 1, cluster.getSolrClient());
-
-    SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
-    cluster.getSolrClient().add("newcollection3", doc);
-    cluster.getSolrClient().commit("newcollection3");
-    assertEquals(
-        "4055",
-        cluster
-            .getSolrClient()
-            .query("newcollection3", params("q", "*:*"))
-            .getResults()
-            .get(0)
-            .get("id"));
-  }
-
-  @Test
   public void testUploadWithForbiddenContent() throws Exception {
     // Uploads a config set containing a script, a class file and jar file, will return 400 error
     long res = uploadConfigSet("forbidden", "suffix", "foo", true, false, true, false, true);
@@ -1560,7 +1518,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     // Read single file from sample configs. This should fail the unzipping
     return uploadGivenConfigSet(
-        SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml"),
+        SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml").toFile(),
         configSetName,
         suffix,
         username,
@@ -1585,7 +1543,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       final ByteBuffer fileBytes =
           TestSolrConfigHandler.getFileContent(file.getAbsolutePath(), false);
       final String uriEnding =
-          "/cluster/configs/"
+          "/configsets/"
               + configSetName
               + suffix
               + (!overwrite ? "?overwrite=false" : "")
@@ -1605,7 +1563,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     try {
       return (new Upload())
           .setConfigSetName(configSetName + suffix)
-          .setUploadFile(file, "application/zip")
+          .setUploadFile(file.toPath(), "application/zip")
           .setOverwrite(overwrite ? true : null) // expect server default to be 'false'
           .setCleanup(cleanup ? true : null) // expect server default to be 'false'
           .setBasicAuthCredentials(username, username) // for our MockAuthenticationPlugin
@@ -1629,18 +1587,20 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       boolean v2)
       throws IOException {
     // Read single file from sample configs
-    final File file = SolrTestCaseJ4.getFile(localFilePath);
+    final File file = SolrTestCaseJ4.getFile(localFilePath).toFile();
 
     if (v2) {
       // TODO: switch to use V2Request
 
       final ByteBuffer sampleConfigFile =
           TestSolrConfigHandler.getFileContent(file.getAbsolutePath(), false);
+      if (uploadPath != null && !uploadPath.startsWith("/")) {
+        uploadPath = "/" + uploadPath;
+      }
       final String uriEnding =
-          "/cluster/configs/"
+          "/configsets/"
               + configSetName
               + suffix
-              + "/"
               + uploadPath
               + (!overwrite ? "?overwrite=false" : "")
               + (cleanup ? "?cleanup=true" : "");
@@ -1662,7 +1622,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .setConfigSetName(configSetName + suffix)
           .setFilePath(uploadPath)
           // NOTE: server doesn't actually care, and test plumbing doesn't tell us
-          .setUploadFile(file, "application/octet-stream")
+          .setUploadFile(file.toPath(), "application/octet-stream")
           .setOverwrite(overwrite ? true : null) // expect server default to be 'false'
           .setCleanup(cleanup ? true : null) // expect server default to be 'false'
           .setBasicAuthCredentials(username, username) // for our MockAuthenticationPlugin
@@ -1682,7 +1642,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   private File createTempZipFile(String directoryPath) {
     try {
       final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(directoryPath);
+      final File directory = SolrTestCaseJ4.getFile(directoryPath).toFile();
       if (log.isInfoEnabled()) {
         log.info("Directory: {}", directory.getAbsolutePath());
       }
@@ -1703,7 +1663,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   private File createTempZipFileWithForbiddenTypes(String file) {
     try {
       final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(file);
+      final File directory = SolrTestCaseJ4.getFile(file).toFile();
       if (log.isInfoEnabled()) {
         log.info("Directory: {}", directory.getAbsolutePath());
       }
@@ -1721,7 +1681,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   private File createTempZipFileWithForbiddenContent(String resourcePath) {
     try {
       final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(resourcePath);
+      final File directory = SolrTestCaseJ4.getFile(resourcePath).toFile();
       if (log.isInfoEnabled()) {
         log.info("Directory: {}", directory.getAbsolutePath());
       }
@@ -1892,7 +1852,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private byte[] readFile(String fname) throws IOException {
     byte[] buf = null;
-    try (FileInputStream fis = new FileInputStream(getFile(fname))) {
+    try (FileInputStream fis = new FileInputStream(getFile(fname).toFile())) {
       buf = new byte[fis.available()];
       fis.read(buf);
     }
@@ -1903,7 +1863,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testDeleteErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
     tmpConfigDir.toFile().deleteOnExit();
     // Ensure ConfigSet is immutable

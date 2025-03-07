@@ -93,8 +93,7 @@ public class TransactionLog implements Closeable {
       new JavaBinCodec.ObjectResolver() {
         @Override
         public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-          if (o instanceof BytesRef) {
-            BytesRef br = (BytesRef) o;
+          if (o instanceof BytesRef br) {
             codec.writeByteArray(br.bytes, br.offset, br.length);
             return null;
           }
@@ -161,8 +160,7 @@ public class TransactionLog implements Closeable {
 
     @Override
     public boolean writePrimitive(Object val) throws IOException {
-      if (val instanceof java.util.UUID) {
-        java.util.UUID uuid = (java.util.UUID) val;
+      if (val instanceof java.util.UUID uuid) {
         daos.writeByte(UUID);
         daos.writeLong(uuid.getMostSignificantBits());
         daos.writeLong(uuid.getLeastSignificantBits());

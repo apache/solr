@@ -65,7 +65,7 @@ public class InactiveShardRemover
           CollectionAdminRequest.deleteShard(slice.getCollection(), slice.getName());
       try {
         SolrResponse response =
-            coreContainer.getZkController().getSolrCloudManager().request(deleteRequest);
+            deleteRequest.process(coreContainer.getZkController().getSolrClient());
         if (response.getException() != null) {
           throw response.getException();
         }
@@ -143,7 +143,8 @@ public class InactiveShardRemover
   void deleteInactiveSlices() {
     final ClusterState clusterState = coreContainer.getZkController().getClusterState();
     Collection<Slice> inactiveSlices =
-        clusterState.getCollectionsMap().values().stream()
+        clusterState
+            .collectionStream()
             .flatMap(v -> collectInactiveSlices(v).stream())
             .collect(Collectors.toSet());
 

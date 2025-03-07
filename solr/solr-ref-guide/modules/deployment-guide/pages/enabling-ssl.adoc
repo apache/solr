@@ -136,89 +136,6 @@ If you are using SolrCloud, you need to <<Configure ZooKeeper>> before starting 
 
 If you are running Solr in a user-managed cluster or single-node installation, you can skip to <<Start User-Managed Cluster or Single-Node Solr>>.
 
-
-
-=== Password Distribution via Hadoop Credential Store
-
-Solr supports reading keystore and truststore passwords from Hadoop credential store.
-This approach can be beneficial if password rotation and distribution is already handled by credential stores.
-
-If you are not using a Hadoop credential store, you can skip this step.
-
-Hadoop credential store can be used with Solr using the following two steps.
-
-==== Provide a Hadoop Credential Store
-Create a Hadoop credstore file and define the entries below with the actual keystore passwords.
-
-[source,text]
-----
-solr.jetty.keystore.password
-solr.jetty.truststore.password
-javax.net.ssl.keyStorePassword
-javax.net.ssl.trustStorePassword
-----
-
-Note that if the `javax.net.ssl.\*` configurations are not set, they will fallback to the corresponding `solr.jetty.*` configurations.
-
-==== Configure Solr to use Hadoop Credential Store
-
-Solr requires three parameters to be configured in order to use the credential store file for keystore passwords.
-
-`solr.ssl.credential.provider.chain`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-The credential provider chain.
-This should be set to `hadoop`.
-
-`SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-The path to the credential store file.
-
-`HADOOP_CREDSTORE_PASSWORD`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-The password to the credential store.
-
-[tabs#credstore]
-======
-*nix::
-+
-====
-.solr.in.sh
-[source,bash]
-----
-SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
-SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-HADOOP_CREDSTORE_PASSWORD="credStorePass123"
-----
-====
-
-Windows::
-+
-====
-.solr.in.cmd
-[source,powershell]
-----
-set SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
-set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-set HADOOP_CREDSTORE_PASSWORD="credStorePass123"
-----
-====
-======
-
 === Configure ZooKeeper
 
 After creating the keystore described above and before you start any SolrCloud nodes, you must configure your Solr cluster properties in ZooKeeper so that Solr nodes know to communicate via SSL.
@@ -236,7 +153,7 @@ The examples below use the `bin/solr` tool that comes with Solr to do this.
 ====
 [source,terminal]
 ----
-$ bin/solr cluster --property urlSchema --value https --zk-host server1:2181,server2:2181,server3:2181
+$ bin/solr cluster --property urlScheme --value https --zk-host server1:2181,server2:2181,server3:2181
 ----
 ====
 
@@ -245,7 +162,7 @@ Windows::
 ====
 [source,powershell]
 ----
-C:\> bin/solr.cmd --property urlSchema --value https --zk-host server1:2181,server2:2181,server3:2181
+C:\> bin/solr.cmd cluster --property urlScheme --value https --zk-host server1:2181,server2:2181,server3:2181
 ----
 ====
 ======

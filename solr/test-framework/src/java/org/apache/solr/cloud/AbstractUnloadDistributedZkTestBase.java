@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -33,7 +34,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -41,12 +41,10 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,42 +95,37 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
   private void checkCoreNamePresenceAndSliceCount(
       String collectionName, String coreName, boolean shouldBePresent, int expectedSliceCount)
       throws Exception {
-    final TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    Boolean isPresent = null; // null meaning "don't know"
-    while (null == isPresent || shouldBePresent != isPresent) {
-      getCommonCloudSolrClient();
-      final DocCollection docCollection =
-          cloudClient.getClusterState().getCollectionOrNull(collectionName);
-      final Collection<Slice> slices =
-          (docCollection != null) ? docCollection.getSlices() : Collections.emptyList();
-      if (timeout.hasTimedOut()) {
-        printLayout();
-        fail(
-            "checkCoreNamePresenceAndSliceCount failed:"
-                + " collection="
-                + collectionName
-                + " CoreName="
-                + coreName
-                + " shouldBePresent="
-                + shouldBePresent
-                + " isPresent="
-                + isPresent
-                + " expectedSliceCount="
-                + expectedSliceCount
-                + " actualSliceCount="
-                + slices.size());
-      }
-      if (expectedSliceCount == slices.size()) {
-        isPresent = false;
-        for (Slice slice : slices) {
-          for (Replica replica : slice.getReplicas()) {
-            if (coreName.equals(replica.get("core"))) {
-              isPresent = true;
+    ZkStateReader reader = ZkStateReader.from(cloudClient);
+    try {
+      reader.waitForState(
+          collectionName,
+          45,
+          TimeUnit.SECONDS,
+          c -> {
+            final Collection<Slice> slices = (c != null) ? c.getSlices() : Collections.emptyList();
+            if (expectedSliceCount == slices.size()) {
+              for (Slice slice : slices) {
+                for (Replica replica : slice.getReplicas()) {
+                  if (coreName.equals(replica.get("core"))) {
+                    return shouldBePresent;
+                  }
+                }
+              }
+              return !shouldBePresent;
+            } else {
+              return false;
             }
-          }
-        }
-      }
-      Thread.sleep(1000);
+          });
+    } catch (TimeoutException e) {
+      printLayout();
+      fail(
+          "checkCoreNamePresenceAndSliceCount failed:"
+              + " collection="
+              + collectionName
+              + " CoreName="
+              + coreName
+              + " shouldBePresent="
+              + shouldBePresent);
     }
   }
 

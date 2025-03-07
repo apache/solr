@@ -457,6 +457,51 @@ http://_host:port_/api/cores/_core_name_/replication/files?generation=<_generati
 +
 You can discover the generation number of the index by running the `indexversion` command.
 
+`filecontent`::
+Retrieve a stream of a specific file path of a core.
+
++
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://_host:port_/solr/_core_name_/replication?command=filecontent&<_directory-type_>=<_file-path_>&wt=filestream
+
+----
+====
++
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+http://_host:port_/api/cores/_core_name_/replication/files/<_file-path_>&dirType=<_directory-type_>
+
+----
+====
++
+Directory type is required for both V1 and V2 with these supported types:
+
+* `file` Read from Lucene index file directory
+
+* `cf` Read from Configuration file directory
+
+* `tlogFile` Read from Tlog file directory
+
++
+There are several optional parameters:
+
+* `offset` Output stream read offset
+
+* `compression` True/False compress file output
+
+* `checksum` True/False write checksum with output stream
+
+* `maxWriteMBPerSec` Limit data write per seconds. Defaults to no throttling
+
+* `generation` The generation number of the index
+
 `backup`::
 Create a backup on leader if there are committed index data in the server; otherwise, does nothing.
 +

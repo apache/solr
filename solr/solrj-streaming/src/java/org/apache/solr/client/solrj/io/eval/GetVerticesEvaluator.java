@@ -34,7 +34,7 @@ public class GetVerticesEvaluator extends RecursiveObjectEvaluator implements On
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof ConvexHull2D)) {
+    if (!(value instanceof ConvexHull2D convexHull2D)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -42,7 +42,6 @@ public class GetVerticesEvaluator extends RecursiveObjectEvaluator implements On
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      ConvexHull2D convexHull2D = (ConvexHull2D) value;
       Vector2D[] vectors = convexHull2D.getVertices();
       double[][] data = new double[vectors.length][2];
       for (int i = 0; i < vectors.length; i++) {

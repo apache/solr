@@ -23,12 +23,12 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -44,6 +44,14 @@ import org.slf4j.LoggerFactory;
 public class ZkCpTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Option SOLR_HOME_OPTION =
+      Option.builder()
+          .longOpt("solr-home")
+          .hasArg()
+          .argName("DIR")
+          .desc("Required to look up configuration for compressing state.json.")
+          .build();
+
   public ZkCpTool() {
     this(CLIO.getOutStream());
   }
@@ -53,19 +61,12 @@ public class ZkCpTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder()
-            .longOpt("solr-home")
-            .argName("DIR")
-            .hasArg()
-            .required(false)
-            .desc("Required to look up configuration for compressing state.json.")
-            .build(),
-        SolrCLI.OPTION_RECURSIVE,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(SOLR_HOME_OPTION)
+        .addOption(CommonCLIOptions.RECURSIVE_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -123,13 +124,12 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     String src = cli.getArgs()[0];
     String dst = cli.getArgs()[1];
-    boolean recursive = cli.hasOption("recursive");
+    boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
     boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
@@ -158,7 +158,7 @@ public class ZkCpTool extends ToolBase {
     Compressor compressor = new ZLibCompressor();
 
     if (dstIsZk) {
-      String solrHome = cli.getOptionValue("solr-home");
+      String solrHome = cli.getOptionValue(SOLR_HOME_OPTION);
       if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
       }

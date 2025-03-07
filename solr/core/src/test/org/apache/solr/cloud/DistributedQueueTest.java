@@ -295,7 +295,13 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     zkClient
         .getCuratorFramework()
         .getConnectionStateListenable()
-        .addListener((OnDisconnect) hasDisconnected::countDown);
+        .addListener(
+            (OnDisconnect)
+                ((sessionExpired) -> {
+                  if (sessionExpired) {
+                    hasDisconnected.countDown();
+                  }
+                }));
     long sessionId = zkClient.getZkSessionId();
     zkServer.expire(sessionId);
     hasDisconnected.await(10, TimeUnit.SECONDS);

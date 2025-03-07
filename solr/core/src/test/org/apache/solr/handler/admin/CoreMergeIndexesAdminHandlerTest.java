@@ -52,12 +52,11 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
     public boolean fail = false;
 
     @Override
-    public Directory create(String path, LockFactory lockFactory, DirContext dirContext)
-        throws IOException {
+    public Directory create(String path, LockFactory lockFactory) throws IOException {
       if (fail) {
         throw new FailingDirectoryFactoryException();
       } else {
-        return super.create(path, lockFactory, dirContext);
+        return super.create(path, lockFactory);
       }
     }
   }

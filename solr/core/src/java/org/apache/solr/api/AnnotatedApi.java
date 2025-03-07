@@ -261,8 +261,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     }
 
     private void readPayloadType(Type t) {
-      if (t instanceof ParameterizedType) {
-        ParameterizedType typ = (ParameterizedType) t;
+      if (t instanceof ParameterizedType typ) {
         if (typ.getRawType() == PayloadObj.class) {
           isWrappedInPayloadObj = true;
           if (typ.getActualTypeArguments().length == 0) {
@@ -271,8 +270,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
             return;
           }
           Type t1 = typ.getActualTypeArguments()[0];
-          if (t1 instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) t1;
+          if (t1 instanceof ParameterizedType parameterizedType) {
             parameterClass = (Class<?>) parameterizedType.getRawType();
           } else {
             parameterClass = (Class<?>) typ.getActualTypeArguments()[0];
@@ -345,9 +343,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     public boolean equals(Object rhs) {
       if (null == rhs) return false;
       if (this == rhs) return true;
-      if (!(rhs instanceof Cmd)) return false;
+      if (!(rhs instanceof Cmd rhsCast)) return false;
 
-      final Cmd rhsCast = (Cmd) rhs;
       return Objects.equals(command, rhsCast.command)
           && Objects.equals(method, rhsCast.method)
           && Objects.equals(obj, rhsCast.obj)
@@ -373,8 +370,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
       t = types[2]; // (SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta>)
     if (types.length == 1) t = types[0]; // (PayloadObj<PluginMeta>)
     if (t != null) {
-      if (t instanceof ParameterizedType) {
-        ParameterizedType typ = (ParameterizedType) t;
+      if (t instanceof ParameterizedType typ) {
         if (typ.getRawType() == PayloadObj.class) {
           t = typ.getActualTypeArguments()[0];
         }

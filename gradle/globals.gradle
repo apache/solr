@@ -35,7 +35,10 @@ allprojects {
 
   // Artifacts will have names after full gradle project path
   // so :solr:core will have solr-core.jar, etc.
-  project.archivesBaseName = project.path.replaceAll("^:", "").replace(':', '-')
+  project.archivesBaseName = project.path
+          .replaceAll("^:", "")
+          .replace(':', '-')
+          .replace("-modules-", "-")
 
   project.ext {
     // Utility method to support passing overrides via -P or -D.

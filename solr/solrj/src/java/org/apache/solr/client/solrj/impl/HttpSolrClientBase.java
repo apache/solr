@@ -112,12 +112,16 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
-    return ClientUtils.buildRequestUrl(solrRequest, requestWriter, serverBaseUrl, collection);
+    return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);
   }
 
   protected ResponseParser responseParser(SolrRequest<?> solrRequest) {
     // TODO add invariantParams support
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
+  }
+
+  protected RequestWriter getRequestWriter() {
+    return requestWriter;
   }
 
   // TODO: Remove this for 10.0, there is a typo in the method name
@@ -213,13 +217,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
       }
 
       if (wantStream(processor)) {
-        // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<>();
-        rsp.add("stream", is);
-        rsp.add("responseStatus", httpStatus);
         // Only case where stream should not be closed
         shouldClose = false;
-        return rsp;
+        // no processor specified, return raw stream
+        return InputStreamResponseParser.createInputStreamNamedList(httpStatus, is);
       }
 
       checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);

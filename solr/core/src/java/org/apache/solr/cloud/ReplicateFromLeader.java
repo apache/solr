@@ -27,6 +27,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -89,7 +90,7 @@ public class ReplicateFromLeader {
       NamedList<Object> followerConfig = new NamedList<>();
       followerConfig.add(ReplicationHandler.FETCH_FROM_LEADER, Boolean.TRUE);
       followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, Boolean.TRUE);
-      followerConfig.add(ReplicationHandler.POLL_INTERVAL, pollIntervalStr);
+      followerConfig.add(ReplicationAPIBase.POLL_INTERVAL, pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("follower", followerConfig);
 

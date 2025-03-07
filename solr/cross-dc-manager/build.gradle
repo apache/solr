@@ -23,37 +23,54 @@ apply plugin: 'java-library'
 description = 'Cross-DC Manager'
 
 dependencies {
+  implementation platform(project(':platform'))
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
   implementation project(':solr:modules:cross-dc')
 
-  implementation 'io.dropwizard.metrics:metrics-core'
-  implementation 'io.dropwizard.metrics:metrics-servlets'
-  implementation 'org.eclipse.jetty:jetty-server'
-  implementation 'org.eclipse.jetty:jetty-servlet'
-  implementation 'org.slf4j:slf4j-api'
-  runtimeOnly ('com.google.protobuf:protobuf-java-util')
-  runtimeOnly ('commons-codec:commons-codec')
+  implementation libs.dropwizard.metrics.core
+  implementation libs.dropwizard.metrics.servlets
+  implementation libs.eclipse.jetty.server
+  implementation libs.eclipse.jetty.servlet
+  implementation libs.slf4j.api
+  runtimeOnly libs.google.protobuf.javautils
+  runtimeOnly libs.commonscodec.commonscodec
 
-  implementation 'org.apache.kafka:kafka-clients'
-  runtimeOnly 'org.apache.kafka:kafka_2.13'
-  runtimeOnly 'org.apache.kafka:kafka-streams'
+  implementation libs.apache.kafka.clients
+  runtimeOnly libs.apache.kafka.kafka213
+  runtimeOnly libs.apache.kafka.streams
 
-  runtimeOnly 'org.apache.logging.log4j:log4j-api'
-  runtimeOnly 'org.apache.logging.log4j:log4j-core'
-  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
-  runtimeOnly 'com.lmax:disruptor'
+  runtimeOnly libs.apache.log4j.api
+  runtimeOnly libs.apache.log4j.core
+  runtimeOnly libs.apache.log4j.slf4j2impl
+  runtimeOnly libs.lmax.disruptor
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'org.apache.lucene:lucene-test-framework'
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
-  testImplementation 'org.mockito:mockito-core'
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.mockito.core
 
-  testImplementation 'org.apache.kafka:kafka-streams:3.7.1:test'
-  testImplementation 'org.apache.kafka:kafka-clients:3.7.1:test'
-  testRuntimeOnly 'org.apache.kafka:kafka_2.13:3.7.1:test'
-  testRuntimeOnly 'org.apache.kafka:kafka-server-common:3.7.1:test'
+  testImplementation(libs.apache.kafka.streams) {
+    artifact {
+      classifier = "test"
+    }
+  }
+  testImplementation(libs.apache.kafka.clients) {
+    artifact {
+      classifier = "test"
+    }
+  }
+  testRuntimeOnly(libs.apache.kafka.kafka213) {
+    artifact {
+      classifier = "test"
+    }
+  }
+  testRuntimeOnly(libs.apache.kafka.server.common) {
+    artifact {
+      classifier = "test"
+    }
+  }
 }
 
 ext {

@@ -835,8 +835,7 @@ public class SolrMetricManager {
     AtomicInteger removed = new AtomicInteger();
     registry.removeMatching(
         (name, metric) -> {
-          if (metric instanceof GaugeWrapper) {
-            GaugeWrapper<?> wrapper = (GaugeWrapper<?>) metric;
+          if (metric instanceof GaugeWrapper<?> wrapper) {
             boolean toRemove = wrapper.getTag().contains(tagSegment);
             if (toRemove) {
               removed.incrementAndGet();

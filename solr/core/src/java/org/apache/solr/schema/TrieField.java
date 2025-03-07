@@ -697,8 +697,7 @@ public class TrieField extends NumericFieldType {
    * prefix of the main value of a trie field that indexes multiple precisions per value.
    */
   public static String getMainValuePrefix(org.apache.solr.schema.FieldType ft) {
-    if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField) ft;
+    if (ft instanceof TrieField trie) {
       if (trie.precisionStep == Integer.MAX_VALUE) return null;
       switch (trie.type) {
         case INTEGER:

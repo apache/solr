@@ -83,9 +83,8 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     @Override
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-      if (o instanceof ResultContext) {
+      if (o instanceof ResultContext res) {
         ReturnFields orig = returnFields;
-        ResultContext res = (ResultContext) o;
         if (res.getReturnFields() != null) {
           returnFields = res.getReturnFields();
         }
@@ -111,10 +110,9 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         writeResults(ctx, codec);
         return null; // null means we completely handled it
       }
-      if (o instanceof IndexableField) {
+      if (o instanceof IndexableField f) {
         if (schema == null) schema = solrQueryRequest.getSchema();
 
-        IndexableField f = (IndexableField) o;
         SchemaField sf = schema.getFieldOrNull(f.name());
         try {
           o = DocsStreamer.getValue(sf, f);
@@ -262,8 +260,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     @Override
     public Object getFirstValue(String name) {
       Object v = _fields.get(name);
-      if (v == null || !(v instanceof Collection)) return convertCharSeq(v);
-      Collection<?> c = (Collection<?>) v;
+      if (v == null || !(v instanceof Collection<?> c)) return convertCharSeq(v);
       if (c.size() > 0) {
         return convertCharSeq(c.iterator().next());
       }

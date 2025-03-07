@@ -90,6 +90,9 @@ public class SolrZkClient implements Closeable {
   private Compressor compressor;
   private int minStateByteLenForCompression;
 
+  // Allow method reference to return a reference to a functional interface (Mapwriter),
+  // rather than a reference to a ZkMetrics object
+  @SuppressWarnings("UnnecessaryMethodReference")
   public MapWriter getMetrics() {
     return metricsListener;
   }
@@ -121,7 +124,7 @@ public class SolrZkClient implements Closeable {
         builder.zkCredentialsProvider,
         builder.aclProvider,
         builder.onReconnect,
-        builder.beforeReconnect,
+        builder.onDisconnect,
         builder.higherLevelIsClosed,
         builder.minStateByteLenForCompression,
         builder.compressor,
@@ -136,7 +139,7 @@ public class SolrZkClient implements Closeable {
       ZkCredentialsProvider zkCredentialsProvider,
       ACLProvider aclProvider,
       final OnReconnect onReconnect,
-      BeforeReconnect beforeReconnect,
+      OnDisconnect onDisconnect,
       IsClosed higherLevelIsClosed,
       int minStateByteLenForCompression,
       Compressor compressor,
@@ -207,10 +210,10 @@ public class SolrZkClient implements Closeable {
           .getConnectionStateListenable()
           .addListener(onReconnect, zkConnectionListenerCallbackExecutor);
     }
-    if (beforeReconnect != null) {
+    if (onDisconnect != null) {
       client
           .getConnectionStateListenable()
-          .addListener(beforeReconnect, zkConnectionListenerCallbackExecutor);
+          .addListener(onDisconnect, zkConnectionListenerCallbackExecutor);
     }
     client.start();
     try {
@@ -1182,7 +1185,7 @@ public class SolrZkClient implements Closeable {
     public int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     public int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     public OnReconnect onReconnect;
-    public BeforeReconnect beforeReconnect;
+    public OnDisconnect onDisconnect;
     public ZkCredentialsProvider zkCredentialsProvider;
     public ACLProvider aclProvider;
     public IsClosed higherLevelIsClosed;
@@ -1238,8 +1241,8 @@ public class SolrZkClient implements Closeable {
       return this;
     }
 
-    public Builder withBeforeConnect(BeforeReconnect beforeReconnect) {
-      this.beforeReconnect = beforeReconnect;
+    public Builder withDisconnectListener(OnDisconnect onDisconnect) {
+      this.onDisconnect = onDisconnect;
       return this;
     }
 

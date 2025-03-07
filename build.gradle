@@ -21,21 +21,26 @@ import java.time.format.DateTimeFormatter
 plugins {
   id 'base'
   id 'solr.build-infra'
-  id 'com.palantir.consistent-versions' version '2.16.0'
-  id 'org.owasp.dependencycheck' version '9.0.8'
-  id 'ca.cutterslade.analyze' version '1.10.0'
-  id 'de.thetaphi.forbiddenapis' version '3.7' apply false
-  id 'de.undercouch.download' version '5.5.0' apply false
-  id 'net.ltgt.errorprone' version '3.1.0' apply false
-  id 'com.diffplug.spotless' version '6.5.2' apply false
-  id 'com.github.node-gradle.node' version '7.0.1' apply false
+
+  alias(libs.plugins.owasp.dependencycheck)
+  alias(libs.plugins.cutterslade.analyze)
+  alias(libs.plugins.benmanes.versions)
+  alias(libs.plugins.kotlin.multiplatform) apply false
+  alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
+  alias(libs.plugins.thetaphi.forbiddenapis) apply false
+  alias(libs.plugins.undercouch.download) apply false
+  alias(libs.plugins.ltgt.errorprone) apply false
+  alias(libs.plugins.diffplug.spotless) apply false
+  alias(libs.plugins.nodegradle.node) apply false
+  alias(libs.plugins.openapi.generator) apply false
 }
 
-apply from: file('build-tools/scriptDepVersions.gradle')
-
 // Declare default Java versions for the entire project and for SolrJ separately
-rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(scriptDepVersions['min-java-version'])
-rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(scriptDepVersions['min-solrj-java-version'])
+rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(libs.versions.java.min.get())
+rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
+
+// Check development mode for entire project (defaults to true if 'production' not provided and set to true)
+rootProject.ext.development = !project.hasProperty('production') || project.findProperty('production') != 'true'
 
 apply from: file('gradle/globals.gradle')
 
@@ -100,7 +105,7 @@ ext {
   }
   
   luceneBaseVersionProvider = project.provider { 
-    def luceneVersion = getVersion('org.apache.lucene:lucene-core')
+    def luceneVersion = libs.versions.apache.lucene.get()
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
       throw GradleException("Can't strip base version from " + luceneVersion)
@@ -120,10 +125,6 @@ ext {
 apply from: file('gradle/conventions.gradle')
 apply from: file('gradle/generation/local-settings.gradle')
 
-// Ant-compatibility layer: apply folder layout early so that
-// evaluation of other scripts doesn't need to be deferred.
-apply from: file('gradle/ant-compat/solr.folder-layout.gradle')
-
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
 apply from: file('gradle/java/folder-layout.gradle')
@@ -131,7 +132,6 @@ apply from: file('gradle/java/javac.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
-apply from: file('gradle/testing/fail-on-unsupported-jdk.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 apply from: file('gradle/testing/retry-test.gradle')
@@ -150,7 +150,6 @@ apply from: file('gradle/validation/precommit.gradle')
 apply from: file('gradle/validation/forbidden-apis.gradle')
 apply from: file('gradle/validation/jar-checks.gradle')
 apply from: file('gradle/validation/git-status.gradle')
-apply from: file('gradle/validation/versions-props-sorted.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
@@ -161,7 +160,7 @@ apply from: file('gradle/validation/validate-log-calls.gradle')
 apply from: file('gradle/validation/check-broken-links.gradle')
 
 apply from: file('gradle/validation/solr.config-file-sanity.gradle')
-
+apply from: file('gradle/validation/dependencies.gradle')
 apply from: file('gradle/validation/spotless.gradle')
 
 // Wire up included builds to some validation tasks.
@@ -188,13 +187,6 @@ apply from: file('gradle/help.gradle')
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 
-// Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
-// here so that we can coexist with current ant build but they are indicative
-// of potential problems with the build conventions, dependencies, etc.
-apply from: file('gradle/ant-compat/misc.gradle')
-
-apply from: file('gradle/ant-compat/artifact-naming.gradle')
-
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
@@ -205,7 +197,6 @@ apply from: file('gradle/hacks/global-exclude-dependencies.gradle')
 apply from: file('gradle/hacks/gradle-archives.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
-apply from: file('gradle/hacks/hashmapAssertions.gradle')
 apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
 apply from: file('gradle/hacks/dummy-outputs.gradle')
 

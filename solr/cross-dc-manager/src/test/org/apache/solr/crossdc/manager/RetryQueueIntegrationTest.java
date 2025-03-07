@@ -157,7 +157,7 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
 
     // new SolrCloudTestCase.Builder(1, baseDir).addConfig("conf",
     // getFile("configs/cloud-minimal/conf").toPath()).configure();
-    cluster.uploadConfigSet(getFile("configs/cloud-minimal/conf").toPath(), "conf");
+    cluster.uploadConfigSet(getFile("configs/cloud-minimal/conf"), "conf");
 
     CollectionAdminRequest.Create create2 =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1);

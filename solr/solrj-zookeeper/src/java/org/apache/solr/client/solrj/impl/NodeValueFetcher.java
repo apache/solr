@@ -93,8 +93,7 @@ public class NodeValueFetcher {
     public Object convertVal(Object val) {
       if (val instanceof String) {
         return Double.valueOf((String) val);
-      } else if (val instanceof Number) {
-        Number num = (Number) val;
+      } else if (val instanceof Number num) {
         return num.doubleValue();
 
       } else {

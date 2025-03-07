@@ -112,7 +112,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     waitForState(
         "Expected to see all replicas active",
         collectionName,
-        (n, c) -> {
+        c -> {
           for (Replica r : c.getReplicas()) {
             if (r.getState() != Replica.State.ACTIVE) return false;
           }
