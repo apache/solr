@@ -1136,6 +1136,8 @@ public class SolrZkClient implements Closeable {
       try {
         zkCallbackExecutor.execute(
             () -> {
+              // Curator still does not have a way of counting fired watches natively
+              metricsListener.watchesFired.increment();
               watcher.process(event);
             });
       } catch (RejectedExecutionException e) {
