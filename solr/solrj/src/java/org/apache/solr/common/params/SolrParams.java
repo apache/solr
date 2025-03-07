@@ -76,6 +76,7 @@ public abstract class SolrParams
         assert value[0] != null;
         ew.put(entry.getKey(), value[0]);
       } else if (value.length > 1) {
+        // values shouldn't be null; not bothering to assert it
         ew.put(entry.getKey(), value);
       }
     }
