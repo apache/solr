@@ -202,6 +202,7 @@ public class SolrZkClient implements Closeable {
             .retryPolicy(retryPolicy)
             .runSafeService(curatorSafeServiceExecutor)
             .compressionProvider(new SolrZkCompressionProvider(compressor, minStateByteLenForCompression))
+            .enableCompression()
             .build();
     if (onReconnect != null) {
       client
