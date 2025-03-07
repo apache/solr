@@ -22,8 +22,10 @@ public class QueryResult {
   // Object for back compatibility so that we render true not "true" in json
   private Object partialResults;
   private Boolean segmentTerminatedEarly;
+  private Boolean terminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
+  private Boolean maxHitsTerminatedEarly;
 
   public Object groupedResults; // TODO: currently for testing
 
@@ -84,5 +86,21 @@ public class QueryResult {
 
   public CursorMark getNextCursorMark() {
     return nextCursorMark;
+  }
+
+  public Boolean getTerminatedEarly() {
+    return terminatedEarly;
+  }
+
+  public void setTerminatedEarly(boolean terminatedEarly) {
+    this.terminatedEarly = terminatedEarly;
+  }
+
+  public Boolean getMaxHitsTerminatedEarly() {
+    return maxHitsTerminatedEarly;
+  }
+
+  public void setMaxHitsTerminatedEarly(Boolean maxHitsTerminatedEarly) {
+    this.maxHitsTerminatedEarly = maxHitsTerminatedEarly;
   }
 }

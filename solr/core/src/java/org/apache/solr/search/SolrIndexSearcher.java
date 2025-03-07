@@ -290,9 +290,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
     }
 
-    final boolean terminateEarly = cmd.getTerminateEarly();
-    if (terminateEarly) {
-      collector = new EarlyTerminatingCollector(collector, cmd.getLen());
+    if (cmd.shouldEarlyTerminateSearch()) {
+      collector = new EarlyTerminatingCollector(collector, cmd.getMaxHitsTerminateEarly());
     }
 
     final long timeAllowed = cmd.getTimeAllowed();
@@ -326,12 +325,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (collector instanceof DelegatingCollector) {
         ((DelegatingCollector) collector).complete();
       }
-      throw etce;
+      qr.setPartialResults(true);
+      qr.setMaxHitsTerminatedEarly(true);
     } finally {
       if (earlyTerminatingSortingCollector != null) {
         qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
       }
-
       if (cmd.isQueryCancellable()) {
         core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
       }
@@ -1976,7 +1975,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;
-
+        if (searchResult.isTerminatedEarly) {
+          qr.setTerminatedEarly(true);
+          qr.setPartialResults(Boolean.TRUE);
+        }
         maxScore = searchResult.getMaxScore(totalHits);
       }
 

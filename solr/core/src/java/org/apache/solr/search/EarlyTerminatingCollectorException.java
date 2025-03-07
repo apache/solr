@@ -22,13 +22,12 @@ package org.apache.solr.search;
  */
 public class EarlyTerminatingCollectorException extends RuntimeException {
   private static final long serialVersionUID = 5939241340763428118L;
-  private int numberScanned;
-  private int numberCollected;
+  private final int numberScanned;
+  private final int numberCollected;
 
   public EarlyTerminatingCollectorException(int numberCollected, int numberScanned) {
     assert numberCollected <= numberScanned : numberCollected + "<=" + numberScanned;
     assert 0 < numberCollected;
-    assert 0 < numberScanned;
 
     this.numberCollected = numberCollected;
     this.numberScanned = numberScanned;
