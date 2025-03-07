@@ -201,7 +201,8 @@ public class SolrZkClient implements Closeable {
             .authorization(zkCredentialsProvider.getCredentials())
             .retryPolicy(retryPolicy)
             .runSafeService(curatorSafeServiceExecutor)
-            .compressionProvider(new SolrZkCompressionProvider(compressor, minStateByteLenForCompression))
+            .compressionProvider(
+                new SolrZkCompressionProvider(compressor, minStateByteLenForCompression))
             .enableCompression()
             .build();
     if (onReconnect != null) {
@@ -450,7 +451,8 @@ public class SolrZkClient implements Closeable {
   }
 
   /** Returns node's state */
-  public Stat setData(final String path, final byte[] data, final int version, boolean retryOnConnLoss)
+  public Stat setData(
+      final String path, final byte[] data, final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
     Stat result =
         runWithCorrectThrows(
