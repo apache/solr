@@ -14,34 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search;
 
-package org.apache.solr.client.solrj.request;
+import org.apache.lucene.search.IndexSearcher;
 
-import java.util.Date;
-import org.apache.solr.common.util.NamedList;
-
-public class CoreStatus {
-
-  private final NamedList<Object> response;
-
-  public CoreStatus(NamedList<Object> response) {
-    this.response = response;
-  }
-
-  public String getDataDirectory() {
-    return (String) response.get("dataDir");
-  }
-
-  public String getInstanceDirectory() {
-    return (String) response.findRecursive("instanceDir");
-  }
-
-  @Override
-  public String toString() {
-    return response.toString();
-  }
-
-  public Date getCoreStartTime() {
-    return (Date) response.get("startTime");
-  }
-}
+/**
+ * Marker interface indicating that the tagged class assumes access to {@link SolrIndexSearcher}
+ * functionality and cannot be used by a vanilla Lucene {@link IndexSearcher}
+ *
+ * @lucene.experimental
+ */
+public interface SolrSearcherRequirer {}

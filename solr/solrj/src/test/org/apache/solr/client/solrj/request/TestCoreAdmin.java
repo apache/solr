@@ -80,7 +80,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       cores.getAllowPaths().add(dataDir.toPath()); // Allow the test dir
       cores.getAllowPaths().add(newCoreInstanceDir.toPath()); // Allow the test dir
 
-      File instanceDir = new File(cores.getSolrHome());
+      File instanceDir = cores.getSolrHome().toFile();
       FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir, "newcore"));
 
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
@@ -264,7 +264,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     try {
       cores = CoreContainer.createAndLoad(SOLR_HOME);
 
-      String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
+      String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).dataDir;
       Path data = Paths.get(ddir, "index");
       assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 
