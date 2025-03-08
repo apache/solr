@@ -50,6 +50,7 @@ dev.langchain4j:langchain4j-core:0.35.0=compileClasspath,jarValidation,runtimeCl
 dev.langchain4j:langchain4j-hugging-face:0.35.0=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
 dev.langchain4j:langchain4j-mistral-ai:0.35.0=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
 dev.langchain4j:langchain4j-open-ai:0.35.0=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
+info.picocli:picocli:4.7.6=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 io.dropwizard.metrics:metrics-annotation:4.2.26=jarValidation,solrPlatformLibs,testRuntimeClasspath
 io.dropwizard.metrics:metrics-core:4.2.26=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 io.dropwizard.metrics:metrics-graphite:4.2.26=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath

@@ -33,6 +33,7 @@ com.tdunning:t-digest:3.3=permitUnusedDeclared,solrCore
 commons-cli:commons-cli:1.9.0=permitUnusedDeclared,solrCore
 commons-codec:commons-codec:1.17.1=permitUnusedDeclared,solrCore
 commons-io:commons-io:2.15.1=permitUnusedDeclared,solrCore
+info.picocli:picocli:4.7.6=permitUnusedDeclared,solrCore
 io.dropwizard.metrics:metrics-annotation:4.2.26=serverLib
 io.dropwizard.metrics:metrics-core:4.2.26=permitUnusedDeclared,serverLib,solrCore
 io.dropwizard.metrics:metrics-graphite:4.2.26=permitUnusedDeclared,serverLib,solrCore
