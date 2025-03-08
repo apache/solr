@@ -411,7 +411,7 @@ public class SolrCLI implements CLIO {
     print(
         "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(
-        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
+        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export");
     print("");
     print("  Start Solr on default port 8983:");
     print("");
