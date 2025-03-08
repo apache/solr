@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DataEntry;
 import org.apache.solr.common.util.DataEntry.EntryListener;
 import org.apache.solr.common.util.DataInputInputStream;
@@ -53,15 +52,11 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
   }
 
   @Override
-  public NamedList<Object> processResponse(InputStream body, String encoding) {
+  public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
     if (callback != null) {
       return streamDocs(body);
     } else {
-      try {
-        return fastStreamDocs(body, fastCallback);
-      } catch (IOException e) {
-        throw new RuntimeException("Unable to parse", e);
-      }
+      return fastStreamDocs(body, fastCallback);
     }
   }
 
@@ -116,7 +111,7 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
   private EntryListener docListener;
 
   @SuppressWarnings({"unchecked"})
-  private NamedList<Object> streamDocs(InputStream body) {
+  private NamedList<Object> streamDocs(InputStream body) throws IOException {
     try (JavaBinCodec codec =
         new JavaBinCodec() {
 
@@ -164,8 +159,6 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
         }; ) {
 
       return (NamedList<Object>) codec.unmarshal(body);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
     }
   }
 }

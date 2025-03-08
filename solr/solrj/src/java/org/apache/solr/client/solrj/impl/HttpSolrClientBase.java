@@ -322,7 +322,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
       return;
     }
     final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
-    if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+    if (!processorSupportedContentTypes.isEmpty()) {
       boolean processorAcceptsMimeType =
           processorAcceptsMimeType(processorSupportedContentTypes, mimeType);
       if (!processorAcceptsMimeType) {
