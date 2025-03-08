@@ -413,12 +413,12 @@ public class SolrCLI implements CLIO {
     print(
         "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
     print("");
-    print("  Start Solr on port 8984:");
+    print("  Start Solr on default port 8983:");
     print("");
-    printGreen("    ./solr start -p 8984");
+    printGreen("    ./solr start");
     print("");
     print(
-        "  Start Solr connecting to external Zookeeper at localhost:2181, with 1g max heap size and remote Java debug options enabled):");
+        "  Start Solr connecting to external Zookeeper at localhost:2181, with 1g max heap size and remote Java debug options enabled:");
     print("");
     printGreen(
         "    ./solr start -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
@@ -426,7 +426,7 @@ public class SolrCLI implements CLIO {
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
     print("");
-    print("  Start Solr in User Managed (aka standalone) mode:");
+    print("  Start Solr in User Managed (aka Standalone) mode:");
     print("");
     printGreen("    ./solr start --user-managed");
     print("");
