@@ -63,6 +63,7 @@ edu.ucar:httpservices:4.5.5=compileClasspath,jarValidation,runtimeClasspath,runt
 edu.ucar:netcdf4:4.5.5=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 edu.ucar:udunits:4.5.5=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 edu.usc.ir:sentiment-analysis-parser:0.1=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
+info.picocli:picocli:4.7.6=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 io.dropwizard.metrics:metrics-annotation:4.2.26=jarValidation,solrPlatformLibs,testRuntimeClasspath
 io.dropwizard.metrics:metrics-core:4.2.26=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 io.dropwizard.metrics:metrics-graphite:4.2.26=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
