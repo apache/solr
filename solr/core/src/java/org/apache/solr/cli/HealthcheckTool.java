@@ -51,9 +51,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Supports healthcheck command in the bin/solr script. */
+@picocli.CommandLine.Command(
+    name = "healthcheck",
+    description = "Check the health of a SolrCloud collection.")
 public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      description = "Name of the collection to check.")
+  private String collection;
+
+  // NOCOMMIT: Find a way to make this common for all tools that need it
+  @picocli.CommandLine.Option(
+      names = {"-z", "--zk-host"},
+      description =
+          "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
+              + CommonCLIOptions.DefaultValues.ZK_HOST
+              + '.',
+      required = true)
+  String zkHost;
+
+  @picocli.CommandLine.Option(
+      names = {"-u", "--credentials"},
+      description =
+          "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
+  private String credentials;
+
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -89,7 +115,9 @@ public class HealthcheckTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String zkHost = CLIUtils.getZkHost(cli);
+    zkHost = CLIUtils.getZkHost(cli);
+    collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
+
     if (zkHost == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       System.exit(1);
@@ -97,7 +125,7 @@ public class HealthcheckTool extends ToolBase {
     try (CloudHttp2SolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
       cloudSolrClient.connect();
-      runCloudTool(cloudSolrClient, cli);
+      runCloudTool(cloudSolrClient);
     }
   }
 
@@ -106,8 +134,7 @@ public class HealthcheckTool extends ToolBase {
     return "healthcheck";
   }
 
-  protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
+  protected void runCloudTool(CloudSolrClient cloudSolrClient) throws Exception {
 
     log.debug("Running healthcheck for {}", collection);
 
@@ -168,15 +195,11 @@ public class HealthcheckTool extends ToolBase {
           q = new SolrQuery("*:*");
           q.setRows(0);
           q.set(DISTRIB, "false");
-          try (var solrClientForCollection =
-              CLIUtils.getSolrClient(
-                  coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+          try (var solrClientForCollection = CLIUtils.getSolrClient(coreUrl, credentials)) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
             try (var solrClient =
-                CLIUtils.getSolrClient(
-                    replicaCoreProps.getBaseUrl(),
-                    cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+                CLIUtils.getSolrClient(replicaCoreProps.getBaseUrl(), credentials)) {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(
@@ -226,6 +249,20 @@ public class HealthcheckTool extends ToolBase {
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(report);
     echo(arr.toString());
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    if (zkHost == null) {
+      CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
+      return 1;
+    }
+    try (CloudHttp2SolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost)) {
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+      cloudSolrClient.connect();
+      runCloudTool(cloudSolrClient);
+    }
+    return 0;
   }
 }
 
