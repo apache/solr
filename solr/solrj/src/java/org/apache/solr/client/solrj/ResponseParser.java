@@ -37,7 +37,8 @@ public abstract class ResponseParser {
   /**
    * A well-behaved ResponseParser will return the content-types it supports.
    *
-   * @return the content-type values that this parser is capable of parsing. Never null.
+   * @return the content-type values that this parser is capable of parsing. Never null. Empty means
+   *     no enforcement.
    */
   public abstract Collection<String> getContentTypes();
 
