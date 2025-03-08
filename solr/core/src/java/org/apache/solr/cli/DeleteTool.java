@@ -216,4 +216,9 @@ public class DeleteTool extends ToolBase {
       throw new Exception("Failed to delete core '" + coreName + "' due to: " + sse.getMessage());
     }
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }

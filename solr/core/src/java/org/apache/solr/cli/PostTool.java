@@ -1342,6 +1342,11 @@ public class PostTool extends ToolBase {
     }
   }
 
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
+
   /** Utility class to hold the result form a page fetch */
   public static class PageFetcherResult {
     int httpStatus = 200;

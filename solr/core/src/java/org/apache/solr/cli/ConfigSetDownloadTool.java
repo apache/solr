@@ -101,4 +101,9 @@ public class ConfigSetDownloadTool extends ToolBase {
       throw (e);
     }
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }

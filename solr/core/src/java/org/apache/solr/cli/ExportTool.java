@@ -707,4 +707,9 @@ public class ExportTool extends ToolBase {
     SolrDocumentList sdl = (SolrDocumentList) res.get("response");
     return sdl.getNumFound();
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }
