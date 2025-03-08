@@ -20,6 +20,7 @@ package org.apache.solr.cli;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.api.util.SolrVersion;
 
+@picocli.CommandLine.Command(name = "version", description = "Prints the Solr version.")
 public class VersionTool extends ToolBase {
 
   @Override
@@ -30,5 +31,11 @@ public class VersionTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     CLIO.out("Solr version is: " + SolrVersion.LATEST);
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    CLIO.out("Solr version is: " + SolrVersion.LATEST);
+    return 0;
   }
 }
