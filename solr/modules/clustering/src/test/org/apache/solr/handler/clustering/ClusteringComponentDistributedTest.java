@@ -17,6 +17,7 @@
 package org.apache.solr.handler.clustering;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -35,7 +36,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
   private static final String QUERY_TESTSET_SAMPLE_DOCUMENTS = "testSet:sampleDocs";
 
   @Override
-  public String getSolrHome() {
+  public Path getSolrHome() {
     return getFile("clustering/solr/collection1").getParent().toString();
   }
 

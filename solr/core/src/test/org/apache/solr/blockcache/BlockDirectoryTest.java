@@ -138,7 +138,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testEOF() throws IOException {
-    Directory fsDir = FSDirectory.open(file.resolve( "normal"));
+    Directory fsDir = FSDirectory.open(file.resolve("normal"));
     String name = "test.eof";
     createFile(name, fsDir, directory);
     long fsLength = fsDir.fileLength(name);

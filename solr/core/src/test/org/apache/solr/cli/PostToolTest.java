@@ -20,9 +20,8 @@ package org.apache.solr.cli;
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -30,6 +29,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -77,9 +78,9 @@ public class PostToolTest extends SolrCloudTestCase {
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
 
-    File jsonDoc = File.createTempFile("temp", ".json");
+    Path jsonDoc = Files.createTempFile("temp", ".json");
 
-    FileWriter fw = new FileWriter(jsonDoc, StandardCharsets.UTF_8);
+    BufferedWriter fw = Files.newBufferedWriter(jsonDoc, StandardCharsets.UTF_8);
     Utils.writeJson(Map.of("id", "1", "title_s", "mytitle"), fw, true);
     fw.flush();
 
@@ -91,7 +92,7 @@ public class PostToolTest extends SolrCloudTestCase {
       collection,
       "--credentials",
       SecurityJson.USER_PASS,
-      jsonDoc.getAbsolutePath()
+      jsonDoc.toAbsolutePath().toString(),
     };
     assertEquals(0, runTool(args));
 
@@ -121,14 +122,19 @@ public class PostToolTest extends SolrCloudTestCase {
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
 
-    File jsonDoc = File.createTempFile("temp", ".json");
+    Path jsonDoc = Files.createTempFile("temp", ".json");
 
-    FileWriter fw = new FileWriter(jsonDoc, StandardCharsets.UTF_8);
+    BufferedWriter fw = Files.newBufferedWriter(jsonDoc, StandardCharsets.UTF_8);
     Utils.writeJson(Map.of("id", "1", "title_s", "mytitle"), fw, true);
     fw.flush();
 
     String[] args = {
-      "post", "-c", collection, "--credentials", SecurityJson.USER_PASS, jsonDoc.getAbsolutePath()
+      "post",
+      "-c",
+      collection,
+      "--credentials",
+      SecurityJson.USER_PASS,
+      jsonDoc.toAbsolutePath().toString(),
     };
     assertEquals(0, runTool(args));
 
@@ -158,9 +164,9 @@ public class PostToolTest extends SolrCloudTestCase {
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
 
-    File tsvDoc = File.createTempFile("temp", ".tsv");
+    Path tsvDoc = Files.createTempFile("temp", ".tsv");
 
-    FileWriter fw = new FileWriter(tsvDoc, StandardCharsets.UTF_8);
+    BufferedWriter fw = Files.newBufferedWriter(tsvDoc, StandardCharsets.UTF_8);
     fw.write("1\tmytitle\n");
     fw.close();
 
@@ -174,7 +180,7 @@ public class PostToolTest extends SolrCloudTestCase {
       "\"separator=%09&header=false&fieldnames=id,title_s\"",
       "--type",
       "text/csv",
-      tsvDoc.getAbsolutePath()
+      tsvDoc.toAbsolutePath().toString(),
     };
     assertEquals(0, runTool(args));
 
@@ -280,12 +286,12 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testGuessType() {
-    File f = new File("foo.doc");
-    assertEquals("application/msword", PostTool.guessType(f.toPath()));
-    f = new File("foobar");
-    assertEquals("application/octet-stream", PostTool.guessType(f.toPath()));
-    f = new File("foo.json");
-    assertEquals("application/json", PostTool.guessType(f.toPath()));
+    Path f = Path.of("foo.doc");
+    assertEquals("application/msword", PostTool.guessType(f));
+    f = Path.of("foobar");
+    assertEquals("application/octet-stream", PostTool.guessType(f));
+    f = Path.of("foo.json");
+    assertEquals("application/json", PostTool.guessType(f));
   }
 
   @Test
@@ -294,8 +300,7 @@ public class PostToolTest extends SolrCloudTestCase {
     postTool.recursive = 0;
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
-    // TODO SOLR-8282 move to PATH
-    File dir = getFile("exampledocs").toFile();
+    Path dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
   }
@@ -304,8 +309,8 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testDetectingIfRecursionPossibleInFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
-    File dir = getFile("exampledocs").toFile();
-    File doc = File.createTempFile("temp", ".json");
+    Path dir = getFile("exampledocs");
+    Path doc = Files.createTempFile("temp", ".json");
     assertTrue(postTool.recursionPossible(new String[] {dir.toString()}));
     assertFalse(postTool.recursionPossible(new String[] {doc.toString()}));
     assertTrue(postTool.recursionPossible(new String[] {doc.toString(), dir.toString()}));
@@ -317,8 +322,7 @@ public class PostToolTest extends SolrCloudTestCase {
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
-    // TODO SOLR-8282 move to PATH
-    File dir = getFile("exampledocs").toFile();
+    Path dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
   }

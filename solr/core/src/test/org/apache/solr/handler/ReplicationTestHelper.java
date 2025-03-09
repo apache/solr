@@ -52,7 +52,12 @@ public final class ReplicationTestHelper {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String CONF_DIR =
-      "solr" + FileSystems.getDefault().getSeparator() + "collection1" + FileSystems.getDefault().getSeparator() + "conf" + FileSystems.getDefault().getSeparator();
+      "solr"
+          + FileSystems.getDefault().getSeparator()
+          + "collection1"
+          + FileSystems.getDefault().getSeparator()
+          + "conf"
+          + FileSystems.getDefault().getSeparator();
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     Files.copy(

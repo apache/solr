@@ -45,7 +45,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -158,7 +157,7 @@ import org.xml.sax.SAXException;
 /**
  * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase. To change
  * which core is used when loading the schema and solrconfig.xml, simply invoke the {@link
- * #initCore(String, String, String, String)} method.
+ * #initCore(String, String, Path, String)} method.
  */
 // ExtrasFS might be ok, the failures with e.g. nightly runs might be "normal"
 @SuppressFileSystems("ExtrasFS")
@@ -532,14 +531,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #initCoreDataDir
    */
-  protected static File initAndGetDataDir() {
-    File dataDir = initCoreDataDir;
+  protected static Path initAndGetDataDir() {
+    Path dataDir = initCoreDataDir;
     if (null == dataDir) {
       final int id = dataDirCount.incrementAndGet();
-      dataDir = initCoreDataDir = createTempDir("data-dir-" + id).toFile();
+      dataDir = initCoreDataDir = createTempDir("data-dir-" + id);
       assertNotNull(dataDir);
       if (log.isInfoEnabled()) {
-        log.info("Created dataDir: {}", dataDir.getAbsolutePath());
+        log.info("Created dataDir: {}", dataDir.toAbsolutePath());
       }
     }
     return dataDir;
@@ -695,7 +694,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @see #initAndGetDataDir()
    * @deprecated use initAndGetDataDir instead of directly accessing this variable
    */
-  @Deprecated protected static volatile File initCoreDataDir;
+  @Deprecated protected static volatile Path initCoreDataDir;
 
   /**
    * Initializes things your test might need
@@ -2235,7 +2234,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  public static void copyMinConf(File dstRoot) throws IOException {
+  public static void copyMinConf(Path dstRoot) throws IOException {
     copyMinConf(dstRoot, null);
   }
 
@@ -2243,18 +2242,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // the string to write to the core.properties file may be null in which case nothing is done with
   // it.
   // propertiesContent may be an empty string, which will actually work.
-  public static void copyMinConf(File dstRoot, String propertiesContent) throws IOException {
+  public static void copyMinConf(Path dstRoot, String propertiesContent) throws IOException {
     copyMinConf(dstRoot, propertiesContent, "solrconfig-minimal.xml");
   }
 
-  public static void copyMinConf(File dstRoot, String propertiesContent, String solrconfigXmlName)
+  public static void copyMinConf(Path dstRoot, String propertiesContent, String solrconfigXmlName)
       throws IOException {
-    Path dstPath = dstRoot.toPath();
-    Path subHome = dstPath.resolve("conf");
+    Path subHome = dstRoot.resolve("conf");
     Files.createDirectories(subHome);
 
     if (propertiesContent != null) {
-      Files.writeString(dstRoot.toPath().resolve(CORE_PROPERTIES_FILENAME), propertiesContent);
+      Files.writeString(dstRoot.resolve(CORE_PROPERTIES_FILENAME), propertiesContent);
     }
     Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
     Files.copy(top.resolve("schema-tiny.xml"), subHome.resolve("schema.xml"));
@@ -2265,17 +2263,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   // Creates minimal full setup, including solr.xml
-  public static void copyMinFullSetup(File dstRoot) throws IOException {
-    Files.createDirectories(dstRoot.toPath());
-    Files.copy(
-        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.toPath().resolve("solr.xml"));
+  public static void copyMinFullSetup(Path dstRoot) throws IOException {
+    Files.createDirectories(dstRoot);
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.resolve("solr.xml"));
     copyMinConf(dstRoot);
   }
 
   // Just copies the file indicated to the tmp home directory naming it "solr.xml"
-  public static void copyXmlToHome(File dstRoot, String fromFile) throws IOException {
-    Files.createDirectories(dstRoot.toPath());
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.toPath().resolve("solr.xml"));
+  public static void copyXmlToHome(Path dstRoot, String fromFile) throws IOException {
+    Files.createDirectories(dstRoot);
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.resolve("solr.xml"));
   }
 
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf

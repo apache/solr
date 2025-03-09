@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;

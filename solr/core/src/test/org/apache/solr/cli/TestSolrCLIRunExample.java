@@ -572,7 +572,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     try {
       Files.createFile(toExecute);
     } catch (IOException e) {
-      throw new IOException("Should have been able to create file '" + toExecute.toAbsolutePath() + "' ");
+      throw new IOException(
+          "Should have been able to create file '" + toExecute.toAbsolutePath() + "' ");
     }
 
     String[] toolArgs =

@@ -17,7 +17,6 @@
 
 package org.apache.solr.common.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileVisitResult;
@@ -558,7 +557,8 @@ public class ZkMaintenanceUtils {
   public static String createZkNodeName(String zkRoot, Path root, Path file) {
     String relativePath = root.relativize(file).toString();
     // Windows shenanigans
-    if ("\\".equals(FileSystems.getDefault().getSeparator())) relativePath = relativePath.replace("\\", "/");
+    if ("\\".equals(FileSystems.getDefault().getSeparator()))
+      relativePath = relativePath.replace("\\", "/");
     // It's possible that the relative path and file are the same, in which case
     // adding the bare slash is A Bad Idea unless it's a non-leaf data node
     boolean isNonLeafData = file.toFile().getName().equals(ZKNODE_DATA_FILE);

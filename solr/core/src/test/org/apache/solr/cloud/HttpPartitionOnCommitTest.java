@@ -16,8 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -175,7 +175,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
   /** Overrides the parent implementation to install a SocketProxy in-front of the Jetty server. */
   @Override
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,

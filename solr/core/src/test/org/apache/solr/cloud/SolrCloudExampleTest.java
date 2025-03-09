@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,8 +60,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
 
     String testCollectionName = "gettingstarted";
-    File defaultConfigs = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    assertTrue(defaultConfigs.getAbsolutePath() + " not found!", defaultConfigs.isDirectory());
+    Path defaultConfigs = Path.of(ExternalPaths.DEFAULT_CONFIGSET);
+    assertTrue(defaultConfigs.toAbsolutePath() + " not found!", Files.isDirectory(defaultConfigs));
 
     Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
     if (liveNodes.isEmpty())

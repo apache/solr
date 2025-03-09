@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +49,12 @@ public class TestRestoreCore extends SolrJettyTestBase {
   SolrClient leaderClient;
 
   private static final String CONF_DIR =
-      "solr" + FileSystems.getDefault().getSeparator() + DEFAULT_TEST_CORENAME + FileSystems.getDefault().getSeparator() + "conf" + FileSystems.getDefault().getSeparator();
+      "solr"
+          + FileSystems.getDefault().getSeparator()
+          + DEFAULT_TEST_CORENAME
+          + FileSystems.getDefault().getSeparator()
+          + "conf"
+          + FileSystems.getDefault().getSeparator();
 
   private static long docsSeed; // see indexDocs()
 

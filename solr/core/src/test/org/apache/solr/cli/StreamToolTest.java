@@ -22,7 +22,6 @@ import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
-import java.io.FileWriter;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringReader;

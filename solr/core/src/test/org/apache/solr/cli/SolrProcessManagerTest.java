@@ -84,7 +84,9 @@ public class SolrProcessManagerTest extends SolrTestCase {
   private static Pair<Integer, Process> createProcess(int port, boolean https) throws IOException {
     // Get the path to the java executable from the current JVM
     String classPath =
-        Arrays.stream(System.getProperty("java.class.path").split(FileSystems.getDefault().getSeparator()))
+        Arrays.stream(
+                System.getProperty("java.class.path")
+                    .split(FileSystems.getDefault().getSeparator()))
             .filter(p -> p.contains("solr") && p.contains("core") && p.contains("build"))
             .collect(Collectors.joining(FileSystems.getDefault().getSeparator()));
     ProcessBuilder processBuilder =

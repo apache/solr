@@ -22,7 +22,6 @@ import static org.apache.solr.core.CoreContainer.LOAD_COMPLETE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
@@ -102,7 +101,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private void addCoreWithProps(String name, Properties stockProps) throws Exception {
-    Path propFile = solrHomeDirectory.resolve(name).resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+    Path propFile =
+        solrHomeDirectory.resolve(name).resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
     Path parent = propFile.getParent();
     try {
       Files.createDirectories(parent);
@@ -193,7 +193,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         Properties persistable = cd1.getPersistableUserProperties();
         persistable.setProperty("bogusprop", "bogusval");
         cc.getCoresLocator().persist(cc, cd1);
-        Path propFile = solrHomeDirectory.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+        Path propFile =
+            solrHomeDirectory.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
         Properties newProps = new Properties();
         try (InputStreamReader is =
             new InputStreamReader(Files.newInputStream(propFile), StandardCharsets.UTF_8)) {
@@ -395,10 +396,14 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         "Wrong exception thrown on duplicate core names",
         message.contains("Found multiple cores with the name [core1]"));
     assertTrue(
-            FileSystems.getDefault().getSeparator() + "core1 should have been mentioned in the message: " + message,
+        FileSystems.getDefault().getSeparator()
+            + "core1 should have been mentioned in the message: "
+            + message,
         message.contains(FileSystems.getDefault().getSeparator() + "core1"));
     assertTrue(
-            FileSystems.getDefault().getSeparator() + "core2 should have been mentioned in the message:" + message,
+        FileSystems.getDefault().getSeparator()
+            + "core2 should have been mentioned in the message:"
+            + message,
         message.contains(FileSystems.getDefault().getSeparator() + "core2"));
   }
 
@@ -410,10 +415,16 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(alt.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true, "dataDir=core1"),
-        alt.resolve("core1" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        alt.resolve(
+            "core1"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(
         makeCoreProperties("core2", false, false, "dataDir=core2"),
-        alt.resolve("core2" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        alt.resolve(
+            "core2"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
         SolrCore core2 = cc.getCore("core2")) {
@@ -446,9 +457,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     // one core *not* under the relative directory
     addCoreWithProps(
         makeCoreProperties("core0", false, true, "datadir=core0"),
-        solrHomeDirectory
-            .resolve("core0")
-            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
+        solrHomeDirectory.resolve("core0").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -472,10 +481,16 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(noCoreDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        noCoreDir.resolve("core1" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        noCoreDir.resolve(
+            "core1"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(
         makeCoreProperties("core2", false, false),
-        noCoreDir.resolve( "core2" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        noCoreDir.resolve(
+            "core2"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
         SolrCore core2 = cc.getCore("core2")) {
@@ -492,14 +507,20 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        coreDir.resolve("core1" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve(
+            "core1"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     // Ensure that another core is opened successfully
     addCoreWithProps(
         makeCoreProperties("core2", false, false, "dataDir=core2"),
-        coreDir.resolve("core2" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve(
+            "core2"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    Path toSet = coreDir.resolve( "core1");
+    Path toSet = coreDir.resolve("core1");
     try {
       Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
       perms.remove(PosixFilePermission.OWNER_READ);
@@ -532,17 +553,24 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        coreDir.resolve("core1" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve(
+            "core1"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     addCoreWithProps(
         makeCoreProperties("core2", false, false, "dataDir=core2"),
-        coreDir.resolve("core2" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve(
+            "core2"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     Path toSet = solrHomeDirectory.resolve("cantReadDir");
     try {
       Files.createDirectories(toSet); // SOLR-16903 TODO Fix directory changes for overwrite
     } catch (IOException e) {
-      throw new RuntimeException("Should have been able to make directory '" + toSet.toAbsolutePath() + "' ", e);
+      throw new RuntimeException(
+          "Should have been able to make directory '" + toSet.toAbsolutePath() + "' ", e);
     }
     try {
       Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
@@ -577,14 +605,18 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(coreDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        coreDir.resolve( "core1" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        coreDir.resolve(
+            "core1"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     Path toSet = solrHomeDirectory.resolve("cantReadFile");
 
     try {
       Files.createFile(toSet); // SOLR-16903 TODO Fix directory changes for overwrite
     } catch (IOException e) {
-      throw new RuntimeException("Should have been able to make file '" + toSet.toAbsolutePath() + "' ", e);
+      throw new RuntimeException(
+          "Should have been able to make file '" + toSet.toAbsolutePath() + "' ", e);
     }
 
     try {
@@ -635,7 +667,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(homeDir.toAbsolutePath().toString());
     addCoreWithProps(
         makeCoreProperties("core1", false, true),
-        homeDir.resolve("core1" + FileSystems.getDefault().getSeparator() + CorePropertiesLocator.PROPERTIES_FILENAME));
+        homeDir.resolve(
+            "core1"
+                + FileSystems.getDefault().getSeparator()
+                + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     try {
       Set<PosixFilePermission> perms = Files.getPosixFilePermissions(homeDir);

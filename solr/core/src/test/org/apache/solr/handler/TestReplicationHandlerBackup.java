@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -62,7 +61,12 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   SolrClient leaderClient;
 
   private static final String CONF_DIR =
-      "solr" + FileSystems.getDefault().getSeparator() + "collection1" + FileSystems.getDefault().getSeparator() + "conf" + FileSystems.getDefault().getSeparator();
+      "solr"
+          + FileSystems.getDefault().getSeparator()
+          + "collection1"
+          + FileSystems.getDefault().getSeparator()
+          + "conf"
+          + FileSystems.getDefault().getSeparator();
 
   boolean addNumberToKeepInRequest = true;
   String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;

@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.SortedMap;
 import javax.xml.xpath.XPathExpressionException;
@@ -46,7 +47,7 @@ public abstract class RestTestBase extends SolrJettyTestBase {
   }
 
   public static void createJettyAndHarness(
-      String solrHome,
+      Path solrHome,
       String configFile,
       String schemaFile,
       String context,

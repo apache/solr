@@ -53,7 +53,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
         StandardCopyOption.REPLACE_EXISTING);
     FileUtils.copyDirectory(
         workDir.resolve("collection1").toFile(), workDir.resolve("collection2").toFile());
-    return workDir.toFile();
+    return workDir;
   }
 
   @BeforeClass
