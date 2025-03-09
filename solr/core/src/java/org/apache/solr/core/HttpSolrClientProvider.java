@@ -34,7 +34,6 @@ import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 final class HttpSolrClientProvider implements AutoCloseable {
 
   static final String METRIC_SCOPE_NAME = "defaultHttpSolrClientProvider";
-
   private final Http2SolrClient httpSolrClient;
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
@@ -44,7 +43,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
     initializeMetrics(parentContext);
 
     Http2SolrClient.Builder httpClientBuilder =
-        new Http2SolrClient.Builder().withListenerFactory(List.of(trackHttpSolrMetrics));
+        new Http2SolrClient.Builder().withRequestListeners(List.of(trackHttpSolrMetrics));
 
     if (cfg != null) {
       httpClientBuilder
