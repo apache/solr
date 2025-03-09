@@ -461,7 +461,7 @@ public class ReplicationHandler extends RequestHandlerBase
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
           currentIndexFetcher.destroy();
         }
-        currentIndexFetcher = new IndexFetcher(solrParams.toNamedList(), this, core);
+        currentIndexFetcher = new IndexFetcher(new SimpleOrderedMap<>(solrParams), this, core);
       } else {
         currentIndexFetcher = pollingIndexFetcher;
       }

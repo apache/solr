@@ -22,6 +22,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -431,13 +432,12 @@ public class TestMinHashQParser extends SolrTestCaseJ4 {
 
   private SolrQueryRequest createRequest(String query) {
     SolrQueryRequest qr = req(query);
-    NamedList<Object> par = qr.getParams().toNamedList();
-    par.add("debug", "false");
-    par.add("rows", "30");
-    par.add("fl", "id,score");
+    ModifiableSolrParams par = ModifiableSolrParams.of(qr.getParams());
+    par.set("debug", "false");
+    par.set("rows", "30");
+    par.set("fl", "id,score");
     par.remove("qt");
-    SolrParams newp = par.toSolrParams();
-    qr.setParams(newp);
+    qr.setParams(par);
     return qr;
   }
 }
