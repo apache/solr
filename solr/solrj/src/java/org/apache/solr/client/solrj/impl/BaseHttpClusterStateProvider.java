@@ -65,20 +65,19 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   // the liveNodes and aliases cache will be invalidated after 5 secs
   private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.solrj.cache.timeout.sec", 5);
 
-  protected void init(List<String> solrUrls) throws Exception {
+  protected void initConfiguredNodes(List<String> solrUrls) throws Exception {
     this.configuredNodes =
         solrUrls.stream()
-            .map(
-                (solrUrl) -> {
-                  try {
-                    return new URI(solrUrl).toURL();
-                  } catch (MalformedURLException | URISyntaxException e) {
-                    throw new IllegalArgumentException(
-                        "Failed to parse base Solr URL " + solrUrl, e);
-                  }
-                })
+            .map(BaseHttpClusterStateProvider::stringToUrl)
             .collect(Collectors.toList());
-    this.urlScheme = this.configuredNodes.get(0).getProtocol();
+  }
+
+  private static URL stringToUrl(String solrUrl) {
+    try {
+      return new URI(solrUrl).toURL();
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new IllegalArgumentException("Failed to parse base Solr URL " + solrUrl, e);
+    }
   }
 
   @Override
@@ -216,21 +215,23 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   @Override
   public synchronized Set<String> getLiveNodes() {
     // synchronized because there's no value in multiple doing this at the same time
-    if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
-        <= getCacheTimeout()) {
-      return this.liveNodes; // cached copy is fresh enough
-    }
 
-    if (liveNodes != null) { // thus we've fetched liveNodes previously
+    // only in the initial state, liveNodes is null
+    if (liveNodes != null) {
+      if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
+          <= getCacheTimeout()) {
+        return this.liveNodes; // cached copy is fresh enough
+      }
+
       if (liveNodes.stream()
-          .anyMatch((node) -> updateLiveNodes(URLUtil.getBaseUrlForNodeName(node, urlScheme))))
-        return this.liveNodes;
+          .map(node -> URLUtil.getBaseUrlForNodeName(node, urlScheme))
+          .map(BaseHttpClusterStateProvider::stringToUrl)
+          .anyMatch(this::updateLiveNodes)) return this.liveNodes;
 
       log.warn("Failed fetching live_nodes from {}. Trying configured nodes...", liveNodes);
     }
 
-    if (configuredNodes.stream().anyMatch((nodeUrl) -> updateLiveNodes(nodeUrl.toString())))
-      return this.liveNodes;
+    if (configuredNodes.stream().anyMatch(this::updateLiveNodes)) return this.liveNodes;
 
     throw new RuntimeException(
         "Failed fetching live_nodes from "
@@ -240,10 +241,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + " solr URLs.");
   }
 
-  private boolean updateLiveNodes(String url) {
-    try (SolrClient client = getSolrClient(url)) {
+  private boolean updateLiveNodes(URL url) {
+    try (SolrClient client = getSolrClient(url.toString())) {
       this.liveNodes = fetchLiveNodes(client);
       liveNodesTimestamp = System.nanoTime();
+      urlScheme = url.getProtocol();
       return true;
     } catch (Exception e) {
       log.warn("Attempt to fetch live_nodes from {} failed.", url, e);
