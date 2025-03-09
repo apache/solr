@@ -220,8 +220,8 @@ public class {{classname}} {
 
             // TODO Hardcode this for now, but in reality we'll want to parse this out of the Operation data somehow
             @Override
-            public String getRequestType() {
-              return SolrRequestType.ADMIN.toString();
+            protected SolrRequestType getBaseRequestType() {
+              return SolrRequestType.ADMIN;
             }
 
             @Override

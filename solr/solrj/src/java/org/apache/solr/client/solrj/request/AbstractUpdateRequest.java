@@ -126,8 +126,8 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.UPDATE.toString();
+  protected SolrRequestType getBaseRequestType() {
+    return SolrRequestType.UPDATE;
   }
 
   public boolean isWaitSearcher() {
@@ -157,6 +157,11 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
 
   @Override
   public boolean isSendToLeaders() {
+    return sendToLeaders;
+  }
+
+  @Override
+  public boolean shouldSendToLeaders() {
     return sendToLeaders;
   }
 
