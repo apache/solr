@@ -232,7 +232,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     }
     addDocs(20);
     JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
-    cluster.expireZkSession(jetty);
+    cluster.expireZkSession(jetty, true);
     addDocs(30);
     waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(40);
@@ -254,7 +254,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     SolrCore core = jetty.getCoreContainer().getCores().iterator().next();
 
     for (int i = 0; i < (TEST_NIGHTLY ? 5 : 2); i++) {
-      cluster.expireZkSession(jetty);
+      cluster.expireZkSession(jetty, true);
       waitForState(
           "Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
       waitForState("Expecting node to reconnect", collectionName, activeReplicaCount(1, 0, 1));
