@@ -18,16 +18,12 @@ package org.apache.solr.request;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RTimer;
@@ -179,18 +175,9 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
     System.gc();
     RTimer timer = new RTimer();
     for (int i = 0; i < encIter; i++) {
-      if (w instanceof BinaryQueryResponseWriter binWriter) {
-        out = new ByteArrayOutputStream();
-        binWriter.write(out, req, rsp);
-        out.close();
-      } else {
-        out = new ByteArrayOutputStream();
-        // to be fair, from my previous tests, much of the performance will be sucked up
-        // by java's UTF-8 encoding/decoding, not the actual writing
-        Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-        w.write(writer, req, rsp);
-        writer.close();
-      }
+      out = new ByteArrayOutputStream(32_000);
+      w.write(out, req, rsp);
+      out.close();
     }
 
     double encodeTime = timer.getTime();

@@ -29,8 +29,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
 
-/** */
-public class JSONResponseWriter implements QueryResponseWriter {
+/** JSON {@link QueryResponseWriter}. */
+public class JSONResponseWriter implements TextQueryResponseWriter {
   public static String CONTENT_TYPE_JSON_UTF8 = "application/json; charset=UTF-8";
 
   private String contentType = CONTENT_TYPE_JSON_UTF8;
