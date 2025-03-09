@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.exec.OS;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -345,5 +346,9 @@ public final class CLIUtils {
   public static Path getConfigSetsDir(Path solrInstallDir) {
     Path configSetsPath = Paths.get("server/solr/configsets/");
     return solrInstallDir.resolve(configSetsPath);
+  }
+
+  public static boolean isWindows() {
+    return (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
   }
 }
