@@ -16,8 +16,9 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.lucene.index.DirectoryReader;
@@ -61,7 +62,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     assertQ(req("q", "id:2"), "//result[@numFound='0']");
 
     // call backup
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = createTempDir().toAbsolutePath().toString();
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
 
     final CoreContainer cores = h.getCoreContainer();
@@ -82,7 +83,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "false"),
           resp);
       assertNull("Backup should have succeeded", resp.getException());
-      simpleBackupCheck(new File(location, "snapshot." + snapshotName), 2);
+      simpleBackupCheck(Path.of(location, "snapshot." + snapshotName), 2);
     }
   }
 
@@ -108,8 +109,8 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    final File backupDir = createTempDir().toFile();
-    cores.getAllowPaths().add(backupDir.toPath());
+    final Path backupDir = createTempDir();
+    cores.getAllowPaths().add(backupDir);
 
     { // first a backup before we've ever done *anything*...
       SolrQueryResponse resp = new SolrQueryResponse();
@@ -122,13 +123,13 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "empty_backup1",
               "location",
-              backupDir.getAbsolutePath(),
+              backupDir.toAbsolutePath().toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(
-          new File(backupDir, "snapshot.empty_backup1"), 0, initialEmptyIndexSegmentFileName);
+          backupDir.resolve("snapshot.empty_backup1"), 0, initialEmptyIndexSegmentFileName);
     }
 
     { // Empty (named) snapshot...
@@ -158,13 +159,13 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "empty_backup2",
               "location",
-              backupDir.getAbsolutePath(),
+              backupDir.toAbsolutePath().toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(
-          new File(backupDir, "snapshot.empty_backup2"), 0, initialEmptyIndexSegmentFileName);
+          backupDir.resolve("snapshot.empty_backup2"), 0, initialEmptyIndexSegmentFileName);
     }
 
     { // Second empty (named) snapshot...
@@ -185,8 +186,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     assertU(commit());
 
     for (String name : Arrays.asList("empty_backup1", "empty_backup2")) {
-      simpleBackupCheck(
-          new File(backupDir, "snapshot." + name), 0, initialEmptyIndexSegmentFileName);
+      simpleBackupCheck(backupDir.resolve("snapshot." + name), 0, initialEmptyIndexSegmentFileName);
     }
 
     // Make backups from each of the snapshots and check they are still empty as well...
@@ -205,13 +205,12 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "commitName",
               snapName,
               "location",
-              backupDir.getAbsolutePath(),
+              backupDir.toAbsolutePath().toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
       assertNull("Backup " + name + " should have succeeded", resp.getException());
-      simpleBackupCheck(
-          new File(backupDir, "snapshot." + name), 0, initialEmptyIndexSegmentFileName);
+      simpleBackupCheck(backupDir.resolve("snapshot." + name), 0, initialEmptyIndexSegmentFileName);
     }
     admin.close();
   }
@@ -237,8 +236,8 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    final File backupDir = createTempDir().toFile();
-    cores.getAllowPaths().add(backupDir.toPath());
+    final Path backupDir = createTempDir();
+    cores.getAllowPaths().add(backupDir);
 
     { // take an initial 'backup1a' containing our 1 document
       final SolrQueryResponse resp = new SolrQueryResponse();
@@ -251,12 +250,12 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "backup1a",
               "location",
-              backupDir.getAbsolutePath(),
+              backupDir.toAbsolutePath().toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
       assertNull("Backup should have succeeded", resp.getException());
-      simpleBackupCheck(new File(backupDir, "snapshot.backup1a"), 1, oneDocSegmentFile);
+      simpleBackupCheck(backupDir.resolve("snapshot.backup1a"), 1, oneDocSegmentFile);
     }
 
     { // and an initial "snapshot1a' that should eventually match
@@ -294,12 +293,12 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "backup1b",
               "location",
-              backupDir.getAbsolutePath(),
+              backupDir.toAbsolutePath().toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
       assertNull("Backup should have succeeded", resp.getException());
-      simpleBackupCheck(new File(backupDir, "snapshot.backup1b"), 1, oneDocSegmentFile);
+      simpleBackupCheck(backupDir.resolve("snapshot.backup1b"), 1, oneDocSegmentFile);
     }
 
     { // and a second "snapshot1b' should also still be identical
@@ -320,7 +319,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     assertU(commit());
 
     for (String name : Arrays.asList("backup1a", "backup1b")) {
-      simpleBackupCheck(new File(backupDir, "snapshot." + name), 1, oneDocSegmentFile);
+      simpleBackupCheck(backupDir.resolve("snapshot." + name), 1, oneDocSegmentFile);
     }
 
     { // But we should be able to confirm both docs appear in a new backup (not based on a previous
@@ -335,12 +334,12 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "backup2",
               "location",
-              backupDir.getAbsolutePath(),
+              backupDir.toAbsolutePath().toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
       assertNull("Backup should have succeeded", resp.getException());
-      simpleBackupCheck(new File(backupDir, "snapshot.backup2"), 2);
+      simpleBackupCheck(backupDir.resolve("snapshot.backup2"), 2);
     }
 
     // if we go back and create backups from our earlier snapshots they should still only
@@ -360,12 +359,12 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "commitName",
               snapName,
               "location",
-              backupDir.getAbsolutePath(),
+              backupDir.toAbsolutePath().toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
       assertNull("Backup " + name + " should have succeeded", resp.getException());
-      simpleBackupCheck(new File(backupDir, "snapshot." + name), 1, oneDocSegmentFile);
+      simpleBackupCheck(backupDir.resolve("snapshot." + name), 1, oneDocSegmentFile);
     }
     admin.close();
   }
@@ -433,7 +432,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
   /**
    * Simple check that the backup exists, is a valid index, and contains the expected number of docs
    */
-  private static void simpleBackupCheck(final File backup, final int numDocs) throws IOException {
+  private static void simpleBackupCheck(final Path backup, final int numDocs) throws IOException {
     simpleBackupCheck(backup, numDocs, null);
   }
 
@@ -444,16 +443,16 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
    * backup.
    */
   private static void simpleBackupCheck(
-      final File backup, final int numDocs, final String expectedSegmentsFileName)
+      final Path backup, final int numDocs, final String expectedSegmentsFileName)
       throws IOException {
     assertNotNull(backup);
-    assertTrue("Backup doesn't exist" + backup, backup.exists());
+    assertTrue("Backup doesn't exist" + backup, Files.exists(backup));
     if (null != expectedSegmentsFileName) {
       assertTrue(
           expectedSegmentsFileName + " doesn't exist in " + backup,
-          new File(backup, expectedSegmentsFileName).exists());
+          Files.exists(backup.resolve(expectedSegmentsFileName)));
     }
-    try (Directory dir = FSDirectory.open(backup.toPath())) {
+    try (Directory dir = FSDirectory.open(backup)) {
       TestUtil.checkIndex(dir, true, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals("numDocs in " + backup, numDocs, r.numDocs());

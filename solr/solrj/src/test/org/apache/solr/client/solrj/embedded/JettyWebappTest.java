@@ -16,9 +16,10 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Random;
 import org.apache.http.Header;
@@ -52,10 +53,10 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 
-    File dataDir = createTempDir().toFile();
-    dataDir.mkdirs();
+    Path dataDir = createTempDir();
+    Files.createDirectories(dataDir);
 
-    System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
+    System.setProperty("solr.data.dir", dataDir.toRealPath().toString());
     String path = ExternalPaths.WEBAPP_HOME;
 
     server = new Server(port);

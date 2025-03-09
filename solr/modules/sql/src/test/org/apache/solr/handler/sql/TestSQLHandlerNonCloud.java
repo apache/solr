@@ -16,8 +16,10 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
@@ -32,17 +34,17 @@ import org.junit.Test;
 
 public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
 
-  private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
+  private static Path createSolrHome() throws Exception {
+    Path workDir = createTempDir();
     setupJettyTestHome(workDir, DEFAULT_TEST_COLLECTION_NAME);
     return workDir;
   }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File solrHome = createSolrHome();
-    solrHome.deleteOnExit();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    Path solrHome = createSolrHome();
+    Files.newOutputStream(solrHome, StandardOpenOption.DELETE_ON_CLOSE);
+    createAndStartJetty(solrHome.toAbsolutePath());
   }
 
   @Test

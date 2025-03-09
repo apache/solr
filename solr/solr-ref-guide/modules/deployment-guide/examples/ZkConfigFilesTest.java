@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.ref_guide_examples;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -65,7 +65,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   @Test
   public void testCanUploadConfigToZk() throws Exception {
     final String localConfigSetDirectory =
-        new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).getAbsolutePath();
+        Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET).toAbsolutePath().toString();
 
     assertConfigsContainOnly();
 

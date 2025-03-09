@@ -23,13 +23,14 @@ import static org.apache.solr.handler.ReplicationTestHelper.createNewSolrClient;
 import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +38,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
@@ -528,16 +530,20 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty.stop();
 
     // set up a subdirectory /foo/ in order to force subdir file replication
-    File leaderFooDir =
-        new File(leader.getConfDir() + FileSystems.getDefault().getSeparator() + "foo");
-    File leaderBarFile = new File(leaderFooDir, "bar.txt");
-    assertTrue("could not make dir " + leaderFooDir, leaderFooDir.mkdirs());
-    assertTrue(leaderBarFile.createNewFile());
+    Path leaderFooDir =
+        Path.of(leader.getConfDir() + FileSystems.getDefault().getSeparator() + "foo");
+    Path leaderBarFile = leaderFooDir.resolve("bar.txt");
+    try {
+      Files.createDirectories(leaderFooDir);
+      Files.createFile(leaderBarFile);
+    } catch (Exception e) {
+      throw new RuntimeException("could not make dir or file " + leaderFooDir, e);
+    }
 
-    File followerFooDir =
-        new File(follower.getConfDir() + FileSystems.getDefault().getSeparator() + "foo");
-    File followerBarFile = new File(followerFooDir, "bar.txt");
-    assertFalse(followerFooDir.exists());
+    Path followerFooDir =
+        Path.of(follower.getConfDir() + FileSystems.getDefault().getSeparator() + "foo");
+    Path followerBarFile = followerFooDir.resolve("bar.txt");
+    assertFalse(Files.exists(followerFooDir));
 
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
@@ -554,8 +560,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrDocument d = ((SolrDocumentList) followerQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", d.getFieldValue("newname"));
 
-    assertTrue(followerFooDir.isDirectory());
-    assertTrue(followerBarFile.exists());
+    assertTrue(Files.isDirectory(followerFooDir));
+    assertTrue(Files.exists(followerBarFile));
 
     checkForSingleIndex(leaderJetty);
     checkForSingleIndex(followerJetty, true);
@@ -992,11 +998,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return (CachingDirectoryFactory) core.getDirectoryFactory();
   }
 
-  private void checkForSingleIndex(JettySolrRunner jetty) {
+  private void checkForSingleIndex(JettySolrRunner jetty) throws IOException {
     checkForSingleIndex(jetty, false);
   }
 
-  private void checkForSingleIndex(JettySolrRunner jetty, boolean afterReload) {
+  private void checkForSingleIndex(JettySolrRunner jetty, boolean afterReload) throws IOException {
     CoreContainer cores = jetty.getCoreContainer();
     Collection<SolrCore> theCores = cores.getCores();
     for (SolrCore core : theCores) {
@@ -1017,31 +1023,30 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         // :TODO: assert that one of the paths is a subpath of hte other
       }
       if (dirFactory instanceof StandardDirectoryFactory) {
-        System.out.println(Arrays.asList(new File(ddir).list()));
-        // we also allow one extra index dir - it may not be removed until the core is closed
-        int cnt = indexDirCount(ddir);
-        // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
-        if (afterReload) {
-          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt || 2 == cnt);
-        } else {
-          assertEquals("found:" + cnt + Arrays.asList(new File(ddir).list()), 1, cnt);
+        try (Stream<Path> files = Files.list(Path.of(ddir))) {
+          List<Path> filesList = files.toList();
+          System.out.println(filesList);
+          // we also allow one extra index dir - it may not be removed until the core is closed
+          int cnt = indexDirCount(ddir);
+          // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
+          if (afterReload) {
+            assertTrue("found:" + cnt + filesList, 1 == cnt || 2 == cnt);
+          } else {
+            assertEquals("found:" + cnt + filesList, 1, cnt);
+          }
         }
       }
     }
   }
 
-  private int indexDirCount(String ddir) {
-    String[] list =
-        new File(ddir)
-            .list(
-                new FilenameFilter() {
-                  @Override
-                  public boolean accept(File dir, String name) {
-                    File f = new File(dir, name);
-                    return f.isDirectory() && !name.startsWith("snapshot");
-                  }
-                });
-    return list.length;
+  private int indexDirCount(String ddir) throws IOException {
+    try (Stream<Path> files = Files.list(Path.of(ddir))) {
+      return (int)
+          files
+              .filter(
+                  (file) -> Files.isDirectory(file) && !file.getFileName().startsWith("snapshot"))
+              .count();
+    }
   }
 
   public static void pullFromTo(JettySolrRunner srcSolr, JettySolrRunner destSolr)
@@ -1549,10 +1554,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyBackups() throws Exception {
-    final File backupDir = createTempDir().toFile();
+    final Path backupDir = createTempDir();
     final BackupStatusChecker backupStatus = new BackupStatusChecker(leaderClient);
 
-    leaderJetty.getCoreContainer().getAllowPaths().add(backupDir.toPath());
+    leaderJetty.getCoreContainer().getAllowPaths().add(backupDir);
 
     { // initial request w/o any committed docs
       final String backupName = "empty_backup1";
@@ -1564,7 +1569,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                       "command",
                       "backup",
                       "location",
-                      backupDir.getAbsolutePath(),
+                      backupDir.toAbsolutePath().toString(),
                       "name",
                       backupName))
               .setRequiresCollection(true);
@@ -1578,7 +1583,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           dirName);
       assertTrue(
           dirName + " doesn't exist in expected location for backup " + backupName,
-          new File(backupDir, dirName).exists());
+          Files.exists(backupDir.resolve(dirName)));
     }
 
     index(leaderClient, "id", "1", "name", "foo");
@@ -1593,7 +1598,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                       "command",
                       "backup",
                       "location",
-                      backupDir.getAbsolutePath(),
+                      backupDir.toAbsolutePath().toString(),
                       "name",
                       backupName))
               .setRequiresCollection(true);
@@ -1607,13 +1612,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           dirName);
       assertTrue(
           dirName + " doesn't exist in expected location for backup " + backupName,
-          new File(backupDir, dirName).exists());
+          Files.exists(backupDir.resolve(dirName)));
     }
 
     // confirm backups really are empty
     for (int i = 1; i <= 2; i++) {
       final String name = "snapshot.empty_backup" + i;
-      try (Directory dir = new NIOFSDirectory(new File(backupDir, name).toPath());
+      try (Directory dir = new NIOFSDirectory(backupDir.resolve(name));
           IndexReader reader = DirectoryReader.open(dir)) {
         assertEquals(name + " is not empty", 0, reader.numDocs());
       }

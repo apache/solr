@@ -130,8 +130,7 @@ public class MiniClusterState {
               benchmarkParams.getBenchmark() + ".txt");
       Files.createDirectories(metricsResults.getParent());
 
-      cluster.dumpMetrics(
-          metricsResults.getParent().toFile(), metricsResults.getFileName().toString());
+      cluster.dumpMetrics(metricsResults.getParent(), metricsResults.getFileName().toString());
     }
 
     /**

@@ -17,7 +17,6 @@
 package org.apache.solr.handler;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
@@ -25,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -61,7 +61,7 @@ public final class ReplicationTestHelper {
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     Files.copy(
-        Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
+        SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"),
         Path.of(instance.getHomeDir(), "solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     Properties nodeProperties = new Properties();
@@ -103,10 +103,10 @@ public final class ReplicationTestHelper {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time
    * "TEST_PORT" is found.
    */
-  private static void copyFile(Path src, File dst, Integer port, boolean internalCompression)
+  private static void copyFile(Path src, Path dst, Integer port, boolean internalCompression)
       throws IOException {
     try (BufferedReader in = Files.newBufferedReader(src, StandardCharsets.UTF_8);
-        Writer out = Files.newBufferedWriter(dst.toPath(), StandardCharsets.UTF_8)) {
+        Writer out = Files.newBufferedWriter(dst, StandardCharsets.UTF_8)) {
       for (String line = in.readLine(); null != line; line = in.readLine()) {
         if (null != port) {
           line = line.replace("TEST_PORT", port.toString());
@@ -244,9 +244,9 @@ public final class ReplicationTestHelper {
 
     private final String name;
     private Integer testPort;
-    private final File homeDir;
-    private File confDir;
-    private File dataDir;
+    private final Path homeDir;
+    private Path confDir;
+    private Path dataDir;
 
     /**
      * @param homeDir Base directory to build solr configuration and index in
@@ -254,7 +254,7 @@ public final class ReplicationTestHelper {
      *     new conf dir.
      * @param testPort if not null, used as a replacement for TEST_PORT in the cloned config files.
      */
-    public SolrInstance(File homeDir, String name, Integer testPort) {
+    public SolrInstance(Path homeDir, String name, Integer testPort) {
       this.homeDir = homeDir;
       this.name = name;
       this.testPort = testPort;
@@ -273,7 +273,7 @@ public final class ReplicationTestHelper {
     }
 
     public String getDataDir() {
-      return dataDir.getAbsolutePath();
+      return dataDir.toAbsolutePath().toString();
     }
 
     public String getSolrConfigFile() {
@@ -293,14 +293,14 @@ public final class ReplicationTestHelper {
       props.setProperty("name", "collection1");
 
       SolrTestCaseJ4.writeCoreProperties(
-          homeDir.toPath().resolve("collection1"), props, "TestReplicationHandler");
+          homeDir.resolve("collection1"), props, "TestReplicationHandler");
 
-      dataDir = new File(homeDir + "/collection1", "data");
-      confDir = new File(homeDir + "/collection1", "conf");
+      dataDir = Path.of(homeDir + "/collection1", "data");
+      confDir = Path.of(homeDir + "/collection1", "conf");
 
-      homeDir.mkdirs();
-      dataDir.mkdirs();
-      confDir.mkdirs();
+      Files.createDirectories(homeDir);
+      Files.createDirectories(dataDir);
+      Files.createDirectories(confDir);
 
       copyConfigFile(getSolrConfigFile(), "solrconfig.xml");
       copyConfigFile(getSchemaFile(), "schema.xml");
@@ -312,7 +312,7 @@ public final class ReplicationTestHelper {
     public void copyConfigFile(String srcFile, String destFile) throws IOException {
       copyFile(
           SolrTestCaseJ4.getFile(srcFile),
-          new File(confDir, destFile),
+          confDir.resolve(destFile),
           testPort,
           LuceneTestCase.random().nextBoolean());
     }

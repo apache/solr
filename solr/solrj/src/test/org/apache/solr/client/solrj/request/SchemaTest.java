@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,7 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
@@ -110,10 +110,9 @@ public class SchemaTest extends RestTestBase {
 
   @Before
   public void init() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(
-        new File(getFile("solrj/solr/collection1").getParent().toString()),
-        tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(
+        getFile("solrj/solr/collection1").getParent(), tmpSolrHome.toAbsolutePath());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -121,7 +120,7 @@ public class SchemaTest extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
+        tmpSolrHome.toAbsolutePath(),
         "solrconfig-managed-schema.xml",
         "schema.xml",
         "/solr",
