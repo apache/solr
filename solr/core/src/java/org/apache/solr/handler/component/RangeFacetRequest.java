@@ -805,7 +805,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       if (!(this.field.getType() instanceof CurrencyFieldType)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Cannot perform range faceting over non CurrencyField fields");
+            "Cannot perform range faceting over non CurrencyFieldType fields");
       }
       defaultCurrencyCode = ((CurrencyFieldType) this.field.getType()).getDefaultCurrency();
       exchangeRateProvider = ((CurrencyFieldType) this.field.getType()).getProvider();
