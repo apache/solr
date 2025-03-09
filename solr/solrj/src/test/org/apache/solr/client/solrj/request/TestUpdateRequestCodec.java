@@ -247,13 +247,14 @@ public class TestUpdateRequestCodec extends SolrTestCase {
 
     InputStream is = getClass().getResourceAsStream("/solrj/updateReq_4_5.bin");
     assertNotNull("updateReq_4_5.bin was not found", is);
+    List<SolrInputDocument> unmarshalledDocs = new ArrayList<>();
     UpdateRequest updateUnmarshalled =
         new JavaBinUpdateRequestCodec()
             .unmarshal(
                 is,
                 (document, req, commitWithin, override) -> {
                   if (commitWithin == null) {
-                    req.add(document);
+                    unmarshalledDocs.add(document);
                   }
                   System.err.println(
                       "Doc"
@@ -263,6 +264,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
                           + " , override:"
                           + override);
                 });
+    updateUnmarshalled.add(unmarshalledDocs);
 
     System.err.println(updateUnmarshalled.getDocumentsMap());
     System.err.println(updateUnmarshalled.getDocuments());
