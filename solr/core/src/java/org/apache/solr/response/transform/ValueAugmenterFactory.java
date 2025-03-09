@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import jakarta.inject.Named;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -27,6 +28,7 @@ import org.apache.solr.util.DateMathParser;
 /**
  * @since solr 4.0
  */
+@Named("value")
 public class ValueAugmenterFactory extends TransformerFactory {
   protected Object value = null;
   protected Object defaultValue = null;
