@@ -183,6 +183,8 @@ Improvements
   `org.apache.solr.client.solrj.request.FileStoreApi`. The older form of this endpoint (`GET /api/node/files`) is deprecated and will be
   removed. (Jason Gerlowski)
 
+* SOLR-17607: SolrJ CloudSolrClient configured with HTTP URLs will no longer eagerly connect to
+  anything. (David Smiley)
 
 Optimizations
 ---------------------
