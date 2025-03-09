@@ -260,6 +260,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
         CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
+      solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
 
       assertEquals(1, adminLogs.getCount());
       assertTrue(
