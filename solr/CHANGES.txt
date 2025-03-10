@@ -220,6 +220,8 @@ Bug Fixes
 * SOLR-17644: Fixes collection creation failure when using a replica placement plugin with basic auth. SolrCloudManager
   now directly uses HttpSolrClientProvider's client, resolving missing auth listeners. (Sanjay Dutt, David Smiley)
 
+* SOLR-17599: CrossDC should not use the MirroringUpdateHandler when replaying updates from the transaction log or when doing PeerSync. (Mark Miller)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
