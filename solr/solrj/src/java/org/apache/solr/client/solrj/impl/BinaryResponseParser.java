@@ -18,11 +18,9 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 
@@ -47,21 +45,12 @@ public class BinaryResponseParser extends ResponseParser {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public NamedList<Object> processResponse(InputStream body, String encoding) {
-    try {
-      return (NamedList<Object>) createCodec().unmarshal(body);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-    }
+  public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
+    return (NamedList<Object>) createCodec().unmarshal(body);
   }
 
   protected JavaBinCodec createCodec() {
     return new JavaBinCodec(null, stringCache);
-  }
-
-  @Override
-  public String getContentType() {
-    return BINARY_CONTENT_TYPE;
   }
 
   @Override
@@ -72,10 +61,5 @@ public class BinaryResponseParser extends ResponseParser {
   @Override
   public String getVersion() {
     return "2";
-  }
-
-  @Override
-  public NamedList<Object> processResponse(Reader reader) {
-    throw new RuntimeException("Cannot handle character stream");
   }
 }

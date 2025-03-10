@@ -130,7 +130,7 @@ public abstract class DelegationTokenRequest<
     public Cancel(String token) {
       super(METHOD.PUT);
       this.token = token;
-      setResponseParser(new NoOpResponseParser());
+      setResponseParser(new NoOpResponseParser("xml"));
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 

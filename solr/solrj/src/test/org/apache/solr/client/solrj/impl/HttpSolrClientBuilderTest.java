@@ -31,7 +31,7 @@ import org.junit.Test;
 public class HttpSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_BASE_SOLR_URL = "ANY_BASE_SOLR_URL";
   private static final HttpClient ANY_HTTP_CLIENT = HttpClientBuilder.create().build();
-  private static final ResponseParser ANY_RESPONSE_PARSER = new NoOpResponseParser();
+  private static final ResponseParser ANY_RESPONSE_PARSER = new NoOpResponseParser("xml");
 
   @Test(expected = IllegalArgumentException.class)
   public void testBaseSolrUrlIsRequired() {

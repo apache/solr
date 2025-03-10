@@ -22,18 +22,17 @@ import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
@@ -289,27 +288,28 @@ public class SolrExampleCborTest extends SolrExampleTests {
       }
 
       @Override
+      public Set<String> getContentTypes() {
+        return Set.of("application/cbor", "application/octet-stream");
+      }
+
+      @Override
       @SuppressWarnings({"rawtypes", "unchecked"})
-      public NamedList<Object> processResponse(InputStream b, String encoding) {
+      public NamedList<Object> processResponse(InputStream b, String encoding) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper(new CBORFactory());
-        try {
-          Map m = (Map) objectMapper.readValue(b, Object.class);
-          NamedList nl = new NamedList();
-          m.forEach(
-              (k, v) -> {
-                if (v instanceof Map map) {
-                  if ("response".equals(k)) {
-                    v = convertResponse((Map) v);
-                  } else {
-                    v = new NamedList(map);
-                  }
+        Map m = (Map) objectMapper.readValue(b, Object.class);
+        NamedList nl = new NamedList();
+        m.forEach(
+            (k, v) -> {
+              if (v instanceof Map map) {
+                if ("response".equals(k)) {
+                  v = convertResponse((Map) v);
+                } else {
+                  v = new NamedList(map);
                 }
-                nl.add(k.toString(), v);
-              });
-          return nl;
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-        }
+              }
+              nl.add(k.toString(), v);
+            });
+        return nl;
       }
 
       @SuppressWarnings({"rawtypes", "unchecked"})
@@ -331,11 +331,6 @@ public class SolrExampleCborTest extends SolrExampleTests {
           }
         }
         return sdl;
-      }
-
-      @Override
-      public NamedList<Object> processResponse(Reader reader) {
-        return null;
       }
     };
   }

@@ -622,7 +622,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       }
 
       final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
-      if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+      if (!processorSupportedContentTypes.isEmpty()) {
         final Collection<String> processorMimeTypes =
             processorSupportedContentTypes.stream()
                 .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
