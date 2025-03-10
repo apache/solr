@@ -732,12 +732,12 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         (coll) -> {
           // add a watcher that tracks how many times it's invoked per znode version
           if (coll != null) {
+            invoked.computeIfAbsent(coll.getZNodeVersion(), (k) -> new LongAdder()).increment();
             try {
               barrier.await(250, TimeUnit.MILLISECONDS);
             } catch (InterruptedException | TimeoutException | BrokenBarrierException e) {
               throw new RuntimeException(e);
             }
-            invoked.computeIfAbsent(coll.getZNodeVersion(), (k) -> new LongAdder()).increment();
           }
           return false;
         });

@@ -39,6 +39,12 @@ import org.apache.solr.common.util.Hash;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 
+/**
+ * Matches documents where the specified field hashes to a value within the given range. Can be used
+ * to create a filter that will only match documents falling within a certain shard's hash range.
+ *
+ * @see HashRangeQParser
+ */
 public class HashRangeQuery extends Query {
 
   protected final String field;
@@ -88,6 +94,9 @@ public class HashRangeQuery extends Query {
       private int[] getCache(LeafReaderContext context) throws IOException {
         IndexReader.CacheHelper cacheHelper = context.reader().getReaderCacheHelper();
         if (cacheHelper == null) {
+          return null;
+        }
+        if (!(searcher instanceof SolrIndexSearcher)) { // e.g. delete-by-query
           return null;
         }
         @SuppressWarnings("unchecked")

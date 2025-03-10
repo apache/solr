@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.File;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -26,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -158,13 +161,14 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     admin.handleRequestBody(request, response);
     assertNull("Exception on create", response.getException());
     NamedList<?> responseValues = response.getValues();
-    NamedList<?> status = (NamedList<?>) responseValues.get("status");
-    NamedList<?> collectionStatus = (NamedList<?>) status.get(collection);
-    String collectionSchema = (String) collectionStatus.get(CoreAdminParams.SCHEMA);
+    final var statusByCore =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            responseValues.get("status"),
+            new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
     assertEquals(
         "Schema resource name differs from expected name",
         expectedSchemaResource,
-        collectionSchema);
+        statusByCore.get(collection).schema);
   }
 
   public void testAddFieldWhenNotMutable() throws Exception {

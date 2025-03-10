@@ -64,7 +64,7 @@ dependencies {
     runtimeOnly libs.slf4j.api
     
     implementation libs.jakarta.ws.rsapi
-    implementation libs.fasterxml.jackson.core.annotations
+    api libs.fasterxml.jackson.core.annotations
     api libs.swagger3.annotations.jakarta
     implementation libs.semver4j.semver4j
 
