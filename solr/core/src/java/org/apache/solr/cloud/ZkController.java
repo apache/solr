@@ -857,7 +857,6 @@ public class ZkController implements Closeable {
               .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
-      cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
   }

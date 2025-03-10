@@ -27,7 +27,10 @@ import org.apache.solr.common.util.NamedList;
 
 /**
  * A special parser that puts the entire response into a string "response" field in the NamedList.
+ *
+ * @deprecated see {@link InputStreamResponseParser instead}; more efficient
  */
+@Deprecated
 public class NoOpResponseParser extends ResponseParser {
 
   private String writerType = "xml";
