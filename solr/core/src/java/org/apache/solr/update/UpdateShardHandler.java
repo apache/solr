@@ -20,6 +20,7 @@ import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_M
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -127,10 +128,12 @@ public class UpdateShardHandler implements SolrInfoBean {
     Http2SolrClient.Builder recoveryOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
       updateOnlyClientBuilder
+          .withRequestListeners(List.of(trackHttpSolrMetrics))
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
       recoveryOnlyClientBuilder
+          .withRequestListeners(List.of(trackHttpSolrMetrics))
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
@@ -138,10 +141,8 @@ public class UpdateShardHandler implements SolrInfoBean {
 
     updateOnlyClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
     updateOnlyClient = updateOnlyClientBuilder.build();
-    updateOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     recoveryOnlyClient = recoveryOnlyClientBuilder.build();
-    recoveryOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
