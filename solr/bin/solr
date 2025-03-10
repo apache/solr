@@ -616,7 +616,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
   exit $?
 fi
 
-# at this point the only tool that has a custom run process, "auth" have been run and exited.
+# at this point the only tool that has a custom run process, "auth" has been run and exited.
 # Unless a command is one of the ones in the if clause below, we will just run it with the default run_tool function and then exit.
 if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then
   # hand off the command to the SolrCLI and let it handle the option parsing and validation
