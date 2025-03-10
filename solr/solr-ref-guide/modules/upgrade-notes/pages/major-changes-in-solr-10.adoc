@@ -101,3 +101,5 @@ Users who that don't need to vary JAR access on a per-core basis have several op
 * Kerberos based authentication has been removed.  This results in changes to SolrJ, the Solr Admin app, and the removal of the `hadoop-auth` module.
 
 * Storing indexes and snapshots in HDFS has been removed.  This results in changes to solrconfig.xml and related configuration files and removal of the `hdfs` module.
+
+* ExternalFileField field type has been removed.

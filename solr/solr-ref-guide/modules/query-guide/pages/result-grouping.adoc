@@ -81,7 +81,7 @@ If `true`, query results will be grouped.
 |===
 +
 The name of the field by which to group results.
-The field must be single-valued, and either be indexed or a field type that has a value source and works in a function query, such as `ExternalFileField`.
+The field must be single-valued, and either be indexed.
 It must also be a string-based field, such as `StrField` or `TextField`.
 
 `group.func`::
