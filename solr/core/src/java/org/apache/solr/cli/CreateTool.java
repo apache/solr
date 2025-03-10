@@ -341,7 +341,7 @@ public class CreateTool extends ToolBase {
       Path fullConfDir = getFullConfDir(solrInstallDir, confDirName);
       if (!Files.isDirectory(fullConfDir)) {
         echo("Specified configuration directory " + confDirName + " not found!");
-        System.exit(1);
+        runtime.exit(1);
       }
     }
   }

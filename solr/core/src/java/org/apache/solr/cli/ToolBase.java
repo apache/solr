@@ -54,6 +54,11 @@ public abstract class ToolBase implements Tool {
         .addOption(CommonCLIOptions.VERBOSE_OPTION);
   }
 
+  @Override
+  public ToolRuntime getRuntime() {
+    return runtime;
+  }
+
   /**
    * Provides the two ways of connecting to Solr for CLI Tools
    *

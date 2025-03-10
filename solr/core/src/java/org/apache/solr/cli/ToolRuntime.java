@@ -27,4 +27,13 @@ public abstract class ToolRuntime {
   public abstract void print(String message);
 
   public abstract void println(String message);
+
+  /** Invokes {@link System#exit(int)} to force the JVM to immediately quit. */
+  public void exit(int status) {
+    try {
+      System.exit(status);
+    } catch (java.lang.SecurityException secExc) {
+      if (status != 0) throw new RuntimeException("SolrCLI failed to exit with status " + status);
+    }
+  }
 }

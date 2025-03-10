@@ -20,6 +20,9 @@ import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * Standard implementation of tool runtime when running from command line.
+ *
+ * <p>This implementation may do a call to {@link System#exit(int)} and consequently should not be
+ * used in tests.
  */
 public class DefaultToolRuntime extends ToolRuntime {
 

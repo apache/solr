@@ -95,7 +95,19 @@ public class CLITestHelper {
   }
 
   /**
-   * Runtime for test with additional validations.
+   * Runtime for test with additional validations. Mostly, we ensure tests never call {@link
+   * System#exit(int)}.
    */
-  public static class ValidatingRuntime extends DefaultToolRuntime {}
+  public static class ValidatingRuntime extends DefaultToolRuntime {
+
+    /**
+     * Do not allow to exit the JMV in unit tests!
+     *
+     * @param status JVM return code.
+     */
+    @Override
+    public void exit(int status) {
+      throw new RuntimeException("exit() not allowed in tests");
+    }
+  }
 }

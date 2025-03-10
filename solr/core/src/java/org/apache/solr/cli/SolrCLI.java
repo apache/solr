@@ -51,24 +51,17 @@ public class SolrCLI implements CLIO {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static void exit(int exitStatus) {
-    try {
-      System.exit(exitStatus);
-    } catch (java.lang.SecurityException secExc) {
-      if (exitStatus != 0)
-        throw new RuntimeException("SolrCLI failed to exit with status " + exitStatus);
-    }
-  }
-
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
+    ToolRuntime runtime = new DefaultToolRuntime();
+
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
     final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
       printHelp();
-      exit(1);
+      runtime.exit(1);
     }
 
     if (Arrays.asList("-v", "--version").contains(args[0])) {
@@ -109,16 +102,15 @@ public class SolrCLI implements CLIO {
     }
     SSLConfigurationsFactory.current().init();
 
-    ToolRuntime runtime = new DefaultToolRuntime();
     Tool tool = null;
     try {
       tool = findTool(args, runtime);
     } catch (IllegalArgumentException iae) {
       CLIO.err(iae.getMessage());
-      System.exit(1);
+      runtime.exit(1);
     }
     CommandLine cli = parseCmdLine(tool, args);
-    System.exit(tool.runTool(cli));
+    runtime.exit(tool.runTool(cli));
   }
 
   public static Tool findTool(String[] args, ToolRuntime runtime) throws Exception {
@@ -259,6 +251,7 @@ public class SolrCLI implements CLIO {
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     Options options = tool.getOptions();
+    ToolRuntime runtime = tool.getRuntime();
 
     CommandLine cli = null;
     try {
@@ -281,16 +274,16 @@ public class SolrCLI implements CLIO {
       if (!hasHelpArg) {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage() + "\n");
         printToolHelp(tool);
-        exit(1);
+        runtime.exit(1);
       } else {
         printToolHelp(tool);
-        exit(0);
+        runtime.exit(0);
       }
     }
 
     if (cli.hasOption(CommonCLIOptions.HELP_OPTION)) {
       printToolHelp(tool);
-      exit(0);
+      runtime.exit(0);
     }
 
     return cli;
