@@ -86,7 +86,7 @@ public class BadClusterTest extends SolrCloudTestCase {
 
   private void testAllNodesDown() throws Exception {
     try (CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory)) {
-      cluster.expireZkSession(cluster.getReplicaJetty(getReplicas().get(0)), true);
+      cluster.expireZkSession(cluster.getReplicaJetty(getReplicas().get(0)));
       expectThrows(IOException.class, () -> getTuples(stream));
     }
   }

@@ -403,7 +403,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     doc.addField("a_t", "hello" + 2);
 
     // cause leader migration by expiring the current leader's zk session
-    chaosMonkey.expireSession(leaderJetty, false);
+    chaosMonkey.expireSession(leaderJetty);
 
     String expectedNewLeaderCoreNodeName = notLeaders.get(0).getName();
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);

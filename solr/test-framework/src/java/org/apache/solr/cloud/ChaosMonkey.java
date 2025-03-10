@@ -145,12 +145,11 @@ public class ChaosMonkey {
   }
 
   // TODO: expire all clients at once?
-  public void expireSession(final JettySolrRunner jetty, boolean waitForConnectionLoss) {
-    expireSession(jetty, zkServer, waitForConnectionLoss);
+  public void expireSession(final JettySolrRunner jetty) {
+    expireSession(jetty, zkServer);
   }
 
-  public static void expireSession(
-      final JettySolrRunner jetty, final ZkTestServer zkServer, boolean waitForConnectionLoss) {
+  public static void expireSession(final JettySolrRunner jetty, final ZkTestServer zkServer) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
       monkeyLog("expire session for node " + jetty.getBaseUrl() + " !");
@@ -158,13 +157,11 @@ public class ChaosMonkey {
       long sessionId = zkClient.getZkSessionId();
       zkServer.expire(sessionId);
       causeConnectionLoss(jetty);
-      if (waitForConnectionLoss) {
-        // Loop until either the Zookeeper Client is no longer connected, or the zkSessionID changes
-        // (which means the connection was lost in the client)
-        while (zkClient.getCuratorFramework().getZookeeperClient().isConnected()) {
-          if (zkClient.getZkSessionId() != sessionId) {
-            break;
-          }
+      // Loop until either the Zookeeper Client is no longer connected, or the zkSessionID changes
+      // (which means the connection was lost in the client)
+      while (zkClient.getCuratorFramework().getZookeeperClient().isConnected()) {
+        if (zkClient.getZkSessionId() != sessionId) {
+          break;
         }
       }
     }
@@ -175,7 +172,7 @@ public class ChaosMonkey {
 
     CloudJettyRunner jetty = getRandomJetty(sliceName, aggressivelyKillLeaders);
     if (jetty != null) {
-      expireSession(jetty.jetty, false);
+      expireSession(jetty.jetty);
       expires.incrementAndGet();
     }
   }

@@ -797,8 +797,8 @@ public class MiniSolrCloudCluster {
   }
 
   /** Make the zookeeper session on a particular jetty lose connection and expire */
-  public void expireZkSession(JettySolrRunner jetty, boolean waitForConnectionLoss) {
-    ChaosMonkey.expireSession(jetty, zkServer, waitForConnectionLoss);
+  public void expireZkSession(JettySolrRunner jetty) {
+    ChaosMonkey.expireSession(jetty, zkServer);
   }
 
   // Currently not used ;-(
