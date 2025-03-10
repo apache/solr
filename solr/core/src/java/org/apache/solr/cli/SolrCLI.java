@@ -38,18 +38,49 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
+@picocli.CommandLine.Command(
+    name = "solr",
+    version = "Apache Solr version " + SolrVersion.LATEST_STRING,
+    mixinStandardHelpOptions = true,
+    commandListHeading = "\nCommands:\n",
+    descriptionHeading = "Global options:\n",
+    footer = {
+      "",
+      "SolrCloud example (embedded Zookeeper):",
+      "",
+      "  ./solr start -c",
+      "",
+      "For more help on how to use Solr, head to https://solr.apache.org/"
+    },
+    usageHelpAutoWidth = true,
+    defaultValueProvider = ZkTool.ZkHostDefaultValueProvider.class,
+    subcommands = {StatusTool.class, HealthcheckTool.class, VersionTool.class, ZkTool.class})
 public class SolrCLI implements CLIO {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @picocli.CommandLine.Option(
+      names = {"-v", "--version"},
+      versionHelp = true,
+      description = "Print version information and exit")
+  boolean versionRequested;
+
+  @picocli.CommandLine.Option(
+      names = {"-h", "--help"},
+      usageHelp = true,
+      description = "Display this help message")
+  boolean helpRequested;
 
   public static void exit(int exitStatus) {
     try {
@@ -62,6 +93,25 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
+    if (EnvUtils.getPropertyAsBool("solr.picocli", true)) {
+      CLIO.err("Using picocli");
+      SSLConfigurationsFactory.current().init();
+      picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
+      exit(commandLine.execute(args));
+    } else {
+      CLIO.err("DEBUG: Using commons-cli");
+      exit(parseWithCommonsCli(args));
+    }
+  }
+
+  /**
+   * Parses the command-line arguments passed by the user using Apache Commons CLI. This
+   *
+   * @param args the original command-line arguments
+   * @deprecated Please use picocli
+   */
+  @Deprecated(since = "9.9")
+  public static int parseWithCommonsCli(String[] args) throws Exception {
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
     final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
@@ -117,15 +167,17 @@ public class SolrCLI implements CLIO {
       System.exit(1);
     }
     CommandLine cli = parseCmdLine(tool, args);
-    System.exit(tool.runTool(cli));
+    return tool.runTool(cli);
   }
 
+  @Deprecated
   public static Tool findTool(String[] args) throws Exception {
     String toolType = args[0].trim().toLowerCase(Locale.ROOT);
     return newTool(toolType);
   }
 
-  public static CommandLine parseCmdLine(Tool tool, String[] args) {
+  @Deprecated
+  public static org.apache.commons.cli.CommandLine parseCmdLine(Tool tool, String[] args) {
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<>();
     List<String> dashDList = new ArrayList<>();
@@ -140,7 +192,7 @@ public class SolrCLI implements CLIO {
     String[] toolArgs = toolArgList.toArray(new String[0]);
 
     // process command-line args to configure this application
-    CommandLine cli = processCommandLineArgs(tool, toolArgs);
+    org.apache.commons.cli.CommandLine cli = processCommandLineArgs(tool, toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -179,6 +231,7 @@ public class SolrCLI implements CLIO {
   }
 
   // Creates an instance of the requested tool, using classpath scanning if necessary
+  @Deprecated
   private static Tool newTool(String toolType) throws Exception {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool();
     else if ("status".equals(toolType)) return new StatusTool();
@@ -232,7 +285,7 @@ public class SolrCLI implements CLIO {
    * CLI option.
    */
   public static String getOptionWithDeprecatedAndDefault(
-      CommandLine cli, Option opt, Option deprecated, String def) {
+      org.apache.commons.cli.CommandLine cli, Option opt, Option deprecated, String def) {
     String val = cli.getOptionValue(opt);
     if (val == null) {
       val = cli.getOptionValue(deprecated);
@@ -242,6 +295,7 @@ public class SolrCLI implements CLIO {
 
   // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
+  @Deprecated
   private static void deprecatedHandlerStdErr(Option o) {
     // Deprecated options without a description act as "stealth" options
     if (o.isDeprecated() && !o.getDeprecated().getDescription().isBlank()) {
@@ -256,10 +310,12 @@ public class SolrCLI implements CLIO {
   }
 
   /** Parses the command-line arguments passed by the user. */
-  public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
+  @Deprecated
+  public static org.apache.commons.cli.CommandLine processCommandLineArgs(
+      Tool tool, String[] args) {
     Options options = tool.getOptions();
 
-    CommandLine cli = null;
+    org.apache.commons.cli.CommandLine cli = null;
     try {
       cli =
           DefaultParser.builder()
@@ -296,6 +352,7 @@ public class SolrCLI implements CLIO {
   }
 
   /** Prints tool help for a given tool */
+  @Deprecated
   public static void printToolHelp(Tool tool) {
     HelpFormatter formatter = getFormatter();
     Options nonDeprecatedOptions = new Options();
@@ -314,13 +371,19 @@ public class SolrCLI implements CLIO {
         autoGenerateUsage);
   }
 
+  @Deprecated
   public static HelpFormatter getFormatter() {
     HelpFormatter formatter = HelpFormatter.builder().get();
     formatter.setWidth(120);
     return formatter;
   }
 
-  /** Scans Jar files on the classpath for Tool implementations to activate. */
+  /**
+   * Scans Jar files on the classpath for Tool implementations to activate.
+   *
+   * @deprecated With Picocli we no longer need to scan the classpath for Tool implementations?
+   */
+  @Deprecated
   private static List<Class<? extends Tool>> findToolClassesInPackage(String packageName) {
     List<Class<? extends Tool>> toolClasses = new ArrayList<>();
     try {
@@ -344,6 +407,7 @@ public class SolrCLI implements CLIO {
     return toolClasses;
   }
 
+  @Deprecated
   private static Set<String> findClasses(String path, String packageName) throws Exception {
     Set<String> classes = new TreeSet<>();
     if (path.startsWith("file:") && path.contains("!")) {
@@ -402,6 +466,7 @@ public class SolrCLI implements CLIO {
         numSeconds);
   }
 
+  @Deprecated
   private static void printHelp() {
 
     print("Usage: solr COMMAND OPTIONS");
