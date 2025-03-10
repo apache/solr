@@ -29,7 +29,9 @@ import org.apache.solr.common.util.NamedList;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
-/** ResponseParser for JsonMaps. */
+/**
+ * Parses the input as a JSON {@link Map}, and puts the entries onto the response {@link NamedList}.
+ */
 public class JsonMapResponseParser extends ResponseParser {
   @Override
   public String getWriterType() {
