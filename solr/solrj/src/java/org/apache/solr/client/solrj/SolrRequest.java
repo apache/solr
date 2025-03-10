@@ -213,7 +213,7 @@ public abstract class SolrRequest<T> implements Serializable {
    * special cases. If no special case is identified, {@link SolrRequest#getBaseRequestType()} is
    * returned.
    */
-  public SolrRequestType getRequestType() {
+  public final SolrRequestType getRequestType() {
     if (CommonParams.ADMIN_PATHS.contains(getPath())) {
       return SolrRequestType.ADMIN;
     } else if (this instanceof IsUpdateRequest) {
