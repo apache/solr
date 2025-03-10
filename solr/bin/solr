@@ -356,10 +356,6 @@ fi
 # This looks strange, but it is to avoid extra spaces when we have only one of the values set
 AUTHC_OPTS="${AUTHC_OPTS:-}${SOLR_AUTHENTICATION_OPTS:+ $SOLR_AUTHENTICATION_OPTS}"
 
-# Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
-SOLR_TOOL_HOST="${SOLR_HOST:-localhost}"
-export SOLR_TOOL_HOST
-
 function print_usage() {
   CMD="${1:-}"
   ERROR_MSG="${2:-}"

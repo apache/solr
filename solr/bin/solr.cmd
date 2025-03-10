@@ -240,12 +240,6 @@ IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
 )
 set "AUTHC_OPTS=%AUTHC_CLIENT_BUILDER_ARG% %SOLR_AUTHENTICATION_OPTS%"
 
-REM Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
-IF NOT "%SOLR_HOST%"=="" (
-  set "SOLR_TOOL_HOST=%SOLR_HOST%"
-) ELSE (
-  set "SOLR_TOOL_HOST=localhost"
-)
 IF "%SOLR_JETTY_HOST%"=="" (
   set "SOLR_JETTY_HOST=127.0.0.1"
 )
