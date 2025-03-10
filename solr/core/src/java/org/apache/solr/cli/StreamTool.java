@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
@@ -60,12 +59,8 @@ import org.apache.solr.handler.CatStream;
 /** Supports stream command in the bin/solr script. */
 public class StreamTool extends ToolBase {
 
-  public StreamTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public StreamTool(PrintStream stdout) {
-    super(stdout);
+  public StreamTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   private final SolrClientCache solrClientCache = new SolrClientCache();

@@ -79,7 +79,8 @@ public class ApiToolTest extends SolrCloudTestCase {
     }
     cluster.getSolrClient().request(ur, COLLECTION_NAME);
 
-    ApiTool tool = new ApiTool();
+    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ApiTool tool = new ApiTool(runtime);
 
     String response =
         tool.callGet(

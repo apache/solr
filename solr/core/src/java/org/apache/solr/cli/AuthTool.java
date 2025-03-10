@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Console;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -99,12 +98,8 @@ public class AuthTool extends ToolBase {
               "This is where any authentication related configuration files, if any, would be placed.")
           .build();
 
-  public AuthTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public AuthTool(PrintStream stdout) {
-    super(stdout);
+  public AuthTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -328,7 +323,7 @@ public class AuthTool extends ToolBase {
     if (!updateIncludeFileOnly) {
       zkHost = CLIUtils.getZkHost(cli);
       if (zkHost == null) {
-        stdout.print("ZK Host not found. Solr should be running in cloud mode.");
+        runtime.print("ZK Host not found. Solr should be running in cloud mode.");
         SolrCLI.exit(1);
       }
 

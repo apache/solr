@@ -14,25 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.solr.client.api.util.SolrVersion;
+/**
+ * An implementation of this class is specified when executing {@link ToolBase} to access
+ * environment specific methods (mostly to differentiate test from non-test executions for now).
+ *
+ * @see ToolBase
+ */
+public abstract class ToolRuntime {
 
-public class VersionTool extends ToolBase {
+  public abstract void print(String message);
 
-  public VersionTool(ToolRuntime runtime) {
-    super(runtime);
-  }
-
-  @Override
-  public String getName() {
-    return "version";
-  }
-
-  @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    CLIO.out("Solr version is: " + SolrVersion.LATEST);
-  }
+  public abstract void println(String message);
 }

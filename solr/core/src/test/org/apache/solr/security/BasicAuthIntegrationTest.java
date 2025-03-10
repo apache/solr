@@ -20,10 +20,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 
 import com.codahale.metrics.MetricRegistry;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -36,6 +33,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
@@ -300,12 +298,11 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       String[] toolArgs =
           new String[] {"status", "--solr-url", baseUrl, "--credentials", "harry:HarryIsUberCool"};
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
-      StatusTool tool = new StatusTool(stdoutSim);
+      CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
+      StatusTool tool = new StatusTool(runtime);
       try {
         tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
-        Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
+        Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(runtime.getReader());
         assertTrue(obj.containsKey("version"));
         assertTrue(obj.containsKey("startTime"));
         assertTrue(obj.containsKey("uptime"));
@@ -314,7 +311,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         log.error(
             "StatusTool failed due to: {}; stdout from tool prior to failure: {}",
             e,
-            baos.toString(StandardCharsets.UTF_8.name())); // nowarn
+            runtime.getOutput()); // nowarn
       }
 
       SolrParams params = new MapSolrParams(Collections.singletonMap("q", "*:*"));

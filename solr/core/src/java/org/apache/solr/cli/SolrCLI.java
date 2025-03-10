@@ -109,9 +109,10 @@ public class SolrCLI implements CLIO {
     }
     SSLConfigurationsFactory.current().init();
 
+    ToolRuntime runtime = new DefaultToolRuntime();
     Tool tool = null;
     try {
-      tool = findTool(args);
+      tool = findTool(args, runtime);
     } catch (IllegalArgumentException iae) {
       CLIO.err(iae.getMessage());
       System.exit(1);
@@ -120,9 +121,9 @@ public class SolrCLI implements CLIO {
     System.exit(tool.runTool(cli));
   }
 
-  public static Tool findTool(String[] args) throws Exception {
+  public static Tool findTool(String[] args, ToolRuntime runtime) throws Exception {
     String toolType = args[0].trim().toLowerCase(Locale.ROOT);
-    return newTool(toolType);
+    return newTool(toolType, runtime);
   }
 
   public static CommandLine parseCmdLine(Tool tool, String[] args) {
@@ -179,38 +180,38 @@ public class SolrCLI implements CLIO {
   }
 
   // Creates an instance of the requested tool, using classpath scanning if necessary
-  private static Tool newTool(String toolType) throws Exception {
-    if ("healthcheck".equals(toolType)) return new HealthcheckTool();
-    else if ("status".equals(toolType)) return new StatusTool();
-    else if ("api".equals(toolType)) return new ApiTool();
-    else if ("create".equals(toolType)) return new CreateTool();
-    else if ("delete".equals(toolType)) return new DeleteTool();
-    else if ("config".equals(toolType)) return new ConfigTool();
-    else if ("run_example".equals(toolType)) return new RunExampleTool();
-    else if ("upconfig".equals(toolType)) return new ConfigSetUploadTool();
-    else if ("downconfig".equals(toolType)) return new ConfigSetDownloadTool();
-    else if ("zk-tool-help".equals(toolType)) return new ZkToolHelp();
-    else if ("rm".equals(toolType)) return new ZkRmTool();
-    else if ("mv".equals(toolType)) return new ZkMvTool();
-    else if ("cp".equals(toolType)) return new ZkCpTool();
-    else if ("ls".equals(toolType)) return new ZkLsTool();
-    else if ("cluster".equals(toolType)) return new ClusterTool();
-    else if ("updateacls".equals(toolType)) return new UpdateACLTool();
-    else if ("linkconfig".equals(toolType)) return new LinkConfigTool();
-    else if ("mkroot".equals(toolType)) return new ZkMkrootTool();
-    else if ("assert".equals(toolType)) return new AssertTool();
-    else if ("auth".equals(toolType)) return new AuthTool();
-    else if ("export".equals(toolType)) return new ExportTool();
-    else if ("package".equals(toolType)) return new PackageTool();
-    else if ("post".equals(toolType)) return new PostTool();
-    else if ("postlogs".equals(toolType)) return new PostLogsTool();
-    else if ("version".equals(toolType)) return new VersionTool();
-    else if ("stream".equals(toolType)) return new StreamTool();
-    else if ("snapshot-create".equals(toolType)) return new SnapshotCreateTool();
-    else if ("snapshot-delete".equals(toolType)) return new SnapshotDeleteTool();
-    else if ("snapshot-list".equals(toolType)) return new SnapshotListTool();
-    else if ("snapshot-describe".equals(toolType)) return new SnapshotDescribeTool();
-    else if ("snapshot-export".equals(toolType)) return new SnapshotExportTool();
+  private static Tool newTool(String toolType, ToolRuntime runtime) throws Exception {
+    if ("healthcheck".equals(toolType)) return new HealthcheckTool(runtime);
+    else if ("status".equals(toolType)) return new StatusTool(runtime);
+    else if ("api".equals(toolType)) return new ApiTool(runtime);
+    else if ("create".equals(toolType)) return new CreateTool(runtime);
+    else if ("delete".equals(toolType)) return new DeleteTool(runtime);
+    else if ("config".equals(toolType)) return new ConfigTool(runtime);
+    else if ("run_example".equals(toolType)) return new RunExampleTool(runtime);
+    else if ("upconfig".equals(toolType)) return new ConfigSetUploadTool(runtime);
+    else if ("downconfig".equals(toolType)) return new ConfigSetDownloadTool(runtime);
+    else if ("zk-tool-help".equals(toolType)) return new ZkToolHelp(runtime);
+    else if ("rm".equals(toolType)) return new ZkRmTool(runtime);
+    else if ("mv".equals(toolType)) return new ZkMvTool(runtime);
+    else if ("cp".equals(toolType)) return new ZkCpTool(runtime);
+    else if ("ls".equals(toolType)) return new ZkLsTool(runtime);
+    else if ("cluster".equals(toolType)) return new ClusterTool(runtime);
+    else if ("updateacls".equals(toolType)) return new UpdateACLTool(runtime);
+    else if ("linkconfig".equals(toolType)) return new LinkConfigTool(runtime);
+    else if ("mkroot".equals(toolType)) return new ZkMkrootTool(runtime);
+    else if ("assert".equals(toolType)) return new AssertTool(runtime);
+    else if ("auth".equals(toolType)) return new AuthTool(runtime);
+    else if ("export".equals(toolType)) return new ExportTool(runtime);
+    else if ("package".equals(toolType)) return new PackageTool(runtime);
+    else if ("post".equals(toolType)) return new PostTool(runtime);
+    else if ("postlogs".equals(toolType)) return new PostLogsTool(runtime);
+    else if ("version".equals(toolType)) return new VersionTool(runtime);
+    else if ("stream".equals(toolType)) return new StreamTool(runtime);
+    else if ("snapshot-create".equals(toolType)) return new SnapshotCreateTool(runtime);
+    else if ("snapshot-delete".equals(toolType)) return new SnapshotDeleteTool(runtime);
+    else if ("snapshot-list".equals(toolType)) return new SnapshotListTool(runtime);
+    else if ("snapshot-describe".equals(toolType)) return new SnapshotDescribeTool(runtime);
+    else if ("snapshot-export".equals(toolType)) return new SnapshotExportTool(runtime);
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning

@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -76,12 +75,8 @@ public class StatusTool extends ToolBase {
 
   private final SolrProcessManager processMgr;
 
-  public StatusTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public StatusTool(PrintStream stdout) {
-    super(stdout);
+  public StatusTool(ToolRuntime runtime) {
+    super(runtime);
     processMgr = new SolrProcessManager();
   }
 
@@ -313,7 +308,7 @@ public class StatusTool extends ToolBase {
     return status;
   }
 
-  public Map<String, Object> reportStatus(NamedList<Object> info, SolrClient solrClient)
+  public static Map<String, Object> reportStatus(NamedList<Object> info, SolrClient solrClient)
       throws Exception {
     Map<String, Object> status = new LinkedHashMap<>();
 
@@ -341,7 +336,7 @@ public class StatusTool extends ToolBase {
    * cluster.
    */
   @SuppressWarnings("unchecked")
-  protected Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
+  private static Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
       throws Exception {
     Map<String, String> cloudStatus = new LinkedHashMap<>();
     cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");

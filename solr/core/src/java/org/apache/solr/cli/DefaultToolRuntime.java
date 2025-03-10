@@ -14,25 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.common.util.SuppressForbidden;
 
-public class VersionTool extends ToolBase {
+/**
+ * Standard implementation of tool runtime when running from command line.
+ */
+public class DefaultToolRuntime extends ToolRuntime {
 
-  public VersionTool(ToolRuntime runtime) {
-    super(runtime);
+  @Override
+  @SuppressForbidden(reason = "For use in CLI only")
+  public void print(String message) {
+    System.out.print(message);
   }
 
   @Override
-  public String getName() {
-    return "version";
-  }
-
-  @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    CLIO.out("Solr version is: " + SolrVersion.LATEST);
+  @SuppressForbidden(reason = "For use in CLI only")
+  public void println(String message) {
+    System.out.println(message);
   }
 }
