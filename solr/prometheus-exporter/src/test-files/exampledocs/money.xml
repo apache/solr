@@ -15,7 +15,7 @@
  limitations under the License.
 -->
 
-<!-- Example documents utilizing the CurrencyField type -->
+<!-- Example documents utilizing the CurrencyFieldType type -->
 <add>
 <doc>
   <field name="id">USD</field>
