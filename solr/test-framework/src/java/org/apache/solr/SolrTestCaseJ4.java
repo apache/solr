@@ -142,6 +142,7 @@ import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
+import org.hamcrest.Matcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -685,8 +686,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * The directory used as the <code>dataDir</code> for the TestHarness unless {@link #hdfsDataDir}
-   * is non null.
+   * The directory used as the <code>dataDir</code> for the TestHarness.
    *
    * <p>Will be set to null by {@link #deleteCore} and re-initialized as needed by {@link
    * #createCore}. In the event of a test failure, the contents will be left on disk.
@@ -696,9 +696,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @deprecated use initAndGetDataDir instead of directly accessing this variable
    */
   @Deprecated protected static volatile File initCoreDataDir;
-
-  // hack due to File dataDir
-  protected static String hdfsDataDir;
 
   /**
    * Initializes things your test might need
@@ -732,10 +729,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
     h =
         new TestHarness(
-            coreName,
-            hdfsDataDir == null ? initAndGetDataDir().getAbsolutePath() : hdfsDataDir,
-            solrConfig,
-            getSchemaFile());
+            coreName, initAndGetDataDir().getAbsolutePath(), solrConfig, getSchemaFile());
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
   }
 
@@ -844,7 +838,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     lrf = null;
     configString = schemaString = null;
     initCoreDataDir = null;
-    hdfsDataDir = null;
   }
 
   /** Validates an update XML String is successful */
@@ -1031,8 +1024,64 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       }
       return response;
     } finally {
-      // restore the params
-      if (params != null && params != req.getParams()) req.setParams(params);
+      req.setParams(params); // restore in case we changed it
+    }
+  }
+
+  public static <T> String assertThatJQ(SolrQueryRequest req, Matcher<T> test) throws Exception {
+    return assertThatJQ(req, "", test);
+  }
+
+  /**
+   * Validates a query completes and, using JSON deserialization, returns an object that passes the
+   * given Matcher test.
+   *
+   * <p>Please use this with care: this makes it easy to match complete structures, but doing so can
+   * result in fragile tests if you are matching more than what you want to test.
+   *
+   * @param req Solr request to execute
+   * @param message Failure message for test
+   * @param test Matcher for the given object returned from deserializing the response
+   * @return The request response as a JSON String if the test matcher passes
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> String assertThatJQ(SolrQueryRequest req, String message, Matcher<T> test)
+      throws Exception {
+    final SolrParams params = req.getParams();
+    try {
+      if (!"json".equals(params.get("wt", "xml")) || params.get("indent") == null) {
+        ModifiableSolrParams newParams = new ModifiableSolrParams(params);
+        newParams.set("wt", "json");
+        if (params.get("indent") == null) newParams.set("indent", "true");
+        req.setParams(newParams);
+      }
+
+      String response;
+      boolean failed = true;
+      try {
+        response = h.query(req);
+        failed = false;
+      } finally {
+        if (failed) {
+          fail("REQUEST FAILED: " + req.getParamString());
+        }
+      }
+      Object responseObj;
+      failed = true;
+      try {
+        responseObj = Utils.fromJSONString(response);
+        failed = false;
+      } finally {
+        if (failed) {
+          fail("Couldn't deserialize json: " + response);
+        }
+      }
+
+      assertThat(message, (T) responseObj, test);
+
+      return response;
+    } finally {
+      req.setParams(params); // restore in case we changed it
     }
   }
 

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud;
 import java.io.IOException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
@@ -31,6 +32,11 @@ public class DelegatingCloudManager implements SolrCloudManager {
 
   public DelegatingCloudManager(SolrCloudManager delegate) {
     this.delegate = delegate;
+  }
+
+  @Override
+  public CloudSolrClient getSolrClient() {
+    return delegate.getSolrClient();
   }
 
   @Override
