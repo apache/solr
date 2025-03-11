@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -39,7 +40,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -474,7 +474,18 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   public void testRealTimeGet()
-      throws SolrServerException, IOException, KeeperException, InterruptedException {
+      throws SolrServerException,
+          IOException,
+          KeeperException,
+          InterruptedException,
+          TimeoutException {
+    cluster
+        .getZkStateReader()
+        .waitForLiveNodes(
+            10,
+            TimeUnit.SECONDS,
+            (oldLiveNodes, newLiveNodes) ->
+                newLiveNodes.size() == cluster.getJettySolrRunners().size());
     // should be redirected to Replica.Type.NRT
     int numReplicas = random().nextBoolean() ? 1 : 2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numReplicas, 0, numReplicas)
@@ -484,27 +495,18 @@ public class TestPullReplica extends SolrCloudTestCase {
         collectionName,
         activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
-    HttpClient httpClient = getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getBaseUrl())
-              .withDefaultCollection(rAdd.getCoreName())
-              .withHttpClient(httpClient)
-              .build()) {
+      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient =
           cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
-        try (SolrClient client =
-            new HttpSolrClient.Builder(rGet.getBaseUrl())
-                .withDefaultCollection(rGet.getCoreName())
-                .withHttpClient(httpClient)
-                .build()) {
+        try (SolrClient client = getHttpSolrClient(rGet.getBaseUrl(), rGet.getCoreName())) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -514,11 +516,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getBaseUrl())
-              .withDefaultCollection(rAdd.getCoreName())
-              .withHttpClient(httpClient)
-              .build()) {
+      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
