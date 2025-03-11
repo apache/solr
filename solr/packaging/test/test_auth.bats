@@ -56,7 +56,7 @@ setup() {
   assert_output --partial '"status":0'
   
   solr auth disable
-  run curl "http://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run curl "http://localhost:${SOLR_PORT}/api/cluster"
   assert_output --partial '"numFound":0'  
   solr stop --all
 }
