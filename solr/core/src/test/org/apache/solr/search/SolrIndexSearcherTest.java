@@ -444,6 +444,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
               assertEquals(10, search.getDocList().size());
               assertFalse(search.isPartialResults());
               assertNull(search.getTerminatedEarly());
+              assertNull(search.getMaxHitsTerminatedEarly());
               return null;
             });
 
@@ -457,6 +458,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
               assertEquals(10, search.getDocList().size());
               assertFalse(search.isPartialResults());
               assertNull(search.getTerminatedEarly());
+              assertNull(search.getMaxHitsTerminatedEarly());
               return null;
             });
 
@@ -470,7 +472,8 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
               assertEquals(20, search.getDocList().matches());
               assertEquals(10, search.getDocList().size());
               assertTrue(search.isPartialResults());
-              assertEquals(Boolean.TRUE, search.getTerminatedEarly());
+              assertNull(search.getTerminatedEarly());
+              assertEquals(Boolean.TRUE, search.getMaxHitsTerminatedEarly());
               return null;
             });
   }
