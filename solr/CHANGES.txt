@@ -110,6 +110,15 @@ Other Changes
 
 * SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
 
+==================  9.8.1 ==================
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
