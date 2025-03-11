@@ -33,6 +33,9 @@ Improvements
   `org.apache.solr.client.solrj.request.FileStoreApi`. The older form of this endpoint (`GET /api/node/files`) is deprecated and is slated to
   be removed. (Jason Gerlowski)
 
+* SOLR-17607: SolrJ CloudSolrClient configured with HTTP URLs will no longer eagerly connect to
+  anything. (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
