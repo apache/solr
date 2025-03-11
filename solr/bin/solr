@@ -596,6 +596,10 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
     exit 1
   fi
+  
+  if [ -n "${AUTH_PORT}" ]; then
+    export SOLR_PORT="${AUTH_PORT}"
+  fi
 
   if [ -z "${SOLR_HOME:-}" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
