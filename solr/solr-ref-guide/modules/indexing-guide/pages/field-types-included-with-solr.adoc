@@ -99,6 +99,8 @@ This shortcoming may be addressed in a future release.
 
 |EnumField |Use EnumFieldType instead.
 
+|ExternalFileField | This field is deprecated and will be removed in Solr 10.
+
 |TrieDateField |Use DatePointField instead.
 
 |TrieDoubleField |Use DoublePointField instead.
