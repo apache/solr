@@ -52,11 +52,12 @@ setup() {
 @test "enable auth connects via zookeeper" {
   solr start
   run solr auth enable --type basicAuth --credentials name:password -z localhost:${ZK_PORT}
+  assert_output --partial 'Successfully enabled basic auth'
   run curl -u name:password --basic "http://localhost:${SOLR_PORT}/api/cluster"
   assert_output --partial '"status":0'
   
-  solr auth disable
+  solr auth disable -z localhost:${ZK_PORT}
   run curl "http://localhost:${SOLR_PORT}/api/cluster"
-  assert_output --partial '"numFound":0'  
+  assert_output --partial '"status":0' 
   solr stop --all
 }
