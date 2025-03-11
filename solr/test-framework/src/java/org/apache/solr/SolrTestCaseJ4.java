@@ -2309,7 +2309,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /** Creates a temp solr home using sample_techproducts_configs. Returns the home path. */
   @Deprecated // Instead use a basic config + whatever is needed or default config
-  public static String legacyExampleCollection1SolrHome() {
+  public static Path legacyExampleCollection1SolrHome() {
     String sourceHome = ExternalPaths.SOURCE_HOME;
     if (sourceHome == null)
       throw new IllegalStateException(
@@ -2334,7 +2334,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
               StandardCharsets.UTF_8)) {
         props.store(writer, null);
       }
-      return tempSolrHome.toString();
+      return tempSolrHome;
     } catch (RuntimeException e) {
       throw e;
     } catch (IOException e) {

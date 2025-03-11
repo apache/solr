@@ -42,7 +42,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").toAbsolutePath().toString());
+    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").toAbsolutePath());
   }
 
   @Override

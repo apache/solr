@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import java.nio.file.FileSystems;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;

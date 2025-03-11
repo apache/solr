@@ -357,7 +357,7 @@ public class ZkMaintenanceUtils {
             String zkNode = createZkNodeName(zkPath, rootPath, file);
             try {
               // if the path exists (and presumably we're uploading data to it) just set its data
-              if (file.toFile().getName().equals(ZKNODE_DATA_FILE)
+              if (file.getFileName().toString().equals(ZKNODE_DATA_FILE)
                   && zkClient.exists(zkNode, true)) {
                 zkClient.setData(zkNode, file, true);
               } else if (file == rootPath) {
@@ -562,7 +562,7 @@ public class ZkMaintenanceUtils {
       relativePath = relativePath.replace("\\", "/");
     // It's possible that the relative path and file are the same, in which case
     // adding the bare slash is A Bad Idea unless it's a non-leaf data node
-    boolean isNonLeafData = file.toFile().getName().equals(ZKNODE_DATA_FILE);
+    boolean isNonLeafData = file.getFileName().toString().equals(ZKNODE_DATA_FILE);
     if (relativePath.length() == 0 && !isNonLeafData) return zkRoot;
 
     // Important to have this check if the source is file:whatever/ and the destination is just zk:/

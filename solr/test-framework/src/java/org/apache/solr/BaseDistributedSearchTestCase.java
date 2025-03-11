@@ -1176,8 +1176,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     String solrxml = getSolrXml();
     if (solrxml != null) {
       Files.copy(
-          Path.of(getSolrHome(), solrxml),
-          jettyHome.toPath().resolve("solr.xml"),
+          getSolrHome().resolve(solrxml),
+          jettyHome.resolve("solr.xml"),
           StandardCopyOption.REPLACE_EXISTING);
     }
   }

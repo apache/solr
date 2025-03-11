@@ -111,7 +111,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
-    leader = new SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     leaderJetty = createAndStartJetty(leader);
     leaderClient =
@@ -119,8 +119,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     follower =
-        new SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+        new SolrInstance(createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient =
@@ -355,8 +354,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrClient repeaterClient = null;
     try {
       repeater =
-          new SolrInstance(
-              createTempDir("solr-instance").toFile(), "repeater", leaderJetty.getLocalPort());
+          new SolrInstance(createTempDir("solr-instance"), "repeater", leaderJetty.getLocalPort());
       repeater.setUp();
       repeaterJetty = createAndStartJetty(repeater);
       repeaterClient =
@@ -1069,8 +1067,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     try {
       repeater =
-          new SolrInstance(
-              createTempDir("solr-instance").toFile(), "repeater", leaderJetty.getLocalPort());
+          new SolrInstance(createTempDir("solr-instance"), "repeater", leaderJetty.getLocalPort());
       repeater.setUp();
       repeater.copyConfigFile(CONF_DIR + "solrconfig-repeater.xml", "solrconfig.xml");
       repeaterJetty = createAndStartJetty(repeater);

@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;

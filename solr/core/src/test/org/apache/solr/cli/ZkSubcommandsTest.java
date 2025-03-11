@@ -89,10 +89,10 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
       log.info("####SETUP_START {}", getTestName());
     }
 
-    String exampleHome = legacyExampleCollection1SolrHome();
+    Path exampleHome = legacyExampleCollection1SolrHome();
 
     Path tmpDir = createTempDir();
-    solrHome = exampleHome;
+    solrHome = exampleHome.toString();
 
     originalSystemOut = System.out;
 

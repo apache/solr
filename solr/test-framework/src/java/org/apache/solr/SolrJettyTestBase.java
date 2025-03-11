@@ -53,7 +53,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     if (configFile != null) nodeProps.setProperty("solrconfig", configFile);
     if (schemaFile != null) nodeProps.setProperty("schema", schemaFile);
     if (System.getProperty("solr.data.dir") == null) {
-      nodeProps.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
+      nodeProps.setProperty("solr.data.dir", createTempDir().toRealPath().toString());
     }
 
     return createAndStartJetty(solrHome, nodeProps, jettyConfig);

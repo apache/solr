@@ -46,7 +46,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
 
   private static Path createSolrHome() throws Exception {
     Path workDir = createTempDir();
-    setupJettyTestHome(workDir.toFile(), "collection1");
+    setupJettyTestHome(workDir, "collection1");
     Files.copy(
         Path.of(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
         workDir.resolve("collection1").resolve("conf").resolve("solrconfig.xml"),

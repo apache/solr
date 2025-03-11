@@ -21,6 +21,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,15 +54,14 @@ public class TestLlmBase extends RestTestBase {
       String solrconfig, String schema, boolean buildIndex, boolean persistModelStore)
       throws Exception {
     initFolders(persistModelStore);
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema, "/solr", true, null);
     if (buildIndex) prepareIndex();
   }
 
   protected static void initFolders(boolean isPersistent) throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
-    tmpConfDir.toFile().deleteOnExit();
+    Files.newOutputStream(tmpConfDir, StandardOpenOption.DELETE_ON_CLOSE);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
 
     final Path modelStore = tmpConfDir.resolve(MODEL_FILE_NAME);
