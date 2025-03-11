@@ -55,7 +55,6 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -197,6 +196,9 @@ public class SolrZkClient implements Closeable {
             .authorization(zkCredentialsProvider.getCredentials())
             .retryPolicy(retryPolicy)
             .runSafeService(curatorSafeServiceExecutor)
+            .compressionProvider(
+                new SolrZkCompressionProvider(compressor, minStateByteLenForCompression))
+            .enableCompression()
             .build();
     // This will collect metrics for foreground curator commands
     client.getZookeeperClient().setTracerDriver(metricsListener);
@@ -230,18 +232,6 @@ public class SolrZkClient implements Closeable {
     }
 
     assert ObjectReleaseTracker.track(this);
-    if (aclProvider == null) {
-      this.aclProvider = useDefaultCredsAndACLs ? createACLProvider() : new DefaultZkACLProvider();
-    } else {
-      this.aclProvider = aclProvider;
-    }
-
-    if (compressor == null) {
-      this.compressor = new ZLibCompressor();
-    } else {
-      this.compressor = compressor;
-    }
-    this.minStateByteLenForCompression = minStateByteLenForCompression;
   }
 
   public CuratorFramework getCuratorFramework() {
@@ -433,18 +423,6 @@ public class SolrZkClient implements Closeable {
                     .storingStatIn(stat)
                     .usingWatcher(wrapWatcher(watcher))
                     .forPath(path));
-    if (compressor.isCompressedBytes(result)) {
-      log.debug("Zookeeper data at path {} is compressed", path);
-      try {
-        result = compressor.decompressBytes(result);
-      } catch (Exception e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            String.format(
-                Locale.ROOT, "Unable to decompress data at path: %s from zookeeper", path),
-            e);
-      }
-    }
     return result;
   }
 
@@ -455,16 +433,12 @@ public class SolrZkClient implements Closeable {
   }
 
   /** Returns node's state */
-  public Stat setData(final String path, byte data[], final int version, boolean retryOnConnLoss)
+  public Stat setData(
+      final String path, final byte[] data, final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    if (SolrZkClient.shouldCompressData(data, path, minStateByteLenForCompression)) {
-      // state.json should be compressed before being put to ZK
-      data = compressor.compressBytes(data);
-    }
-    final byte[] finalData = data;
     Stat result =
         runWithCorrectThrows(
-            "setting data", () -> client.setData().withVersion(version).forPath(path, finalData));
+            "setting data", () -> client.setData().withVersion(version).forPath(path, data));
     return result;
   }
 
@@ -646,11 +620,6 @@ public class SolrZkClient implements Closeable {
     var createBuilder = client.create();
     if (!failOnExists) {
       createBuilder.orSetData();
-    }
-
-    if (SolrZkClient.shouldCompressData(data, path, minStateByteLenForCompression)) {
-      // state.json should be compressed before being put to ZK
-      data = compressor.compressBytes(data);
     }
 
     if (path.startsWith("/")) {
@@ -1279,15 +1248,5 @@ public class SolrZkClient implements Closeable {
     public SolrZkClient build() {
       return new SolrZkClient(this);
     }
-  }
-
-  static boolean shouldCompressData(byte[] data, String path, int minStateByteLenForCompression) {
-    if (path.endsWith("state.json")
-        && minStateByteLenForCompression > -1
-        && data.length > minStateByteLenForCompression) {
-      // state.json should be compressed before being put to ZK
-      return true;
-    }
-    return false;
   }
 }
