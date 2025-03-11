@@ -34,7 +34,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.solr.cli.CLITestHelper;
-import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -296,22 +295,10 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
       assertAuthMetricsMinimums(17, 8, 8, 1, 0, 0);
 
-      String[] toolArgs =
-          new String[] {"status", "--solr-url", baseUrl, "--credentials", "harry:HarryIsUberCool"};
-      CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
-      StatusTool tool = new StatusTool(runtime);
-      try {
-        tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
-        Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(runtime.getReader());
-        assertTrue(obj.containsKey("version"));
-        assertTrue(obj.containsKey("startTime"));
-        assertTrue(obj.containsKey("uptime"));
-        assertTrue(obj.containsKey("memory"));
-      } catch (Exception e) {
-        log.error(
-            "StatusTool failed due to: {}; stdout from tool prior to failure: {}",
-            e,
-            runtime.getOutput()); // nowarn
+      String[] toolArgs = new String[] {"status", "--solr-url", baseUrl};
+      int res = CLITestHelper.runTool(toolArgs, StatusTool.class);
+      if (res == 0) {
+        fail("Request should have failed because of missing auth");
       }
 
       SolrParams params = new MapSolrParams(Collections.singletonMap("q", "*:*"));

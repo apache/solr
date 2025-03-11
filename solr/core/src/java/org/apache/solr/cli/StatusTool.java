@@ -229,7 +229,7 @@ public class StatusTool extends ToolBase {
       /* ignore */
     }
     if (statusJson != null) {
-      CLIO.out(statusJson);
+      runtime.println(statusJson);
     } else {
       CLIO.err("Solr at " + solrUrl + " not online.");
     }
