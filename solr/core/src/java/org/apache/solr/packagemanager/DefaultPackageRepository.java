@@ -81,7 +81,7 @@ public class DefaultPackageRepository extends PackageRepository {
   public Path download(String artifactName) throws SolrException, IOException {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
     tmpDirectory.toFile().deleteOnExit();
-    URL url = URI.create(repositoryURL).resolve(artifactName).toURL();
+    URL url = getRepoUri().resolve(artifactName).toURL();
     String fileName = FilenameUtils.getName(url.getPath());
     Path destination = tmpDirectory.resolve(fileName);
 
@@ -99,9 +99,13 @@ public class DefaultPackageRepository extends PackageRepository {
     return destination;
   }
 
+  private URI getRepoUri() {
+    return URI.create(repositoryURL.endsWith("/") ? repositoryURL : repositoryURL + "/");
+  }
+
   private void initPackages() {
     try {
-      final var url = URI.create(repositoryURL).resolve("repository.json").toURL();
+      final var url = getRepoUri().resolve("repository.json").toURL();
       packages =
           PackageUtils.getMapper()
               .readValue(url, new TypeReference<List<SolrPackage>>() {})
