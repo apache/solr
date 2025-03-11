@@ -259,7 +259,7 @@
 
 
     <!-- Enum type -->
-    <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
+    <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
    <!-- Valid attributes for fields:
      name: mandatory - the name for the field
