@@ -201,6 +201,9 @@ Bug Fixes
   current live nodes list is stale. CloudSolrClient now retains the initial configured list of passed URLs as backup
   used for fetching cluster state when all live nodes have failed. (Matthew Biscocho via David Smiley, Houston Putman)
 
+* SOLR-17700: Use Core Operation lock when unloading cores. This fixes errors that occur when a collection deletion and reload
+  occur at the same time. (Houston Putman)
+
 
 Dependency Upgrades
 ---------------------
