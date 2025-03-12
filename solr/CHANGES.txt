@@ -41,13 +41,6 @@ Optimizations
 
 Bug Fixes
 ---------------------
-* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
-  (Matthew Biscocho via David Smiley)
-
-* SOLR-17221: If multiple query param keys are sent that only vary by case, they were wrongly merged when
-  doing distributed search (sharded collections). This could likely occur for fielded parameters such as
-  f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
-
 * SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
   it needs to close the stream to cleanup resources but wasn't. (David Smiley)
 
@@ -55,19 +48,6 @@ Bug Fixes
   current live nodes list is stale. CloudSolrClient now retains the initial configured list of passed URLs as backup
   used for fetching cluster state when all live nodes have failed. (Matthew Biscocho via David Smiley, Houston Putman)
 
-* SOLR-17637: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
-  This can cause the HttpShardHandler to indefinitely wait on a completed response that will never come. (Houston Putman)
-
-* SOLR-17652: Fix a bug that could cause long leader elections to leave PULL replicas in DOWN state forever. (hossman)
-
-* SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
-
-* SOLR-17673: Disable multi-threaded search execution by default at the node-level.
-  Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
-  (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
-
-* SOLR-17644: Fixes collection creation failure when using a replica placement plugin with basic auth. SolrCloudManager
-  now directly uses HttpSolrClientProvider's client, resolving missing auth listeners. (Sanjay Dutt, David Smiley)
 
 Dependency Upgrades
 ---------------------
@@ -106,14 +86,36 @@ Other Changes
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
-* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
-
 * SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
 
 ==================  9.8.1 ==================
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
+
+* SOLR-17637: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
+  This can cause the HttpShardHandler to indefinitely wait on a completed response that will never come. (Houston Putman)
+
+* SOLR-17673: Disable multi-threaded search execution by default at the node-level.
+  Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
+  (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
+
+* SOLR-17652: Fix a bug that could cause long leader elections to leave PULL replicas in DOWN state forever. (hossman)
+
+* SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
+
+* SOLR-17221: If multiple query param keys are sent that only vary by case, they were wrongly merged when
+  doing distributed search (sharded collections). This could likely occur for fielded parameters such as
+  f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
+
+* SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
+
+* SOLR-17677: Before attempting a delete by query ("DBQ"), Solr now checks whether the provided query can be run using a Lucene IndexSearcher,
+  and aborts the operation with a '400' error if it cannot. (Jason Gerlowski)
+
+* SOLR-17644: Fixes collection creation failure when using a replica placement plugin with basic auth. SolrCloudManager
+  now directly uses HttpSolrClientProvider's client, resolving missing auth listeners. (Sanjay Dutt, David Smiley)
 
 Dependency Upgrades
 ---------------------
