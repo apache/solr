@@ -22,6 +22,7 @@ import org.apache.commons.cli.Options;
 
 public interface Tool {
   /** Defines the interface to a Solr tool that can be run from this command-line app. */
+  @Deprecated
   String getName();
 
   /**
@@ -30,6 +31,7 @@ public interface Tool {
    *
    * @return The custom usage string or 'null' to auto generate (default)
    */
+  @Deprecated
   default String getUsage() {
     return null;
   }
@@ -37,6 +39,7 @@ public interface Tool {
   /**
    * Optional header to display before the options in help output. Defaults to 'List of options:'
    */
+  @Deprecated
   default String getHeader() {
     return "List of options:";
   }
@@ -45,6 +48,7 @@ public interface Tool {
    * Optional footer to display after the options in help output. Defaults to a link to reference
    * guide
    */
+  @Deprecated
   default String getFooter() {
     return "\nPlease see the Reference Guide for more tools documentation: https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html";
   }
@@ -54,7 +58,9 @@ public interface Tool {
    *
    * @return The {@link Options} this tool supports.
    */
+  @Deprecated
   Options getOptions();
 
+  @Deprecated
   int runTool(CommandLine cli) throws Exception;
 }
