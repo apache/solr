@@ -97,7 +97,7 @@ task downloadBrowserify(type: NpmTask) {
 tasks.register("generateUiDevFiles") {
   description = "Generate new UI for development and add files to outputs for later referencing."
   group = "build"
-  onlyIf { rootProject.ext.withNewUiModule }
+  onlyIf { rootProject.ext.withUiModule }
 
   // Development files are larger in size but have shorter compile times.
   dependsOn project(":solr:ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
@@ -107,7 +107,7 @@ tasks.register("generateUiDevFiles") {
 tasks.register("generateUiProdFiles") {
   description = "Generate new UI for production and add files to outputs for later referencing"
   group = "build"
-  onlyIf { rootProject.ext.withNewUiModule }
+  onlyIf { rootProject.ext.withUiModule }
 
   // Production files are smaller in size but have longer compile times.
   dependsOn project(":solr:ui").tasks.wasmJsBrowserDistribution
@@ -153,7 +153,7 @@ war {
 
   // Include new Admin UI files in webapp
   // By default, we always build dev that does not optimize generated files for release to reduce build times.
-  if (rootProject.ext.withNewUiModule) {
+  if (rootProject.ext.withUiModule) {
     if (rootProject.ext.development) {
       from (tasks.generateUiDevFiles) {
         into "ui"

@@ -119,7 +119,7 @@ ext {
   vectorIncubatorJavaVersions = [ JavaVersion.VERSION_21, JavaVersion.VERSION_22, JavaVersion.VERSION_23, JavaVersion.VERSION_24, JavaVersion.VERSION_25 ] as Set
 
   // Flag that allows disabling the experimental UI via gradle properties
-  withNewUiModule = !project.hasProperty('disableNewUiModule') || project.findProperty('disableNewUiModule') != 'true'
+  withUiModule = !project.hasProperty('disableUiModule') || project.findProperty('disableUiModule') != 'true'
 }
 
 // Include smaller chunks configuring dedicated build areas.

@@ -68,8 +68,8 @@ include "solr:docker"
 include "solr:prometheus-exporter"
 
 // Do not load the new UI module if it is disabled explicitly
-def withNewUiModule = !rootProject.hasProperty('disableNewUiModule') || rootProject.findProperty('disableNewUiModule') != 'true'
-if (withNewUiModule) { // Exclude new UI from unsupported OS builds
+def withUiModule = !rootProject.hasProperty('disableUiModule') || rootProject.findProperty('disableUiModule') != 'true'
+if (withUiModule) { // Exclude new UI from unsupported OS builds
     include(":solr:ui")
 }
 
