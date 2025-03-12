@@ -29,7 +29,7 @@ import org.apache.commons.cli.CommandLine;
 public class CLITestHelper {
 
   /**
-   * Run a tool with all parameters, as specified in the command line. Fist parameter must be the
+   * Run a tool with all parameters, as specified in the command line. First parameter must be the
    * tool name.
    *
    * @param args Complete command line.
