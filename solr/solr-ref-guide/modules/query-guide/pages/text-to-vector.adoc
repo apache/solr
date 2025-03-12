@@ -351,7 +351,7 @@ This has data traffic implications(you transfer your documents over the network 
 
 If your use case is compatible with xref:indexing-guide:partial-document-updates.adoc[Partial Updates], you can do better:
 
-You still define two chains, but this time the 'vectorisation' one only includes the 'TextToVectorUpdateProcessor' (and the xref:configuration-guide:update-request-processors#update-processor-factories-you-should-_not_-modify-or-remove[Mandatory Processors] )
+You still define two chains, but this time the 'vectorisation' one only includes the 'TextToVectorUpdateProcessor' (and the xref:configuration-guide:update-request-processors.adoc[Mandatory Processors] )
 
 [source,xml]
 ----

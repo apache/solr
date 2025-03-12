@@ -73,14 +73,14 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
       } catch (RuntimeException vectorisationFailure) {
         SchemaField uniqueKeyField = schema.getUniqueKeyField();
         String uniqueKeyFieldName = uniqueKeyField.getName();
-        log.error(
-            "Could not vectorise: "
-                + inputField
-                + " for the document with "
-                + uniqueKeyFieldName
-                + ": "
-                + doc.getFieldValue(uniqueKeyFieldName),
-            vectorisationFailure);
+        if (log.isErrorEnabled()) {
+          log.error(
+              "Could not vectorise: {} for the document with {}: {}",
+              inputField,
+              uniqueKeyFieldName,
+              doc.getFieldValue(uniqueKeyFieldName),
+              vectorisationFailure);
+        }
       }
     }
     super.processAdd(cmd);
