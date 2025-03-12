@@ -116,7 +116,7 @@ ext {
   }
 
   // Flag that allows disabling the experimental UI via gradle properties
-  withNewUiModule = !project.hasProperty('disableNewUiModule') || project.findProperty('disableNewUiModule') != 'true'
+  withUiModule = !project.hasProperty('disableUiModule') || project.findProperty('disableUiModule') != 'true'
 }
 
 // Include smaller chunks configuring dedicated build areas.
