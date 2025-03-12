@@ -20,7 +20,6 @@ import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.output.Response;
-
 import java.util.List;
 
 public class ExceptionThrowingEmbeddingModel implements EmbeddingModel {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.llm.textvectorisation.update.processor;
 
+import java.io.IOException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -27,139 +28,141 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-
-
-
-
 public class TextToVectorUpdateProcessorTest extends TestLlmBase {
 
-    @BeforeClass
-    public static void init() throws Exception {
-        setupTest("solrconfig-llm.xml", "schema.xml", false, false);
-    }
+  @BeforeClass
+  public static void init() throws Exception {
+    setupTest("solrconfig-llm.xml", "schema.xml", false, false);
+  }
 
-    @AfterClass
-    public static void cleanup() throws Exception {
-        afterTest();
-    }
+  @AfterClass
+  public static void cleanup() throws Exception {
+    afterTest();
+  }
 
-    @Test
-    public void processAdd_inputField_shouldVectoriseInputField()
-            throws Exception {
-        loadModel("dummy-model.json");//preparation
+  @Test
+  public void processAdd_inputField_shouldVectoriseInputField() throws Exception {
+    loadModel("dummy-model.json"); // preparation
 
-        addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."),"textToVector");
-        addWithChain(sdoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."),"textToVector");
-        assertU(commit());
+    addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
+    addWithChain(
+        sdoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."),
+        "textToVector");
+    assertU(commit());
 
-        final String solrQuery = "*:*";
-        final SolrQuery query = new SolrQuery();
-        query.setQuery(solrQuery);
-        query.add("fl", "id,vector");
+    final String solrQuery = "*:*";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "id,vector");
 
-        assertJQ(
-                "/query" + query.toQueryString(),
-                "/response/numFound==2]",
-                "/response/docs/[0]/id=='99'",
-                "/response/docs/[0]/vector==[1.0, 2.0, 3.0, 4.0]",
-                "/response/docs/[1]/id=='98'",
-                "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "/response/docs/[0]/vector==[1.0, 2.0, 3.0, 4.0]",
+        "/response/docs/[1]/id=='98'",
+        "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); //clean up
-    }
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
+  }
 
-    /*
-    This test looks for the 'dummy-1' model, but such model is not loaded, the model store is empty, so the update fails
-     */
-    @Test
-    public void processAdd_modelNotFound_shouldThrowException() throws SolrServerException, IOException {
-        RuntimeException thrown =
-                assertThrows(
-                        "model not found should throw an exception",
-                        SolrClient.RemoteSolrException.class,
-                        () -> {
-                            addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."),"textToVector");
-                        });
-        assertTrue(
-                thrown.getMessage().contains(
-                        "The model configured in the Update Request Processor 'dummy-1' can't be found in the store: /schema/text-to-vector-model-store"));
-    }
+  /*
+  This test looks for the 'dummy-1' model, but such model is not loaded, the model store is empty, so the update fails
+   */
+  @Test
+  public void processAdd_modelNotFound_shouldThrowException() {
+    RuntimeException thrown =
+        assertThrows(
+            "model not found should throw an exception",
+            SolrClient.RemoteSolrException.class,
+            () -> {
+              addWithChain(
+                  sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
+            });
+    assertTrue(
+        thrown
+            .getMessage()
+            .contains(
+                "The model configured in the Update Request Processor 'dummy-1' can't be found in the store: /schema/text-to-vector-model-store"));
+  }
 
-    @Test
-    public void processAdd_emptyInputField_shouldLogAndIndexWithNoVector() throws Exception {
-        loadModel("dummy-model.json");//preparation
-        addWithChain(sdoc("id", "99", "_text_", ""),"textToVector");
-        addWithChain(sdoc("id", "98", "_text_", "Vegeta is the saiyan prince."),"textToVector");
-        assertU(commit());
+  @Test
+  public void processAdd_emptyInputField_shouldLogAndIndexWithNoVector() throws Exception {
+    loadModel("dummy-model.json"); // preparation
+    addWithChain(sdoc("id", "99", "_text_", ""), "textToVector");
+    addWithChain(sdoc("id", "98", "_text_", "Vegeta is the saiyan prince."), "textToVector");
+    assertU(commit());
 
-        final String solrQuery = "*:*";
-        final SolrQuery query = new SolrQuery();
-        query.setQuery(solrQuery);
-        query.add("fl", "id,vector");
+    final String solrQuery = "*:*";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "id,vector");
 
-        assertJQ(
-                "/query" + query.toQueryString(),
-                "/response/numFound==2]",
-                "/response/docs/[0]/id=='99'",
-                "!/response/docs/[0]/vector==", //no vector field for the document 99
-                "/response/docs/[1]/id=='98'",
-                "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "!/response/docs/[0]/vector==", // no vector field for the document 99
+        "/response/docs/[1]/id=='98'",
+        "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); //clean up
-    }
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
+  }
 
-    @Test
-    public void processAdd_nullInputField_shouldLogAndIndexWithNoVector() throws Exception {
-        loadModel("dummy-model.json");//preparation
-        addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."),"textToVector");
-        assertU(adoc("id", "98"));
-        assertU(commit());
+  @Test
+  public void processAdd_nullInputField_shouldLogAndIndexWithNoVector() throws Exception {
+    loadModel("dummy-model.json"); // preparation
+    addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
+    assertU(adoc("id", "98"));
+    assertU(commit());
 
-        final String solrQuery = "*:*";
-        final SolrQuery query = new SolrQuery();
-        query.setQuery(solrQuery);
-        query.add("fl", "id,vector");
+    final String solrQuery = "*:*";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "id,vector");
 
-        assertJQ(
-                "/query" + query.toQueryString(),
-                "/response/numFound==2]",
-                "/response/docs/[0]/id=='99'",
-                "/response/docs/[0]/vector==[1.0, 2.0, 3.0, 4.0]",
-                "/response/docs/[1]/id=='98'",
-                "!/response/docs/[1]/vector==");//no vector field for the document 98
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "/response/docs/[0]/vector==[1.0, 2.0, 3.0, 4.0]",
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/vector=="); // no vector field for the document 98
 
-        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); //clean up
-    }
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
+  }
 
-    @Test
-    public void processAdd_failingVectorisation_shouldLogAndIndexWithNoVector() throws Exception {
-        loadModel("exception-throwing-model.json");//preparation
-        addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."),"failingTextToVector");
-        addWithChain(sdoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."),"failingTextToVector");
-        assertU(commit());
+  @Test
+  public void processAdd_failingVectorisation_shouldLogAndIndexWithNoVector() throws Exception {
+    loadModel("exception-throwing-model.json"); // preparation
+    addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "failingTextToVector");
+    addWithChain(
+        sdoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."),
+        "failingTextToVector");
+    assertU(commit());
 
-        final String solrQuery = "*:*";
-        final SolrQuery query = new SolrQuery();
-        query.setQuery(solrQuery);
-        query.add("fl", "id,vector");
+    final String solrQuery = "*:*";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "id,vector");
 
-        assertJQ(
-                "/query" + query.toQueryString(),
-                "/response/numFound==2]",
-                "/response/docs/[0]/id=='99'",
-                "!/response/docs/[0]/vector==",//no vector field for the document 99
-                "/response/docs/[1]/id=='98'",
-                "!/response/docs/[1]/vector==");//no vector field for the document 98
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "!/response/docs/[0]/vector==", // no vector field for the document 99
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/vector=="); // no vector field for the document 98
 
-        restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/exception-throwing-model"); //clean up
-    }
+    restTestHarness.delete(
+        ManagedTextToVectorModelStore.REST_END_POINT + "/exception-throwing-model"); // clean up
+  }
 
-    void addWithChain(SolrInputDocument document, String updateChain) throws SolrServerException, IOException {
-        UpdateRequest req = new UpdateRequest();
-        req.add(document);
-        req.setParam("update.chain", updateChain);
-        solrClientTestRule.getSolrClient("collection1").request(req);
-    }
-
+  void addWithChain(SolrInputDocument document, String updateChain)
+      throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    req.add(document);
+    req.setParam("update.chain", updateChain);
+    solrClientTestRule.getSolrClient("collection1").request(req);
+  }
 }

@@ -17,6 +17,10 @@
 
 package org.apache.solr.llm.textvectorisation.update.processor;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.llm.textvectorisation.model.SolrTextToVectorModel;
@@ -28,59 +32,63 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-
-
 class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private IndexSchema schema;
-    private final String inputField;
-    private final String outputField;
-    private SolrTextToVectorModel textToVector;
+  private IndexSchema schema;
+  private final String inputField;
+  private final String outputField;
+  private SolrTextToVectorModel textToVector;
 
-    public TextToVectorUpdateProcessor(
-            String inputField,
-            String outputField,
-            SolrTextToVectorModel textToVector,
-            SolrQueryRequest req, UpdateRequestProcessor next) {
-        super(next);
-        this.schema = req.getSchema();
-        this.inputField = inputField;
-        this.outputField = outputField;
-        this.textToVector = textToVector;
-    }
+  public TextToVectorUpdateProcessor(
+      String inputField,
+      String outputField,
+      SolrTextToVectorModel textToVector,
+      SolrQueryRequest req,
+      UpdateRequestProcessor next) {
+    super(next);
+    this.schema = req.getSchema();
+    this.inputField = inputField;
+    this.outputField = outputField;
+    this.textToVector = textToVector;
+  }
 
-    /**
-     * @param cmd the update command in input containing the Document to process
-     * @throws IOException If there is a low-level I/O error
-     */
-    @Override
-    public void processAdd(AddUpdateCommand cmd) throws IOException {
-        SolrInputDocument doc = cmd.getSolrInputDocument();
-        SolrInputField inputFieldContent = doc.get(inputField);
-        if (!isNullOrEmpty(inputFieldContent)) {
-            try {
-                String textToVectorise = inputFieldContent.getValue().toString();
-                float[] vector = textToVector.vectorise(textToVectorise);
-                List<Float> vectorAsList = new ArrayList<Float>(vector.length);
-                for (float f : vector) {
-                    vectorAsList.add(f);
-                }
-                doc.addField(outputField, vectorAsList);
-            } catch (RuntimeException vectorisationFailure) {
-                SchemaField uniqueKeyField = schema.getUniqueKeyField();
-                String uniqueKeyFieldName = uniqueKeyField.getName();
-                log.error("Could not vectorise: " + inputField + " for the document with " + uniqueKeyFieldName + ": " + doc.getFieldValue(uniqueKeyFieldName), vectorisationFailure);
-            }
+  /**
+   * @param cmd the update command in input containing the Document to process
+   * @throws IOException If there is a low-level I/O error
+   */
+  @Override
+  public void processAdd(AddUpdateCommand cmd) throws IOException {
+    SolrInputDocument doc = cmd.getSolrInputDocument();
+    SolrInputField inputFieldContent = doc.get(inputField);
+    if (!isNullOrEmpty(inputFieldContent)) {
+      try {
+        String textToVectorise = inputFieldContent.getValue().toString();
+        float[] vector = textToVector.vectorise(textToVectorise);
+        List<Float> vectorAsList = new ArrayList<Float>(vector.length);
+        for (float f : vector) {
+          vectorAsList.add(f);
         }
-        super.processAdd(cmd);
+        doc.addField(outputField, vectorAsList);
+      } catch (RuntimeException vectorisationFailure) {
+        SchemaField uniqueKeyField = schema.getUniqueKeyField();
+        String uniqueKeyFieldName = uniqueKeyField.getName();
+        log.error(
+            "Could not vectorise: "
+                + inputField
+                + " for the document with "
+                + uniqueKeyFieldName
+                + ": "
+                + doc.getFieldValue(uniqueKeyFieldName),
+            vectorisationFailure);
+      }
     }
+    super.processAdd(cmd);
+  }
 
-    protected boolean isNullOrEmpty(SolrInputField inputFieldContent) {
-        return (inputFieldContent == null || inputFieldContent.getValue() == null || inputFieldContent.getValue().toString().isEmpty());
-    }
+  protected boolean isNullOrEmpty(SolrInputField inputFieldContent) {
+    return (inputFieldContent == null
+        || inputFieldContent.getValue() == null
+        || inputFieldContent.getValue().toString().isEmpty());
+  }
 }
