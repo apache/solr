@@ -57,7 +57,6 @@ include "solr:modules:s3-repository"
 include "solr:modules:scripting"
 include "solr:modules:sql"
 include "solr:webapp"
-include "solr:ui"
 include "solr:benchmark"
 include "solr:test-framework"
 include "solr:solr-ref-guide"
@@ -67,6 +66,12 @@ include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
 include "solr:prometheus-exporter"
+
+// Do not load the new UI module if it is disabled explicitly
+def withNewUiModule = !rootProject.hasProperty('disableNewUiModule') || rootProject.findProperty('disableNewUiModule') != 'true'
+if (withNewUiModule) { // Exclude new UI from unsupported OS builds
+    include(":solr:ui")
+}
 
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
