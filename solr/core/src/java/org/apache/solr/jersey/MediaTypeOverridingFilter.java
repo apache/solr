@@ -25,7 +25,6 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
@@ -65,7 +64,7 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
     // TODO Is it valid for SQRequest to be null?
     final var params = (solrQueryRequest != null) ? solrQueryRequest.getParams() : null;
-    final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(params, MediaType.APPLICATION_JSON);
+    final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(params, null);
     if (mediaType != null) {
       responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
     }
