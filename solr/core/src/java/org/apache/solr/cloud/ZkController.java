@@ -857,7 +857,6 @@ public class ZkController implements Closeable {
               .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
-      cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
   }
@@ -1101,7 +1100,7 @@ public class ZkController implements Closeable {
           (collectionState) -> {
             if (collectionState == null) return false;
             boolean allStatesCorrect =
-                Optional.ofNullable(collectionState.getReplicas(nodeName)).stream()
+                Optional.ofNullable(collectionState.getReplicasOnNode(nodeName)).stream()
                     .flatMap(List::stream)
                     .allMatch(replica -> replica.getState() == Replica.State.DOWN);
 

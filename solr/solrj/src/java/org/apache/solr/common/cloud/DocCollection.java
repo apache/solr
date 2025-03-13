@@ -358,7 +358,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /** Get the list of replicas hosted on the given node or <code>null</code> if none. */
+  @Deprecated // see getReplicasOnNode
   public List<Replica> getReplicas(String nodeName) {
+    return getReplicasOnNode(nodeName);
+  }
+
+  /** Get the list of replicas hosted on the given node or <code>null</code> if none. */
+  public List<Replica> getReplicasOnNode(String nodeName) {
     return nodeNameReplicas.get(nodeName);
   }
 
@@ -451,6 +457,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *
    * @see CollectionStatePredicate
    */
+  @Deprecated // only for 2 tests
   public static boolean isFullyActive(
       Set<String> liveNodes,
       DocCollection collectionState,
@@ -512,6 +519,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /** Get the shardId of a core on a specific node */
+  @Deprecated // only one usage; obscure looking
   public String getShardId(String nodeName, String coreName) {
     for (Slice slice : this) {
       for (Replica replica : slice) {
@@ -578,10 +586,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   @Deprecated
   public int getExpectedReplicaCount(Replica.Type type, int def) {
     // def is kept for backwards compatibility.
-    return numReplicas.get(type);
-  }
-
-  public int getExpectedReplicaCount(Replica.Type type) {
     return numReplicas.get(type);
   }
 
