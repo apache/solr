@@ -432,7 +432,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
                     .toString()
                     .lastIndexOf(
                         "sample_techproducts_configs"
-                            + FileSystems.getDefault().getSeparator()
+                            + System.getProperty("path.separator")
                             + "conf");
             String relativePathofFile =
                 sourceFile

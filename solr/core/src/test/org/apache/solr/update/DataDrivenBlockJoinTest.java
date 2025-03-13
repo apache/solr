@@ -16,8 +16,10 @@
  */
 package org.apache.solr.update;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,8 +32,9 @@ public class DataDrivenBlockJoinTest extends SolrTestCaseJ4 {
   @Before
   public void before() throws Exception {
     Path tmpSolrHome = createTempDir();
-    Path tmpConfDir = tmpSolrHome.resolve(confDir);
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
     Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
     PathUtils.copyFileToDirectory(testHomeConfDir.resolve("solrconfig-schemaless.xml"), tmpConfDir);
     PathUtils.copyFileToDirectory(
         testHomeConfDir.resolve("schema-add-schema-fields-update-processor.xml"), tmpConfDir);

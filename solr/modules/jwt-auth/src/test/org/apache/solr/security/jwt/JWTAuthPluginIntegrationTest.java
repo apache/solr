@@ -32,7 +32,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.security.KeyStore;
 import java.util.Base64;
 import java.util.HashMap;
@@ -106,7 +105,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
     Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
-    Files.newOutputStream(tempDir, StandardOpenOption.DELETE_ON_CLOSE);
+    tempDir.toFile().deleteOnExit();
 
     Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
     new KeystoreGenerator()

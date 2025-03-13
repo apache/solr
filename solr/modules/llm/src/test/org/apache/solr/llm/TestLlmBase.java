@@ -21,7 +21,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,7 +60,7 @@ public class TestLlmBase extends RestTestBase {
   protected static void initFolders(boolean isPersistent) throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
-    Files.newOutputStream(tmpConfDir, StandardOpenOption.DELETE_ON_CLOSE);
+    tmpConfDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
 
     final Path modelStore = tmpConfDir.resolve(MODEL_FILE_NAME);

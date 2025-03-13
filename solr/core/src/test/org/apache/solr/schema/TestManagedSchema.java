@@ -22,11 +22,13 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.common.SolrException;
@@ -55,10 +57,13 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   @Before
   public void initManagedSchemaCore() throws Exception {
     tmpSolrHome = createTempDir();
-    tmpConfDir = tmpSolrHome.resolve(confDir);
+    tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
     Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
     PathUtils.copyFileToDirectory(
-        testHomeConfDir.resolve("solrconfig-managed-schema.xml"), tmpConfDir);
+        testHomeConfDir.resolve("solrconfig-managed-schema.xml"),
+        tmpConfDir,
+        StandardCopyOption.REPLACE_EXISTING);
     PathUtils.copyFileToDirectory(testHomeConfDir.resolve("solrconfig-basic.xml"), tmpConfDir);
     PathUtils.copyFileToDirectory(
         testHomeConfDir.resolve("solrconfig-managed-schema-test.xml"), tmpConfDir);

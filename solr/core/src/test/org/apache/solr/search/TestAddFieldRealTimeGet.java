@@ -16,9 +16,11 @@
  */
 package org.apache.solr.search;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
@@ -31,8 +33,9 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
   @Before
   public void initManagedSchemaCore() throws Exception {
     final Path tmpSolrHome = createTempDir().toAbsolutePath();
-    Path tmpConfDir = tmpSolrHome.resolve(confDir);
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
     Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
     final String configFileName = "solrconfig-managed-schema.xml";
     final String schemaFileName = "schema-id-and-version-fields-only.xml";
     PathUtils.copyFileToDirectory(testHomeConfDir.resolve(configFileName), tmpConfDir);

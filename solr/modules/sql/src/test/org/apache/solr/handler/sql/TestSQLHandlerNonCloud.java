@@ -17,9 +17,7 @@
 package org.apache.solr.handler.sql;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
@@ -43,7 +41,7 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path solrHome = createSolrHome();
-    Files.newOutputStream(solrHome, StandardOpenOption.DELETE_ON_CLOSE);
+    solrHome.toFile().deleteOnExit();
     createAndStartJetty(solrHome.toAbsolutePath());
   }
 

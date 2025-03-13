@@ -427,10 +427,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       SolrCore lc5 = cc.getCore("collection5");
       SolrCore lc6 = cc.getCore("collection6");
 
-      copyMinConf(solrHomeDirectory, "t2");
-      copyMinConf(solrHomeDirectory, "t4");
-      copyMinConf(solrHomeDirectory, "t5");
-      copyMinConf(solrHomeDirectory, "t6");
+      copyMinConf(solrHomeDirectory.resolve("t2"));
+      copyMinConf(solrHomeDirectory.resolve("t4"));
+      copyMinConf(solrHomeDirectory.resolve("t5"));
+      copyMinConf(solrHomeDirectory.resolve("t6"));
 
       // Should also fail with the same name
       tryCreateFail(admin, "collection2", "t12", "Core with name", "collection2", "already exists");
@@ -487,11 +487,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   public void testCreateTransientFromAdmin() throws Exception {
     final CoreContainer cc = initEmpty();
     try {
-      copyMinConf(solrHomeDirectory, "core1");
-      copyMinConf(solrHomeDirectory, "core2");
-      copyMinConf(solrHomeDirectory, "core3");
-      copyMinConf(solrHomeDirectory, "core4");
-      copyMinConf(solrHomeDirectory, "core5");
+      copyMinConf(solrHomeDirectory.resolve("core1"));
+      copyMinConf(solrHomeDirectory.resolve("core2"));
+      copyMinConf(solrHomeDirectory.resolve("core3"));
+      copyMinConf(solrHomeDirectory.resolve("core4"));
+      copyMinConf(solrHomeDirectory.resolve("core5"));
 
       createViaAdmin(cc, "core1", true, true);
       createViaAdmin(cc, "core2", true, false);

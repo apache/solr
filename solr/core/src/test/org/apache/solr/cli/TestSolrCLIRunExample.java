@@ -448,7 +448,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     Path solrExampleDir = createTempDir();
 
-    Path solrServerDir = solrHomeDir.toAbsolutePath();
+    Path solrServerDir = solrHomeDir.getParent();
 
     String[] toolArgs =
         new String[] {

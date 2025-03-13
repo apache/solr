@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.DOMUtil;
@@ -96,8 +98,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   @Before
   public void initManagedSchemaCore() throws Exception {
     Path tmpSolrHome = createTempDir();
-    Path tmpConfDir = tmpSolrHome.resolve(confDir);
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
     Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
     PathUtils.copyFileToDirectory(
         testHomeConfDir.resolve("solrconfig-managed-schema.xml"), tmpConfDir);
     PathUtils.copyFileToDirectory(

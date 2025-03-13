@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.IndexSchema;
@@ -45,8 +47,9 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
   @Before
   public void initManagedSchemaCore() throws Exception {
     Path tmpSolrHome = createTempDir();
-    Path tmpConfDir = tmpSolrHome.resolve(confDir);
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
     Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
     PathUtils.copyFileToDirectory(testHomeConfDir.resolve(SOLRCONFIG_XML), tmpConfDir);
     PathUtils.copyFileToDirectory(testHomeConfDir.resolve(SCHEMA_XML), tmpConfDir);
 

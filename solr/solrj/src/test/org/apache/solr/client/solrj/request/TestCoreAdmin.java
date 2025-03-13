@@ -116,8 +116,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       assertEquals(
           dataDir
               .resolve("ulog" + FileSystems.getDefault().getSeparator() + "tlog")
-              .toAbsolutePath(),
-          logDir.toAbsolutePath());
+              .toAbsolutePath()
+              .toString(),
+          logDir.toAbsolutePath().toString());
     }
   }
 

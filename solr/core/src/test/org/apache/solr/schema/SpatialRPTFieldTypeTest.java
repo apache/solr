@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.After;
@@ -38,9 +39,10 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   @Before
   public void initManagedSchemaCore() throws Exception {
     tmpSolrHome = createTempDir();
-    tmpConfDir = tmpSolrHome.resolve(confDir);
+    tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
     Path testHomeConfDir = TEST_HOME().resolve(confDir);
-    org.apache.commons.io.file.PathUtils.copyFileToDirectory(
+    Files.createDirectories(tmpConfDir);
+    PathUtils.copyFileToDirectory(
         testHomeConfDir.resolve("solrconfig-managed-schema.xml"), tmpConfDir);
     PathUtils.copyFileToDirectory(testHomeConfDir.resolve("solrconfig-basic.xml"), tmpConfDir);
     PathUtils.copyFileToDirectory(

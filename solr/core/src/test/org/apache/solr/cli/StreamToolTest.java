@@ -209,7 +209,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     for (int i = 0; i < 4; i++) {
       Tuple t = tuples.get(i);
       assertEquals(localFile.getFileName() + " line " + (i + 1), t.get("line"));
-      assertEquals(localFile.toAbsolutePath(), t.get("file"));
+      assertEquals(localFile.toAbsolutePath().toString(), t.get("file"));
     }
   }
 

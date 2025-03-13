@@ -16,9 +16,11 @@
  */
 package org.apache.solr.search;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -47,11 +49,10 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
    */
   @BeforeClass
   public static void setupTempDirAndCoreWithManagedSchema() throws Exception {
-    solrHome = createTempDir();
-    solrHome = solrHome.toAbsolutePath();
-
-    Path confDir = solrHome.resolve(confPath);
+    solrHome = createTempDir().toAbsolutePath();
+    Path confDir = FilterPath.unwrap(solrHome.resolve(confPath));
     Path testHomeConfDir = TEST_HOME().resolve(confPath);
+    Files.createDirectories(confDir);
     PathUtils.copyFileToDirectory(
         testHomeConfDir.resolve("solrconfig-managed-schema.xml"), confDir);
     PathUtils.copyFileToDirectory(
