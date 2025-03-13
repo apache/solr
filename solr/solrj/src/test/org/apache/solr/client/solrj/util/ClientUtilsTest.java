@@ -17,10 +17,10 @@
 package org.apache.solr.client.solrj.util;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.junit.Test;
 
@@ -55,7 +55,7 @@ public class ClientUtilsTest extends SolrTestCase {
 
   @Test
   public void testUrlBuilding() throws Exception {
-    final var rw = new RequestWriter();
+    final var rw = new XMLRequestWriter();
     // Simple case, non-collection request
     {
       final var request = new HealthCheckRequest();

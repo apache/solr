@@ -31,7 +31,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Date;
@@ -76,7 +75,7 @@ public class DistribFileStore implements FileStore {
 
   public DistribFileStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    this.solrHome = Paths.get(this.coreContainer.getSolrHome());
+    this.solrHome = this.coreContainer.getSolrHome();
   }
 
   @Override

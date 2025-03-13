@@ -69,7 +69,8 @@ Due to changes in Lucene 9, that isn't possible any more.
 
 == Solr 9.8.1
 === Configuration
-In solrconfig.xml, the `indexSearcherExecutorThreads` now defaults to 0.
+
+In `solr.xml`, the `indexSearcherExecutorThreads` now defaults to 0.
 Therefore, multi-threaded search execution is disabled at a node-level by default.
 It is currently recommended to only use an `indexSearcherExecutorThreads > 0` if all query requests sent to Solr opt-in to multiThreaded search.
 Additionally, `indexSearcherExecutorThreads = -1` can be given to use the number of available CPU threads available to Solr.
@@ -78,6 +79,13 @@ This was the previous default.
 == Solr 9.8
 === Configuration
 In solrconfig.xml, the `numVersionBuckets` and `versionBucketLockTimeoutMs` settings are now obsolete and ignored; a warning will be logged if specified.
+
+`<lib/>` directives have been made into an "opt-in" feature in Solr 9.8 and must be explicitly enabled if desired (using a system property or environment variable like `-Dsolr.config.lib.enabled=true`) If not explicitly enabled, Solr will log a warning but otherwise quietly ignore any `<lib/>` tags in configsets.
+This is a breaking change, and we apologize for the disruption, but it's a necessary response to a number of security gaps that have come to light around this feature.
+`<lib/>` directives should be considered deprecated and will be removed entirely in Solr 10.0.
+Current users of `<lib/>` have a number of options to ensure their libraries remain on Solr's classpath, including: `SOLR_MODULES`, core "lib" directories, the solr.xml `<sharedLib>` tag, Solr's package manager, etc.
+
+If you're using the new/experimental `multiThreaded=true` parameter introduced in 9.7, you may now need to increase `indexSearcherExecutorThreads` in `solr.xml` to more fully utilize a machine than in 9.7.
 
 === Partial Results
 When query limits are in use and partial results are not desirable (i.e. reporting or quantitative usages of search)

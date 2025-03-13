@@ -310,7 +310,7 @@ public class RunExampleTool extends ToolBase {
             cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
     Map<String, Object> nodeStatus = startSolr(solrHomeDir, isCloudMode, cli, port, zkHost, 30);
 
-    String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"));
+    String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
     // If the example already exists then let the user know they should delete it, or
     // they may get unusual behaviors.

@@ -130,15 +130,10 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
           jetty.getCoreContainer().getSolrHome() + " vs " + workDir,
           // mock dirs from createTempDir() don't play nice with startsWith, so we have to use the
           // string value
-          Paths.get(jetty.getCoreContainer().getSolrHome()).startsWith(workDir));
+          jetty.getCoreContainer().getSolrHome().startsWith(workDir));
       assertEquals(
           jetty.getCoreContainer().getSolrHome(),
-          jetty
-              .getCoreContainer()
-              .getResourceLoader()
-              .getInstancePath()
-              .toAbsolutePath()
-              .toString());
+          jetty.getCoreContainer().getResourceLoader().getInstancePath().toAbsolutePath());
 
       assertTrue(
           CollectionAdminRequest.createCollection("test", 1, 1)
