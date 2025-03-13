@@ -40,7 +40,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.RawResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.TabularResponseWriter;
 import org.apache.solr.schema.FieldType;
@@ -48,10 +48,12 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.ReturnFields;
 
-public class XLSXResponseWriter extends RawResponseWriter {
+/** A .XLSX spreadsheet format {@link org.apache.solr.response.QueryResponseWriter}. */
+public class XLSXResponseWriter implements QueryResponseWriter {
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp)
+  public void write(
+      OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp, String contentType)
       throws IOException {
     // throw away arraywriter just to satisfy super requirements; we're grabbing
     // all writes before they go to it anyway

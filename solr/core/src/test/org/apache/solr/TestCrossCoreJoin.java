@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -27,7 +26,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.join.TestScoreJoinQPNoScore;
 import org.apache.solr.servlet.DirectSolrConnection;
@@ -213,11 +211,12 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   @Test
   public void testCoresAreDifferent() throws Exception {
     assertQEx("schema12.xml" + " has no \"cat\" field", req("cat:*"), ErrorCode.BAD_REQUEST);
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(fromCore, "cat:*", "/select", 0, 100, Collections.emptyMap());
-    final String resp = query(fromCore, req);
-    assertTrue(resp, resp.contains("numFound=\"1\""));
-    assertTrue(resp, resp.contains("<str name=\"id\">10</str>"));
+    try (var req =
+        new LocalSolrQueryRequest(fromCore, "cat:*", "/select", 0, 100, Collections.emptyMap())) {
+      final String resp = query(fromCore, req);
+      assertTrue(resp, resp.contains("numFound=\"1\""));
+      assertTrue(resp, resp.contains("<str name=\"id\">10</str>"));
+    }
   }
 
   public String query(SolrCore core, SolrQueryRequest req) throws Exception {
@@ -232,16 +231,15 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     }
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
-    core.execute(core.getRequestHandler(handler), req, rsp);
-    if (rsp.getException() != null) {
-      throw rsp.getException();
+    try {
+      core.execute(core.getRequestHandler(handler), req, rsp);
+      if (rsp.getException() != null) {
+        throw rsp.getException();
+      }
+      return req.getResponseWriter().writeToString(req, rsp);
+    } finally {
+      SolrRequestInfo.clearRequestInfo();
     }
-    StringWriter sw = new StringWriter(32000);
-    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-    responseWriter.write(sw, req, rsp);
-    req.close();
-    SolrRequestInfo.clearRequestInfo();
-    return sw.toString();
   }
 
   @AfterClass
