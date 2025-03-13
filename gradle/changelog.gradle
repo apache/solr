@@ -1,0 +1,50 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+logchange {
+  taskPrefix = "logchange"
+  rootPath = "."
+  inputDir = "changelog"
+  unreleasedVersionDir = "unreleased"
+  outputFile = "CHANGELOG.md"
+  configFile = "logchange-config.yml"
+  generateChangesXml = false
+  xmlOutputFile = "changes.xml"
+}
+
+task generateChangeYaml {
+  description = 'Generates a change/log description file (YAML)'
+  doLast {
+    def gitUserName = 'git config user.name'.execute().text.trim()
+    def gitBranch = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
+    def jiraMatcher = gitBranch =~ /SOLR-\d+/
+    def jiraRef = jiraMatcher ? jiraMatcher[0] : "SOLR-XXXX"
+    def fileName = "changelog/unreleased/${gitBranch}.yml"
+    def file = new File(fileName)
+    file.parentFile.mkdirs()
+    file.text = """# logchange format: https://github.com/logchange/logchange#yaml-format
+type: other # added/changed/deprecated/removed/fixed/security/dependency_update/other
+links:
+  - name: ${jiraRef}
+title: TITLE HERE
+authors:
+  - name: ${gitUserName}
+"""
+
+    println "Generated file: ${fileName} -- open it"
+  }
+}
