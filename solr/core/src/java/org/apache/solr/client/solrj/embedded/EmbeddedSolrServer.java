@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrDocument;
@@ -77,8 +78,8 @@ public class EmbeddedSolrServer extends SolrClient {
 
   @SuppressWarnings("ImmutableEnumChecker")
   public enum RequestWriterSupplier {
-    JavaBin(() -> new BinaryRequestWriter()),
-    XML(() -> new RequestWriter());
+    JavaBin(BinaryRequestWriter::new),
+    XML(XMLRequestWriter::new);
 
     private final Supplier<RequestWriter> supplier;
 

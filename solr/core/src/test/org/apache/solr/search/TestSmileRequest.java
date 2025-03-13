@@ -102,13 +102,9 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public NamedList<Object> processResponse(InputStream body, String encoding) {
-      try {
-        Map m = (Map) SmileWriterTest.decodeSmile(body);
-        return new NamedList(m);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
+      Map m = (Map) SmileWriterTest.decodeSmile(body);
+      return new NamedList(m);
     }
 
     @Override

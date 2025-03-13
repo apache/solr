@@ -80,7 +80,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       cores.getAllowPaths().add(dataDir.toPath()); // Allow the test dir
       cores.getAllowPaths().add(newCoreInstanceDir.toPath()); // Allow the test dir
 
-      File instanceDir = new File(cores.getSolrHome());
+      File instanceDir = cores.getSolrHome().toFile();
       FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir, "newcore"));
 
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
