@@ -16,4 +16,4 @@
  */
 
 /** Contains model store related classes. */
-package org.apache.solr.llm.texttovector.store;
+package org.apache.solr.llm.textvectorisation.store;
