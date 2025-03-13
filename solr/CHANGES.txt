@@ -202,6 +202,8 @@ Bug Fixes
   used for fetching cluster state when all live nodes have failed. (Matthew Biscocho via David Smiley, Houston Putman)
 
 
+* SOLR-17690: Make solr CLI tools read ZK_HOST environment as documented (Jan Høydahl)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
