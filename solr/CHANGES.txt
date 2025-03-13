@@ -188,6 +188,8 @@ Improvements
 * SOLR-17607: SolrJ CloudSolrClient configured with HTTP URLs will no longer eagerly connect to
   anything. (David Smiley)
 
+* SOLR-17685: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of existing SOLR_HOST ENV variable. (Eric Pugh, Houston Putnam)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
