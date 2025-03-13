@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -105,11 +104,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
     public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
       Map m = (Map) SmileWriterTest.decodeSmile(body);
       return new NamedList(m);
-    }
-
-    @Override
-    public NamedList<Object> processResponse(Reader reader) {
-      throw new UnsupportedOperationException();
     }
 
     @Override
