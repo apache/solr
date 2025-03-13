@@ -21,7 +21,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
 
 import jakarta.inject.Inject;
 import java.util.List;
-import org.apache.solr.client.api.endpoint.ListCollectionsApi;
+import org.apache.solr.client.api.endpoint.CollectionApis;
 import org.apache.solr.client.api.model.ListCollectionsResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
@@ -34,7 +34,7 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API (GET /v2/collections) is equivalent to the v1 /admin/collections?action=LIST command
  */
-public class ListCollections extends AdminAPIBase implements ListCollectionsApi {
+public class ListCollections extends AdminAPIBase implements CollectionApis.List {
 
   @Inject
   public ListCollections(CoreContainer coreContainer, SolrQueryRequest req, SolrQueryResponse rsp) {

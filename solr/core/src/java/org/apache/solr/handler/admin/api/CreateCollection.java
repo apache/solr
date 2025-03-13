@@ -53,7 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.solr.client.api.endpoint.CreateCollectionApi;
+import org.apache.solr.client.api.endpoint.CollectionApis;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionRouterProperties;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
@@ -85,7 +85,7 @@ import org.apache.zookeeper.KeeperException;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=CREATE command.
  */
-public class CreateCollection extends AdminAPIBase implements CreateCollectionApi {
+public class CreateCollection extends AdminAPIBase implements CollectionApis.Create {
 
   @Inject
   public CreateCollection(
@@ -129,19 +129,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
             remoteMessage,
             CollectionParams.CollectionAction.CREATE,
             DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-      return response;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
-    response.warning = (String) remoteResponse.getResponse().get("warning");
+    processRemoteResponse(response, remoteResponse, requestBody.async);
 
     // Even if Overseer does wait for the collection to be created, it sees a different cluster
     // state than this node, so this wait is required to make sure the local node Zookeeper watches
