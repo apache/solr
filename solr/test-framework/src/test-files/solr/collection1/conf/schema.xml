@@ -437,14 +437,6 @@
   <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
 
   <!-- Currency type -->
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
-  <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar"
-             multiValued="false"/>
-  <fieldType name="oer_currency"
-             class="solr.CurrencyField"
-             multiValued="false"
-             providerClass="solr.OpenExchangeRatesOrgProvider"
-             ratesFileLocation="open-exchange-rates.json"/>
   <fieldType name="currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
              currencyConfig="currency.xml" multiValued="false"/>
   <fieldType name="mock_currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
