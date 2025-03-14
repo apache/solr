@@ -33,7 +33,7 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   public AbstractUpdateRequest(METHOD m, String path) {
-    super(m, path);
+    super(m, path, SolrRequestType.UPDATE);
   }
 
   /** Sets appropriate parameters for the given ACTION */
@@ -123,11 +123,6 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   @Override
   protected UpdateResponse createResponse(NamedList<Object> namedList) {
     return new UpdateResponse();
-  }
-
-  @Override
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.UPDATE;
   }
 
   public boolean isWaitSearcher() {

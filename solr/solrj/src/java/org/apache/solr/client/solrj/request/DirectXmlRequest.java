@@ -37,7 +37,7 @@ public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateRespo
   private SolrParams params;
 
   public DirectXmlRequest(String path, String body) {
-    super(METHOD.POST, path);
+    super(METHOD.POST, path, SolrRequestType.UPDATE);
     xml = body;
   }
 
@@ -54,11 +54,6 @@ public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateRespo
   @Override
   public SolrParams getParams() {
     return params != null ? params : new ModifiableSolrParams();
-  }
-
-  @Override
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.UPDATE;
   }
 
   @Override

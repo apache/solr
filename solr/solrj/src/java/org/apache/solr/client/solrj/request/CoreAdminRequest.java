@@ -45,11 +45,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   protected boolean isIndexInfoNeeded = true;
   protected CoreAdminParams.CoreAdminAction action = null;
 
-  @Override
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.ADMIN;
-  }
-
   // a create core request
   public static class Create extends CoreAdminRequest {
 
@@ -591,11 +586,11 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   }
 
   public CoreAdminRequest() {
-    super(METHOD.GET, "/admin/cores");
+    super(METHOD.GET, "/admin/cores", SolrRequestType.ADMIN);
   }
 
   public CoreAdminRequest(String path) {
-    super(METHOD.GET, path);
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
   }
 
   public void setCoreName(String coreName) {

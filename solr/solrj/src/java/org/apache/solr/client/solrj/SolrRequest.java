@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -102,6 +101,7 @@ public abstract class SolrRequest<T> implements Serializable {
 
   private METHOD method = METHOD.GET;
   private String path = null;
+  private SolrRequestType defaultType = SolrRequestType.UNSPECIFIED;
   private Map<String, String> headers;
   private List<String> preferredNodes;
 
@@ -139,9 +139,14 @@ public abstract class SolrRequest<T> implements Serializable {
   // ---------------------------------------------------------
   // ---------------------------------------------------------
 
-  public SolrRequest(METHOD m, String path) {
+  public SolrRequest(METHOD m, String path, SolrRequestType defaultType) {
     this.method = m;
     this.path = path;
+    this.defaultType = defaultType;
+  }
+
+  public SolrRequest(METHOD m, String path) {
+    this(m, path, SolrRequestType.UNSPECIFIED);
   }
 
   // ---------------------------------------------------------
@@ -198,28 +203,18 @@ public abstract class SolrRequest<T> implements Serializable {
   }
 
   /**
-   * Defines the intended type of this Solr request.
+   * The type of this Solr request.
    *
-   * <p>Subclasses should typically override this method instead of {@link
-   * SolrRequest#getRequestType}. Note that changing request type can break/impact request routing
-   * within various clients (i.e. {@link CloudSolrClient}).
+   * <p>Pattern matches {@link SolrRequest#getPath} to identify ADMIN requests and other special
+   * cases. Overriding this method may affect request routing within various clients (i.e. {@link
+   * CloudSolrClient}).
    */
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.UNSPECIFIED;
-  }
-
-  /**
-   * Pattern matches on the underlying {@link SolrRequest} to identify ADMIN requests and other
-   * special cases. If no special case is identified, {@link SolrRequest#getBaseRequestType()} is
-   * returned.
-   */
-  public final SolrRequestType getRequestType() {
-    if (CommonParams.ADMIN_PATHS.contains(getPath())) {
+  public SolrRequestType getRequestType() {
+    String path = getPath();
+    if (path != null && CommonParams.ADMIN_PATHS.contains(path)) {
       return SolrRequestType.ADMIN;
-    } else if (this instanceof IsUpdateRequest) {
-      return SolrRequestType.UPDATE;
     } else {
-      return getBaseRequestType();
+      return defaultType;
     }
   }
 

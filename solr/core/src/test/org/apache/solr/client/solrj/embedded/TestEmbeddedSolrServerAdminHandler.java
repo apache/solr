@@ -47,7 +47,7 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
   private static class SystemInfoRequest extends SolrRequest<QueryResponse> {
 
     public SystemInfoRequest() {
-      super(METHOD.GET, "/admin/info/system");
+      super(METHOD.GET, "/admin/info/system", SolrRequest.SolrRequestType.ADMIN);
     }
 
     @Override
@@ -58,11 +58,6 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
     @Override
     protected QueryResponse createResponse(final NamedList<Object> namedList) {
       return new QueryResponse();
-    }
-
-    @Override
-    protected SolrRequest.SolrRequestType getBaseRequestType() {
-      return SolrRequest.SolrRequestType.ADMIN;
     }
   }
 }

@@ -52,11 +52,11 @@ public abstract class ConfigSetAdminRequest<
   }
 
   public ConfigSetAdminRequest() {
-    super(METHOD.GET, "/admin/configs");
+    super(METHOD.GET, "/admin/configs", SolrRequestType.ADMIN);
   }
 
   public ConfigSetAdminRequest(String path) {
-    super(METHOD.GET, path);
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
   }
 
   protected abstract Q getThis();
@@ -102,11 +102,6 @@ public abstract class ConfigSetAdminRequest<
     protected ConfigSetAdminResponse createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse();
     }
-  }
-
-  @Override
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.ADMIN;
   }
 
   /**

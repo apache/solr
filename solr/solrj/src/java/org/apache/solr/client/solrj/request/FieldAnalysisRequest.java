@@ -48,7 +48,7 @@ public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAn
    * @param uri the uri of the request handler.
    */
   public FieldAnalysisRequest(String uri) {
-    super(METHOD.GET, uri);
+    super(METHOD.GET, uri, SolrRequestType.QUERY);
   }
 
   @Override
@@ -79,11 +79,6 @@ public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAn
       params.add(AnalysisParams.FIELD_TYPE, fieldTypeValue);
     }
     return params;
-  }
-
-  @Override
-  protected SolrRequestType getBaseRequestType() {
-    return SolrRequestType.QUERY;
   }
 
   // ===== Helper Methods =====
