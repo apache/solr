@@ -34,7 +34,7 @@ def genFailInfo(def task, TestDescriptor desc) {
 }
 
 allprojects {
-  tasks.withType(Test) { Test task ->
+  tasks.withType(Test).configureEach { Test task ->
     afterTest { desc, result ->
       if (result.resultType == TestResult.ResultType.FAILURE) {
         failedTests << genFailInfo(task, desc)
