@@ -21,6 +21,12 @@ It can also consume a stream of tokens that have already undergone analysis with
 
 == The ExternalFileField Type
 
+.ExternalFileField has been Deprecated
+[WARNING]
+====
+ExternalFileField has been deprecated and will be removed in a future release.
+====
+
 The `ExternalFileField` type makes it possible to specify the values for a field in a file outside the Solr index.
 For such a field, the file contains mappings from a key field to the field value.
 Another way to think of this is that, instead of specifying the field in documents as they are indexed, Solr finds values for this field in the external file.
