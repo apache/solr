@@ -401,12 +401,6 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   }
 
   @Test
-  public void testMultivalueExternalFileField() throws SolrServerException, IOException {
-    runTestForFieldWithoutQuery(
-        "externalFileRemove", new String[] {"file1.txt", "file2.txt", "file3.txt", "file4.txt"});
-  }
-
-  @Test
   public void testMultivalueFloatPointField() throws SolrServerException, IOException {
     runTestForFieldWithQuery("floatPointRemove", new Float[] {1.0f, 2.0f, 3.0f, 4.0f});
   }

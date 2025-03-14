@@ -32,9 +32,6 @@
 
   <updateHandler class="solr.DirectUpdateHandler2"/>
 
-  <requestHandler name="/reloadCache"
-                  class="org.apache.solr.search.function.FileFloatSource$ReloadCacheRequestHandler" />
-
   <!-- test ValueSourceParser plugins -->
   <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
     <float name="nvlFloatValue">0.0</float>
