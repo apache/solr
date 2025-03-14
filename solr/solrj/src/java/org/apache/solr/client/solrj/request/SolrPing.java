@@ -38,7 +38,7 @@ public class SolrPing extends CollectionRequiringSolrRequest<SolrPingResponse> {
 
   /** Create a new SolrPing object. */
   public SolrPing() {
-    // this reqeust is not processed as an admin request
+    // this request is not processed as an admin request
     super(METHOD.GET, CommonParams.PING_HANDLER, SolrRequestType.UNSPECIFIED);
     params = new ModifiableSolrParams();
   }
