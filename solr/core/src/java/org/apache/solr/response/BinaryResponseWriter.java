@@ -21,9 +21,7 @@ import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharS
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,24 +43,20 @@ import org.apache.solr.search.ReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BinaryResponseWriter implements BinaryQueryResponseWriter {
+/** Solr's "javabin" format. TODO rename accordingly. */
+public class BinaryResponseWriter implements QueryResponseWriter {
   //  public static boolean useUtf8CharSeq = true;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+  public void write(
+      OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
       throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) response.removeResponseHeader();
     try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
       jbc.setWritableDocFields(resolver).marshal(response.getValues(), out);
     }
-  }
-
-  @Override
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
-      throws IOException {
-    throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
   }
 
   @Override
@@ -162,38 +156,28 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   }
 
   /**
-   * TODO -- there may be a way to do this without marshal at all...
+   * Serializes and deserializes to a {@link NamedList}, thus normalizing a response as if read from
+   * a client via JavaBin. Documents become {@link org.apache.solr.common.SolrDocument}, DocList
+   * becomes {@link org.apache.solr.common.SolrDocumentList}, etc.
    *
-   * @return a response object equivalent to what you get from the XML/JSON/javabin parser.
-   *     Documents become SolrDocuments, DocList becomes SolrDocumentList etc.
    * @since solr 1.4
    */
-  @SuppressWarnings("unchecked")
   public static NamedList<Object> getParsedResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
+    // NOTE: EmbeddedSolrServer.writeResponse is similar
+    // NOTE: this static method could live anywhere; might as well be here I guess
     try {
-      if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) {
-        rsp.removeResponseHeader();
-      }
-      Resolver resolver = new Resolver(req, rsp.getReturnFields());
-
-      try (var out =
+      var out =
           new ByteArrayOutputStream() {
             ByteArrayInputStream toInputStream() {
               return new ByteArrayInputStream(buf, 0, count);
             }
-          }) {
-        try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
-          jbc.setWritableDocFields(resolver).marshal(rsp.getValues(), out);
-        }
+          };
 
-        try (InputStream in = out.toInputStream()) {
-          try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
-            return (NamedList<Object>) jbc.unmarshal(in);
-          }
-        }
-      }
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+      new BinaryResponseWriter().write(out, req, rsp);
+      return new BinaryResponseParser().processResponse(out.toInputStream(), null);
+
+    } catch (IOException ex) {
+      throw new RuntimeException(ex); // almost impossible as we don't do real IO
     }
   }
 

@@ -89,10 +89,30 @@ public abstract class RestTestBase extends SolrJettyTestBase {
         if (response != null) fail(m + "update was not successful: " + response);
       } else {
         String response = restTestHarness.validateErrorUpdate(update);
-        if (response != null) fail(m + "update succeeded, but should have failed: " + response);
+        if (response == null) fail(m + "update succeeded, but should have failed: " + response);
       }
     } catch (SAXException e) {
       throw new RuntimeException("Invalid XML", e);
+    }
+  }
+
+  public static void checkUpdateU(String update, String... tests) {
+    try {
+      String response = restTestHarness.validateUpdate(update);
+      String results = TestHarness.validateXPath(response, tests);
+      if (null != results) {
+        log.error(
+            "REQUEST FAILED: xpath={}\n\txml response was: {}\n\trequest was:{}",
+            results,
+            response,
+            update);
+        fail(results);
+      }
+    } catch (XPathExpressionException e1) {
+      throw new RuntimeException("XPath is invalid", e1);
+    } catch (Exception e2) {
+      log.error("REQUEST FAILED: {}", update, e2);
+      throw new RuntimeException("Exception during query", e2);
     }
   }
 

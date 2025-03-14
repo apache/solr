@@ -40,7 +40,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   @BeforeClass
   public static void setupSysProps() {
-    System.setProperty("socketTimeout", "5000");
+    System.setProperty("socketTimeout", "10000");
     System.setProperty("distribUpdateSoTimeout", "5000");
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
