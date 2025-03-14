@@ -209,7 +209,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     byte[] fromZkRaw =
         zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json");
     byte[] fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
-    byte[] fromLocRaw = Files.readAllBytes(Path.of(localFile.getAbsolutePath()));
+    byte[] fromLocRaw = Files.readAllBytes(localFile.toAbsolutePath());
     byte[] fromLoc = new ZLibCompressor().compressBytes(fromLocRaw);
     assertArrayEquals(
         "When asking to not decompress, we should get back the compressed data that what we put in ZK",
@@ -287,7 +287,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     ZkCpTool tool = new ZkCpTool();
     assertEquals(0, runTool(args, tool));
 
-    Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
+    Path locFile = SOLR_HOME.resolve("solr-stress-new.xml");
     byte[] fileBytes = Files.readAllBytes(locFile);
 
     // Check raw ZK data
@@ -304,7 +304,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // Lets do it again
     assertEquals(0, runTool(args, tool));
 
-    locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
+    locFile = SOLR_HOME.resolve("solr-stress-new.xml");
     fileBytes = Files.readAllBytes(locFile);
 
     fromZk = zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json");
@@ -376,13 +376,21 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(0, runTool(args, configSetUploadTool));
 
     assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
+    final Path confDir = Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET);
+
     List<String> zkFiles =
         zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
-    final Path confDir = Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET);
+
     try (Stream<Path> filesStream = Files.list(confDir)) {
       assertEquals(
           "Verify that all local files are uploaded to ZK", filesStream.count(), zkFiles.size());
     }
+
+    try (Stream<Path> filesStream = Files.list(confDir)) {
+      assertEquals(
+          "Verify that all local files are uploaded to ZK", filesStream.count(), zkFiles.size());
+    }
+
     // test linkconfig
     args =
         new String[] {
@@ -406,7 +414,8 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     // test down config
     Path configSetDir =
-        tmpDir.resolve(
+        Path.of(
+            tmpDir.toString(),
             "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
     assertFalse(Files.exists(configSetDir));
 
@@ -426,30 +435,24 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     Path confSetDir = configSetDir.resolve("conf");
     try (Stream<Path> filesStream = Files.list(confSetDir)) {
+      List<Path> files = filesStream.toList();
       zkFiles =
           zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
-      long fileCount = filesStream.count();
       assertEquals(
-          "Comparing original conf files that were to be uploaded to what is in ZK",
-          fileCount,
+          "Comparing original conf files that were to be uploadedto what is in ZK",
+          files.size(),
           zkFiles.size());
-      assertEquals("Comparing downloaded files to what is in ZK", fileCount, zkFiles.size());
+      assertEquals("Comparing downloaded files to what is in ZK", files.size(), zkFiles.size());
     }
 
     Path sourceConfDir = Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET);
     // filter out all directories starting with . (e.g. .svn)
-    try (Stream<Path> filesStream = Files.list(sourceConfDir)) {
+    try (Stream<Path> stream = Files.walk(sourceConfDir)) {
       List<Path> files =
-          filesStream
-              .filter(
-                  (path -> {
-                    if (!Files.isDirectory(path)) {
-                      return false;
-                    }
-                    return !path.getFileName().toString().startsWith(".");
-                  }))
+          stream
+              .filter(Files::isRegularFile)
+              .filter(path -> path.getFileName().toString().matches("[^\\.].*"))
               .toList();
-
       files.forEach(
           (sourceFile) -> {
             int indexOfRelativePath =
@@ -458,15 +461,11 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
                     .toString()
                     .lastIndexOf(
                         "sample_techproducts_configs"
-                            + System.getProperty("path.separator")
+                            + FileSystems.getDefault().getSeparator()
                             + "conf");
             String relativePathofFile =
-                sourceFile
-                    .toAbsolutePath()
-                    .toString()
-                    .substring(indexOfRelativePath + 33); // SOLR-16903 Check again if this is right
-            Path downloadedFile = confSetDir.resolve(relativePathofFile);
-
+                sourceFile.toAbsolutePath().toString().substring(indexOfRelativePath + 33);
+            Path downloadedFile = confDir.resolve(relativePathofFile);
             if (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN
                 .matcher(relativePathofFile)
                 .matches()) {
