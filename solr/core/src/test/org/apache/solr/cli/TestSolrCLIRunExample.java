@@ -17,12 +17,10 @@
 package org.apache.solr.cli;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
@@ -83,15 +81,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
    */
   private static class RunExampleExecutor extends DefaultExecutor implements Closeable {
 
-    private PrintStream stdout;
     private final List<CommandLine> commandsExecuted = new ArrayList<>();
     private MiniSolrCloudCluster solrCloudCluster;
     private JettySolrRunner standaloneSolr;
-
-    RunExampleExecutor(PrintStream stdout) {
-      super();
-      this.stdout = stdout;
-    }
 
     /**
      * Override the call to execute a command asynchronously to occur synchronously during a unit
@@ -370,13 +362,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           };
 
       // capture tool output to stdout
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+      CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
 
-      RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
+      RunExampleExecutor executor = new RunExampleExecutor();
       closeables.add(executor);
 
-      RunExampleTool tool = new RunExampleTool(executor, System.in, stdoutSim);
+      RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
       try {
         int status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
 
@@ -394,11 +385,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         log.error(
             "RunExampleTool failed due to: {}; stdout from tool prior to failure: {}",
             e,
-            baos.toString(StandardCharsets.UTF_8.name())); // nowarn
+            runtime.getOutput()); // nowarn
         throw e;
       }
 
-      String toolOutput = baos.toString(StandardCharsets.UTF_8.name());
+      String toolOutput = runtime.getOutput();
 
       // dump all the output written by the SolrCLI commands to stdout
       // System.out.println("\n\n"+toolOutput+"\n\n");
@@ -475,13 +466,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     InputStream userInputSim = new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8));
 
     // capture tool output to stdout
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+    CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
 
-    RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
+    RunExampleExecutor executor = new RunExampleExecutor();
     closeables.add(executor);
 
-    RunExampleTool tool = new RunExampleTool(executor, userInputSim, stdoutSim);
+    RunExampleTool tool = new RunExampleTool(executor, userInputSim, runtime);
     try {
       tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
     } catch (Exception e) {
@@ -489,11 +479,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "RunExampleTool failed due to: "
               + e
               + "; stdout from tool prior to failure: "
-              + baos.toString(StandardCharsets.UTF_8.name()));
+              + runtime.getOutput());
       throw e;
     }
 
-    String toolOutput = baos.toString(StandardCharsets.UTF_8.name());
+    String toolOutput = runtime.getOutput();
 
     // verify Solr is running on the expected port and verify the collection exists
     String solrUrl = "http://localhost:" + bindPort + "/solr";
@@ -545,7 +535,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     // delete the collection
-    DeleteTool deleteTool = new DeleteTool(stdoutSim);
+    DeleteTool deleteTool = new DeleteTool(runtime);
     String[] deleteArgs = new String[] {"--name", collectionName, "--solr-url", solrUrl};
     deleteTool.runTool(SolrCLI.processCommandLineArgs(deleteTool, deleteArgs));
 
@@ -586,13 +576,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "--script", toExecute.getAbsolutePath()
         };
 
-    // capture tool output to stdout
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
-
     DefaultExecutor executor = DefaultExecutor.builder().get();
 
-    RunExampleTool tool = new RunExampleTool(executor, System.in, stdoutSim);
+    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
     int code = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
     assertEquals("Execution should have failed with return code 1", 1, code);
   }

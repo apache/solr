@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
@@ -30,12 +29,8 @@ import org.slf4j.LoggerFactory;
 public class ZkRmTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ZkRmTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ZkRmTool(PrintStream stdout) {
-    super(stdout);
+  public ZkRmTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

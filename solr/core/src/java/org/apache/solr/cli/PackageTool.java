@@ -94,7 +94,8 @@ public class PackageTool extends ToolBase {
 
   @SuppressForbidden(
       reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
-  public PackageTool() {
+  public PackageTool(ToolRuntime runtime) {
+    super(runtime);
     // Need a logging free, clean output going through to the user.
     Configurator.setRootLevel(Level.OFF);
   }

@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
-import java.io.PrintStream;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -67,12 +66,8 @@ public class PostLogsTool extends ToolBase {
           .desc("All files found at or below the root directory will be indexed.")
           .build();
 
-  public PostLogsTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public PostLogsTool(PrintStream stdout) {
-    super(stdout);
+  public PostLogsTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
