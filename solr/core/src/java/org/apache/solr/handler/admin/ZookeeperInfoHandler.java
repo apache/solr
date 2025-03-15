@@ -344,7 +344,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     /** Called after a ZooKeeper session expiration occurs */
     @Override
-    public void command() {
+    public void onReconnect() {
       // we need to re-establish the watcher on the collections list after session expires
       synchronized (this) {
         cachedCollections = null;

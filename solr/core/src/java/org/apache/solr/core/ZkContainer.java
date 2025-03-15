@@ -237,16 +237,16 @@ public class ZkContainer {
   public void close() {
 
     try {
-      if (zkController != null) {
-        zkController.close();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
     } finally {
       try {
+        if (zkController != null) {
+          zkController.close();
+        }
+      } finally {
         if (zkServer != null) {
           zkServer.stop();
         }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
       }
     }
   }

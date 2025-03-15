@@ -407,29 +407,30 @@ public class ZkStateReader implements SolrCloseable {
       int zkClientTimeout,
       int zkClientConnectTimeout,
       boolean canUseZkACLs) {
-    SolrZkClient.Builder builder =
+    this.zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkServerAddress)
             .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withUseDefaultCredsAndACLs(canUseZkACLs)
-            .withReconnectListener(
+            .build();
+    this.zkClient
+        .getCuratorFramework()
+        .getConnectionStateListenable()
+        .addListener(
+            (OnReconnect)
                 () -> {
                   // on reconnect, reload cloud info
                   try {
                     this.createClusterStateWatchersAndUpdate();
-                  } catch (KeeperException e) {
-                    log.error("A ZK error has occurred", e);
-                    throw new ZooKeeperException(
-                        ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
                   } catch (InterruptedException e) {
                     // Restore the interrupted status
                     Thread.currentThread().interrupt();
-                    log.error("Interrupted", e);
-                    throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Interrupted", e);
+                    log.warn("Interrupted", e);
+                  } catch (Throwable e) {
+                    log.error("An error has occurred while updating the cluster state", e);
                   }
                 });
-    this.zkClient = builder.build();
     this.closeClient = true;
     this.securityNodeWatcher = null;
     collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this);
