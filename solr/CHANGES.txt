@@ -212,6 +212,8 @@ Bug Fixes
 * SOLR-17700: Use Core Operation lock when unloading cores. This fixes errors that occur when a collection deletion and reload
   occur at the same time. (Houston Putman)
 
+* SOLR-17699: Fixed performance regression since 9.0 with "frange" queries embedded in other queries.
+  May also affect some numeric range queries when the minimum is negative.  (David Smiley)
 
 Dependency Upgrades
 ---------------------
