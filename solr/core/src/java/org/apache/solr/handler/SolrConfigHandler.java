@@ -55,7 +55,6 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -1031,11 +1030,6 @@ public class SolrConfigHandler extends RequestHandlerBase
     @Override
     protected SolrResponse createResponse(SolrClient client) {
       return null;
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequest.SolrRequestType.ADMIN.toString();
     }
   }
 
