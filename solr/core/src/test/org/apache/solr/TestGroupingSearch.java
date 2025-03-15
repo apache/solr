@@ -38,7 +38,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -437,7 +437,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(request, response));
       String handlerName = request.getParams().get(CommonParams.QT);
       h.getCore().execute(h.getCore().getRequestHandler(handlerName), request, response);
-      BinaryResponseWriter responseWriter = new BinaryResponseWriter();
+      JavaBinResponseWriter responseWriter = new JavaBinResponseWriter();
       responseWriter.write(out, request, response);
     } finally {
       request.close();

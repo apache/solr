@@ -158,7 +158,8 @@ Other Changes
 
 * SOLR-17682: QueryResponseWriter: refactor the hierarchy.  Base abstraction is now byte oriented,
   thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
-  Stopped using RawResponseWriter when not needed.  (David Smiley)
+  Stopped using RawResponseWriter when not needed.  Rename BinaryResponseWriter to JavaBinResponseWriter.
+  (David Smiley)
 
 ==================  9.9.0 ==================
 New Features

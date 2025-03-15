@@ -59,9 +59,9 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
@@ -199,7 +199,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
     if (rw instanceof JacksonJsonWriter) {
       writer = ((JacksonJsonWriter) rw).getWriter(os, req, res);
-    } else if (rw instanceof BinaryResponseWriter) {
+    } else if (rw instanceof JavaBinResponseWriter) {
       // todo add support for other writers after testing
       writer = new JavaBinCodec(os, null);
     } else {

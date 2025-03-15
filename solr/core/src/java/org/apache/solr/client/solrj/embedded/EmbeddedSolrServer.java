@@ -58,7 +58,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -283,7 +283,7 @@ public class EmbeddedSolrServer extends SolrClient {
         throw new IllegalArgumentException(
             "Only javabin is supported when using a streaming response callback");
       var resolver =
-          new BinaryResponseWriter.Resolver(req, rsp.getReturnFields()) {
+          new JavaBinResponseWriter.Resolver(req, rsp.getReturnFields()) {
             @Override
             public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
               // write an empty list...
@@ -356,7 +356,7 @@ public class EmbeddedSolrServer extends SolrClient {
   }
 
   private JavaBinCodec createJavaBinCodec(
-      final StreamingResponseCallback callback, final BinaryResponseWriter.Resolver resolver) {
+      final StreamingResponseCallback callback, final JavaBinResponseWriter.Resolver resolver) {
     return new JavaBinCodec(resolver) {
 
       @Override
