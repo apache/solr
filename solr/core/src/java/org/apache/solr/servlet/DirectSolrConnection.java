@@ -16,7 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.SolrException;
@@ -28,8 +27,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
@@ -114,14 +111,7 @@ public class DirectSolrConnection {
       }
 
       // Now write it out
-      QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-      if (responseWriter instanceof BinaryResponseWriter) {
-        return ((BinaryResponseWriter) responseWriter).serializeResponse(req, rsp);
-      } else {
-        StringWriter out = new StringWriter();
-        responseWriter.write(out, req, rsp);
-        return out.toString();
-      }
+      return req.getResponseWriter().writeToString(req, rsp);
     } finally {
       if (req != null) {
         req.close();

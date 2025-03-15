@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.texttovector.search;
+package org.apache.solr.llm.textvectorisation.search;
 
 import java.util.Arrays;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.llm.TestLlmBase;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -27,6 +28,11 @@ public class TextToVectorQParserTest extends TestLlmBase {
   public static void init() throws Exception {
     setupTest("solrconfig-llm.xml", "schema.xml", true, false);
     loadModel("dummy-model.json");
+  }
+
+  @AfterClass
+  public static void cleanup() throws Exception {
+    afterTest();
   }
 
   @Test
