@@ -19,9 +19,9 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.cloud.Replica.State.DOWN;
 import static org.apache.solr.common.cloud.Replica.State.RECOVERING;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -95,7 +95,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   /** Overrides the parent implementation to install a SocketProxy in-front of the Jetty server. */
   @Override
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,

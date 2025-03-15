@@ -16,7 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
@@ -481,14 +483,17 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testRelativeIndexDirLocation() {
     SolrCore core = h.getCore();
-    File indexDir = new File(core.getDataDir() + File.separator + "spellchecker1");
-    assertTrue(indexDir.exists());
+    Path indexDir =
+        Path.of(core.getDataDir() + FileSystems.getDefault().getSeparator() + "spellchecker1");
+    assertTrue(Files.exists(indexDir));
 
-    indexDir = new File(core.getDataDir() + File.separator + "spellchecker2");
-    assertTrue(indexDir.exists());
+    indexDir =
+        Path.of(core.getDataDir() + FileSystems.getDefault().getSeparator() + "spellchecker2");
+    assertTrue(Files.exists(indexDir));
 
-    indexDir = new File(core.getDataDir() + File.separator + "spellchecker3");
-    assertTrue(indexDir.exists());
+    indexDir =
+        Path.of(core.getDataDir() + FileSystems.getDefault().getSeparator() + "spellchecker3");
+    assertTrue(Files.exists(indexDir));
   }
 
   @Test

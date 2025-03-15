@@ -19,8 +19,8 @@ package org.apache.solr.schema;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -57,19 +57,19 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    Path tmpSolrHome = createTempDir();
+    Path tmpConfDir = tmpSolrHome.resolve(confDir);
+    Path testHomeConfDir = TEST_HOME().resolve(confDir);
     FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig-schemaless.xml"), tmpConfDir);
+        testHomeConfDir.resolve("solrconfig-schemaless.xml").toFile(), tmpConfDir.toFile());
     FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "schema-add-schema-fields-update-processor.xml"), tmpConfDir);
+        testHomeConfDir.resolve("schema-add-schema-fields-update-processor.xml").toFile(),
+        tmpConfDir.toFile());
     FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+        testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml").toFile(),
+        tmpConfDir.toFile());
     initCore(
-        "solrconfig-schemaless.xml",
-        "schema-add-schema-fields-update-processor.xml",
-        tmpSolrHome.getPath());
+        "solrconfig-schemaless.xml", "schema-add-schema-fields-update-processor.xml", tmpSolrHome);
   }
 
   @Test

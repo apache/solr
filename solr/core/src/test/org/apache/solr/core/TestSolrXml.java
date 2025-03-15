@@ -18,8 +18,8 @@ package org.apache.solr.core;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -166,7 +166,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   public void testPropertySub() throws IOException {
 
     System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
-    System.setProperty("coreRootDirectory", "myCoreRoot" + File.separator);
+    System.setProperty("coreRootDirectory", "myCoreRoot" + FileSystems.getDefault().getSeparator());
     System.setProperty("hostPort", "8888");
     System.setProperty("shareSchema", "false");
     System.setProperty("socketTimeout", "220");

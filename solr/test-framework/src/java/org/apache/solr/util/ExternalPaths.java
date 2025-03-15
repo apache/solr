@@ -16,8 +16,9 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example
@@ -40,25 +41,27 @@ public class ExternalPaths {
   /**
    * @see #SOURCE_HOME
    */
-  public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
+  public static String WEBAPP_HOME = Path.of(SOURCE_HOME, "webapp/web").toAbsolutePath().toString();
 
   /**
    * @see #SOURCE_HOME
    */
   public static String DEFAULT_CONFIGSET =
-      new File(SOURCE_HOME, "server/solr/configsets/_default/conf").getAbsolutePath();
+      Path.of(SOURCE_HOME, "server/solr/configsets/_default/conf").toAbsolutePath().toString();
 
   /**
    * @see #SOURCE_HOME
    */
   public static String TECHPRODUCTS_CONFIGSET =
-      new File(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf")
-          .getAbsolutePath();
+      Path.of(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf")
+          .toAbsolutePath()
+          .toString();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String SERVER_HOME = new File(SOURCE_HOME, "server/solr").getAbsolutePath();
+  public static String SERVER_HOME =
+      Path.of(SOURCE_HOME, "server/solr").toAbsolutePath().toString();
 
   /**
    * Ugly, ugly hack to determine the example home without depending on the CWD this is needed for
@@ -67,23 +70,23 @@ public class ExternalPaths {
    */
   static String determineSourceHome() {
     try {
-      File file = new File("solr/conf");
-      if (!file.exists()) {
+      Path file = Path.of("solr/conf");
+      if (!Files.exists(file)) {
         URL resourceUrl = ExternalPaths.class.getClassLoader().getResource("solr/conf");
         if (resourceUrl != null) {
-          file = new File(resourceUrl.toURI());
+          file = Path.of(resourceUrl.toURI());
         } else {
           // If there is no "solr/conf" in the classpath, fall back to searching from the current
           // directory.
-          file = new File(System.getProperty("tests.src.home", "."));
+          file = Path.of(System.getProperty("tests.src.home", "."));
         }
       }
 
-      File base = file.getAbsoluteFile();
-      while (!(new File(base, "solr/CHANGES.txt").exists()) && null != base) {
-        base = base.getParentFile();
+      Path base = file.toAbsolutePath();
+      while (!Files.exists(base.resolve("solr/CHANGES.txt")) && null != base) {
+        base = base.getParent();
       }
-      return (null == base) ? null : new File(base, "solr/").getAbsolutePath();
+      return (null == base) ? null : base.resolve("solr/").toAbsolutePath().toString();
     } catch (Exception e) {
       // all bets are off
       return null;

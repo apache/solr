@@ -178,16 +178,14 @@ public class TestRerankBase extends RestTestBase {
     setupTestInit(solrconfig, schema, false);
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema, "/solr", true, null);
   }
 
   public static void setupPersistentTest(String solrconfig, String schema) throws Exception {
 
     setupTestInit(solrconfig, schema, true);
 
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema, "/solr", true, null);
   }
 
   protected static void aftertest() throws Exception {

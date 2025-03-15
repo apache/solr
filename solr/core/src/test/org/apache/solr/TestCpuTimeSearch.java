@@ -48,7 +48,7 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, "true");
 
     Path configSet = createTempDir("configSet");
-    copyMinConf(configSet.toFile());
+    copyMinConf(configSet);
     solrRule.startSolr(LuceneTestCase.createTempDir());
 
     solrRule.newCollection("core1").withConfigSet(configSet.toString()).create();

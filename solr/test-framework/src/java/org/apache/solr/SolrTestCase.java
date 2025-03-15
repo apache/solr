@@ -24,8 +24,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -131,8 +132,8 @@ public class SolrTestCase extends LuceneTestCase {
           existingValue);
       return;
     }
-    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    if (extPath.canRead(/* implies exists() */ ) && extPath.isDirectory()) {
+    final Path extPath = Path.of(ExternalPaths.DEFAULT_CONFIGSET);
+    if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
           SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,

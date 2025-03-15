@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -42,7 +41,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   String filename;
-  File file;
+  Path file;
 
   @Override
   @Before
@@ -50,9 +49,9 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
-    File tempDir = createTempDir("TestCSVLoader").toFile();
-    file = new File(tempDir, "solr_tmp.csv");
-    filename = file.getPath();
+    Path tempDir = createTempDir("TestCSVLoader");
+    file = tempDir.resolve("solr_tmp.csv");
+    filename = file.toString();
     cleanup();
   }
 
@@ -63,7 +62,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // the super classes version
     super.tearDown();
     if (null != file) {
-      Files.delete(file.toPath());
+      Files.delete(file);
       file = null;
     }
   }

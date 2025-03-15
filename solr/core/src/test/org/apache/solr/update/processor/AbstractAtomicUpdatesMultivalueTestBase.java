@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,7 +45,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
   protected static void initWithRequestWriter(RequestWriterSupplier requestWriterSupplier)
       throws Exception {
-    solrClientTestRule.startSolr(Paths.get(SolrTestCaseJ4.TEST_HOME()));
+    solrClientTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
 
     System.setProperty("enable.update.log", "true");
     SolrTestCaseJ4.newRandomConfig();

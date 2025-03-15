@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.io.File;
+import java.nio.file.FileSystems;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -150,7 +150,10 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
             () -> {
               CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
                   .setRepositoryName(VALID_REPOSITORY_NAME)
-                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setLocation(
+                      validBackupLocation
+                          + FileSystems.getDefault().getSeparator()
+                          + "someNonexistentLocation")
                   .process(cluster.getSolrClient());
             });
     assertTrue(e.getMessage().contains("specified location"));
@@ -163,7 +166,9 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
             () -> {
               CollectionAdminRequest.listBackup(BACKUP_NAME)
                   .setBackupLocation(
-                      validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                      validBackupLocation
+                          + FileSystems.getDefault().getSeparator()
+                          + "someNonexistentLocation")
                   .setBackupRepository(VALID_REPOSITORY_NAME)
                   .process(cluster.getSolrClient());
             });
@@ -176,7 +181,10 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
             Exception.class,
             () -> {
               CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
-                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setLocation(
+                      validBackupLocation
+                          + FileSystems.getDefault().getSeparator()
+                          + "someNonexistentLocation")
                   .setRepositoryName(VALID_REPOSITORY_NAME)
                   .process(cluster.getSolrClient());
             });
@@ -189,7 +197,10 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
             Exception.class,
             () -> {
               CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
-                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setLocation(
+                      validBackupLocation
+                          + FileSystems.getDefault().getSeparator()
+                          + "someNonexistentLocation")
                   .setRepositoryName(VALID_REPOSITORY_NAME)
                   .process(cluster.getSolrClient());
             });

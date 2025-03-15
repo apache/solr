@@ -89,7 +89,7 @@ public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
     }
     System.setProperty(
         PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG,
-        f.toFile().getAbsolutePath());
+        f.toAbsolutePath().toString());
     PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver credentialsResolver =
         new PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver();
     assertEquals("foo", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER));

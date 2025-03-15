@@ -16,6 +16,7 @@
  */
 package org.apache.solr.scripting.update;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.regex.Pattern;
 import javax.script.ScriptEngineManager;
@@ -74,7 +75,7 @@ public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
       if (null == solrHome) {
         initCore(solrconfigFile, schemaFile);
       } else {
-        initCore(solrconfigFile, schemaFile, solrHome);
+        initCore(solrconfigFile, schemaFile, Path.of(solrHome));
       }
 
       CoreContainer cc = h.getCoreContainer();

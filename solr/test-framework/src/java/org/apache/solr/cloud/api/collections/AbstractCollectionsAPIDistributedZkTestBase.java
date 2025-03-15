@@ -146,7 +146,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .setCreateNodeSet("")
             .process(cluster.getSolrClient())
             .getStatus());
-    String dataDir = createTempDir().toFile().getAbsolutePath();
+    String dataDir = createTempDir().toAbsolutePath().toString();
     // create a core that simulates something left over from a partially-deleted collection
     assertTrue(
         CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")

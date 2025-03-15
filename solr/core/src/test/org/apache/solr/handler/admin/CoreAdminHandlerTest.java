@@ -300,11 +300,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testDeleteInstanceDir() throws Exception {
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
 
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corerename");
+    copySolrHomeToTemp(solrHomeDirectory, "corerename");
 
     Path coreRename = solrHomeDirectory.resolve("corerename");
     Path renamePropFile = coreRename.resolve("core.properties");
@@ -381,7 +381,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testUnloadForever() throws Exception {
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
@@ -446,7 +446,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "Ignore test on windows because it does not delete data directory immediately after unload",
         Constants.WINDOWS);
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =

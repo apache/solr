@@ -16,11 +16,12 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.After;
@@ -29,35 +30,36 @@ import org.locationtech.spatial4j.shape.Shape;
 
 public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
+  private static Path tmpSolrHome;
+  private static Path tmpConfDir;
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
   @Before
   public void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "schema-one-field-no-dynamic-field.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "schema-one-field-no-dynamic-field-unique-key.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-minimal.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema_codec.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-bm25.xml"), tmpConfDir);
+    tmpSolrHome = createTempDir();
+    tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
+    Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig-managed-schema.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve("solrconfig-basic.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("schema-one-field-no-dynamic-field.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("schema-one-field-no-dynamic-field-unique-key.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve("schema-minimal.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve("schema_codec.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve("schema-bm25.xml"), tmpConfDir);
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "false");
     System.setProperty("enable.update.log", "false");
-    initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.getPath());
+    initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome);
   }
 
   @After
@@ -142,14 +144,11 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
 
   public void testMaxDistErrConversion() throws Exception {
     deleteCore();
-    File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
+    Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
-    Files.delete(managedSchemaFile.toPath());
+    Files.delete(managedSchemaFile);
     System.setProperty("managed.schema.mutable", "true");
-    initCore(
-        "solrconfig-managed-schema.xml",
-        "schema-one-field-no-dynamic-field.xml",
-        tmpSolrHome.getPath());
+    initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     String fieldName = "new_text_field";
     assertNull(
@@ -263,14 +262,11 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   private void setupRPTField(String distanceUnits, String format, FieldType fieldType)
       throws Exception {
     deleteCore();
-    File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
+    Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
-    Files.delete(managedSchemaFile.toPath());
+    Files.delete(managedSchemaFile);
     System.setProperty("managed.schema.mutable", "true");
-    initCore(
-        "solrconfig-managed-schema.xml",
-        "schema-one-field-no-dynamic-field.xml",
-        tmpSolrHome.getPath());
+    initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     String fieldName = "new_text_field";
     assertNull(

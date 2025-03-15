@@ -17,9 +17,9 @@
 
 package org.apache.solr.prometheus.exporter;
 
-import java.io.File;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -101,7 +101,8 @@ public class MetricsConfiguration {
           MethodHandles.lookup()
               .lookupClass()
               .getClassLoader()
-              .getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+              .getResourceAsStream(
+                  resource.replace(FileSystems.getDefault().getSeparator(), "/"))) {
         document = dbf.newDocumentBuilder().parse(configInputStream);
       }
     }

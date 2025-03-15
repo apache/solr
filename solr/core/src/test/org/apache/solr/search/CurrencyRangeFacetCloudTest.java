@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -64,7 +63,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     final int nodeCount = numShards * numReplicas;
 
     configureCluster(nodeCount)
-        .addConfig(CONF, Paths.get(TEST_HOME(), "collection1", "conf"))
+        .addConfig(CONF, TEST_HOME().resolve("collection1").resolve("conf"))
         .configure();
 
     assertEquals(

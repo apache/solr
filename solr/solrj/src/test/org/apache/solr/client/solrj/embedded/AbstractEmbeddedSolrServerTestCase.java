@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.embedded;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
@@ -62,13 +61,13 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     System.setProperty("coreRootDirectory", "."); // relative to Solr home
 
     // The index is always stored within a temporary directory
-    File tempDir = createTempDir().toFile();
+    Path tempDir = createTempDir();
 
-    File dataDir = new File(tempDir, "data1");
-    File dataDir2 = new File(tempDir, "data2");
-    System.setProperty("dataDir1", dataDir.getAbsolutePath());
-    System.setProperty("dataDir2", dataDir2.getAbsolutePath());
-    System.setProperty("tempDir", tempDir.getAbsolutePath());
+    Path dataDir = tempDir.resolve("data1");
+    Path dataDir2 = tempDir.resolve("data2");
+    System.setProperty("dataDir1", dataDir.toAbsolutePath().toString());
+    System.setProperty("dataDir2", dataDir2.toAbsolutePath().toString());
+    System.setProperty("tempDir", tempDir.toAbsolutePath().toString());
     SolrTestCaseJ4.newRandomConfig();
 
     solrClientTestRule.startSolr(SOLR_HOME);

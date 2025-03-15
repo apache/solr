@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +49,7 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     createAndStartJetty(legacyExampleCollection1SolrHome());
     fooUrl = getBaseUrl();
 
-    secondJetty.startSolr(Path.of(legacyExampleCollection1SolrHome()));
+    secondJetty.startSolr(legacyExampleCollection1SolrHome());
     barUrl = secondJetty.getBaseUrl();
   }
 

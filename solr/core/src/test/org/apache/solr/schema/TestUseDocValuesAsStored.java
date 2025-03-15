@@ -16,9 +16,10 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -32,7 +33,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.DOMUtil;
@@ -95,23 +97,23 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Before
   public void initManagedSchemaCore() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "enumsConfig.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "schema-non-stored-docvalues.xml"), tmpConfDir);
+    Path tmpSolrHome = createTempDir();
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
+    Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig-managed-schema.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve("enumsConfig.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("schema-non-stored-docvalues.xml"), tmpConfDir);
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("enable.update.log", "false");
     System.setProperty("managed.schema.mutable", "true");
-    initCore(
-        "solrconfig-managed-schema.xml", "schema-non-stored-docvalues.xml", tmpSolrHome.getPath());
+    initCore("solrconfig-managed-schema.xml", "schema-non-stored-docvalues.xml", tmpSolrHome);
 
     assertQ("sanity check", req("q", "*:*"), "//*[@numFound='0']");
   }

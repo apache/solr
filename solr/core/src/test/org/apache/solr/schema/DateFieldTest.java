@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
+import java.nio.file.FileSystems;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;
@@ -26,8 +26,13 @@ import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrConfig;
 
 public class DateFieldTest extends SolrTestCaseJ4 {
-  private final String testInstanceDir = TEST_HOME() + File.separator + "collection1";
-  private final String testConfHome = testInstanceDir + File.separator + "conf" + File.separator;
+  private final String testInstanceDir =
+      TEST_HOME() + FileSystems.getDefault().getSeparator() + "collection1";
+  private final String testConfHome =
+      testInstanceDir
+          + FileSystems.getDefault().getSeparator()
+          + "conf"
+          + FileSystems.getDefault().getSeparator();
   private FieldType f = null;
 
   @Override
