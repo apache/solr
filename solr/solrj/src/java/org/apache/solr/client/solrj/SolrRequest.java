@@ -29,11 +29,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * @since solr 1.3
  */
-public abstract class SolrRequest<T extends SolrResponse> implements Serializable {
+public abstract class SolrRequest<T> implements Serializable {
   // This user principal is typically used by Auth plugins during distributed/sharded search
   private Principal userPrincipal;
 
@@ -240,9 +241,9 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   /**
    * Create a new SolrResponse to hold the response from the server
    *
-   * @param client the {@link SolrClient} the request will be sent to
+   * @param namedList the {@link SolrClient} the request will be sent to
    */
-  protected abstract T createResponse(SolrClient client);
+  protected abstract T createResponse(NamedList<Object> namedList);
 
   /**
    * Send this request to a {@link SolrClient} and return the response
@@ -256,12 +257,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public final T process(SolrClient client, String collection)
       throws SolrServerException, IOException {
     long startNanos = System.nanoTime();
-    T res = createResponse(client);
     var namedList = client.request(this, collection);
-    res.setResponse(namedList);
     long endNanos = System.nanoTime();
-    res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
-    return res;
+    final T typedResponse = createResponse(namedList);
+    // SolrResponse is pre-V2 API
+    if (typedResponse instanceof SolrResponse res) {
+      res.setResponse(namedList); // TODO insist createResponse does this ?
+      res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
+    }
+    return typedResponse;
   }
 
   /**

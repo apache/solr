@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.InputStreamResponse;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.common.util.NamedList;
 
 {{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}
 {{#imports}}
@@ -251,7 +252,8 @@ public class {{classname}} {
             }
 
             @Override
-            protected {{operationIdCamelCase}}Response createResponse(SolrClient client) {
+          protected {{operationIdCamelCase}}Response createResponse(NamedList
+        <Object> namedList) {
               return new {{operationIdCamelCase}}Response();
             }
 
