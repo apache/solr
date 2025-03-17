@@ -39,7 +39,7 @@ public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAn
 
   /** Constructs a new FieldAnalysisRequest with a default uri of "/fieldanalysis". */
   public FieldAnalysisRequest() {
-    super(METHOD.GET, "/analysis/field");
+    super(METHOD.GET, "/analysis/field", SolrRequestType.UNSPECIFIED);
   }
 
   /**

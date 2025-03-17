@@ -40,7 +40,7 @@ public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
   }
 
   public LukeRequest(String path) {
-    super(METHOD.GET, path);
+    super(METHOD.GET, path, SolrRequestType.UNSPECIFIED);
   }
 
   // ---------------------------------------------------------------------------------
