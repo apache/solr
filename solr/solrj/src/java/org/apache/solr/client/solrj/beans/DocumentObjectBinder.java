@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrDocument;
@@ -41,13 +42,22 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * A class to map objects to and from solr documents.
+ * Maps objects to and from Solr documents.
  *
  * @since solr 1.3
  */
 public class DocumentObjectBinder {
 
-  private final Map<Class<?>, List<DocField>> infocache = new ConcurrentHashMap<>();
+  /**
+   * The singleton/default instance. The implementation is loaded via {@link ServiceLoader}, so it's
+   * customizable.
+   */
+  public static final DocumentObjectBinder INSTANCE =
+      ServiceLoader.load(DocumentObjectBinder.class)
+          .findFirst()
+          .orElseGet(DocumentObjectBinder::new);
+
+  private final Map<Class<?>, List<DocField>> infoCache = new ConcurrentHashMap<>();
 
   public DocumentObjectBinder() {}
 
@@ -126,18 +136,12 @@ public class DocumentObjectBinder {
   }
 
   private List<DocField> getDocFields(Class<?> clazz) {
-    List<DocField> fields = infocache.get(clazz);
-    if (fields == null) {
-      synchronized (infocache) {
-        infocache.put(clazz, fields = collectInfo(clazz));
-      }
-    }
-    return fields;
+    return infoCache.computeIfAbsent(clazz, this::collectInfo);
   }
 
   @SuppressWarnings("removal")
   @SuppressForbidden(reason = "Needs access to possibly private @Field annotated fields/methods")
-  private List<DocField> collectInfo(Class<?> clazz) {
+  protected List<DocField> collectInfo(Class<?> clazz) {
     List<DocField> fields = new ArrayList<>();
     Class<?> superClazz = clazz;
     List<AccessibleObject> members = new ArrayList<>();
@@ -169,7 +173,7 @@ public class DocumentObjectBinder {
     return fields;
   }
 
-  private class DocField {
+  protected class DocField {
     private Field annotation;
     private String name;
     private java.lang.reflect.Field field;
