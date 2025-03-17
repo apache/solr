@@ -22,12 +22,8 @@ import org.apache.solr.client.solrj.SolrResponse;
 /** Parent {@link SolrRequest} class that requires a target collection or core. */
 public abstract class CollectionRequiringSolrRequest<T extends SolrResponse>
     extends SolrRequest<T> {
-  public CollectionRequiringSolrRequest(METHOD m, String path, SolrRequestType defaultType) {
-    super(m, path, defaultType);
-  }
-
-  public CollectionRequiringSolrRequest(METHOD m, String path) {
-    super(m, path);
+  public CollectionRequiringSolrRequest(METHOD m, String path, SolrRequestType requestType) {
+    super(m, path, requestType);
   }
 
   @Override

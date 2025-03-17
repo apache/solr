@@ -56,7 +56,7 @@ public class DocumentAnalysisRequest
    * @param uri The of the request handler.
    */
   public DocumentAnalysisRequest(String uri) {
-    super(METHOD.POST, uri);
+    super(METHOD.POST, uri, SolrRequestType.QUERY);
   }
 
   @Override

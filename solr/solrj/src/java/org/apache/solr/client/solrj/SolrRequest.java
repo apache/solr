@@ -92,7 +92,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private METHOD method = METHOD.GET;
   private String path = null;
-  private SolrRequestType defaultType = SolrRequestType.UNSPECIFIED;
+  private SolrRequestType requestType = SolrRequestType.UNSPECIFIED;
   private Map<String, String> headers;
   private List<String> preferredNodes;
 
@@ -130,14 +130,10 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   // ---------------------------------------------------------
   // ---------------------------------------------------------
 
-  public SolrRequest(METHOD m, String path, SolrRequestType defaultType) {
+  public SolrRequest(METHOD m, String path, SolrRequestType requestType) {
     this.method = m;
     this.path = path;
-    this.defaultType = defaultType;
-  }
-
-  public SolrRequest(METHOD m, String path) {
-    this(m, path, SolrRequestType.UNSPECIFIED);
+    this.requestType = requestType;
   }
 
   // ---------------------------------------------------------
@@ -205,7 +201,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     if (path != null && CommonParams.ADMIN_PATHS.contains(path)) {
       return SolrRequestType.ADMIN;
     } else {
-      return defaultType;
+      return requestType;
     }
   }
 
