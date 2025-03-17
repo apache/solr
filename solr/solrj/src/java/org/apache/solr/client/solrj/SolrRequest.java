@@ -32,6 +32,14 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
 /**
+ * The SolrJ base class for a request into Solr. If you create one of these, then call {@link
+ * #process(SolrClient)} to send it and get a typed response. There are some convenience methods on
+ * {@link SolrClient} that avoids the need to even create these explicitly for common cases.
+ *
+ * @param <T> the response type, that which is returned from a {@code process} method. For V1 APIs,
+ *     it's a {@link SolrResponse}.
+ * @see org.apache.solr.client.solrj.request.QueryRequest
+ * @see org.apache.solr.client.solrj.request.UpdateRequest
  * @since solr 1.3
  */
 public abstract class SolrRequest<T> implements Serializable {
@@ -239,9 +247,11 @@ public abstract class SolrRequest<T> implements Serializable {
   }
 
   /**
-   * Create a new SolrResponse to hold the response from the server
+   * Create a new SolrResponse to hold the response from the server. If the response extends {@link
+   * SolrResponse}, then there's no need to use the arguments, as {@link
+   * SolrResponse#setResponse(NamedList)} will be called right after this method.
    *
-   * @param namedList the {@link SolrClient} the request will be sent to
+   * @param namedList from {@link SolrClient#request(SolrRequest, String)}.
    */
   protected abstract T createResponse(NamedList<Object> namedList);
 
