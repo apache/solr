@@ -123,6 +123,7 @@ public class {{classname}} {
              {{/requiredParams}}
              */
             public {{operationIdCamelCase}}({{#allParams}}{{#required}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{#isBodyParam}}{{#vendorExtensions.x-genericEntity}}{{^-first}}, {{/-first}}{{{dataType}}} requestBody{{/vendorExtensions.x-genericEntity}}{{/isBodyParam}}{{/required}}{{/allParams}}) {
+                // TODO Hardcode request type for now, but in reality we'll want to parse this out of the Operation data somehow
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
                   "{{{path}}}"{{#pathParams}}

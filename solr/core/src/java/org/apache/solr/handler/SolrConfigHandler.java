@@ -968,7 +968,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     int maxWait;
 
     PerReplicaCallable(Replica replica, String prop, int expectedZkVersion, int maxWait) {
-      super(METHOD.GET, "/config/" + ZNODEVER);
+      super(METHOD.GET, "/config/" + ZNODEVER, SolrRequestType.ADMIN);
       this.replica = replica;
       this.expectedZkVersion = expectedZkVersion;
       this.prop = prop;

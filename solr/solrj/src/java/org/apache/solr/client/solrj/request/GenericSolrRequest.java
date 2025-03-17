@@ -50,7 +50,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
    * @param params query parameter names and values for making this request.
    */
   public GenericSolrRequest(METHOD m, String path, SolrParams params) {
-    super(m, path);
+    super(m, path, SolrRequestType.UNSPECIFIED);
     this.params = Objects.requireNonNull(params);
   }
 
