@@ -17,8 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,15 +36,7 @@ public class MockScriptUpdateProcessorFactory extends UpdateRequestProcessorFact
     implements SolrCoreAware {
 
   @Override
-  public void inform(SolrCore core) {
-    if (!core.getCoreDescriptor().isConfigSetTrusted()) {
-      throw new SolrException(
-          ErrorCode.UNAUTHORIZED,
-          "The configset for this collection was uploaded without any authentication in place,"
-              + " and this operation is not available for collections with untrusted configsets. To use this component, re-upload the configset"
-              + " after enabling authentication and authorization.");
-    }
-  }
+  public void inform(SolrCore core) {}
 
   @Override
   public UpdateRequestProcessor getInstance(

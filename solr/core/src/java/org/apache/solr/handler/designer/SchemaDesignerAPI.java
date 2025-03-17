@@ -278,11 +278,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       throw new IOException(
           "Failed to save data in ZK at path: " + zkPath, SolrZkClient.checkInterrupted(e));
     }
-    // If the request is untrusted, and the configSet is trusted, remove the trusted flag on the
-    // configSet.
-    if (configSetHelper.isConfigSetTrusted(mutableId) && !requestIsTrusted) {
-      configSetHelper.removeConfigSetTrust(mutableId);
-    }
 
     configSetHelper.reloadTempCollection(mutableId, false);
 

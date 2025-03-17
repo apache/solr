@@ -146,7 +146,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testCreateErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-      getConfigSetService().uploadConfig("configSet", configset("configset-2"), false);
+      getConfigSetService().uploadConfig("configSet", configset("configset-2"));
 
       // no action
       CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
@@ -297,9 +297,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           getConfigSetProps(oldProps),
           UTF_8);
     }
-    getConfigSetService()
-        .uploadConfig(
-            baseConfigSetName, tmpConfigDir, isTrusted(zkClient(), baseConfigSetName, ""));
+    getConfigSetService().uploadConfig(baseConfigSetName, tmpConfigDir);
   }
 
   private void verifyCreate(
@@ -1872,7 +1870,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         tmpConfigDir.resolve("configsetprops.json"),
         getConfigSetProps(Map.of("immutable", "true")),
         UTF_8);
-    getConfigSetService().uploadConfig("configSet", tmpConfigDir, false);
+    getConfigSetService().uploadConfig("configSet", tmpConfigDir);
 
     // no ConfigSet name
     DeleteNoErrorChecking delete = new DeleteNoErrorChecking();
@@ -1900,7 +1898,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final String configSet = "testDelete";
-    getConfigSetService().uploadConfig(configSet, configset("configset-2"), false);
+    getConfigSetService().uploadConfig(configSet, configset("configset-2"));
     assertDelete(solrClient, configSet, true);
     assertDelete(solrClient, "configSetBogus", false);
     solrClient.close();
@@ -1949,7 +1947,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Set<String> configSets = new HashSet<String>();
       for (int i = 0; i < 5; ++i) {
         String configSet = "configSet" + i;
-        getConfigSetService().uploadConfig(configSet, configset("configset-2"), false);
+        getConfigSetService().uploadConfig(configSet, configset("configset-2"));
         configSets.add(configSet);
       }
       response = list.process(solrClient);

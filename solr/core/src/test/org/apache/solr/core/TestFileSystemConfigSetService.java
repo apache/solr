@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -94,10 +93,7 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     fileSystemConfigSetService.uploadFileToConfig(configName, "testfile", testdata, true);
 
     // metadata is stored in .metadata.json
-    fileSystemConfigSetService.setConfigMetadataWithTrust(
-        configName, new HashMap<>(Map.of("key1", "val1")));
     Map<String, Object> metadata = fileSystemConfigSetService.getConfigMetadata(configName);
-    assertEquals("{key1=val1, trusted=true}", metadata.toString());
 
     List<String> allConfigFiles = fileSystemConfigSetService.getAllConfigFiles(configName);
     assertEquals("[schema.xml, solrconfig.xml, testfile]", allConfigFiles.toString());

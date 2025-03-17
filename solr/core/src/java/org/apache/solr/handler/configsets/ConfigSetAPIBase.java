@@ -134,24 +134,9 @@ public class ConfigSetAPIBase extends JerseyResource {
       throws IOException {
     if (overwritesExisting) {
       if (!requestIsTrusted) {
-        ensureOverwritingUntrustedConfigSet(configName);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Trying to make an untrusted ConfigSet update");
       }
-      // If the request is trusted and cleanup=true, then the configSet will be set to trusted after
-      // the overwriting has been done.
-    } else {
-      configSetService.setConfigSetTrust(configName, requestIsTrusted);
-    }
-  }
-
-  /*
-   * Fail if an untrusted request tries to update a trusted ConfigSet
-   */
-  private void ensureOverwritingUntrustedConfigSet(String configName) throws IOException {
-    boolean isCurrentlyTrusted = configSetService.isConfigSetTrusted(configName);
-    if (isCurrentlyTrusted) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Trying to make an untrusted ConfigSet update on a trusted configSet");
     }
   }
 

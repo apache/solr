@@ -104,14 +104,6 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
     }
     deleteUnusedFiles(configSetService, configSetName, filesToDelete);
 
-    // If the request is doing a full trusted overwrite of an untrusted configSet (overwrite=true,
-    // cleanup=true), then trust the configSet.
-    if (cleanup
-        && requestIsTrusted
-        && overwritesExisting
-        && !configSetService.isConfigSetTrusted(configSetName)) {
-      configSetService.setConfigSetTrust(configSetName, true);
-    }
     return response;
   }
 

@@ -79,7 +79,7 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     Files.createDirectory(configDir.resolve("subdir"));
     Files.createFile(configDir.resolve("subdir").resolve("file3"));
 
-    configSetService.uploadConfig(configName, configDir, false);
+    configSetService.uploadConfig(configName, configDir);
 
     assertTrue(configSetService.checkConfigExists(configName));
     assertFalse(configSetService.checkConfigExists("dummyConfig"));
@@ -94,14 +94,9 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
 
     Map<String, Object> metadata = configSetService.getConfigMetadata(configName);
     assertFalse(metadata.isEmpty());
-    assertFalse(configSetService.isConfigSetTrusted(configName));
 
-    configSetService.setConfigSetTrust(configName, true);
-    assertTrue(configSetService.isConfigSetTrusted(configName));
-
-    configSetService.setConfigMetadataWithTrust(
+    configSetService.setConfigMetadata(
         configName, new HashMap<>(Collections.singletonMap("foo", true)));
-    assertTrue(configSetService.isConfigSetTrusted(configName));
     assertTrue(configSetService.getConfigMetadata(configName).containsKey("foo"));
 
     List<String> configFiles = configSetService.getAllConfigFiles(configName);

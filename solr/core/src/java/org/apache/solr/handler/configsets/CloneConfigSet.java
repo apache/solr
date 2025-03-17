@@ -64,8 +64,8 @@ public class CloneConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Cl
     }
 
     if (!DISABLE_CREATE_AUTH_CHECKS
-        && !isTrusted(solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin())
-        && configSetService.isConfigSetTrusted(requestBody.baseConfigSet)) {
+        && !isTrusted(
+            solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin())) {
       throw new SolrException(
           SolrException.ErrorCode.UNAUTHORIZED,
           "Can't create a configset with an unauthenticated request from a trusted "

@@ -568,7 +568,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     public void copyConfig(String fromConfig, String toConfig) {}
 
     @Override
-    protected void uploadConfig(String configName, Path dir) {}
+    public void uploadConfig(String configName, Path dir) {}
 
     @Override
     public void uploadFileToConfig(
