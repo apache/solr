@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -483,16 +482,13 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testRelativeIndexDirLocation() {
     SolrCore core = h.getCore();
-    Path indexDir =
-        Path.of(core.getDataDir() + FileSystems.getDefault().getSeparator() + "spellchecker1");
+    Path indexDir = Path.of(core.getDataDir(), "spellchecker1");
     assertTrue(Files.exists(indexDir));
 
-    indexDir =
-        Path.of(core.getDataDir() + FileSystems.getDefault().getSeparator() + "spellchecker2");
+    indexDir = Path.of(core.getDataDir(), "spellchecker2");
     assertTrue(Files.exists(indexDir));
 
-    indexDir =
-        Path.of(core.getDataDir() + FileSystems.getDefault().getSeparator() + "spellchecker3");
+    indexDir = Path.of(core.getDataDir(), "spellchecker3");
     assertTrue(Files.exists(indexDir));
   }
 

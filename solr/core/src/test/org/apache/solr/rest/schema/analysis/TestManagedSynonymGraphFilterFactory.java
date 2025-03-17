@@ -45,7 +45,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
   @Before
   public void before() throws Exception {
     tmpSolrHome = createTempDir();
-    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome.toAbsolutePath());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 

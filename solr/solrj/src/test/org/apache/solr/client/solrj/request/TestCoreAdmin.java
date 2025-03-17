@@ -21,7 +21,6 @@ import static org.hamcrest.core.Is.is;
 
 import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -85,10 +84,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("newcore");
-      req.setInstanceDir(
-          newCoreInstanceDir.toAbsolutePath().toString()
-              + FileSystems.getDefault().getSeparator()
-              + "newcore");
+      req.setInstanceDir(newCoreInstanceDir.toAbsolutePath().resolve("newcore").toString());
       req.setDataDir(dataDir.toAbsolutePath().toString());
       req.setUlogDir(dataDir.resolve("ulog").toAbsolutePath().toString());
       req.setConfigSet("shared");
@@ -114,10 +110,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       }
 
       assertEquals(
-          dataDir
-              .resolve("ulog" + FileSystems.getDefault().getSeparator() + "tlog")
-              .toAbsolutePath()
-              .toString(),
+          dataDir.resolve("ulog").resolve("tlog").toAbsolutePath().toString(),
           logDir.toAbsolutePath().toString());
     }
   }

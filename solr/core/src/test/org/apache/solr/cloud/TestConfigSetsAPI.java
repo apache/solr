@@ -1707,7 +1707,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
                 zout.write(Files.readAllBytes(file));
                 zout.closeEntry();
               } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Failed to write zip file", e);
               }
             });
       }
@@ -1998,7 +1998,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    */
   @Test
   public void testUserAndTestDefaultConfigsetsAreSame() {
-    final Path extPath = Path.of(ExternalPaths.DEFAULT_CONFIGSET);
+    final Path extPath = ExternalPaths.DEFAULT_CONFIGSET;
     assertTrue(
         "_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, Files.exists(extPath));
     assertTrue(

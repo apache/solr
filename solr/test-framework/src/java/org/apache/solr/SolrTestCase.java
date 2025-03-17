@@ -132,7 +132,7 @@ public class SolrTestCase extends LuceneTestCase {
           existingValue);
       return;
     }
-    final Path extPath = Path.of(ExternalPaths.DEFAULT_CONFIGSET);
+    final Path extPath = ExternalPaths.DEFAULT_CONFIGSET;
     if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
@@ -140,7 +140,8 @@ public class SolrTestCase extends LuceneTestCase {
           ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
       System.setProperty(
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ExternalPaths.DEFAULT_CONFIGSET.toString());
     } else {
       log.warn(
           "System property '{}' is not already set, but test-framework derived value ('{}') either "
@@ -152,7 +153,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)
     if (ExternalPaths.SOURCE_HOME != null) {
-      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
+      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME.toString());
     }
 
     if (!TEST_NIGHTLY) {

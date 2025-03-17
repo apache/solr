@@ -57,7 +57,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     Files.createDirectories(dataDir);
 
     System.setProperty("solr.data.dir", dataDir.toRealPath().toString());
-    String path = ExternalPaths.WEBAPP_HOME;
+    String path = ExternalPaths.WEBAPP_HOME.toString();
 
     server = new Server(port);
     // insecure: only use for tests!!!!

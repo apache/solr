@@ -4284,20 +4284,18 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(8, tuples.size());
 
-    final String expectedSecondLevel1Path =
-        "directory1" + FileSystems.getDefault().getSeparator() + "secondLevel1.txt";
+    final Path expectedSecondLevel1Path = Path.of("directory1", "secondLevel1.txt");
     for (int i = 0; i < 4; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel1.txt line " + (i + 1), t.get("line"));
-      assertEquals(expectedSecondLevel1Path, t.get("file"));
+      assertEquals(expectedSecondLevel1Path.toString(), t.get("file"));
     }
 
-    final String expectedSecondLevel2Path =
-        "directory1" + FileSystems.getDefault().getSeparator() + "secondLevel2.txt";
+    final Path expectedSecondLevel2Path = Path.of("directory1", "secondLevel2.txt");
     for (int i = 4; i < 8; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel2.txt line " + (i - 3), t.get("line"));
-      assertEquals(expectedSecondLevel2Path, t.get("file"));
+      assertEquals(expectedSecondLevel2Path.toString(), t.get("file"));
     }
   }
 
@@ -4326,12 +4324,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals("topLevel1.txt", t.get("file"));
     }
 
-    final String expectedSecondLevel2Path =
-        "directory1" + FileSystems.getDefault().getSeparator() + "secondLevel2.txt";
+    final Path expectedSecondLevel2Path = Path.of("directory1", "secondLevel2.txt");
     for (int i = 4; i < 8; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel2.txt line " + (i - 3), t.get("line"));
-      assertEquals(expectedSecondLevel2Path, t.get("file"));
+      assertEquals(expectedSecondLevel2Path.toString(), t.get("file"));
     }
   }
 

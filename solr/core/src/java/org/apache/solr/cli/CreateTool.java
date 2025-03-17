@@ -21,6 +21,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -189,7 +190,7 @@ public class CreateTool extends ToolBase {
             "Failed to create new core instance directory: " + coreInstanceDir.toAbsolutePath());
       }
 
-      PathUtils.copyDirectory(confDir, coreInstanceDir);
+      PathUtils.copyDirectory(confDir, coreInstanceDir, StandardCopyOption.COPY_ATTRIBUTES);
 
       echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"

@@ -45,7 +45,7 @@ public class TestSampleDocumentsLoader extends SolrTestCase {
   public void setup() throws IOException {
     loader = new DefaultSampleDocumentsLoader();
     loader.init(new NamedList<>());
-    exampleDir = Path.of(ExternalPaths.SOURCE_HOME, "example");
+    exampleDir = ExternalPaths.SOURCE_HOME.resolve("example");
     assertTrue(
         "Required test data directory " + exampleDir.toRealPath() + " not found!",
         Files.isDirectory(exampleDir));

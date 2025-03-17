@@ -69,7 +69,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(testCollection, "conf", 1, 1).process(client);
       modifySchema(testCollection, client);
 
-      byte[] b = Files.readAllBytes(Path.of(ExternalPaths.SOURCE_HOME, "example/films/films.json"));
+      byte[] b = Files.readAllBytes(ExternalPaths.SOURCE_HOME.resolve("example/films/films.json"));
       // every operation is performed twice. We should only take the second number
       // so that we give JVM a chance to optimize that code
       index(testCollection, client, createJsonReq(b), true);
@@ -194,7 +194,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
   @SuppressWarnings("unchecked")
   public void test() throws Exception {
-    Path filmsJson = Path.of(ExternalPaths.SOURCE_HOME, "example/films/films.json");
+    Path filmsJson = ExternalPaths.SOURCE_HOME.resolve("example/films/films.json");
 
     List<Object> films = null;
     try (InputStream is = Files.newInputStream(filmsJson)) {

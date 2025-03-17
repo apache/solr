@@ -36,39 +36,38 @@ public class ExternalPaths {
    * <p>Note that all other static paths available in this class are derived from the source home,
    * and if it is null, those paths will just be relative to 'null' and may not be meaningful.
    */
-  public static final String SOURCE_HOME = determineSourceHome();
+  public static final Path SOURCE_HOME = determineSourceHome();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String WEBAPP_HOME = Path.of(SOURCE_HOME, "webapp/web").toAbsolutePath().toString();
+  public static Path WEBAPP_HOME = SOURCE_HOME.resolve("webapp/web").toAbsolutePath();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String DEFAULT_CONFIGSET =
-      Path.of(SOURCE_HOME, "server/solr/configsets/_default/conf").toAbsolutePath().toString();
+  public static Path DEFAULT_CONFIGSET =
+      SOURCE_HOME.resolve("server/solr/configsets/_default/conf").toAbsolutePath();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String TECHPRODUCTS_CONFIGSET =
-      Path.of(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf")
-          .toAbsolutePath()
-          .toString();
+  public static Path TECHPRODUCTS_CONFIGSET =
+      SOURCE_HOME
+          .resolve("server/solr/configsets/sample_techproducts_configs/conf")
+          .toAbsolutePath();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String SERVER_HOME =
-      Path.of(SOURCE_HOME, "server/solr").toAbsolutePath().toString();
+  public static Path SERVER_HOME = SOURCE_HOME.resolve("server/solr").toAbsolutePath();
 
   /**
    * Ugly, ugly hack to determine the example home without depending on the CWD this is needed for
    * example/multicore tests which reside outside the classpath. if the source home can't be
    * determined, this method returns null.
    */
-  static String determineSourceHome() {
+  static Path determineSourceHome() {
     try {
       Path file = Path.of("solr/conf");
       if (!Files.exists(file)) {
@@ -86,7 +85,7 @@ public class ExternalPaths {
       while (!Files.exists(base.resolve("solr/CHANGES.txt")) && null != base) {
         base = base.getParent();
       }
-      return (null == base) ? null : base.resolve("solr/").toAbsolutePath().toString();
+      return (null == base) ? null : base.resolve("solr/").toAbsolutePath();
     } catch (Exception e) {
       // all bets are off
       return null;

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -41,8 +42,8 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path tmpSolrHome = createTempDir().toAbsolutePath();
-    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
-    initCore("solrconfig.xml", "schema.xml", tmpSolrHome);
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome, StandardCopyOption.COPY_ATTRIBUTES);
+    initCore("solrconfig.xml", "schema.xml", tmpSolrHome.toAbsolutePath());
   }
 
   @AfterClass

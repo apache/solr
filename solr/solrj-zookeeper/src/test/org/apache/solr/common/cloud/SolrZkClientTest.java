@@ -65,7 +65,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    configureCluster(1).addConfig("_default", Path.of(ExternalPaths.DEFAULT_CONFIGSET)).configure();
+    configureCluster(1).addConfig("_default", ExternalPaths.DEFAULT_CONFIGSET).configure();
     solrClient =
         new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())

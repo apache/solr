@@ -237,8 +237,8 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       this.homeDir = homeDir;
       this.port = port;
 
-      dataDir = Path.of(homeDir + "/collection1", "data");
-      confDir = Path.of(homeDir + "/collection1", "conf");
+      dataDir = homeDir.resolve("collection1").resolve("data");
+      confDir = homeDir.resolve("collection1").resolve("conf");
     }
 
     public String getHomeDir() {

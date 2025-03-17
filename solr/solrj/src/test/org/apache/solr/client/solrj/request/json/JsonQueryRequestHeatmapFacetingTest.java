@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.request.json;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,8 +40,7 @@ public class JsonQueryRequestHeatmapFacetingTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig(
             CONFIG_NAME,
-            Path.of(
-                ExternalPaths.SOURCE_HOME,
+            ExternalPaths.SOURCE_HOME.resolve(
                 "solrj/src/test-files/solrj/solr/configsets/spatial/conf"))
         .configure();
 

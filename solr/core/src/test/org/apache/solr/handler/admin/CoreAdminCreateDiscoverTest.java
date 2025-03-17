@@ -253,12 +253,12 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     assertNotNull(statusByCore);
     final var coreProps = statusByCore.get("testInstanceDirAsPropertyParam");
     assertNotNull(coreProps);
-    String instanceDir = coreProps.instanceDir;
+    Path instanceDir = Path.of(coreProps.instanceDir);
     assertNotNull(instanceDir);
     assertEquals(
         "Instance dir does not match param given in property.instanceDir syntax",
         workDir.toAbsolutePath().toString(),
-        Path.of(instanceDir).toAbsolutePath().toString());
+        instanceDir.toAbsolutePath().toString());
   }
 
   @Test

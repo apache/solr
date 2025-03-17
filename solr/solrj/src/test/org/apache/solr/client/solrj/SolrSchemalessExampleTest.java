@@ -25,12 +25,12 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -46,16 +46,15 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    Path tempSolrHome = createTempDir();
+    Path tempSolrHome = FilterPath.unwrap(createTempDir());
     // Schemaless renames schema.xml -> schema.xml.bak, and creates + modifies conf/managed-schema,
     // which violates the test security manager's rules, which disallow writes outside the build
     // dir, so we copy the example/example-schemaless/solr/ directory to a new temp dir where writes
     // are allowed.
-    FileUtils.copyFileToDirectory(
-        Path.of(ExternalPaths.SERVER_HOME, "solr.xml").toFile(), tempSolrHome.toFile());
+    PathUtils.copyFileToDirectory(ExternalPaths.SERVER_HOME.resolve("solr.xml"), tempSolrHome);
     Path collection1Dir = tempSolrHome.resolve("collection1");
     Files.createDirectories(collection1Dir);
-    PathUtils.copyDirectory(Path.of(ExternalPaths.DEFAULT_CONFIGSET), collection1Dir);
+    PathUtils.copyDirectory(ExternalPaths.DEFAULT_CONFIGSET, collection1Dir);
     Properties props = new Properties();
     props.setProperty("name", "collection1");
     OutputStreamWriter writer = null;

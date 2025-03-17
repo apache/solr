@@ -70,7 +70,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
-        .addConfig(DEFAULT_CONFIGSET_NAME, Path.of(ExternalPaths.DEFAULT_CONFIGSET))
+        .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();
     // SchemaDesignerAPI depends on the blob store ".system" collection existing.
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
@@ -134,7 +134,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   @Test
   @SuppressWarnings("unchecked")
   public void testAddTechproductsProgressively() throws Exception {
-    Path docsDir = Path.of(ExternalPaths.SOURCE_HOME, "example/exampledocs");
+    Path docsDir = ExternalPaths.SOURCE_HOME.resolve("example/exampledocs");
     assertTrue(docsDir.toAbsolutePath() + " not found!", Files.isDirectory(docsDir));
     List<Path> toAdd;
     try (Stream<Path> files = Files.list(docsDir)) {
@@ -298,7 +298,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     ModifiableSolrParams reqParams = new ModifiableSolrParams();
 
-    Path filmsDir = Path.of(ExternalPaths.SOURCE_HOME, "example/films");
+    Path filmsDir = ExternalPaths.SOURCE_HOME.resolve("example/films");
     assertTrue(filmsDir.toAbsolutePath() + " not found!", Files.isDirectory(filmsDir));
     Path filmsXml = filmsDir.resolve("films.xml");
     assertTrue("example/films/films.xml not found", Files.isRegularFile(filmsXml));
@@ -363,7 +363,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
 
     // POST some sample JSON docs
-    Path booksJson = Path.of(ExternalPaths.SOURCE_HOME, "example/exampledocs/books.json");
+    Path booksJson = ExternalPaths.SOURCE_HOME.resolve("example/exampledocs/books.json");
     ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson);
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));

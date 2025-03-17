@@ -60,7 +60,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
 
     String testCollectionName = "gettingstarted";
-    Path defaultConfigs = Path.of(ExternalPaths.DEFAULT_CONFIGSET);
+    Path defaultConfigs = ExternalPaths.DEFAULT_CONFIGSET;
     assertTrue(defaultConfigs.toAbsolutePath() + " not found!", Files.isDirectory(defaultConfigs));
 
     Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
@@ -110,7 +110,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     // now index docs ...
     log.info("Created collection, now posting example docs!");
-    Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
+    Path exampleDocsDir = ExternalPaths.SOURCE_HOME.resolve("example").resolve("exampledocs");
     assertTrue(exampleDocsDir.toAbsolutePath() + " not found!", Files.isDirectory(exampleDocsDir));
 
     String[] argsForPost =

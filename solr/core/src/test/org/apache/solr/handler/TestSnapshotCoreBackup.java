@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
@@ -62,11 +61,11 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     assertQ(req("q", "id:2"), "//result[@numFound='0']");
 
     // call backup
-    String location = createTempDir().toAbsolutePath().toString();
+    Path location = createTempDir().toAbsolutePath();
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
 
     final CoreContainer cores = h.getCoreContainer();
-    cores.getAllowPaths().add(Paths.get(location));
+    cores.getAllowPaths().add(location);
     try (final CoreAdminHandler admin = new CoreAdminHandler(cores)) {
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody(
@@ -78,12 +77,12 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               snapshotName,
               "location",
-              location,
+              location.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
       assertNull("Backup should have succeeded", resp.getException());
-      simpleBackupCheck(Path.of(location, "snapshot." + snapshotName), 2);
+      simpleBackupCheck(location.resolve("snapshot." + snapshotName), 2);
     }
   }
 

@@ -166,7 +166,11 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     try (Stream<Path> files = Files.list(resolvedTlogDir)) {
       List<Path> list =
           files
-              .filter(file -> Files.isRegularFile(file) && file.getFileName().startsWith("tlog."))
+              .filter(
+                  file -> {
+                    return Files.isRegularFile(file)
+                        && file.getFileName().toString().startsWith("tlog.");
+                  })
               .toList();
       assertNotNull(list);
       assertEquals(1, list.size());

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,13 +48,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
-  private static final String CONF_DIR =
-      "solr"
-          + FileSystems.getDefault().getSeparator()
-          + DEFAULT_TEST_CORENAME
-          + FileSystems.getDefault().getSeparator()
-          + "conf"
-          + FileSystems.getDefault().getSeparator();
+  private static final Path CONF_DIR = Path.of("solr", DEFAULT_TEST_CORENAME, "conf");
 
   private static long docsSeed; // see indexDocs()
 
@@ -88,7 +81,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
-    leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    leader.copyConfigFile(CONF_DIR.resolve(configFile).toString(), "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort());

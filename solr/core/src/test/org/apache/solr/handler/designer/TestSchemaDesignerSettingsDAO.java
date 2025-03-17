@@ -19,7 +19,6 @@ package org.apache.solr.handler.designer;
 
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -42,7 +41,7 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
-        .addConfig(DEFAULT_CONFIGSET_NAME, Path.of(ExternalPaths.DEFAULT_CONFIGSET))
+        .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();
   }
 

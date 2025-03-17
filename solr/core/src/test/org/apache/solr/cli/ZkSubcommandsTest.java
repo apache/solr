@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -192,8 +191,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     expected = zLibCompressor.compressBytes(dataBytes);
 
     byte[] fromLoca =
-        new ZLibCompressor()
-            .compressBytes(Files.readAllBytes(Path.of(localFile.toAbsolutePath().toString())));
+        new ZLibCompressor().compressBytes(Files.readAllBytes(localFile.toAbsolutePath()));
     assertArrayEquals("Should get back what we put in ZK", fromLoca, expected);
 
     args =
@@ -233,7 +231,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp",
           "-z",
           zkServer.getZkAddress(),
-          SOLR_HOME + FileSystems.getDefault().getSeparator() + "solr-stress-new.xml",
+          SOLR_HOME.resolve("solr-stress-new.xml").toString(),
           "zk:/foo.xml"
         };
 
@@ -255,7 +253,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp",
           "-z",
           zkServer.getZkAddress(),
-          SOLR_HOME + FileSystems.getDefault().getSeparator() + "solr-stress-new.xml",
+          SOLR_HOME.resolve("solr-stress-new.xml").toString(),
           "zk:foo.xml"
         };
 
@@ -280,7 +278,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp",
           "-z",
           zkServer.getZkAddress(),
-          SOLR_HOME + FileSystems.getDefault().getSeparator() + "solr-stress-new.xml",
+          SOLR_HOME.resolve("solr-stress-new.xml").toString(),
           "zk:/state.json"
         };
 
@@ -325,7 +323,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp",
           "-z",
           zkServer.getZkAddress(),
-          SOLR_HOME + FileSystems.getDefault().getSeparator() + "not-there.xml",
+          SOLR_HOME.resolve("not-there.xml").toString(),
           "zk:/foo.xml"
         };
 
@@ -367,7 +365,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "--conf-name",
           confsetname,
           "--conf-dir",
-          ExternalPaths.TECHPRODUCTS_CONFIGSET,
+          ExternalPaths.TECHPRODUCTS_CONFIGSET.toString(),
           "-z",
           zkServer.getZkAddress()
         };
@@ -376,7 +374,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(0, runTool(args, configSetUploadTool));
 
     assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
-    final Path confDir = Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET);
+    final Path confDir = ExternalPaths.TECHPRODUCTS_CONFIGSET;
 
     List<String> zkFiles =
         zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
@@ -414,8 +412,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     // test down config
     Path configSetDir =
-        Path.of(
-            tmpDir.toString(),
+        tmpDir.resolve(
             "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
     assertFalse(Files.exists(configSetDir));
 
@@ -439,19 +436,19 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
       zkFiles =
           zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
       assertEquals(
-          "Comparing original conf files that were to be uploadedto what is in ZK",
+          "Comparing original conf files that were to be uploaded to what is in ZK",
           files.size(),
           zkFiles.size());
       assertEquals("Comparing downloaded files to what is in ZK", files.size(), zkFiles.size());
     }
 
-    Path sourceConfDir = Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET);
+    Path sourceConfDir = ExternalPaths.TECHPRODUCTS_CONFIGSET;
     // filter out all directories starting with . (e.g. .svn)
     try (Stream<Path> stream = Files.walk(sourceConfDir)) {
       List<Path> files =
           stream
               .filter(Files::isRegularFile)
-              .filter(path -> path.getFileName().toString().matches("[^\\.].*"))
+              .filter(path -> path.getFileName().startsWith("."))
               .toList();
       files.forEach(
           (sourceFile) -> {
@@ -526,7 +523,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     final String standardOutput2 = byteStream2.toString(StandardCharsets.UTF_8);
     assertTrue(standardOutput2.startsWith("Copying from 'zk:/getNode'"));
-    byte[] fileBytes = Files.readAllBytes(Paths.get(localFile.toAbsolutePath().toString()));
+    byte[] fileBytes = Files.readAllBytes(localFile.toAbsolutePath());
     assertArrayEquals(data, fileBytes);
   }
 
@@ -558,7 +555,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     ZkCpTool tool = new ZkCpTool();
     assertEquals(0, runTool(args, tool));
 
-    assertArrayEquals(data, Files.readAllBytes(Path.of(localFile.toAbsolutePath().toString())));
+    assertArrayEquals(data, Files.readAllBytes(localFile.toAbsolutePath()));
   }
 
   @Test

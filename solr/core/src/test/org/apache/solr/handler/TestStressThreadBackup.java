@@ -287,6 +287,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
           "Validating {} random backups to ensure they are un-affected by deleting all docs...",
           numBackupsToCheck);
       try (Stream<Path> files = Files.list(backupDir)) {
+        // insure consistent (arbitrary) ordering before shuffling
         final List<Path> allBackups = files.sorted().toList();
         Collections.shuffle(allBackups, random());
         for (int i = 0; i < numBackupsToCheck; i++) {

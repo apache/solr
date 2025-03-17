@@ -28,7 +28,6 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -81,13 +80,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   public static void createMiniSolrCloudCluster() throws Exception {
 
     final String configName = "solrCloudCollectionConfig";
-    final Path configDir =
-        Path.of(
-            TEST_HOME().toString()
-                + FileSystems.getDefault().getSeparator()
-                + "collection1"
-                + FileSystems.getDefault().getSeparator()
-                + "conf");
+    final Path configDir = TEST_HOME().resolve("collection1").resolve("conf");
 
     final int numShards = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
     final int repFactor = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);

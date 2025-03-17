@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.request.json;
 
-import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -47,9 +46,7 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig(CONFIG_NAME, Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET))
-        .configure();
+    configureCluster(1).addConfig(CONFIG_NAME, ExternalPaths.TECHPRODUCTS_CONFIGSET).configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .process(cluster.getSolrClient());

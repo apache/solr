@@ -337,7 +337,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   protected void testExample(String exampleName) throws Exception {
     // Occasionally we want to test in User Managed mode, not the default SolrCloud mode.
     String testStandaloneMode = LuceneTestCase.rarely() ? "--user-managed" : "";
-    Path defaultSolrHomeDir = Path.of(ExternalPaths.SERVER_HOME);
+    Path defaultSolrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(defaultSolrHomeDir)) {
       fail(defaultSolrHomeDir.toAbsolutePath() + " not found and is required to run this test!");
     }
@@ -442,7 +442,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
    */
   @Test
   public void testInteractiveSolrCloudExample() throws Exception {
-    Path solrHomeDir = Path.of(ExternalPaths.SERVER_HOME);
+    Path solrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(solrHomeDir))
       fail(solrHomeDir.toAbsolutePath() + " not found and is required to run this test!");
 
@@ -555,7 +555,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   @Test
   public void testFailExecuteScript() throws Exception {
-    Path solrHomeDir = Path.of(ExternalPaths.SERVER_HOME);
+    Path solrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(solrHomeDir))
       fail(solrHomeDir.toAbsolutePath() + " not found and is required to run this test!");
 

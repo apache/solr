@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.nio.file.FileSystems;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -152,7 +151,7 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
                   .setRepositoryName(VALID_REPOSITORY_NAME)
                   .setLocation(
                       validBackupLocation
-                          + FileSystems.getDefault().getSeparator()
+                          + System.getProperty("path.separator")
                           + "someNonexistentLocation")
                   .process(cluster.getSolrClient());
             });
@@ -167,7 +166,7 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
               CollectionAdminRequest.listBackup(BACKUP_NAME)
                   .setBackupLocation(
                       validBackupLocation
-                          + FileSystems.getDefault().getSeparator()
+                          + System.getProperty("path.separator")
                           + "someNonexistentLocation")
                   .setBackupRepository(VALID_REPOSITORY_NAME)
                   .process(cluster.getSolrClient());
@@ -183,7 +182,7 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
               CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
                   .setLocation(
                       validBackupLocation
-                          + FileSystems.getDefault().getSeparator()
+                          + System.getProperty("path.separator")
                           + "someNonexistentLocation")
                   .setRepositoryName(VALID_REPOSITORY_NAME)
                   .process(cluster.getSolrClient());
@@ -199,7 +198,7 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
               CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
                   .setLocation(
                       validBackupLocation
-                          + FileSystems.getDefault().getSeparator()
+                          + System.getProperty("path.separator")
                           + "someNonexistentLocation")
                   .setRepositoryName(VALID_REPOSITORY_NAME)
                   .process(cluster.getSolrClient());

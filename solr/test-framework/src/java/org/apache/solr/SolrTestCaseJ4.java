@@ -76,6 +76,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
@@ -2310,14 +2311,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /** Creates a temp solr home using sample_techproducts_configs. Returns the home path. */
   @Deprecated // Instead use a basic config + whatever is needed or default config
   public static Path legacyExampleCollection1SolrHome() {
-    String sourceHome = ExternalPaths.SOURCE_HOME;
+    Path sourceHome = ExternalPaths.SOURCE_HOME;
     if (sourceHome == null)
       throw new IllegalStateException(
           "No source home! Cannot create the legacy example solr home directory.");
 
     try {
-      Path tempSolrHome = LuceneTestCase.createTempDir();
-      Path serverSolr = tempSolrHome.getFileSystem().getPath(sourceHome, "server", "solr");
+      Path tempSolrHome = FilterPath.unwrap(LuceneTestCase.createTempDir());
+      Path serverSolr = tempSolrHome.resolve(sourceHome).resolve("server").resolve("solr");
       Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
 
       Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");

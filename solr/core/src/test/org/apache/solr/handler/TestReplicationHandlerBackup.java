@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,13 +60,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
-  private static final String CONF_DIR =
-      "solr"
-          + FileSystems.getDefault().getSeparator()
-          + "collection1"
-          + FileSystems.getDefault().getSeparator()
-          + "conf"
-          + FileSystems.getDefault().getSeparator();
+  private static final Path CONF_DIR = Path.of("solr", "collection1", "conf");
 
   boolean addNumberToKeepInRequest = true;
   String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
@@ -107,7 +100,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
     leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
-    leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    leader.copyConfigFile(CONF_DIR.resolve(configFile).toString(), "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort());

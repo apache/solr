@@ -46,8 +46,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     // the file will remain after the native test (it cannot safely be deleted without the risk of
     // deleting another guys lock) it's ok, these aren't "compatible" anyway: really this test
     // should not re-use the same directory at all.
-    Files.deleteIfExists(
-        Path.of(initAndGetDataDir().toString(), "index", IndexWriter.WRITE_LOCK_NAME));
+    Files.deleteIfExists(initAndGetDataDir().resolve("index").resolve(IndexWriter.WRITE_LOCK_NAME));
   }
 
   @Test

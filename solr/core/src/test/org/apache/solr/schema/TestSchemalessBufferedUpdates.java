@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,7 +28,8 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -58,16 +60,14 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path tmpSolrHome = createTempDir();
-    Path tmpConfDir = tmpSolrHome.resolve(confDir);
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
     Path testHomeConfDir = TEST_HOME().resolve(confDir);
-    FileUtils.copyFileToDirectory(
-        testHomeConfDir.resolve("solrconfig-schemaless.xml").toFile(), tmpConfDir.toFile());
-    FileUtils.copyFileToDirectory(
-        testHomeConfDir.resolve("schema-add-schema-fields-update-processor.xml").toFile(),
-        tmpConfDir.toFile());
-    FileUtils.copyFileToDirectory(
-        testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml").toFile(),
-        tmpConfDir.toFile());
+    Files.createDirectories(tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve("solrconfig-schemaless.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("schema-add-schema-fields-update-processor.xml"), tmpConfDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
     initCore(
         "solrconfig-schemaless.xml", "schema-add-schema-fields-update-processor.xml", tmpSolrHome);
   }

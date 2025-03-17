@@ -134,12 +134,11 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     ConfigSetDownloadTool downTool = new ConfigSetDownloadTool();
     int res = downTool.runTool(SolrCLI.processCommandLineArgs(downTool, args));
     assertEquals("Download should have succeeded.", 0, res);
-    verifyZkLocalPathsMatch(
-        Path.of(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
+    verifyZkLocalPathsMatch(tmp.toAbsolutePath().resolve("conf"), "/configs/downconfig1");
 
     // Ensure that empty files don't become directories (SOLR-11198)
 
-    Path emptyFile = Path.of(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path emptyFile = tmp.toAbsolutePath().resolve("conf").resolve("stopwords").resolve("emptyfile");
     Files.createFile(emptyFile);
 
     // Now copy it up and back and insure it's still a file in the new place
@@ -158,10 +157,10 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     res = downTool.runTool(SolrCLI.processCommandLineArgs(downTool, args));
     assertEquals("Download should have succeeded.", 0, res);
-    verifyZkLocalPathsMatch(
-        Path.of(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig2");
+    verifyZkLocalPathsMatch(tmp.toAbsolutePath().resolve("conf"), "/configs/downconfig2");
     // And insure the empty file is a text file
-    Path destEmpty = Path.of(tmp2.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path destEmpty =
+        tmp2.toAbsolutePath().resolve("conf").resolve("stopwords").resolve("emptyfile");
     assertTrue("Empty files should NOT be copied down as directories", destEmpty.toFile().isFile());
   }
 
@@ -237,12 +236,14 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // copy to local ending in separator
     // src and cp3 and cp4 are valid
-    String localSlash =
-        tmp.normalize()
-            + FileSystems.getDefault().getSeparator()
-            + "cpToLocal"
-            + FileSystems.getDefault().getSeparator();
-    args = new String[] {"--zk-host", zkAddr, "zk:/cp3/schema.xml", localSlash};
+    String localSlash = tmp.normalize().resolve("cpToLocal").toString();
+    args =
+        new String[] {
+          "--zk-host",
+          zkAddr,
+          "zk:/cp3/schema.xml",
+          localSlash + FileSystems.getDefault().getSeparator()
+        };
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should nave created intermediate directory locally.", 0, res);
@@ -256,10 +257,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
         new String[] {
           "--zk-host",
           zkAddr,
-          "file:"
-              + srcPathCheck.normalize().toAbsolutePath()
-              + FileSystems.getDefault().getSeparator()
-              + "solrconfig.xml",
+          "file:" + srcPathCheck.normalize().toAbsolutePath().resolve("solrconfig.xml"),
           "zk:/powerup/"
         };
 
@@ -275,10 +273,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
         new String[] {
           "--zk-host",
           zkAddr,
-          "file:"
-              + srcPathCheck.normalize().toAbsolutePath()
-              + FileSystems.getDefault().getSeparator()
-              + "solrconfig.xml",
+          "file:" + srcPathCheck.normalize().toAbsolutePath().resolve("solrconfig.xml"),
           "zk:/copyUpFile.xml"
         };
 
@@ -291,12 +286,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // copy individual file down
     // src and cp3 are valid
 
-    String localNamed =
-        tmp.normalize()
-            + FileSystems.getDefault().getSeparator()
-            + "localnamed"
-            + FileSystems.getDefault().getSeparator()
-            + "renamed.txt";
+    String localNamed = tmp.normalize().resolve("localnamed").resolve("renamed.txt").toString();
     args = new String[] {"--zk-host", zkAddr, "zk:/cp4/solrconfig.xml", "file:" + localNamed};
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
@@ -335,7 +325,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // Check for an intermediate ZNODE having content. You know cp7/stopwords is a parent node.
     tmp = createTempDir("dirdata");
-    Path file = Path.of(tmp.toAbsolutePath().toString(), "zknode.data");
+    Path file = tmp.toAbsolutePath().resolve("zknode.data");
     List<String> lines = new ArrayList<>();
     lines.add("{Some Arbitrary Data}");
     Files.write(file, lines, StandardCharsets.UTF_8);
@@ -365,7 +355,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Next, copy cp7 down and verify that zknode.data exists for cp7
-    Path zData = Path.of(tmp.toAbsolutePath().toString(), "conf/stopwords/zknode.data");
+    Path zData = tmp.toAbsolutePath().resolve("conf/stopwords/zknode.data");
     assertTrue("znode.data should have been copied down", zData.toFile().exists());
 
     // Finally, copy up to cp8 and verify that the data is up there.
@@ -383,7 +373,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
     // Copy an individual empty file up and back down and insure it's still a file
-    Path emptyFile = Path.of(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path emptyFile = tmp.toAbsolutePath().resolve("conf/stopwords/emptyfile");
     Files.createFile(emptyFile);
 
     args =
@@ -398,7 +388,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path tmp2 = createTempDir("cp9");
-    Path emptyDest = Path.of(tmp2.toAbsolutePath().toString(), "emptyfile");
+    Path emptyDest = tmp2.toAbsolutePath().resolve("emptyfile");
     args =
         new String[] {
           "--zk-host",
@@ -409,7 +399,8 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
-    assertTrue("Empty files should NOT be copied down as directories", emptyDest.toFile().isFile());
+    assertTrue(
+        "Empty files should NOT be copied down as directories", Files.isRegularFile(emptyDest));
 
     // Now with recursive copy
 
@@ -434,7 +425,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
-    Path locEmpty = Path.of(tmp2.toAbsolutePath().toString(), "stopwords", "emptyfile");
+    Path locEmpty = tmp2.toAbsolutePath().resolve("stopwords/emptyfile");
     assertTrue("Empty files should NOT be copied down as directories", locEmpty.toFile().isFile());
   }
 
@@ -652,7 +643,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
       }
       if (isEphemeral(zkRoot + child)) continue;
 
-      Path thisPath = Path.of(fileRoot.toAbsolutePath().toString(), child);
+      Path thisPath = fileRoot.toAbsolutePath().resolve(child);
       assertTrue(
           "Znode " + child + " should have been found on disk at " + fileRoot.toAbsolutePath(),
           Files.exists(thisPath));

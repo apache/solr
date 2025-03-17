@@ -137,7 +137,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
 
     // After upgrade to managed schema, downgrading to non-managed should work after putting back
     // the non-managed schema.
-    Files.move(upgradedOriginalSchemaFile, nonManagedSchemaFile); // SOLR-16903 TODO
+    Files.move(upgradedOriginalSchemaFile, nonManagedSchemaFile);
     initCore("solrconfig-basic.xml", "schema-minimal.xml", tmpSolrHome);
     assertSchemaResource(collection, "schema-minimal.xml");
   }

@@ -27,7 +27,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -341,7 +341,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
       Path file = temporaryFolder.newFile().toPath();
       InputStream input = s3.getObject(b -> b.bucket(BUCKET_NAME).key(path));
-      FileUtils.copyInputStreamToFile(input, file.toFile());
+      Files.copy(input, file, StandardCopyOption.REPLACE_EXISTING);
       return file;
     }
   }

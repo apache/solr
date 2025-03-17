@@ -39,9 +39,9 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
   @Ignore
   @SuppressForbidden(reason = "Needed to provide time for tests.")
   public void testPerf() throws Exception {
-    String sourceHome = ExternalPaths.SOURCE_HOME;
+    Path sourceHome = ExternalPaths.SOURCE_HOME;
     Path configSetDir =
-        Path.of(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
+        sourceHome.resolve("server/solr/configsets/sample_techproducts_configs/conf");
 
     String configSetsBaseDir = TEST_PATH().resolve("configsets").toString();
     byte[] b = Files.readAllBytes(configSetDir.resolve("solrconfig.xml"));

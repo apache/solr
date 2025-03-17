@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,9 +44,7 @@ public class ConcurrentUpdateHttp2SolrClientMultiCollectionTest extends SolrClou
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET))
-        .configure();
+    configureCluster(1).addConfig("conf", ExternalPaths.TECHPRODUCTS_CONFIGSET).configure();
   }
 
   @Before

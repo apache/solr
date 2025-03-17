@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -528,8 +527,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty.stop();
 
     // set up a subdirectory /foo/ in order to force subdir file replication
-    Path leaderFooDir =
-        Path.of(leader.getConfDir() + FileSystems.getDefault().getSeparator() + "foo");
+    Path leaderFooDir = Path.of(leader.getConfDir()).resolve("foo");
     Path leaderBarFile = leaderFooDir.resolve("bar.txt");
     try {
       Files.createDirectories(leaderFooDir);
@@ -538,8 +536,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       throw new RuntimeException("could not make dir or file " + leaderFooDir, e);
     }
 
-    Path followerFooDir =
-        Path.of(follower.getConfDir() + FileSystems.getDefault().getSeparator() + "foo");
+    Path followerFooDir = Path.of(follower.getConfDir()).resolve("foo");
     Path followerBarFile = followerFooDir.resolve("bar.txt");
     assertFalse(Files.exists(followerFooDir));
 

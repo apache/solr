@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.request.json;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,9 +48,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig(CONFIG_NAME, Path.of(ExternalPaths.TECHPRODUCTS_CONFIGSET))
-        .configure();
+    configureCluster(1).addConfig(CONFIG_NAME, ExternalPaths.TECHPRODUCTS_CONFIGSET).configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .process(cluster.getSolrClient());
