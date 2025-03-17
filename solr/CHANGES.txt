@@ -160,6 +160,9 @@ Other Changes
   thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
   Stopped using RawResponseWriter when not needed.  (David Smiley)
 
+* SOLR-17706: SolrJ DocumentObjectBinder is now a global singleton via an INSTANCE field and that
+  which is pluggable via Java SPI/ServiceLoader.  SolrClient.getBinder is gone.  (David Smiley)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
