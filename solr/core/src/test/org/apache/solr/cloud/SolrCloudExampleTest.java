@@ -93,7 +93,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // NOTE: not calling SolrCLI.main as the script does because it calls System.exit which is a
     // no-no in a JUnit test
 
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     CreateTool tool = new CreateTool(runtime);
     CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);

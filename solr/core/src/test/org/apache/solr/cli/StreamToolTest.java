@@ -76,7 +76,7 @@ public class StreamToolTest extends SolrCloudTestCase {
         new String[] {
           "--fields", "field9, field2, field3, field4",
         };
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     StreamTool streamTool = new StreamTool(runtime);
     CommandLine cli = SolrCLI.processCommandLineArgs(streamTool, args);
     String[] outputFields = StreamTool.getOutputFields(cli);

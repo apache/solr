@@ -224,7 +224,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testTypeSupported() {
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(false);
     PostTool postTool = new PostTool(runtime);
 
     assertTrue(postTool.typeSupported("application/pdf"));
@@ -280,7 +280,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testDoFilesMode() throws IOException {
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     PostTool postTool = new PostTool(runtime);
     postTool.recursive = 0;
     postTool.dryRun = true;
@@ -293,7 +293,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testDetectingIfRecursionPossibleInFilesMode() throws IOException {
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     PostTool postTool = new PostTool(runtime);
     postTool.recursive = 1; // This is the default
     File dir = getFile("exampledocs").toFile();
@@ -305,7 +305,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testRecursionAppliesToFilesMode() throws IOException {
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     PostTool postTool = new PostTool(runtime);
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
@@ -318,7 +318,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testDoWebMode() throws IOException, URISyntaxException {
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     PostTool postTool = new PostTool(runtime);
     postTool.pageFetcher = new MockPageFetcher(runtime);
     postTool.dryRun = true;
@@ -343,7 +343,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testRobotsExclusion() throws IOException, URISyntaxException {
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     PostTool postTool = new PostTool(runtime);
     postTool.pageFetcher = new MockPageFetcher(runtime);
     postTool.dryRun = true;

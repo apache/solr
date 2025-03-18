@@ -82,7 +82,7 @@ public class TestExportTool extends SolrCloudTestCase {
       assertEquals(docCount, qr.getResults().getNumFound());
 
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
-      ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+      ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
 
       ExportTool.Info info = new ExportTool.MultiThreadedRunner(runtime, url, null);
       String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
@@ -191,7 +191,7 @@ public class TestExportTool extends SolrCloudTestCase {
       }
       assertEquals(docCount, totalDocsFromCores);
 
-      ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+      ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
       ExportTool.MultiThreadedRunner info;
       String absolutePath;
 

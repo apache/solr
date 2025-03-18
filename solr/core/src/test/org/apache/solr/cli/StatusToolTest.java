@@ -38,7 +38,7 @@ public class StatusToolTest extends SolrCloudTestCase {
     String baseUrl = randomJetty.getBaseUrl().toString();
 
     String[] toolArgs = new String[] {"status", "--solr-url", baseUrl};
-    CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
     StatusTool tool = new StatusTool(runtime);
     tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
 

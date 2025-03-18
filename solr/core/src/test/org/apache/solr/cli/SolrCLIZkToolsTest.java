@@ -537,7 +537,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // Should only find a single level.
     String[] args = new String[] {"ls", "--zk-host", zkAddr, "/configs"};
 
-    CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
 
     int res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     String content = runtime.getOutput();

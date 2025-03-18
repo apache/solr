@@ -325,7 +325,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // test what happens when path arg "/" isn't the last one.
     String[] args = new String[] {"ls", "/", "-r", "true", "-z", zkServer.getZkAddress()};
 
-    CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
     assertEquals(0, CLITestHelper.runTool(args, runtime, ZkLsTool.class));
 
     final String standardOutput2 = runtime.getOutput();
@@ -466,7 +466,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.getAbsolutePath()
         };
 
-    CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
     assertEquals(0, CLITestHelper.runTool(args, runtime, ZkCpTool.class));
 
     final String standardOutput2 = runtime.getOutput();

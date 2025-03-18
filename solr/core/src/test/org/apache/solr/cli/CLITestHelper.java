@@ -19,12 +19,16 @@ package org.apache.solr.cli;
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
 import org.apache.commons.cli.CommandLine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CLITestHelper {
 
@@ -36,7 +40,7 @@ public class CLITestHelper {
    * @param clazz Expected class name of tool implementation.
    */
   public static int runTool(String[] args, Class<?> clazz) throws Exception {
-    ToolRuntime runtime = new ValidatingRuntime();
+    ToolRuntime runtime = new TestingRuntime(false);
     return runTool(args, runtime, clazz);
   }
 
@@ -59,46 +63,70 @@ public class CLITestHelper {
     return tool.runTool(cli);
   }
 
-  public static class BufferingRuntime extends ValidatingRuntime {
+  /**
+   * Runtime for test with additional validations. Mostly, we ensure tests never call {@link
+   * System#exit(int)}.
+   */
+  public static class TestingRuntime extends ToolRuntime {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final StringWriter writer;
     private final PrintWriter printer;
 
-    public BufferingRuntime() {
-      writer = new StringWriter();
-      printer = new PrintWriter(writer);
+    public TestingRuntime(boolean captureOutput) {
+      if (captureOutput) {
+        writer = new StringWriter();
+        printer = new PrintWriter(writer);
+      } else {
+        writer = null;
+        printer = null;
+      }
     }
 
     @Override
     public void print(String message) {
-      printer.print(message);
+      // This logs with a full line, while prod code prints to System.out with no new line char
+      log.info(message);
+
+      if (printer != null) {
+        printer.print(message);
+      }
     }
 
     @Override
     public void println(String message) {
-      printer.println(message);
+      log.info(message);
+
+      if (printer != null) {
+        printer.println(message);
+      }
     }
 
     public void clearOutput() {
+      if (printer == null) {
+        fail("TestingRuntime was created without capturing output");
+      }
+
       printer.flush();
       writer.getBuffer().setLength(0);
     }
 
     public String getOutput() {
+      if (printer == null) {
+        fail("TestingRuntime was created without capturing output");
+      }
+
       printer.flush();
       return writer.toString();
     }
 
     public Reader getReader() {
+      if (printer == null) {
+        fail("TestingRuntime was created without capturing output");
+      }
+
       return new StringReader(writer.toString());
     }
-  }
-
-  /**
-   * Runtime for test with additional validations. Mostly, we ensure tests never call {@link
-   * System#exit(int)}.
-   */
-  public static class ValidatingRuntime extends DefaultToolRuntime {
 
     /**
      * Do not allow to exit the JMV in unit tests!

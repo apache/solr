@@ -362,7 +362,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           };
 
       // capture tool output to stdout
-      CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
+      CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
 
       RunExampleExecutor executor = new RunExampleExecutor();
       closeables.add(executor);
@@ -466,7 +466,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     InputStream userInputSim = new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8));
 
     // capture tool output to stdout
-    CLITestHelper.BufferingRuntime runtime = new CLITestHelper.BufferingRuntime();
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
 
     RunExampleExecutor executor = new RunExampleExecutor();
     closeables.add(executor);
@@ -578,7 +578,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     DefaultExecutor executor = DefaultExecutor.builder().get();
 
-    ToolRuntime runtime = new CLITestHelper.ValidatingRuntime();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
     int code = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
     assertEquals("Execution should have failed with return code 1", 1, code);
