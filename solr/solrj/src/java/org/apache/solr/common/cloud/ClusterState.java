@@ -214,7 +214,7 @@ public class ClusterState implements MapWriter {
       DocCollection coll = ref.get();
       if (coll == null) continue; // this collection got removed in between, skip
       // TODO: for really large clusters, we could 'index' on this
-      return Optional.ofNullable(coll.getReplicas(nodeName)).stream()
+      return Optional.ofNullable(coll.getReplicasOnNode(nodeName)).stream()
           .flatMap(List::stream)
           .filter(r -> coreName.equals(r.getStr(ReplicaStateProps.CORE_NAME)))
           .map(Replica::getShard)
@@ -232,7 +232,7 @@ public class ClusterState implements MapWriter {
         .filter(Objects::nonNull)
         .forEach(
             col -> {
-              List<Replica> replicas = col.getReplicas(nodeName);
+              List<Replica> replicas = col.getReplicasOnNode(nodeName);
               if (replicas != null && !replicas.isEmpty()) {
                 replicaNamesPerCollectionOnNode.put(col.getName(), replicas);
               }
