@@ -508,7 +508,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       perms.remove(PosixFilePermission.OWNER_READ);
       perms.remove(PosixFilePermission.GROUP_READ);
       perms.remove(PosixFilePermission.OTHERS_READ);
-      Files.setPosixFilePermissions(toSet, perms);
+      Files.setAttribute(toSet, "posix:permissions", perms);
     } catch (IOException e) {
       throw new RuntimeException("Cannot make " + toSet + " non-readable. Test aborted.", e);
     }
@@ -526,7 +526,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     perms.add(PosixFilePermission.OWNER_READ);
     perms.add(PosixFilePermission.GROUP_READ);
     perms.add(PosixFilePermission.OTHERS_READ);
-    Files.setPosixFilePermissions(toSet, perms);
+    Files.setAttribute(toSet, "posix:permissions", perms);
   }
 
   @Test
@@ -553,7 +553,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       perms.remove(PosixFilePermission.OWNER_READ);
       perms.remove(PosixFilePermission.GROUP_READ);
       perms.remove(PosixFilePermission.OTHERS_READ);
-      Files.setPosixFilePermissions(toSet, perms);
+      Files.setAttribute(toSet, "posix:permissions", perms);
     } catch (IOException e) {
       throw new RuntimeException("Cannot make " + toSet + " non-readable. Test aborted.", e);
     }
@@ -572,7 +572,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     perms.add(PosixFilePermission.OWNER_READ);
     perms.add(PosixFilePermission.GROUP_READ);
     perms.add(PosixFilePermission.OTHERS_READ);
-    Files.setPosixFilePermissions(toSet, perms);
+    Files.setAttribute(toSet, "posix:permissions", perms);
   }
 
   @Test
@@ -597,7 +597,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       perms.remove(PosixFilePermission.OWNER_READ);
       perms.remove(PosixFilePermission.GROUP_READ);
       perms.remove(PosixFilePermission.OTHERS_READ);
-      Files.setPosixFilePermissions(toSet, perms);
+      Files.setAttribute(toSet, "posix:permissions", perms);
     } catch (IOException e) {
       throw new RuntimeException("Cannot make " + toSet + " non-readable. Test aborted.", e);
     }
@@ -613,7 +613,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     perms.add(PosixFilePermission.OWNER_READ);
     perms.add(PosixFilePermission.GROUP_READ);
     perms.add(PosixFilePermission.OTHERS_READ);
-    Files.setPosixFilePermissions(toSet, perms);
+    Files.setAttribute(toSet, "posix:permissions", perms);
   }
 
   @Test
@@ -647,7 +647,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       perms.remove(PosixFilePermission.OWNER_READ);
       perms.remove(PosixFilePermission.GROUP_READ);
       perms.remove(PosixFilePermission.OTHERS_READ);
-      Files.setPosixFilePermissions(homeDir, perms);
+      Files.setAttribute(homeDir, "posix:permissions", perms);
     } catch (IOException e) {
       throw new RuntimeException("Cannot make " + homeDir + " non-readable. Test aborted.", e);
     }
@@ -670,7 +670,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     perms.add(PosixFilePermission.OWNER_READ);
     perms.add(PosixFilePermission.GROUP_READ);
     perms.add(PosixFilePermission.OTHERS_READ);
-    Files.setPosixFilePermissions(homeDir, perms);
+    Files.setAttribute(homeDir, "posix:permissions", perms);
   }
 
   // For testing whether finding a solr.xml overrides looking at solr.properties
