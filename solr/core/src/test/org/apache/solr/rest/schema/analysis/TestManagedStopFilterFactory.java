@@ -43,7 +43,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   @Before
   public void before() throws Exception {
     Path tmpSolrHome = createTempDir();
-    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -51,7 +51,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath(),
+        tmpSolrHome,
         "solrconfig-managed-schema.xml",
         "schema-rest.xml",
         "/solr",

@@ -186,8 +186,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     Path localFile = Files.createTempFile("topLevel1", ".txt");
     populateFileWithData(localFile);
 
-    StreamTool.LocalCatStream catStream =
-        new StreamTool.LocalCatStream(localFile.toAbsolutePath().toString(), -1);
+    StreamTool.LocalCatStream catStream = new StreamTool.LocalCatStream(localFile.toString(), -1);
     List<Tuple> tuples = new ArrayList();
     try {
       catStream.open();
@@ -209,7 +208,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     for (int i = 0; i < 4; i++) {
       Tuple t = tuples.get(i);
       assertEquals(localFile.getFileName() + " line " + (i + 1), t.get("line"));
-      assertEquals(localFile.toAbsolutePath().toString(), t.get("file"));
+      assertEquals(localFile.toString(), t.get("file"));
     }
   }
 
@@ -279,7 +278,7 @@ public class StreamToolTest extends SolrCloudTestCase {
       "--verbose",
       "-zk-host",
       cluster.getZkClient().getZkServerAddress(),
-      expressionFile.toAbsolutePath().toString()
+      expressionFile.toString()
     };
 
     assertEquals(0, runTool(args));
@@ -327,7 +326,7 @@ public class StreamToolTest extends SolrCloudTestCase {
       cluster.getZkClient().getZkServerAddress(),
       "--credentials",
       SecurityJson.USER_PASS,
-      expressionFile.toAbsolutePath().toString()
+      expressionFile.toString()
     };
 
     assertEquals(0, runTool(args));

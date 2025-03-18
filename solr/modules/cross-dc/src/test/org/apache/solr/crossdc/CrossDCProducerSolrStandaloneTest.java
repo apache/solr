@@ -88,7 +88,7 @@ public class CrossDCProducerSolrStandaloneTest extends SolrTestCaseJ4 {
     Path tmpHome = createTempDir("tmp-home");
     Path coreDir = tmpHome.resolve(coreName);
     populateCoreDirectory("configs/cloud-minimal/conf", solrConfigName, coreDir);
-    initCore("solrconfig.xml", "schema.xml", tmpHome.toAbsolutePath(), coreName);
+    initCore("solrconfig.xml", "schema.xml", tmpHome, coreName);
 
     return new EmbeddedSolrServer(h.getCoreContainer(), coreName);
   }

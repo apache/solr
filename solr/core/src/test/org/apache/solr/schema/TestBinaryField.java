@@ -69,7 +69,7 @@ public class TestBinaryField extends SolrJettyTestBase {
       coreProps.store(w, "");
     }
 
-    createAndStartJetty(homeDir.toAbsolutePath());
+    createAndStartJetty(homeDir);
   }
 
   public void testSimple() throws Exception {

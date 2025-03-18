@@ -273,7 +273,7 @@ public final class ReplicationTestHelper {
     }
 
     public String getDataDir() {
-      return dataDir.toAbsolutePath().toString();
+      return dataDir.toString();
     }
 
     public String getSolrConfigFile() {

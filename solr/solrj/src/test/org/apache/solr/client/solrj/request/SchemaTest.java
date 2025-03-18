@@ -111,8 +111,7 @@ public class SchemaTest extends RestTestBase {
   @Before
   public void init() throws Exception {
     Path tmpSolrHome = createTempDir();
-    PathUtils.copyDirectory(
-        getFile("solrj/solr/collection1").getParent(), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(getFile("solrj/solr/collection1").getParent(), tmpSolrHome);
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -120,12 +119,7 @@ public class SchemaTest extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath(),
-        "solrconfig-managed-schema.xml",
-        "schema.xml",
-        "/solr",
-        true,
-        extraServlets);
+        tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml", "/solr", true, extraServlets);
   }
 
   @After

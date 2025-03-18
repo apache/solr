@@ -59,18 +59,13 @@ public class TestBulkSchemaAPI extends RestTestBase {
   @Before
   public void before() throws Exception {
     Path tmpSolrHome = createTempDir();
-    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath(),
-        "solrconfig-managed-schema.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        null);
+        tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml", "/solr", true, null);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(

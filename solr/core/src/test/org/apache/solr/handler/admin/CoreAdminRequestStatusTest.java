@@ -62,7 +62,7 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4 {
               CoreAdminParams.ACTION,
               CoreAdminParams.CoreAdminAction.CREATE.toString(),
               CoreAdminParams.INSTANCE_DIR,
-              instPropFile.toAbsolutePath().toString(),
+              instPropFile.toString(),
               CoreAdminParams.NAME,
               "dummycore",
               CommonAdminParams.ASYNC,

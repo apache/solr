@@ -92,7 +92,7 @@ public class PostToolTest extends SolrCloudTestCase {
       collection,
       "--credentials",
       SecurityJson.USER_PASS,
-      jsonDoc.toAbsolutePath().toString(),
+      jsonDoc.toString(),
     };
     assertEquals(0, runTool(args));
 
@@ -129,12 +129,7 @@ public class PostToolTest extends SolrCloudTestCase {
     fw.flush();
 
     String[] args = {
-      "post",
-      "-c",
-      collection,
-      "--credentials",
-      SecurityJson.USER_PASS,
-      jsonDoc.toAbsolutePath().toString(),
+      "post", "-c", collection, "--credentials", SecurityJson.USER_PASS, jsonDoc.toString(),
     };
     assertEquals(0, runTool(args));
 
@@ -180,7 +175,7 @@ public class PostToolTest extends SolrCloudTestCase {
       "\"separator=%09&header=false&fieldnames=id,title_s\"",
       "--type",
       "text/csv",
-      tsvDoc.toAbsolutePath().toString(),
+      tsvDoc.toString(),
     };
     assertEquals(0, runTool(args));
 

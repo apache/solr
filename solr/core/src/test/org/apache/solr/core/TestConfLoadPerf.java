@@ -71,7 +71,7 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
               Stat stat = new Stat();
               stat.setVersion(1);
               return new ZkSolrResourceLoader.ZkByteArrayInputStream(
-                  b, configSetDir.resolve("solrconfig.xml").toAbsolutePath().toString(), stat);
+                  b, configSetDir.resolve("solrconfig.xml").toString(), stat);
             } else {
               throw new FileNotFoundException(resource);
             }

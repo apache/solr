@@ -190,9 +190,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         Path tlogFolder = Path.of(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
         try (Stream<Path> tLogFiles = Files.list(tlogFolder)) {
           Path lastTLogFile =
-              tlogFolder
-                  .toAbsolutePath()
-                  .resolve(tLogFiles.sorted().toList().getLast().getFileName());
+              tlogFolder.resolve(tLogFiles.sorted().toList().getLast().getFileName());
           byte[] tlogBytes = Files.readAllBytes(lastTLogFile);
           contentFiles.put(lastTLogFile.toString(), tlogBytes);
           logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);

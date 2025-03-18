@@ -36,7 +36,7 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
     Properties props = new Properties();
     props.setProperty("test", "Before reload");
     writeProperties(props);
-    initCore("solrconfig.xml", "schema.xml", solrHomeDirectory.toAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", solrHomeDirectory);
   }
 
   @Test

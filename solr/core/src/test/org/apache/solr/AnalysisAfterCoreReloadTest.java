@@ -41,9 +41,9 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    Path tmpSolrHome = createTempDir().toAbsolutePath();
+    Path tmpSolrHome = createTempDir();
     PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome, StandardCopyOption.COPY_ATTRIBUTES);
-    initCore("solrconfig.xml", "schema.xml", tmpSolrHome.toAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", tmpSolrHome);
   }
 
   @AfterClass

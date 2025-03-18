@@ -1271,7 +1271,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     }
 
     if (log.isInfoEnabled()) {
-      log.info("OUT: {}", file.toAbsolutePath());
+      log.info("OUT: {}", file);
     }
   }
 

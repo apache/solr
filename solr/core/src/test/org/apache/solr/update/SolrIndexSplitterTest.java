@@ -100,7 +100,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           new SplitIndexCommand(
               request,
               rsp,
-              List.of(indexDir1.toAbsolutePath().toString(), indexDir2.toAbsolutePath().toString()),
+              List.of(indexDir1.toString(), indexDir2.toString()),
               null,
               ranges,
               new PlainIdRouter(),
@@ -113,7 +113,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCore()
               .getDirectoryFactory()
               .get(
-                  indexDir1.toAbsolutePath().toString(),
+                  indexDir1.toString(),
                   DirectoryFactory.DirContext.DEFAULT,
                   h.getCore().getSolrConfig().indexConfig.lockType);
       DirectoryReader reader = DirectoryReader.open(directory);
@@ -132,7 +132,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCore()
               .getDirectoryFactory()
               .get(
-                  indexDir2.toAbsolutePath().toString(),
+                  indexDir2.toString(),
                   DirectoryFactory.DirContext.DEFAULT,
                   h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
@@ -190,7 +190,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           new SplitIndexCommand(
               request,
               rsp,
-              List.of(indexDir1.toAbsolutePath().toString(), indexDir2.toAbsolutePath().toString()),
+              List.of(indexDir1.toString(), indexDir2.toString()),
               null,
               ranges,
               new PlainIdRouter(),
@@ -203,7 +203,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCore()
               .getDirectoryFactory()
               .get(
-                  indexDir1.toAbsolutePath().toString(),
+                  indexDir1.toString(),
                   DirectoryFactory.DirContext.DEFAULT,
                   h.getCore().getSolrConfig().indexConfig.lockType);
       DirectoryReader reader = DirectoryReader.open(directory);
@@ -222,7 +222,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCore()
               .getDirectoryFactory()
               .get(
-                  indexDir2.toAbsolutePath().toString(),
+                  indexDir2.toString(),
                   DirectoryFactory.DirContext.DEFAULT,
                   h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
@@ -265,21 +265,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       core1 =
           h.getCoreContainer()
               .create(
-                  "split1",
-                  Map.of(
-                      "dataDir",
-                      indexDir1.toAbsolutePath().toString(),
-                      "configSet",
-                      "cloud-minimal"));
+                  "split1", Map.of("dataDir", indexDir1.toString(), "configSet", "cloud-minimal"));
       core2 =
           h.getCoreContainer()
               .create(
-                  "split2",
-                  Map.of(
-                      "dataDir",
-                      indexDir2.toAbsolutePath().toString(),
-                      "configSet",
-                      "cloud-minimal"));
+                  "split2", Map.of("dataDir", indexDir2.toString(), "configSet", "cloud-minimal"));
 
       LocalSolrQueryRequest request = null;
       try {
@@ -356,10 +346,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           new SplitIndexCommand(
               request,
               rsp,
-              List.of(
-                  indexDir1.toAbsolutePath().toString(),
-                  indexDir2.toAbsolutePath().toString(),
-                  indexDir3.toAbsolutePath().toString()),
+              List.of(indexDir1.toString(), indexDir2.toString(), indexDir3.toString()),
               null,
               null,
               new PlainIdRouter(),
@@ -372,7 +359,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCore()
               .getDirectoryFactory()
               .get(
-                  indexDir1.toAbsolutePath().toString(),
+                  indexDir1.toString(),
                   DirectoryFactory.DirContext.DEFAULT,
                   h.getCore().getSolrConfig().indexConfig.lockType);
       DirectoryReader reader = DirectoryReader.open(directory);
@@ -383,7 +370,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCore()
               .getDirectoryFactory()
               .get(
-                  indexDir2.toAbsolutePath().toString(),
+                  indexDir2.toString(),
                   DirectoryFactory.DirContext.DEFAULT,
                   h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
@@ -394,7 +381,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCore()
               .getDirectoryFactory()
               .get(
-                  indexDir3.toAbsolutePath().toString(),
+                  indexDir3.toString(),
                   DirectoryFactory.DirContext.DEFAULT,
                   h.getCore().getSolrConfig().indexConfig.lockType);
       reader = DirectoryReader.open(directory);
@@ -462,7 +449,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           new SplitIndexCommand(
               request,
               rsp,
-              List.of(indexDir.toAbsolutePath().toString()),
+              List.of(indexDir.toString()),
               null,
               List.of(splitKeyRange),
               new CompositeIdRouter(),
@@ -474,7 +461,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCore()
               .getDirectoryFactory()
               .get(
-                  indexDir.toAbsolutePath().toString(),
+                  indexDir.toString(),
                   DirectoryFactory.DirContext.DEFAULT,
                   h.getCore().getSolrConfig().indexConfig.lockType);
       DirectoryReader reader = DirectoryReader.open(directory);
@@ -538,21 +525,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       core1 =
           h.getCoreContainer()
               .create(
-                  "split1",
-                  Map.of(
-                      "dataDir",
-                      indexDir1.toAbsolutePath().toString(),
-                      "configSet",
-                      "cloud-minimal"));
+                  "split1", Map.of("dataDir", indexDir1.toString(), "configSet", "cloud-minimal"));
       core2 =
           h.getCoreContainer()
               .create(
-                  "split2",
-                  Map.of(
-                      "dataDir",
-                      indexDir2.toAbsolutePath().toString(),
-                      "configSet",
-                      "cloud-minimal"));
+                  "split2", Map.of("dataDir", indexDir2.toString(), "configSet", "cloud-minimal"));
 
       LocalSolrQueryRequest request = null;
       try {

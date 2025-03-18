@@ -49,7 +49,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
    */
   @BeforeClass
   public static void setupTempDirAndCoreWithManagedSchema() throws Exception {
-    solrHome = createTempDir().toAbsolutePath();
+    solrHome = createTempDir();
     Path confDir = FilterPath.unwrap(solrHome.resolve(confPath));
     Path testHomeConfDir = TEST_HOME().resolve(confPath);
     Files.createDirectories(confDir);

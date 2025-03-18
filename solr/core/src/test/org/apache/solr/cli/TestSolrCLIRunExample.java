@@ -234,7 +234,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       System.setProperty("jetty.port", String.valueOf(port));
       System.setProperty("solr.log.dir", createTempDir("solr_logs").toString());
 
-      standaloneSolr = new JettySolrRunner(solrHomeDir.toAbsolutePath().toString(), port);
+      standaloneSolr = new JettySolrRunner(solrHomeDir.toString(), port);
       Thread bg =
           new Thread() {
             @Override
@@ -339,7 +339,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String testStandaloneMode = LuceneTestCase.rarely() ? "--user-managed" : "";
     Path defaultSolrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(defaultSolrHomeDir)) {
-      fail(defaultSolrHomeDir.toAbsolutePath() + " not found and is required to run this test!");
+      fail(defaultSolrHomeDir + " not found and is required to run this test!");
     }
 
     Path testSolrHomeDir = createTempDir();
@@ -359,9 +359,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             "-e",
             exampleName,
             "--server-dir",
-            solrServerDir.toAbsolutePath().toString(),
+            solrServerDir.toString(),
             "--solr-home",
-            testSolrHomeDir.toAbsolutePath().toString(),
+            testSolrHomeDir.toString(),
             "-p",
             String.valueOf(bindPort),
             testStandaloneMode
@@ -444,7 +444,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   public void testInteractiveSolrCloudExample() throws Exception {
     Path solrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(solrHomeDir))
-      fail(solrHomeDir.toAbsolutePath() + " not found and is required to run this test!");
+      fail(solrHomeDir + " not found and is required to run this test!");
 
     Path solrExampleDir = createTempDir();
 
@@ -453,8 +453,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String[] toolArgs =
         new String[] {
           "--example", "cloud",
-          "--server-dir", solrServerDir.toAbsolutePath().toString(),
-          "--example-dir", solrExampleDir.toAbsolutePath().toString()
+          "--server-dir", solrServerDir.toString(),
+          "--example-dir", solrExampleDir.toString()
         };
 
     int bindPort = -1;
@@ -535,10 +535,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     Path node1SolrHome = solrExampleDir.resolve("cloud/node1/solr");
     if (!Files.isDirectory(node1SolrHome)) {
-      fail(
-          node1SolrHome.toAbsolutePath()
-              + " not found! run cloud example failed; tool output: "
-              + toolOutput);
+      fail(node1SolrHome + " not found! run cloud example failed; tool output: " + toolOutput);
     }
 
     // delete the collection
@@ -557,7 +554,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   public void testFailExecuteScript() throws Exception {
     Path solrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(solrHomeDir))
-      fail(solrHomeDir.toAbsolutePath() + " not found and is required to run this test!");
+      fail(solrHomeDir + " not found and is required to run this test!");
 
     Path solrExampleDir = createTempDir();
     Path solrServerDir = solrHomeDir.getParent();
@@ -572,17 +569,16 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     try {
       Files.createFile(toExecute);
     } catch (IOException e) {
-      throw new IOException(
-          "Should have been able to create file '" + toExecute.toAbsolutePath() + "' ");
+      throw new IOException("Should have been able to create file '" + toExecute + "' ");
     }
 
     String[] toolArgs =
         new String[] {
           "-e", "techproducts",
-          "--server-dir", solrServerDir.toAbsolutePath().toString(),
-          "--example-dir", solrExampleDir.toAbsolutePath().toString(),
+          "--server-dir", solrServerDir.toString(),
+          "--example-dir", solrExampleDir.toString(),
           "-p", String.valueOf(bindPort),
-          "--script", toExecute.toAbsolutePath().toString(),
+          "--script", toExecute.toString(),
         };
 
     // capture tool output to stdout

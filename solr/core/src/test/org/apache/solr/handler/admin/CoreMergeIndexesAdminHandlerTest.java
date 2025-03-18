@@ -87,7 +87,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
                           CoreAdminParams.CORE,
                           "collection1",
                           CoreAdminParams.INDEX_DIR,
-                          workDir.toAbsolutePath().toString()),
+                          workDir.toString()),
                       new SolrQueryResponse());
                 });
         assertEquals(

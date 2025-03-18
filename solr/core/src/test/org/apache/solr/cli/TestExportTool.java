@@ -65,8 +65,7 @@ public class TestExportTool extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
-      String tmpFileLoc =
-          cluster.getBaseDir().toAbsolutePath() + FileSystems.getDefault().getSeparator();
+      String tmpFileLoc = cluster.getBaseDir() + FileSystems.getDefault().getSeparator();
 
       UpdateRequest ur = new UpdateRequest();
       ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -157,8 +156,7 @@ public class TestExportTool extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 8, 8);
 
-      String tmpFileLoc =
-          cluster.getBaseDir().toAbsolutePath() + FileSystems.getDefault().getSeparator();
+      String tmpFileLoc = cluster.getBaseDir() + FileSystems.getDefault().getSeparator();
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
 
       int docCount = 0;
@@ -252,7 +250,7 @@ public class TestExportTool extends SolrCloudTestCase {
         "--credentials",
         SecurityJson.USER_PASS,
         "--output",
-        outFile.toAbsolutePath().toString(),
+        outFile.toString(),
         "--verbose"
       };
 

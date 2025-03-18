@@ -46,9 +46,9 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setUpCore() throws Exception {
-    Path tmpSolrHome = createTempDir().toAbsolutePath();
+    Path tmpSolrHome = createTempDir();
     PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
-    initCore("solrconfig.xml", "schema.xml", tmpSolrHome.toAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", tmpSolrHome);
   }
 
   /**

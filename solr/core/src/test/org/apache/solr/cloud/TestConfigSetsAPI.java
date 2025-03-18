@@ -1539,8 +1539,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     if (v2) {
       // TODO: switch to using V2Request
 
-      final ByteBuffer fileBytes =
-          TestSolrConfigHandler.getFileContent(file.toAbsolutePath().toString(), false);
+      final ByteBuffer fileBytes = TestSolrConfigHandler.getFileContent(file.toString(), false);
       final String uriEnding =
           "/configsets/"
               + configSetName
@@ -1592,7 +1591,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       // TODO: switch to use V2Request
 
       final ByteBuffer sampleConfigFile =
-          TestSolrConfigHandler.getFileContent(file.toAbsolutePath().toString(), false);
+          TestSolrConfigHandler.getFileContent(file.toString(), false);
       if (uploadPath != null && !uploadPath.startsWith("/")) {
         uploadPath = "/" + uploadPath;
       }
@@ -1643,11 +1642,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       final Path zipFile = createTempFile("configset", "zip");
       final Path directory = SolrTestCaseJ4.getFile(directoryPath);
       if (log.isInfoEnabled()) {
-        log.info("Directory: {}", directory.toAbsolutePath());
+        log.info("Directory: {}", directory);
       }
       zip(directory, zipFile);
       if (log.isInfoEnabled()) {
-        log.info("Zipfile: {}", zipFile.toAbsolutePath());
+        log.info("Zipfile: {}", zipFile);
       }
       return zipFile;
     } catch (IOException e) {
@@ -1664,11 +1663,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       final Path zipFile = createTempFile("configset", "zip");
       final Path directory = SolrTestCaseJ4.getFile(file);
       if (log.isInfoEnabled()) {
-        log.info("Directory: {}", directory.toAbsolutePath());
+        log.info("Directory: {}", directory);
       }
       zipWithForbiddenEndings(directory, zipFile);
       if (log.isInfoEnabled()) {
-        log.info("Zipfile: {}", zipFile.toAbsolutePath());
+        log.info("Zipfile: {}", zipFile);
       }
       return zipFile;
     } catch (IOException e) {
@@ -1682,11 +1681,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       final Path zipFile = createTempFile("configset", "zip");
       final Path directory = SolrTestCaseJ4.getFile(resourcePath);
       if (log.isInfoEnabled()) {
-        log.info("Directory: {}", directory.toAbsolutePath());
+        log.info("Directory: {}", directory);
       }
       zipWithForbiddenContent(directory, zipFile);
       if (log.isInfoEnabled()) {
-        log.info("Zipfile: {}", zipFile.toAbsolutePath());
+        log.info("Zipfile: {}", zipFile);
       }
       return zipFile;
     } catch (IOException e) {

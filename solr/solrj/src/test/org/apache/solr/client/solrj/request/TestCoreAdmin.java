@@ -57,7 +57,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName("corewithconfigset");
-    req.setInstanceDir(newCoreInstanceDir.toAbsolutePath().toString());
+    req.setInstanceDir(newCoreInstanceDir.toString());
     req.setConfigSet("configset-2");
 
     CoreAdminResponse response = req.process(client);
@@ -84,9 +84,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("newcore");
-      req.setInstanceDir(newCoreInstanceDir.toAbsolutePath().resolve("newcore").toString());
-      req.setDataDir(dataDir.toAbsolutePath().toString());
-      req.setUlogDir(dataDir.resolve("ulog").toAbsolutePath().toString());
+      req.setInstanceDir(newCoreInstanceDir.resolve("newcore").toString());
+      req.setDataDir(dataDir.toString());
+      req.setUlogDir(dataDir.resolve("ulog").toString());
       req.setConfigSet("shared");
 
       // These should be the inverse of defaults.
@@ -109,9 +109,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
         logDir = Path.of(core.getUpdateHandler().getUpdateLog().getTlogDir());
       }
 
-      assertEquals(
-          dataDir.resolve("ulog").resolve("tlog").toAbsolutePath().toString(),
-          logDir.toAbsolutePath().toString());
+      assertEquals(dataDir.resolve("ulog").resolve("tlog").toString(), logDir.toString());
     }
   }
 

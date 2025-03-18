@@ -98,7 +98,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer init() throws Exception {
     solrHomeDirectory = createTempDir();
 
-    copyXmlToHome(solrHomeDirectory.toAbsolutePath(), "solr-transientCores.xml");
+    copyXmlToHome(solrHomeDirectory, "solr-transientCores.xml");
     for (int idx = 1; idx < 10; ++idx) {
       copyMinConf(solrHomeDirectory.resolve("collection" + idx));
     }
@@ -109,7 +109,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private CoreContainer initEmpty() throws IOException {
     solrHomeDirectory = createTempDir();
-    copyXmlToHome(solrHomeDirectory.toAbsolutePath(), "solr-transientCores.xml");
+    copyXmlToHome(solrHomeDirectory, "solr-transientCores.xml");
     NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory, null);
     return createCoreContainer(
         cfg,

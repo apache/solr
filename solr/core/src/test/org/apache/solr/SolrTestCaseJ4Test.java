@@ -30,7 +30,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest
     // configuration sets we can, so we don't copy that much junk around.
-    Path tmpSolrHome = createTempDir().toAbsolutePath();
+    Path tmpSolrHome = createTempDir();
 
     Path subHome = tmpSolrHome.resolve("core0/conf");
     Files.createDirectories(subHome);

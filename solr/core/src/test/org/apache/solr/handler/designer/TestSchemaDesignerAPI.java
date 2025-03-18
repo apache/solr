@@ -135,7 +135,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   @SuppressWarnings("unchecked")
   public void testAddTechproductsProgressively() throws Exception {
     Path docsDir = ExternalPaths.SOURCE_HOME.resolve("example/exampledocs");
-    assertTrue(docsDir.toAbsolutePath() + " not found!", Files.isDirectory(docsDir));
+    assertTrue(docsDir + " not found!", Files.isDirectory(docsDir));
     List<Path> toAdd;
     try (Stream<Path> files = Files.list(docsDir)) {
       toAdd =
@@ -149,7 +149,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
                         || name.endsWith(".jsonl");
                   })
               .toList();
-      assertNotNull("No test data files found in " + docsDir.toAbsolutePath(), toAdd);
+      assertNotNull("No test data files found in " + docsDir, toAdd);
     }
 
     String configSet = "techproducts";
@@ -299,7 +299,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     ModifiableSolrParams reqParams = new ModifiableSolrParams();
 
     Path filmsDir = ExternalPaths.SOURCE_HOME.resolve("example/films");
-    assertTrue(filmsDir.toAbsolutePath() + " not found!", Files.isDirectory(filmsDir));
+    assertTrue(filmsDir + " not found!", Files.isDirectory(filmsDir));
     Path filmsXml = filmsDir.resolve("films.xml");
     assertTrue("example/films/films.xml not found", Files.isRegularFile(filmsXml));
 

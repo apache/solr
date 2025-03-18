@@ -1559,13 +1559,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           new GenericSolrRequest(
                   SolrRequest.METHOD.GET,
                   "/replication",
-                  params(
-                      "command",
-                      "backup",
-                      "location",
-                      backupDir.toAbsolutePath().toString(),
-                      "name",
-                      backupName))
+                  params("command", "backup", "location", backupDir.toString(), "name", backupName))
               .setRequiresCollection(true);
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
@@ -1588,13 +1582,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           new GenericSolrRequest(
                   SolrRequest.METHOD.GET,
                   "/replication",
-                  params(
-                      "command",
-                      "backup",
-                      "location",
-                      backupDir.toAbsolutePath().toString(),
-                      "name",
-                      backupName))
+                  params("command", "backup", "location", backupDir.toString(), "name", backupName))
               .setRequiresCollection(true);
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);

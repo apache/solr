@@ -41,8 +41,7 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path solrHome = createSolrHome();
-    solrHome.toFile().deleteOnExit();
-    createAndStartJetty(solrHome.toAbsolutePath());
+    createAndStartJetty(solrHome);
   }
 
   @Test

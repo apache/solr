@@ -72,7 +72,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         }
       }
     }
-    createAndStartJetty(tempSolrHome.toAbsolutePath());
+    createAndStartJetty(tempSolrHome);
   }
 
   @Test

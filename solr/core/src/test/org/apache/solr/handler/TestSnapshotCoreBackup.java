@@ -61,7 +61,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     assertQ(req("q", "id:2"), "//result[@numFound='0']");
 
     // call backup
-    Path location = createTempDir().toAbsolutePath();
+    Path location = createTempDir();
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
 
     final CoreContainer cores = h.getCoreContainer();
@@ -122,7 +122,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "empty_backup1",
               "location",
-              backupDir.toAbsolutePath().toString(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
@@ -158,7 +158,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "empty_backup2",
               "location",
-              backupDir.toAbsolutePath().toString(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
@@ -204,7 +204,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "commitName",
               snapName,
               "location",
-              backupDir.toAbsolutePath().toString(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
@@ -249,7 +249,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "backup1a",
               "location",
-              backupDir.toAbsolutePath().toString(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
@@ -292,7 +292,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "backup1b",
               "location",
-              backupDir.toAbsolutePath().toString(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
@@ -333,7 +333,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "name",
               "backup2",
               "location",
-              backupDir.toAbsolutePath().toString(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);
@@ -358,7 +358,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
               "commitName",
               snapName,
               "location",
-              backupDir.toAbsolutePath().toString(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false"),
           resp);

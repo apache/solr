@@ -45,7 +45,7 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
         Path.of(top, "solrconfig-headers.xml"),
         Path.of(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
-    createAndStartJetty(solrHomeDirectory.toAbsolutePath());
+    createAndStartJetty(solrHomeDirectory);
   }
 
   @AfterClass

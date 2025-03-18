@@ -151,7 +151,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
                     "name",
                     backupName,
                     CoreAdminParams.BACKUP_LOCATION,
-                    backupDir.toAbsolutePath().toString());
+                    backupDir.toString());
             if (null != snapName) {
               p.add(CoreAdminParams.COMMIT_NAME, snapName);
             }
@@ -404,7 +404,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
               CoreAdminParams.NAME,
               backupName,
               CoreAdminParams.BACKUP_LOCATION,
-              backupDir.toAbsolutePath().toString(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false");
       if (null != snapName) {

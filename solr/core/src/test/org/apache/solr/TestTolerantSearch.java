@@ -60,7 +60,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   public static void createThings() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
     Path solrHome = createSolrHome();
-    createAndStartJetty(solrHome.toAbsolutePath());
+    createAndStartJetty(solrHome);
     String url = getBaseUrl();
     collection1 = getHttpSolrClient(url, "collection1");
     collection2 = getHttpSolrClient(url, "collection2");

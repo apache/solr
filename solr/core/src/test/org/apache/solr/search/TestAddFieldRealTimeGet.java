@@ -32,7 +32,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
 
   @Before
   public void initManagedSchemaCore() throws Exception {
-    final Path tmpSolrHome = createTempDir().toAbsolutePath();
+    final Path tmpSolrHome = createTempDir();
     Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
     Path testHomeConfDir = TEST_HOME().resolve(confDir);
     Files.createDirectories(tmpConfDir);

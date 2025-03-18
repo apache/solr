@@ -125,16 +125,12 @@ public class TestRestManager extends SolrRestletTestBase {
   public void testReloadFromPersistentStorage() throws IOException {
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     Path unitTestStorageDir = createTempDir("testRestManager");
-    assertTrue(
-        unitTestStorageDir.toAbsolutePath() + " is not a directory!",
-        Files.isDirectory(unitTestStorageDir));
+    assertTrue(unitTestStorageDir + " is not a directory!", Files.isDirectory(unitTestStorageDir));
     assertTrue(Files.isReadable(unitTestStorageDir));
     assertTrue(Files.isWritable(unitTestStorageDir));
 
     NamedList<String> ioInitArgs = new NamedList<>();
-    ioInitArgs.add(
-        ManagedResourceStorage.STORAGE_DIR_INIT_ARG,
-        unitTestStorageDir.toAbsolutePath().toString());
+    ioInitArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, unitTestStorageDir.toString());
 
     StorageIO storageIO = new ManagedResourceStorage.FileStorageIO();
     storageIO.configure(loader, ioInitArgs);

@@ -70,7 +70,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     Path indexDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toAbsolutePath().toString());
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toString());
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
     assertEquals(dictName + " is not equal to " + "external", "external", dictName);
@@ -120,7 +120,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     Path indexDir = createTempDir();
     Files.createDirectories(indexDir);
-    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toAbsolutePath().toString());
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toString());
     spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop_type");
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);

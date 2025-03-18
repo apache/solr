@@ -56,12 +56,7 @@ public class TestConfigSetImmutable extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
 
     createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath(),
-        "solrconfig-schemaless.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        null);
+        tmpSolrHome, "solrconfig-schemaless.xml", "schema-rest.xml", "/solr", true, null);
   }
 
   @After

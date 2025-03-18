@@ -40,7 +40,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
     Path solrHomeDirectory = createTempDir();
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory.toAbsolutePath());
+    createAndStartJetty(solrHomeDirectory);
   }
 
   protected static final String CONTENTS = "id\n100\n101\n102";

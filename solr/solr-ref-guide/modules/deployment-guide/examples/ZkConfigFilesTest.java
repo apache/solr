@@ -63,8 +63,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
 
   @Test
   public void testCanUploadConfigToZk() throws Exception {
-    final String localConfigSetDirectory =
-        ExternalPaths.TECHPRODUCTS_CONFIGSET.toAbsolutePath().toString();
+    final String localConfigSetDirectory = ExternalPaths.TECHPRODUCTS_CONFIGSET.toString();
 
     assertConfigsContainOnly();
 

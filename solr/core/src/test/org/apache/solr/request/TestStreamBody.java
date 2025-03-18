@@ -39,7 +39,7 @@ public class TestStreamBody extends RestTestBase {
 
   public void startSolr() throws Exception {
     Path tmpSolrHome = createTempDir();
-    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -47,12 +47,7 @@ public class TestStreamBody extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath(),
-        "solrconfig-minimal.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        extraServlets);
+        tmpSolrHome, "solrconfig-minimal.xml", "schema-rest.xml", "/solr", true, extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(
