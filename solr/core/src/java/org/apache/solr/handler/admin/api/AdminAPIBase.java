@@ -152,6 +152,28 @@ public abstract class AdminAPIBase extends JerseyResource {
     return remoteResponse;
   }
 
+  protected void processRemoteResponse(
+      SubResponseAccumulatingJerseyResponse responseToUser,
+      SolrResponse remoteResponse,
+      String asyncId)
+      throws Exception {
+    if (remoteResponse.getException() != null) {
+      throw remoteResponse.getException();
+    }
+
+    if (asyncId != null) {
+      responseToUser.requestId = asyncId;
+      return;
+    }
+
+    // Values fetched from remoteResponse may be null
+    responseToUser.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
+    responseToUser.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+    if (remoteResponse.getResponse().get("warning") instanceof String) {
+      responseToUser.warning = (String) remoteResponse.getResponse().get("warning");
+    }
+  }
+
   protected static void insertIfNotNull(Map<String, Object> destination, String key, Object value) {
     if (value != null) {
       destination.put(key, value);
