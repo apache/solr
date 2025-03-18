@@ -46,7 +46,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17361 OpenJ9 can't compile solr: No method HotSpotDiagnosticMXBean.dumpHeap (Alex Deparvu)
 
 Deprecation Removals
 ----------------------
