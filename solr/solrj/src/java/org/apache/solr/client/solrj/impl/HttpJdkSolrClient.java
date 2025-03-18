@@ -283,7 +283,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
 
     HttpRequest.BodyPublisher bodyPublisher;
-    Future<?> contentWritingFuture = null;
+    CompletableFuture<Void> contentWritingFuture = new CompletableFuture<>();
     if (contentWriter != null) {
       boolean success = maybeTryHeadRequest(url);
       if (!success) {
@@ -294,15 +294,16 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       final PipedInputStream sink = new PipedInputStream(source);
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> sink);
 
-      contentWritingFuture =
-          executor.submit(
-              () -> {
-                try (source) {
-                  contentWriter.write(source);
-                } catch (Exception e) {
-                  log.error("Cannot write Content Stream", e);
-                }
-              });
+      executor.submit(
+          () -> {
+            try (source) {
+              contentWriter.write(source);
+              contentWritingFuture.complete(null);
+            } catch (Exception e) {
+              log.error("Cannot write Content Stream", e);
+              contentWritingFuture.completeExceptionally(e);
+            }
+          });
     } else if (streams != null && streams.size() == 1) {
       boolean success = maybeTryHeadRequest(url);
       if (!success) {
