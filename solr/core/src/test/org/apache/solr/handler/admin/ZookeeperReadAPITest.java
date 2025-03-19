@@ -77,6 +77,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
 
       final var configListRequest = new ZookeeperReadApi.ListNodes("/configs");
       final var configListResponse = configListRequest.process(client).getParsed();
+
       assertEquals(
           16, configListResponse.unknownProperties().get("/configs").get("_default").dataLength);
       assertEquals(

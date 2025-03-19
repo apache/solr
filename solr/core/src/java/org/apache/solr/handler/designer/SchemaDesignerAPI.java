@@ -71,7 +71,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.configsets.ConfigSetAPIBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -245,8 +244,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       data = in.readAllBytes();
     }
     Exception updateFileError = null;
-    boolean requestIsTrusted =
-        ConfigSetAPIBase.isTrusted(req.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
+
     if (SOLR_CONFIG_XML.equals(file)) {
       // verify the updated solrconfig.xml is valid before saving to ZK (to avoid things blowing up
       // later)

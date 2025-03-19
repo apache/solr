@@ -23,7 +23,6 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.CONFIG_SET_TIMEOUT
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.security.Principal;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -43,7 +42,6 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,15 +113,6 @@ public class ConfigSetAPIBase extends JerseyResource {
     }
 
     return contentStreamsIterator.next().getStream();
-  }
-
-  public static boolean isTrusted(Principal userPrincipal, AuthenticationPlugin authPlugin) {
-    if (authPlugin != null && userPrincipal != null) {
-      log.debug("Trusted configset request");
-      return true;
-    }
-    log.debug("Untrusted configset request");
-    return false;
   }
 
   protected void createBaseNode(

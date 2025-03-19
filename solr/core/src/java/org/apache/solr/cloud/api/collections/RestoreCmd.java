@@ -150,7 +150,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     final URI location;
     final URI backupPath;
     final List<String> nodeList;
-    final boolean requestIsTrusted;
 
     final CoreContainer container;
     final BackupRepository repository;
@@ -166,7 +165,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       this.asyncId = message.getStr(ASYNC);
       this.repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
       this.backupId = message.getInt(CoreAdminParams.BACKUP_ID, -1);
-      this.requestIsTrusted = message.getBool(CoreAdminParams.TRUSTED, false);
 
       this.container = ccc.getCoreContainer();
       this.repository = this.container.newBackupRepository(repo);
