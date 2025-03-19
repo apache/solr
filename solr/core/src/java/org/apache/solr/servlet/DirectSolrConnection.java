@@ -37,7 +37,9 @@ import org.apache.solr.response.SolrQueryResponse;
  * interface to Solr.
  *
  * @since solr 1.2
+ * @deprecated see {@link org.apache.solr.client.solrj.embedded.EmbeddedSolrServer}
  */
+@Deprecated
 public class DirectSolrConnection {
   protected final SolrCore core;
   protected final SolrRequestParsers parser;

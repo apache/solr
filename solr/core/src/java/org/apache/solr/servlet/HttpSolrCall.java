@@ -1059,7 +1059,7 @@ public class HttpSolrCall {
       if (core != null) return core;
     }
 
-    List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
+    List<Replica> replicas = collection.getReplicasOnNode(cores.getZkController().getNodeName());
     return randomlyGetSolrCore(liveNodes, replicas);
   }
 
