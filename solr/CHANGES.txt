@@ -59,6 +59,8 @@ Bug Fixes
 * SOLR-17699: Fixed performance regression since 9.0 with "frange" queries embedded in other queries.
   May also affect some numeric range queries when the minimum is negative.  (David Smiley)
 
+* SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
