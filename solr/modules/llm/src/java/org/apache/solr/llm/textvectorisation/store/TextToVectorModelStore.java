@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.texttovector.store;
+package org.apache.solr.llm.textvectorisation.store;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.llm.texttovector.model.SolrTextToVectorModel;
+import org.apache.solr.llm.textvectorisation.model.SolrTextToVectorModel;
 
 /** Simple store to manage CRUD operations on the {@link SolrTextToVectorModel} */
 public class TextToVectorModelStore {

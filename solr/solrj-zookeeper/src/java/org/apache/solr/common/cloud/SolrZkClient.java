@@ -92,9 +92,6 @@ public class SolrZkClient implements Closeable {
 
   private final ExecutorService zkCallbackExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
-  private final ExecutorService zkConnectionListenerCallbackExecutor =
-      ExecutorUtil.newMDCAwareSingleThreadExecutor(
-          new SolrNamedThreadFactory("zkConnectionListenerCallback"));
 
   private volatile boolean isClosed = false;
   private int zkClientTimeout;
@@ -116,8 +113,6 @@ public class SolrZkClient implements Closeable {
         builder.zkClientConnectTimeout,
         builder.zkCredentialsProvider,
         builder.aclProvider,
-        builder.onReconnect,
-        builder.onDisconnect,
         builder.higherLevelIsClosed,
         builder.minStateByteLenForCompression,
         builder.compressor,
@@ -131,8 +126,6 @@ public class SolrZkClient implements Closeable {
       int clientConnectTimeout,
       ZkCredentialsProvider zkCredentialsProvider,
       ACLProvider aclProvider,
-      final OnReconnect onReconnect,
-      OnDisconnect onDisconnect,
       IsClosed higherLevelIsClosed,
       int minStateByteLenForCompression,
       Compressor compressor,
@@ -204,16 +197,6 @@ public class SolrZkClient implements Closeable {
     client.getZookeeperClient().setTracerDriver(metricsListener);
     // This will collect metrics for background curator commands
     client.getCuratorListenable().addListener(metricsListener);
-    if (onReconnect != null) {
-      client
-          .getConnectionStateListenable()
-          .addListener(onReconnect, zkConnectionListenerCallbackExecutor);
-    }
-    if (onDisconnect != null) {
-      client
-          .getConnectionStateListenable()
-          .addListener(onDisconnect, zkConnectionListenerCallbackExecutor);
-    }
     client.start();
     try {
       if (!client.blockUntilConnected(clientConnectTimeout, TimeUnit.MILLISECONDS)) {
@@ -896,12 +879,6 @@ public class SolrZkClient implements Closeable {
     } catch (Exception e) {
       log.error("Error shutting down zkCallbackExecutor", e);
     }
-
-    try {
-      ExecutorUtil.shutdownAndAwaitTermination(zkConnectionListenerCallbackExecutor);
-    } catch (Exception e) {
-      log.error("Error shutting down zkConnManagerCallbackExecutor", e);
-    }
   }
 
   /**
@@ -1152,8 +1129,6 @@ public class SolrZkClient implements Closeable {
     public String zkServerAddress;
     public int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     public int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
-    public OnReconnect onReconnect;
-    public OnDisconnect onDisconnect;
     public ZkCredentialsProvider zkCredentialsProvider;
     public ACLProvider aclProvider;
     public IsClosed higherLevelIsClosed;
@@ -1201,16 +1176,6 @@ public class SolrZkClient implements Closeable {
      */
     public Builder withConnTimeOut(int zkConnectTimeout, TimeUnit unit) {
       this.zkClientConnectTimeout = Math.toIntExact(unit.toMillis(zkConnectTimeout));
-      return this;
-    }
-
-    public Builder withReconnectListener(OnReconnect onReconnect) {
-      this.onReconnect = onReconnect;
-      return this;
-    }
-
-    public Builder withDisconnectListener(OnDisconnect onDisconnect) {
-      this.onDisconnect = onDisconnect;
       return this;
     }
 
