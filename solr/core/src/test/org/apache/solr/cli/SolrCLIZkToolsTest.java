@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -213,10 +212,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     String localSlash = tmp.normalize().resolve("cpToLocal").toString();
     args =
         new String[] {
-          "--zk-host",
-          zkAddr,
-          "zk:/cp3/schema.xml",
-          localSlash + FileSystems.getDefault().getSeparator()
+          "--zk-host", zkAddr, "zk:/cp3/schema.xml", localSlash + tmp.getFileSystem().getSeparator()
         };
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
@@ -405,7 +401,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // Now fail if we specify "file:". Everything should still be in /mv2
     args =
         new String[] {
-          "--zk-host", zkAddr, "file:" + FileSystems.getDefault().getSeparator() + "mv2", "/mv3"
+          "--zk-host", zkAddr, "file:" + srcPathCheck.getFileSystem().getSeparator() + "mv2", "/mv3"
         };
 
     // Still in mv2

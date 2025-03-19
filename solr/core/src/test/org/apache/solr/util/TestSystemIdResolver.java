@@ -17,7 +17,6 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Arrays;
 import org.apache.lucene.util.ResourceLoader;
@@ -59,7 +58,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
     assertEquals(
         "solrres://@/test.xml",
         SystemIdResolver.createSystemIdFromResourceName(
-            FileSystems.getDefault().getSeparator() + "test.xml"));
+            testHome.getFileSystem().getSeparator() + "test.xml"));
 
     // check relative URI resolving
     assertEquals(
