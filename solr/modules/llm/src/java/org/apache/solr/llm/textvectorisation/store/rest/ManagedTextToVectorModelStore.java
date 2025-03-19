@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.texttovector.store.rest;
+package org.apache.solr.llm.textvectorisation.store.rest;
 
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
@@ -26,9 +26,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.texttovector.model.SolrTextToVectorModel;
-import org.apache.solr.llm.texttovector.store.TextToVectorModelException;
-import org.apache.solr.llm.texttovector.store.TextToVectorModelStore;
+import org.apache.solr.llm.textvectorisation.model.SolrTextToVectorModel;
+import org.apache.solr.llm.textvectorisation.store.TextToVectorModelException;
+import org.apache.solr.llm.textvectorisation.store.TextToVectorModelStore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;

@@ -37,6 +37,8 @@ Improvements
 
 * SOLR-17516: `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. (James Dyer)
 
+* SOLR-17685: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of existing SOLR_HOST ENV variable. (Eric Pugh, Houston Putnam)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -154,6 +156,10 @@ Other Changes
 
 * SOLR-16903: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
 
+* SOLR-17682: QueryResponseWriter: refactor the hierarchy.  Base abstraction is now byte oriented,
+  thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
+  Stopped using RawResponseWriter when not needed.  (David Smiley)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -166,6 +172,8 @@ New Features
 * SOLR-17656: New 'skipLeaderRecovery' replica property allows PULL replicas with existing indexes to immediately become ACTIVE (hossman)
 
 * SOLR-17309: Certificate based authentication plugin now has richer flexible cert principal resolution. (Lamine Idjeraoui via Eric Pugh)
+
+* SOLR-17632: Added update request processor to encode text to vector at indexing time through external LLM services. (Alessandro Benedetti)
 
 Improvements
 ---------------------
@@ -204,6 +212,8 @@ Bug Fixes
 * SOLR-17700: Use Core Operation lock when unloading cores. This fixes errors that occur when a collection deletion and reload
   occur at the same time. (Houston Putman)
 
+* SOLR-17699: Fixed performance regression since 9.0 with "frange" queries embedded in other queries.
+  May also affect some numeric range queries when the minimum is negative.  (David Smiley)
 
 Dependency Upgrades
 ---------------------

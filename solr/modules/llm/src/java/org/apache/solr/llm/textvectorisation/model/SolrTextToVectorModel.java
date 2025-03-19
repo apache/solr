@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.texttovector.model;
+package org.apache.solr.llm.textvectorisation.model;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -26,8 +26,8 @@ import java.util.Objects;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.texttovector.store.TextToVectorModelException;
-import org.apache.solr.llm.texttovector.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.llm.textvectorisation.store.TextToVectorModelException;
+import org.apache.solr.llm.textvectorisation.store.rest.ManagedTextToVectorModelStore;
 
 /**
  * This object wraps a {@link dev.langchain4j.model.embedding.EmbeddingModel} to encode text to

@@ -48,3 +48,37 @@ setup() {
   assert_output --partial '"numFound":0'
   solr stop --all
 }
+
+@test "enable auth connects via zookeeper" {
+  solr start
+  run solr auth enable --type basicAuth --credentials name:password -z localhost:${ZK_PORT}
+  assert_output --partial 'Successfully enabled basic auth'
+  run curl -u name:password --basic "http://localhost:${SOLR_PORT}/api/cluster"
+  assert_output --partial '"status":0'
+  
+  solr auth disable -z localhost:${ZK_PORT}
+  run curl "http://localhost:${SOLR_PORT}/api/cluster"
+  assert_output --partial '"status":0' 
+  solr stop --all
+}
+
+@test "AUTH_PORT delegates to SOLR_PORT" {
+  solr start -p ${SOLR2_PORT}
+  
+  export AUTH_PORT=${SOLR2_PORT}
+  
+  unset SOLR2_PORT
+  assert [ -z "${SOLR2_PORT}" ]
+  
+  solr auth enable --type basicAuth --credentials name:password
+  solr assert --started http://localhost:${AUTH_PORT} --timeout 5000
+
+  run curl -u name:password --basic "http://localhost:${AUTH_PORT}/api/cluster"
+  assert_output --partial '"status":0'
+  
+  solr auth disable
+  run curl "http://localhost:${AUTH_PORT}/api/cluster"
+  assert_output --partial '"status":0' 
+  solr stop --all
+  export SOLR2_PORT=${AUTH_PORT}
+}
