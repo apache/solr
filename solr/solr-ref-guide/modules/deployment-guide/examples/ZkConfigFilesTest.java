@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.ref_guide_examples;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.ConfigSetService;
@@ -63,13 +63,12 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
 
   @Test
   public void testCanUploadConfigToZk() throws Exception {
-    final String localConfigSetDirectory = ExternalPaths.TECHPRODUCTS_CONFIGSET.toString();
+    final Path localConfigSetDirectory = ExternalPaths.TECHPRODUCTS_CONFIGSET;
 
     assertConfigsContainOnly();
 
     // tag::zk-configset-upload[]
-    getConfigSetService()
-        .uploadConfig("nameForConfigset", Paths.get(localConfigSetDirectory), false);
+    getConfigSetService().uploadConfig("nameForConfigset", localConfigSetDirectory, false);
     // end::zk-configset-upload[]
 
     assertConfigsContainOnly("nameForConfigset");
