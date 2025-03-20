@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.texttovector.store.rest;
+package org.apache.solr.llm.textvectorisation.store.rest;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 

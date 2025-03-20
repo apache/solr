@@ -481,7 +481,7 @@ public class Overseer implements SolrCloseable {
       byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
-      } catch (IllegalStateException e) {
+      } catch (IllegalStateException | KeeperException.NoNodeException e) {
         return;
       } catch (Exception e) {
         log.warn("Error communicating with ZooKeeper", e);

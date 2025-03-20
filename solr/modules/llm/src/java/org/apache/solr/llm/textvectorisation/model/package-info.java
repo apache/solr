@@ -16,4 +16,4 @@
  */
 
 /** APIs and classes for implementing text to vector logic. */
-package org.apache.solr.llm.texttovector.model;
+package org.apache.solr.llm.textvectorisation.model;

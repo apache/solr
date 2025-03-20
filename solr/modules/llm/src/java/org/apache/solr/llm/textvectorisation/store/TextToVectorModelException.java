@@ -14,6 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.llm.textvectorisation.store;
 
-/** APIs and classes for implementing text to vector QueryParsers. */
-package org.apache.solr.llm.texttovector.search;
+public class TextToVectorModelException extends RuntimeException {
+
+  private static final long serialVersionUID = 1L;
+
+  public TextToVectorModelException(String message) {
+    super(message);
+  }
+
+  public TextToVectorModelException(String message, Exception cause) {
+    super(message, cause);
+  }
+}

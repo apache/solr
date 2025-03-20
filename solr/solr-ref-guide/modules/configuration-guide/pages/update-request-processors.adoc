@@ -415,6 +415,12 @@ When using any of these factories, please consult the {solr-javadocs}/core/org/a
 These processors are included in Solr releases as "module", and require additional jars loaded at runtime.
 See the README files associated with each module for details:
 
+The {solr-javadocs}/modules/llm/index.html[`llm`] module provides::
+
+{solr-javadocs}/modules/llm/org/apache/solr/llm/textvectorisation/update/processor/TextToVectorUpdateProcessorFactory.html[TextToVectorUpdateProcessorFactory]:: Update processor which vectorises a textual field in input and adds the resulting vector as the value of a new field.
+It uses external text to vectors LLM to perform the vectorisation for each processed document.
+For more information: xref:query-guide:text-to-vector.adoc[Update Request Processor]
+
 The {solr-javadocs}/modules/langid/index.html[`langid`] module provides::
 
 {solr-javadocs}/modules/langid/org/apache/solr/update/processor/LangDetectLanguageIdentifierUpdateProcessorFactory.html[LangDetectLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using http://code.google.com/p/language-detection.
