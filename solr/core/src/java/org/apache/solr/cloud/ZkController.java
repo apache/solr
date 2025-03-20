@@ -529,7 +529,9 @@ public class ZkController implements Closeable {
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
-      throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
+      // This means that we are closing down and the executor is shut down.
+      // There is no need to throw an additional error here, as the executor will
+      // not accept further listener commands.
     } catch (Exception e) {
       log.error("Exception during reconnect", e);
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
