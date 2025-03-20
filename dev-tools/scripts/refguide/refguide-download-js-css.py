@@ -104,7 +104,7 @@ def main():
     base_dir = args.folder
 
     # Iterate over the folder structure
-    folders = [name for name in os.listdir(base_dir) if re.match(r'7_\d+', name)]
+    folders = [name for name in os.listdir(base_dir) if re.match(r'\d+_\d+', name)]
     if not folders:
         print(f"No versioned directories 'N_M' found in {base_dir}, exiting.")
         return
