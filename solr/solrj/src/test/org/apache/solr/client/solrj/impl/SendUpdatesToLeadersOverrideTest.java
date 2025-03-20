@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Test the behavior of {@link CloudSolrClient#isUpdatesToLeaders} and {@link
- * SolrRequest#shouldSendToLeaders}.
+ * UpdateRequest#isSendToLeaders}.
  *
  * <p>This class uses {@link TrackingUpdateProcessorFactory} instances (configured both before, and
  * after the <code>distrib</code> processor) to inspect which replicas receive various {@link
@@ -202,7 +202,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
    * setting <code>shards.preference=replica.type:PULL</code> on the input req, and then returning
    * that req
    */
-  private static AbstractUpdateRequest prefPull(final AbstractUpdateRequest req) {
+  private static UpdateRequest prefPull(final UpdateRequest req) {
     req.setParam("shards.preference", "replica.type:PULL");
     return req;
   }

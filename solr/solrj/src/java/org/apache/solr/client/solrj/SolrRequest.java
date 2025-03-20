@@ -228,16 +228,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   /**
-   * Indicates if clients should make attempts to route this request to a shard leader, overriding
-   * typical client routing preferences for requests. Defaults to true.
-   *
-   * @see CloudSolrClient#isUpdatesToLeaders
-   */
-  public boolean shouldSendToLeaders() {
-    return true;
-  }
-
-  /**
    * Indicates which API version this request will make
    *
    * <p>Defaults implementation returns 'V1'.
