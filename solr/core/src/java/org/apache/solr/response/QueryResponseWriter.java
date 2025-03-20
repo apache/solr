@@ -45,7 +45,6 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 public interface QueryResponseWriter extends NamedListInitializedPlugin {
   public static String CONTENT_TYPE_XML_UTF8 = "application/xml; charset=UTF-8";
   public static String CONTENT_TYPE_TEXT_UTF8 = "text/plain; charset=UTF-8";
-  public static String CONTENT_TYPE_TEXT_ASCII = "text/plain; charset=US-ASCII";
 
   /**
    * Writes the response to the {@link OutputStream}. {@code contentType} is from {@link
