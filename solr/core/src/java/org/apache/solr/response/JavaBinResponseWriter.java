@@ -43,8 +43,8 @@ import org.apache.solr.search.ReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Solr's "javabin" format. TODO rename accordingly. */
-public class BinaryResponseWriter implements QueryResponseWriter {
+/** Solr's "javabin" format. */
+public class JavaBinResponseWriter implements QueryResponseWriter {
   //  public static boolean useUtf8CharSeq = true;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -173,7 +173,7 @@ public class BinaryResponseWriter implements QueryResponseWriter {
             }
           };
 
-      new BinaryResponseWriter().write(out, req, rsp);
+      new JavaBinResponseWriter().write(out, req, rsp);
       return new BinaryResponseParser().processResponse(out.toInputStream(), null);
 
     } catch (IOException ex) {
