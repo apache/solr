@@ -147,21 +147,4 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     this.commitWithin = commitWithin;
     return this;
   }
-
-  private boolean sendToLeaders = true;
-
-  @Override
-  public boolean isSendToLeaders() {
-    return sendToLeaders;
-  }
-
-  @Override
-  public boolean shouldSendToLeaders() {
-    return sendToLeaders;
-  }
-
-  public AbstractUpdateRequest setSendToLeaders(final boolean sendToLeaders) {
-    this.sendToLeaders = sendToLeaders;
-    return this;
-  }
 }

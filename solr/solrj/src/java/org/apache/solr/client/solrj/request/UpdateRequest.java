@@ -55,6 +55,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   private Iterator<SolrInputDocument> docIterator = null;
   private Map<String, Map<String, Object>> deleteById = null;
   private List<String> deleteQuery = null;
+  private boolean sendToLeaders = true;
 
   private boolean isLastDocInBatch = false;
 
@@ -389,5 +390,14 @@ public class UpdateRequest extends AbstractUpdateRequest {
 
   public void lastDocInBatch() {
     isLastDocInBatch = true;
+  }
+
+  public boolean isSendToLeaders() {
+    return sendToLeaders;
+  }
+
+  public UpdateRequest setSendToLeaders(final boolean sendToLeaders) {
+    this.sendToLeaders = sendToLeaders;
+    return this;
   }
 }

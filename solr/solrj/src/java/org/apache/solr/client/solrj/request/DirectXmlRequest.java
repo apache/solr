@@ -56,11 +56,6 @@ public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateRespo
     return params != null ? params : new ModifiableSolrParams();
   }
 
-  @Override
-  public boolean shouldSendToLeaders() {
-    return true;
-  }
-
   public void setParams(SolrParams params) {
     this.params = params;
   }
