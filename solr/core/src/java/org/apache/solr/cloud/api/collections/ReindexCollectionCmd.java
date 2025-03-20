@@ -96,6 +96,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   public static final String TARGET = "target";
   public static final String TARGET_COL_PREFIX = ".rx_";
   public static final String CHK_COL_PREFIX = ".rx_ck_";
+  public static final String CHK_CONFIG_NAME = "chkConfigName";
   public static final String REINDEXING_STATE = CollectionAdminRequest.PROPERTY_PREFIX + "rx";
 
   public static final String STATE = "state";
@@ -267,6 +268,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       targetCollection = target;
     }
     String chkCollection = CHK_COL_PREFIX + extCollection;
+    String chkConfigName = message.getStr(CHK_CONFIG_NAME, "_default");
     String daemonUrl = null;
     Replica daemonReplica = null;
     Exception exc = null;
@@ -348,7 +350,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               CommonParams.NAME, chkCollection,
               ZkStateReader.NUM_SHARDS_PROP, "1",
               ZkStateReader.REPLICATION_FACTOR, "1",
-              CollectionAdminParams.COLL_CONF, "_default",
+              CollectionAdminParams.COLL_CONF, chkConfigName,
               CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
       cmdResults = new NamedList<>();
       new CreateCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
