@@ -60,6 +60,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   private final org.apache.solr.response.ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
   private final DocList docs;
+  private boolean doScore;
+  private boolean doMatchScore;
 
   private final DocTransformer transformer;
   private final DocIterator docIterator;
@@ -76,7 +78,12 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     docFetcher = rctx.getDocFetcher();
     solrReturnFields = (SolrReturnFields) rctx.getReturnFields();
 
-    if (transformer != null) transformer.setContext(rctx);
+    if (transformer != null) {
+      transformer.setContext(rctx);
+    }
+
+    doScore = rctx.wantsScores();
+    doMatchScore = rctx.wantsMatchScores();
   }
 
   public int currentIndex() {
@@ -95,10 +102,17 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);
 
     if (transformer != null) {
-      boolean doScore = rctx.wantsScores();
       try {
-        if (doScore) {
-          transformer.transform(sdoc, id, docIterator.score());
+        if (doScore || doMatchScore) {
+          if (doScore) {
+            transformer.transform(sdoc, id, docIterator.score());
+          }
+          if (doMatchScore) {
+            final Float matchScore = docIterator.matchScore();
+            if (matchScore != null) {
+              sdoc.addField(SolrReturnFields.MATCH_SCORE, matchScore);
+            }
+          }
         } else {
           transformer.transform(sdoc, id);
         }
@@ -114,8 +128,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
    * This method is less efficient then the 3 arg version because it may convert some fields that
    * are not needed
    *
+   * @see #convertLuceneDocToSolrDoc(Document, IndexSchema, ReturnFields)
    * @deprecated use the 3 arg version for better performance
-   * @see #convertLuceneDocToSolrDoc(Document,IndexSchema,ReturnFields)
    */
   @Deprecated
   public static SolrDocument convertLuceneDocToSolrDoc(Document doc, final IndexSchema schema) {
@@ -185,7 +199,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   public static Object getValue(SchemaField sf, IndexableField f) {
     FieldType ft = null;
-    if (sf != null) ft = sf.getType();
+    if (sf != null) {
+      ft = sf.getType();
+    }
 
     if (ft == null) { // handle fields not in the schema
       BytesRef bytesRef = f.binaryValue();
@@ -197,7 +213,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
           System.arraycopy(bytesRef.bytes, bytesRef.offset, bytes, 0, bytesRef.length);
           return bytes;
         }
-      } else return f.stringValue();
+      } else {
+        return f.stringValue();
+      }
     } else {
       if (KNOWN_TYPES.contains(ft.getClass())) {
         return ft.toObject(f);
