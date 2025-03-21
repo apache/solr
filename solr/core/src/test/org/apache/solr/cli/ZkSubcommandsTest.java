@@ -368,11 +368,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "Verify that all local files are uploaded to ZK", filesStream.count(), zkFiles.size());
     }
 
-    try (Stream<Path> filesStream = Files.list(confDir)) {
-      assertEquals(
-          "Verify that all local files are uploaded to ZK", filesStream.count(), zkFiles.size());
-    }
-
     // test linkconfig
     args =
         new String[] {
