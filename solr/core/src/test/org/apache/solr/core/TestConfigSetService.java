@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -79,7 +78,7 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     Files.createDirectory(configDir.resolve("subdir"));
     Files.createFile(configDir.resolve("subdir").resolve("file3"));
 
-    configSetService.uploadConfig(configName, configDir, false);
+    configSetService.uploadConfig(configName, configDir);
 
     assertTrue(configSetService.checkConfigExists(configName));
     assertFalse(configSetService.checkConfigExists("dummyConfig"));
@@ -92,16 +91,8 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     configSetService.uploadFileToConfig(configName, "subdir/file4", data, true);
     assertArrayEquals(configSetService.downloadFileFromConfig(configName, "subdir/file4"), data);
 
-    Map<String, Object> metadata = configSetService.getConfigMetadata(configName);
-    assertFalse(metadata.isEmpty());
-    assertFalse(configSetService.isConfigSetTrusted(configName));
-
-    configSetService.setConfigSetTrust(configName, true);
-    assertTrue(configSetService.isConfigSetTrusted(configName));
-
-    configSetService.setConfigMetadataWithTrust(
+    configSetService.setConfigMetadata(
         configName, new HashMap<>(Collections.singletonMap("foo", true)));
-    assertTrue(configSetService.isConfigSetTrusted(configName));
     assertTrue(configSetService.getConfigMetadata(configName).containsKey("foo"));
 
     List<String> configFiles = configSetService.getAllConfigFiles(configName);

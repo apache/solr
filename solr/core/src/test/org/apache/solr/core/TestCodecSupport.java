@@ -250,7 +250,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
           new SolrCore(
               coreContainer,
               cd,
-              new ConfigSet("fakeConfigset", config, forceFetch -> schema, null, true));
+              new ConfigSet("fakeConfigset", config, forceFetch -> schema, null));
       assertNull(coreContainer.registerCore(cd, c, false, false));
       h.coreName = newCoreName;
       assertEquals(

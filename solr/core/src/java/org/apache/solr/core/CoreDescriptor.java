@@ -67,13 +67,6 @@ public class CoreDescriptor {
       "conf" + FileSystems.getDefault().getSeparator() + "solrcore.properties";
 
   /**
-   * Whether this core was configured using a configSet that was trusted. This helps in avoiding the
-   * loading of plugins that have potential vulnerabilities, when the configSet was not uploaded
-   * from a trusted user.
-   */
-  private boolean trustedConfigSet = true;
-
-  /**
    * Get the standard properties in persistable form
    *
    * @return the standard core properties in persistable form
@@ -174,7 +167,6 @@ public class CoreDescriptor {
     this.coreProperties.setProperty(CORE_NAME, coreName);
     this.originalCoreProperties.setProperty(CORE_NAME, coreName);
     this.substitutableProperties.setProperty(SOLR_CORE_PROP_PREFIX + CORE_NAME, coreName);
-    this.trustedConfigSet = other.trustedConfigSet;
   }
 
   /**
@@ -395,14 +387,5 @@ public class CoreDescriptor {
 
   public String getConfigSetPropertiesName() {
     return coreProperties.getProperty(CORE_CONFIGSET_PROPERTIES);
-  }
-
-  public boolean isConfigSetTrusted() {
-    return trustedConfigSet;
-  }
-
-  /** TODO remove mutability */
-  public void setConfigSetTrusted(boolean trusted) {
-    this.trustedConfigSet = trusted;
   }
 }

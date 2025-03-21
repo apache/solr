@@ -61,8 +61,6 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
     ensureConfigSetUploadEnabled();
 
     boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
-    boolean requestIsTrusted =
-        isTrusted(solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
     // Get upload parameters
     if (overwrite == null) overwrite = true;
     if (cleanup == null) cleanup = false;
@@ -79,11 +77,6 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
     } else {
       filesToDelete = Collections.emptyList();
     }
-
-    // Create a node for the configuration in zookeeper
-    // For creating the baseZnode, the cleanup parameter is only allowed to be true when
-    // singleFilePath is not passed.
-    createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
 
     try (ZipInputStream zis = new ZipInputStream(requestBody, StandardCharsets.UTF_8)) {
       boolean hasEntry = false;
@@ -104,14 +97,6 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
     }
     deleteUnusedFiles(configSetService, configSetName, filesToDelete);
 
-    // If the request is doing a full trusted overwrite of an untrusted configSet (overwrite=true,
-    // cleanup=true), then trust the configSet.
-    if (cleanup
-        && requestIsTrusted
-        && overwritesExisting
-        && !configSetService.isConfigSetTrusted(configSetName)) {
-      configSetService.setConfigSetTrust(configSetName, true);
-    }
     return response;
   }
 
@@ -128,8 +113,6 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
     ensureConfigSetUploadEnabled();
 
     boolean overwritesExisting = configSetService.checkConfigExists(configSetName);
-    boolean requestIsTrusted =
-        isTrusted(solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
 
     // Get upload parameters
 
@@ -162,7 +145,6 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
       // Create a node for the configuration in config
       // For creating the baseNode, the cleanup parameter is only allowed to be true when
       // singleFilePath is not passed.
-      createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
       configSetService.uploadFileToConfig(configSetName, fixedSingleFilePath, data, overwrite);
     }
     return response;

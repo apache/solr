@@ -70,8 +70,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
     assertConfigsContainOnly();
 
     // tag::zk-configset-upload[]
-    getConfigSetService()
-        .uploadConfig("nameForConfigset", Paths.get(localConfigSetDirectory), false);
+    getConfigSetService().uploadConfig("nameForConfigset", Paths.get(localConfigSetDirectory));
     // end::zk-configset-upload[]
 
     assertConfigsContainOnly("nameForConfigset");

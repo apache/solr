@@ -64,7 +64,6 @@ public class SyntheticSolrCore extends SolrCore {
     syntheticCoreDescriptor.setConfigSet(configSetName);
     ConfigSet coreConfig =
         coreContainer.getConfigSetService().loadConfigSet(syntheticCoreDescriptor);
-    syntheticCoreDescriptor.setConfigSetTrusted(coreConfig.isTrusted());
     SyntheticSolrCore syntheticCore =
         new SyntheticSolrCore(coreContainer, syntheticCoreDescriptor, coreConfig);
     coreContainer.registerCore(syntheticCoreDescriptor, syntheticCore, false, false);

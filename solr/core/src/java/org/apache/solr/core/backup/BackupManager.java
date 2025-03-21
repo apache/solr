@@ -255,16 +255,12 @@ public class BackupManager {
    * @throws IOException in case of I/O errors.
    */
   public void uploadConfigDir(
-      String sourceConfigName,
-      String targetConfigName,
-      ConfigSetService configSetService,
-      boolean requestIsTrusted)
+      String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
     if (!repository.exists(source)) {
       throw new IllegalArgumentException("Configset expected at " + source + " does not exist");
     }
-    configSetService.setConfigSetTrust(targetConfigName, requestIsTrusted);
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 

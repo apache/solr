@@ -35,20 +35,16 @@ public class ConfigSet {
 
   private final NamedList<?> properties;
 
-  private final boolean trusted;
-
   public ConfigSet(
       String name,
       SolrConfig solrConfig,
       SchemaSupplier indexSchemaSupplier,
-      NamedList<?> properties,
-      boolean trusted) {
+      NamedList<?> properties) {
     this.name = name;
     this.solrConfig = solrConfig;
     this.schemaSupplier = indexSchemaSupplier;
     schema = schemaSupplier.get(true);
     this.properties = properties;
-    this.trusted = trusted;
   }
 
   public String getName() {
@@ -73,10 +69,6 @@ public class ConfigSet {
 
   public NamedList<?> getProperties() {
     return properties;
-  }
-
-  public boolean isTrusted() {
-    return trusted;
   }
 
   /**

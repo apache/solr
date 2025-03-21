@@ -580,7 +580,7 @@ public class MiniSolrCloudCluster {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir, true);
+      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir);
     }
   }
 
