@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -596,10 +595,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       // Did we get the expected message for each of the cores that failed to load? Make sure we
       // don't run afoul of the dreaded slash/backslash difference on Windows and *nix machines.
-      testMessage(cc.getCoreInitFailures(), makePath("badConfig1", "conf", "solrconfig.xml"));
-      testMessage(cc.getCoreInitFailures(), makePath("badConfig2", "conf", "solrconfig.xml"));
-      testMessage(cc.getCoreInitFailures(), makePath("badSchema1", "conf", "schema.xml"));
-      testMessage(cc.getCoreInitFailures(), makePath("badSchema2", "conf", "schema.xml"));
+      testMessage(
+          cc.getCoreInitFailures(), Path.of("badConfig1", "conf", "solrconfig.xml").toString());
+      testMessage(
+          cc.getCoreInitFailures(), Path.of("badConfig2", "conf", "solrconfig.xml").toString());
+      testMessage(cc.getCoreInitFailures(), Path.of("badSchema1", "conf", "schema.xml").toString());
+      testMessage(cc.getCoreInitFailures(), Path.of("badSchema2", "conf", "schema.xml").toString());
 
       // Status should report that there are failure messages for the bad cores and none for the
       // good cores.
@@ -893,10 +894,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private LocalSolrQueryRequest makeReq(SolrCore core, String... paramPairs) {
     return new LocalSolrQueryRequest(core, params(paramPairs));
-  }
-
-  private static String makePath(String... args) {
-    return String.join(FileSystems.getDefault().getSeparator(), args);
   }
 
   @Test

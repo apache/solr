@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -65,12 +64,8 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     // create and configure cluster
     configureCluster(1)
-        .addConfig(
-            COLL_A,
-            configset("different-stopwords" + FileSystems.getDefault().getSeparator() + COLL_A))
-        .addConfig(
-            COLL_B,
-            configset("different-stopwords" + FileSystems.getDefault().getSeparator() + COLL_B))
+        .addConfig(COLL_A, configset("different-stopwords/" + COLL_A))
+        .addConfig(COLL_B, configset("different-stopwords/" + COLL_B))
         .configure();
 
     try {

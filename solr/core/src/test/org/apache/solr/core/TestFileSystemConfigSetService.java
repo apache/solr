@@ -21,7 +21,6 @@ import static org.hamcrest.Matchers.hasItem;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -71,16 +70,7 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
 
     // Each of these will fail "quietly" as ConfigSetService opts to log warnings but otherwise not
     // surface validation errors to enable bulk uploading
-    final var invalidFilePaths =
-        List.of(
-            ".." + FileSystems.getDefault().getSeparator() + "escapePath",
-            "foo"
-                + FileSystems.getDefault().getSeparator()
-                + ".."
-                + FileSystems.getDefault().getSeparator()
-                + ".."
-                + FileSystems.getDefault().getSeparator()
-                + "bar");
+    final var invalidFilePaths = List.of("../escapePath", "foo/../../bar");
     for (String invalidFilePath : invalidFilePaths) {
       fileSystemConfigSetService.uploadFileToConfig(configName, invalidFilePath, testdata, true);
       assertFalse(Files.exists(specificConfigSetBase.resolve(invalidFilePath)));
