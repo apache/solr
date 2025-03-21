@@ -510,7 +510,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       perms.remove(PosixFilePermission.GROUP_READ);
       perms.remove(PosixFilePermission.OTHERS_READ);
       Files.setAttribute(toSet, "posix:permissions", perms);
-    } catch (IOException e) {
+    } catch (UnsupportedOperationException e) {
       throw new AssumptionViolatedException(
           "Cannot make " + toSet + " non-readable. Test aborted.", e);
     }
@@ -556,7 +556,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       perms.remove(PosixFilePermission.GROUP_READ);
       perms.remove(PosixFilePermission.OTHERS_READ);
       Files.setAttribute(toSet, "posix:permissions", perms);
-    } catch (IOException e) {
+    } catch (UnsupportedOperationException e) {
       throw new AssumptionViolatedException(
           "Cannot make " + toSet + " non-readable. Test aborted.", e);
     }
@@ -601,7 +601,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       perms.remove(PosixFilePermission.GROUP_READ);
       perms.remove(PosixFilePermission.OTHERS_READ);
       Files.setAttribute(toSet, "posix:permissions", perms);
-    } catch (IOException e) {
+    } catch (UnsupportedOperationException e) {
       throw new AssumptionViolatedException(
           "Cannot make " + toSet + " non-readable. Test aborted.", e);
     }
@@ -652,7 +652,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       perms.remove(PosixFilePermission.GROUP_READ);
       perms.remove(PosixFilePermission.OTHERS_READ);
       Files.setAttribute(homeDir, "posix:permissions", perms);
-    } catch (IOException e) {
+    } catch (UnsupportedOperationException e) {
       throw new AssumptionViolatedException(
           "Cannot make " + homeDir + " non-readable. Test aborted.", e);
     }
