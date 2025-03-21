@@ -28,10 +28,10 @@ configure(rootProject) {
 
 // Make sure we clean up after running tests.
 allprojects {
-  plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin).configureEach {
     def temps = []
 
-    task wipeTaskTemp() {
+    tasks.register("wipeTaskTemp") {
       doLast {
         temps.each { temp ->
           project.delete fileTree(temp).matching {
@@ -41,7 +41,7 @@ allprojects {
       }
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
       finalizedBy wipeTaskTemp
       temps += temporaryDir
     }
