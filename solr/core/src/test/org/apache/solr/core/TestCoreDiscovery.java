@@ -31,11 +31,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -503,15 +501,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         coreDir.resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
     Path toSet = coreDir.resolve("core1");
-    try {
-      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
-      perms.remove(PosixFilePermission.OWNER_READ);
-      perms.remove(PosixFilePermission.GROUP_READ);
-      perms.remove(PosixFilePermission.OTHERS_READ);
-      Files.setAttribute(toSet, "posix:permissions", perms);
-    } catch (IOException e) {
-      throw new RuntimeException("Cannot make " + toSet + " non-readable. Test aborted.", e);
-    }
+    assumeTrue(
+        "Cannot make " + toSet + " non-readable. Test aborted.",
+        toSet.toFile().setReadable(false, false));
     assumeFalse("Appears we are a super user, skip test", Files.isReadable(toSet));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -522,11 +514,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.shutdown();
     }
     // So things can be cleaned up by the framework!
-    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
-    perms.add(PosixFilePermission.OWNER_READ);
-    perms.add(PosixFilePermission.GROUP_READ);
-    perms.add(PosixFilePermission.OTHERS_READ);
-    Files.setAttribute(toSet, "posix:permissions", perms);
+    toSet.toFile().setReadable(true, false);
   }
 
   @Test
@@ -548,15 +536,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       throw new RuntimeException(
           "Should have been able to make directory '" + toSet.toAbsolutePath() + "' ", e);
     }
-    try {
-      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
-      perms.remove(PosixFilePermission.OWNER_READ);
-      perms.remove(PosixFilePermission.GROUP_READ);
-      perms.remove(PosixFilePermission.OTHERS_READ);
-      Files.setAttribute(toSet, "posix:permissions", perms);
-    } catch (IOException e) {
-      throw new RuntimeException("Cannot make " + toSet + " non-readable. Test aborted.", e);
-    }
+    assumeTrue(
+        "Cannot make " + toSet + " non-readable. Test aborted.",
+        toSet.toFile().setReadable(false, false));
     assumeFalse("Appears we are a super user, skip test", Files.isReadable(toSet));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -568,11 +550,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.shutdown();
     }
     // So things can be cleaned up by the framework!
-    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
-    perms.add(PosixFilePermission.OWNER_READ);
-    perms.add(PosixFilePermission.GROUP_READ);
-    perms.add(PosixFilePermission.OTHERS_READ);
-    Files.setAttribute(toSet, "posix:permissions", perms);
+    toSet.toFile().setReadable(true, false);
   }
 
   @Test
@@ -592,15 +570,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
           "Should have been able to make file '" + toSet.toAbsolutePath() + "' ", e);
     }
 
-    try {
-      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
-      perms.remove(PosixFilePermission.OWNER_READ);
-      perms.remove(PosixFilePermission.GROUP_READ);
-      perms.remove(PosixFilePermission.OTHERS_READ);
-      Files.setAttribute(toSet, "posix:permissions", perms);
-    } catch (IOException e) {
-      throw new RuntimeException("Cannot make " + toSet + " non-readable. Test aborted.", e);
-    }
+    assumeTrue(
+        "Cannot make " + toSet + " non-readable. Test aborted.",
+        toSet.toFile().setReadable(false, false));
 
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1")) {
@@ -609,11 +581,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.shutdown();
     }
     // So things can be cleaned up by the framework!
-    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(toSet);
-    perms.add(PosixFilePermission.OWNER_READ);
-    perms.add(PosixFilePermission.GROUP_READ);
-    perms.add(PosixFilePermission.OTHERS_READ);
-    Files.setAttribute(toSet, "posix:permissions", perms);
+    toSet.toFile().setReadable(true, false);
   }
 
   @Test
@@ -642,15 +610,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         makeCoreProperties("core1", false, true),
         homeDir.resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    try {
-      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(homeDir);
-      perms.remove(PosixFilePermission.OWNER_READ);
-      perms.remove(PosixFilePermission.GROUP_READ);
-      perms.remove(PosixFilePermission.OTHERS_READ);
-      Files.setAttribute(homeDir, "posix:permissions", perms);
-    } catch (IOException e) {
-      throw new RuntimeException("Cannot make " + homeDir + " non-readable. Test aborted.", e);
-    }
+    assumeTrue(
+        "Cannot make " + homeDir + " non-readable. Test aborted.",
+        homeDir.toFile().setReadable(false, false));
 
     assumeFalse("Appears we are a super user, skip test", Files.isReadable(homeDir));
     Exception thrown =
@@ -666,11 +628,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
             });
     assertThat(thrown.getMessage(), containsString("Error reading core root directory"));
     // So things can be cleaned up by the framework!
-    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(homeDir);
-    perms.add(PosixFilePermission.OWNER_READ);
-    perms.add(PosixFilePermission.GROUP_READ);
-    perms.add(PosixFilePermission.OTHERS_READ);
-    Files.setAttribute(homeDir, "posix:permissions", perms);
+    homeDir.toFile().setReadable(true, false);
   }
 
   // For testing whether finding a solr.xml overrides looking at solr.properties
