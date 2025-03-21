@@ -38,6 +38,9 @@ Improvements
 * SOLR-17607: SolrJ CloudSolrClient configured with HTTP URLs will no longer eagerly connect to
   anything. (David Smiley)
 
+* SOLR-10998: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt' is unspecified.  JSON is still used as a default when
+  neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
