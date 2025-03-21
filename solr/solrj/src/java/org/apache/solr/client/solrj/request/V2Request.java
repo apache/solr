@@ -50,7 +50,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   private ResponseParser parser;
 
   private V2Request(METHOD m, String resource, boolean useBinary) {
-    super(m, resource);
+    super(m, resource, SolrRequestType.UNSPECIFIED);
     Matcher matcher = COLL_REQ_PATTERN.matcher(getPath());
     if (matcher.find()) {
       this.collection = matcher.group(2);
@@ -132,11 +132,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   public ResponseParser getResponseParser() {
     if (parser != null) return parser;
     return super.getResponseParser();
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
   }
 
   public static class Builder {

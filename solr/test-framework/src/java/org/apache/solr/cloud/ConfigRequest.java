@@ -36,7 +36,7 @@ public class ConfigRequest extends CollectionRequiringSolrRequest {
   protected final String message;
 
   public ConfigRequest(String message) {
-    super(SolrRequest.METHOD.POST, "/config");
+    super(SolrRequest.METHOD.POST, "/config", SolrRequestType.UNSPECIFIED);
     this.message = message;
   }
 
@@ -55,10 +55,5 @@ public class ConfigRequest extends CollectionRequiringSolrRequest {
   @Override
   public SolrResponse createResponse(SolrClient client) {
     return new SolrResponseBase();
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequest.SolrRequestType.ADMIN.toString();
   }
 }
