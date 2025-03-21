@@ -18,7 +18,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
@@ -52,12 +51,8 @@ public class ZkCpTool extends ToolBase {
           .desc("Required to look up configuration for compressing state.json.")
           .build();
 
-  public ZkCpTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ZkCpTool(PrintStream stdout) {
-    super(stdout);
+  public ZkCpTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

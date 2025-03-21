@@ -17,9 +17,6 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -79,7 +76,8 @@ public class StreamToolTest extends SolrCloudTestCase {
         new String[] {
           "--fields", "field9, field2, field3, field4",
         };
-    StreamTool streamTool = new StreamTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    StreamTool streamTool = new StreamTool(runtime);
     CommandLine cli = SolrCLI.processCommandLineArgs(streamTool, args);
     String[] outputFields = StreamTool.getOutputFields(cli);
     assert outputFields != null;
@@ -243,7 +241,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           cluster.getZkClient().getZkServerAddress(),
           expression
         };
-    assertEquals(1, runTool(args));
+    assertEquals(1, CLITestHelper.runTool(args, StreamTool.class));
   }
 
   @Test
@@ -260,7 +258,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           cluster.getZkClient().getZkServerAddress(),
           expression
         };
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
   }
 
   @Test
@@ -284,7 +282,7 @@ public class StreamToolTest extends SolrCloudTestCase {
       expressionFile.getAbsolutePath()
     };
 
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
 
     // test passing in the expression directly
     args =
@@ -298,7 +296,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           expression
         };
 
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
   }
 
   @Test
@@ -332,7 +330,7 @@ public class StreamToolTest extends SolrCloudTestCase {
       expressionFile.getAbsolutePath()
     };
 
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
 
     // test passing in the expression directly
     args =
@@ -350,14 +348,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           expression
         };
 
-    assertEquals(0, runTool(args));
-  }
-
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof StreamTool);
-    CommandLine cli = parseCmdLine(tool, args);
-    return tool.runTool(cli);
+    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
   }
 
   // Copied from StreamExpressionTest.java

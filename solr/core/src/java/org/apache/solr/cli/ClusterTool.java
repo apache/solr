@@ -18,7 +18,6 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -53,12 +52,8 @@ public class ClusterTool extends ToolBase {
           .desc("Set the property to this value.")
           .build();
 
-  public ClusterTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ClusterTool(PrintStream stdout) {
-    super(stdout);
+  public ClusterTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

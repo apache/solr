@@ -49,6 +49,9 @@ public interface Tool {
     return "\nPlease see the Reference Guide for more tools documentation: https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html";
   }
 
+  /** Return non-null runtime of the tool. */
+  ToolRuntime getRuntime();
+
   /**
    * Retrieve the {@link Options} supported by this tool.
    *

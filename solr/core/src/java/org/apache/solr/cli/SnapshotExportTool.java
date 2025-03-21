@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -73,12 +72,8 @@ public class SnapshotExportTool extends ToolBase {
               "Specifies the async request identifier to be used during snapshot export preparation.")
           .build();
 
-  public SnapshotExportTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public SnapshotExportTool(PrintStream stdout) {
-    super(stdout);
+  public SnapshotExportTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintStream;
@@ -30,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -131,8 +127,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp", "-z", zkServer.getZkAddress(), localFile.getAbsolutePath(), "zk:/data.txt"
         };
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     assertArrayEquals(
         zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
@@ -145,7 +140,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     writer.write(data);
     writer.close();
 
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     assertArrayEquals(
         zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
@@ -172,8 +167,8 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         new String[] {
           "cp", "-z", zkServer.getZkAddress(), localFile.getAbsolutePath(), "zk:/state.json"
         };
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args, tool));
+
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     assertArrayEquals(dataBytes, zkClient.getCuratorFramework().getData().forPath("/state.json"));
     assertArrayEquals(
@@ -198,7 +193,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         new String[] {
           "cp", "-z", zkServer.getZkAddress(), localFile.getAbsolutePath(), "zk:/state.json"
         };
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     byte[] fromZkRaw =
         zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json");
@@ -231,8 +226,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "zk:/foo.xml"
         };
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     String fromZk =
         new String(zkClient.getData("/foo.xml", null, null, true), StandardCharsets.UTF_8);
@@ -253,8 +247,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "zk:foo.xml"
         };
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     String fromZk =
         new String(zkClient.getData("/foo.xml", null, null, true), StandardCharsets.UTF_8);
@@ -278,8 +271,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "zk:/state.json"
         };
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
     byte[] fileBytes = Files.readAllBytes(locFile);
@@ -296,7 +288,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         "Should get back an uncompressed version what we put in ZK", fileBytes, fromZk);
 
     // Lets do it again
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
     fileBytes = Files.readAllBytes(locFile);
@@ -323,8 +315,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "zk:/foo.xml"
         };
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(1, runTool(args, tool));
+    assertEquals(1, CLITestHelper.runTool(args, ZkCpTool.class));
   }
 
   @Test
@@ -334,13 +325,10 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // test what happens when path arg "/" isn't the last one.
     String[] args = new String[] {"ls", "/", "-r", "true", "-z", zkServer.getZkAddress()};
 
-    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8);
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    assertEquals(0, CLITestHelper.runTool(args, runtime, ZkLsTool.class));
 
-    ZkLsTool tool = new ZkLsTool(myOut);
-    assertEquals(0, runTool(args, tool));
-
-    final String standardOutput2 = byteStream.toString(StandardCharsets.UTF_8);
+    final String standardOutput2 = runtime.getOutput();
 
     String separator2 = System.lineSeparator();
     assertEquals(
@@ -366,8 +354,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           zkServer.getZkAddress()
         };
 
-    ConfigSetUploadTool configSetUploadTool = new ConfigSetUploadTool();
-    assertEquals(0, runTool(args, configSetUploadTool));
+    assertEquals(0, CLITestHelper.runTool(args, ConfigSetUploadTool.class));
 
     assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
     File confDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
@@ -388,8 +375,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           zkServer.getZkAddress()
         };
 
-    LinkConfigTool linkConfigTool = new LinkConfigTool();
-    assertEquals(0, runTool(args, linkConfigTool));
+    assertEquals(0, CLITestHelper.runTool(args, LinkConfigTool.class));
 
     ZkNodeProps collectionProps =
         ZkNodeProps.load(
@@ -414,8 +400,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           zkServer.getZkAddress()
         };
 
-    ConfigSetDownloadTool configSetDownloadTool = new ConfigSetDownloadTool();
-    assertEquals(0, runTool(args, configSetDownloadTool));
+    assertEquals(0, CLITestHelper.runTool(args, ConfigSetDownloadTool.class));
 
     confDir = new File(configSetDir, "conf");
     files = confDir.listFiles();
@@ -463,8 +448,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // test reset zk
     args = new String[] {"rm", "-r", "-z", zkServer.getZkAddress(), "zk:/configs/confsetone"};
 
-    ZkRmTool zkRmTool = new ZkRmTool();
-    assertEquals(0, runTool(args, zkRmTool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkRmTool.class));
 
     assertEquals(0, zkClient.getChildren("/configs", null, true).size());
   }
@@ -482,13 +466,10 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.getAbsolutePath()
         };
 
-    ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
-    final PrintStream myOut2 = new PrintStream(byteStream2, false, StandardCharsets.UTF_8);
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    assertEquals(0, CLITestHelper.runTool(args, runtime, ZkCpTool.class));
 
-    ZkCpTool tool = new ZkCpTool(myOut2);
-    assertEquals(0, runTool(args, tool));
-
-    final String standardOutput2 = byteStream2.toString(StandardCharsets.UTF_8);
+    final String standardOutput2 = runtime.getOutput();
     assertTrue(standardOutput2.startsWith("Copying from 'zk:/getNode'"));
     byte[] fileBytes = Files.readAllBytes(Paths.get(localFile.getAbsolutePath()));
     assertArrayEquals(data, fileBytes);
@@ -515,8 +496,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, localFile.getAbsolutePath()
         };
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     assertArrayEquals(data, Files.readAllBytes(Path.of(localFile.getAbsolutePath())));
   }
@@ -537,8 +517,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.toAbsolutePath().toString()
         };
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
     assertArrayEquals(data, Files.readAllBytes(file));
   }
 
@@ -563,8 +542,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.toAbsolutePath().toString()
         };
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     assertArrayEquals(data, Files.readAllBytes(file));
   }
@@ -578,8 +556,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.getAbsolutePath()};
 
-    ZkCpTool tool = new ZkCpTool();
-    assertEquals(1, runTool(args, tool));
+    assertEquals(1, CLITestHelper.runTool(args, ZkCpTool.class));
   }
 
   @Test
@@ -587,11 +564,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     String[] args = new String[] {"ls", "/", "-r", "-z", "----------:33332"};
 
-    ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
-    final PrintStream myOut2 = new PrintStream(byteStream2, false, StandardCharsets.UTF_8);
-
-    ZkLsTool tool = new ZkLsTool(myOut2);
-    assertEquals(1, runTool(args, tool));
+    assertEquals(1, CLITestHelper.runTool(args, ZkLsTool.class));
   }
 
   @Test
@@ -602,13 +575,12 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         new String[] {
           "cluster", "--property", "urlScheme", "--value", "http", "-z", zkServer.getZkAddress()
         };
-    ClusterTool tool = new ClusterTool();
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ClusterTool.class));
 
     assertEquals("http", properties.getClusterProperty("urlScheme", "none"));
 
     args = new String[] {"cluster", "--property", "urlScheme", "-z", zkServer.getZkAddress()};
-    assertEquals(0, runTool(args, tool));
+    assertEquals(0, CLITestHelper.runTool(args, ClusterTool.class));
     assertNull(properties.getClusterProperty("urlScheme", (String) null));
   }
 
@@ -633,8 +605,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "pass");
 
       String[] args = new String[] {"updateacls", "/", "-z", zkServer.getZkAddress()};
-      UpdateACLTool tool = new UpdateACLTool();
-      assertEquals(0, runTool(args, tool));
+      assertEquals(0, CLITestHelper.runTool(args, UpdateACLTool.class));
     } finally {
       // Need to clear these before we open the next SolrZkClient
       System.clearProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
@@ -656,11 +627,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
       excepted = true;
     }
     assertTrue("Did not fail to read.", excepted);
-  }
-
-  private int runTool(String[] args, Tool tool) throws Exception {
-    CommandLine cli = parseCmdLine(tool, args);
-    return tool.runTool(cli);
   }
 
   @Override
