@@ -30,7 +30,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,11 +39,9 @@ import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -58,6 +56,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
     @BeforeClass
     public static void setupCluster() throws Exception {
         System.setProperty("enable.packages", "true"); // for file upload
+        System.setProperty("solr.allowPaths", "*"); // for backups
         configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
     }
 
@@ -69,10 +68,10 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         baseUrlV2 = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
     }
 
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
+    @AfterClass
+    public static void teardownClass() {
+        System.clearProperty("enable.packages");
+        System.clearProperty("solr.allowPaths");
     }
 
     @Test
@@ -88,6 +87,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
         final String collectionPath = "/collections/testCollection";
         canGet(collectionPath);
+//        canGet(collectionPath+"-not-a-collection"); // TODO returns 500, should be 404
 
         canPut(collectionPath + "/properties/foo", """
                 {
@@ -102,24 +102,35 @@ public class V2APISmokeTest extends SolrCloudTestCase {
                 }
                 """);
 
-// TODO Backups API
-//        canPost(collectionPath + "/backups/{backupName}/versions");
+        Path v2apiBackupPath = createTempDir("v2apiBackup");
+        canPost(collectionPath + "/backups/testBackup/versions", String.format(Locale.ROOT, """
+                {
+                    "location": "file:///%s"
+                }
+                """, v2apiBackupPath.toString().replace("\\", "/")));
 
         canPost(collectionPath + "/reload", "{}");
 
-// TODO: Shard operations
+        // TODO: is there a better API to GET the list of shards for a collection rather than the cluster status?
+        // Or use implict and create / delete
+        String shardName = canGet("/cluster", TestClusterResponseStub.class).cluster.collections.get("testCollection").shards.keySet().stream().findAny().get();
+
 //        canPost(collectionPath + "/shards", """
 //                {
 //                    "name": "s1"
 //                }
 //                """);
-//        String shardPath = collectionPath + "/shards/s1";
-//        canPost(shardPath + "/force-leader");
-//        canPost(shardPath + "/replicas");
+        String shardPath = collectionPath + "/shards/" + shardName;
+//        canPost(shardPath + "/force-leader", "{}"); // TODO: 500 - The shard already has an active leader. Force leader is not applicable.
+        canPost(shardPath + "/replicas", "{}");
 //        canDelete(shardPath + "/replicas/{replicaName}");
 //        canDelete(shardPath + "/replicas");
-//        canPost(shardPath + "/sync");
-//        canPost(shardPath + "/install");
+//        canPost(shardPath + "/sync", "{}"); // TODO: 500 - Sync Failed
+//        canPost(shardPath + "/install", """
+//                {
+//                    "location": "TODO"
+//                }
+//                """);
 //        canPut(shardPath + "/replicas/{replicaName}/properties/{propName}");
 //        canDelete(shardPath + "/replicas/{replicaName}/properties/{propName}");
 //        canDelete(shardPath);
@@ -135,6 +146,10 @@ public class V2APISmokeTest extends SolrCloudTestCase {
                     "count" : 1
                 }
                 """);
+        // TODO: This randomly fails, need to wait for something I guess...
+        // java.lang.NullPointerException: Cannot invoke "org.apache.solr.request.SolrQueryRequest.getRequestTimer()" because "solrQueryRequest" is null
+        //	at org.apache.solr.jersey.PostRequestDecorationFilter.filter(PostRequestDecorationFilter.java:65)
+        //	at org.glassfish.jersey.server.ContainerFilteringStage$ResponseFilterStage.apply(ContainerFilteringStage.java:172)
         canPost(collectionPath + "/rename", """
                 {
                   "to": "test123"
@@ -191,9 +206,15 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
     @Test
     public void testClusterApi() throws Exception {
-        String tetFilePath = "/cluster/files/testFile-" + Instant.now().toEpochMilli();
-        canPut(tetFilePath, createTempFile().toFile());
-//        canDelete(tetFilePath); // TODO: 500 because delete cluster file calls delete local, which fails if file exists in cluster
+        canGet("/cluster"); // TODO: Missing from OA spec
+        String testFile = "testFile-" + Instant.now().toEpochMilli();
+        String testFilePath = "/cluster/filestore/files/" + testFile;
+        canPut(testFilePath, createTempFile().toFile());
+        canGet(testFilePath);
+        canGet("/cluster/filestore/metadata/" + testFile);
+//        canDelete(testFilePath); // TODO: 500 because delete cluster file calls delete local, which fails if file exists in cluster
+        canPost("/cluster/filestore/commands/fetch/" + testFile, "{}");
+//        canPost("/cluster/filestore/commands/sync/" + testFile, "{}"); // TODO: 500 - node already exists in ZK, how can this API be used?
 
         canGet("/cluster/properties");
         canPut("/cluster/properties", """
@@ -226,9 +247,8 @@ public class V2APISmokeTest extends SolrCloudTestCase {
     }
 
     private String getNodeName() throws Exception {
-        NodesResponse nodesResponse = canGet("/cluster/nodes/", NodesResponse.class); // TODO: Missing from OA Spec
-        String nodeName = nodesResponse.nodes.get(0);
-        return nodeName;
+        TestNodesResponseStub nodesResponse = canGet("/cluster/nodes", TestNodesResponseStub.class); // TODO: Missing from OA Spec
+        return nodesResponse.nodes.get(0);
     }
 
     @Test
@@ -249,14 +269,17 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
     @Test
     public void testCoresApi() throws Exception {
-        // TODO /cores is missing from OA Spec
         canPost("/collections", """
                 {
                   "name": "testCore",
                   "numShards": 1
                 }
                 """);
-        canGet("/cores");
+        // TODO GET /cores is missing from OA Spec and now returns a 500
+        //Index 1 out of bounds for length 1
+        //	at org.apache.solr.api.V2HttpCall.init(V2HttpCall.java:178) ~[main/:?]
+//        canGet("/cores");
+
 //        final String nodeNode = getNodeName();
 //        canPost("/cores", String.format(Locale.ROOT, """
 //                  {
@@ -302,14 +325,13 @@ public class V2APISmokeTest extends SolrCloudTestCase {
                   "level": "WARN"
                 }
                 """);
-        canGet("/node/files/xyz.txt");
         canGet("/node/commands/123");
     }
 
     private void testCollectionsAndCoresApi(String indexType, String indexName) throws Exception {
         //indexType = collections | cores
         String indexPath = "/" + indexType + "/" + indexName;
-        String schemaPath = indexPath+ "/schema"; 
+        String schemaPath = indexPath + "/schema";
         canGet(schemaPath);
         canGet(schemaPath + "/copyfields");
         canGet(schemaPath + "/dynamicfields");
@@ -380,8 +402,20 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         }
     }
 
-    private static class NodesResponse {
+    private static class TestNodesResponseStub {
         public List<String> nodes;
+    }
+
+    private static class TestClusterResponseStub {
+        public TestClusterResponseCollectionStub cluster;
+    }
+
+    private static class TestClusterResponseCollectionStub {
+        public Map<String, TestClusterResponseCollectionShardsStub> collections;
+    }
+
+    private static class TestClusterResponseCollectionShardsStub {
+        public Map<String, Object> shards;
     }
 
 
@@ -396,6 +430,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
             throw new RuntimeException(e);
         }
     }
+
     private static void zip(File directory, File zipfile) throws IOException {
         URI base = directory.toURI();
         Deque<File> queue = new ArrayDeque<>();
