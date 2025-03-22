@@ -39,6 +39,9 @@ Improvements
 
 * SOLR-17685: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of existing SOLR_HOST ENV variable. (Eric Pugh, Houston Putnam)
 
+* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse.
+  (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
