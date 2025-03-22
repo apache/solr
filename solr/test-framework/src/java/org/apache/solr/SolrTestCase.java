@@ -24,8 +24,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -131,15 +132,16 @@ public class SolrTestCase extends LuceneTestCase {
           existingValue);
       return;
     }
-    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    if (extPath.canRead(/* implies exists() */ ) && extPath.isDirectory()) {
+    final Path extPath = ExternalPaths.DEFAULT_CONFIGSET;
+    if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
           SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
           ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
       System.setProperty(
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ExternalPaths.DEFAULT_CONFIGSET.toString());
     } else {
       log.warn(
           "System property '{}' is not already set, but test-framework derived value ('{}') either "
@@ -151,7 +153,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)
     if (ExternalPaths.SOURCE_HOME != null) {
-      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
+      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME.toString());
     }
 
     if (!TEST_NIGHTLY) {

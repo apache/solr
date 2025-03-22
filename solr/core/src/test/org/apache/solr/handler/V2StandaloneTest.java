@@ -32,13 +32,13 @@ public class V2StandaloneTest extends SolrTestCaseJ4 {
 
   @Test
   public void testWelcomeMessage() throws Exception {
-    Path solrHomeTmp = createTempDir().toAbsolutePath();
+    Path solrHomeTmp = createTempDir();
     PathUtils.copyDirectory(
-        Path.of(TEST_HOME(), "configsets/minimal/conf"), solrHomeTmp.resolve("conf"));
-    Files.copy(Path.of(TEST_HOME(), "solr.xml"), solrHomeTmp.resolve("solr.xml"));
+        TEST_HOME().resolve("configsets/minimal/conf"), solrHomeTmp.resolve("conf"));
+    Files.copy(TEST_HOME().resolve("solr.xml"), solrHomeTmp.resolve("solr.xml"));
 
     JettySolrRunner jetty =
-        new JettySolrRunner(solrHomeTmp.toAbsolutePath().toString(), JettyConfig.builder().build());
+        new JettySolrRunner(solrHomeTmp.toString(), JettyConfig.builder().build());
     jetty.start();
 
     try (SolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort()))) {

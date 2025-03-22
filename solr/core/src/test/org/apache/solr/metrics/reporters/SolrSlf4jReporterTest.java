@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocumentList;
@@ -44,7 +43,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
   @Test
   public void testReporter() throws Exception {
     ensureLoggingConfiguredAppropriately();
-    Path home = Paths.get(TEST_HOME());
+    Path home = TEST_HOME();
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
@@ -57,7 +56,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
             cfg,
             new TestHarness.TestCoresLocator(
                 DEFAULT_TEST_CORENAME,
-                initAndGetDataDir().getAbsolutePath(),
+                initAndGetDataDir().toString(),
                 "solrconfig.xml",
                 "schema.xml"));
 

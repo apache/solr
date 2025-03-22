@@ -54,7 +54,10 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     SharedMetricRegistries.clear();
 
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
-    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
+    solrClientTestRule
+        .newCollection()
+        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET.toString())
+        .create();
     var cc = solrClientTestRule.getCoreContainer();
     cc.waitForLoadingCoresToFinish(30000);
 

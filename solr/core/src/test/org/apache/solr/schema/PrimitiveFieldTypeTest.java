@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -27,8 +27,7 @@ import org.junit.Test;
 
 /** Tests that defaults are set for Primitive (non-analyzed) fields */
 public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
-  private final String testConfHome =
-      TEST_HOME() + File.separator + "collection1" + File.separator + "conf" + File.separator;
+  private final Path testConfHome = TEST_HOME().resolve("collection1").resolve("conf");
   protected SolrConfig config;
   protected IndexSchema schema;
   protected HashMap<String, String> initMap;
@@ -42,7 +41,9 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
     initMap = new HashMap<>();
-    config = new SolrConfig(TEST_PATH().resolve("collection1"), testConfHome + "solrconfig.xml");
+    config =
+        new SolrConfig(
+            TEST_PATH().resolve("collection1"), testConfHome.resolve("solrconfig.xml").toString());
   }
 
   @Override
@@ -68,7 +69,9 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     // ***********************
     // With schema version 1.4:
     // ***********************
-    schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema12.xml", config);
+    schema =
+        IndexSchemaFactory.buildIndexSchema(
+            testConfHome.resolve("schema12.xml").toString(), config);
 
     for (Class<? extends FieldType> clazz : types) {
       FieldType ft = clazz.getConstructor().newInstance();
@@ -79,7 +82,9 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     // ***********************
     // With schema version 1.5
     // ***********************
-    schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema15.xml", config);
+    schema =
+        IndexSchemaFactory.buildIndexSchema(
+            testConfHome.resolve("schema15.xml").toString(), config);
 
     for (Class<? extends FieldType> clazz : types) {
       FieldType ft = clazz.getConstructor().newInstance();
@@ -92,7 +97,9 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   public void testDateField() {
-    schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema15.xml", config);
+    schema =
+        IndexSchemaFactory.buildIndexSchema(
+            testConfHome.resolve("schema15.xml").toString(), config);
 
     final TrieDateField tdt = new TrieDateField();
     {

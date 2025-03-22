@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -61,7 +60,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
     expectCount = numNodes;
 
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_HOME().resolve("collection1").resolve("conf");
 
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 

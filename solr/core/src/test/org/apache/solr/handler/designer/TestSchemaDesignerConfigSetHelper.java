@@ -24,7 +24,6 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,7 +57,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
-        .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
+        .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();
     // SchemaDesignerConfigSetHelper depends on the blob store
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());

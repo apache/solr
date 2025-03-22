@@ -18,11 +18,11 @@ package org.apache.solr.client.solrj.io.stream;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -4284,25 +4284,27 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(8, tuples.size());
 
-    final String expectedSecondLevel1Path = "directory1" + File.separator + "secondLevel1.txt";
+    final Path expectedSecondLevel1Path = Path.of("directory1", "secondLevel1.txt");
     for (int i = 0; i < 4; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel1.txt line " + (i + 1), t.get("line"));
-      assertEquals(expectedSecondLevel1Path, t.get("file"));
+      assertEquals(expectedSecondLevel1Path.toString(), t.get("file"));
     }
 
-    final String expectedSecondLevel2Path = "directory1" + File.separator + "secondLevel2.txt";
+    final Path expectedSecondLevel2Path = Path.of("directory1", "secondLevel2.txt");
     for (int i = 4; i < 8; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel2.txt line " + (i - 3), t.get("line"));
-      assertEquals(expectedSecondLevel2Path, t.get("file"));
+      assertEquals(expectedSecondLevel2Path.toString(), t.get("file"));
     }
   }
 
   @Test
   public void testCatStreamMultipleExplicitFiles() throws Exception {
     final String catStream =
-        "cat(\"topLevel1.txt,directory1" + File.separator + "secondLevel2.txt\")";
+        "cat(\"topLevel1.txt,directory1"
+            + FileSystems.getDefault().getSeparator()
+            + "secondLevel2.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", catStream);
     paramsLoc.set("qt", "/stream");
@@ -4322,11 +4324,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals("topLevel1.txt", t.get("file"));
     }
 
-    final String expectedSecondLevel2Path = "directory1" + File.separator + "secondLevel2.txt";
+    final Path expectedSecondLevel2Path = Path.of("directory1", "secondLevel2.txt");
     for (int i = 4; i < 8; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel2.txt line " + (i - 3), t.get("line"));
-      assertEquals(expectedSecondLevel2Path, t.get("file"));
+      assertEquals(expectedSecondLevel2Path.toString(), t.get("file"));
     }
   }
 

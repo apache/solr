@@ -16,9 +16,9 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -46,16 +46,14 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     // the file will remain after the native test (it cannot safely be deleted without the risk of
     // deleting another guys lock) it's ok, these aren't "compatible" anyway: really this test
     // should not re-use the same directory at all.
-    Files.deleteIfExists(
-        new File(new File(initAndGetDataDir(), "index"), IndexWriter.WRITE_LOCK_NAME).toPath());
+    Files.deleteIfExists(initAndGetDataDir().resolve("index").resolve(IndexWriter.WRITE_LOCK_NAME));
   }
 
   @Test
   public void testSimpleLockErrorOnStartup() throws Exception {
 
     Directory directory =
-        newFSDirectory(
-            new File(initAndGetDataDir(), "index").toPath(), SimpleFSLockFactory.INSTANCE);
+        newFSDirectory(initAndGetDataDir().resolve("index"), SimpleFSLockFactory.INSTANCE);
     // creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 
@@ -78,11 +76,11 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   @Test
   public void testNativeLockErrorOnStartup() throws Exception {
 
-    File indexDir = new File(initAndGetDataDir(), "index");
+    Path indexDir = initAndGetDataDir().resolve("index");
     if (log.isInfoEnabled()) {
-      log.info("Acquiring lock on {}", indexDir.getAbsolutePath());
+      log.info("Acquiring lock on {}", indexDir);
     }
-    Directory directory = newFSDirectory(indexDir.toPath(), NativeFSLockFactory.INSTANCE);
+    Directory directory = newFSDirectory(indexDir, NativeFSLockFactory.INSTANCE);
     // creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 

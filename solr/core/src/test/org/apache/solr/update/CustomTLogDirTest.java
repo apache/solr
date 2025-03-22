@@ -16,9 +16,11 @@
  */
 package org.apache.solr.update;
 
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -81,7 +83,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "true");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     System.setProperty("solr.ulog.dir", ulogDir.toString()); // picked up from `solrconfig.xml`
-    SolrTestCaseJ4.copyMinConf(configSet.toFile(), null, "solrconfig.xml");
+    SolrTestCaseJ4.copyMinConf(configSet, null, "solrconfig.xml");
 
     // relative dir path specs should not be able to "escape" the core-scoped instance dir;
     // check that this config is unsuccessful
@@ -147,7 +149,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     if (ulogDir != null) {
       System.setProperty("solr.ulog.dir", ulogDir.toString()); // picked up from `solrconfig.xml`
     }
-    SolrTestCaseJ4.copyMinConf(configSet.toFile(), null, "solrconfig.xml");
+    SolrTestCaseJ4.copyMinConf(configSet, null, "solrconfig.xml");
 
     String collectionName = instanceDir.getFileName().toString();
 
@@ -161,13 +163,19 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     client.add(sdoc("id", "3"));
     client.commit();
 
-    File[] list =
-        resolvedTlogDir.toFile().listFiles((f) -> f.isFile() && f.getName().startsWith("tlog."));
-
-    assertNotNull(list);
-    assertEquals(1, list.length);
-    CoreContainer cc = ((EmbeddedSolrServer) client).getCoreContainer();
-    cc.unload(collectionName, true, true, true);
-    assertFalse(resolvedTlogDir.toFile().exists());
+    try (Stream<Path> files = Files.list(resolvedTlogDir)) {
+      List<Path> list =
+          files
+              .filter(
+                  file ->
+                      Files.isRegularFile(file)
+                          && file.getFileName().toString().startsWith("tlog."))
+              .toList();
+      assertNotNull(list);
+      assertEquals(1, list.size());
+      CoreContainer cc = ((EmbeddedSolrServer) client).getCoreContainer();
+      cc.unload(collectionName, true, true, true);
+      assertFalse(Files.exists(resolvedTlogDir));
+    }
   }
 }

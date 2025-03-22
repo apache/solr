@@ -16,8 +16,9 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example
@@ -35,55 +36,56 @@ public class ExternalPaths {
    * <p>Note that all other static paths available in this class are derived from the source home,
    * and if it is null, those paths will just be relative to 'null' and may not be meaningful.
    */
-  public static final String SOURCE_HOME = determineSourceHome();
+  public static final Path SOURCE_HOME = determineSourceHome();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
+  public static Path WEBAPP_HOME = SOURCE_HOME.resolve("webapp/web").toAbsolutePath();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String DEFAULT_CONFIGSET =
-      new File(SOURCE_HOME, "server/solr/configsets/_default/conf").getAbsolutePath();
+  public static Path DEFAULT_CONFIGSET =
+      SOURCE_HOME.resolve("server/solr/configsets/_default/conf").toAbsolutePath();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String TECHPRODUCTS_CONFIGSET =
-      new File(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf")
-          .getAbsolutePath();
+  public static Path TECHPRODUCTS_CONFIGSET =
+      SOURCE_HOME
+          .resolve("server/solr/configsets/sample_techproducts_configs/conf")
+          .toAbsolutePath();
 
   /**
    * @see #SOURCE_HOME
    */
-  public static String SERVER_HOME = new File(SOURCE_HOME, "server/solr").getAbsolutePath();
+  public static Path SERVER_HOME = SOURCE_HOME.resolve("server/solr").toAbsolutePath();
 
   /**
    * Ugly, ugly hack to determine the example home without depending on the CWD this is needed for
    * example/multicore tests which reside outside the classpath. if the source home can't be
    * determined, this method returns null.
    */
-  static String determineSourceHome() {
+  static Path determineSourceHome() {
     try {
-      File file = new File("solr/conf");
-      if (!file.exists()) {
+      Path file = Path.of("solr/conf");
+      if (!Files.exists(file)) {
         URL resourceUrl = ExternalPaths.class.getClassLoader().getResource("solr/conf");
         if (resourceUrl != null) {
-          file = new File(resourceUrl.toURI());
+          file = Path.of(resourceUrl.toURI());
         } else {
           // If there is no "solr/conf" in the classpath, fall back to searching from the current
           // directory.
-          file = new File(System.getProperty("tests.src.home", "."));
+          file = Path.of(System.getProperty("tests.src.home", "."));
         }
       }
 
-      File base = file.getAbsoluteFile();
-      while (!(new File(base, "solr/CHANGES.txt").exists()) && null != base) {
-        base = base.getParentFile();
+      Path base = file.toAbsolutePath();
+      while (!Files.exists(base.resolve("solr/CHANGES.txt")) && null != base) {
+        base = base.getParent();
       }
-      return (null == base) ? null : new File(base, "solr/").getAbsolutePath();
+      return (null == base) ? null : base.resolve("solr/").toAbsolutePath();
     } catch (Exception e) {
       // all bets are off
       return null;

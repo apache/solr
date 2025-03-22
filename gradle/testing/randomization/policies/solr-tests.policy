@@ -198,6 +198,9 @@ grant {
   permission "java.net.URLPermission" "http://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
+
+  // Needed by TestCoreDiscovery
+  permission java.lang.RuntimePermission "accessUserInformation";
 };
 
 // additional permissions based on system properties set by /bin/solr

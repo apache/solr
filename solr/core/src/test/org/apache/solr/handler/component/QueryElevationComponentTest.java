@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
-import java.io.File;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -1258,9 +1257,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   // write an elevation config file to boost some docs
-  private void writeElevationConfigFile(File file, String query, String... ids) throws Exception {
-    try (PrintWriter out =
-        new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8))) {
+  private void writeElevationConfigFile(Path file, String query, String... ids) throws Exception {
+    try (PrintWriter out = new PrintWriter(Files.newBufferedWriter(file, StandardCharsets.UTF_8))) {
       out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
       out.println("<elevate>");
       out.println("<query text=\"" + query + "\">");
@@ -1273,7 +1271,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     }
 
     if (log.isInfoEnabled()) {
-      log.info("OUT: {}", file.getAbsolutePath());
+      log.info("OUT: {}", file);
     }
   }
 
@@ -1281,20 +1279,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   public void testElevationReloading() throws Exception {
     // need a mutable solr home.  Copying all collection1 is a lot but this is only one test.
     final Path solrHome = createTempDir();
-    copyMinConf(solrHome.resolve("collection1").toFile(), null, "solrconfig-elevate.xml");
+    copyMinConf(solrHome.resolve("collection1"), null, "solrconfig-elevate.xml");
 
-    File configFile =
-        solrHome.resolve("collection1").resolve("conf").resolve("elevate.xml").toFile();
+    Path configFile = solrHome.resolve("collection1").resolve("conf").resolve("elevate.xml");
     writeElevationConfigFile(configFile, "aaa", "A");
 
-    initCore("solrconfig.xml", "schema.xml", solrHome.toString());
+    initCore("solrconfig.xml", "schema.xml", solrHome);
 
     try {
 
       QueryElevationComponent comp =
           (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       NamedList<String> args = new NamedList<>();
-      args.add(QueryElevationComponent.CONFIG_FILE, configFile.getName());
+      args.add(QueryElevationComponent.CONFIG_FILE, configFile.getFileName().toString());
       comp.init(args);
       comp.inform(h.getCore());
 

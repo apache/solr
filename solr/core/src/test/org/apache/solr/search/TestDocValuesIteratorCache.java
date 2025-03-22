@@ -74,7 +74,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
   @SuppressWarnings("try")
   public void test() throws Exception {
     Path configSet = LuceneTestCase.createTempDir();
-    SolrTestCaseJ4.copyMinConf(configSet.toFile());
+    SolrTestCaseJ4.copyMinConf(configSet);
     Path schemaXml = configSet.resolve("conf/schema.xml");
     Files.writeString(
         schemaXml,

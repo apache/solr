@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -95,10 +95,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   public static void createMiniSolrCloudCluster() throws Exception {
 
     final String configName = "solrCloudCollectionConfig";
-    final File configDir =
-        new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+    final Path configDir = TEST_HOME().resolve("collection1").resolve("conf");
 
-    configureCluster(NUM_SERVERS).addConfig(configName, configDir.toPath()).configure();
+    configureCluster(NUM_SERVERS).addConfig(configName, configDir).configure();
 
     COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 

@@ -16,9 +16,11 @@
  */
 package org.apache.solr.search;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -36,7 +38,7 @@ import org.junit.BeforeClass;
  */
 public class TestSearcherReuse extends SolrTestCaseJ4 {
 
-  private static File solrHome;
+  private static Path solrHome;
 
   private static final String collection = "collection1";
   private static final String confPath = collection + "/conf";
@@ -47,25 +49,21 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
    */
   @BeforeClass
   public static void setupTempDirAndCoreWithManagedSchema() throws Exception {
-    solrHome = createTempDir().toFile();
-    solrHome = solrHome.getAbsoluteFile();
-
-    File confDir = new File(solrHome, confPath);
-    File testHomeConfDir = new File(TEST_HOME(), confPath);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig-managed-schema.xml"), confDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), confDir);
-    FileUtils.copyFileToDirectory(
-        new File(testHomeConfDir, "schema-id-and-version-fields-only.xml"), confDir);
+    solrHome = createTempDir();
+    Path confDir = FilterPath.unwrap(solrHome.resolve(confPath));
+    Path testHomeConfDir = TEST_HOME().resolve(confPath);
+    Files.createDirectories(confDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig-managed-schema.xml"), confDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml"), confDir);
+    PathUtils.copyFileToDirectory(
+        testHomeConfDir.resolve("schema-id-and-version-fields-only.xml"), confDir);
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "true");
-    initCore(
-        "solrconfig-managed-schema.xml",
-        "schema-id-and-version-fields-only.xml",
-        solrHome.getPath());
+    initCore("solrconfig-managed-schema.xml", "schema-id-and-version-fields-only.xml", solrHome);
   }
 
   @AfterClass

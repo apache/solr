@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
@@ -64,7 +64,7 @@ public class FileUtilsTest extends SolrTestCase {
     for (int i = 0; i < pathSegments.length; i++) {
       sb.append(pathSegments[i]);
       if (i < pathSegments.length - 1) {
-        sb.append(File.separator);
+        sb.append(FileSystems.getDefault().getSeparator());
       }
     }
     return sb.toString();

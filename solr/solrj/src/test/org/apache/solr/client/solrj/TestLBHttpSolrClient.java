@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -83,8 +82,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     httpClient = HttpClientUtil.createClient(null);
 
     for (int i = 0; i < solr.length; i++) {
-      solr[i] =
-          new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i).toFile(), 0);
+      solr[i] = new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i), 0);
       solr[i].setUp();
       solr[i].startJetty();
       addDocs(solr[i]);
@@ -260,19 +258,19 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
   private static class SolrInstance {
     String name;
-    File homeDir;
-    File dataDir;
-    File confDir;
+    Path homeDir;
+    Path dataDir;
+    Path confDir;
     int port;
     JettySolrRunner jetty;
 
-    public SolrInstance(String name, File homeDir, int port) {
+    public SolrInstance(String name, Path homeDir, int port) {
       this.name = name;
       this.homeDir = homeDir;
       this.port = port;
 
-      dataDir = new File(homeDir + "/collection1", "data");
-      confDir = new File(homeDir + "/collection1", "conf");
+      dataDir = homeDir.resolve("collection1").resolve("data");
+      confDir = homeDir.resolve("collection1").resolve("conf");
     }
 
     public String getHomeDir() {
@@ -312,22 +310,22 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
 
     public void setUp() throws Exception {
-      homeDir.mkdirs();
-      dataDir.mkdirs();
-      confDir.mkdirs();
+      Files.createDirectories(homeDir);
+      Files.createDirectories(dataDir);
+      Files.createDirectories(confDir);
 
-      Files.copy(SolrTestCaseJ4.getFile(getSolrXmlFile()), homeDir.toPath().resolve("solr.xml"));
+      Files.copy(SolrTestCaseJ4.getFile(getSolrXmlFile()), homeDir.resolve("solr.xml"));
 
-      Path f = confDir.toPath().resolve("solrconfig.xml");
+      Path f = confDir.resolve("solrconfig.xml");
       Files.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
-      f = confDir.toPath().resolve("schema.xml");
+      f = confDir.resolve("schema.xml");
       Files.copy(SolrTestCaseJ4.getFile(getSchemaFile()), f);
-      Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
+      Files.createFile(homeDir.resolve("collection1/core.properties"));
     }
 
     public void tearDown() throws Exception {
       if (jetty != null) jetty.stop();
-      IOUtils.rm(homeDir.toPath());
+      IOUtils.rm(homeDir);
     }
 
     public void startJetty() throws Exception {

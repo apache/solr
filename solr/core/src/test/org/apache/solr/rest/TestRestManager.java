@@ -16,8 +16,9 @@
  */
 package org.apache.solr.rest;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.solr.common.util.NamedList;
@@ -123,16 +124,13 @@ public class TestRestManager extends SolrRestletTestBase {
   @Test
   public void testReloadFromPersistentStorage() throws IOException {
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
-    File unitTestStorageDir = createTempDir("testRestManager").toFile();
-    assertTrue(
-        unitTestStorageDir.getAbsolutePath() + " is not a directory!",
-        unitTestStorageDir.isDirectory());
-    assertTrue(unitTestStorageDir.canRead());
-    assertTrue(unitTestStorageDir.canWrite());
+    Path unitTestStorageDir = createTempDir("testRestManager");
+    assertTrue(unitTestStorageDir + " is not a directory!", Files.isDirectory(unitTestStorageDir));
+    assertTrue(Files.isReadable(unitTestStorageDir));
+    assertTrue(Files.isWritable(unitTestStorageDir));
 
     NamedList<String> ioInitArgs = new NamedList<>();
-    ioInitArgs.add(
-        ManagedResourceStorage.STORAGE_DIR_INIT_ARG, unitTestStorageDir.getAbsolutePath());
+    ioInitArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, unitTestStorageDir.toString());
 
     StorageIO storageIO = new ManagedResourceStorage.FileStorageIO();
     storageIO.configure(loader, ioInitArgs);

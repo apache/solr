@@ -74,9 +74,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
             ? "solr.NRTCachingDirectoryFactory"
             : "solr.StandardDirectoryFactory"; // test the default most of the time
     System.setProperty("solr.directoryFactory", factory);
-    leader =
-        new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     leaderJetty = createAndStartJetty(leader);
     leaderClient =
@@ -86,7 +84,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
     follower =
         new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+            createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient =

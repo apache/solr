@@ -16,7 +16,6 @@
  *
  */
 
-import java.io.File;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -39,7 +38,7 @@ public class UsingPingRefGuideExamplesTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setUpCluster() throws Exception {
     configureCluster(NUM_LIVE_NODES)
-        .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
+        .addConfig("conf", ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .configure();
 
     CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)

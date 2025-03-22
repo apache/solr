@@ -25,10 +25,10 @@ import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -80,8 +80,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   public static void createMiniSolrCloudCluster() throws Exception {
 
     final String configName = "solrCloudCollectionConfig";
-    final File configDir =
-        new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+    final Path configDir = TEST_HOME().resolve("collection1").resolve("conf");
 
     final int numShards = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
     final int repFactor = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
@@ -93,7 +92,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         numServers,
         numShards,
         repFactor);
-    configureCluster(numServers).addConfig(configName, configDir.toPath()).configure();
+    configureCluster(numServers).addConfig(configName, configDir).configure();
 
     Map<String, String> collectionProperties = new HashMap<>();
     collectionProperties.put("config", "solrconfig-distrib-update-processor-chains.xml");

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -66,7 +66,7 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
   /** Overrides the parent implementation to install a SocketProxy in-front of the Jetty server. */
   @Override
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,

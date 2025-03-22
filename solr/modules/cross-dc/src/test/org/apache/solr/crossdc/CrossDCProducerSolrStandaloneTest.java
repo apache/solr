@@ -16,7 +16,6 @@
  */
 package org.apache.solr.crossdc;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -89,7 +88,7 @@ public class CrossDCProducerSolrStandaloneTest extends SolrTestCaseJ4 {
     Path tmpHome = createTempDir("tmp-home");
     Path coreDir = tmpHome.resolve(coreName);
     populateCoreDirectory("configs/cloud-minimal/conf", solrConfigName, coreDir);
-    initCore("solrconfig.xml", "schema.xml", tmpHome.toAbsolutePath().toString(), coreName);
+    initCore("solrconfig.xml", "schema.xml", tmpHome, coreName);
 
     return new EmbeddedSolrServer(h.getCoreContainer(), coreName);
   }
@@ -120,13 +119,13 @@ public class CrossDCProducerSolrStandaloneTest extends SolrTestCaseJ4 {
     Files.createFile(coreDirectory.resolve("core.properties"));
 
     // Copy "schema.xml" from the source location to the "conf" subdirectory
-    File sourceSchemaFile = getFile(Path.of(sourceLocation, "schema.xml").toString()).toFile();
+    Path sourceSchemaFile = getFile(Path.of(sourceLocation, "schema.xml").toString());
     Path targetSchemaPath = subHome.resolve("schema.xml");
-    Files.copy(sourceSchemaFile.toPath(), targetSchemaPath, StandardCopyOption.REPLACE_EXISTING);
+    Files.copy(sourceSchemaFile, targetSchemaPath, StandardCopyOption.REPLACE_EXISTING);
 
     // Copy solr config file from the source location to the "conf" subdirectory
-    File sourceConfigFile = getFile(Path.of(sourceLocation, solrConfigName).toString()).toFile();
+    Path sourceConfigFile = getFile(Path.of(sourceLocation, solrConfigName).toString());
     Path targetConfigPath = subHome.resolve("solrconfig.xml");
-    Files.copy(sourceConfigFile.toPath(), targetConfigPath, StandardCopyOption.REPLACE_EXISTING);
+    Files.copy(sourceConfigFile, targetConfigPath, StandardCopyOption.REPLACE_EXISTING);
   }
 }

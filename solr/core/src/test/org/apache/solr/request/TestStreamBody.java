@@ -16,11 +16,11 @@
  */
 package org.apache.solr.request;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
@@ -38,8 +38,8 @@ public class TestStreamBody extends RestTestBase {
   private static final String collection = "collection1";
 
   public void startSolr() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -47,12 +47,7 @@ public class TestStreamBody extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
-        "solrconfig-minimal.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        extraServlets);
+        tmpSolrHome, "solrconfig-minimal.xml", "schema-rest.xml", "/solr", true, extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(

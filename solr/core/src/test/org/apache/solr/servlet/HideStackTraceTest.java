@@ -46,7 +46,7 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
     System.setProperty("solr.hideStackTrace", "true");
 
     Path configSet = createTempDir("configSet");
-    copyMinConf(configSet.toFile());
+    copyMinConf(configSet);
     // insert a special filterCache configuration
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
     Files.writeString(

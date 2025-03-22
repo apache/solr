@@ -21,13 +21,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -936,13 +936,13 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    File file = getFile("solrj/books.csv").toFile();
+    Path file = getFile("solrj/books.csv");
     final int opened[] = new int[] {0};
     final int closed[] = new int[] {0};
 
     boolean assertClosed = random().nextBoolean();
     if (assertClosed) {
-      byte[] allBytes = Files.readAllBytes(file.toPath());
+      byte[] allBytes = Files.readAllBytes(file);
 
       ContentStreamBase.ByteArrayStream contentStreamMock =
           new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
@@ -960,7 +960,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           };
       up.addContentStream(contentStreamMock);
     } else {
-      up.addFile(file.toPath(), "application/csv");
+      up.addFile(file, "application/csv");
     }
 
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);

@@ -41,10 +41,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
-    initCore(
-        "solrconfig-script-updateprocessor.xml",
-        "schema.xml",
-        getFile("scripting/solr").toAbsolutePath().toString());
+    initCore("solrconfig-script-updateprocessor.xml", "schema.xml", getFile("scripting/solr"));
   }
 
   /**
