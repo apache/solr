@@ -16,17 +16,20 @@
  */
 package org.apache.solr.handler.admin;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
@@ -247,11 +250,14 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
             CoreAdminParams.CORE,
             "testInstanceDirAsPropertyParam"),
         resp);
-    NamedList<?> status = (NamedList<?>) resp.getValues().get("status");
-    assertNotNull(status);
-    NamedList<?> coreProps = (NamedList<?>) status.get("testInstanceDirAsPropertyParam");
-    assertNotNull(status);
-    String instanceDir = (String) coreProps.get("instanceDir");
+    final var statusByCore =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            resp.getValues().get("status"),
+            new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
+    assertNotNull(statusByCore);
+    final var coreProps = statusByCore.get("testInstanceDirAsPropertyParam");
+    assertNotNull(coreProps);
+    String instanceDir = coreProps.instanceDir;
     assertNotNull(instanceDir);
     assertEquals(
         "Instance dir does not match param given in property.instanceDir syntax",

@@ -55,13 +55,16 @@ resolve {
   outputDir = file(project.openApiSpecDir)
   outputFileName = "solr-openapi-${version}"
   prettyPrint = true
+// Ignore resources not annotated with 'Operation', useful for omitting endpoints from OAS
+  readAllResources = false
 }
 
 dependencies {
+    api platform(project(":platform"))
     runtimeOnly libs.slf4j.api
     
     implementation libs.jakarta.ws.rsapi
-    implementation libs.fasterxml.jackson.core.annotations
+    api libs.fasterxml.jackson.core.annotations
     api libs.swagger3.annotations.jakarta
     implementation libs.semver4j.semver4j
 

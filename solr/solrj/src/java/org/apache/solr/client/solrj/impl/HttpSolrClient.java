@@ -611,19 +611,18 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
       }
       if (processor == null || processor instanceof InputStreamResponseParser) {
-
         // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<>();
-        rsp.add("stream", respBody);
+        final var rsp =
+            InputStreamResponseParser.createInputStreamNamedList(
+                response.getStatusLine().getStatusCode(), respBody);
         rsp.add("closeableResponse", response);
-        rsp.add("responseStatus", response.getStatusLine().getStatusCode());
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;
       }
 
       final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
-      if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+      if (!processorSupportedContentTypes.isEmpty()) {
         final Collection<String> processorMimeTypes =
             processorSupportedContentTypes.stream()
                 .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))

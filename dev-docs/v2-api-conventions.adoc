@@ -1,3 +1,4 @@
+= API Design
 == HTTP Paths
 
 Where possible, each v2 API is given an HTTP path that reflects the resource type and/or name most relevant to its functionality.
@@ -69,8 +70,8 @@ For use within the v2 API, the four "popular" HTTP methods have the following se
 == Errors
 
 v2 APIs should be consistent in how they report errors.  Throwing a `SolrException` will convey
-1.the error code as the HTTP response status code, as `responseHeader.status` and as `error.code`, and
-1.the error message as `error.msg`.
+1. The error code as the HTTP response status code, as `responseHeader.status` and as `error.code`, and
+2. The error message as `error.msg`.
 
 API calls that reference a specific resource (e.g. `specificCollName`, `specificAliasName`, `specificPropertyName` and others per the above list) that do not exist should return `SolrException.ErrorCode.NOT_FOUND` (HTTP 404).
 
@@ -82,3 +83,23 @@ Often these operations were initially conceived of as procedural "commands" and 
 
 Solr's v2 API currently accommodates these "command" APIs by appending the command name (often a verb like "unload", "reload", or "split") onto the otherwise "resource"-based path.
 For example: Solr's core "unload" command uses the API `POST /api/cores/specificCoreName/unload`.
+
+= JAX-RS Implementation Conventions
+
+== Streaming
+
+Solr has a number of APIs that return binary file data or other arbitrary content, such as the "replication" APIs used to pull index files from other cores.
+Please use the following conventions when implementing similar endpoints:
+1. `@Operation` annotations use an "extension property" to indicate to codegen tools that the API output is "raw" or untyped.  For example:
++
+```
+  @Operation(
+      summary = "Return the data stored in a specified ZooKeeper node",
+      tags = {"zookeeper-read"},
+      extensions = {
+        @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})
+      })
+```
+2. Interface methods should return a type that implements the JAX-RS `StreamingOutput` interface.
+
+See the `fetchFile()` method in `ReplicationApis.java` for a concrete example.

@@ -90,7 +90,8 @@ public class TestRawTransformer extends SolrCloudTestCase {
           "stopwords.txt",
           "synonyms.txt",
           "protwords.txt",
-          "currency.xml"
+          "currency.xml",
+          "enumsConfig.xml"
         }) {
       Files.copy(Path.of(src_dir, file), confDir.resolve(file));
     }
@@ -282,12 +283,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
         strResponse.contains("\"links\":[\""));
   }
 
-  private static final NoOpResponseParser XML_NOOP_RESPONSE_PARSER = new NoOpResponseParser();
+  private static final NoOpResponseParser XML_NOOP_RESPONSE_PARSER = new NoOpResponseParser("xml");
   private static final NoOpResponseParser JSON_NOOP_RESPONSE_PARSER =
-      new NoOpResponseParser() {
-        @Override
-        public String getWriterType() {
-          return "json";
-        }
-      };
+      new NoOpResponseParser("json");
 }

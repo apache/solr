@@ -54,7 +54,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.servlet.Filter;
-import org.apache.curator.test.KillSession;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -517,6 +516,32 @@ public class MiniSolrCloudCluster {
   }
 
   /**
+   * Add a previously stopped node back to the cluster on a different port
+   *
+   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
+   * @return the started node
+   * @throws Exception on error
+   */
+  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
+    return startJettySolrRunner(jetty, false);
+  }
+
+  /**
+   * Add a previously stopped node back to the cluster
+   *
+   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
+   * @param reusePort the port previously used by jetty
+   * @return the started node
+   * @throws Exception on error
+   */
+  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty, boolean reusePort)
+      throws Exception {
+    jetty.start(reusePort);
+    if (!jettys.contains(jetty)) jettys.add(jetty);
+    return jetty;
+  }
+
+  /**
    * Stop a Solr instance
    *
    * @param index the index of node in collection returned by {@link #getJettySolrRunners()}
@@ -526,19 +551,6 @@ public class MiniSolrCloudCluster {
     JettySolrRunner jetty = jettys.get(index);
     jetty.stop();
     jettys.remove(index);
-    return jetty;
-  }
-
-  /**
-   * Add a previously stopped node back to the cluster
-   *
-   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
-   * @return the started node
-   * @throws Exception on error
-   */
-  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
-    jetty.start(false);
-    if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
   }
 
@@ -786,21 +798,7 @@ public class MiniSolrCloudCluster {
 
   /** Make the zookeeper session on a particular jetty lose connection and expire */
   public void expireZkSession(JettySolrRunner jetty) {
-    CoreContainer cores = jetty.getCoreContainer();
-    if (cores != null) {
-      ChaosMonkey.causeConnectionLoss(jetty);
-      SolrZkClient zkClient = cores.getZkController().getZkClient();
-      long sessionId = zkClient.getZkSessionId();
-      zkServer.expire(sessionId);
-      try {
-        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
-      } catch (Exception e) {
-        log.error("Exception killing session", e);
-      }
-      if (log.isInfoEnabled()) {
-        log.info("Expired zookeeper session from node {}", jetty.getBaseUrl());
-      }
-    }
+    ChaosMonkey.expireSession(jetty, zkServer);
   }
 
   // Currently not used ;-(
