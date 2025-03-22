@@ -158,7 +158,11 @@ Other Changes
 
 * SOLR-17682: QueryResponseWriter: refactor the hierarchy.  Base abstraction is now byte oriented,
   thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
-  Stopped using RawResponseWriter when not needed.  (David Smiley)
+  Stopped using RawResponseWriter when not needed.  Rename BinaryResponseWriter to JavaBinResponseWriter.
+  (David Smiley)
+
+* SOLR-17706: SolrJ DocumentObjectBinder is now a global singleton via an INSTANCE field and that
+  which is pluggable via Java SPI/ServiceLoader.  SolrClient.getBinder is gone.  (David Smiley)
 
 ==================  9.9.0 ==================
 New Features
@@ -194,6 +198,9 @@ Improvements
 * SOLR-17607: SolrJ CloudSolrClient configured with HTTP URLs will no longer eagerly connect to
   anything. (David Smiley)
 
+* SOLR-10998: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt' is unspecified.  JSON is still used as a default when
+  neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
@@ -212,6 +219,10 @@ Bug Fixes
 * SOLR-17700: Use Core Operation lock when unloading cores. This fixes errors that occur when a collection deletion and reload
   occur at the same time. (Houston Putman)
 
+* SOLR-17699: Fixed performance regression since 9.0 with "frange" queries embedded in other queries.
+  May also affect some numeric range queries when the minimum is negative.  (David Smiley)
+
+* SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
 
 Dependency Upgrades
 ---------------------

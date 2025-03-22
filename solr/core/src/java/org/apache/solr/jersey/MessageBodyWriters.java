@@ -36,8 +36,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -70,7 +70,7 @@ public class MessageBodyWriters {
       implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
-      return new BinaryResponseWriter();
+      return new JavaBinResponseWriter();
     }
 
     @Override
