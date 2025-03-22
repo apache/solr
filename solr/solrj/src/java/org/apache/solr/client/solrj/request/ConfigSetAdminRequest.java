@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -34,6 +33,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase.FileStream;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * This class is experimental and subject to change.
@@ -72,7 +72,7 @@ public abstract class ConfigSetAdminRequest<
   }
 
   @Override
-  protected abstract R createResponse(SolrClient client);
+  protected abstract R createResponse(NamedList<Object> namedList);
 
   protected abstract static class ConfigSetSpecificAdminRequest<
           T extends ConfigSetAdminRequest<T, ConfigSetAdminResponse>>
@@ -99,7 +99,7 @@ public abstract class ConfigSetAdminRequest<
     }
 
     @Override
-    protected ConfigSetAdminResponse createResponse(SolrClient client) {
+    protected ConfigSetAdminResponse createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse();
     }
   }
@@ -327,7 +327,7 @@ public abstract class ConfigSetAdminRequest<
     }
 
     @Override
-    protected ConfigSetAdminResponse.List createResponse(SolrClient client) {
+    protected ConfigSetAdminResponse.List createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse.List();
     }
   }

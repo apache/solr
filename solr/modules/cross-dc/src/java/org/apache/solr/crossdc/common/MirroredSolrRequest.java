@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Objects;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -36,6 +35,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Class to encapsulate a mirrored Solr request. This adds a timestamp and #attempts to the request
@@ -76,7 +76,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    protected CollectionAdminResponse createResponse(NamedList<Object> namedList) {
       return new CollectionAdminResponse();
     }
   }
@@ -116,7 +116,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
     }
 
     @Override
-    protected ConfigSetAdminResponse createResponse(SolrClient client) {
+    protected ConfigSetAdminResponse createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse();
     }
   }
