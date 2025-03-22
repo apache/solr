@@ -45,7 +45,7 @@ public class TestClusteringResponse extends SolrJettyTestBase {
         response = parser.processResponse(in);
       }
     }
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     ClusteringResponse clusteringResponse = qr.getClusteringResponse();
     List<Cluster> clusters = clusteringResponse.getClusters();
     assertEquals(4, clusters.size());
