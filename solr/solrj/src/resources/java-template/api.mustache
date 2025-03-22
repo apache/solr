@@ -28,13 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
+import org.apache.solr.client.solrj.JacksonDataBindResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.client.solrj.JacksonParsingResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
@@ -77,7 +76,7 @@ import {{modelPackage}}.{{dataType}};
 // changes should be made to the underlying template and not this file directly.
 
 /**
- * Experimental SolrRequest's and SolrResponse's for {{classVarName}}, generated from an OAS.
+* Experimental {@link SolrRequest}s for {{classVarName}}, generated from an OAS.
  *
  * <p>See individual request and response classes for more detailed and relevant information.
  *
@@ -91,17 +90,13 @@ public class {{classname}} {
     {{#operation}}
     {{^vendorExtensions.x-omitFromCodegen}}
         {{#vendorExtensions.x-rawOutput}}
-        public static class {{operationIdCamelCase}}Response extends InputStreamResponse {}
+            public static class {{operationIdCamelCase}} extends SolrRequest
+          <InputStreamResponse> {
         {{/vendorExtensions.x-rawOutput}}
         {{^vendorExtensions.x-rawOutput}}
-        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
-            public {{operationIdCamelCase}}Response() {
-                super({{modelPackage}}.{{returnType}}.class);
-            }
-        }
+            public static class {{operationIdCamelCase}} extends SolrRequest<{{modelPackage}}
+            .{{returnType}}> {
         {{/vendorExtensions.x-rawOutput}}
-
-        public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
             {{#bodyParam}}
             private final {{{dataType}}} requestBody;
             {{/bodyParam}}
@@ -250,17 +245,31 @@ public class {{classname}} {
               {{/queryParams}}
               return queryParams;
             }
+        {{#vendorExtensions.x-rawOutput}}
+            @Override
+            protected InputStreamResponse createResponse(NamedList
+          <Object> namedList) {
+            return new InputStreamResponse();
+            }
 
             @Override
-          protected {{operationIdCamelCase}}Response createResponse(NamedList
-        <Object> namedList) {
-              return new {{operationIdCamelCase}}Response();
+            public InputStreamResponseParser getResponseParser() {
+            return new InputStreamResponseParser("json");
+            }
+        {{/vendorExtensions.x-rawOutput}}
+        {{^vendorExtensions.x-rawOutput}}
+            @Override
+            protected {{modelPackage}}.{{returnType}} createResponse(NamedList
+          <Object> namedList) {
+            return ({{modelPackage}}.{{returnType}}) namedList.get("response");
             }
 
             @Override
             public ResponseParser getResponseParser() {
-              return new InputStreamResponseParser("json");
+            return new JacksonDataBindResponseParser<>({{modelPackage}}.{{returnType}}.class);
             }
+        {{/vendorExtensions.x-rawOutput}}
+
         }
     {{/vendorExtensions.x-omitFromCodegen}}
     {{/operation}}

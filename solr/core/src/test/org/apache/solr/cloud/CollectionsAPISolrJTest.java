@@ -798,9 +798,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     indexSomeDocs(simpleCollName);
 
     final var simpleResponse =
-        new CollectionsApi.GetCollectionStatus(simpleCollName)
-            .process(cluster.getSolrClient())
-            .getParsed();
+        new CollectionsApi.GetCollectionStatus(simpleCollName).process(cluster.getSolrClient());
     assertEquals(simpleCollName, simpleResponse.name);
     assertEquals(2, simpleResponse.shards.size());
     assertEquals(Integer.valueOf(2), simpleResponse.activeShards);
@@ -815,7 +813,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Ensure segment data present when request sets 'segments=true' flag
     final var segmentDataRequest = new CollectionsApi.GetCollectionStatus(simpleCollName);
     segmentDataRequest.setSegments(true);
-    final var segmentDataResponse = segmentDataRequest.process(cluster.getSolrClient()).getParsed();
+    final var segmentDataResponse = segmentDataRequest.process(cluster.getSolrClient());
     var segmentData = segmentDataResponse.shards.get("shard1").leader.segInfos;
     assertNotNull(segmentData);
     assertTrue(segmentData.info.numSegments > 0); // Expect at least one segment
@@ -828,8 +826,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Ensure file-size data present when request sets sizeInfo flag
     final var segmentFileSizeRequest = new CollectionsApi.GetCollectionStatus(simpleCollName);
     segmentFileSizeRequest.setSizeInfo(true);
-    final var segmentFileSizeResponse =
-        segmentFileSizeRequest.process(cluster.getSolrClient()).getParsed();
+    final var segmentFileSizeResponse = segmentFileSizeRequest.process(cluster.getSolrClient());
     segmentData = segmentFileSizeResponse.shards.get("shard1").leader.segInfos;
     assertNotNull(segmentData);
     final var largeFileList = segmentData.segments.get("_0").largestFilesByName;

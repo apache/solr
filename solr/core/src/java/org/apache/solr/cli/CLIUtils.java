@@ -322,7 +322,7 @@ public final class CLIUtils {
           Thread.sleep(clamPeriodForStatusPollMs);
         }
         final var coreStatusReq = new CoresApi.GetCoreStatus(coreName);
-        final var coreStatusRsp = coreStatusReq.process(solrClient).getParsed();
+        final var coreStatusRsp = coreStatusReq.process(solrClient);
         final var coreStatusByName = coreStatusRsp.status;
         final var coreStatus = coreStatusByName.get(coreName);
         final var failureStatus = coreStatusRsp.initFailures;

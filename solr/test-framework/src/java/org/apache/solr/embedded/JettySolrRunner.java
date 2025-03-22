@@ -713,7 +713,7 @@ public class JettySolrRunner {
       final var coreStatusReq = new CoresApi.GetAllCoreStatus();
       coreStatusReq.setIndexInfo(true);
       try (final var client = newClient()) {
-        final var coreStatusRsp = coreStatusReq.process(client).getParsed();
+        final var coreStatusRsp = coreStatusReq.process(client);
         Utils.writeJson(coreStatusRsp, pw, true);
       } catch (SolrServerException | IOException e) {
         // Worth logging but not re-throwing
