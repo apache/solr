@@ -528,7 +528,7 @@ public class DistribFileStore implements FileStore {
     try {
       // fail if file exists
       if (coreContainer.getZkController().getZkClient().exists(ZK_PACKAGESTORE + path, true)) {
-        throw new SolrException(BAD_REQUEST, "The path exist ZK, delete and retry");
+        throw new SolrException(BAD_REQUEST, "The path exists in ZK, delete and retry");
       }
 
     } catch (SolrException se) {

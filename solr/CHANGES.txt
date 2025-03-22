@@ -221,8 +221,6 @@ Bug Fixes
 
 * SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
 
-* SOLR-17617: Fix v2 CollectionPropertyApi and InstallCoreDataApi. (Colvin Cowie)
-
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)

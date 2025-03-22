@@ -174,7 +174,7 @@ public class V2HttpCall extends HttpSolrCall {
             }
           }
         }
-      } else if ("cores".equals(prefix)) {
+      } else if ("cores".equals(prefix) && pathSegments.size() > 1) {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
       }

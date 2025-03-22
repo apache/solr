@@ -275,19 +275,15 @@ public class V2APISmokeTest extends SolrCloudTestCase {
                   "numShards": 1
                 }
                 """);
-        // TODO GET /cores is missing from OA Spec and now returns a 500
-        //Index 1 out of bounds for length 1
-        //	at org.apache.solr.api.V2HttpCall.init(V2HttpCall.java:178) ~[main/:?]
-//        canGet("/cores");
+        canGet("/cores");
 
 //        final String nodeNode = getNodeName();
+        // Unable to create core [testCore] Caused by: No shard id for CoreDescriptor
 //        canPost("/cores", String.format(Locale.ROOT, """
 //                  {
-//                    "create": {
 //                      "name": "testCore",
 //                      "coreNodeName": "%s",
 //                      "configSet": "_default"
-//                    }
 //                  }
 //                """, nodeNode));
 //        String corePath = "/cores/testCore";
@@ -310,7 +306,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 //        canPost(corePath + "/swap");
 //        canPost(corePath + "/unload");
 
-//        testCollectionsAndCoresApi("cores", "testCore");
+        testCollectionsAndCoresApi("cores", "testCore");
     }
 
 
