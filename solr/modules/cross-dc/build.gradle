@@ -24,7 +24,7 @@ description = 'Cross-DC Replication Plugins'
 ext {
   // Use of the security manager is not supported on windows.
   // Mockito does not work with it enabled.
-  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+  useSecurityManager = rootProject.ext.runtimeJavaVersion <= JavaVersion.VERSION_23 && !Os.isFamily(Os.FAMILY_WINDOWS)
 }
 
 dependencies {
