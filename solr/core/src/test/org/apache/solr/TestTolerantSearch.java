@@ -33,7 +33,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -247,7 +247,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     expectThrows(SolrException.class, () -> collection1.query(query));
   }
 
-  public static class BadResponseWriter extends BinaryResponseWriter {
+  public static class BadResponseWriter extends JavaBinResponseWriter {
 
     private static boolean failOnGetFields = false;
     private static boolean failOnGetTopIds = false;
@@ -258,7 +258,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     }
 
     @Override
-    public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+    public void write(
+        OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
         throws IOException {
 
       // I want to fail on the shard request, not the original user request, and only on the
@@ -281,7 +282,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Dummy exception in BadResponseWriter");
       }
-      super.write(out, req, response);
+      super.write(out, req, response, contentType);
     }
   }
 }

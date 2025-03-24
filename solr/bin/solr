@@ -356,10 +356,6 @@ fi
 # This looks strange, but it is to avoid extra spaces when we have only one of the values set
 AUTHC_OPTS="${AUTHC_OPTS:-}${SOLR_AUTHENTICATION_OPTS:+ $SOLR_AUTHENTICATION_OPTS}"
 
-# Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
-SOLR_TOOL_HOST="${SOLR_HOST:-localhost}"
-export SOLR_TOOL_HOST
-
 function print_usage() {
   CMD="${1:-}"
   ERROR_MSG="${2:-}"
@@ -601,6 +597,10 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     exit 1
   fi
 
+  if [ -n "${AUTH_PORT}" ]; then
+    export SOLR_PORT="${AUTH_PORT}"
+  fi
+  
   if [ -z "${SOLR_HOME:-}" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
   elif [[ $SOLR_HOME != /* ]]; then
@@ -612,22 +612,11 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     fi
   fi
 
-  if [ -z "${AUTH_PORT:-}" ]; then
-    for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
-      do
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          AUTH_PORT=$port
-          break
-        fi
-      done
-  fi
-
-  run_tool auth $@ --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
+  run_tool auth $@ --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
   exit $?
 fi
 
-# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.
+# at this point the only tool that has a custom run process, "auth" has been run and exited.
 # Unless a command is one of the ones in the if clause below, we will just run it with the default run_tool function and then exit.
 if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then
   # hand off the command to the SolrCLI and let it handle the option parsing and validation

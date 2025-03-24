@@ -240,12 +240,6 @@ IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
 )
 set "AUTHC_OPTS=%AUTHC_CLIENT_BUILDER_ARG% %SOLR_AUTHENTICATION_OPTS%"
 
-REM Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
-IF NOT "%SOLR_HOST%"=="" (
-  set "SOLR_TOOL_HOST=%SOLR_HOST%"
-) ELSE (
-  set "SOLR_TOOL_HOST=localhost"
-)
 IF "%SOLR_JETTY_HOST%"=="" (
   set "SOLR_JETTY_HOST=127.0.0.1"
 )
@@ -1175,7 +1169,7 @@ IF "%FG%"=="1" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT! --solr-url !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%
+    org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT!
   IF NOT "!ERRORLEVEL!"=="0" (
       set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
       goto err
@@ -1220,22 +1214,14 @@ IF NOT EXIST "%SOLR_HOME%\" (
   )
 )
 
-if "!AUTH_PORT!"=="" (
-  for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
-    set SOME_SOLR_PORT=
-    For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
-    if NOT "!SOME_SOLR_PORT!"=="" (
-      for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
-        IF NOT "%%k"=="0" set AUTH_PORT=!SOME_SOLR_PORT!
-      )
-    )
-  )
+IF DEFINED AUTH_PORT (
+  set "SOLR_PORT=%AUTH_PORT%"
 )
+
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% --solr-include-file "%SOLR_INCLUDE%" --auth-conf-dir "%SOLR_HOME%" ^
-    --solr-url !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!
+    org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% --solr-include-file "%SOLR_INCLUDE%" --auth-conf-dir "%SOLR_HOME%"
 goto done
 
 :err

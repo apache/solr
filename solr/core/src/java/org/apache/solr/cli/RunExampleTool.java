@@ -41,7 +41,6 @@ import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.exec.Executor;
-import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -694,7 +693,7 @@ public class RunExampleTool extends ToolBase {
     Path cwd = Path.of(System.getProperty("user.dir"));
     Path binDir = Path.of(script).getParent();
 
-    boolean isWindows = (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
+    boolean isWindows = CLIUtils.isWindows();
     String callScript = (!isWindows && cwd.equals(binDir.getParent())) ? "bin/solr" : script;
 
     String cwdPath = cwd.toAbsolutePath().toString();

@@ -37,8 +37,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.ReturnFields;
 
-/** Response writer for csv data */
-public class CSVResponseWriter implements QueryResponseWriter {
+/** Response writer for CSV data */
+public class CSVResponseWriter implements TextQueryResponseWriter {
 
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {

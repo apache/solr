@@ -74,8 +74,10 @@ public class AuthTool extends ToolBase {
           .longOpt("solr-include-file")
           .hasArg()
           .argName("FILE")
+          .required()
           .desc(
-              "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
+              "The Solr include file which contains overridable environment variables for configuring Solr configurations.  Defaults to solr.in."
+                  + (CLIUtils.isWindows() ? ".cmd" : ".sh"))
           .build();
 
   private static final Option UPDATE_INCLUDE_FILE_OPTION =
@@ -95,7 +97,7 @@ public class AuthTool extends ToolBase {
           .argName("FILE")
           .required()
           .desc(
-              "This is where any authentication related configuration files, if any, would be placed.")
+              "This is where any authentication related configuration files, if any, would be placed.  Defaults to $SOLR_HOME.")
           .build();
 
   public AuthTool(ToolRuntime runtime) {
