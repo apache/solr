@@ -183,10 +183,11 @@ The default value is equal to the number of processors.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: number of available processors
+|Optional |Default: 0
 |===
 +
 Specifies the number of threads that will be assigned for search queries.
+A value of `-1` represents the total number of available processor threads available.
 
 `coreRootDirectory`::
 +

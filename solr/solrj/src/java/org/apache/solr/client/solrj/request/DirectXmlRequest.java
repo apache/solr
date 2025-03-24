@@ -20,13 +20,16 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
  * Send arbitrary XML to a request handler
  *
  * @since solr 1.3
+ * @deprecated Use {@link GenericSolrRequest}.
  */
+@Deprecated
 public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
 
@@ -50,7 +53,7 @@ public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateRespo
 
   @Override
   public SolrParams getParams() {
-    return params;
+    return params != null ? params : new ModifiableSolrParams();
   }
 
   @Override

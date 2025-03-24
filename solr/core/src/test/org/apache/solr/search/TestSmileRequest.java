@@ -18,12 +18,14 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -90,7 +92,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
 
   // adding this to core adds the dependency on a few extra jars to our distribution.
   // So this is not added there
-  public static class SmileResponseParser extends BinaryResponseParser {
+  public static class SmileResponseParser extends ResponseParser {
 
     @Override
     public String getWriterType() {
@@ -99,13 +101,14 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public NamedList<Object> processResponse(InputStream body, String encoding) {
-      try {
-        Map m = (Map) SmileWriterTest.decodeSmile(body);
-        return new NamedList(m);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
+      Map m = (Map) SmileWriterTest.decodeSmile(body);
+      return new NamedList(m);
+    }
+
+    @Override
+    public Collection<String> getContentTypes() {
+      return Set.of("application/x-jackson-smile", "application/octet-stream");
     }
   }
 }

@@ -19,7 +19,6 @@ package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -27,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -152,7 +151,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     int docIdToDelete = 100;
 
     SolrQueryRequestBase batchSingleDeleteRequest =
-        new SolrQueryRequestBase(core, new MapSolrParams(new HashMap<>())) {};
+        new SolrQueryRequestBase(core, SolrParams.of()) {};
     List<String> docs = new ArrayList<>();
     for (int i = 0; i < numDeletesToSend; i++) {
       docs.add(delI(Integer.toString(docIdToDelete)));
@@ -230,8 +229,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
    */
   private SolrQueryRequestBase constructBatchRequestHelper(
       int batchSize, Function<Integer, String> requestFn) {
-    SolrQueryRequestBase updateReq =
-        new SolrQueryRequestBase(core, new MapSolrParams(new HashMap<>())) {};
+    SolrQueryRequestBase updateReq = new SolrQueryRequestBase(core, SolrParams.of()) {};
     List<String> docs = new ArrayList<>();
     for (int i = 0; i < batchSize; i++) {
       docs.add(requestFn.apply(i));

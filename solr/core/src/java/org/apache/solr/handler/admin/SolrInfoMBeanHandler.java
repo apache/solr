@@ -32,7 +32,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 
@@ -72,7 +72,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       wrap.add("solr-mbeans", cats);
       cats =
           (NamedList<NamedList<NamedList<Object>>>)
-              BinaryResponseWriter.getParsedResponse(req, wrap).get("solr-mbeans");
+              JavaBinResponseWriter.getParsedResponse(req, wrap).get("solr-mbeans");
 
       // Get rid of irrelevant things
       normalize(ref);

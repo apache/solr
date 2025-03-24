@@ -166,10 +166,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     ZLibCompressor zLibCompressor = new ZLibCompressor();
     byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
-    byte[] expected =
-        random().nextBoolean()
-            ? zLibCompressor.compressBytes(dataBytes)
-            : zLibCompressor.compressBytes(dataBytes);
+    byte[] expected = zLibCompressor.compressBytes(dataBytes);
 
     String[] args =
         new String[] {
@@ -178,7 +175,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     ZkCpTool tool = new ZkCpTool();
     assertEquals(0, runTool(args, tool));
 
-    assertArrayEquals(zkClient.getCuratorFramework().getData().forPath("/state.json"), expected);
+    assertArrayEquals(dataBytes, zkClient.getCuratorFramework().getData().forPath("/state.json"));
+    assertArrayEquals(
+        expected, zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json"));
 
     // test re-put to existing
     data = "my data deux";
@@ -201,13 +200,23 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         };
     assertEquals(0, runTool(args, tool));
 
+    byte[] fromZkRaw =
+        zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json");
     byte[] fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
-    byte[] fromLoc =
-        new ZLibCompressor()
-            .compressBytes(Files.readAllBytes(Path.of(localFile.getAbsolutePath())));
-    assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
+    byte[] fromLocRaw = Files.readAllBytes(Path.of(localFile.getAbsolutePath()));
+    byte[] fromLoc = new ZLibCompressor().compressBytes(fromLocRaw);
+    assertArrayEquals(
+        "When asking to not decompress, we should get back the compressed data that what we put in ZK",
+        fromLoc,
+        fromZkRaw);
+    assertArrayEquals(
+        "When not specifying anything, we should get back what exactly we put in ZK (not compressed)",
+        fromLocRaw,
+        fromZk);
 
-    assertArrayEquals(zkClient.getCuratorFramework().getData().forPath("/state.json"), expected);
+    assertArrayEquals(dataBytes, zkClient.getCuratorFramework().getData().forPath("/state.json"));
+    assertArrayEquals(
+        expected, zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json"));
   }
 
   @Test
@@ -272,18 +281,34 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     ZkCpTool tool = new ZkCpTool();
     assertEquals(0, runTool(args, tool));
 
-    byte[] fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
-    byte[] fromLoc = new ZLibCompressor().compressBytes(Files.readAllBytes(locFile));
-    assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
+    byte[] fileBytes = Files.readAllBytes(locFile);
+
+    // Check raw ZK data
+    byte[] fromZk =
+        zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json");
+    byte[] fromLoc = new ZLibCompressor().compressBytes(fileBytes);
+    assertArrayEquals("Should get back a compressed version of what we put in ZK", fromLoc, fromZk);
+
+    // Check curator output (should be decompressed)
+    fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
+    assertArrayEquals(
+        "Should get back an uncompressed version what we put in ZK", fileBytes, fromZk);
 
     // Lets do it again
     assertEquals(0, runTool(args, tool));
 
-    fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
     locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
-    fromLoc = new ZLibCompressor().compressBytes(Files.readAllBytes(locFile));
-    assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
+    fileBytes = Files.readAllBytes(locFile);
+
+    fromZk = zkClient.getCuratorFramework().getData().undecompressed().forPath("/state.json");
+    fromLoc = new ZLibCompressor().compressBytes(fileBytes);
+    assertArrayEquals("Should get back a compressed version of what we put in ZK", fromLoc, fromZk);
+
+    // Check curator output (should be decompressed)
+    fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
+    assertArrayEquals(
+        "Should get back an uncompressed version what we put in ZK", fileBytes, fromZk);
   }
 
   @Test

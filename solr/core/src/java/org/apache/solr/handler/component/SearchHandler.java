@@ -662,7 +662,7 @@ public class SearchHandler extends RequestHandlerBase
             for (SearchComponent c : components) {
               if (checkLimitsBefore(
                   c,
-                  "handleResponses next stage:" + stageInEnglish(nextStage),
+                  "handleResponses next stage:" + stageToString(nextStage),
                   rb.req,
                   rb.rsp,
                   components)) {
@@ -681,7 +681,7 @@ public class SearchHandler extends RequestHandlerBase
 
         for (SearchComponent c : components) {
           if (checkLimitsBefore(
-              c, "finishStage stage:" + stageInEnglish(nextStage), rb.req, rb.rsp, components)) {
+              c, "finishStage stage:" + stageToString(nextStage), rb.req, rb.rsp, components)) {
             return;
           }
           c.finishStage(rb);
@@ -726,9 +726,9 @@ public class SearchHandler extends RequestHandlerBase
     return true;
   }
 
-  private static String stageInEnglish(int nextStage) {
+  protected String stageToString(int stage) {
     // This should probably be a enum, but that change should be its own ticket.
-    switch (nextStage) {
+    switch (stage) {
       case STAGE_START:
         return "START";
       case STAGE_PARSE_QUERY:
@@ -743,8 +743,7 @@ public class SearchHandler extends RequestHandlerBase
       case STAGE_DONE:
         return "FINISHING";
       default:
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Unrecognized stage:" + nextStage);
+        return "CUSTOM_STAGE_" + String.valueOf(stage);
     }
   }
 
