@@ -352,7 +352,10 @@ public class SolrCores {
           try {
             modifyLock.wait();
           } catch (InterruptedException e) {
-            return null; // Seems best not to do anything at all if the thread is interrupted
+            // Seems best to throw a SolrException if interrupted, because returning any value,
+            // including null, would mean the waiting is complete.
+            Thread.currentThread().interrupt();
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           }
         }
       } while (pending);
