@@ -36,8 +36,6 @@ plugins {
 }
 
 // Declare default Java versions for the entire project and for SolrJ separately
-rootProject.ext.currentJavaVersion = JavaVersion.current()
-rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
 rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(libs.versions.java.min.get())
 rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
 
