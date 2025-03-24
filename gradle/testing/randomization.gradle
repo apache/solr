@@ -204,7 +204,7 @@ allprojects {
         def useSecurityManager = Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"]);
         // Allow the project to override this
         if (project.ext.has("useSecurityManager")) {
-          useSecurityManager = project.ext.get("useSecurityManager")
+          useSecurityManager &= project.ext.get("useSecurityManager")
         }
         if (useSecurityManager) {
           def commonSolrDir = project(':solr').layout.projectDirectory
