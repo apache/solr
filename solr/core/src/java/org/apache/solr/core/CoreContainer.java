@@ -2323,16 +2323,14 @@ public class CoreContainer {
     // TestConfigSetsAPI and TestLazyCores
     if (desc == null || zkSys.getZkController() != null) return null;
 
-    // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
-    // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
-    core = solrCores.waitAddPendingCoreOps(name);
-
-    if (isShutDown) {
-      // We're quitting, so stop. This needs to be after the wait above since we may come off the
-      // wait as a consequence of shutting down.
-      return null;
-    }
     try {
+      // This will put an entry in pending core ops if the core isn't loaded. Here's where moving
+      // the waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
+      core = solrCores.waitAddPendingCoreOps(name);
+      if (isShutDown) {
+        // We're quitting, so stop.
+        return null;
+      }
       if (core == null) {
         if (zkSys.getZkController() != null) {
           zkSys.getZkController().throwErrorIfReplicaReplaced(desc);

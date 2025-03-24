@@ -346,7 +346,12 @@ public class SolrCores {
             }
           }
         }
-        if (container.isShutDown()) return null; // Just stop already.
+        if (container.isShutDown()) {
+          // Just stop already.
+          // Seems best to throw a SolrException if shutting down, because returning any value,
+          // including null, would mean the waiting is complete.
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Server is shutting down");
+        }
 
         if (pending) {
           try {
