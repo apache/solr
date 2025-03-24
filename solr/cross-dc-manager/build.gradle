@@ -78,7 +78,7 @@ ext {
 
   // Use of the security manager is not supported on windows.
   // Mockito does not work with it enabled.
-  useSecurityManager = rootProject.ext.runtimeJavaVersion <= JavaVersion.VERSION_23 && !Os.isFamily(Os.FAMILY_WINDOWS)
+  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
 }
 
 task run(type: JavaExec) {
