@@ -365,15 +365,12 @@ public class SolrCores {
         }
       } while (pending);
       // We _really_ need to do this within the synchronized block!
-      if (!container.isShutDown()) {
-        if (!pendingCoreOps.add(name)) {
-          log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
-        }
-        // we might have been _unloading_ the core, so return the core if it was loaded.
-        return getCoreFromAnyList(name, false);
+      if (!pendingCoreOps.add(name)) {
+        log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
       }
+      // we might have been _unloading_ the core, so return the core if it was loaded.
+      return getCoreFromAnyList(name, false);
     }
-    return null;
   }
 
   // We should always be removing the first thing in the list with our name! The idea here is to NOT
