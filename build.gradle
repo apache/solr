@@ -114,6 +114,9 @@ ext {
     logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
     return luceneBaseVersion
   }
+
+  // Flag that allows disabling the experimental UI via gradle properties
+  withUiModule = !project.hasProperty('disableUiModule') || project.findProperty('disableUiModule') != 'true'
 }
 
 // Include smaller chunks configuring dedicated build areas.
