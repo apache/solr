@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
@@ -29,12 +28,8 @@ import org.apache.solr.common.params.CollectionAdminParams;
 /** Supports snapshot-export command in the bin/solr script. */
 public class SnapshotExportTool extends ToolBase {
 
-  public SnapshotExportTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public SnapshotExportTool(PrintStream stdout) {
-    super(stdout);
+  public SnapshotExportTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

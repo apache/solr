@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.net.URI;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
@@ -33,12 +32,8 @@ import org.noggit.JSONWriter;
 
 public class ApiTool extends ToolBase {
   /** Used to send an arbitrary HTTP request to a Solr API endpoint. */
-  public ApiTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ApiTool(PrintStream stdout) {
-    super(stdout);
+  public ApiTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

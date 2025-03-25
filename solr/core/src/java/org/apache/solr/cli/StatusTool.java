@@ -19,7 +19,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
 
-import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
@@ -47,12 +46,8 @@ import org.noggit.JSONWriter;
 public class StatusTool extends ToolBase {
   private final SolrProcessManager processMgr;
 
-  public StatusTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public StatusTool(PrintStream stdout) {
-    super(stdout);
+  public StatusTool(ToolRuntime runtime) {
+    super(runtime);
     processMgr = new SolrProcessManager();
   }
 
@@ -127,7 +122,7 @@ public class StatusTool extends ToolBase {
     if (solrUrl != null) {
       if (!URLUtil.hasScheme(solrUrl)) {
         CLIO.err("Invalid URL provided: " + solrUrl);
-        System.exit(1);
+        runtime.exit(1);
       }
 
       // URL provided, do not consult local processes, as the URL may be remote
@@ -135,14 +130,14 @@ public class StatusTool extends ToolBase {
         // Used by Windows start script when starting Solr
         try {
           waitForSolrUpAndPrintStatus(solrUrl, cli, maxWaitSecs);
-          System.exit(0);
+          runtime.exit(0);
         } catch (Exception e) {
           CLIO.err(e.getMessage());
-          System.exit(1);
+          runtime.exit(1);
         }
       } else {
         boolean running = printStatusFromRunningSolr(solrUrl, cli);
-        System.exit(running ? 0 : 1);
+        runtime.exit(running ? 0 : 1);
       }
     }
 
@@ -150,7 +145,7 @@ public class StatusTool extends ToolBase {
       Optional<SolrProcess> proc = processMgr.processForPort(port);
       if (proc.isEmpty()) {
         CLIO.err("Could not find a running Solr on port " + port);
-        System.exit(1);
+        runtime.exit(1);
       } else {
         solrUrl = proc.get().getLocalUrl();
         if (shortFormat) {
@@ -158,7 +153,7 @@ public class StatusTool extends ToolBase {
         } else {
           printProcessStatus(proc.get(), cli);
         }
-        System.exit(0);
+        runtime.exit(0);
       }
     }
 
@@ -214,7 +209,7 @@ public class StatusTool extends ToolBase {
       }
     } catch (URISyntaxException e) {
       CLIO.err("Invalid URL provided, does not contain port");
-      System.exit(1);
+      runtime.exit(1);
       return null;
     }
   }
@@ -257,7 +252,7 @@ public class StatusTool extends ToolBase {
       /* ignore */
     }
     if (statusJson != null) {
-      CLIO.out(statusJson);
+      runtime.println(statusJson);
     } else {
       CLIO.err("Solr at " + solrUrl + " not online.");
     }
@@ -332,7 +327,7 @@ public class StatusTool extends ToolBase {
     return status;
   }
 
-  public Map<String, Object> reportStatus(NamedList<Object> info, SolrClient solrClient)
+  public static Map<String, Object> reportStatus(NamedList<Object> info, SolrClient solrClient)
       throws Exception {
     Map<String, Object> status = new LinkedHashMap<>();
 
@@ -360,7 +355,7 @@ public class StatusTool extends ToolBase {
    * cluster.
    */
   @SuppressWarnings("unchecked")
-  protected Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
+  private static Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
       throws Exception {
     Map<String, String> cloudStatus = new LinkedHashMap<>();
     cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");

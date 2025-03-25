@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -34,12 +33,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 public class UpdateACLTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  public UpdateACLTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public UpdateACLTool(PrintStream stdout) {
-    super(stdout);
+  public UpdateACLTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

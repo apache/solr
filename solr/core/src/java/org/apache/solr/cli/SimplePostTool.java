@@ -67,6 +67,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
@@ -804,6 +805,7 @@ public class SimplePostTool {
     CLIO.out(msg);
   }
 
+  @SuppressForbidden(reason = "Fine to use System.exit() here. Only in CLI and removed in 10")
   static void fatal(String msg) {
     CLIO.err("SimplePostTool: FATAL: " + msg);
     System.exit(2);

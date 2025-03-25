@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
@@ -28,12 +27,8 @@ import org.slf4j.LoggerFactory;
 public class ZkLsTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ZkLsTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ZkLsTool(PrintStream stdout) {
-    super(stdout);
+  public ZkLsTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -77,7 +72,7 @@ public class ZkLsTool extends ToolBase {
               + " recursive: "
               + recursive,
           cli);
-      stdout.print(zkClient.listZnode(znode, recursive));
+      runtime.print(zkClient.listZnode(znode, recursive));
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);
       throw (e);

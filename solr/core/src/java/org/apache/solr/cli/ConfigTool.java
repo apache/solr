@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,12 +32,8 @@ import org.noggit.JSONWriter;
 /** Sends a POST to the Config API to perform a specified action. */
 public class ConfigTool extends ToolBase {
 
-  public ConfigTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ConfigTool(PrintStream stdout) {
-    super(stdout);
+  public ConfigTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

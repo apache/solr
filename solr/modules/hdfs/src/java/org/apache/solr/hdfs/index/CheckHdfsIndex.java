@@ -28,6 +28,7 @@ import org.apache.solr.hdfs.store.HdfsDirectory;
 import org.apache.solr.hdfs.util.HdfsUtil;
 
 public class CheckHdfsIndex {
+  @SuppressForbidden(reason = "This is a CLI tool, allow to exit the JVM")
   public static void main(String[] args) throws IOException, InterruptedException {
     int exitCode = doMain(args);
     System.exit(exitCode);

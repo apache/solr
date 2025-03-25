@@ -18,7 +18,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
@@ -43,12 +42,8 @@ import org.slf4j.LoggerFactory;
 public class ZkCpTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ZkCpTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ZkCpTool(PrintStream stdout) {
-    super(stdout);
+  public ZkCpTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

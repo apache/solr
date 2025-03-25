@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
-import java.io.PrintStream;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -48,12 +47,8 @@ import org.apache.solr.handler.component.ShardRequest;
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
 public class PostLogsTool extends ToolBase {
 
-  public PostLogsTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public PostLogsTool(PrintStream stdout) {
-    super(stdout);
+  public PostLogsTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

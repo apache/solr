@@ -17,12 +17,8 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.After;
@@ -75,13 +71,6 @@ public class AuthToolTest extends SolrCloudTestCase {
       "--block-unknown",
       "true"
     };
-    assertEquals(0, runTool(args));
-  }
-
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof AuthTool);
-    CommandLine cli = parseCmdLine(tool, args);
-    return tool.runTool(cli);
+    assertEquals(0, CLITestHelper.runTool(args, AuthTool.class));
   }
 }

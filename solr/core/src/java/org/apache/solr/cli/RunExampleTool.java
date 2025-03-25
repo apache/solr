@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -72,12 +71,12 @@ public class RunExampleTool extends ToolBase {
   protected String urlScheme;
 
   /** Default constructor used by the framework when running as a command-line application. */
-  public RunExampleTool() {
-    this(null, System.in, CLIO.getOutStream());
+  public RunExampleTool(ToolRuntime runtime) {
+    this(null, System.in, runtime);
   }
 
-  public RunExampleTool(Executor executor, InputStream userInput, PrintStream stdout) {
-    super(stdout);
+  public RunExampleTool(Executor executor, InputStream userInput, ToolRuntime runtime) {
+    super(runtime);
     this.executor = (executor != null) ? executor : new DefaultExecutor();
     this.userInput = userInput;
   }
@@ -338,7 +337,7 @@ public class RunExampleTool extends ToolBase {
             "--conf-dir", configSet,
             "--solr-url", solrUrl
           };
-      CreateTool createTool = new CreateTool(stdout);
+      CreateTool createTool = new CreateTool(runtime);
       int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
       if (createCode != 0)
         throw new Exception(
@@ -371,7 +370,7 @@ public class RunExampleTool extends ToolBase {
               "xml",
               exampledocsDir.getAbsolutePath()
             };
-        PostTool postTool = new PostTool();
+        PostTool postTool = new PostTool(runtime);
         CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
         postTool.runTool(postToolCli);
 
@@ -478,7 +477,7 @@ public class RunExampleTool extends ToolBase {
               "application/json",
               filmsJsonFile.getAbsolutePath()
             };
-        PostTool postTool = new PostTool();
+        PostTool postTool = new PostTool(runtime);
         CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
         postTool.runTool(postToolCli);
 
@@ -767,7 +766,7 @@ public class RunExampleTool extends ToolBase {
 
     Map<String, Object> nodeStatus = null;
     try {
-      nodeStatus = (new StatusTool()).getStatus(solrUrl);
+      nodeStatus = (new StatusTool(runtime)).getStatus(solrUrl);
     } catch (Exception ignore) {
       /* just trying to determine if this example is already running. */
     }
@@ -916,7 +915,7 @@ public class RunExampleTool extends ToolBase {
           "--solr-url", solrUrl
         };
 
-    CreateTool createTool = new CreateTool(stdout);
+    CreateTool createTool = new CreateTool(runtime);
     int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
 
     if (createCode != 0)
@@ -937,7 +936,7 @@ public class RunExampleTool extends ToolBase {
 
   protected Map<String, Object> getNodeStatus(String solrUrl, int maxWaitSecs, CommandLine cli)
       throws Exception {
-    StatusTool statusTool = new StatusTool();
+    StatusTool statusTool = new StatusTool(runtime);
     echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...", cli);
 
     URI solrURI = new URI(solrUrl);

@@ -45,6 +45,8 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.cli.CLIO;
+import org.apache.solr.cli.DefaultToolRuntime;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -97,9 +99,11 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
           TEMP_DIR,
           HDFS_PATH_PREFIX);
 
+  private final ToolRuntime runtime;
   private final CloudSolrClient solrClient;
 
-  public SolrSnapshotsTool(String solrZkEnsemble) {
+  public SolrSnapshotsTool(ToolRuntime runtime, String solrZkEnsemble) {
+    this.runtime = runtime;
     solrClient =
         new CloudSolrClient.Builder(Collections.singletonList(solrZkEnsemble), Optional.empty())
             .build();
@@ -380,7 +384,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
               + collectionName
               + " due to following error : "
               + e.getLocalizedMessage());
-      System.exit(1);
+      runtime.exit(1);
     }
 
     try {
@@ -393,7 +397,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
               + collectionName
               + " due to following error : "
               + e.getLocalizedMessage());
-      System.exit(1);
+      runtime.exit(1);
     }
   }
 
@@ -426,7 +430,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
               + collectionName
               + " due to following error : "
               + e.getLocalizedMessage());
-      System.exit(1);
+      runtime.exit(1);
     }
   }
 
@@ -497,13 +501,14 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
         "This parameter specifies the async request identifier to be used"
             + " during snapshot export preparation");
 
+    ToolRuntime runtime = new DefaultToolRuntime();
     CommandLine cmd = null;
     try {
       cmd = parser.parse(options, args);
     } catch (ParseException e) {
       CLIO.out(e.getLocalizedMessage());
       printHelp(options);
-      System.exit(1);
+      runtime.exit(1);
     }
 
     if (cmd.hasOption(CREATE)
@@ -513,31 +518,31 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
         || cmd.hasOption(PREPARE_FOR_EXPORT)
         || cmd.hasOption(EXPORT_SNAPSHOT)) {
       try (SolrSnapshotsTool tool =
-          new SolrSnapshotsTool(requiredArg(options, cmd, SOLR_ZK_ENSEMBLE))) {
+          new SolrSnapshotsTool(runtime, requiredArg(runtime, options, cmd, SOLR_ZK_ENSEMBLE))) {
         if (cmd.hasOption(CREATE)) {
           String snapshotName = cmd.getOptionValue(CREATE);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
+          String collectionName = requiredArg(runtime, options, cmd, COLLECTION);
           tool.createSnapshot(collectionName, snapshotName);
 
         } else if (cmd.hasOption(DELETE)) {
           String snapshotName = cmd.getOptionValue(DELETE);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
+          String collectionName = requiredArg(runtime, options, cmd, COLLECTION);
           tool.deleteSnapshot(collectionName, snapshotName);
 
         } else if (cmd.hasOption(LIST)) {
-          String collectionName = requiredArg(options, cmd, COLLECTION);
+          String collectionName = requiredArg(runtime, options, cmd, COLLECTION);
           tool.listSnapshots(collectionName);
 
         } else if (cmd.hasOption(DESCRIBE)) {
           String snapshotName = cmd.getOptionValue(DESCRIBE);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
+          String collectionName = requiredArg(runtime, options, cmd, COLLECTION);
           tool.describeSnapshot(collectionName, snapshotName);
 
         } else if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
           String snapshotName = cmd.getOptionValue(PREPARE_FOR_EXPORT);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
-          String localFsDir = requiredArg(options, cmd, TEMP_DIR);
-          String hdfsOpDir = requiredArg(options, cmd, DEST_DIR);
+          String collectionName = requiredArg(runtime, options, cmd, COLLECTION);
+          String localFsDir = requiredArg(runtime, options, cmd, TEMP_DIR);
+          String hdfsOpDir = requiredArg(runtime, options, cmd, DEST_DIR);
           String pathPrefix = cmd.getOptionValue(HDFS_PATH_PREFIX);
 
           if (pathPrefix != null) {
@@ -549,15 +554,15 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
                       + pathPrefix
                       + " is invalid. The error is "
                       + e.getLocalizedMessage());
-              System.exit(1);
+              runtime.exit(1);
             }
           }
           tool.prepareForExport(collectionName, snapshotName, localFsDir, pathPrefix, hdfsOpDir);
 
         } else if (cmd.hasOption(EXPORT_SNAPSHOT)) {
           String snapshotName = cmd.getOptionValue(EXPORT_SNAPSHOT);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
-          String destDir = requiredArg(options, cmd, DEST_DIR);
+          String collectionName = requiredArg(runtime, options, cmd, COLLECTION);
+          String destDir = requiredArg(runtime, options, cmd, DEST_DIR);
           Optional<String> backupRepo = Optional.ofNullable(cmd.getOptionValue(BACKUP_REPO_NAME));
           Optional<String> asyncReqId = Optional.ofNullable(cmd.getOptionValue(ASYNC_REQ_ID));
 
@@ -572,11 +577,12 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
   }
 
-  private static String requiredArg(Options options, CommandLine cmd, String optVal) {
+  private static String requiredArg(
+      ToolRuntime runtime, Options options, CommandLine cmd, String optVal) {
     if (!cmd.hasOption(optVal)) {
       CLIO.out("Please specify the value for option " + optVal);
       printHelp(options);
-      System.exit(1);
+      runtime.exit(1);
     }
     return cmd.getOptionValue(optVal);
   }

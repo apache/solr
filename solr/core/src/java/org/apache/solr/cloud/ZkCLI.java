@@ -43,7 +43,9 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.solr.cli.CLIO;
+import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -159,6 +161,7 @@ public class ZkCLI implements CLIO {
           SAXException,
           KeeperException {
 
+    ToolRuntime runtime = new DefaultToolRuntime();
     CommandLineParser parser =
         DefaultParser.builder()
             // Override deprecation handler since the default one prints to stdout, we want stderr
@@ -445,7 +448,7 @@ public class ZkCLI implements CLIO {
       if (line.hasOption(RUNZK) || line.hasOption(RUN_ZK)) {
         if (!line.hasOption(SOLR_HOME) && !line.hasOption(SOLRHOME)) {
           stdout.println("--" + SOLR_HOME + " is required for " + RUN_ZK);
-          System.exit(1);
+          runtime.exit(1);
         }
         solrPort =
             line.hasOption(RUN_ZK) ? line.getOptionValue(RUN_ZK) : line.getOptionValue(RUNZK);
@@ -491,7 +494,7 @@ public class ZkCLI implements CLIO {
             | IllegalAccessException
             | InvocationTargetException e) {
           stdout.println("Unable to find or instantiate compression class: " + e.getMessage());
-          System.exit(1);
+          runtime.exit(1);
         }
       }
 
@@ -508,7 +511,7 @@ public class ZkCLI implements CLIO {
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLR_HOME) && !line.hasOption(SOLRHOME)) {
             stdout.println("--" + SOLR_HOME + " is required for " + BOOTSTRAP);
-            System.exit(1);
+            runtime.exit(1);
           }
 
           CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
@@ -516,7 +519,7 @@ public class ZkCLI implements CLIO {
 
           if (!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
-            System.exit(1);
+            runtime.exit(1);
           }
 
           ConfigSetService.bootstrapConf(cc);
@@ -529,7 +532,7 @@ public class ZkCLI implements CLIO {
               || (!line.hasOption(CONF_NAME) && !line.hasOption(CONFNAME))) {
             stdout.println(
                 "--" + CONF_DIR + " and --" + CONF_NAME + " are required for " + UPCONFIG);
-            System.exit(1);
+            runtime.exit(1);
           }
           String confDir =
               line.hasOption(CONF_DIR)
@@ -546,7 +549,7 @@ public class ZkCLI implements CLIO {
 
           if (!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
-            System.exit(1);
+            runtime.exit(1);
           }
           final Pattern excludePattern = Pattern.compile(excludeExpr);
           ZkMaintenanceUtils.uploadToZK(
@@ -559,7 +562,7 @@ public class ZkCLI implements CLIO {
               || (!line.hasOption(CONF_NAME) && !line.hasOption(CONFNAME))) {
             stdout.println(
                 "--" + CONF_DIR + " and --" + CONF_NAME + " are required for " + DOWNCONFIG);
-            System.exit(1);
+            runtime.exit(1);
           }
           String confDir =
               line.hasOption(CONF_DIR)
@@ -576,7 +579,7 @@ public class ZkCLI implements CLIO {
               || (!line.hasOption(CONF_NAME) && !line.hasOption(CONFNAME))) {
             stdout.println(
                 "--" + COLLECTION + " and --" + CONF_NAME + " are required for " + LINKCONFIG);
-            System.exit(1);
+            runtime.exit(1);
           }
           String collection = line.getOptionValue(COLLECTION);
           String confName =
@@ -592,7 +595,7 @@ public class ZkCLI implements CLIO {
           List<String> argList = line.getArgList();
           if (argList.size() != 1) {
             stdout.println("-" + LS + " requires one arg - the path to list");
-            System.exit(1);
+            runtime.exit(1);
           }
 
           StringBuilder sb = new StringBuilder();
@@ -604,18 +607,18 @@ public class ZkCLI implements CLIO {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + CLEAR + " requires one arg - the path to clear");
-            System.exit(1);
+            runtime.exit(1);
           }
           zkClient.clean(arglist.get(0));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(MAKEPATH)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
-            System.exit(1);
+            runtime.exit(1);
           }
           if (!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
-            System.exit(1);
+            runtime.exit(1);
           }
           zkClient.makePath(arglist.get(0), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
@@ -623,7 +626,7 @@ public class ZkCLI implements CLIO {
           if (arglist.size() != 2) {
             stdout.println(
                 "-" + PUT + " requires two args - the path to create and the data string");
-            System.exit(1);
+            runtime.exit(1);
           }
           String path = arglist.get(0);
           byte[] data = arglist.get(1).getBytes(StandardCharsets.UTF_8);
@@ -643,7 +646,7 @@ public class ZkCLI implements CLIO {
                 "-"
                     + PUT_FILE
                     + " requires two args - the path to create in ZK and the path to the local file");
-            System.exit(1);
+            runtime.exit(1);
           }
 
           String path = arglist.get(0);
@@ -657,7 +660,7 @@ public class ZkCLI implements CLIO {
           } else {
             if (!ZkController.checkChrootPath(zkServerAddress, true)) {
               stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
-              System.exit(1);
+              runtime.exit(1);
             }
             zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
@@ -665,7 +668,7 @@ public class ZkCLI implements CLIO {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + GET + " requires one arg - the path to get");
-            System.exit(1);
+            runtime.exit(1);
           }
           byte[] data = zkClient.getData(arglist.get(0), null, null, true);
           stdout.println(new String(data, StandardCharsets.UTF_8));
@@ -674,7 +677,7 @@ public class ZkCLI implements CLIO {
           if (arglist.size() != 2) {
             stdout.println(
                 "-" + GET_FILE + "requires two args - the path to get and the file to save it to");
-            System.exit(1);
+            runtime.exit(1);
           }
           byte[] data = zkClient.getData(arglist.get(0), null, null, true);
           Files.write(Path.of(arglist.get(1)), data);
@@ -682,7 +685,7 @@ public class ZkCLI implements CLIO {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + UPDATEACLS + " requires one arg - the path to update");
-            System.exit(1);
+            runtime.exit(1);
           }
           zkClient.updateACLs(arglist.get(0));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLUSTERPROP)) {
@@ -691,7 +694,7 @@ public class ZkCLI implements CLIO {
           }
           if (!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
-            System.exit(1);
+            runtime.exit(1);
           }
           String propertyName = line.getOptionValue(NAME);
           // If -val option is missing, we will use the null value. This is required to maintain
@@ -704,12 +707,12 @@ public class ZkCLI implements CLIO {
             stdout.println(
                 "Unable to set the cluster property due to following error : "
                     + ex.getLocalizedMessage());
-            System.exit(1);
+            runtime.exit(1);
           }
         } else {
           // If not cmd matches
           stdout.println("Unknown command " + line.getOptionValue(CMD) + ". Use -h to get help.");
-          System.exit(1);
+          runtime.exit(1);
         }
       } finally {
         if (solrPort != null) {

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,12 +33,8 @@ import org.slf4j.LoggerFactory;
 public class ConfigSetUploadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ConfigSetUploadTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ConfigSetUploadTool(PrintStream stdout) {
-    super(stdout);
+  public ConfigSetUploadTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

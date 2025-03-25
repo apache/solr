@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -27,12 +26,8 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 /** Supports snapshot-create command in the bin/solr script. */
 public class SnapshotCreateTool extends ToolBase {
 
-  public SnapshotCreateTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public SnapshotCreateTool(PrintStream stdout) {
-    super(stdout);
+  public SnapshotCreateTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

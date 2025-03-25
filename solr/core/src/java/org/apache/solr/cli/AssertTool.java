@@ -17,7 +17,6 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,12 +45,8 @@ public class AssertTool extends ToolBase {
   private static boolean useExitCode = false;
   private static Long timeoutMs = 1000L;
 
-  public AssertTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public AssertTool(PrintStream stdout) {
-    super(stdout);
+  public AssertTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -368,8 +363,8 @@ public class AssertTool extends ToolBase {
     return ret;
   }
 
-  public static int assertSolrRunning(String url) throws Exception {
-    StatusTool status = new StatusTool();
+  public int assertSolrRunning(String url) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     try {
       status.waitToSeeSolrUp(url, timeoutMs, TimeUnit.MILLISECONDS);
     } catch (Exception se) {
@@ -386,8 +381,8 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public static int assertSolrNotRunning(String url) throws Exception {
-    StatusTool status = new StatusTool();
+  public int assertSolrNotRunning(String url) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     long timeout =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
     try (SolrClient solrClient = SolrCLI.getSolrClient(url)) {
@@ -422,7 +417,7 @@ public class AssertTool extends ToolBase {
             + " seconds");
   }
 
-  public static int assertSolrRunningInCloudMode(String url) throws Exception {
+  public int assertSolrRunningInCloudMode(String url) throws Exception {
     if (!isSolrRunningOn(url)) {
       return exitOrException(
           "Solr is not running on url "
@@ -438,7 +433,7 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public static int assertSolrNotRunningInCloudMode(String url) throws Exception {
+  public int assertSolrNotRunningInCloudMode(String url) throws Exception {
     if (!isSolrRunningOn(url)) {
       return exitOrException(
           "Solr is not running on url "
@@ -516,8 +511,8 @@ public class AssertTool extends ToolBase {
     }
   }
 
-  private static boolean isSolrRunningOn(String url) throws Exception {
-    StatusTool status = new StatusTool();
+  private boolean isSolrRunningOn(String url) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     try {
       status.waitToSeeSolrUp(url, timeoutMs, TimeUnit.MILLISECONDS);
       return true;

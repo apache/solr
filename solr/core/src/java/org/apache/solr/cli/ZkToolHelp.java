@@ -18,7 +18,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.cli.SolrCLI.print;
 
-import java.io.PrintStream;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -26,12 +25,8 @@ import org.apache.commons.cli.Option;
 /** Supports zk help information in the bin/solr script. */
 public class ZkToolHelp extends ToolBase {
 
-  public ZkToolHelp() {
-    this(CLIO.getOutStream());
-  }
-
-  public ZkToolHelp(PrintStream stdout) {
-    super(stdout);
+  public ZkToolHelp(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -67,15 +62,15 @@ public class ZkToolHelp extends ToolBase {
     }
     if (cli.hasOption("print-long-zk-usage")) {
       print("usage:");
-      print(new ZkLsTool().getUsage());
-      print(new ZkCpTool().getUsage());
-      print(new ZkMvTool().getUsage());
+      print(new ZkLsTool(runtime).getUsage());
+      print(new ZkCpTool(runtime).getUsage());
+      print(new ZkMvTool(runtime).getUsage());
 
-      print(new ConfigSetUploadTool().getUsage());
-      print(new ConfigSetDownloadTool().getUsage());
-      print(new ZkMkrootTool().getUsage());
-      print(new LinkConfigTool().getUsage());
-      print(new UpdateACLTool().getUsage());
+      print(new ConfigSetUploadTool(runtime).getUsage());
+      print(new ConfigSetDownloadTool(runtime).getUsage());
+      print(new ZkMkrootTool(runtime).getUsage());
+      print(new LinkConfigTool(runtime).getUsage());
+      print(new UpdateACLTool(runtime).getUsage());
       print("");
       print(
           "Pass --help or -h after any COMMAND to see command-specific usage information such as: ./solr zk ls --help");

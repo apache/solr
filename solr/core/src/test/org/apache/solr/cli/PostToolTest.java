@@ -17,9 +17,6 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -35,7 +32,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -80,7 +76,7 @@ public class PostToolTest extends SolrCloudTestCase {
       collection,
       jsonDoc.getAbsolutePath()
     };
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;
@@ -115,7 +111,7 @@ public class PostToolTest extends SolrCloudTestCase {
     fw.flush();
 
     String[] args = {"post", "-c", collection, jsonDoc.getAbsolutePath()};
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;
@@ -159,7 +155,7 @@ public class PostToolTest extends SolrCloudTestCase {
       "text/csv",
       tsvDoc.getAbsolutePath()
     };
-    assertEquals(0, runTool(args));
+    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;
@@ -175,13 +171,6 @@ public class PostToolTest extends SolrCloudTestCase {
       Thread.sleep(100);
     }
     assertEquals("*:* found unexpected number of documents", expectedDocCount, numFound);
-  }
-
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof PostTool);
-    CommandLine cli = parseCmdLine(tool, args);
-    return tool.runTool(cli);
   }
 
   @Test
@@ -218,7 +207,8 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testTypeSupported() {
-    PostTool postTool = new PostTool();
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PostTool postTool = new PostTool(runtime);
 
     assertTrue(postTool.typeSupported("application/pdf"));
     assertTrue(postTool.typeSupported("application/xml"));
@@ -251,7 +241,8 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testDoFilesMode() {
-    PostTool postTool = new PostTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PostTool postTool = new PostTool(runtime);
     postTool.recursive = 0;
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
@@ -262,7 +253,8 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testDetectingIfRecursionPossibleInFilesMode() throws IOException {
-    PostTool postTool = new PostTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PostTool postTool = new PostTool(runtime);
     postTool.recursive = 1; // This is the default
     File dir = getFile("exampledocs");
     File doc = File.createTempFile("temp", ".json");
@@ -273,7 +265,8 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testRecursionAppliesToFilesMode() {
-    PostTool postTool = new PostTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PostTool postTool = new PostTool(runtime);
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
@@ -284,8 +277,9 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testDoWebMode() throws IOException, URISyntaxException {
-    PostTool postTool = new PostTool();
-    postTool.pageFetcher = new MockPageFetcher();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PostTool postTool = new PostTool(runtime);
+    postTool.pageFetcher = new MockPageFetcher(runtime);
     postTool.dryRun = true;
     postTool.solrUpdateUrl = URI.create("http://user:password@localhost:5150/solr/fake/update");
 
@@ -308,8 +302,9 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testRobotsExclusion() throws IOException, URISyntaxException {
-    PostTool postTool = new PostTool();
-    postTool.pageFetcher = new MockPageFetcher();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PostTool postTool = new PostTool(runtime);
+    postTool.pageFetcher = new MockPageFetcher(runtime);
     postTool.dryRun = true;
 
     assertFalse(
@@ -327,8 +322,8 @@ public class PostToolTest extends SolrCloudTestCase {
     HashMap<String, String> htmlMap = new HashMap<>();
     HashMap<String, Set<URI>> linkMap = new HashMap<>();
 
-    public MockPageFetcher() throws IOException, URISyntaxException {
-      (new PostTool()).super();
+    public MockPageFetcher(ToolRuntime runtime) throws IOException, URISyntaxException {
+      (new PostTool(runtime)).super();
       htmlMap.put(
           "http://[ff01::114]",
           "<html><body><a href=\"http://[ff01::114]/page1\">page1</a><a href=\"http://[ff01::114]/page2\">page2</a></body></html>");
