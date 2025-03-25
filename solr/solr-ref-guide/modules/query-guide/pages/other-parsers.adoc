@@ -386,7 +386,7 @@ For more information about range queries over functions, see Yonik Seeley's intr
 The `FuzzyQParser` extends the `QParserPlugin` and creates a fuzzy query for a term.
 This query parser gives additional options on top of the standard xref:standard-query-parser.adoc#fuzzy-searches[`field~2` fuzzy query notation].
 
-For more information about fuzzy queries and their options, please refer to Lucene's {lucene-javadocs}/core/org/apache/lucene/search/FuzzyQuery.html)[`FuzzyQuery` documentation].
+For more information about fuzzy queries and their options, please refer to Lucene's {lucene-javadocs}/core/org/apache/lucene/search/FuzzyQuery.html[`FuzzyQuery` documentation].
 
 *Parameters*
 
