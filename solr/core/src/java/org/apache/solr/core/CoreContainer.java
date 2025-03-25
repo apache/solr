@@ -1078,19 +1078,23 @@ public class CoreContainer {
           coreLoadExecutor.execute(
               () -> {
                 SolrCore core;
+                boolean pendingCoreOpAdded = false;
                 try {
                   if (zkSys.getZkController() != null) {
                     zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
                   }
                   MDCLoggingContext.setCoreDescriptor(this, cd);
                   solrCores.waitAddPendingCoreOps(cd.getName());
+                  pendingCoreOpAdded = true;
                   core = createFromDescriptor(cd, false, false);
                 } catch (Exception e) {
                   log.error("SolrCore failed to load on startup", e);
                   MDCLoggingContext.clear();
                   return;
                 } finally {
-                  solrCores.removeFromPendingOps(cd.getName());
+                  if (pendingCoreOpAdded) {
+                    solrCores.removeFromPendingOps(cd.getName());
+                  }
                   if (asyncSolrCoreLoad) {
                     solrCores.markCoreAsNotLoading(cd);
                   }
@@ -1610,8 +1614,8 @@ public class CoreContainer {
         coresLocator.create(this, cd);
 
         SolrCore core;
+        solrCores.waitAddPendingCoreOps(cd.getName());
         try {
-          solrCores.waitAddPendingCoreOps(cd.getName());
           core = createFromDescriptor(cd, true, newCollection);
           // Write out the current core properties in case anything changed when the core was
           // created
@@ -2047,8 +2051,8 @@ public class CoreContainer {
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
       boolean success = false;
+      solrCores.waitAddPendingCoreOps(cd.getName());
       try {
-        solrCores.waitAddPendingCoreOps(cd.getName());
         ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
         if (log.isInfoEnabled()) {
           log.info(
@@ -2105,8 +2109,8 @@ public class CoreContainer {
       if (coreId != null) return; // yeah, this core is already reloaded/unloaded return right away
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
+        solrCores.waitAddPendingCoreOps(clf.cd.getName());
         try {
-          solrCores.waitAddPendingCoreOps(clf.cd.getName());
           createFromDescriptor(clf.cd, true, false);
         } finally {
           solrCores.removeFromPendingOps(clf.cd.getName());
@@ -2149,8 +2153,8 @@ public class CoreContainer {
    */
   public void unload(
       String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
+    solrCores.waitAddPendingCoreOps(name);
     try {
-      solrCores.waitAddPendingCoreOps(name);
       unloadWithoutCoreOp(name, deleteIndexDir, deleteDataDir, deleteInstanceDir);
     } finally {
       solrCores.removeFromPendingOps(name);
