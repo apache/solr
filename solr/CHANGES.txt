@@ -263,6 +263,8 @@ Other Changes
 
 * SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
 
+* SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
+
 ==================  9.8.1 ==================
 Bug Fixes
 ---------------------
