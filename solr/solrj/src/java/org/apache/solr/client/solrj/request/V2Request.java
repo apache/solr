@@ -50,7 +50,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   private ResponseParser parser;
 
   private V2Request(METHOD m, String resource, boolean useBinary) {
-    super(m, resource, SolrRequestType.UNSPECIFIED);
+    super(m, resource, SolrRequestType.ADMIN);
     Matcher matcher = COLL_REQ_PATTERN.matcher(getPath());
     if (matcher.find()) {
       this.collection = matcher.group(2);
