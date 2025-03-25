@@ -24,7 +24,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 
 /**
@@ -92,8 +91,6 @@ public class FuzzyQParserPlugin extends QParserPlugin {
           || !(fieldType instanceof TextField)
           || ((TextField) fieldType).getMultiTermAnalyzer() == null) return part;
 
-      SchemaField sf = req.getSchema().getFieldOrNull((field));
-      if (sf == null || !(fieldType instanceof TextField)) return part;
       BytesRef out =
           TextField.analyzeMultiTerm(field, part, ((TextField) fieldType).getMultiTermAnalyzer());
       return out == null ? part : out.utf8ToString();
