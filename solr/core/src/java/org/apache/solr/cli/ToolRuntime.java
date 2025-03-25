@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.solr.common.util.SuppressForbidden;
+
 /**
  * An implementation of this class is specified when executing {@link ToolBase} to access
  * environment specific methods (mostly to differentiate test from non-test executions for now).
@@ -29,6 +31,7 @@ public abstract class ToolRuntime {
   public abstract void println(String message);
 
   /** Invokes {@link System#exit(int)} to force the JVM to immediately quit. */
+  @SuppressForbidden(reason = "That's the only method in CLI code where we allow to exit the JVM")
   public void exit(int status) {
     try {
       System.exit(status);

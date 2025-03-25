@@ -127,7 +127,7 @@ public class PackageTool extends ToolBase {
       String cmd = cli.getArgs()[0];
 
       try (SolrClient solrClient = CLIUtils.getSolrClient(cli, true)) {
-        packageManager = new PackageManager(solrClient, solrUrl, zkHost);
+        packageManager = new PackageManager(runtime, solrClient, solrUrl, zkHost);
         try {
           repositoryManager = new RepositoryManager(solrClient, packageManager);
 

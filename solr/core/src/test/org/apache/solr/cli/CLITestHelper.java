@@ -49,8 +49,8 @@ public class CLITestHelper {
    * tool name.
    *
    * @param args Complete command line.
-   * @param runtime The runtime implementation specified to the tool. In test, should be usually a
-   *     test specific implementation for additional checks.
+   * @param runtime The runtime implementation specified to the tool. In tests, an instance of
+   *     {@link TestingRuntime} should be typically used for additional checks.
    * @param clazz Expected class name of tool implementation.
    */
   public static int runTool(String[] args, ToolRuntime runtime, Class<?> clazz) throws Exception {
