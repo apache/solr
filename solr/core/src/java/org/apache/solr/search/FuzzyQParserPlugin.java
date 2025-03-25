@@ -35,7 +35,7 @@ import org.apache.solr.schema.TextField;
  * <p>Example: <code>{!fuzzy f=myfield maxEdits=1 prefixLength=3 maxExpansions=2}foobar</code>
  *
  * @see QueryParser
- * @since 4.0
+ * @since 9.9
  */
 public class FuzzyQParserPlugin extends QParserPlugin {
   public static final String NAME = "fuzzy";
