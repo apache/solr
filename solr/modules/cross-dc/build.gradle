@@ -43,8 +43,17 @@ dependencies {
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'junit:junit'
   testImplementation 'commons-io:commons-io'
-  testImplementation 'org.mockito:mockito-core'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  // The explicit dependency on bytebuddy is required for Java 25 support
+  // Once Mockito upgrades its dependency on ByteBuddy to 1.16.1, we should
+  // be able to remove this and merely use:
+  //   testImplementation 'org.mockito:mockito-core'
+  testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy"
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly 'net.bytebuddy:byte-buddy'
+  testRuntimeOnly 'net.bytebuddy:byte-buddy-agent'
 
   testImplementation "org.apache.kafka:kafka-clients:3.7.1:test"
 }
