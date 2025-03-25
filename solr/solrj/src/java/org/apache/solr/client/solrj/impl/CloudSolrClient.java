@@ -1052,7 +1052,6 @@ public abstract class CloudSolrClient extends SolrClient {
         final var nodeBaseUrl = Utils.getBaseUrlForNodeName(liveNode, urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl));
       }
-
     } else { // Typical...
       Set<String> collectionNames = resolveAliases(inputCollections);
       if (collectionNames.isEmpty()) {
