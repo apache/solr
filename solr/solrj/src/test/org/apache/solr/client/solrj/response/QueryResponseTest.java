@@ -55,7 +55,7 @@ public class QueryResponseTest extends SolrTestCase {
       }
     }
 
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     assertNotNull(qr);
 
     int counter = 0;
@@ -119,7 +119,7 @@ public class QueryResponseTest extends SolrTestCase {
       }
     }
 
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     assertNotNull(qr);
     GroupResponse groupResponse = qr.getGroupResponse();
     assertNotNull(groupResponse);
@@ -225,7 +225,7 @@ public class QueryResponseTest extends SolrTestCase {
       }
     }
 
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     assertNotNull(qr);
     GroupResponse groupResponse = qr.getGroupResponse();
     assertNotNull(groupResponse);
@@ -267,7 +267,7 @@ public class QueryResponseTest extends SolrTestCase {
       NamedList<Object> response = parser.processResponse(in);
       in.close();
 
-      QueryResponse qr = new QueryResponse(response, null);
+      QueryResponse qr = new QueryResponse(response);
       assertNotNull(qr);
       assertNotNull(qr.getIntervalFacets());
       assertEquals(2, qr.getIntervalFacets().size());
@@ -311,7 +311,7 @@ public class QueryResponseTest extends SolrTestCase {
       }
     }
 
-    QueryResponse qr = new QueryResponse(response, null);
+    QueryResponse qr = new QueryResponse(response);
     assertNotNull(qr);
 
     Map<String, Object> explainMap = qr.getExplainMap();

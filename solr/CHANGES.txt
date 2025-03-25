@@ -161,6 +161,9 @@ Other Changes
   Stopped using RawResponseWriter when not needed.  Rename BinaryResponseWriter to JavaBinResponseWriter.
   (David Smiley)
 
+* SOLR-17706: SolrJ DocumentObjectBinder is now a global singleton via an INSTANCE field and that
+  which is pluggable via Java SPI/ServiceLoader.  SolrClient.getBinder is gone.  (David Smiley)
+
 * SOLR-17584: There is no longer a distinction between trusted and untrusted configSets; all are now trusted.
   To ensure security, Solr should enforce authentication and authorization,
   allowing only authorized admins to publish them. (Abhishek Umarjikar)
