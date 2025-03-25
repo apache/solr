@@ -14,25 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.common.util.SuppressForbidden;
 
-public class VersionTool extends ToolBase {
+/**
+ * An implementation of this class is specified when executing {@link ToolBase} to access
+ * environment specific methods (mostly to differentiate test from non-test executions for now).
+ *
+ * @see ToolBase
+ */
+public abstract class ToolRuntime {
 
-  public VersionTool(ToolRuntime runtime) {
-    super(runtime);
-  }
+  public abstract void print(String message);
 
-  @Override
-  public String getName() {
-    return "version";
-  }
+  public abstract void println(String message);
 
-  @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    CLIO.out("Solr version is: " + SolrVersion.LATEST);
+  /** Invokes {@link System#exit(int)} to force the JVM to immediately quit. */
+  @SuppressForbidden(reason = "That's the only method in CLI code where we allow to exit the JVM")
+  public void exit(int status) {
+    try {
+      System.exit(status);
+    } catch (java.lang.SecurityException secExc) {
+      if (status != 0) throw new RuntimeException("SolrCLI failed to exit with status " + status);
+    }
   }
 }

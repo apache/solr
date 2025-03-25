@@ -202,6 +202,9 @@ Improvements
 * SOLR-17607: SolrJ CloudSolrClient configured with HTTP URLs will no longer eagerly connect to
   anything. (David Smiley)
 
+* SOLR-10998: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt' is unspecified.  JSON is still used as a default when
+  neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
@@ -263,6 +266,10 @@ Other Changes
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
 * SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
+
+* SOLR-17716: Handle interrupted exception in SolrCores.waitAddPendingCoreOps. (Bruno Roustant)
+
+* SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
 
 ==================  9.8.1 ==================
 Bug Fixes
