@@ -53,8 +53,8 @@ dependencies {
     exclude group: "net.bytebuddy", module: "byte-buddy"
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testImplementation libs.bytebuddy
-  testImplementation libs.bytebuddy.agent
+  testRuntimeOnly libs.bytebuddy
+  testRuntimeOnly libs.bytebuddy.agent
 
   testImplementation(libs.apache.kafka.clients) {
     artifact {
