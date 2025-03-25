@@ -103,6 +103,8 @@ Other Changes
 
 * SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
 
+* SOLR-17716: Handle interrupted exception in SolrCores.waitAddPendingCoreOps. (Bruno Roustant)
+
 ==================  9.8.1 ==================
 Bug Fixes
 ---------------------
