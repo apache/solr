@@ -18,7 +18,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -38,12 +37,8 @@ public class ZkMkrootTool extends ToolBase {
           .desc("Raise an error if the root exists.  Defaults to false.")
           .build();
 
-  public ZkMkrootTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ZkMkrootTool(PrintStream stdout) {
-    super(stdout);
+  public ZkMkrootTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
