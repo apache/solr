@@ -163,7 +163,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertFalse(dq.isDirty());
     assertEquals(1, dq.watcherCount());
 
-    forceSessionExpire();
+    ChaosMonkey.expireSession(zkClient, zkServer);
 
     // Session expiry should have fired the watcher.
     Thread.sleep(100);
@@ -288,28 +288,6 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     long timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
     assertTrue(
         "Time was " + timeTaken + "ms, expected 250-1500ms", timeTaken > 250 && timeTaken < 1500);
-  }
-
-  private void forceSessionExpire() throws InterruptedException, TimeoutException {
-    final CountDownLatch hasDisconnected = new CountDownLatch(1);
-    zkClient
-        .getCuratorFramework()
-        .getConnectionStateListenable()
-        .addListener(
-            (OnDisconnect)
-                ((sessionExpired) -> {
-                  if (sessionExpired) {
-                    hasDisconnected.countDown();
-                  }
-                }));
-    long sessionId = zkClient.getZkSessionId();
-    zkServer.expire(sessionId);
-    hasDisconnected.await(10, TimeUnit.SECONDS);
-    assertEquals(
-        "ZK Client did not disconnect after session expiration", 0, hasDisconnected.getCount());
-    zkClient.getCuratorFramework().blockUntilConnected(10, TimeUnit.SECONDS);
-    assertTrue(zkClient.isConnected());
-    assertNotEquals(sessionId, zkClient.getZkSessionId());
   }
 
   protected ZkDistributedQueue makeDistributedQueue(String dqZNode) throws Exception {

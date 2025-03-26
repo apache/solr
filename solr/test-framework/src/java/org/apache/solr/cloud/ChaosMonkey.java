@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +32,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.OnDisconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.Slice;
@@ -47,6 +49,7 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,18 +155,42 @@ public class ChaosMonkey {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
       monkeyLog("expire session for node " + jetty.getBaseUrl() + " !");
-      SolrZkClient zkClient = cores.getZkController().getZkClient();
-      long sessionId = zkClient.getZkSessionId();
-      zkServer.expire(sessionId);
-      causeConnectionLoss(jetty);
-      // Loop until either the Zookeeper Client is no longer connected, or the zkSessionID changes
-      // (which means the connection was lost in the client)
-      while (zkClient.getCuratorFramework().getZookeeperClient().isConnected()) {
-        if (zkClient.getZkSessionId() != sessionId) {
-          break;
-        }
+      try {
+        expireSession(cores.getZkController().getZkClient(), zkServer);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.warn("Exception causing connection loss", e);
       }
     }
+  }
+
+  public static void expireSession(final SolrZkClient zkClient, final ZkTestServer zkServer)
+      throws InterruptedException {
+    final CountDownLatch hasDisconnected = new CountDownLatch(1);
+    final OnDisconnect onDisconnect =
+        (sessionExpired) -> {
+          if (sessionExpired) {
+            hasDisconnected.countDown();
+          }
+        };
+    zkClient.getCuratorFramework().getConnectionStateListenable().addListener(onDisconnect);
+    long sessionId = zkClient.getZkSessionId();
+    zkServer.expire(sessionId);
+    Assert.assertTrue(
+        "ZK Client did not disconnect after session expiration",
+        hasDisconnected.await(10, TimeUnit.SECONDS));
+    Assert.assertTrue(
+        "Curator Client did not reconnect within 10 seconds",
+        zkClient.getCuratorFramework().blockUntilConnected(10, TimeUnit.SECONDS));
+    Assert.assertTrue(
+        "Curator ZK Client did not reconnect within timeout",
+        zkClient.getCuratorFramework().getZookeeperClient().blockUntilConnectedOrTimedOut());
+    Assert.assertTrue("ZK Client is not connected", zkClient.isConnected());
+    Assert.assertNotEquals(
+        "ZK Client session ID did not change, not a real session expiration",
+        sessionId,
+        zkClient.getZkSessionId());
+    zkClient.getCuratorFramework().getConnectionStateListenable().removeListener(onDisconnect);
   }
 
   public void expireRandomSession() throws KeeperException, InterruptedException {
