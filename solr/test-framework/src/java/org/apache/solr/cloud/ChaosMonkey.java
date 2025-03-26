@@ -28,7 +28,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-import org.apache.curator.test.KillSession;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.DocCollection;
@@ -194,7 +193,12 @@ public class ChaosMonkey {
       monkeyLog("Will cause connection loss on node " + jetty.getBaseUrl());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
       try {
-        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
+        zkClient
+            .getCuratorFramework()
+            .getZookeeperClient()
+            .getZooKeeper()
+            .getTestable()
+            .closeSocket();
       } catch (Exception e) {
         log.warn("Exception causing connection loss", e);
       }
