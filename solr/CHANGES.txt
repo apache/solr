@@ -101,7 +101,7 @@ Other Changes
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
-* SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
+* SOLR-17518: Deprecate UpdateRequest.getXml(). Usage of XMLRequestWriter is now preferred. (Pierre Salagnac)
 
 * SOLR-17716: Handle interrupted exception in SolrCores.waitAddPendingCoreOps. (Bruno Roustant)
 
