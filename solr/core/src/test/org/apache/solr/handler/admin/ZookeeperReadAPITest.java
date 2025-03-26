@@ -76,7 +76,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
       }
 
       final var configListRequest = new ZookeeperReadApi.ListNodes("/configs");
-      final var configListResponse = configListRequest.process(client).getParsed();
+      final var configListResponse = configListRequest.process(client);
       assertEquals(
           16, configListResponse.unknownProperties().get("/configs").get("_default").dataLength);
       assertEquals(
@@ -133,7 +133,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
   public void testCanListChildNodes() throws Exception {
     try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
       final var listDefaultFilesReq = new ZookeeperReadApi.ListNodes("/configs/_default");
-      final var listDefaultFilesResponse = listDefaultFilesReq.process(client).getParsed();
+      final var listDefaultFilesResponse = listDefaultFilesReq.process(client);
 
       // At the top level, the response contains a key with the value of the specified zkPath
       assertEquals(1, listDefaultFilesResponse.unknownProperties().size());

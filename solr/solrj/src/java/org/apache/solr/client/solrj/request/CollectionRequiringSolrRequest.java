@@ -17,11 +17,9 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 
 /** Parent {@link SolrRequest} class that requires a target collection or core. */
-public abstract class CollectionRequiringSolrRequest<T extends SolrResponse>
-    extends SolrRequest<T> {
+public abstract class CollectionRequiringSolrRequest<T> extends SolrRequest<T> {
   public CollectionRequiringSolrRequest(METHOD m, String path) {
     super(m, path);
   }
