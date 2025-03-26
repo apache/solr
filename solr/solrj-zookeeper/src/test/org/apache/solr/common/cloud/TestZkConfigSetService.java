@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
@@ -224,7 +223,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
     String solrHome = legacyExampleCollection1SolrHome();
 
-    CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+    CoreContainer cc = new CoreContainer(Path.of(solrHome), new Properties());
     System.setProperty("zkHost", zkServer.getZkAddress());
 
     SolrZkClient zkClient =

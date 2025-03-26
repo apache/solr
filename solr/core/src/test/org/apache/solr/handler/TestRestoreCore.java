@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.IndexFileNames;
@@ -224,7 +223,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     // Remove the segments_n file so that the backup index is corrupted.
     // Restore should fail, and it should automatically roll back to the original index.
-    final Path restoreIndexPath = Paths.get(location, backupDirName);
+    final Path restoreIndexPath = Path.of(location, backupDirName);
     assertTrue("Does not exist: " + restoreIndexPath, Files.exists(restoreIndexPath));
     try (DirectoryStream<Path> stream =
         Files.newDirectoryStream(restoreIndexPath, IndexFileNames.SEGMENTS + "*")) {

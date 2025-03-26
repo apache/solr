@@ -30,7 +30,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -237,7 +236,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     // Sanity check that a core did get loaded
     addCoreWithProps("corep2", makeCoreProperties("corep2", false, true));
 
-    Path coreP1PropFile = Paths.get(solrHomeDirectory.toString(), "corep1", "core.properties");
+    Path coreP1PropFile = Path.of(solrHomeDirectory.toString(), "corep1", "core.properties");
     assertTrue(
         "Core.properties file should exist for before core load failure core corep1",
         Files.exists(coreP1PropFile));
@@ -254,13 +253,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
           "Core.properties file should still exist for core corep1", Files.exists(coreP1PropFile));
 
       // Creating a core successfully should create a core.properties file
-      Path corePropFile = Paths.get(solrHomeDirectory.toString(), "corep3", "core.properties");
+      Path corePropFile = Path.of(solrHomeDirectory.toString(), "corep3", "core.properties");
       assertFalse("Should not be a properties file yet", Files.exists(corePropFile));
       cc.create("corep3", Map.of("configSet", "minimal"));
       assertTrue("Should be a properties file for newly created core", Files.exists(corePropFile));
 
       // Failing to create a core should _not_ leave a core.properties file hanging around.
-      corePropFile = Paths.get(solrHomeDirectory.toString(), "corep4", "core.properties");
+      corePropFile = Path.of(solrHomeDirectory.toString(), "corep4", "core.properties");
       assertFalse("Should not be a properties file yet for corep4", Files.exists(corePropFile));
 
       thrown =
@@ -283,7 +282,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
       // Finally, let's determine that this create path operation also leaves a prop file.
 
-      corePropFile = Paths.get(solrHomeDirectory.toString(), "corep5", "core.properties");
+      corePropFile = Path.of(solrHomeDirectory.toString(), "corep5", "core.properties");
       assertFalse("Should not be a properties file yet for corep5", Files.exists(corePropFile));
 
       cc.create("corep5", Map.of("configSet", "minimal"));
@@ -624,7 +623,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       "<solr> "
           + "<int name=\"transientCacheSize\">2</int> "
           + "<str name=\"configSetBaseDir\">"
-          + Paths.get(TEST_HOME()).resolve("configsets")
+          + Path.of(TEST_HOME()).resolve("configsets")
           + "</str>"
           + "<solrcloud> "
           + "<int name=\"zkClientTimeout\">20</int> "

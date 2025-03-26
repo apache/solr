@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -471,7 +470,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     final String standardOutput2 = runtime.getOutput();
     assertTrue(standardOutput2.startsWith("Copying from 'zk:/getNode'"));
-    byte[] fileBytes = Files.readAllBytes(Paths.get(localFile.getAbsolutePath()));
+    byte[] fileBytes = Files.readAllBytes(Path.of(localFile.getAbsolutePath()));
     assertArrayEquals(data, fileBytes);
   }
 

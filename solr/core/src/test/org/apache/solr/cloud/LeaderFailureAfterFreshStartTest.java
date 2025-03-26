@@ -23,7 +23,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -146,7 +146,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       String coreName = freshNode.jetty.getCoreContainer().getCores().iterator().next().getName();
       String replicationProperties =
           freshNode.jetty.getSolrHome() + "/cores/" + coreName + "/data/replication.properties";
-      String md5 = DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties)));
+      String md5 = DigestUtils.md5Hex(Files.readAllBytes(Path.of(replicationProperties)));
 
       // shutdown the original leader
       log.info("Now shutting down initial leader");
@@ -158,7 +158,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       assertEquals(
           "Node went into replication",
           md5,
-          DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties))));
+          DigestUtils.md5Hex(Files.readAllBytes(Path.of(replicationProperties))));
 
       success = true;
     } finally {

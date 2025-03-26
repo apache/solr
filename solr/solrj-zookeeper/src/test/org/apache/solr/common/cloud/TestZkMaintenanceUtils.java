@@ -20,7 +20,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -174,7 +173,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       oneByte[0] = 0x30;
       zkClient.makePath("/test1byte/one", oneByte, true);
 
-      Path tmpDest = Paths.get(createTempDir().toFile().getAbsolutePath(), "MustBeOne");
+      Path tmpDest = Path.of(createTempDir().toFile().getAbsolutePath(), "MustBeOne");
       ZkMaintenanceUtils.downloadFromZK(zkClient, "/test1byte/one", tmpDest);
 
       try (FileInputStream fis = new FileInputStream(tmpDest.toFile())) {

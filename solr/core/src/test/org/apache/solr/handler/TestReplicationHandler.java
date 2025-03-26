@@ -30,7 +30,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -1410,7 +1410,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderClient.close();
     leaderJetty.stop();
 
-    Directory dir = FSDirectory.open(Paths.get(dataDir).resolve("index"));
+    Directory dir = FSDirectory.open(Path.of(dataDir).resolve("index"));
     String[] files = dir.listAll();
     long totalBytes = 0;
     for (String file : files) {
@@ -1462,7 +1462,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void doTestIllegalFilePaths() {
     // Loop through the file=, cf=, tlogFile= params and prove that it throws exception for path
     // traversal attempts
-    String absFile = Paths.get("foo").toAbsolutePath().toString();
+    String absFile = Path.of("foo").toAbsolutePath().toString();
     List<String> illegalFilenames =
         Arrays.asList(absFile, "../dir/traversal", "illegal\rfile\nname\t");
     List<String> params =

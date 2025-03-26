@@ -28,7 +28,6 @@ import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -635,9 +634,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Assume.assumeFalse(OS.isFamilyWindows());
     System.setProperty("solr.allowPaths", "/var/solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("/var/solr/foo"));
+    cc.assertPathAllowed(Path.of("/var/solr/foo"));
     try {
-      cc.assertPathAllowed(Paths.get("/tmp"));
+      cc.assertPathAllowed(Path.of("/tmp"));
       fail("Path /tmp should not be allowed");
     } catch (SolrException e) {
       /* Ignore */
@@ -652,9 +651,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Assume.assumeTrue(OS.isFamilyWindows());
     System.setProperty("solr.allowPaths", "C:\\solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("C:\\solr\\foo"));
+    cc.assertPathAllowed(Path.of("C:\\solr\\foo"));
     try {
-      cc.assertPathAllowed(Paths.get("C:\\tmp"));
+      cc.assertPathAllowed(Path.of("C:\\tmp"));
       fail("Path C:\\tmp should not be allowed");
     } catch (SolrException e) {
       /* Ignore */
@@ -696,12 +695,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Assume.assumeFalse(OS.isFamilyWindows());
     System.setProperty("solr.allowPaths", "/var/solr/../solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("/var/solr/foo"));
+    cc.assertPathAllowed(Path.of("/var/solr/foo"));
     assertThrows(
         "Path /tmp should not be allowed",
         SolrException.class,
         () -> {
-          cc.assertPathAllowed(Paths.get("/tmp"));
+          cc.assertPathAllowed(Path.of("/tmp"));
         });
     cc.shutdown();
     System.clearProperty("solr.allowPaths");
@@ -712,12 +711,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Assume.assumeTrue(OS.isFamilyWindows());
     System.setProperty("solr.allowPaths", "C:\\solr\\..\\solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("C:\\solr\\foo"));
+    cc.assertPathAllowed(Path.of("C:\\solr\\foo"));
     assertThrows(
         "Path C:\\tmp should not be allowed",
         SolrException.class,
         () -> {
-          cc.assertPathAllowed(Paths.get("C:\\tmp"));
+          cc.assertPathAllowed(Path.of("C:\\tmp"));
         });
     cc.shutdown();
     System.clearProperty("solr.allowPaths");

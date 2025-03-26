@@ -18,7 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
@@ -65,7 +65,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
 
     final CoreContainer cores = h.getCoreContainer();
-    cores.getAllowPaths().add(Paths.get(location));
+    cores.getAllowPaths().add(Path.of(location));
     try (final CoreAdminHandler admin = new CoreAdminHandler(cores)) {
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody(

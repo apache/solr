@@ -17,7 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.File;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Date;
 import org.apache.lucene.index.IndexableField;
@@ -36,7 +36,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    SolrConfig config = new SolrConfig(Paths.get(testInstanceDir), testConfHome + "solrconfig.xml");
+    SolrConfig config = new SolrConfig(Path.of(testInstanceDir), testConfHome + "solrconfig.xml");
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema.xml", config);
     f = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) ? new DatePointField() : new TrieDateField();
     f.init(schema, Collections.<String, String>emptyMap());

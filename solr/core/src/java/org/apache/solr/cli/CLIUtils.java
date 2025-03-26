@@ -26,7 +26,6 @@ import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -343,7 +342,7 @@ public final class CLIUtils {
   }
 
   public static Path getConfigSetsDir(Path solrInstallDir) {
-    Path configSetsPath = Paths.get("server/solr/configsets/");
+    Path configSetsPath = Path.of("server/solr/configsets/");
     return solrInstallDir.resolve(configSetsPath);
   }
 

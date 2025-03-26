@@ -35,7 +35,6 @@ import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1597,7 +1596,7 @@ public class CoreContainer {
 
       // Validate paths are relative to known locations to avoid path traversal
       assertPathAllowed(cd.getInstanceDir());
-      assertPathAllowed(Paths.get(cd.getDataDir()));
+      assertPathAllowed(Path.of(cd.getDataDir()));
 
       boolean preExistingZkEntry = false;
       try {

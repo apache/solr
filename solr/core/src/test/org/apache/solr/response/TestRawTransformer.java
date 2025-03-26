@@ -19,7 +19,6 @@ package org.apache.solr.response;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -105,7 +104,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
 
   private static void initCloud() throws Exception {
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Path.of(TEST_HOME(), "collection1", "conf");
 
     final int numNodes = 3;
     MiniSolrCloudCluster cloud =

@@ -18,7 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,7 +92,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     final int nodeCount = numShards * numReplicas;
 
     configureCluster(nodeCount)
-        .addConfig(CONF, Paths.get(TEST_HOME(), "collection1", "conf"))
+        .addConfig(CONF, Path.of(TEST_HOME(), "collection1", "conf"))
         .configure();
 
     assertEquals(

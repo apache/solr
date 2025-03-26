@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -118,7 +117,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
   @Test
   public void testDownconfig() throws Exception {
     Path tmp =
-        Paths.get(createTempDir("downConfigNewPlace").toAbsolutePath().toString(), "myconfset");
+        Path.of(createTempDir("downConfigNewPlace").toAbsolutePath().toString(), "myconfset");
 
     // First we need a configset on ZK to bring down.
 
@@ -142,11 +141,11 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     int res = CLITestHelper.runTool(args, ConfigSetDownloadTool.class);
     assertEquals("Download should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(
-        Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
+        Path.of(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
 
     // Ensure that empty files don't become directories (SOLR-11198)
 
-    Path emptyFile = Paths.get(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path emptyFile = Path.of(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
     Files.createFile(emptyFile);
 
     // Now copy it up and back and insure it's still a file in the new place
@@ -166,9 +165,9 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, ConfigSetDownloadTool.class);
     assertEquals("Download should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(
-        Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig2");
+        Path.of(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig2");
     // And insure the empty file is a text file
-    Path destEmpty = Paths.get(tmp2.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path destEmpty = Path.of(tmp2.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
     assertTrue("Empty files should NOT be copied down as directories", destEmpty.toFile().isFile());
   }
 
@@ -272,7 +271,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should nave created intermediate directory locally.", 0, res);
     assertTrue(
         "File should have been copied to a directory successfully",
-        Files.exists(Paths.get(localSlash, "schema.xml")));
+        Files.exists(Path.of(localSlash, "schema.xml")));
 
     // copy to ZK ending in '/'.
     // src and cp3 are valid
@@ -317,7 +316,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     res = CLITestHelper.runTool(args, ZkCpTool.class);
     assertEquals("Copy to local named file should have succeeded.", 0, res);
-    Path locPath = Paths.get(localNamed);
+    Path locPath = Path.of(localNamed);
     assertTrue("Should have found file: " + localNamed, Files.exists(locPath));
     assertTrue("Should be an individual file", Files.isRegularFile(locPath));
     assertTrue("File should have some data", Files.size(locPath) > 100);
@@ -356,7 +355,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // Check for an intermediate ZNODE having content. You know cp7/stopwords is a parent node.
     tmp = createTempDir("dirdata");
-    Path file = Paths.get(tmp.toAbsolutePath().toString(), "zknode.data");
+    Path file = Path.of(tmp.toAbsolutePath().toString(), "zknode.data");
     List<String> lines = new ArrayList<>();
     lines.add("{Some Arbitrary Data}");
     Files.write(file, lines, StandardCharsets.UTF_8);
@@ -386,7 +385,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Next, copy cp7 down and verify that zknode.data exists for cp7
-    Path zData = Paths.get(tmp.toAbsolutePath().toString(), "conf/stopwords/zknode.data");
+    Path zData = Path.of(tmp.toAbsolutePath().toString(), "conf/stopwords/zknode.data");
     assertTrue("znode.data should have been copied down", zData.toFile().exists());
 
     // Finally, copy up to cp8 and verify that the data is up there.
@@ -404,7 +403,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
     // Copy an individual empty file up and back down and insure it's still a file
-    Path emptyFile = Paths.get(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path emptyFile = Path.of(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
     Files.createFile(emptyFile);
 
     args =
@@ -420,7 +419,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path tmp2 = createTempDir("cp9");
-    Path emptyDest = Paths.get(tmp2.toAbsolutePath().toString(), "emptyfile");
+    Path emptyDest = Path.of(tmp2.toAbsolutePath().toString(), "emptyfile");
     args =
         new String[] {
           "cp",
@@ -458,7 +457,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, ZkCpTool.class);
     assertEquals("Copy should have succeeded.", 0, res);
 
-    Path locEmpty = Paths.get(tmp2.toAbsolutePath().toString(), "stopwords", "emptyfile");
+    Path locEmpty = Path.of(tmp2.toAbsolutePath().toString(), "stopwords", "emptyfile");
     assertTrue("Empty files should NOT be copied down as directories", locEmpty.toFile().isFile());
   }
 
@@ -672,7 +671,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
       }
       if (isEphemeral(zkRoot + child)) continue;
 
-      Path thisPath = Paths.get(fileRoot.toAbsolutePath().toString(), child);
+      Path thisPath = Path.of(fileRoot.toAbsolutePath().toString(), child);
       assertTrue(
           "Znode " + child + " should have been found on disk at " + fileRoot.toAbsolutePath(),
           Files.exists(thisPath));
