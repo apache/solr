@@ -136,7 +136,14 @@ public class DocumentObjectBinder {
   }
 
   private List<DocField> getDocFields(Class<?> clazz) {
-    return infoCache.computeIfAbsent(clazz, this::collectInfo);
+    // can't use computeIfAbsent because collectInfo may recursively call getDocFields
+    List<DocField> fields = infoCache.get(clazz);
+    if (fields == null) {
+      synchronized (infoCache) {
+        infoCache.put(clazz, fields = collectInfo(clazz));
+      }
+    }
+    return fields;
   }
 
   @SuppressWarnings("removal")
