@@ -131,6 +131,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
 
+  static final String DESTINATION_IDLE_TIMEOUT = "destinationIdleTimeout";
+
   /** Get {@link ShardHandler} that uses the default http client. */
   @Override
   public ShardHandler getShardHandler() {
@@ -313,6 +315,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     int soTimeout =
         getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
 
+    Long destinationIdleTimeout = getParameter(args, DESTINATION_IDLE_TIMEOUT, null, sb);
     this.defaultClient =
         new Http2SolrClient.Builder()
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
@@ -320,6 +323,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
             .withListenerFactory(List.of(this.httpListenerFactory, this.delayedReqLogger))
+            .withDestinationIdleTimeout(destinationIdleTimeout)
             .build();
     this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient, new String[0]).build();
 
