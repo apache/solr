@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -29,12 +28,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 /** Supports linking a configset to a collection */
 public class LinkConfigTool extends ToolBase {
 
-  public LinkConfigTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public LinkConfigTool(PrintStream stdout) {
-    super(stdout);
+  public LinkConfigTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

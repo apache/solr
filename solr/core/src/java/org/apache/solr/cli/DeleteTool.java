@@ -19,7 +19,6 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.List;
@@ -50,12 +49,8 @@ import org.slf4j.LoggerFactory;
 public class DeleteTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public DeleteTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public DeleteTool(PrintStream stdout) {
-    super(stdout);
+  public DeleteTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

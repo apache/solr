@@ -30,7 +30,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -88,6 +87,11 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
 public class ExportTool extends ToolBase {
+
+  public ExportTool(ToolRuntime runtime) {
+    super(runtime);
+  }
+
   @Override
   public String getName() {
     return "export";
@@ -145,6 +149,8 @@ public class ExportTool extends ToolBase {
   }
 
   public abstract static class Info {
+    final ToolRuntime runtime;
+
     String baseurl;
     String format;
     boolean compress;
@@ -155,12 +161,12 @@ public class ExportTool extends ToolBase {
     long limit = 100;
     AtomicLong docsWritten = new AtomicLong(0);
     int bufferSize = 1024 * 1024;
-    PrintStream output;
     String uniqueKey;
     CloudSolrClient solrClient;
     DocsSink sink;
 
-    public Info(String url) {
+    public Info(ToolRuntime runtime, String url) {
+      this.runtime = runtime;
       setUrl(url);
       setOutFormat(null, "jsonl", false);
     }
@@ -263,13 +269,12 @@ public class ExportTool extends ToolBase {
       // Swap to required Option when --solr-collection-url removed.
       throw new IllegalArgumentException("Must specify --solr-url.");
     }
-    Info info = new MultiThreadedRunner(url);
+    Info info = new MultiThreadedRunner(runtime, url);
     info.query = cli.getOptionValue("query", "*:*");
     info.setOutFormat(
         cli.getOptionValue("out"), cli.getOptionValue("format"), cli.hasOption("compress"));
     info.fields = cli.getOptionValue("fields");
     info.setLimit(cli.getOptionValue("limit", "100"));
-    info.output = super.stdout;
     info.exportDocs();
   }
 
@@ -520,8 +525,8 @@ public class ExportTool extends ToolBase {
     private final long startTime;
 
     @SuppressForbidden(reason = "Need to print out time")
-    public MultiThreadedRunner(String url) {
-      super(url);
+    public MultiThreadedRunner(ToolRuntime runtime, String url) {
+      super(runtime, url);
       startTime = System.currentTimeMillis();
     }
 
@@ -544,9 +549,7 @@ public class ExportTool extends ToolBase {
       try {
         addConsumer(consumerlatch);
         addProducers(m);
-        if (output != null) {
-          output.println("Number of shards : " + corehandlers.size());
-        }
+        runtime.println("Number of shards : " + corehandlers.size());
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
         corehandlers.forEach(
             (s, coreHandler) ->
@@ -555,7 +558,7 @@ public class ExportTool extends ToolBase {
                       try {
                         coreHandler.exportDocsFromCore();
                       } catch (Exception e) {
-                        if (output != null) output.println("Error exporting docs from : " + s);
+                        runtime.println("Error exporting docs from : " + s);
                       }
                       producerLatch.countDown();
                     }));
@@ -603,7 +606,7 @@ public class ExportTool extends ToolBase {
               try {
                 doc = queue.poll(30, TimeUnit.SECONDS);
               } catch (InterruptedException e) {
-                if (output != null) output.println("Consumer interrupted");
+                runtime.println("Consumer interrupted");
                 failed = true;
                 break;
               }
@@ -614,7 +617,7 @@ public class ExportTool extends ToolBase {
                 }
                 sink.accept(doc);
               } catch (Exception e) {
-                if (output != null) output.println("Failed to write to file " + e.getMessage());
+                runtime.println("Failed to write to file " + e.getMessage());
                 failed = true;
               }
             }
@@ -650,7 +653,7 @@ public class ExportTool extends ToolBase {
                   receivedDocs.incrementAndGet();
                 } catch (InterruptedException e) {
                   failed = true;
-                  if (output != null) output.println("Failed to write docs from" + e.getMessage());
+                  runtime.println("Failed to write docs from" + e.getMessage());
                 }
               };
           StreamingBinaryResponseParser responseParser =
@@ -665,32 +668,27 @@ public class ExportTool extends ToolBase {
               NamedList<Object> rsp = client.request(request, replica.getCoreName());
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
-                if (output != null) {
-                  output.println(
-                      StrUtils.formatString(
-                          "\nExport complete from shard {0}, core {1}, docs received: {2}",
-                          replica.getShard(), replica.getCoreName(), receivedDocs.get()));
-                }
+                runtime.println(
+                    StrUtils.formatString(
+                        "\nExport complete from shard {0}, core {1}, docs received: {2}",
+                        replica.getShard(), replica.getCoreName(), receivedDocs.get()));
                 if (expectedDocs != receivedDocs.get()) {
-                  if (output != null) {
-                    output.println(
-                        StrUtils.formatString(
-                            "Could not download all docs from core {0}, docs expected: {1}, received: {2}",
-                            replica.getCoreName(), expectedDocs, receivedDocs.get()));
-                    return false;
-                  }
+                  runtime.println(
+                      StrUtils.formatString(
+                          "Could not download all docs from core {0}, docs expected: {1}, received: {2}",
+                          replica.getCoreName(), expectedDocs, receivedDocs.get()));
+                  return false;
                 }
                 return true;
               }
               cursorMark = nextCursorMark;
-              if (output != null) output.print(".");
+              runtime.print(".");
             } catch (SolrServerException e) {
-              if (output != null)
-                output.println(
-                    "Error reading from server "
-                        + replica.getBaseUrl()
-                        + "/"
-                        + replica.getCoreName());
+              runtime.println(
+                  "Error reading from server "
+                      + replica.getBaseUrl()
+                      + "/"
+                      + replica.getCoreName());
               failed = true;
               return false;
             }

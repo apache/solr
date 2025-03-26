@@ -494,7 +494,9 @@ public class TestDocTermOrds extends SolrTestCase {
 
   public void testNumericEncoded32() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriterConfig iwconfig = newIndexWriterConfig(null);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwconfig);
 
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
@@ -536,7 +538,9 @@ public class TestDocTermOrds extends SolrTestCase {
 
   public void testNumericEncoded64() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriterConfig iwconfig = newIndexWriterConfig(null);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwconfig);
 
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", 5, Field.Store.NO));

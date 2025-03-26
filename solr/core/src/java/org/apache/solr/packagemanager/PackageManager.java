@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -74,6 +75,7 @@ import org.slf4j.LoggerFactory;
 /** Handles most of the management of packages that are already installed in Solr. */
 public class PackageManager implements Closeable {
 
+  final ToolRuntime runtime;
   final String solrUrl;
   final SolrClient solrClient;
   final SolrZkClient zkClient;
@@ -82,7 +84,8 @@ public class PackageManager implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public PackageManager(SolrClient solrClient, String solrUrl, String zkHost) {
+  public PackageManager(ToolRuntime runtime, SolrClient solrClient, String solrUrl, String zkHost) {
+    this.runtime = runtime;
     this.solrUrl = solrUrl;
     this.solrClient = solrClient;
     this.zkClient =
@@ -110,7 +113,7 @@ public class PackageManager implements Closeable {
               + ":"
               + version
               + " doesn't exist. Use the install command to install this package version first.");
-      System.exit(1);
+      runtime.exit(1);
     }
 
     // Make sure that this package instance is not deployed on any collection
@@ -123,7 +126,7 @@ public class PackageManager implements Closeable {
                 + " is currently deployed on collection: "
                 + collection
                 + ". Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
-        System.exit(1);
+        runtime.exit(1);
       }
     }
 
@@ -140,7 +143,7 @@ public class PackageManager implements Closeable {
                 + "is currently deployed as a cluster-level plugin ("
                 + clusterPackageInstance.getCustomData()
                 + "). Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before uninstalling the package.");
-        System.exit(1);
+        runtime.exit(1);
       }
     }
 
@@ -931,7 +934,7 @@ public class PackageManager implements Closeable {
               + ":"
               + version
               + ". Use install command to install this version first.");
-      System.exit(1);
+      runtime.exit(1);
     }
 
     Manifest manifest = packageInstance.manifest;
@@ -941,7 +944,7 @@ public class PackageManager implements Closeable {
               + SolrVersion.LATEST
               + ", package version constraint: "
               + manifest.versionConstraint);
-      System.exit(1);
+      runtime.exit(1);
     }
 
     boolean res =

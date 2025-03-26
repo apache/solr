@@ -52,8 +52,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides a field type to support Lucene's {@link org.apache.lucene.document.KnnVectorField}. See
- * {@link org.apache.lucene.search.KnnVectorQuery} for more details. It supports a fixed cardinality
+ * Provides a field type to support Lucene's {@link org.apache.lucene.document.KnnByteVectorField}
+ * and {@link org.apache.lucene.document.KnnFloatVectorField}. See {@link
+ * org.apache.lucene.search.KnnByteVectorQuery} and {@link
+ * org.apache.lucene.search.KnnFloatVectorQuery} for more details. It supports a fixed cardinality
  * dimension for the vector and a fixed similarity function. The default similarity is
  * EUCLIDEAN_HNSW (L2). The default algorithm is HNSW. For Lucene 9.1 e.g. See {@link
  * org.apache.lucene.util.hnsw.HnswGraph} for more details about the implementation. <br>

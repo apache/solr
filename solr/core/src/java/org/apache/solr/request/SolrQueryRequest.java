@@ -194,6 +194,10 @@ public interface SolrQueryRequest extends AutoCloseable {
     return core == null ? null : core.getCoreContainer();
   }
 
+  /**
+   * @deprecated use getCore().getCoreDescriptor().getCloudDescriptor()
+   */
+  @Deprecated
   default CloudDescriptor getCloudDescriptor() {
     return getCore().getCoreDescriptor().getCloudDescriptor();
   }

@@ -57,6 +57,7 @@ import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
@@ -101,6 +102,18 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
               .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
               .build();
       req.process(cluster.getSolrClient());
+      // Wait until we see this locally, this is important for tests to make sure they don't start
+      // without a clean coreContainer
+      RetryUtil.retryUntil(
+          "PlacementPluginFactory not removed in coreContainer within 1 second after removal API call",
+          1000,
+          1,
+          TimeUnit.MILLISECONDS,
+          () -> {
+            DelegatingPlacementPluginFactory pluginFactory =
+                (DelegatingPlacementPluginFactory) cc.getPlacementPluginFactory();
+            return pluginFactory.getDelegate() == null;
+          });
     }
   }
 

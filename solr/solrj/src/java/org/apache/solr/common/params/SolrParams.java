@@ -68,18 +68,17 @@ public abstract class SolrParams
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    // TODO don't call toNamedList; more efficiently implement here
-    // note: multiple values, if present, are a String[] under 1 key
-    toNamedList()
-        .forEach(
-            (k, v) -> {
-              if (v == null || "".equals(v)) return;
-              try {
-                ew.put(k, v);
-              } catch (IOException e) {
-                throw new RuntimeException("Error serializing", e);
-              }
-            });
+    for (Map.Entry<String, String[]> entry : this) {
+      String[] value = entry.getValue();
+      // if only one value, don't wrap in an array
+      if (value.length == 1) {
+        assert value[0] != null;
+        ew.put(entry.getKey(), value[0]);
+      } else if (value.length > 1) {
+        // values shouldn't be null; not bothering to assert it
+        ew.put(entry.getKey(), value);
+      }
+    }
   }
 
   /** Returns an Iterator of {@code Map.Entry} providing a multi-map view. Treat it as read-only. */
@@ -433,7 +432,10 @@ public abstract class SolrParams
   /**
    * Convert this to a NamedList of unique keys with either String or String[] values depending on
    * how many values there are for the parameter.
+   *
+   * @deprecated see {@link SimpleOrderedMap#SimpleOrderedMap(MapWriter)}
    */
+  @Deprecated
   public NamedList<Object> toNamedList() {
     final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
 

@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -66,7 +67,12 @@ public class StartSolrJetty {
       server.join();
     } catch (Exception e) {
       log.error("failed to start", e);
-      System.exit(100);
+      exit(100);
     }
+  }
+
+  @SuppressForbidden(reason = "This is a CLI tool, allow to exit the JVM")
+  private static void exit(int status) {
+    System.exit(status);
   }
 }

@@ -20,6 +20,7 @@ package org.apache.solr.update.processor;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class OpenNLPLangDetectUpdateProcessorFactoryTest
     }
     SolrQueryRequest req = _parser.buildRequestFrom(h.getCore(), new ModifiableSolrParams(), null);
     OpenNLPLangDetectUpdateProcessorFactory factory = new OpenNLPLangDetectUpdateProcessorFactory();
-    factory.init(parameters.toNamedList());
+    factory.init(new SimpleOrderedMap<>(parameters));
     factory.inform(h.getCore());
     return (OpenNLPLangDetectUpdateProcessor) factory.getInstance(req, resp, null);
   }

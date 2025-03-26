@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated // see NavigableMap.wrap.  May keep but use package scope.
 public class MapWriterMap implements MapWriter {
   private final Map<String, Object> delegate;
 

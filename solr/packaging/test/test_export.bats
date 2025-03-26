@@ -66,5 +66,4 @@ teardown() {
   run solr create_core -c COLL_NAME
   run solr export -url "http://localhost:${SOLR_PORT}/solr/COLL_NAME"
   refute_output --partial 'Export complete'
-  assert_output --partial "ERROR: Couldn't initialize a HttpClusterStateProvider"
 }

@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.util;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -115,6 +114,8 @@ public class ClientUtils {
     final var v2Root = SolrRequest.ApiVersion.V2.getApiPrefix();
     if (existingPath.contains(v1Root)) {
       return existingPath.replaceFirst(v1Root, v2Root);
+    } else if (existingPath.endsWith("/api")) {
+      return existingPath;
     } else if (!existingPath.contains(v2Root)) {
       return existingPath + v2Root;
     } else {
@@ -208,15 +209,6 @@ public class ClientUtils {
         XML.writeXML(writer, "field", valWriter, "name", name, "update", update);
       }
     }
-  }
-
-  public static String toXML(SolrInputDocument doc) {
-    StringWriter str = new StringWriter();
-    try {
-      writeXML(doc, str);
-    } catch (Exception ex) {
-    }
-    return str.toString();
   }
 
   // ---------------------------------------------------------------------------------------

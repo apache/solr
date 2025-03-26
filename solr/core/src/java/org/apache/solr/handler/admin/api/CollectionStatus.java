@@ -89,8 +89,8 @@ public class CollectionStatus extends AdminAPIBase implements CollectionStatusAp
       CoreContainer coreContainer, ZkNodeProps params, NamedList<Object> colStatusSink) {
     final var colStatusAssembler =
         new ColStatus(
-            coreContainer.getSolrClientCache(),
-            coreContainer.getZkController().getZkStateReader().getClusterState(),
+            coreContainer.getDefaultHttpSolrClient(),
+            coreContainer.getZkController().getClusterState(),
             params);
     colStatusAssembler.getColStatus(colStatusSink);
   }

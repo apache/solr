@@ -19,8 +19,10 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.PackageTool;
 import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.LogLevel;
@@ -80,7 +82,8 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   @Test
   public void testPackageManager() throws Exception {
-    PackageTool tool = new PackageTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PackageTool tool = new PackageTool(runtime);
 
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 

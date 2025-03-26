@@ -128,7 +128,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     collection = cloudClient.getClusterState().getCollection(coll);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
-    List<Replica> replicas = collection.getReplicas(nodeToBeDecommissioned);
+    List<Replica> replicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
     if (replicas == null) {
       replicas = Collections.emptyList();
     }
@@ -163,14 +163,14 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
           s.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
     }
     // make sure all newly created replicas on node are active
-    List<Replica> newReplicas = collection.getReplicas(nodeToBeDecommissioned);
+    List<Replica> newReplicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
     replicas.forEach(r -> newReplicas.removeIf(nr -> nr.getName().equals(r.getName())));
     assertFalse(newReplicas.isEmpty());
     for (Replica r : newReplicas) {
       assertEquals(r.toString(), Replica.State.ACTIVE, r.getState());
     }
     // make sure all replicas on emptyNode are not active
-    replicas = collection.getReplicas(emptyNode);
+    replicas = collection.getReplicasOnNode(emptyNode);
     if (replicas != null) {
       for (Replica r : replicas) {
         assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
@@ -257,7 +257,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     log.info("excluded_nodes : {}  ", emptyNodes);
     List<Integer> initialReplicaCounts =
         l.stream()
-            .map(node -> initialCollection.getReplicas(node).size())
+            .map(node -> initialCollection.getReplicasOnNode(node).size())
             .collect(Collectors.toList());
     createReplaceNodeRequest(nodeToBeDecommissioned, null, true)
         .processAndWait("000", cloudClient, 15);
@@ -266,7 +266,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     assertNotNull("Collection cannot be null: " + coll, collection);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
-    List<Replica> replicas = collection.getReplicas(nodeToBeDecommissioned);
+    List<Replica> replicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
     if (replicas == null) {
       replicas = Collections.emptyList();
     }
@@ -274,8 +274,8 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         "There should be no more replicas on the sourceNode after a replaceNode request.",
         Collections.emptyList(),
         replicas);
-    int sizeA = collection.getReplicas(emptyNodes.get(0)).size();
-    int sizeB = collection.getReplicas(emptyNodes.get(1)).size();
+    int sizeA = collection.getReplicasOnNode(emptyNodes.get(0)).size();
+    int sizeB = collection.getReplicasOnNode(emptyNodes.get(1)).size();
     assertEquals(
         "The empty nodes should have a similar number of replicas placed on each", sizeA, sizeB, 1);
     assertEquals(
@@ -286,7 +286,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       assertEquals(
           "The number of replicas on non-empty and non-source nodes should not change",
           initialReplicaCounts.get(i).intValue(),
-          collection.getReplicas(l.get(i)).size());
+          collection.getReplicasOnNode(l.get(i)).size());
     }
   }
 

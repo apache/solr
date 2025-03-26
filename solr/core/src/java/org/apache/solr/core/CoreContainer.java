@@ -67,6 +67,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -743,7 +744,18 @@ public class CoreContainer {
     return caches.get(name);
   }
 
+  /**
+   * The {@link SolrClientCache} is mostly for streaming expressions. Prefer other clients for other
+   * use-cases.
+   *
+   * @see #getDefaultHttpSolrClient()
+   * @see ZkController#getSolrClient()
+   * @see Http2SolrClient#requestWithBaseUrl(String, String, SolrRequest)
+   * @deprecated likely to simply be moved to the ObjectCache so as to not be used
+   */
+  @Deprecated
   public SolrClientCache getSolrClientCache() {
+    // TODO put in the objectCache instead
     return solrClientCache;
   }
 
@@ -837,7 +849,7 @@ public class CoreContainer {
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
-    solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+    solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -1071,19 +1083,23 @@ public class CoreContainer {
           coreLoadExecutor.execute(
               () -> {
                 SolrCore core;
+                boolean pendingCoreOpAdded = false;
                 try {
                   if (zkSys.getZkController() != null) {
                     zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
                   }
                   MDCLoggingContext.setCoreDescriptor(this, cd);
                   solrCores.waitAddPendingCoreOps(cd.getName());
+                  pendingCoreOpAdded = true;
                   core = createFromDescriptor(cd, false, false);
                 } catch (Exception e) {
                   log.error("SolrCore failed to load on startup", e);
                   MDCLoggingContext.clear();
                   return;
                 } finally {
-                  solrCores.removeFromPendingOps(cd.getName());
+                  if (pendingCoreOpAdded) {
+                    solrCores.removeFromPendingOps(cd.getName());
+                  }
                   if (asyncSolrCoreLoad) {
                     solrCores.markCoreAsNotLoading(cd);
                   }
@@ -1169,6 +1185,7 @@ public class CoreContainer {
                 protected void configure() {
                   bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
                       .to(DistribFileStore.class)
+                      .to(FileStore.class)
                       .in(Singleton.class);
                 }
               })
@@ -1606,8 +1623,8 @@ public class CoreContainer {
         coresLocator.create(this, cd);
 
         SolrCore core;
+        solrCores.waitAddPendingCoreOps(cd.getName());
         try {
-          solrCores.waitAddPendingCoreOps(cd.getName());
           core = createFromDescriptor(cd, true, newCollection);
           // Write out the current core properties in case anything changed when the core was
           // created
@@ -1769,7 +1786,9 @@ public class CoreContainer {
             (deleteUnknownCores
                 ? " It will be deleted. See SOLR-13396 for more information."
                 : ""));
-        unload(dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
+        // We alreday have an ongoing CoreOp, so do not wait to start another one
+        unloadWithoutCoreOp(
+            dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
         throw e;
       }
       solrCores.removeCoreDescriptor(dcore);
@@ -2041,8 +2060,8 @@ public class CoreContainer {
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
       boolean success = false;
+      solrCores.waitAddPendingCoreOps(cd.getName());
       try {
-        solrCores.waitAddPendingCoreOps(cd.getName());
         ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
         if (log.isInfoEnabled()) {
           log.info(
@@ -2101,8 +2120,8 @@ public class CoreContainer {
       if (coreId != null) return; // yeah, this core is already reloaded/unloaded return right away
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
+        solrCores.waitAddPendingCoreOps(clf.cd.getName());
         try {
-          solrCores.waitAddPendingCoreOps(clf.cd.getName());
           createFromDescriptor(clf.cd, true, false);
         } finally {
           solrCores.removeFromPendingOps(clf.cd.getName());
@@ -2145,7 +2164,22 @@ public class CoreContainer {
    */
   public void unload(
       String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
+    solrCores.waitAddPendingCoreOps(name);
+    try {
+      unloadWithoutCoreOp(name, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+    } finally {
+      solrCores.removeFromPendingOps(name);
+    }
+  }
 
+  /**
+   * This is the actual logic of unloading a core, but does not obtain a lock on the core for the
+   * operation. This method should only be used internally when "unloading" is required within
+   * another core operation. Otherwise, use the public {@link #unload(String, boolean, boolean,
+   * boolean)} method, which will obtain a core operation lock.
+   */
+  private void unloadWithoutCoreOp(
+      String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
 
     if (name != null) {
@@ -2556,12 +2590,12 @@ public class CoreContainer {
   }
 
   /**
-   * Provides the existing general-purpose HTTP/2 Solr client from {@link HttpSolrClientProvider}.
+   * A general-purpose HTTP/2 Solr client.
    *
-   * <p>The caller does not need to close the client, as its lifecycle is managed by {@link
-   * HttpSolrClientProvider}.
+   * <p>The caller does not need to close the client.
    *
    * @return the existing {@link Http2SolrClient}
+   * @see Http2SolrClient#requestWithBaseUrl(String, String, SolrRequest)
    */
   public Http2SolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();

@@ -49,6 +49,7 @@ configure(project(":solr:documentation")) {
     javadocs group: 'org.apache.lucene', name: 'lucene-analysis-common', classifier: 'javadoc'
     javadocs group: 'org.apache.lucene', name: 'lucene-analysis-stempel', classifier: 'javadoc'
     javadocs group: 'org.apache.lucene', name: 'lucene-queryparser', classifier: 'javadoc'
+    javadocs group: 'org.apache.lucene', name: 'lucene-queries', classifier: 'javadoc'
     javadocs group: 'org.apache.lucene', name: 'lucene-spatial-extras', classifier: 'javadoc'
   }
 

@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -160,12 +159,8 @@ public class PostTool extends ToolBase {
     mimeMap.put("log", "text/plain");
   }
 
-  public PostTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public PostTool(PrintStream stdout) {
-    super(stdout);
+  public PostTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

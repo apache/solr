@@ -181,8 +181,10 @@ A single delete message can contain multiple delete operations.
 [IMPORTANT]
 ====
 
-When using the Join query parser in a Delete By Query, you should use the `score` parameter with a value of "none" to avoid a `ClassCastException`.
-See the section on the xref:query-guide:join-query-parser.adoc[] for more details on the `score` parameter.
+Some queries, including many `{!join}` and `{!graph}` queries, are not supported in delete operations and will return a 400 error.
+
+Users interested in using the Join query parser in a Delete By Query may do so by specifying a `score` parameter with the value "none" (and ensuring no `method` parameter is provided).
+See the section on the xref:query-guide:join-query-parser.adoc[] for more details on the `score` parameter and its usage.
 
 ====
 

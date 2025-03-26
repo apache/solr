@@ -39,7 +39,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -76,7 +75,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -519,12 +517,8 @@ public class Utils {
             o = idx < l.size() ? l.get(idx) : null;
           } else if (o instanceof IteratorWriter) {
             o = getValueAt((IteratorWriter) o, idx);
-          } else if (o instanceof MapWriter) {
+          } else if (o instanceof MapWriter || o instanceof Map<?, ?>) {
             o = getVal(o, null, idx);
-          } else if (o instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = (Map<String, Object>) o;
-            o = getVal(new MapWriterMap(map), null, idx);
           } else {
             return null;
           }
@@ -590,11 +584,23 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
-  private static Object getVal(Object obj, String key, int idx) {
-    if (obj instanceof MapWriter) {
+  /** Extract either the key or index from mapLike. */
+  private static Object getVal(Object mapLike, String key, int idx) {
+    assert (key == null && idx >= 0) || (key != null && idx == -1);
+    if (mapLike instanceof Map<?, ?>) {
+      var m = (Map<?, ?>) mapLike;
+      if (key != null) {
+        return m.get(key);
+      } else {
+        var optEntry = m.entrySet().stream().skip(idx).findFirst();
+        return optEntry
+            .map(entry -> new MapWriterEntry<>(entry.getKey().toString(), entry.getValue()))
+            .orElse(null);
+      }
+    } else if (mapLike instanceof MapWriter) {
       Object[] result = new Object[1];
       try {
-        ((MapWriter) obj)
+        ((MapWriter) mapLike)
             .writeMap(
                 new MapWriter.EntryWriter() {
                   int count = -1;
@@ -614,8 +620,7 @@ public class Utils {
         throw new RuntimeException(e);
       }
       return result[0];
-    } else if (obj instanceof Map) return ((Map<?, ?>) obj).get(key);
-    else throw new RuntimeException("must be a NamedList or Map");
+    } else throw new RuntimeException("must be a NamedList or Map");
   }
 
   /**
@@ -739,9 +744,11 @@ public class Utils {
    * @param urlScheme scheme for the base url ('http' or 'https')
    * @return url that looks like {@code https://app-node-1:8983/solr}
    * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String)}
    */
+  @Deprecated
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
-    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
   /**
@@ -754,23 +761,12 @@ public class Utils {
    * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
    *     https://app-node-1:8983/solr} (V1)
    * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String, boolean)}
    */
+  @Deprecated
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
-    final int colonAt = nodeName.indexOf(':');
-    if (colonAt == -1) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected ':' separator: " + nodeName);
-    }
-
-    final int _offset = nodeName.indexOf('_', colonAt);
-    if (_offset < 0) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected '_' separator: " + nodeName);
-    }
-    final String hostAndPort = nodeName.substring(0, _offset);
-    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, isV2);
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {

@@ -17,6 +17,8 @@
 package org.apache.solr.client.api.endpoint;
 
 import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
+import static org.apache.solr.client.api.util.Constants.OMIT_FROM_CODEGEN_PROPERTY;
+import static org.apache.solr.client.api.util.Constants.RAW_OUTPUT_PROPERTY;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,23 +26,26 @@ import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import java.io.InputStream;
 import java.util.List;
+import org.apache.solr.client.api.model.FileStoreDirectoryListingResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 
 @Path("/cluster")
 public interface ClusterFileStoreApis {
-  // TODO Better understand the purpose of the 'sig' parameter and improve docs here.
+
   @PUT
   @Operation(
       summary = "Upload a file to the filestore.",
       tags = {"file-store"})
-  @Path("/files{filePath:.+}")
+  @Path("/filestore/files{filePath:.+}")
   UploadToFileStoreResponse uploadFile(
       @Parameter(description = "File store path") @PathParam("filePath") String filePath,
       @Parameter(description = "Signature(s) for the file being uploaded") @QueryParam("sig")
@@ -60,8 +65,105 @@ public interface ClusterFileStoreApis {
   @Operation(
       summary = "Delete a file or directory from the filestore.",
       tags = {"file-store"})
-  @Path("/files{path:.+}")
+  @Path("/filestore/files{path:.+}")
   SolrJerseyResponse deleteFile(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("path")
+          String path,
+      @Parameter(
+              description =
+                  "Indicates whether the deletion should only be done on the receiving node.  For internal use only")
+          @QueryParam("localDelete")
+          Boolean localDelete);
+
+  @GET
+  @Operation(
+      summary = "Retrieve metadata about a file or directory in the filestore.",
+      tags = {"file-store"})
+  @Path("/filestore/metadata{path:.+}")
+  FileStoreDirectoryListingResponse getMetadata(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("path")
+          String path);
+
+  @GET
+  @Operation(
+      summary = "Retrieve raw contents of a file in the filestore.",
+      tags = {"file-store"},
+      extensions = {
+        @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})
+      })
+  @Path("/filestore/files{filePath:.+}")
+  SolrJerseyResponse getFile(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("filePath")
+          String path);
+
+  @POST
+  @Operation(
+      summary = "Fetches a filestore entry from other nodes in the cluster.",
+      tags = {"file-store"})
+  @Path("/filestore/commands/fetch{path:.+}")
+  SolrJerseyResponse fetchFile(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("path")
+          String path,
+      @Parameter(description = "An optional Solr node name to fetch the file from")
+          @QueryParam("getFrom")
+          String getFrom);
+
+  @POST
+  @Operation(
+      summary = "Syncs a file by pushing it to other nodes in the cluster.",
+      tags = {"file-store"})
+  @Path("/filestore/commands/sync{path:.+}")
+  SolrJerseyResponse syncFile(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("path")
+          String path);
+
+  ////////////////////////
+  // Deprecated API bindings for 'upload' and 'delete' APIs without the '/filestore' path segment.
+  // cf. 'uploadFile' and 'deleteFile' bindings above. Remove in 10.0
+  @PUT
+  @Operation(
+      summary = "Upload a file to the filestore.  Deprecated: Use 'uploadFile' instead",
+      tags = {"file-store"},
+      deprecated = true,
+      extensions = {
+        @Extension(
+            properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
+      })
+  @Path("/files{filePath:.+}")
+  @Deprecated
+  UploadToFileStoreResponse uploadFileDeprecated(
+      @Parameter(description = "File store path") @PathParam("filePath") String filePath,
+      @Parameter(description = "Signature(s) for the file being uploaded") @QueryParam("sig")
+          List<String> sig,
+      @Parameter(description = "File content to be stored in the filestore")
+          @RequestBody(
+              required = true,
+              extensions = {
+                @Extension(
+                    properties = {
+                      @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                    })
+              })
+          InputStream requestBody);
+
+  @DELETE
+  @Operation(
+      summary =
+          "Delete a file or directory from the filestore. Deprecated: Use 'deleteFile' instead",
+      tags = {"file-store"},
+      deprecated = true,
+      extensions = {
+        @Extension(
+            properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
+      })
+  @Path("/files{path:.+}")
+  @Deprecated
+  SolrJerseyResponse deleteFileDeprecated(
       @Parameter(description = "Path to a file or directory within the filestore")
           @PathParam("path")
           String path,

@@ -17,20 +17,15 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
 
 public abstract class ToolBase implements Tool {
 
-  protected PrintStream stdout;
+  protected final ToolRuntime runtime;
   protected boolean verbose = false;
 
-  protected ToolBase() {
-    this(CLIO.getOutStream());
-  }
-
-  protected ToolBase(PrintStream stdout) {
-    this.stdout = stdout;
+  protected ToolBase(ToolRuntime runtime) {
+    this.runtime = runtime;
   }
 
   protected void echoIfVerbose(final String msg, CommandLine cli) {
@@ -45,7 +40,12 @@ public abstract class ToolBase implements Tool {
   }
 
   protected void echo(final String msg) {
-    stdout.println(msg);
+    runtime.println(msg);
+  }
+
+  @Override
+  public ToolRuntime getRuntime() {
+    return runtime;
   }
 
   @Override

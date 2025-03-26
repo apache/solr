@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -29,12 +28,8 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 /** Supports snapshot-list command in the bin/solr script. */
 public class SnapshotListTool extends ToolBase {
 
-  public SnapshotListTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public SnapshotListTool(PrintStream stdout) {
-    super(stdout);
+  public SnapshotListTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

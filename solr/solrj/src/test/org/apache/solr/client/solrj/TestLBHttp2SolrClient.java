@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -48,6 +49,9 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.4
  */
+@LogLevel("org.apache.solr.client.solrj.impl=DEBUG")
+// SSL Currently interacts with this test in a way that makes starting the server too slow
+@SolrTestCaseJ4.SuppressSSL()
 public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -209,7 +213,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
   private void startJettyAndWaitForAliveCheckQuery(SolrInstance solrInstance) throws Exception {
     try (LogListener logListener =
-        LogListener.debug().substring(LBSolrClient.UPDATE_LIVE_SERVER_MESSAGE)) {
+        LogListener.debug(LBSolrClient.class).substring(LBSolrClient.UPDATE_LIVE_SERVER_MESSAGE)) {
       solrInstance.startJetty();
       if (logListener.pollMessage(10, TimeUnit.SECONDS) == null) {
         fail("The alive check query was not logged within 10 seconds.");

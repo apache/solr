@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -32,7 +33,7 @@ import org.junit.Test;
 public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
   private static RegexpBoostProcessor reProcessor;
   protected static SolrRequestParsers _parser;
-  protected static ModifiableSolrParams parameters;
+  protected static SimpleOrderedMap<String> config;
   private static RegexpBoostProcessorFactory factory;
   private SolrInputDocument document;
 
@@ -43,13 +44,13 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     _parser = new SolrRequestParsers(null);
     SolrQueryResponse resp = null;
-    parameters = new ModifiableSolrParams();
-    parameters.set(RegexpBoostProcessor.BOOST_FILENAME_PARAM, "regex-boost-processor-test.txt");
-    parameters.set(RegexpBoostProcessor.INPUT_FIELD_PARAM, "url");
-    parameters.set(RegexpBoostProcessor.BOOST_FIELD_PARAM, "urlboost");
+    config = new SimpleOrderedMap<>();
+    config.add(RegexpBoostProcessor.BOOST_FILENAME_PARAM, "regex-boost-processor-test.txt");
+    config.add(RegexpBoostProcessor.INPUT_FIELD_PARAM, "url");
+    config.add(RegexpBoostProcessor.BOOST_FIELD_PARAM, "urlboost");
     SolrQueryRequest req = _parser.buildRequestFrom(core, new ModifiableSolrParams(), null);
     factory = new RegexpBoostProcessorFactory();
-    factory.init(parameters.toNamedList());
+    factory.init(config);
     reProcessor = (RegexpBoostProcessor) factory.getInstance(req, resp, null);
   }
 
@@ -58,7 +59,7 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     // null static members for gc
     reProcessor = null;
     _parser = null;
-    parameters = null;
+    config = null;
     factory = null;
   }
 

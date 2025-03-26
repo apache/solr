@@ -143,7 +143,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     DocIterator iter = docList.iterator();
     while (iter.hasNext()) {
       int docId = iter.next();
-      Document doc = searcher.doc(docId);
+      Document doc = searcher.getDocFetcher().doc(docId);
       String id = doc.getField("id").stringValue();
       String name = lookupByName(doc.get("name"));
       assertEquals("looking for " + name, NAMES.indexOf(name) + "", id);

@@ -65,7 +65,7 @@ public class InactiveShardRemover
           CollectionAdminRequest.deleteShard(slice.getCollection(), slice.getName());
       try {
         SolrResponse response =
-            coreContainer.getZkController().getSolrCloudManager().request(deleteRequest);
+            deleteRequest.process(coreContainer.getZkController().getSolrClient());
         if (response.getException() != null) {
           throw response.getException();
         }

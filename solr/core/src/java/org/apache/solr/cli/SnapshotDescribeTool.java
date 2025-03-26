@@ -17,7 +17,6 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -37,12 +36,8 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 /** Supports snapshot-describe command in the bin/solr script. */
 public class SnapshotDescribeTool extends ToolBase {
 
-  public SnapshotDescribeTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public SnapshotDescribeTool(PrintStream stdout) {
-    super(stdout);
+  public SnapshotDescribeTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   private static final DateFormat dateFormat =

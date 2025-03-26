@@ -96,7 +96,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     assertQ(req("q", "101", "df", ID_FLD, "fl", ID_FLD)); // eager load ID_FLD; rest are lazy
 
     // fetch the document; we know it will be from the documentCache, docId 0
-    final Document d = h.getCore().withSearcher(searcher -> searcher.doc(0));
+    final Document d = h.getCore().withSearcher(searcher -> searcher.getDocFetcher().doc(0));
 
     assertEager(d, ID_FLD);
     assertLazyNotLoaded(d, LAZY_FIELD);

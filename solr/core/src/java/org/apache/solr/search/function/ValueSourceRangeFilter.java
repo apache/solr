@@ -116,7 +116,7 @@ public class ValueSourceRangeFilter extends Query {
           valueSource
               .getValues(vsContext, context)
               .getRangeScorer(this, context, lowerVal, upperVal, includeLower, includeUpper);
-      return new ConstantScoreScorer(this, score(), scoreMode, scorer.iterator());
+      return new ConstantScoreScorer(this, score(), scoreMode, scorer.twoPhaseIterator());
     }
 
     @Override

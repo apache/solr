@@ -62,6 +62,7 @@ The next sections describe some installation options:
 | xref:package-manager.adoc[]: Package-based plugins.
 | xref:cluster-plugins.adoc[]: Cluster-level plugins.
 | xref:replica-placement-plugins.adoc[]: Plugins specifically for replica placement.
+|
 |===
 // end::plugin-sections[]
 ****

@@ -17,6 +17,7 @@
 package org.apache.solr.hdfs.search;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.apache.solr.util.SolrMatchers.subListMatches;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
@@ -24,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -55,6 +57,9 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.hamcrest.FeatureMatcher;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -322,9 +327,18 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
-      assertJQ(
+      assertThatJQ(
           req("qt", "/get", "getVersions", "6"),
-          "=={'versions':[-2010,1030,1020,-1017,1015,1010]}");
+          "Incorrect ordering of versions during applyBufferedUpdates",
+          versionsMatch(
+              6,
+              // These do not have the same id, so they may be in any order
+              subListMatches(0, 3, Matchers.containsInAnyOrder(-2010L, 1030L, 1020L)),
+              // The deleteById will not be applied in parallel, because it contains ids from the
+              // previous adds
+              subListMatches(3, 4, Matchers.contains(-1017L)),
+              // These do not have the same id, so they may be in any order
+              subListMatches(4, 6, Matchers.containsInAnyOrder(1015L, 1010L))));
 
       assertJQ(req("q", "*:*"), "/response/numFound==2");
 
@@ -367,12 +381,22 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
           "{\"delete\": { \"query\":\"id:B2 OR id:B8\" }}",
           params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", "-3000"));
 
-      assertJQ(
+      assertThatJQ(
           req("qt", "/get", "getVersions", "13"),
-          "=={'versions':[-3000,1080,1050,1060,-940,1040,3,-2010,1030,1020,-1017,1015,1010]}" // the
-          // "3"
-          // appears because versions aren't checked while buffering
-          );
+          "Incorrect versions during buffering",
+          versionsMatch(
+              13,
+              // These buffered updates have not been applied, they should be in the exact order
+              // the "3" appears because versions aren't checked while buffering
+              subListMatches(
+                  0, 7, Matchers.contains(-3000L, 1080L, 1050L, 1060L, -940L, 1040L, 3L)),
+              // These do not have the same id, so they may be in any order
+              subListMatches(7, 10, Matchers.containsInAnyOrder(1020L, 1030L, -2010L)),
+              // The deleteById will not be applied in parallel, because it contains ids from the
+              // previous adds
+              subListMatches(10, 11, Matchers.contains(-1017L)),
+              // These do not have the same id, so they may be in any order
+              subListMatches(11, 13, Matchers.containsInAnyOrder(1015L, 1010L))));
 
       logReplay.drainPermits();
       rinfoFuture = ulog.applyBufferedUpdates();
@@ -472,7 +496,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
       assertEquals(2, rinfo.adds);
 
-      assertJQ(req("qt", "/get", "getVersions", "2"), "=={'versions':[105,104]}");
+      assertThatJQ(
+          req("qt", "/get", "getVersions", "2"),
+          "Wrong updates after applyBufferedUpdates",
+          versionsMatch(
+              2,
+              // Buffered Updates might not be in the original order
+              Matchers.containsInAnyOrder(105L, 104L)));
 
       // this time add some docs first before buffering starts (so tlog won't be at pos 0)
       updateJ(
@@ -514,7 +544,17 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
               + ",{'id':'C106','_version_':206}"
               + "]");
 
-      assertJQ(req("qt", "/get", "getVersions", "6"), "=={'versions':[206,205,201,200,105,104]}");
+      assertThatJQ(
+          req("qt", "/get", "getVersions", "6"),
+          "Incorrect versions after applyBufferedUpdates",
+          versionsMatch(
+              6,
+              // Buffered Updates might not be in the original order
+              subListMatches(0, 2, Matchers.containsInAnyOrder(206L, 205L)),
+              // These updates were not buffered
+              subListMatches(2, 4, Matchers.containsInRelativeOrder(201L, 200L)),
+              // Buffered Updates might not be in the original order
+              subListMatches(4, 6, Matchers.containsInAnyOrder(105L, 104L))));
 
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
@@ -1152,5 +1192,38 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     if (doc == null) return null;
 
     return (Long) doc.get("_version_");
+  }
+
+  @SafeVarargs
+  public static Matcher<Map<String, List<Long>>> versionsMatch(
+      int numVersions, Matcher<? super List<Long>>... versionsMatchers) {
+    return new VersionsMatcher(numVersions, versionsMatchers);
+  }
+
+  public static class VersionsMatcher extends FeatureMatcher<Map<String, List<Long>>, List<Long>> {
+
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public VersionsMatcher(int numVersions, Matcher<? super List<Long>>... subMatchers) {
+      super(
+          allOf(Matchers.hasSize(numVersions), subMatchers),
+          "a response with versions list",
+          "versions list");
+    }
+
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public static Matcher<? super List<Long>> allOf(
+        Matcher<? super List<Long>> firstMatcher, Matcher<? super List<Long>>... subMatchers) {
+      List<Matcher<? super List<Long>>> matchers = new ArrayList<>(subMatchers.length + 1);
+      matchers.add(firstMatcher);
+      matchers.addAll(Arrays.asList(subMatchers));
+      return Matchers.allOf(matchers);
+    }
+
+    @Override
+    protected List<Long> featureValueOf(Map<String, List<Long>> actual) {
+      return actual.get("versions");
+    }
   }
 }

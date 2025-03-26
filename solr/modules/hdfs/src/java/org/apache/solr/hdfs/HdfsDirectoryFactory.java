@@ -79,6 +79,10 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated The Solr HDFS Module will be removed in Solr 10 with no replacement.
+ */
+@Deprecated(since = "9.9")
 public class HdfsDirectoryFactory extends CachingDirectoryFactory
     implements SolrCoreAware, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

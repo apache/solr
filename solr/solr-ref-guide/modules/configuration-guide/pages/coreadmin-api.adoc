@@ -120,7 +120,7 @@ V1 API::
 Assuming you are using an existing configSet to create your new core:
 [source,bash]
 ----
-http://localhost:8983/solr/admin/cores?action=CREATE&&name=techproducts_v2&configSet=sample_techproducts_configs
+http://localhost:8983/solr/admin/cores?action=CREATE&name=techproducts_v2&configSet=sample_techproducts_configs
 
 ----
 

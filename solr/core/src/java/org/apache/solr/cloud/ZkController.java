@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
@@ -97,6 +98,7 @@ import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Compressor;
@@ -204,9 +206,6 @@ public class ZkController implements Closeable {
   private final SolrZkClient zkClient;
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
-
-  // only for internal usage
-  private Http2SolrClient http2SolrClient;
 
   private CloudHttp2SolrClient cloudSolrClient;
 
@@ -592,6 +591,10 @@ public class ZkController implements Closeable {
     }
   }
 
+  public CloudSolrClient getSolrClient() {
+    return getSolrCloudManager().getSolrClient();
+  }
+
   public int getLeaderVoteWait() {
     return leaderVoteWait;
   }
@@ -759,7 +762,6 @@ public class ZkController implements Closeable {
       sysPropsCacher.close();
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
-      customThreadPool.execute(() -> IOUtils.closeQuietly(http2SolrClient));
 
       try {
         try {
@@ -855,18 +857,11 @@ public class ZkController implements Closeable {
       if (cloudManager != null) {
         return cloudManager;
       }
-      http2SolrClient =
-          new Http2SolrClient.Builder()
-              .withHttpClient(cc.getDefaultHttpSolrClient())
-              .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
-              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-              .build();
       cloudSolrClient =
           new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-              .withHttpClient(http2SolrClient)
+              .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
-      cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
   }
@@ -1110,7 +1105,7 @@ public class ZkController implements Closeable {
           (collectionState) -> {
             if (collectionState == null) return false;
             boolean allStatesCorrect =
-                Optional.ofNullable(collectionState.getReplicas(nodeName)).stream()
+                Optional.ofNullable(collectionState.getReplicasOnNode(nodeName)).stream()
                     .flatMap(List::stream)
                     .allMatch(replica -> replica.getState() == Replica.State.DOWN);
 
@@ -1312,15 +1307,21 @@ public class ZkController implements Closeable {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
 
-      // in this case, we want to wait for the leader as long as the leader might
-      // wait for a vote, at least - but also long enough that a large cluster has
-      // time to get its act together
-      String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
+      final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
-      String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-      log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
-      boolean isLeader = leaderUrl.equals(ourUrl);
-      assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
+      // Check if we are the (new) leader before deciding if/what type of recovery to do
+      boolean isLeader = false;
+      if (replica.getType().leaderEligible) {
+        // if are eligible to be a leader, then we might currently be participating in leader
+        // election.
+
+        // in this case, we want to wait for the leader as long as the leader might
+        // wait for a vote, at least - but also long enough that a large cluster has
+        // time to get its act together
+        String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
+        log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
+        isLeader = leaderUrl.equals(ourUrl);
+      }
 
       try (SolrCore core = cc.getCore(desc.getName())) {
 
@@ -1364,6 +1365,13 @@ public class ZkController implements Closeable {
             }
           }
         }
+
+        // If we don't already have a reason to skipRecovery, check if we should skip
+        // due to replica property
+        if (!skipRecovery) {
+          skipRecovery = checkSkipRecoveryReplicaProp(core, replica);
+        }
+
         boolean didRecovery =
             checkRecovery(
                 recoverReloadedCores,
@@ -1404,6 +1412,62 @@ public class ZkController implements Closeable {
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+
+  static final String SKIP_LEADER_RECOVERY_PROP = "skipLeaderRecovery";
+
+  /**
+   * Note: internally, property names are always lowercase
+   *
+   * @see #SKIP_LEADER_RECOVERY_PROP
+   */
+  static final String SKIP_LEADER_RECOVERY_PROP_KEY =
+      CollectionAdminParams.PROPERTY_PREFIX + SKIP_LEADER_RECOVERY_PROP.toLowerCase(Locale.ROOT);
+
+  /**
+   * Returns true if and only if this replica has a replica property indicating that leader recovery
+   * should be skipped <em>AND</em> the replica meets the neccessary criteria to respect that
+   * property.
+   *
+   * @see #SKIP_LEADER_RECOVERY_PROP_KEY
+   */
+  private boolean checkSkipRecoveryReplicaProp(final SolrCore core, final Replica replica) {
+
+    if (!replica.getBool(SKIP_LEADER_RECOVERY_PROP_KEY, false)) {
+      // Property is not set (or set to false) so we are definitely not skipping recovery
+      return false;
+    }
+
+    // else: Sanity check if we should respect the property ...
+
+    if (replica.getType() != Type.PULL) {
+      if (log.isWarnEnabled()) {
+        log.warn(
+            "Ignoring {} replica property for replica {} because replica type {} requires transaction logs",
+            SKIP_LEADER_RECOVERY_PROP,
+            replica.getName(),
+            replica.getType());
+      }
+      return false;
+    }
+
+    if (null == ReplicateFromLeader.getCommitVersion(core)) {
+      if (log.isWarnEnabled()) {
+        log.warn(
+            "Ignoring {} replica property for replica {} because there is no local index commit",
+            SKIP_LEADER_RECOVERY_PROP,
+            replica.getName());
+      }
+      return false;
+    }
+
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Skipping recovery from leader for replica {} due to {} replica property",
+          replica.getName(),
+          SKIP_LEADER_RECOVERY_PROP);
+    }
+    return true;
   }
 
   private Replica getReplicaOrNull(DocCollection docCollection, String shard, String coreNodeName) {
@@ -1782,9 +1846,8 @@ public class ZkController implements Closeable {
 
   private ZkCollectionTerms getCollectionTerms(String collection) {
     synchronized (collectionToTerms) {
-      if (!collectionToTerms.containsKey(collection))
-        collectionToTerms.put(collection, new ZkCollectionTerms(collection, zkClient));
-      return collectionToTerms.get(collection);
+      return collectionToTerms.computeIfAbsent(
+          collection, col -> new ZkCollectionTerms(col, zkClient));
     }
   }
 

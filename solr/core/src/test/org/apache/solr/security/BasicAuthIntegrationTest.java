@@ -20,10 +20,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 
 import com.codahale.metrics.MetricRegistry;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -36,8 +33,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.solr.cli.SolrCLI;
-import org.apache.solr.cli.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -50,8 +45,11 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -298,25 +296,6 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
       assertAuthMetricsMinimums(17, 8, 8, 1, 0, 0);
 
-      String[] toolArgs = new String[] {"status", "--solr-url", baseUrl};
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
-      StatusTool tool = new StatusTool(stdoutSim);
-      try {
-        System.setProperty("basicauth", "harry:HarryIsUberCool");
-        tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
-        Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
-        assertTrue(obj.containsKey("version"));
-        assertTrue(obj.containsKey("startTime"));
-        assertTrue(obj.containsKey("uptime"));
-        assertTrue(obj.containsKey("memory"));
-      } catch (Exception e) {
-        log.error(
-            "RunExampleTool failed due to: {}; stdout from tool prior to failure: {}",
-            e,
-            baos.toString(StandardCharsets.UTF_8.name())); // nowarn
-      }
-
       SolrParams params = new MapSolrParams(Collections.singletonMap("q", "*:*"));
       // Query that fails due to missing credentials
       exp =
@@ -326,7 +305,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
                 cluster.getSolrClient().query(COLLECTION, params);
               });
       assertEquals(401, exp.code());
-      assertAuthMetricsMinimums(19, 8, 8, 1, 2, 0);
+      assertAuthMetricsMinimums(18, 8, 8, 1, 1, 0);
       assertPkiAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
 
       // Query that succeeds
@@ -334,11 +313,11 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       req.setBasicAuthCredentials("harry", "HarryIsUberCool");
       cluster.getSolrClient().request(req, COLLECTION);
 
-      assertAuthMetricsMinimums(20, 8, 8, 1, 2, 0);
+      assertAuthMetricsMinimums(20, 8, 8, 1, 1, 0);
       assertPkiAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
 
       addDocument("harry", "HarryIsUberCool", "id", "5");
-      assertAuthMetricsMinimums(23, 11, 9, 1, 2, 0);
+      assertAuthMetricsMinimums(22, 11, 9, 1, 1, 0);
       assertPkiAuthMetricsMinimums(14, 14, 0, 0, 0, 0);
 
       // Reindex collection depends on streaming request that needs to authenticate against new
@@ -347,14 +326,14 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           CollectionAdminRequest.reindexCollection(COLLECTION);
       reindexReq.setBasicAuthCredentials("harry", "HarryIsUberCool");
       cluster.getSolrClient().request(reindexReq, COLLECTION);
-      assertAuthMetricsMinimums(24, 12, 9, 1, 2, 0);
+      assertAuthMetricsMinimums(23, 12, 9, 1, 1, 0);
       assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
 
       // Validate forwardCredentials
       assertEquals(
           1,
           executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
-      assertAuthMetricsMinimums(25, 13, 9, 1, 2, 0);
+      assertAuthMetricsMinimums(24, 13, 9, 1, 1, 0);
       assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
       executeCommand(
           baseUrl + authcPrefix,
@@ -373,8 +352,33 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       assertEquals(
           1,
           executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
-      assertAuthMetricsMinimums(32, 20, 9, 1, 2, 0);
+      assertAuthMetricsMinimums(31, 20, 9, 1, 1, 0);
       assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
+
+      // This succeeds with auth enabled
+      CollectionAdminRequest.createCollection("c123", "conf", 3, 1)
+          .setBasicAuthCredentials("harry", "HarryIsUberCool")
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c123", 3, 3);
+
+      // SOLR-17644
+      // Test Collection creation when replica placement plugin and basic auth are enabled
+      PluginMeta plugin = new PluginMeta();
+      plugin.name = PlacementPluginFactory.PLUGIN_NAME;
+      plugin.klass = MinimizeCoresPlacementFactory.class.getName();
+      V2Request v2Request =
+          new V2Request.Builder("/cluster/plugin")
+              .forceV2(true)
+              .POST()
+              .withPayload(singletonMap("add", plugin))
+              .build();
+      v2Request.setBasicAuthCredentials("harry", "HarryIsUberCool");
+      v2Request.process(cluster.getSolrClient());
+
+      CollectionAdminRequest.createCollection("c456", "conf", 3, 1)
+          .setBasicAuthCredentials("harry", "HarryIsUberCool")
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c456", 3, 3);
 
       executeCommand(
           baseUrl + authcPrefix,

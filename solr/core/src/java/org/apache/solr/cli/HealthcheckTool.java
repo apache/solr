@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -79,12 +78,8 @@ public class HealthcheckTool extends ToolBase {
   }
 
   /** Requests health information about a specific collection in SolrCloud. */
-  public HealthcheckTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public HealthcheckTool(PrintStream stdout) {
-    super(stdout);
+  public HealthcheckTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -93,7 +88,7 @@ public class HealthcheckTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
     if (zkHost == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
-      System.exit(1);
+      runtime.exit(1);
     }
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
     try (CloudHttp2SolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost)) {

@@ -71,7 +71,8 @@ import org.slf4j.MDC;
  *
  * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
  * a dedicated thread. This interval can be set using {@link
- * LBHttp2SolrClient.Builder#setAliveCheckInterval(int)} , the default is set to one minute.
+ * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)} , the default is set to one
+ * minute.
  *
  * <p><b>When to use this?</b><br>
  * This can be used as a software load balancer when you do not wish to set up an external load
@@ -236,7 +237,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
               String url;
               try {
                 url = it.nextOrError(e);
-              } catch (SolrServerException ex) {
+              } catch (Throwable ex) {
                 apiFuture.completeExceptionally(e);
                 return;
               }
@@ -317,7 +318,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       RetryListener listener) {
     rsp.rsp = result;
     if (isZombie) {
-      zombieServers.remove(endpoint);
+      reviveZombieServer(endpoint);
     }
     listener.onSuccess(rsp);
   }
@@ -336,32 +337,32 @@ public class LBHttp2SolrClient extends LBSolrClient {
       // we retry on 404 or 403 or 503 or 500
       // unless it's an update - then we only retry on connect exception
       if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         // Server is alive but the request was likely malformed or invalid
         if (isZombie) {
-          zombieServers.remove(endpoint);
+          reviveZombieServer(endpoint);
         }
         listener.onFailure(e, false);
       }
     } catch (SocketException e) {
       if (!isNonRetryable || e instanceof ConnectException) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);
       }
     } catch (SocketTimeoutException e) {
       if (!isNonRetryable) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);
       }
     } catch (SolrServerException e) {
       Throwable rootCause = e.getRootCause();
       if (!isNonRetryable && rootCause instanceof IOException) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else if (isNonRetryable && rootCause instanceof ConnectException) {
-        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);
       }

@@ -328,6 +328,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Co
   {
     "async": "someAsyncId"
   }
+'
 ----
 ====
 ======

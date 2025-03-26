@@ -75,7 +75,6 @@ import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -342,14 +341,6 @@ public class ReplicationHandler extends RequestHandlerBase
       return;
     }
 
-    if (solrParams.getParams(CommonParams.WT) == null) {
-      reportErrorOnResponse(
-          rsp,
-          "Missing wt parameter",
-          new SolrException(SolrException.ErrorCode.BAD_REQUEST, "wt not specified in request"));
-      return;
-    }
-
     coreReplicationAPI.fetchFile(
         fileName,
         dirType,
@@ -509,7 +500,7 @@ public class ReplicationHandler extends RequestHandlerBase
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
           currentIndexFetcher.destroy();
         }
-        currentIndexFetcher = new IndexFetcher(solrParams.toNamedList(), this, core);
+        currentIndexFetcher = new IndexFetcher(new SimpleOrderedMap<>(solrParams), this, core);
       } else {
         currentIndexFetcher = pollingIndexFetcher;
       }

@@ -29,6 +29,7 @@ import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -54,7 +55,7 @@ import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 
-class JoinQuery extends Query {
+class JoinQuery extends Query implements SolrSearcherRequirer {
   String fromField;
   String toField;
   // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core
@@ -86,7 +87,10 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {}
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor sub = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    q.visit(sub);
+  }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)

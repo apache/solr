@@ -18,7 +18,6 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -36,12 +35,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 public class ClusterTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  public ClusterTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ClusterTool(PrintStream stdout) {
-    super(stdout);
+  public ClusterTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

@@ -38,7 +38,7 @@ import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
 import org.apache.solr.search.facet.SweepCountAware.SegCountPerSeg;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
-/** Grabs values from {@link DocValues}. */
+/** Grabs values from {@link SortedDocValues} or {@link SortedDocValues}. */
 class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   static boolean unwrap_singleValued_multiDv = true; // only set to false for test coverage
 
