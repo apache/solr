@@ -116,8 +116,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
   @Test
   public void testDownconfig() throws Exception {
-    Path tmp =
-        Path.of(createTempDir("downConfigNewPlace").toAbsolutePath().toString(), "myconfset");
+    Path tmp = createTempDir("downConfigNewPlace").resolve("myconfset").toAbsolutePath();
 
     // First we need a configset on ZK to bring down.
 
@@ -140,12 +139,11 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     int res = CLITestHelper.runTool(args, ConfigSetDownloadTool.class);
     assertEquals("Download should have succeeded.", 0, res);
-    verifyZkLocalPathsMatch(
-        Path.of(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
+    verifyZkLocalPathsMatch(tmp.resolve("conf").toAbsolutePath(), "/configs/downconfig1");
 
     // Ensure that empty files don't become directories (SOLR-11198)
 
-    Path emptyFile = Path.of(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path emptyFile = tmp.resolve("conf").resolve("stopwords").resolve("emptyfile").toAbsolutePath();
     Files.createFile(emptyFile);
 
     // Now copy it up and back and insure it's still a file in the new place
@@ -164,10 +162,10 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     res = CLITestHelper.runTool(args, ConfigSetDownloadTool.class);
     assertEquals("Download should have succeeded.", 0, res);
-    verifyZkLocalPathsMatch(
-        Path.of(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig2");
+    verifyZkLocalPathsMatch(tmp.resolve("conf").toAbsolutePath(), "/configs/downconfig2");
     // And insure the empty file is a text file
-    Path destEmpty = Path.of(tmp2.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path destEmpty =
+        tmp2.resolve("conf").resolve("stopwords").resolve("emptyfile").toAbsolutePath();
     assertTrue("Empty files should NOT be copied down as directories", destEmpty.toFile().isFile());
   }
 
@@ -355,7 +353,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // Check for an intermediate ZNODE having content. You know cp7/stopwords is a parent node.
     tmp = createTempDir("dirdata");
-    Path file = Path.of(tmp.toAbsolutePath().toString(), "zknode.data");
+    Path file = tmp.resolve("zknode.data").toAbsolutePath();
     List<String> lines = new ArrayList<>();
     lines.add("{Some Arbitrary Data}");
     Files.write(file, lines, StandardCharsets.UTF_8);
@@ -385,7 +383,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Next, copy cp7 down and verify that zknode.data exists for cp7
-    Path zData = Path.of(tmp.toAbsolutePath().toString(), "conf/stopwords/zknode.data");
+    Path zData = tmp.resolve("conf").resolve("stopwords").resolve("zknode.data").toAbsolutePath();
     assertTrue("znode.data should have been copied down", zData.toFile().exists());
 
     // Finally, copy up to cp8 and verify that the data is up there.
@@ -403,7 +401,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
     // Copy an individual empty file up and back down and insure it's still a file
-    Path emptyFile = Path.of(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Path emptyFile = tmp.resolve("conf").resolve("stopwords").resolve("emptyfile").toAbsolutePath();
     Files.createFile(emptyFile);
 
     args =
@@ -419,7 +417,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path tmp2 = createTempDir("cp9");
-    Path emptyDest = Path.of(tmp2.toAbsolutePath().toString(), "emptyfile");
+    Path emptyDest = tmp2.resolve("emptyfile").toAbsolutePath();
     args =
         new String[] {
           "cp",
@@ -457,7 +455,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, ZkCpTool.class);
     assertEquals("Copy should have succeeded.", 0, res);
 
-    Path locEmpty = Path.of(tmp2.toAbsolutePath().toString(), "stopwords", "emptyfile");
+    Path locEmpty = tmp2.resolve("stopwords").resolve("emptyfile").toAbsolutePath();
     assertTrue("Empty files should NOT be copied down as directories", locEmpty.toFile().isFile());
   }
 
@@ -541,7 +539,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     int res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     String content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertFalse("Return should NOT contain a child node", content.contains("solrconfig.xml"));
 
@@ -552,7 +550,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertFalse("Return should NOT contain a child node", content.contains("solrconfig.xml"));
 
@@ -563,7 +561,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
 
@@ -574,7 +572,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
 
@@ -583,7 +581,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     runtime.clearOutput();
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertFalse("Return should not contain /zookeeper", content.contains("/zookeeper"));
 
     // Saw a case where ending in slash didn't work, so test it.
@@ -593,7 +591,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
   }
@@ -629,7 +627,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     args = new String[] {"rm", "--recursive", "--zk-host", zkAddr, "/configs/rm1"};
 
     res = CLITestHelper.runTool(args, ZkRmTool.class);
-    assertEquals("Should have removed node /configs/rm1", res, 0);
+    assertEquals("Should have removed node /configs/rm1", 0, res);
     assertFalse(
         "Znode /configs/toremove really should be gone", zkClient.exists("/configs/rm1", true));
 
@@ -637,7 +635,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     args = new String[] {"rm", "--recursive", "--zk-host", zkAddr, "zk:/configs/rm2"};
 
     res = CLITestHelper.runTool(args, ZkRmTool.class);
-    assertEquals("Should have removed node /configs/rm2", res, 0);
+    assertEquals("Should have removed node /configs/rm2", 0, res);
     assertFalse(
         "Znode /configs/toremove2 really should be gone", zkClient.exists("/configs/rm2", true));
 
@@ -671,7 +669,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
       }
       if (isEphemeral(zkRoot + child)) continue;
 
-      Path thisPath = Path.of(fileRoot.toAbsolutePath().toString(), child);
+      Path thisPath = fileRoot.resolve(child).toAbsolutePath();
       assertTrue(
           "Znode " + child + " should have been found on disk at " + fileRoot.toAbsolutePath(),
           Files.exists(thisPath));

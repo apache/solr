@@ -118,7 +118,7 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
     System.setProperty(SOLR_HOME_PROP, fakeSolrHome);
 
     // mock FS from createTempDir don't play nice using 'startsWith' when the solr stack
-    // reconsistutes the path from string so we have to go the string route here as well...
+    // reconstitutes the path from string so we have to go the string route here as well...
     final Path workDir = Path.of(createTempDir().toAbsolutePath().toString());
 
     final MiniSolrCloudCluster cluster =

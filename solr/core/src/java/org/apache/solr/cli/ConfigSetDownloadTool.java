@@ -84,7 +84,7 @@ public class ConfigSetDownloadTool extends ToolBase {
       // we try to be nice about having the "conf" in the directory, and we create it if it's not
       // there.
       if (!configSetPath.endsWith("/conf")) {
-        configSetPath = Path.of(configSetPath.toString(), "conf");
+        configSetPath = configSetPath.resolve("conf");
       }
       Files.createDirectories(configSetPath);
       echo(
