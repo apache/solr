@@ -1741,13 +1741,11 @@ public class CoreContainer {
       }
 
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
-      dcore.setConfigSetTrusted(coreConfig.isTrusted());
       if (log.isInfoEnabled()) {
         log.info(
-            "Creating SolrCore '{}' using configuration from {}, trusted={}",
+            "Creating SolrCore '{}' using configuration from {}",
             dcore.getName(),
-            coreConfig.getName(),
-            dcore.isConfigSetTrusted());
+            coreConfig.getName());
       }
       try {
         core = new SolrCore(this, dcore, coreConfig);

@@ -167,7 +167,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected void uploadConfig(String configName, Path dir) throws IOException {
+  public void uploadConfig(String configName, Path dir) throws IOException {
     zkClient.uploadToZK(
         dir, CONFIGS_ZKNODE + "/" + configName, ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }

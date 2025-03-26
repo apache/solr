@@ -283,7 +283,7 @@ public class CreateTool extends ToolBase {
               + " to ZooKeeper at "
               + cloudSolrClient.getClusterStateProvider().getQuorumHosts());
       // We will trust the config since we have the Zookeeper Address
-      configSetService.uploadConfig(confName, confPath, true);
+      configSetService.uploadConfig(confName, confPath);
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
