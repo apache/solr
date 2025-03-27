@@ -50,6 +50,7 @@ public class SolrProcessManager {
   private final Map<Integer, SolrProcess> portProcessMap;
   private final Path pidDir;
   private static final Pattern pidFilePattern = Pattern.compile("^solr-([0-9]+)\\.(pid|port)$");
+  private static final boolean wmicAvailable = isWmicAvailable();
   // Set this to true during testing to allow the SolrProcessManager to find only mock Solr
   // processes
   public static boolean enableTestingMode = false;
@@ -162,39 +163,97 @@ public class SolrProcessManager {
     if (!Constants.WINDOWS) {
       return ph.info().commandLine();
     } else {
-      long desiredProcessid = ph.pid();
-      try {
-        Process process =
-            new ProcessBuilder(
-                    "wmic",
-                    "process",
-                    "where",
-                    "ProcessID=" + desiredProcessid,
-                    "get",
-                    "commandline",
-                    "/format:list")
-                .redirectErrorStream(true)
-                .start();
-        try (InputStreamReader inputStreamReader =
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8);
-            BufferedReader reader = new BufferedReader(inputStreamReader)) {
-          while (true) {
-            String line = reader.readLine();
-            if (line == null) {
-              return Optional.empty();
-            }
-            if (!line.startsWith("CommandLine=")) {
-              continue;
-            }
-            return Optional.of(line.substring("CommandLine=".length()));
-          }
-        }
-      } catch (IOException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Error getting command line for process " + desiredProcessid,
-            e);
+      if (wmicAvailable) {
+        return commandLineViaWmic(ph.pid());
+      } else {
+        return commandLineViaPowershell(ph.pid());
       }
+    }
+  }
+
+  /**
+   * Wmic is not available on all Windows systems, so we check if it is available before using it.
+   */
+  private static boolean isWmicAvailable() {
+    if (!Constants.WINDOWS) {
+      return false;
+    }
+    try {
+      Process process = new ProcessBuilder("wmic", "--version").start();
+      process.waitFor();
+      return process.exitValue() == 0;
+    } catch (IOException | InterruptedException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Gets the command line of a process as a string using wmic.
+   *
+   * @param pid the process ID
+   */
+  private static Optional<String> commandLineViaWmic(long pid) {
+    try {
+      Process process =
+          new ProcessBuilder(
+                  "wmic",
+                  "process",
+                  "where",
+                  "ProcessID=" + pid,
+                  "get",
+                  "commandline",
+                  "/format:list")
+              .redirectErrorStream(true)
+              .start();
+      try (InputStreamReader inputStreamReader =
+              new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8);
+          BufferedReader reader = new BufferedReader(inputStreamReader)) {
+        while (true) {
+          String line = reader.readLine();
+          if (line == null) {
+            return Optional.empty();
+          }
+          if (!line.startsWith("CommandLine=")) {
+            continue;
+          }
+          return Optional.of(line.substring("CommandLine=".length()));
+        }
+      }
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error getting command line for process " + pid, e);
+    }
+  }
+
+  /**
+   * Gets the command line of a process as a string using PowerShell.
+   *
+   * @param pid the process ID
+   */
+  private static Optional<String> commandLineViaPowershell(long pid) {
+    try {
+      Process process =
+          new ProcessBuilder(
+                  "powershell.exe",
+                  "-Command",
+                  "Get-Process -Id " + pid + " | Select-Object -ExpandProperty CommandLine")
+              .redirectErrorStream(true)
+              .start();
+      try (InputStreamReader inputStreamReader =
+              new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8);
+          BufferedReader reader = new BufferedReader(inputStreamReader)) {
+        StringBuilder commandLine = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+          commandLine.append(line).append(" ");
+        }
+        return !commandLine.isEmpty()
+            ? Optional.of(commandLine.toString().trim())
+            : Optional.empty();
+      }
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error getting command line for process " + pid, e);
     }
   }
 
