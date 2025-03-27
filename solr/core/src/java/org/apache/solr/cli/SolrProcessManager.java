@@ -182,7 +182,10 @@ public class SolrProcessManager {
       Process process = new ProcessBuilder("wmic", "--version").start();
       process.waitFor();
       return process.exitValue() == 0;
-    } catch (IOException | InterruptedException e) {
+    } catch (IOException e) {
+      return false;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       return false;
     }
   }
