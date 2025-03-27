@@ -81,9 +81,6 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     if (transformer != null) {
       transformer.setContext(rctx);
     }
-
-    doScore = rctx.wantsScores();
-    doMatchScore = rctx.wantsMatchScores();
   }
 
   public int currentIndex() {
@@ -103,19 +100,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
     if (transformer != null) {
       try {
-        if (doScore || doMatchScore) {
-          if (doScore) {
-            transformer.transform(sdoc, id, docIterator.score());
-          }
-          if (doMatchScore) {
-            final Float matchScore = docIterator.matchScore();
-            if (matchScore != null) {
-              sdoc.addField(SolrReturnFields.MATCH_SCORE, matchScore);
-            }
-          }
-        } else {
-          transformer.transform(sdoc, id);
-        }
+        transformer.transform(sdoc, id, docIterator);
       } catch (IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Error applying transformer", e);

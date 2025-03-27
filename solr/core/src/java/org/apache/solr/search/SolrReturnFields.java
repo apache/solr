@@ -40,6 +40,7 @@ import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
+import org.apache.solr.response.transform.MatchScoreAugmenter;
 import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -536,6 +537,13 @@ public class SolrReturnFields extends ReturnFields {
 
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new ScoreAugmenter(disp));
+    }
+    // a valid field name
+    if (MATCH_SCORE.equals(field)) {
+      _wantsScore = true;
+
+      String disp = (key == null) ? field : key;
+      augmenters.addTransformer(new MatchScoreAugmenter(disp));
     }
   }
 
