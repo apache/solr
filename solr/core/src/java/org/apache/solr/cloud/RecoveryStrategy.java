@@ -106,6 +106,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 2500);
   private int maxRetries = 500;
   private int startingRecoveryDelayMilliSeconds = 2000;
+  private ReplicationHandler replicationHandlerDoingFetch;
 
   public static interface RecoveryListener {
     public void recovered();
@@ -188,6 +189,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
     close = true;
     cancelPrepRecoveryCmd();
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
+    if (replicationHandlerDoingFetch != null) {
+      replicationHandlerDoingFetch.abortFetch();
+    }
   }
 
   private final void recoveryFailed(final ZkController zkController, final CoreDescriptor cd)
@@ -240,11 +244,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
         ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
 
     if (isClosed()) return; // we check closed on return
-    boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();
-
-    if (!success) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
+    try {
+      // Stash the RH so the fetch can be aborted if RecoveryStrategy is closed mid-fetch
+      replicationHandlerDoingFetch = replicationHandler;
+      boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();
+      if (!success) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
+      }
+    } finally {
+      replicationHandlerDoingFetch = null;
     }
+
 
     // solrcloud_debug
     if (log.isDebugEnabled()) {
