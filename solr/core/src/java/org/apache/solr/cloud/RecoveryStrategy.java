@@ -255,7 +255,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       replicationHandlerDoingFetch = null;
     }
 
-
     // solrcloud_debug
     if (log.isDebugEnabled()) {
       try {
