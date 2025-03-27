@@ -1873,10 +1873,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int last = len;
     if (last < 0 || last > maxDoc()) last = maxDoc();
     final int lastDocRequested = last;
-    int nDocsReturned = 0;
     int totalHits;
     final float maxScore;
-    final DocSet set;
     final DocList docList;
 
     final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
@@ -1981,11 +1979,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query, scoreModeUsed);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
-      nDocsReturned = topDocs.scoreDocs.length;
+      int nDocsReturned = topDocs.scoreDocs.length;
       int sliceLen = Math.min(lastDocRequested, nDocsReturned);
-      if (sliceLen < 0) {
-        sliceLen = 0;
-      }
       if (!needScores) {
         int[] ids = new int[nDocsReturned];
         for (int i = 0; i < nDocsReturned; i++) {
@@ -2060,7 +2055,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       set = DocSetUtil.getDocSet(setCollector, this);
 
-      nDocsReturned = 0;
       maxScore = set.size() > 0 ? topscore[0] : 0.0f;
       docList =
           new DocSlice(
@@ -2108,6 +2102,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         topDocs = topDocsResult.topDocs;
         maxScore = searchResult.getMaxScore(totalHits);
         set = new BitDocSet(searchResult.getFixedBitSet());
+        // TODO: Think about using ScoreMode from searchResult down below
       }
       final Relation relation =
           populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
