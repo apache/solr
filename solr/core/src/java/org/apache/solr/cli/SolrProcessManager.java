@@ -237,9 +237,12 @@ public class SolrProcessManager {
     try {
       Process process =
           new ProcessBuilder(
-                  "powershell.exe",
-                  "-Command",
-                  "Get-Process -Id " + pid + " | Select-Object -ExpandProperty CommandLine")
+              "powershell.exe",
+              "-Command",
+              String.format(
+                      Locale.ROOT,
+                      "(Get-CimInstance -ClassName Win32_Process -Filter 'ProcessId = %s').CommandLine",
+                      pid))
               .redirectErrorStream(true)
               .start();
       try (InputStreamReader inputStreamReader =
