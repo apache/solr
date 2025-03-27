@@ -47,6 +47,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SolrCloud
 public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTestCase {
 
   private static final String REMOVE_VERSION_FIELD = "remove.version.field";
