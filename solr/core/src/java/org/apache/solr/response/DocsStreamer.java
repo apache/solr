@@ -100,7 +100,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
     if (transformer != null) {
       try {
-        transformer.transform(sdoc, id, docIterator);
+        if (docs.hasScores()) {
+          transformer.transform(sdoc, id, docIterator);
+        } else {
+          transformer.transform(sdoc, id);
+        }
       } catch (IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Error applying transformer", e);

@@ -433,7 +433,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                   LTRRescorer.extractFeaturesInfo(
                       rerankingModelWeight,
                       docid,
-                      (!docsWereReranked) ? docInfo.score() : null,
+                      (!docsWereReranked && docInfo != null) ? docInfo.score() : null,
                       leafContexts));
         }
         doc.addField(name, featureVector);

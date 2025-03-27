@@ -135,7 +135,9 @@ public abstract class DocTransformer {
    *     from the index
    * @throws IOException If there is a low-level I/O error.
    * @see #needsSolrIndexSearcher
+   * @deprecated use {@link #transform(SolrDocument, int, DocIterationInfo)} instead
    */
+  @Deprecated(forRemoval = true, since = "9.9.0")
   public abstract void transform(SolrDocument doc, int docid) throws IOException;
 
   /**
