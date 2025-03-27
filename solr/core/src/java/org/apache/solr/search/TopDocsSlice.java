@@ -74,45 +74,56 @@ public class TopDocsSlice extends DocSlice {
 
   @Override
   public DocIterator iterator() {
-    return new DocIterator() {
-      int pos = offset;
-      final int end = offset + len;
+    boolean hasMatchScore =
+        topDocs.scoreDocs.length > 0 && topDocs.scoreDocs[0] instanceof ReRankCollector.RescoreDoc;
+    if (hasMatchScore) {
+      return new ReRankedTopDocsIterator();
+    } else {
+      return new TopDocsIterator();
+    }
+  }
 
-      @Override
-      public boolean hasNext() {
-        return pos < end;
-      }
+  class TopDocsIterator implements DocIterator {
+    int pos = offset;
+    final int end = offset + len;
 
-      @Override
-      public Integer next() {
-        return nextDoc();
-      }
+    @Override
+    public boolean hasNext() {
+      return pos < end;
+    }
 
-      /** The remove operation is not supported by this Iterator. */
-      @Override
-      public void remove() {
-        throw new UnsupportedOperationException(
-            "The remove  operation is not supported by this Iterator.");
-      }
+    @Override
+    public Integer next() {
+      return nextDoc();
+    }
 
-      @Override
-      public int nextDoc() {
-        return topDocs.scoreDocs[pos++].doc;
-      }
+    /** The remove operation is not supported by this Iterator. */
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException(
+          "The remove  operation is not supported by this Iterator.");
+    }
 
-      @Override
-      public float score() {
-        return topDocs.scoreDocs[pos - 1].score;
-      }
+    @Override
+    public int nextDoc() {
+      return topDocs.scoreDocs[pos++].doc;
+    }
 
-      @Override
-      public Float matchScore() {
-        if (topDocs.scoreDocs[pos - 1] instanceof ReRankCollector.RescoreDoc) {
-          return ((ReRankCollector.RescoreDoc) topDocs.scoreDocs[pos - 1]).matchScore;
-        } else {
-          return null;
-        }
+    @Override
+    public float score() {
+      return topDocs.scoreDocs[pos - 1].score;
+    }
+  }
+
+  class ReRankedTopDocsIterator extends TopDocsIterator {
+
+    @Override
+    public Float matchScore() {
+      try {
+        return ((ReRankCollector.RescoreDoc) topDocs.scoreDocs[pos - 1]).matchScore;
+      } catch (ClassCastException e) {
+        return null;
       }
-    };
+    }
   }
 }
