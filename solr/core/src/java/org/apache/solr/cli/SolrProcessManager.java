@@ -21,9 +21,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIB
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -40,6 +38,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrException;
@@ -190,37 +189,42 @@ public class SolrProcessManager {
                   "Get-CimInstance -ClassName Win32_Process | Where-Object { $_.Name -like '*java*' } | Select-Object ProcessId, CommandLine | ConvertTo-Json -Depth 1")
               .redirectErrorStream(true)
               .start();
-      try (InputStreamReader inputStreamReader =
-              new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8);
-          BufferedReader reader = new BufferedReader(inputStreamReader)) {
-        StringBuilder stringResponse = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-          stringResponse.append(line);
-        }
-        if (log.isDebugEnabled()) {
-          log.debug("Looking up PIDs on Windows took {} ms", stopWatch.getTime());
-        }
-        return parsePidToCommandLineJson(stringResponse.toString());
+      String output = IOUtils.toString(process.getInputStream(), StandardCharsets.UTF_8);
+      int exitCode = process.waitFor();
+      if (exitCode != 0) {
+        String errorText = IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error getting command lines for Windows: " + errorText);
       }
+
+      if (log.isDebugEnabled()) {
+        log.debug("Looking up PIDs on Windows took {} ms", stopWatch.getTime());
+      }
+      return parseWindowsPidToCommandLineJson(output);
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Error getting command lines for Windows");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Interrupted while getting command lines for Windows");
     }
   }
 
-  static Map<Long, String> parsePidToCommandLineJson(String jsonString)
+  static Map<Long, String> parseWindowsPidToCommandLineJson(String jsonString)
       throws JsonProcessingException {
     // Json format: [{"ProcessId": 1234, "CommandLine": "java foo"}]
     ObjectMapper mapper = new ObjectMapper();
-    List<ProcessInfo> processInfoList =
-        mapper.readValue(jsonString, new TypeReference<List<ProcessInfo>>() {});
+    List<WindowsProcessInfo> processInfoList =
+        mapper.readValue(jsonString, new TypeReference<>() {});
     return processInfoList.stream()
         .filter(p -> p.CommandLine != null)
         .collect(Collectors.toMap(p -> p.ProcessId, p -> p.CommandLine));
   }
 
-  public static class ProcessInfo {
+  public static class WindowsProcessInfo {
     public long ProcessId;
     public String CommandLine;
   }

@@ -178,11 +178,11 @@ public class SolrProcessManagerTest extends SolrTestCase {
     assertEquals("https://localhost:" + processHttps.getKey() + "/solr", https.getLocalUrl());
   }
 
-  public void testParsePidToCommandLineJson() throws JsonProcessingException {
+  public void testParseWindowsPidToCommandLineJson() throws JsonProcessingException {
     String jsonResponseFromPowershell =
         "[{\"ProcessId\": 9356, \"CommandLine\":  \"date\"}, {\"ProcessId\": 4736, \"CommandLine\":  null}\n]";
     Map<Long, String> pidToCommandLine =
-        SolrProcessManager.parsePidToCommandLineJson(jsonResponseFromPowershell);
+        SolrProcessManager.parseWindowsPidToCommandLineJson(jsonResponseFromPowershell);
     assertEquals(1, pidToCommandLine.size());
     assertEquals("date", pidToCommandLine.get(9356L));
   }
