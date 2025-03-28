@@ -342,8 +342,7 @@ public final class CLIUtils {
   }
 
   public static Path getConfigSetsDir(Path solrInstallDir) {
-    Path configSetsPath = Path.of("server/solr/configsets/");
-    return solrInstallDir.resolve(configSetsPath);
+    return solrInstallDir.resolve("server/solr/configsets");
   }
 
   public static boolean isWindows() {
