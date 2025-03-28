@@ -41,7 +41,9 @@ public class SchemaChangeOperation {
 
   public static class AddFieldType extends SchemaChangeOperation {
     @JsonProperty public String name;
-    @JsonProperty public String className;
+
+    @JsonProperty("class")
+    public String className;
 
     // Used for setting analyzers, index and stored settings, etc.
     private Map<String, Object> additionalProperties = new HashMap<>();
