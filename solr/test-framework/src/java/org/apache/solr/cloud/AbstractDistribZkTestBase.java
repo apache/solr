@@ -27,7 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.cli.ConfigSetUploadTool;
+import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -391,7 +393,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
           "-z", zkAddr
         };
 
-    ConfigSetUploadTool tool = new ConfigSetUploadTool();
+    ToolRuntime runtime = new DefaultToolRuntime();
+    ConfigSetUploadTool tool = new ConfigSetUploadTool(runtime);
 
     int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);

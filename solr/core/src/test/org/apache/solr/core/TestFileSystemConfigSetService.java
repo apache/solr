@@ -90,10 +90,9 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     fileSystemConfigSetService.uploadFileToConfig(configName, "testfile", testdata, true);
 
     // metadata is stored in .metadata.json
-    fileSystemConfigSetService.setConfigMetadataWithTrust(
-        configName, new HashMap<>(Map.of("key1", "val1")));
+    fileSystemConfigSetService.setConfigMetadata(configName, new HashMap<>(Map.of("key1", "val1")));
     Map<String, Object> metadata = fileSystemConfigSetService.getConfigMetadata(configName);
-    assertEquals("{key1=val1, trusted=true}", metadata.toString());
+    assertEquals("{key1=val1}", metadata.toString());
 
     List<String> allConfigFiles = fileSystemConfigSetService.getAllConfigFiles(configName);
     assertEquals("[schema.xml, solrconfig.xml, testfile]", allConfigFiles.toString());

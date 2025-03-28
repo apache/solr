@@ -78,7 +78,7 @@ if (jvmGradle != jvmCurrent) {
 
     // Javadoc compilation.
     def javadocExecutable = jvmCurrent.javadocExecutable
-    tasks.matching { it.name == "renderJavadoc" || it.name == "renderSiteJavadoc" }.all {
+    tasks.matching { it.name == "renderJavadoc" || it.name == "renderSiteJavadoc" }.configureEach {
       dependsOn ":altJvmWarning"
       executable = javadocExecutable.toString()
     }

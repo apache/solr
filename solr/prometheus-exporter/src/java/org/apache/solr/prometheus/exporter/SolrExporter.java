@@ -102,7 +102,9 @@ public class SolrExporter {
   }
 
   void stop() {
-    httpServer.stop();
+    if (httpServer != null) {
+      httpServer.stop();
+    }
 
     metricsCollector.removeObserver(prometheusCollector);
 

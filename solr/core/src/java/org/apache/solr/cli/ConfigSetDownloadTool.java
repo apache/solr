@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,12 +49,8 @@ public class ConfigSetDownloadTool extends ToolBase {
           .desc("Local directory with configs.")
           .build();
 
-  public ConfigSetDownloadTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ConfigSetDownloadTool(PrintStream stdout) {
-    super(stdout);
+  public ConfigSetDownloadTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

@@ -17,7 +17,6 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -99,12 +98,8 @@ public class CreateTool extends ToolBase {
           .desc("Configuration name; default is the collection name.")
           .build();
 
-  public CreateTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public CreateTool(PrintStream stdout) {
-    super(stdout);
+  public CreateTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -288,7 +283,7 @@ public class CreateTool extends ToolBase {
               + " to ZooKeeper at "
               + cloudSolrClient.getClusterStateProvider().getQuorumHosts());
       // We will trust the config since we have the Zookeeper Address
-      configSetService.uploadConfig(confName, confPath, true);
+      configSetService.uploadConfig(confName, confPath);
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
@@ -346,7 +341,7 @@ public class CreateTool extends ToolBase {
       Path fullConfDir = getFullConfDir(solrInstallDir, confDirName);
       if (!Files.isDirectory(fullConfDir)) {
         echo("Specified configuration directory " + confDirName + " not found!");
-        System.exit(1);
+        runtime.exit(1);
       }
     }
   }

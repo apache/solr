@@ -101,3 +101,7 @@ Users who that don't need to vary JAR access on a per-core basis have several op
 * Kerberos based authentication has been removed.  This results in changes to SolrJ, the Solr Admin app, and the removal of the `hadoop-auth` module.
 
 * Storing indexes and snapshots in HDFS has been removed.  This results in changes to solrconfig.xml and related configuration files and removal of the `hdfs` module.
+
+=== Security
+
+* There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
