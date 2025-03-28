@@ -71,8 +71,11 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
+import org.apache.solr.response.DistributedResultContext;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -1302,6 +1305,11 @@ public class QueryComponent extends SearchComponent {
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
+      DocTransformer scoreTransformer = null;
+      if (returnScores) {
+        scoreTransformer = rb.rsp.getReturnFields().getScoreTransformer();
+        scoreTransformer.setContext(new DistributedResultContext(rb.rsp.getReturnFields(), rb.req));
+      }
 
       final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
       String keyFieldName = uniqueKey;
@@ -1360,13 +1368,17 @@ public class QueryComponent extends SearchComponent {
           final ShardDoc sdoc = rb.resultIds.get(lastKeyString);
           if (sdoc != null) {
             shardDocFoundInResults = Boolean.TRUE;
-            if (returnScores) {
-              doc.setField("score", sdoc.score);
-            } else {
-              // Score might have been added (in createMainQuery) to shard-requests (and therefore
-              // in shard-response-docs) Remove score if the outer request did not ask for it
-              // returned
-              doc.remove("score");
+            // Score might have been added (in createMainQuery) to shard-requests (and therefore
+            // in shard-response-docs) Remove score if the outer request did not ask for it
+            // returned.
+            // If the score is requested, we will add it back with the scoreTransformer
+            doc.remove("score");
+            if (scoreTransformer != null) {
+              try {
+                scoreTransformer.transform(doc, 0, sdoc);
+              } catch (Exception e) {
+                log.warn("Exception transforming score for doc " + lastKeyString, e);
+              }
             }
             if (removeKeyField) {
               doc.removeFields(keyFieldName);

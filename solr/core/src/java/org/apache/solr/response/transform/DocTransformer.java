@@ -91,6 +91,15 @@ public abstract class DocTransformer {
   }
 
   /**
+   * Return whether this augmenter's functionality is dependent on score information.
+   *
+   * @return whether this augmenter needs scores
+   */
+  public boolean needsScore() {
+    return false;
+  }
+
+  /**
    * This is where implementations do the actual work. If implementations require a valid docId and
    * index access, the {@link #needsSolrIndexSearcher} method must return true
    *
@@ -137,7 +146,7 @@ public abstract class DocTransformer {
    * @see #needsSolrIndexSearcher
    * @deprecated use {@link #transform(SolrDocument, int, DocIterationInfo)} instead
    */
-  @Deprecated(forRemoval = true, since = "9.9.0")
+  @Deprecated(since = "9.9.0")
   public abstract void transform(SolrDocument doc, int docid) throws IOException;
 
   /**

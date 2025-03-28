@@ -72,6 +72,13 @@ public abstract class ReturnFields {
   public abstract Map<String, String> getFieldRenames();
 
   /**
+   * A mapping of return fields that depend on score and the names they are associated with.
+   *
+   * @return a mapping from return field name to the string representation of its definition
+   * */
+  public abstract Map<String, String> getScoreDependentReturnFields();
+
+  /**
    * Returns <code>true</code> if the specified field should be returned <em>to the external
    * client</em> -- either using its own name, or via an alias. This method returns <code>false
    * </code> even if the specified name is needed as an "extra" field for use by transformers.
@@ -89,4 +96,7 @@ public abstract class ReturnFields {
 
   /** Returns the DocTransformer used to modify documents, or <code>null</code> */
   public abstract DocTransformer getTransformer();
+
+  /** Returns the DocTransformer used to modify documents to add score information, or <code>null</code> */
+  public abstract DocTransformer getScoreTransformer();
 }

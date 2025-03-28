@@ -49,4 +49,9 @@ public class ScoreAugmenter extends DocTransformer {
       doc.setField(name, 0.0f);
     }
   }
+
+  @Override
+  public boolean needsScore() {
+    return true;
+  }
 }

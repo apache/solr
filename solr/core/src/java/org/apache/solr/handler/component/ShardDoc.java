@@ -20,8 +20,9 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.DocIterationInfo;
 
-public class ShardDoc extends FieldDoc {
+public class ShardDoc extends FieldDoc implements DocIterationInfo {
   public String shard;
   public String shardAddress; // TODO
 
@@ -45,6 +46,8 @@ public class ShardDoc extends FieldDoc {
   // retrieval stage.
 
   public int positionInResponse;
+
+  public Float matchScore;
 
   // the ordinal position in the merged response arraylist
 
@@ -85,5 +88,15 @@ public class ShardDoc extends FieldDoc {
         + positionInResponse
         + " ,sortFieldValues="
         + sortFieldValues;
+  }
+
+  @Override
+  public float score() {
+    return score;
+  }
+
+  @Override
+  public Float matchScore() {
+    return matchScore;
   }
 }
