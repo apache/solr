@@ -24,7 +24,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "add-field-type",
+              "operationType": "add-field-type",
               "name": "my-new-field-type",
               "class": "org.apache.my.ClassName",
               "positionIncrementGap": 100,
@@ -59,7 +59,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "add-copy-field",
+              "operationType": "add-copy-field",
               "source": "source1",
               "destinations": ["dest1", "dest2"],
               "maxChars": 123
@@ -80,7 +80,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "add-field",
+              "operationType": "add-field",
               "name": "my-new-field",
               "type": "fieldType",
               "stored": true
@@ -103,7 +103,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "add-dynamic-field",
+              "operationType": "add-dynamic-field",
               "name": "_abc",
               "type": "fieldType",
               "stored": true
@@ -126,7 +126,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "delete-field-type",
+              "operationType": "delete-field-type",
               "name": "myFieldTypeName"
             }
             """;
@@ -143,7 +143,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "delete-copy-field",
+              "operationType": "delete-copy-field",
               "source": "source1",
               "destinations": ["dest1", "dest2"]
             }
@@ -162,7 +162,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "delete-field",
+              "operationType": "delete-field",
               "name": "myFieldName"
             }
             """;
@@ -179,7 +179,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "delete-dynamic-field",
+              "operationType": "delete-dynamic-field",
               "name": "_abc"
             }
             """;
@@ -196,7 +196,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "replace-field-type",
+              "operationType": "replace-field-type",
               "name": "my-new-field-type",
               "class": "org.apache.my.ClassName",
               "positionIncrementGap": 100,
@@ -231,7 +231,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "replace-field",
+              "operationType": "replace-field",
               "name": "my-new-field",
               "type": "fieldType",
               "stored": true
@@ -254,7 +254,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     final var inputJson =
         """
             {
-              "operationName": "replace-dynamic-field",
+              "operationType": "replace-dynamic-field",
               "name": "_abc",
               "type": "fieldType",
               "stored": true

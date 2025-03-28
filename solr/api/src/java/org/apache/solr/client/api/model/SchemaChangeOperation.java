@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "operationName")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = SchemaChangeOperation.OPERATION_TYPE_PROP)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = SchemaChangeOperation.AddFieldType.class, name = "add-field-type"),
   @JsonSubTypes.Type(value = SchemaChangeOperation.AddCopyField.class, name = "add-copy-field"),
@@ -37,7 +37,10 @@ import java.util.Map;
 })
 public class SchemaChangeOperation {
 
-  @JsonProperty public String operationName; // TODO Come up with a better name for this
+  public static final String OPERATION_TYPE_PROP = "operationType";
+
+  @JsonProperty(OPERATION_TYPE_PROP)
+  public String operationType;
 
   public static class AddFieldType extends SchemaChangeOperation {
     @JsonProperty public String name;
