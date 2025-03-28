@@ -29,6 +29,9 @@ public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   public static void beforeTest() throws Exception {
     solrClientTestRule.startSolr();
 
-    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
+    solrClientTestRule
+        .newCollection()
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .create();
   }
 }

@@ -19,10 +19,10 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -340,7 +340,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   @Override
   protected void createServers(int numServers) throws Exception {
-    File controlJettyDir = createTempDir("control").toFile();
+    Path controlJettyDir = createTempDir("control");
     setupJettySolrHome(controlJettyDir);
     controlJetty =
         createJetty(
@@ -457,9 +457,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (sb.length() > 0) sb.append(',');
       int cnt = this.jettyIntCntr.incrementAndGet();
 
-      File jettyDir = createTempDir("shard-" + i).toFile();
+      Path jettyDir = createTempDir("shard-" + i);
 
-      jettyDir.mkdirs();
+      Files.createDirectories(jettyDir);
       setupJettySolrHome(jettyDir);
       int currentI = i;
       if (numOtherReplicas > 0) {
@@ -743,7 +743,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     props.setProperty("solr.ulog.dir", ulogDir);
     props.setProperty("solrconfig", solrConfigOverride);
 
-    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), props, jettyconfig);
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome().toString(), props, jettyconfig);
 
     jetty.start();
 
@@ -752,7 +752,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   @Override
   public final JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -762,7 +762,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -791,9 +791,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     } else if (random().nextBoolean()) {
       props.setProperty("replicaType", Replica.Type.NRT.toString());
     }
-    props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toString());
+    props.setProperty("coreRootDirectory", solrHome.resolve("cores").toString());
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), props, jettyconfig);
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.toString(), props, jettyconfig);
 
     return jetty;
   }
@@ -803,7 +803,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
    * us the ability to simulate network partitions without having to fuss with IPTables.
    */
   public JettySolrRunner createProxiedJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -828,9 +828,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     } else if (random().nextBoolean()) {
       props.setProperty("replicaType", Replica.Type.NRT.toString());
     }
-    props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toString());
+    props.setProperty("coreRootDirectory", solrHome.resolve("cores").toString());
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), props, jettyconfig, true);
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.toString(), props, jettyconfig, true);
 
     return jetty;
   }
@@ -883,26 +883,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return null;
   }
 
-  private File getRelativeSolrHomePath(File solrHome) {
-    final Path solrHomePath = solrHome.toPath();
-    final Path curDirPath = new File("").getAbsoluteFile().toPath();
+  private Path getRelativeSolrHomePath(Path solrHome) {
+    final Path curDirPath = Path.of("").toAbsolutePath();
 
-    if (!solrHomePath.getRoot().equals(curDirPath.getRoot())) {
+    if (!solrHome.getRoot().equals(curDirPath.getRoot())) {
       // root of current directory and solrHome are not the same, therefore cannot relativize
       return solrHome;
     }
 
-    final Path root = solrHomePath.getRoot();
+    final Path root = solrHome.getRoot();
 
     // relativize current directory to root: /tmp/foo -> /tmp/foo/../..
-    final File relativizedCurDir =
-        new File(curDirPath.toFile(), curDirPath.relativize(root).toString());
+    final Path relativizedCurDir = curDirPath.resolve(curDirPath.relativize(root));
 
     // exclude the root from solrHome: /tmp/foo/solrHome -> tmp/foo/solrHome
-    final Path solrHomeRelativeToRoot = root.relativize(solrHomePath);
+    final Path solrHomeRelativeToRoot = root.relativize(solrHome);
 
     // create the relative solrHome: /tmp/foo/../../tmp/foo/solrHome
-    return new File(relativizedCurDir, solrHomeRelativeToRoot.toString()).getAbsoluteFile();
+    return relativizedCurDir.resolve(solrHomeRelativeToRoot).toAbsolutePath();
   }
 
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrClient> clients)

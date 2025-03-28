@@ -16,7 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -24,7 +25,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.IndexSchema;
@@ -44,15 +46,16 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
 
   @Before
   public void initManagedSchemaCore() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, SOLRCONFIG_XML), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, SCHEMA_XML), tmpConfDir);
+    Path tmpSolrHome = createTempDir();
+    Path tmpConfDir = FilterPath.unwrap(tmpSolrHome.resolve(confDir));
+    Path testHomeConfDir = TEST_HOME().resolve(confDir);
+    Files.createDirectories(tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve(SOLRCONFIG_XML), tmpConfDir);
+    PathUtils.copyFileToDirectory(testHomeConfDir.resolve(SCHEMA_XML), tmpConfDir);
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig*.xml has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
-    initCore(SOLRCONFIG_XML, SCHEMA_XML, tmpSolrHome.getPath());
+    initCore(SOLRCONFIG_XML, SCHEMA_XML, tmpSolrHome);
   }
 
   public void testEmptyValue() {

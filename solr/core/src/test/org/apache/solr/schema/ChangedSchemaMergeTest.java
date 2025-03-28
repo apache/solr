@@ -84,7 +84,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
   private CoreContainer init() throws Exception {
     Path changed = solrHomeDirectory.resolve("changed");
-    copyMinConf(changed.toFile(), "name=changed");
+    copyMinConf(changed, "name=changed");
     // Overlay with my local schema
     schemaFile = changed.resolve("conf").resolve("schema.xml");
     Files.writeString(schemaFile, withWhich, StandardCharsets.UTF_8);

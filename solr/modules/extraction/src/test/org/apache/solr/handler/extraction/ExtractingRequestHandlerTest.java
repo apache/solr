@@ -52,8 +52,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
           false);
     }
 
-    initCore(
-        "solrconfig.xml", "schema.xml", getFile("extraction/solr").toAbsolutePath().toString());
+    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
   }
 
   @Override

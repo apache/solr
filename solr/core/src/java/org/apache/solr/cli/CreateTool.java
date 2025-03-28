@@ -20,13 +20,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
@@ -185,7 +185,7 @@ public class CreateTool extends ToolBase {
             "Failed to create new core instance directory: " + coreInstanceDir.toAbsolutePath());
       }
 
-      FileUtils.copyDirectoryToDirectory(confDir.toFile(), coreInstanceDir.toFile());
+      PathUtils.copyDirectory(confDir, coreInstanceDir, StandardCopyOption.COPY_ATTRIBUTES);
 
       echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"

@@ -19,11 +19,12 @@ package org.apache.solr.common.util;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -483,14 +484,14 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     Object data = generateAllDataTypes();
     byte[] out = getBytes(data);
-    FileOutputStream fs = new FileOutputStream(new File(BIN_FILE_LOCATION));
+    OutputStream fs = Files.newOutputStream(Path.of(BIN_FILE_LOCATION));
     BufferedOutputStream bos = new BufferedOutputStream(fs);
     bos.write(out);
     bos.close();
 
     // Binary file with child documents
     SolrDocument sdoc = generateSolrDocumentWithChildDocs();
-    fs = new FileOutputStream(new File(BIN_FILE_LOCATION_CHILD_DOCS));
+    fs = Files.newOutputStream(Path.of(BIN_FILE_LOCATION_CHILD_DOCS));
     bos = new BufferedOutputStream(fs);
     bos.write(getBytes(sdoc));
     bos.close();

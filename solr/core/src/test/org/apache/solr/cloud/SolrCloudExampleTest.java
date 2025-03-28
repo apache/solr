@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,8 +62,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
 
     String testCollectionName = "gettingstarted";
-    File defaultConfigs = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    assertTrue(defaultConfigs.getAbsolutePath() + " not found!", defaultConfigs.isDirectory());
+    Path defaultConfigs = ExternalPaths.DEFAULT_CONFIGSET;
+    assertTrue(defaultConfigs + " not found!", Files.isDirectory(defaultConfigs));
 
     Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
     if (liveNodes.isEmpty())
@@ -114,8 +113,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     // now index docs ...
     log.info("Created collection, now posting example docs!");
-    Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
-    assertTrue(exampleDocsDir.toAbsolutePath() + " not found!", Files.isDirectory(exampleDocsDir));
+    Path exampleDocsDir = ExternalPaths.SOURCE_HOME.resolve("example").resolve("exampledocs");
+    assertTrue(exampleDocsDir + " not found!", Files.isDirectory(exampleDocsDir));
 
     String[] argsForPost =
         new String[] {
@@ -125,7 +124,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           testCollectionName,
           "--filetypes",
           "xml",
-          exampleDocsDir.toAbsolutePath().toString()
+          exampleDocsDir.toString()
         };
 
     PostTool postTool = new PostTool(runtime);
