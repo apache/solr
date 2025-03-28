@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
@@ -174,6 +176,15 @@ public class SolrProcessManagerTest extends SolrTestCase {
     assertEquals(processHttps.getKey().intValue(), https.getPort());
     assertTrue(https.isHttps());
     assertEquals("https://localhost:" + processHttps.getKey() + "/solr", https.getLocalUrl());
+  }
+
+  public void testParsePidToCommandLineJson() throws JsonProcessingException {
+    String jsonResponseFromPowershell =
+        "[{\"ProcessId\": 9356, \"CommandLine\":  \"date\"}, {\"ProcessId\": 4736, \"CommandLine\":  null}\n]";
+    Map<Long, String> pidToCommandLine =
+        SolrProcessManager.parsePidToCommandLineJson(jsonResponseFromPowershell);
+    assertEquals(1, pidToCommandLine.size());
+    assertEquals("date", pidToCommandLine.get(9356L));
   }
 
   /**

@@ -18,6 +18,9 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,6 +32,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,6 +40,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
@@ -53,8 +58,12 @@ public class SolrProcessManager {
   // Set this to true during testing to allow the SolrProcessManager to find only mock Solr
   // processes
   public static boolean enableTestingMode = false;
+  private static final Map<Long, String> pidToWindowsCommandLineMap = new HashMap<>();
 
   public SolrProcessManager() {
+    if (Constants.WINDOWS) {
+      pidToWindowsCommandLineMap.putAll(commandLinesWindows());
+    }
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
@@ -152,8 +161,8 @@ public class SolrProcessManager {
   }
 
   /**
-   * Gets the command line of a process as a string. This is a workaround for the fact that
-   * ProcessHandle.info().command() is not (yet) implemented on Windows.
+   * Gets the command line of a process as a string. For Windows we need to fetch command lines
+   * using a PowerShell command.
    *
    * @param ph the process handle
    * @return the command line of the process
@@ -162,43 +171,55 @@ public class SolrProcessManager {
     if (!Constants.WINDOWS) {
       return ph.info().commandLine();
     } else {
-      return commandLineWindows(ph.pid());
+      return Optional.ofNullable(pidToWindowsCommandLineMap.get(ph.pid()));
     }
   }
 
   /**
-   * Gets the command line of a process as a string using PowerShell.
+   * Gets the command lines of all java processes on Windows using PowerShell.
    *
-   * @param pid the process ID
+   * @return a map of process IDs to command lines
    */
-  private static Optional<String> commandLineWindows(long pid) {
+  private static Map<Long, String> commandLinesWindows() {
     try {
+      StopWatch stopWatch = StopWatch.createStarted();
       Process process =
           new ProcessBuilder(
                   "powershell.exe",
                   "-Command",
-                  String.format(
-                      Locale.ROOT,
-                      "(Get-CimInstance -ClassName Win32_Process -Filter 'ProcessId = %d').CommandLine",
-                      pid))
+                  "Get-CimInstance -ClassName Win32_Process | Where-Object { $_.Name -like '*java*' } | Select-Object ProcessId, CommandLine | ConvertTo-Json -Depth 1")
               .redirectErrorStream(true)
               .start();
       try (InputStreamReader inputStreamReader =
               new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8);
           BufferedReader reader = new BufferedReader(inputStreamReader)) {
-        StringBuilder commandLine = new StringBuilder();
+        StringBuilder stringResponse = new StringBuilder();
         String line;
         while ((line = reader.readLine()) != null) {
-          commandLine.append(line).append(" ");
+          stringResponse.append(line);
         }
-        return !commandLine.isEmpty()
-            ? Optional.of(commandLine.toString().trim())
-            : Optional.empty();
+        log.debug("Looking up PIDs on Windows took {} ms", stopWatch.getTime());
+        return parsePidToCommandLineJson(stringResponse.toString());
       }
     } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error getting command line for process " + pid, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting command lines for Windows");
     }
+  }
+
+  static Map<Long, String> parsePidToCommandLineJson(String jsonString)
+      throws JsonProcessingException {
+    // Json format: [{"ProcessId": 1234, "CommandLine": "java foo"}]
+    ObjectMapper mapper = new ObjectMapper();
+    List<ProcessInfo> processInfoList =
+        mapper.readValue(jsonString, new TypeReference<List<ProcessInfo>>() {});
+    return processInfoList.stream()
+        .filter(p -> p.CommandLine != null)
+        .collect(Collectors.toMap(p -> p.ProcessId, p -> p.CommandLine));
+  }
+
+  public static class ProcessInfo {
+    public long ProcessId;
+    public String CommandLine;
   }
 
   /**
