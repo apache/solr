@@ -17,9 +17,9 @@
 
 package org.apache.solr.common.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -177,8 +177,8 @@ public class ZkMaintenanceUtils {
 
     // Single file ZK -> local copy where ZK is a leaf node
     if (Files.isDirectory(Path.of(dst))) {
-      if (!dst.endsWith(File.separator)) {
-        dst += File.separator;
+      if (!dst.endsWith(FileSystems.getDefault().getSeparator())) {
+        dst += FileSystems.getDefault().getSeparator();
       }
       dst = normalizeDest(src, dst, srcIsZk, dstIsZk);
     }
@@ -201,8 +201,8 @@ public class ZkMaintenanceUtils {
       return Path.of(".").normalize().toAbsolutePath().toString();
     }
 
-    String dstSeparator = (dstIsZk) ? "/" : File.separator;
-    String srcSeparator = (srcIsZk) ? "/" : File.separator;
+    String dstSeparator = (dstIsZk) ? "/" : FileSystems.getDefault().getSeparator();
+    String srcSeparator = (srcIsZk) ? "/" : FileSystems.getDefault().getSeparator();
 
     // Dest is a directory or non-leaf znode, append last element of the src path.
     if (dstName.endsWith(dstSeparator)) {
@@ -354,7 +354,7 @@ public class ZkMaintenanceUtils {
             String zkNode = createZkNodeName(zkPath, rootPath, file);
             try {
               // if the path exists (and presumably we're uploading data to it) just set its data
-              if (file.toFile().getName().equals(ZKNODE_DATA_FILE)
+              if (file.getFileName().toString().equals(ZKNODE_DATA_FILE)
                   && zkClient.exists(zkNode, true)) {
                 zkClient.setData(zkNode, file, true);
               } else if (file == rootPath) {
@@ -555,10 +555,11 @@ public class ZkMaintenanceUtils {
   public static String createZkNodeName(String zkRoot, Path root, Path file) {
     String relativePath = root.relativize(file).toString();
     // Windows shenanigans
-    if ("\\".equals(File.separator)) relativePath = relativePath.replace("\\", "/");
+    if ("\\".equals(FileSystems.getDefault().getSeparator()))
+      relativePath = relativePath.replace("\\", "/");
     // It's possible that the relative path and file are the same, in which case
     // adding the bare slash is A Bad Idea unless it's a non-leaf data node
-    boolean isNonLeafData = file.toFile().getName().equals(ZKNODE_DATA_FILE);
+    boolean isNonLeafData = file.getFileName().toString().equals(ZKNODE_DATA_FILE);
     if (relativePath.length() == 0 && !isNonLeafData) return zkRoot;
 
     // Important to have this check if the source is file:whatever/ and the destination is just zk:/

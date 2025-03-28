@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final Path ROOT_DIR = Path.of(TEST_HOME());
+  private static final Path ROOT_DIR = TEST_HOME();
   private static final Path CONF_DIR =
       ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
 

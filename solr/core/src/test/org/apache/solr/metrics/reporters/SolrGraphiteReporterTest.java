@@ -43,7 +43,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
   @Test
   public void testReporter() throws Exception {
     int jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
-    Path home = Path.of(TEST_HOME());
+    Path home = TEST_HOME();
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
@@ -62,7 +62,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
               cfg,
               new TestHarness.TestCoresLocator(
                   DEFAULT_TEST_CORENAME,
-                  initAndGetDataDir().getAbsolutePath(),
+                  initAndGetDataDir().toString(),
                   "solrconfig.xml",
                   "schema.xml"));
 

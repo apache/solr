@@ -20,13 +20,13 @@ import static org.apache.commons.io.file.PathUtils.deleteDirectory;
 import static org.apache.solr.bench.BaseBenchState.log;
 
 import com.codahale.metrics.Meter;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -129,8 +129,7 @@ public class MiniClusterState {
               benchmarkParams.getBenchmark() + ".txt");
       Files.createDirectories(metricsResults.getParent());
 
-      cluster.dumpMetrics(
-          metricsResults.getParent().toFile(), metricsResults.getFileName().toString());
+      cluster.dumpMetrics(metricsResults.getParent(), metricsResults.getFileName().toString());
     }
 
     /**
@@ -169,8 +168,14 @@ public class MiniClusterState {
                   long clusterSize =
                       Files.walk(node)
                           .filter(Files::isRegularFile)
-                          .map(Path::toFile)
-                          .mapToLong(File::length)
+                          .mapToLong(
+                              file -> {
+                                try {
+                                  return Files.size(file);
+                                } catch (IOException e) {
+                                  throw new RuntimeException(e);
+                                }
+                              })
                           .sum();
                   log("mini cluster node size (bytes) " + node + " " + clusterSize);
                 } catch (IOException e) {
@@ -552,7 +557,9 @@ public class MiniClusterState {
    */
   public static Path getFile(String name) {
     final URL url =
-        MiniClusterState.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
+        MiniClusterState.class
+            .getClassLoader()
+            .getResource(name.replace(FileSystems.getDefault().getSeparator(), "/"));
     if (url != null) {
       try {
         return Path.of(url.toURI());

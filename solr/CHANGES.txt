@@ -164,6 +164,10 @@ Other Changes
 * SOLR-17706: SolrJ DocumentObjectBinder is now a global singleton via an INSTANCE field and that
   which is pluggable via Java SPI/ServiceLoader.  SolrClient.getBinder is gone.  (David Smiley)
 
+* SOLR-17584: There is no longer a distinction between trusted and untrusted configSets; all are now trusted.
+  To ensure security, Solr should enforce authentication and authorization,
+  allowing only authorized admins to publish them. (Abhishek Umarjikar)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -178,6 +182,8 @@ New Features
 * SOLR-17309: Certificate based authentication plugin now has richer flexible cert principal resolution. (Lamine Idjeraoui via Eric Pugh)
 
 * SOLR-17632: Added update request processor to encode text to vector at indexing time through external LLM services. (Alessandro Benedetti)
+
+* SOLR-17714: Added a FuzzyQParser to enable all FuzzyQuery customizations. (Houston Putman, Siju Varghese)
 
 Improvements
 ---------------------

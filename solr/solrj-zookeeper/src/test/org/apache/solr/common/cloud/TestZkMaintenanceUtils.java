@@ -173,7 +173,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       oneByte[0] = 0x30;
       zkClient.makePath("/test1byte/one", oneByte, true);
 
-      Path tmpDest = createTempDir().resolve("MustBeOne").toAbsolutePath();
+      Path tmpDest = createTempDir().resolve("MustBeOne");
       ZkMaintenanceUtils.downloadFromZK(zkClient, "/test1byte/one", tmpDest);
 
       try (FileInputStream fis = new FileInputStream(tmpDest.toFile())) {

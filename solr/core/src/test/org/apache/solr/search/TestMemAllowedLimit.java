@@ -44,7 +44,7 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
 
   private static Path createConfigSet() throws Exception {
     Path configSet = createTempDir();
-    copyMinConf(configSet.toFile());
+    copyMinConf(configSet);
     // insert an expensive search component
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
     Files.writeString(

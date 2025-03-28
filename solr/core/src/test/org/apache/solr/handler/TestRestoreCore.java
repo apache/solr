@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -48,16 +47,14 @@ public class TestRestoreCore extends SolrJettyTestBase {
   ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
-  private static final String CONF_DIR =
-      "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf" + File.separator;
+  private static final Path CONF_DIR = Path.of("solr", DEFAULT_TEST_CORENAME, "conf");
 
   private static long docsSeed; // see indexDocs()
 
   private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance)
       throws Exception {
     Files.copy(
-        Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        Path.of(instance.getHomeDir(), "solr.xml"));
+        SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), Path.of(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
@@ -81,11 +78,9 @@ public class TestRestoreCore extends SolrJettyTestBase {
     super.setUp();
     String configFile = "solrconfig-leader.xml";
 
-    leader =
-        new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
-    leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    leader.copyConfigFile(CONF_DIR.resolve(configFile).toString(), "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
