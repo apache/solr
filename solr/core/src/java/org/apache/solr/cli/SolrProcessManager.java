@@ -198,11 +198,14 @@ public class SolrProcessManager {
         while ((line = reader.readLine()) != null) {
           stringResponse.append(line);
         }
-        log.debug("Looking up PIDs on Windows took {} ms", stopWatch.getTime());
+        if (log.isDebugEnabled()) {
+          log.debug("Looking up PIDs on Windows took {} ms", stopWatch.getTime());
+        }
         return parsePidToCommandLineJson(stringResponse.toString());
       }
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting command lines for Windows");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error getting command lines for Windows");
     }
   }
 
