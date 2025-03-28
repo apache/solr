@@ -39,7 +39,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
@@ -181,7 +180,6 @@ public class SolrProcessManager {
    */
   private static Map<Long, String> commandLinesWindows() {
     try {
-      StopWatch stopWatch = StopWatch.createStarted();
       Process process =
           new ProcessBuilder(
                   "powershell.exe",
@@ -196,10 +194,6 @@ public class SolrProcessManager {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Error getting command lines for Windows: " + errorText);
-      }
-
-      if (log.isDebugEnabled()) {
-        log.debug("Looking up PIDs on Windows took {} ms", stopWatch.getTime());
       }
       return parseWindowsPidToCommandLineJson(output);
     } catch (IOException e) {
