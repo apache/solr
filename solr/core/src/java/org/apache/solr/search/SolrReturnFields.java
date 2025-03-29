@@ -40,6 +40,7 @@ import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
+import org.apache.solr.response.transform.MatchScoreAugmenter;
 import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -50,6 +51,7 @@ import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
 public class SolrReturnFields extends ReturnFields {
   // Special Field Keys
   public static final String SCORE = "score";
+  public static final String MATCH_SCORE = "matchScore";
 
   private final List<String> globs = new ArrayList<>(1);
 
@@ -107,7 +109,7 @@ public class SolrReturnFields extends ReturnFields {
     if (fl == null) {
       parseFieldList((String[]) null, req);
     } else {
-      if (fl.trim().length() == 0) {
+      if (fl.trim().isEmpty()) {
         // legacy thing to support fl='  ' => fl=*,score!
         // maybe time to drop support for this?
         // See ConvertedLegacyTest
@@ -535,6 +537,13 @@ public class SolrReturnFields extends ReturnFields {
 
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new ScoreAugmenter(disp));
+    }
+    // a valid field name
+    if (MATCH_SCORE.equals(field)) {
+      _wantsScore = true;
+
+      String disp = (key == null) ? field : key;
+      augmenters.addTransformer(new MatchScoreAugmenter(disp));
     }
   }
 

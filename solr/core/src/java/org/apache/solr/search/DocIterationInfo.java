@@ -14,37 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response.transform;
+package org.apache.solr.search;
 
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.search.DocIterationInfo;
+/** Information for the current document in the <code>DocIterator</code>. */
+public interface DocIterationInfo {
 
-/**
- * Simple Augmenter that adds the score
- *
- * @since solr 4.0
- */
-public class ScoreAugmenter extends DocTransformer {
-  final String name;
+  /**
+   * Returns the score for the document just returned by <code>nextDoc()</code>
+   *
+   * <p>The value returned may be meaningless depending on the context in which the DocIterator
+   * instance was retrieved.
+   */
+  public float score();
 
-  public ScoreAugmenter(String display) {
-    this.name = display;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
-    if (context != null && context.wantsScores()) {
-      doc.setField(name, docInfo.score());
-    }
-  }
-
-  @Override
-  public void transform(SolrDocument doc, int docid) {
-    doc.setField(name, 0.0f);
+  /**
+   * Returns the query match score in case of rerank queries
+   *
+   * @return the query match score in case of a rerank query, null otherwise.
+   */
+  public default Float matchScore() {
+    return null;
   }
 }

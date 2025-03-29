@@ -32,15 +32,16 @@ public class DocSlice implements DocList, Accountable {
       RamUsageEstimator.shallowSizeOfInstance(DocSlice.class)
           + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
-  final int offset; // starting position of the docs (zero based)
-  final int len; // number of positions used in arrays
-  final int[] docs; // a slice of documents (docs 0-100 of the query)
+  protected final int offset; // starting position of the docs (zero based)
+  protected final int len; // number of positions used in arrays
+  protected final long matches;
+  protected final TotalHits.Relation matchesRelation;
+  protected final float maxScore;
+  protected int docLength; // number of documents in the result
 
-  final float[] scores; // optional score list
-  final long matches;
-  final TotalHits.Relation matchesRelation;
-  final float maxScore;
-  final long ramBytesUsed; // cached value
+  private final int[] docs; // a slice of documents (docs 0-100 of the query)
+  private final float[] scores; // optional score list
+  private final long ramBytesUsed; // cached value
 
   /**
    * Primary constructor for a DocSlice instance.
@@ -73,6 +74,7 @@ public class DocSlice implements DocList, Accountable {
                 ? 0
                 : ((long) scores.length << 2) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
     this.matchesRelation = matchesRelation;
+    this.docLength = docs == null ? 0 : docs.length;
   }
 
   @Override
