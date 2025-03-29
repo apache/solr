@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SplittableRandom;
@@ -122,7 +121,7 @@ public class MiniClusterState {
 
       // dump Solr metrics
       Path metricsResults =
-          Paths.get(
+          Path.of(
               workDir,
               "metrics-results",
               benchmarkParams.id(),
@@ -203,7 +202,7 @@ public class MiniClusterState {
 
       workDir = System.getProperty("workBaseDir", "build/work");
 
-      Path currentRelativePath = Paths.get("");
+      Path currentRelativePath = Path.of("");
       String s = currentRelativePath.toAbsolutePath().toString();
       log("current relative path is: " + s);
       log("work path is: " + workDir);
@@ -226,13 +225,13 @@ public class MiniClusterState {
       String baseDirSysProp = System.getProperty("miniClusterBaseDir");
       if (baseDirSysProp != null) {
         deleteMiniCluster = false;
-        miniClusterBaseDir = Paths.get(baseDirSysProp);
+        miniClusterBaseDir = Path.of(baseDirSysProp);
         if (Files.exists(miniClusterBaseDir)) {
           createCollectionAndIndex = false;
           allowClusterReuse = true;
         }
       } else {
-        miniClusterBaseDir = Paths.get(workDir, "mini-cluster");
+        miniClusterBaseDir = Path.of(workDir, "mini-cluster");
       }
 
       System.setProperty("metricsEnabled", String.valueOf(metricsEnabled));
@@ -584,6 +583,6 @@ public class MiniClusterState {
         "Cannot find resource in classpath or in file-system (relative to CWD): "
             + name
             + " CWD="
-            + Paths.get("").toAbsolutePath());
+            + Path.of("").toAbsolutePath());
   }
 }

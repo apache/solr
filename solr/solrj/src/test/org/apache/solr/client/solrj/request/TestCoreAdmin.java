@@ -23,7 +23,6 @@ import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -262,7 +261,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       cores = CoreContainer.createAndLoad(SOLR_HOME);
 
       String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).dataDir;
-      Path data = Paths.get(ddir, "index");
+      Path data = Path.of(ddir, "index");
       assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 
       getSolrCore0().add(new SolrInputDocument("id", "core0-1"));

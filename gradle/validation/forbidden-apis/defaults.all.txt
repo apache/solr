@@ -94,3 +94,6 @@ java.net.URL#<init>(**)
 
 @defaultMessage Use Locale.Builder instead.
 java.util.Locale#<init>(**)
+
+@defaultMessage Use Path.of(...) methods instead.
+java.nio.file.Paths#get(**)

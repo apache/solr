@@ -23,7 +23,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -145,11 +144,9 @@ public class ZkMaintenanceUtils {
           throw new SolrServerException(
               "Zookeeper node " + src + " has children and recursive is false");
         }
-      } else if (Files.isDirectory(Paths.get(src))) {
+      } else if (Files.isDirectory(Path.of(src))) {
         throw new SolrServerException(
-            "Local path "
-                + Paths.get(src).toAbsolutePath()
-                + " is a directory and recurse is false");
+            "Local path " + Path.of(src).toAbsolutePath() + " is a directory and recurse is false");
       }
     }
 
@@ -166,7 +163,7 @@ public class ZkMaintenanceUtils {
 
     // local -> ZK copy
     if (dstIsZk) {
-      uploadToZK(zkClient, Paths.get(src), dst, null);
+      uploadToZK(zkClient, Path.of(src), dst, null);
       return;
     }
 
@@ -174,19 +171,19 @@ public class ZkMaintenanceUtils {
     // node has children. This is kind of a weak test for the notion of "directory" on Zookeeper. ZK
     // -> local copy where ZK is a parent node
     if (zkClient.getChildren(src, null, true).size() > 0) {
-      downloadFromZK(zkClient, src, Paths.get(dst));
+      downloadFromZK(zkClient, src, Path.of(dst));
       return;
     }
 
     // Single file ZK -> local copy where ZK is a leaf node
-    if (Files.isDirectory(Paths.get(dst))) {
+    if (Files.isDirectory(Path.of(dst))) {
       if (!dst.endsWith(FileSystems.getDefault().getSeparator())) {
         dst += FileSystems.getDefault().getSeparator();
       }
       dst = normalizeDest(src, dst, srcIsZk, dstIsZk);
     }
     byte[] data = zkClient.getData(src, null, null, true);
-    Path filename = Paths.get(dst);
+    Path filename = Path.of(dst);
     Path parentDir = filename.getParent();
     if (parentDir != null) {
       Files.createDirectories(parentDir);
@@ -201,7 +198,7 @@ public class ZkMaintenanceUtils {
       String srcName, String dstName, boolean srcIsZk, boolean dstIsZk) {
     // Special handling for "."
     if (dstName.equals(".")) {
-      return Paths.get(".").normalize().toAbsolutePath().toString();
+      return Path.of(".").normalize().toAbsolutePath().toString();
     }
 
     String dstSeparator = (dstIsZk) ? "/" : FileSystems.getDefault().getSeparator();
@@ -324,7 +321,7 @@ public class ZkMaintenanceUtils {
       path = path.substring(0, path.length() - 1);
     }
 
-    final Path rootPath = Paths.get(path);
+    final Path rootPath = Path.of(path);
 
     if (!Files.exists(rootPath)) {
       throw new IOException("Path " + rootPath + " does not exist");

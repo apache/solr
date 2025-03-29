@@ -23,7 +23,6 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Properties;
@@ -470,7 +469,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
       final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
       String dataDirectory = status.dataDir;
-      dataDir = Paths.get(dataDirectory);
+      dataDir = Path.of(dataDirectory);
       assertTrue(Files.exists(dataDir));
     }
 

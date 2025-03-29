@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin.api;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -126,7 +126,7 @@ public class MergeIndexes extends CoreAdminAPIBase implements MergeIndexesApi {
                 // Validate each 'indexDir' input as valid
                 dirNames.stream()
                     .forEach(
-                        indexDir -> core.getCoreContainer().assertPathAllowed(Paths.get(indexDir)));
+                        indexDir -> core.getCoreContainer().assertPathAllowed(Path.of(indexDir)));
                 DirectoryFactory dirFactory = core.getDirectoryFactory();
                 dirNames.stream()
                     .forEach(

@@ -18,7 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -813,7 +813,7 @@ public class IndexSizeEstimator {
       System.err.println("ERROR: <indexDir> argument is required.");
       System.exit(-2);
     }
-    Directory dir = FSDirectory.open(Paths.get(path));
+    Directory dir = FSDirectory.open(Path.of(path));
     DirectoryReader reader = StandardDirectoryReader.open(dir);
     IndexSizeEstimator stats = new IndexSizeEstimator(reader, topN, maxLen, summary, details);
     System.out.println(Utils.toJSONString(stats.estimate()));

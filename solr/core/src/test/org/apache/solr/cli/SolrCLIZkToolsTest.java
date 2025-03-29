@@ -475,7 +475,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     int res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     String content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertFalse("Return should NOT contain a child node", content.contains("solrconfig.xml"));
 
@@ -486,7 +486,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertFalse("Return should NOT contain a child node", content.contains("solrconfig.xml"));
 
@@ -497,7 +497,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
 
@@ -508,7 +508,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
 
@@ -517,7 +517,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     runtime.clearOutput();
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertFalse("Return should not contain /zookeeper", content.contains("/zookeeper"));
 
     // Saw a case where ending in slash didn't work, so test it.
@@ -527,7 +527,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, runtime, ZkLsTool.class);
     content = runtime.getOutput();
 
-    assertEquals("List should have succeeded", res, 0);
+    assertEquals("List should have succeeded", 0, res);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
   }
@@ -563,7 +563,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     args = new String[] {"rm", "--recursive", "--zk-host", zkAddr, "/configs/rm1"};
 
     res = CLITestHelper.runTool(args, ZkRmTool.class);
-    assertEquals("Should have removed node /configs/rm1", res, 0);
+    assertEquals("Should have removed node /configs/rm1", 0, res);
     assertFalse(
         "Znode /configs/toremove really should be gone", zkClient.exists("/configs/rm1", true));
 
@@ -571,7 +571,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     args = new String[] {"rm", "--recursive", "--zk-host", zkAddr, "zk:/configs/rm2"};
 
     res = CLITestHelper.runTool(args, ZkRmTool.class);
-    assertEquals("Should have removed node /configs/rm2", res, 0);
+    assertEquals("Should have removed node /configs/rm2", 0, res);
     assertFalse(
         "Znode /configs/toremove2 really should be gone", zkClient.exists("/configs/rm2", true));
 

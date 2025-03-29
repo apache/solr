@@ -26,7 +26,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,7 +63,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   public static void beforeClass() {
     assumeFalse(
         "FIXME: This test does not work with whitespace in CWD (https://issues.apache.org/jira/browse/SOLR-8877)",
-        Paths.get(".").toAbsolutePath().toString().contains(" "));
+        Path.of(".").toAbsolutePath().toString().contains(" "));
     // to be true
     System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
   }
@@ -112,10 +111,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
           String solrHomeDir = getArg("--solr-home", args);
           int port = Integer.parseInt(getArg("-p", args));
-          Path solrXmlPath = Paths.get(solrHomeDir).resolve("solr.xml");
+          Path solrXmlPath = Path.of(solrHomeDir).resolve("solr.xml");
           if (!Files.exists(solrXmlPath)) {
             String solrServerDir = getArg("--server-dir", args);
-            solrXmlPath = Paths.get(solrServerDir).resolve("solr").resolve("solr.xml");
+            solrXmlPath = Path.of(solrServerDir).resolve("solr").resolve("solr.xml");
           }
           String solrxml = Files.readString(solrXmlPath, Charset.defaultCharset());
 

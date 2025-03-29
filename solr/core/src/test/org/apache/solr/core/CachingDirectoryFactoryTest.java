@@ -105,7 +105,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
         df.remove(pathString, addIfTrue(deleteAfter, pathString, after));
         df.doneWithDirectory(d);
         df.release(d);
-        boolean exists = Path.of(pathString).toFile().exists();
+        boolean exists = Files.exists(Path.of(pathString));
         if (after) {
           assertTrue(
               "Path " + pathString + " should be removed after, but it no longer exists", exists);
