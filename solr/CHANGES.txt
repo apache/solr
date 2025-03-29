@@ -230,6 +230,8 @@ Bug Fixes
 
 * SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
 
+* SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
