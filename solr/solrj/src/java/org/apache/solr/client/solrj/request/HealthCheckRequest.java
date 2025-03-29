@@ -38,7 +38,7 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
   }
 
   private HealthCheckRequest(METHOD m, String path) {
-    super(m, path);
+    super(m, path, SolrRequestType.ADMIN);
   }
 
   public void setMaxGenerationLag(int maxLagAllowed) {
@@ -60,10 +60,5 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
     // to an unintended recipient.
     assert client instanceof BaseHttpSolrClient || client instanceof HttpSolrClientBase;
     return new HealthCheckResponse();
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
   }
 }

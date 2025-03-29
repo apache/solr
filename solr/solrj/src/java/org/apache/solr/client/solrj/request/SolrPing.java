@@ -38,7 +38,8 @@ public class SolrPing extends CollectionRequiringSolrRequest<SolrPingResponse> {
 
   /** Create a new SolrPing object. */
   public SolrPing() {
-    super(METHOD.GET, CommonParams.PING_HANDLER);
+    // this request is not processed as an ADMIN request
+    super(METHOD.GET, CommonParams.PING_HANDLER, SolrRequestType.UNSPECIFIED);
     params = new ModifiableSolrParams();
   }
 
@@ -50,11 +51,6 @@ public class SolrPing extends CollectionRequiringSolrRequest<SolrPingResponse> {
   @Override
   public ModifiableSolrParams getParams() {
     return params;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
   }
 
   /**
