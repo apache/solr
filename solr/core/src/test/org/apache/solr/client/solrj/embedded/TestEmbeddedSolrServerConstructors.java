@@ -66,7 +66,6 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
 
   @Test
   public void testPathConstructorZipFS() throws Exception {
-    Path dataDir = createTempDir("data-dir");
     Path archive = createTempFile("configset", ".zip");
     Files.delete(archive);
 
@@ -82,28 +81,28 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
     //                 ├── data
     //                 │   └── core1
     //                 │       ├── conf
-    //                 │       │   ├── managed-schema.xml
+    //                 │       │   ├── schema.xml
     //                 │       │   └── solrconfig.xml
     //                 │       └── core.properties
     //                 └── solr.xml
+    //
+    // Note :
+    // We don't want Solr to attempt to modify
+    // the archive when we point solrHome to
+    // the archive content. That's why we:
+    // - use RAMDirectoryFactory,
+    // - disable the update log.
 
     var zipFs = FileSystems.newFileSystem(archive, Map.of("create", "true"));
     try (zipFs) {
       var destDir = zipFs.getPath("1", "2", "3", "4");
       var confDir = destDir.resolve("data/core1/conf");
       Files.createDirectories(confDir);
-      Files.copy(TEST_PATH().resolve("solr.xml"), destDir.resolve("solr.xml"));
-      PathUtils.copyDirectory(configset("zipfs"), confDir);
 
-      // Need to make sure we circumvent any Solr attempts
-      // to modify the archive when we point solrHome to
-      // the archive content. Steps to achieve that:
-      // - set a custom data dir,
-      // - disable the update log,
-      // - configure the rest manager in the solrconfig.xml with InMemoryStorageIO.
-      Files.writeString(
-          confDir.resolveSibling("core.properties"),
-          String.join("\n", "solr.ulog.enable=false", "solr.data.dir=" + dataDir));
+      Files.createFile(confDir.resolveSibling("core.properties"));
+      Files.copy(TEST_PATH().resolve("solr.xml"), destDir.resolve("solr.xml"));
+
+      PathUtils.copyDirectory(configset("zipfs"), confDir);
     }
 
     // Then :
