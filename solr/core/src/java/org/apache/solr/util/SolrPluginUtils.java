@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -808,15 +809,15 @@ public class SolrPluginUtils {
       Map<Object, ShardDoc> resultIds,
       Map.Entry<String, Object>[] destArr) {
     assert resultIds.size() == destArr.length;
-    for (int i = 0; i < namedList.size(); i++) {
-      String id = namedList.getName(i);
-      // TODO: lookup won't work for non-string ids... String vs Float
-      ShardDoc sdoc = resultIds.get(id);
-      if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
-        int idx = sdoc.positionInResponse;
-        destArr[idx] = new NamedList.NamedListEntry<>(id, namedList.getVal(i));
-      }
-    }
+    namedList.forEach(
+        (id, val) -> {
+          // TODO: lookup won't work for non-string ids... String vs Float
+          ShardDoc sdoc = resultIds.get(id);
+          if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
+            int idx = sdoc.positionInResponse;
+            destArr[idx] = new AbstractMap.SimpleEntry<>(id, val);
+          }
+        });
   }
 
   /**
