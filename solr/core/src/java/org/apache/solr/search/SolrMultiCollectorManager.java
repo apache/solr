@@ -38,7 +38,7 @@ public class SolrMultiCollectorManager
     implements CollectorManager<SolrMultiCollectorManager.Collectors, Object[]> {
 
   private final CollectorManager<Collector, ?>[] collectorManagers;
-  private LongAdder maxHits = null;
+  private LongAdder runningHits = null;
   private int maxDocsToCollect;
   private final List<Collectors> reducableCollectors = new ArrayList<>();
 
@@ -52,7 +52,7 @@ public class SolrMultiCollectorManager
     }
     this.collectorManagers = (CollectorManager[]) collectorManagers;
     if (queryCommand.shouldEarlyTerminateSearch()) {
-      maxHits = new LongAdder();
+      runningHits = new LongAdder();
       maxDocsToCollect = queryCommand.getMaxHitsTerminateEarly();
     }
   }
@@ -104,8 +104,8 @@ public class SolrMultiCollectorManager
       collectors = new Collector[collectorManagers.length];
       for (int i = 0; i < collectors.length; i++) {
         Collector collector = collectorManagers[i].newCollector();
-        if (maxHits != null) {
-          collector = new EarlyTerminatingCollector(collector, maxDocsToCollect, maxHits);
+        if (runningHits != null) {
+          collector = new EarlyTerminatingCollector(collector, maxDocsToCollect, runningHits);
         }
         collectors[i] = collector;
       }

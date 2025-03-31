@@ -194,12 +194,17 @@ public class MultiThreadedSearcher {
   static class SearchResult {
     final ScoreMode scoreMode;
     private final Object[] result;
-    final boolean isTerminatedEarly;
+    final EarlyTerminationReason earlyTerminationReason;
 
-    SearchResult(ScoreMode scoreMode, Object[] result, boolean isTerminatedEarly) {
+    public static enum EarlyTerminationReason {
+      MAX_HITS
+    }
+
+    SearchResult(
+        ScoreMode scoreMode, Object[] result, EarlyTerminationReason earlyTerminationReason) {
       this.scoreMode = scoreMode;
       this.result = result;
-      this.isTerminatedEarly = isTerminatedEarly;
+      this.earlyTerminationReason = earlyTerminationReason;
     }
 
     public TopDocsResult getTopDocsResult() {
