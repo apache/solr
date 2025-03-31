@@ -30,11 +30,11 @@ import org.apache.lucene.search.LeafCollector;
  */
 public class EarlyTerminatingCollector extends FilterCollector {
 
-  private final int chunkSize = 100; // Check across threads only at a chunk size
+  private final int chunkSize; // Check across threads only at a chunk size
 
   private final int maxDocsToCollect;
 
-  private int numCollected = 0;
+  private int numCollectedLocally = 0;
   private int prevReaderCumulativeSize = 0;
   private int currentReaderSize = 0;
   private final LongAdder pendingDocsToCollect;
@@ -48,7 +48,7 @@ public class EarlyTerminatingCollector extends FilterCollector {
    * @param maxDocsToCollect - the maximum number of documents to Collect
    */
   public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect) {
-    this(delegate, maxDocsToCollect, new LongAdder());
+    this(delegate, maxDocsToCollect, null);
   }
 
   public EarlyTerminatingCollector(
@@ -58,6 +58,7 @@ public class EarlyTerminatingCollector extends FilterCollector {
     assert null != delegate;
     this.maxDocsToCollect = maxDocsToCollect;
     this.pendingDocsToCollect = docsToCollect;
+    this.chunkSize = Math.min(100, maxDocsToCollect / 10);
   }
 
   @Override
@@ -70,12 +71,14 @@ public class EarlyTerminatingCollector extends FilterCollector {
       @Override
       public void collect(int doc) throws IOException {
         super.collect(doc);
-        numCollected++;
-        terminatedEarly = maxDocsToCollect <= numCollected;
-        if (numCollected % chunkSize == 0) {
-          pendingDocsToCollect.add(chunkSize);
-          final long overallCollectedDocCount = pendingDocsToCollect.intValue();
-          terminatedEarly = overallCollectedDocCount >= maxDocsToCollect;
+        numCollectedLocally++;
+        terminatedEarly = numCollectedLocally >= maxDocsToCollect;
+        if (pendingDocsToCollect != null) {
+          pendingDocsToCollect.increment();
+          if (numCollectedLocally % chunkSize == 0) {
+            final long overallCollectedDocCount = pendingDocsToCollect.intValue();
+            terminatedEarly = overallCollectedDocCount >= maxDocsToCollect;
+          }
         }
         if (terminatedEarly) {
           throw new EarlyTerminatingCollectorException(
