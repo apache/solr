@@ -40,7 +40,13 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
 
-    return denseVectorType.getKnnVectorQuery(
-        schemaField.getName(), vectorToSearch, topK, getFilterQuery());
+    if(schemaField.multiValued()){
+      return denseVectorType.getMultiValuedKnnVectorQuery(req,
+              schemaField.getName(), vectorToSearch, topK, getFilterQuery());
+    } else {
+      return denseVectorType.getKnnVectorQuery(
+              schemaField.getName(), vectorToSearch, topK, getFilterQuery());
+    }
+    
   }
 }

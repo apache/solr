@@ -40,10 +40,15 @@ import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
+import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.join.BlockJoinParentQParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -381,6 +386,25 @@ public class DenseVectorField extends FloatPointField {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Unexpected state. Vector Encoding: " + vectorEncoding);
+    }
+  }
+
+  public Query getMultiValuedKnnVectorQuery(final SolrQueryRequest request,
+          String fieldName, String vectorToSearch, int topK, Query filterQuery) {
+
+    DenseVectorParser vectorBuilder =
+            getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
+
+    BitSetProducer acceptedDocuments = BlockJoinParentQParser.getCachedBitSetProducer(request, filterQuery);
+    switch (vectorEncoding) {
+      case FLOAT32:
+        return new DiversifyingChildrenFloatKnnVectorQuery(fieldName, vectorBuilder.getFloatVector(), null, topK, acceptedDocuments);
+      case BYTE:
+        return new DiversifyingChildrenByteKnnVectorQuery(fieldName, vectorBuilder.getByteVector(), null, topK, acceptedDocuments);
+      default:
+        throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Unexpected state. Vector Encoding: " + vectorEncoding);
     }
   }
 
