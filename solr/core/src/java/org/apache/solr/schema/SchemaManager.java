@@ -242,7 +242,7 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
         final var addCopyFieldOp = (SchemaChangeOperation.AddCopyField) op;
         String src = addCopyFieldOp.source;
-        List<String> dests = addCopyFieldOp.destination;
+        List<String> dests = addCopyFieldOp.destinations;
 
         // If maxChars is not specified, there is no limit on copied chars
         final var maxChars =
@@ -322,7 +322,7 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
         final var deleteCopyField = (SchemaChangeOperation.DeleteCopyField) op;
         String source = deleteCopyField.source;
-        List<String> dests = deleteCopyField.destination;
+        List<String> dests = deleteCopyField.destinations;
         try {
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.deleteCopyFields(singletonMap(source, dests));

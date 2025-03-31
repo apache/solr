@@ -71,7 +71,29 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.AddCopyField.class));
     final var parsedSpecific = (SchemaChangeOperation.AddCopyField) parsedGeneric;
     assertEquals("source1", parsedSpecific.source);
-    assertThat(parsedSpecific.destination, contains("dest1", "dest2"));
+    assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
+    assertEquals(Integer.valueOf(123), parsedSpecific.maxChars);
+  }
+
+  // "dest" is used instead of "destinations", to support v1 APIs
+  @Test
+  public void testAddCopyFieldAltFieldName() throws Exception {
+    final var inputJson =
+        """
+                {
+                  "operationType": "add-copy-field",
+                  "source": "source1",
+                  "dest": ["dest1", "dest2"],
+                  "maxChars": 123
+                }
+                """;
+
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+
+    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.AddCopyField.class));
+    final var parsedSpecific = (SchemaChangeOperation.AddCopyField) parsedGeneric;
+    assertEquals("source1", parsedSpecific.source);
+    assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
     assertEquals(Integer.valueOf(123), parsedSpecific.maxChars);
   }
 
@@ -142,10 +164,30 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
   public void testDeleteCopyField() throws Exception {
     final var inputJson =
         """
+                {
+                  "operationType": "delete-copy-field",
+                  "source": "source1",
+                  "destinations": ["dest1", "dest2"]
+                }
+                """;
+
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+
+    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.DeleteCopyField.class));
+    final var parsedSpecific = (SchemaChangeOperation.DeleteCopyField) parsedGeneric;
+    assertEquals("source1", parsedSpecific.source);
+    assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
+  }
+
+  // "dest" is used instead of "destinations", to support v1 APIs
+  @Test
+  public void testDeleteCopyFieldAltFieldName() throws Exception {
+    final var inputJson =
+        """
             {
               "operationType": "delete-copy-field",
               "source": "source1",
-              "destinations": ["dest1", "dest2"]
+              "dest": ["dest1", "dest2"]
             }
             """;
 
@@ -154,7 +196,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.DeleteCopyField.class));
     final var parsedSpecific = (SchemaChangeOperation.DeleteCopyField) parsedGeneric;
     assertEquals("source1", parsedSpecific.source);
-    assertThat(parsedSpecific.destination, contains("dest1", "dest2"));
+    assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
   }
 
   @Test

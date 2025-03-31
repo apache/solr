@@ -1,5 +1,6 @@
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -67,7 +68,10 @@ public class SchemaChangeOperation {
 
   public static class AddCopyField extends SchemaChangeOperation {
     @JsonProperty public String source;
-    @JsonProperty("dest") public List<String> destination;
+
+    @JsonAlias("dest")
+    public List<String> destinations;
+
     @JsonProperty public Integer maxChars;
   }
 
@@ -113,8 +117,9 @@ public class SchemaChangeOperation {
 
   public static class DeleteCopyField extends SchemaChangeOperation {
     @JsonProperty public String source;
-    // TODO Figure out how to support both 'dest' and "destinations" for v1/v2 divergence
-    @JsonProperty("dest") public List<String> destination;
+
+    @JsonAlias("dest")
+    public List<String> destinations;
   }
 
   public static class DeleteField extends SchemaChangeOperation {
