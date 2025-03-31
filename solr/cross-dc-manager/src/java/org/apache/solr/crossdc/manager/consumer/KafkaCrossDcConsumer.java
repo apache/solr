@@ -40,6 +40,7 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -418,7 +419,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   }
 
   public void sendBatch(
-      SolrRequest<?> solrReqBatch,
+      SolrRequest<? extends SolrResponse> solrReqBatch,
       MirroredSolrRequest.Type type,
       ConsumerRecord<String, MirroredSolrRequest<?>> lastRecord,
       PartitionManager.WorkUnit workUnit) {
@@ -427,7 +428,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         executor.submit(
             () -> {
               try {
-                final MirroredSolrRequest<?> mirroredSolrRequest =
+                final var mirroredSolrRequest =
                     new MirroredSolrRequest<>(type, lastRecord.value().getAttempt(), solrReqBatch);
                 final IQueueHandler.Result<MirroredSolrRequest<?>> result =
                     messageProcessor.handleItem(mirroredSolrRequest);

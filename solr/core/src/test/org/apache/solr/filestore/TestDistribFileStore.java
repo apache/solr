@@ -246,7 +246,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static NavigableObject assertResponseValues(
       int repeats, SolrClient client, SolrRequest<?> req, Map<String, Object> vals)
       throws Exception {
-    Callable<NavigableObject> callable = () -> req.process(client);
+    Callable<NavigableObject> callable = () -> client.request(req);
 
     return assertResponseValues(repeats, callable, vals);
   }

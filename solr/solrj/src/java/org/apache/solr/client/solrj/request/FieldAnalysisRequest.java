@@ -18,11 +18,11 @@ package org.apache.solr.client.solrj.request;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.FieldAnalysisResponse;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A request for the org.apache.solr.handler.FieldAnalysisRequestHandler.
@@ -52,7 +52,7 @@ public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAn
   }
 
   @Override
-  protected FieldAnalysisResponse createResponse(SolrClient client) {
+  protected FieldAnalysisResponse createResponse(NamedList<Object> namedList) {
     if (fieldTypes == null && fieldNames == null) {
       throw new IllegalStateException("At least one field type or field name need to be specified");
     }
