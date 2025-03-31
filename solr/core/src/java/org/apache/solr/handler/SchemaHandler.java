@@ -91,22 +91,20 @@ public class SchemaHandler extends RequestHandlerBase
 
       try {
         List<CommandOperation> ops = req.getCommands(false);
-        List<Map<String, Object>> parseErrors = CommandOperation.captureErrors(ops);
-        if (!parseErrors.isEmpty()) {
+        List<Map<String, Object>> errs = CommandOperation.captureErrors(ops);
+        if (!errs.isEmpty()) {
           throw new ApiBag.ExceptionWithErrObject(
-              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", parseErrors);
+              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
         }
 
         final var operationList =
             ops.stream()
                 .map(co -> SchemaManagerUtils.convertToSchemaChangeOperations(co))
                 .collect(Collectors.toList());
-        final var processExceptions = new SchemaManager(req).performOperations(operationList);
-        // TODO This whole structure is a bit hacky - should I just go back to using the
-        // "Map<String, Object>" format?
-        if (!processExceptions.isEmpty()) {
-          throw new ApiBag.MultiErrorException(
-              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", processExceptions);
+        errs = new SchemaManager(req).performOperations(operationList);
+        if (!errs.isEmpty()) {
+          throw new ApiBag.ExceptionWithErrObject(
+              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
         }
       } catch (IOException e) {
         throw new SolrException(

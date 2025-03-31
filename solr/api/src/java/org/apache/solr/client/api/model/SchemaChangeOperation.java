@@ -3,6 +3,7 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -69,6 +70,7 @@ public class SchemaChangeOperation {
   public static class AddCopyField extends SchemaChangeOperation {
     @JsonProperty public String source;
 
+    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     @JsonAlias("dest")
     public List<String> destinations;
 
@@ -76,7 +78,9 @@ public class SchemaChangeOperation {
   }
 
   public static class AddField extends SchemaChangeOperation {
-    @JsonProperty public String name;
+    @JsonProperty(required = true)
+    public String name;
+
     @JsonProperty public String type;
 
     // Used for setting index and stored settings, etc.
@@ -118,6 +122,7 @@ public class SchemaChangeOperation {
   public static class DeleteCopyField extends SchemaChangeOperation {
     @JsonProperty public String source;
 
+    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     @JsonAlias("dest")
     public List<String> destinations;
   }

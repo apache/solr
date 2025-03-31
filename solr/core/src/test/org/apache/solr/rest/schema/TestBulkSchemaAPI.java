@@ -131,7 +131,6 @@ public class TestBulkSchemaAPI extends RestTestBase {
   }
 
   public void testAnalyzerClass() throws Exception {
-
     String addFieldTypeAnalyzerWithClass =
         "{\n"
             + "'add-field-type' : {"
@@ -861,14 +860,15 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
 
     payload =
-        "{\n"
-            + "          'add-copy-field' : {\n"
-            + "                       'source' :'bleh_s',\n"
-            + "                       'dest':'"
-            + newFieldName
-            + "'\n"
-            + "                       }\n"
-            + "          }\n";
+        """
+            {
+              "add-copy-field": {
+                "source": "bleh_s",
+                "dest": "%s"
+              }
+            }
+            """
+            .formatted(newFieldName);
     response = harness.post("/schema", json(payload));
 
     map = (Map) fromJSONString(response);

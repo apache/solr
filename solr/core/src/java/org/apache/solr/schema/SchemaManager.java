@@ -20,6 +20,7 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.api.model.SchemaChangeOperation.OPERATION_TYPE_PROP;
+import static org.apache.solr.common.util.CommandOperation.ERR_MSGS;
 import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
 import static org.apache.solr.schema.IndexSchema.NAME;
 import static org.apache.solr.schema.IndexSchema.TYPE;
@@ -42,6 +43,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -80,56 +82,48 @@ public class SchemaManager {
     }
   }
 
+  // TODO Replace the error-list used here with something more intuitive?
   /**
    * Take in a set of schema commands and execute them. It tries to capture as many errors as
    * possible instead of failing at the first error it encounters
    *
    * @return List of errors. If the List is empty then the operation was successful.
    */
-  public List<Exception> performOperations(List<SchemaChangeOperation> ops) throws Exception {
+  public List<Map<String, Object>> performOperations(List<SchemaChangeOperation> ops)
+      throws Exception {
     IndexSchema schema = req.getCore().getLatestSchema();
     if (schema instanceof ManagedIndexSchema && schema.isMutable()) {
       return doOperations(ops);
     } else {
-      return singletonList(
-          new SolrException(SolrException.ErrorCode.BAD_REQUEST, "schema is not editable"));
+      return singletonList(singletonMap(ERR_MSGS, "schema is not editable"));
     }
   }
 
-  private static void executeAndRecordErrors(List<Exception> errorRecord, Runnable toRun) {
-    try {
-      toRun.run();
-    } catch (Exception e) {
-      errorRecord.add(e);
-    }
-  }
-
-  private List<Exception> doOperations(List<SchemaChangeOperation> operations)
+  private List<Map<String, Object>> doOperations(List<SchemaChangeOperation> operations)
       throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(updateTimeOut, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
+    List<Map<String, Object>> errors = new ArrayList<>();
     int latestVersion = -1;
 
-    final List<Exception> exceptions = new ArrayList<>();
     synchronized (req.getSchema().getSchemaUpdateLock()) {
       while (!timeOut.hasTimedOut()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
         for (SchemaChangeOperation op : operations) {
           OpType opType = OpType.get(op.operationType);
-          if (opType != null) {
-            executeAndRecordErrors(
-                exceptions,
-                () -> {
-                  opType.perform(op, this);
-                });
-          } else {
-            exceptions.add(
-                new SolrException(
-                    SolrException.ErrorCode.BAD_REQUEST, "No such operation: " + op.operationType));
+          try {
+            opType.perform(op, this);
+          } catch (SchemaOperationException soe) {
+            errors.add(
+                Map.of(
+                    op.operationType,
+                    SchemaManagerUtils.convertToMap(op),
+                    ERR_MSGS,
+                    singletonList(soe.getMessage())));
           }
         }
-        if (!exceptions.isEmpty()) break;
+        if (!errors.isEmpty()) break;
         SolrResourceLoader loader = req.getCore().getResourceLoader();
         if (loader instanceof ZkSolrResourceLoader zkLoader) {
           StringWriter sw = new StringWriter();
@@ -174,7 +168,8 @@ public class SchemaManager {
             core.getCoreContainer().reload(core.getName(), core.uniqueId);
           } catch (SolrException e) {
             log.warn(errorMsg);
-            exceptions.add(e);
+            errors =
+                singletonList(singletonMap(CommandOperation.ERR_MSGS, errorMsg + e.getMessage()));
           }
           break;
         }
@@ -186,12 +181,11 @@ public class SchemaManager {
       // concurrent schema updates.
       waitForOtherReplicasToUpdate(timeOut, latestVersion);
     }
-    if (exceptions.isEmpty() && timeOut.hasTimedOut()) {
+    if (errors.isEmpty() && timeOut.hasTimedOut()) {
       log.warn("{} Timed out", errorMsg);
-      exceptions.add(
-          new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMsg + "Timed out."));
+      errors = singletonList(singletonMap(CommandOperation.ERR_MSGS, errorMsg + "Timed out."));
     }
-    return exceptions;
+    return errors;
   }
 
   private void waitForOtherReplicasToUpdate(TimeOut timeOut, int latestVersion) {
@@ -213,10 +207,26 @@ public class SchemaManager {
     }
   }
 
+  /**
+   * Represents an error encountered while processing a schema-change operation
+   *
+   * <p>Does not necessarily terminate schema modification, in the case of bulk operations.
+   */
+  private static class SchemaOperationException extends Exception {
+    public SchemaOperationException() {
+      super();
+    }
+
+    public SchemaOperationException(String message) {
+      super(message);
+    }
+  }
+
   public enum OpType {
     ADD_FIELD_TYPE("add-field-type") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var addFieldTypeOp = (SchemaChangeOperation.AddFieldType) op;
         String name = addFieldTypeOp.name;
         String className = addFieldTypeOp.className;
@@ -228,18 +238,14 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not add field type.", e);
-          if (e instanceof SolrException) {
-            throw e;
-          } else {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR, "Could not add field type.", e);
-          }
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     ADD_COPY_FIELD("add-copy-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var addCopyFieldOp = (SchemaChangeOperation.AddCopyField) op;
         String src = addCopyFieldOp.source;
         List<String> dests = addCopyFieldOp.destinations;
@@ -248,9 +254,7 @@ public class SchemaManager {
         final var maxChars =
             addCopyFieldOp.maxChars == null ? CopyField.UNLIMITED : addCopyFieldOp.maxChars;
         if (maxChars < 0) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              MAX_CHARS + " " + maxChars + " cannot be negative.");
+          throw new SchemaOperationException(MAX_CHARS + " '" + maxChars + "' is negative.");
         }
 
         try {
@@ -258,14 +262,19 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not add copy field", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     ADD_FIELD("add-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var addFieldOp = (SchemaChangeOperation.AddField) op;
+        // TODO TestBulkSchemaAPI test is failing because Jackson isn't actually implementing the
+        // required-arg check that we previously had here through CommandOperation.getStr()...figure
+        // out why Jackson isn't enforcing '@JsonProperty(required = true)' when we go to serialize
+        // in SchemaHandler.handleRequestBody
         String name = addFieldOp.name;
         String type = addFieldOp.type;
         try {
@@ -278,13 +287,14 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not add field", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     ADD_DYNAMIC_FIELD("add-dynamic-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var addDynFieldOp = (SchemaChangeOperation.AddDynamicField) op;
         String name = addDynFieldOp.name;
         String type = addDynFieldOp.type;
@@ -299,13 +309,14 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not add dynamic field", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     DELETE_FIELD_TYPE("delete-field-type") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var deleteFieldTypeOp = (SchemaChangeOperation.DeleteFieldType) op;
         String name = deleteFieldTypeOp.name;
         try {
@@ -313,13 +324,14 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not delete field type", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     DELETE_COPY_FIELD("delete-copy-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var deleteCopyField = (SchemaChangeOperation.DeleteCopyField) op;
         String source = deleteCopyField.source;
         List<String> dests = deleteCopyField.destinations;
@@ -329,13 +341,14 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not delete copy field", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     DELETE_FIELD("delete-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var deleteFieldOp = (SchemaChangeOperation.DeleteField) op;
         String name = deleteFieldOp.name;
         try {
@@ -343,13 +356,14 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not delete field", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     DELETE_DYNAMIC_FIELD("delete-dynamic-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var deleteDynFieldOp = (SchemaChangeOperation.DeleteDynamicField) op;
         String name = deleteDynFieldOp.name;
         try {
@@ -357,13 +371,14 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not delete dynamic field", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     REPLACE_FIELD_TYPE("replace-field-type") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var replaceFieldTypeOp = (SchemaChangeOperation.ReplaceFieldType) op;
         String name = replaceFieldTypeOp.name;
         String className = replaceFieldTypeOp.className;
@@ -374,20 +389,20 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not replace field type", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     REPLACE_FIELD("replace-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var replaceFieldOp = (SchemaChangeOperation.ReplaceField) op;
         String name = replaceFieldOp.name;
         String type = replaceFieldOp.type;
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
         if (ft == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.NOT_FOUND, "No such field type '" + type + "'");
+          throw new SchemaOperationException("No such field type '" + type + "'");
         }
         try {
           final String[] propsToOmit = new String[] {OPERATION_TYPE_PROP, NAME, TYPE};
@@ -397,20 +412,20 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not replace field", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     },
     REPLACE_DYNAMIC_FIELD("replace-dynamic-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+          throws SchemaOperationException {
         final var replaceDynFieldOp = (SchemaChangeOperation.ReplaceDynamicField) op;
         String name = replaceDynFieldOp.name;
         String type = replaceDynFieldOp.type;
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
         if (ft == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.NOT_FOUND, "No such field type '" + type + "'");
+          throw new SchemaOperationException("No such field type '" + type + "'");
         }
         try {
           final String[] propsToOmit = new String[] {OPERATION_TYPE_PROP, NAME, TYPE};
@@ -420,12 +435,13 @@ public class SchemaManager {
           return true;
         } catch (Exception e) {
           log.error("Could not replace dynamic field", e);
-          throw e;
+          throw new SchemaOperationException(getErrorStr(e));
         }
       }
     };
 
-    public abstract boolean perform(SchemaChangeOperation op, SchemaManager mgr);
+    public abstract boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+        throws SchemaOperationException;
 
     public static OpType get(String label) {
       return Nested.OP_TYPES.get(label);
