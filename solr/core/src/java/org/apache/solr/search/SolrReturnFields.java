@@ -72,8 +72,8 @@ public class SolrReturnFields extends ReturnFields {
   protected boolean _wantsScore = false;
   protected boolean _wantsAllFields = false;
   protected Map<String, String> renameFields = Collections.emptyMap();
-]
-  private Map<String, String> scoreFieldNames = new HashMap<>();
+
+  private final Map<String, String> scoreDependentFields = new HashMap<>();
 
   // Only set currently with the SolrDocumentFetcher.solrDoc method. Primarily used
   // at this time for testing to ensure we get fields from the expected places.
@@ -120,7 +120,7 @@ public class SolrReturnFields extends ReturnFields {
         _wantsAllFields = true;
         transformer = new ScoreAugmenter(SCORE);
         scoreTransformer = transformer;
-        scoreFieldNames.put(SCORE, "");
+        scoreDependentFields.put(SCORE, "");
       } else {
         parseFieldList(new String[] {fl}, req);
       }
@@ -544,13 +544,13 @@ public class SolrReturnFields extends ReturnFields {
 
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new ScoreAugmenter(disp));
-      scoreFieldNames.put(disp, disp.equals(SCORE) ? "" : SCORE);
+      scoreDependentFields.put(disp, disp.equals(SCORE) ? "" : SCORE);
     } else if (MATCH_SCORE.equals(field)) {
       _wantsScore = true;
 
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new MatchScoreAugmenter(disp));
-      scoreFieldNames.put(disp, disp.equals(MATCH_SCORE) ? "" : MATCH_SCORE);
+      scoreDependentFields.put(disp, disp.equals(MATCH_SCORE) ? "" : MATCH_SCORE);
     }
   }
 
@@ -608,6 +608,11 @@ public class SolrReturnFields extends ReturnFields {
   @Override
   public boolean wantsScore() {
     return _wantsScore;
+  }
+
+  @Override
+  public Map<String, String> getScoreDependentReturnFields() {
+    return scoreDependentFields;
   }
 
   @Override

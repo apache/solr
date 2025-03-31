@@ -20,12 +20,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -193,6 +196,13 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
       return arr;
     }
     return null;
+  }
+
+  /** Get the value or collection of values for a given field. */
+  public Map<String, Object> getSubsetOfFields(Set<String> fieldNames) {
+    final HashMap<String, Object> subset = CollectionUtil.newHashMap(fieldNames.size());
+    fieldNames.forEach(f -> subset.put(f, getFieldValue(f)));
+    return subset;
   }
 
   @Override

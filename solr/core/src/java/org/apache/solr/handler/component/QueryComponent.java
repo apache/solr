@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
@@ -27,6 +28,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -34,6 +36,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -787,7 +792,7 @@ public class QueryComponent extends SearchComponent {
             && fields.wantsField(keyFieldName)
             && fields.getRequestedFieldNames() != null
             && (!fields.hasPatternMatching()
-                && Arrays.asList(keyFieldName, "score")
+                && Arrays.asList(keyFieldName, SolrReturnFields.SCORE)
                     .containsAll(fields.getRequestedFieldNames())))) {
       sreq.purpose |= ShardRequest.PURPOSE_GET_FIELDS;
       rb.onePassDistributedQuery = true;
@@ -840,15 +845,28 @@ public class QueryComponent extends SearchComponent {
         // additional fields below
         sreq.params.set(CommonParams.FL, "*");
       }
-      if (!fields.wantsScore() && shardQueryIncludeScore) {
-        additionalAdded = addFL(additionalFL, "score", additionalAdded);
+      if (!fields.getRequestedFieldNames().contains(SolrReturnFields.SCORE) && shardQueryIncludeScore) {
+        additionalAdded = addFL(additionalFL, SolrReturnFields.SCORE, additionalAdded);
       }
     } else {
       // reset so that only unique key is requested in shard requests
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
-      if (shardQueryIncludeScore) {
-        additionalAdded = addFL(additionalFL, "score", additionalAdded);
+
+      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
+      if (fields != null) {
+        final AtomicBoolean hasAdditionalAdded = new AtomicBoolean(additionalAdded);
+        fields.getScoreDependentReturnFields().forEach((name, value) -> {
+          if (value.isEmpty()) {
+            addFL(additionalFL, name, hasAdditionalAdded.getAndSet(true));
+          } else {
+            addFL(additionalFL, name + ":" + value, hasAdditionalAdded.getAndSet(true));
+          }
+        });
+        additionalAdded = hasAdditionalAdded.get();
       }
+    }
+    if ((fields == null || fields.getRequestedFieldNames() == null || !fields.getRequestedFieldNames().contains(SolrReturnFields.SCORE)) && shardQueryIncludeScore) {
+      additionalAdded = addFL(additionalFL, SolrReturnFields.SCORE, additionalAdded);
     }
 
     // TODO: should this really sendGlobalDfs if just includeScore?
@@ -895,6 +913,8 @@ public class QueryComponent extends SearchComponent {
     else {
       sortFields = new SortField[] {SortField.FIELD_SCORE};
     }
+
+    Set<String> scoreDependentFields = rb.rsp.getReturnFields().getScoreDependentReturnFields().keySet();
 
     IndexSchema schema = rb.req.getSchema();
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
@@ -1083,6 +1103,9 @@ public class QueryComponent extends SearchComponent {
         }
 
         shardDoc.sortFieldValues = unmarshalledSortFieldValues;
+        if (!scoreDependentFields.isEmpty()) {
+          shardDoc.scoreDependentFields = doc.getSubsetOfFields(scoreDependentFields);
+        }
 
         queue.insertWithOverflow(shardDoc);
       } // end for-each-doc-in-response
@@ -1305,10 +1328,11 @@ public class QueryComponent extends SearchComponent {
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
-      DocTransformer scoreTransformer = null;
+      Set<String> scoreDependentFields;
       if (returnScores) {
-        scoreTransformer = rb.rsp.getReturnFields().getScoreTransformer();
-        scoreTransformer.setContext(new DistributedResultContext(rb.rsp.getReturnFields(), rb.req));
+        scoreDependentFields = rb.rsp.getReturnFields().getScoreDependentReturnFields().keySet();
+      } else {
+        scoreDependentFields = Collections.emptySet();
       }
 
       final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
@@ -1373,13 +1397,7 @@ public class QueryComponent extends SearchComponent {
             // returned.
             // If the score is requested, we will add it back with the scoreTransformer
             doc.remove("score");
-            if (scoreTransformer != null) {
-              try {
-                scoreTransformer.transform(doc, 0, sdoc);
-              } catch (Exception e) {
-                log.warn("Exception transforming score for doc " + lastKeyString, e);
-              }
-            }
+            sdoc.scoreDependentFields.forEach(doc::addField);
             if (removeKeyField) {
               doc.removeFields(keyFieldName);
             }

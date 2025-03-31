@@ -16,7 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.solr.common.util.NamedList;
@@ -48,6 +52,7 @@ public class ShardDoc extends FieldDoc implements DocIterationInfo {
   public int positionInResponse;
 
   public Float matchScore;
+  public Map<String, Object> scoreDependentFields = Collections.emptyMap();
 
   // the ordinal position in the merged response arraylist
 
