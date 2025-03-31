@@ -9,7 +9,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = SchemaChangeOperation.OPERATION_TYPE_PROP)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    property = SchemaChangeOperation.OPERATION_TYPE_PROP,
+    visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = SchemaChangeOperation.AddFieldType.class, name = "add-field-type"),
   @JsonSubTypes.Type(value = SchemaChangeOperation.AddCopyField.class, name = "add-copy-field"),
@@ -64,7 +67,7 @@ public class SchemaChangeOperation {
 
   public static class AddCopyField extends SchemaChangeOperation {
     @JsonProperty public String source;
-    @JsonProperty public List<String> destinations;
+    @JsonProperty("dest") public List<String> destination;
     @JsonProperty public Integer maxChars;
   }
 
@@ -110,7 +113,8 @@ public class SchemaChangeOperation {
 
   public static class DeleteCopyField extends SchemaChangeOperation {
     @JsonProperty public String source;
-    @JsonProperty public List<String> destinations; // TODO Why is this needed on delete?
+    // TODO Figure out how to support both 'dest' and "destinations" for v1/v2 divergence
+    @JsonProperty("dest") public List<String> destination;
   }
 
   public static class DeleteField extends SchemaChangeOperation {

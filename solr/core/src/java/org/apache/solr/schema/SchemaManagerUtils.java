@@ -16,6 +16,10 @@
  */
 package org.apache.solr.schema;
 
+import static org.apache.solr.client.api.model.SchemaChangeOperation.OPERATION_TYPE_PROP;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.Map;
 import org.apache.solr.client.api.model.SchemaChangeOperation;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
@@ -29,9 +33,29 @@ public class SchemaManagerUtils {
     }
 
     final var operationData = toConvert.getDataMap();
-    operationData.put(SchemaChangeOperation.OPERATION_TYPE_PROP, opName);
+    operationData.put(OPERATION_TYPE_PROP, opName);
 
     return SolrJacksonMapper.getObjectMapper()
         .convertValue(operationData, SchemaChangeOperation.class);
+  }
+
+  // TODO This utility exists because ManagedIndexSchema currently consumes op data in "Map" form.
+  // This should be switched over to using SchemaChangeOperation, and this utility removed.
+  public static Map<String, Object> convertToMap(SchemaChangeOperation toConvert) {
+
+    return convertToMapExcluding(toConvert, OPERATION_TYPE_PROP);
+  }
+
+  public static Map<String, Object> convertToMapExcluding(
+      SchemaChangeOperation toConvert, String... propsToOmit) {
+    final var opMap =
+        SolrJacksonMapper.getObjectMapper()
+            .convertValue(toConvert, new TypeReference<Map<String, Object>>() {});
+    if (propsToOmit != null) {
+      for (String prop : propsToOmit) {
+        opMap.remove(prop);
+      }
+    }
+    return opMap;
   }
 }

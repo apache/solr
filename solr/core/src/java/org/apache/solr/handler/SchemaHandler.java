@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -39,6 +40,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetSchema;
@@ -50,6 +52,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.SchemaManager;
+import org.apache.solr.schema.SchemaManagerUtils;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -87,10 +90,24 @@ public class SchemaHandler extends RequestHandlerBase
       }
 
       try {
-        List<Map<String, Object>> errs = new SchemaManager(req).performOperations();
-        if (!errs.isEmpty())
+        List<CommandOperation> ops = req.getCommands(false);
+        List<Map<String, Object>> parseErrors = CommandOperation.captureErrors(ops);
+        if (!parseErrors.isEmpty()) {
           throw new ApiBag.ExceptionWithErrObject(
-              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
+              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", parseErrors);
+        }
+
+        final var operationList =
+            ops.stream()
+                .map(co -> SchemaManagerUtils.convertToSchemaChangeOperations(co))
+                .collect(Collectors.toList());
+        final var processExceptions = new SchemaManager(req).performOperations(operationList);
+        // TODO This whole structure is a bit hacky - should I just go back to using the
+        // "Map<String, Object>" format?
+        if (!processExceptions.isEmpty()) {
+          throw new ApiBag.MultiErrorException(
+              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", processExceptions);
+        }
       } catch (IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Error reading input String " + e.getMessage(), e);

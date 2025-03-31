@@ -472,6 +472,24 @@ public class ApiBag {
     }
   }
 
+  public static class MultiErrorException extends SolrException {
+    private final List<Exception> errs;
+
+    public MultiErrorException(ErrorCode code, String msg, List<Exception> errs) {
+      super(code, msg);
+      this.errs = errs;
+    }
+
+    public String getErrorString() {
+      return errs.stream().map(Exception::toString).collect(Collectors.joining(", ", "[", "]"));
+    }
+
+    @Override
+    public String getMessage() {
+      return super.getMessage() + ", errors: " + getErrorString() + ", ";
+    }
+  }
+
   public static class LazyLoadedApi extends Api {
 
     private final PluginBag.PluginHolder<SolrRequestHandler> holder;

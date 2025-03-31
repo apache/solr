@@ -71,7 +71,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.AddCopyField.class));
     final var parsedSpecific = (SchemaChangeOperation.AddCopyField) parsedGeneric;
     assertEquals("source1", parsedSpecific.source);
-    assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
+    assertThat(parsedSpecific.destination, contains("dest1", "dest2"));
     assertEquals(Integer.valueOf(123), parsedSpecific.maxChars);
   }
 
@@ -154,7 +154,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.DeleteCopyField.class));
     final var parsedSpecific = (SchemaChangeOperation.DeleteCopyField) parsedGeneric;
     assertEquals("source1", parsedSpecific.source);
-    assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
+    assertThat(parsedSpecific.destination, contains("dest1", "dest2"));
   }
 
   @Test

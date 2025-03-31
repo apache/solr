@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -32,7 +33,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -41,8 +41,6 @@ import org.apache.solr.client.solrj.response.schema.FieldTypeRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -64,18 +62,8 @@ public class SchemaTest extends RestTestBase {
 
   private static void assertFailedSchemaResponse(
       ThrowingRunnable runnable, String expectedErrorMessage) {
-    BaseHttpSolrClient.RemoteExecutionException e =
-        expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, runnable);
-    SimpleOrderedMap<?> errorMap = (SimpleOrderedMap<?>) e.getMetaData().get("error");
-    assertEquals(
-        "org.apache.solr.api.ApiBag$ExceptionWithErrObject",
-        ((NamedList) errorMap.get("metadata")).get("error-class"));
-    List<?> details = (List<?>) errorMap.get("details");
-    assertTrue(
-        ((List<?>) ((Map<?, ?>) details.get(0)).get("errorMessages"))
-            .get(0)
-            .toString()
-            .contains(expectedErrorMessage));
+    final var e = expectThrows(SolrClient.RemoteSolrException.class, runnable);
+    assertThat(e.getMessage(), containsString(expectedErrorMessage));
   }
 
   private static void createStoredStringField(String fieldName, SolrClient solrClient)

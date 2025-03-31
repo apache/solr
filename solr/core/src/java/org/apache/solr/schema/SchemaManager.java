@@ -19,28 +19,29 @@ package org.apache.solr.schema;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.schema.FieldType.CLASS_NAME;
-import static org.apache.solr.schema.IndexSchema.DESTINATION;
+import static org.apache.solr.client.api.model.SchemaChangeOperation.OPERATION_TYPE_PROP;
 import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
 import static org.apache.solr.schema.IndexSchema.NAME;
-import static org.apache.solr.schema.IndexSchema.SOURCE;
 import static org.apache.solr.schema.IndexSchema.TYPE;
+import static org.apache.solr.schema.SchemaManagerUtils.convertToMap;
+import static org.apache.solr.schema.SchemaManagerUtils.convertToMapExcluding;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.api.model.SchemaChangeOperation;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -80,45 +81,55 @@ public class SchemaManager {
   }
 
   /**
-   * Take in a JSON command set and execute them. It tries to capture as many errors as possible
-   * instead of failing at the first error it encounters
+   * Take in a set of schema commands and execute them. It tries to capture as many errors as
+   * possible instead of failing at the first error it encounters
    *
    * @return List of errors. If the List is empty then the operation was successful.
    */
-  public List<Map<String, Object>> performOperations() throws Exception {
-    List<CommandOperation> ops = req.getCommands(false);
-    List<Map<String, Object>> errs = CommandOperation.captureErrors(ops);
-    if (!errs.isEmpty()) return errs;
-
+  public List<Exception> performOperations(List<SchemaChangeOperation> ops) throws Exception {
     IndexSchema schema = req.getCore().getLatestSchema();
     if (schema instanceof ManagedIndexSchema && schema.isMutable()) {
       return doOperations(ops);
     } else {
-      return singletonList(singletonMap(CommandOperation.ERR_MSGS, "schema is not editable"));
+      return singletonList(
+          new SolrException(SolrException.ErrorCode.BAD_REQUEST, "schema is not editable"));
     }
   }
 
-  private List<Map<String, Object>> doOperations(List<CommandOperation> operations)
+  private static void executeAndRecordErrors(List<Exception> errorRecord, Runnable toRun) {
+    try {
+      toRun.run();
+    } catch (Exception e) {
+      errorRecord.add(e);
+    }
+  }
+
+  private List<Exception> doOperations(List<SchemaChangeOperation> operations)
       throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(updateTimeOut, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
-    List<Map<String, Object>> errors = Collections.emptyList();
     int latestVersion = -1;
 
+    final List<Exception> exceptions = new ArrayList<>();
     synchronized (req.getSchema().getSchemaUpdateLock()) {
       while (!timeOut.hasTimedOut()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
-        for (CommandOperation op : operations) {
-          OpType opType = OpType.get(op.name);
+        for (SchemaChangeOperation op : operations) {
+          OpType opType = OpType.get(op.operationType);
           if (opType != null) {
-            opType.perform(op, this);
+            executeAndRecordErrors(
+                exceptions,
+                () -> {
+                  opType.perform(op, this);
+                });
           } else {
-            op.addError("No such operation : " + op.name);
+            exceptions.add(
+                new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST, "No such operation: " + op.operationType));
           }
         }
-        errors = CommandOperation.captureErrors(operations);
-        if (!errors.isEmpty()) break;
+        if (!exceptions.isEmpty()) break;
         SolrResourceLoader loader = req.getCore().getResourceLoader();
         if (loader instanceof ZkSolrResourceLoader zkLoader) {
           StringWriter sw = new StringWriter();
@@ -163,8 +174,7 @@ public class SchemaManager {
             core.getCoreContainer().reload(core.getName(), core.uniqueId);
           } catch (SolrException e) {
             log.warn(errorMsg);
-            errors =
-                singletonList(singletonMap(CommandOperation.ERR_MSGS, errorMsg + e.getMessage()));
+            exceptions.add(e);
           }
           break;
         }
@@ -176,11 +186,12 @@ public class SchemaManager {
       // concurrent schema updates.
       waitForOtherReplicasToUpdate(timeOut, latestVersion);
     }
-    if (errors.isEmpty() && timeOut.hasTimedOut()) {
+    if (exceptions.isEmpty() && timeOut.hasTimedOut()) {
       log.warn("{} Timed out", errorMsg);
-      errors = singletonList(singletonMap(CommandOperation.ERR_MSGS, errorMsg + "Timed out."));
+      exceptions.add(
+          new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMsg + "Timed out."));
     }
-    return errors;
+    return exceptions;
   }
 
   private void waitForOtherReplicasToUpdate(TimeOut timeOut, int latestVersion) {
@@ -205,254 +216,216 @@ public class SchemaManager {
   public enum OpType {
     ADD_FIELD_TYPE("add-field-type") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        String className = op.getStr(CLASS_NAME);
-        if (op.hasError()) return false;
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var addFieldTypeOp = (SchemaChangeOperation.AddFieldType) op;
+        String name = addFieldTypeOp.name;
+        String className = addFieldTypeOp.className;
         try {
           FieldType fieldType =
-              mgr.managedIndexSchema.newFieldType(name, className, op.getDataMap());
+              mgr.managedIndexSchema.newFieldType(name, className, convertToMap(addFieldTypeOp));
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
           return true;
         } catch (Exception e) {
           log.error("Could not add field type.", e);
-          op.addError(getErrorStr(e));
-          return false;
+          if (e instanceof SolrException) {
+            throw e;
+          } else {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Could not add field type.", e);
+          }
         }
       }
     },
     ADD_COPY_FIELD("add-copy-field") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String src = op.getStr(SOURCE);
-        List<String> dests = op.getStrs(DESTINATION);
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var addCopyFieldOp = (SchemaChangeOperation.AddCopyField) op;
+        String src = addCopyFieldOp.source;
+        List<String> dests = addCopyFieldOp.destination;
 
         // If maxChars is not specified, there is no limit on copied chars
-        int maxChars = CopyField.UNLIMITED;
-        String maxCharsStr = op.getStr(MAX_CHARS, null);
-        if (null != maxCharsStr) {
-          try {
-            maxChars = Integer.parseInt(maxCharsStr);
-          } catch (NumberFormatException e) {
-            op.addError(
-                "Exception parsing " + MAX_CHARS + " '" + maxCharsStr + "': " + getErrorStr(e));
-          }
-          if (maxChars < 0) {
-            op.addError(MAX_CHARS + " '" + maxCharsStr + "' is negative.");
-          }
+        final var maxChars =
+            addCopyFieldOp.maxChars == null ? CopyField.UNLIMITED : addCopyFieldOp.maxChars;
+        if (maxChars < 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              MAX_CHARS + " " + maxChars + " cannot be negative.");
         }
 
-        if (op.hasError()) return false;
-        if (!op.getValuesExcluding(SOURCE, DESTINATION, MAX_CHARS).isEmpty()) {
-          op.addError(
-              "Only the '"
-                  + SOURCE
-                  + "', '"
-                  + DESTINATION
-                  + "' and '"
-                  + MAX_CHARS
-                  + "' params are allowed with the 'add-copy-field' operation");
-          return false;
-        }
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addCopyFields(src, dests, maxChars);
           return true;
         } catch (Exception e) {
           log.error("Could not add copy field", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     ADD_FIELD("add-field") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        String type = op.getStr(TYPE);
-        if (op.hasError()) return false;
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var addFieldOp = (SchemaChangeOperation.AddField) op;
+        String name = addFieldOp.name;
+        String type = addFieldOp.type;
         try {
+          final String[] propsToOmit = new String[] {OPERATION_TYPE_PROP, NAME, TYPE};
           SchemaField field =
-              mgr.managedIndexSchema.newField(name, type, op.getValuesExcluding(NAME, TYPE));
+              mgr.managedIndexSchema.newField(
+                  name, type, convertToMapExcluding(addFieldOp, propsToOmit));
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
           log.error("Could not add field", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     ADD_DYNAMIC_FIELD("add-dynamic-field") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        String type = op.getStr(TYPE);
-        if (op.hasError()) return false;
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var addDynFieldOp = (SchemaChangeOperation.AddDynamicField) op;
+        String name = addDynFieldOp.name;
+        String type = addDynFieldOp.type;
         try {
+          final String[] propsToOmit = new String[] {OPERATION_TYPE_PROP, NAME, TYPE};
           SchemaField field =
-              mgr.managedIndexSchema.newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
+              mgr.managedIndexSchema.newDynamicField(
+                  name, type, convertToMapExcluding(addDynFieldOp, propsToOmit));
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.addDynamicFields(
                   singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
           log.error("Could not add dynamic field", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     DELETE_FIELD_TYPE("delete-field-type") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        if (op.hasError()) return false;
-        if (!op.getValuesExcluding(NAME).isEmpty()) {
-          op.addError(
-              "Only the '" + NAME + "' param is allowed with the 'delete-field-type' operation");
-          return false;
-        }
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var deleteFieldTypeOp = (SchemaChangeOperation.DeleteFieldType) op;
+        String name = deleteFieldTypeOp.name;
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(singleton(name));
           return true;
         } catch (Exception e) {
           log.error("Could not delete field type", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     DELETE_COPY_FIELD("delete-copy-field") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String source = op.getStr(SOURCE);
-        List<String> dests = op.getStrs(DESTINATION);
-        if (op.hasError()) return false;
-        if (!op.getValuesExcluding(SOURCE, DESTINATION).isEmpty()) {
-          op.addError(
-              "Only the '"
-                  + SOURCE
-                  + "' and '"
-                  + DESTINATION
-                  + "' params are allowed with the 'delete-copy-field' operation");
-          return false;
-        }
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var deleteCopyField = (SchemaChangeOperation.DeleteCopyField) op;
+        String source = deleteCopyField.source;
+        List<String> dests = deleteCopyField.destination;
         try {
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.deleteCopyFields(singletonMap(source, dests));
           return true;
         } catch (Exception e) {
           log.error("Could not delete copy field", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     DELETE_FIELD("delete-field") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        if (op.hasError()) return false;
-        if (!op.getValuesExcluding(NAME).isEmpty()) {
-          op.addError("Only the '" + NAME + "' param is allowed with the 'delete-field' operation");
-          return false;
-        }
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var deleteFieldOp = (SchemaChangeOperation.DeleteField) op;
+        String name = deleteFieldOp.name;
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFields(singleton(name));
           return true;
         } catch (Exception e) {
           log.error("Could not delete field", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     DELETE_DYNAMIC_FIELD("delete-dynamic-field") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        if (op.hasError()) return false;
-        if (!op.getValuesExcluding(NAME).isEmpty()) {
-          op.addError(
-              "Only the '" + NAME + "' param is allowed with the 'delete-dynamic-field' operation");
-          return false;
-        }
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var deleteDynFieldOp = (SchemaChangeOperation.DeleteDynamicField) op;
+        String name = deleteDynFieldOp.name;
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(singleton(name));
           return true;
         } catch (Exception e) {
           log.error("Could not delete dynamic field", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     REPLACE_FIELD_TYPE("replace-field-type") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        String className = op.getStr(CLASS_NAME);
-        if (op.hasError()) return false;
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var replaceFieldTypeOp = (SchemaChangeOperation.ReplaceFieldType) op;
+        String name = replaceFieldTypeOp.name;
+        String className = replaceFieldTypeOp.className;
         try {
           mgr.managedIndexSchema =
-              mgr.managedIndexSchema.replaceFieldType(name, className, op.getDataMap());
+              mgr.managedIndexSchema.replaceFieldType(
+                  name, className, convertToMap(replaceFieldTypeOp));
           return true;
         } catch (Exception e) {
           log.error("Could not replace field type", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     REPLACE_FIELD("replace-field") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        String type = op.getStr(TYPE);
-        if (op.hasError()) return false;
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var replaceFieldOp = (SchemaChangeOperation.ReplaceField) op;
+        String name = replaceFieldOp.name;
+        String type = replaceFieldOp.type;
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
         if (ft == null) {
-          op.addError("No such field type '" + type + "'");
-          return false;
+          throw new SolrException(
+              SolrException.ErrorCode.NOT_FOUND, "No such field type '" + type + "'");
         }
         try {
+          final String[] propsToOmit = new String[] {OPERATION_TYPE_PROP, NAME, TYPE};
           mgr.managedIndexSchema =
-              mgr.managedIndexSchema.replaceField(name, ft, op.getValuesExcluding(NAME, TYPE));
+              mgr.managedIndexSchema.replaceField(
+                  name, ft, convertToMapExcluding(replaceFieldOp, propsToOmit));
           return true;
         } catch (Exception e) {
           log.error("Could not replace field", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     },
     REPLACE_DYNAMIC_FIELD("replace-dynamic-field") {
       @Override
-      public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String name = op.getStr(NAME);
-        String type = op.getStr(TYPE);
-        if (op.hasError()) return false;
+      public boolean perform(SchemaChangeOperation op, SchemaManager mgr) {
+        final var replaceDynFieldOp = (SchemaChangeOperation.ReplaceDynamicField) op;
+        String name = replaceDynFieldOp.name;
+        String type = replaceDynFieldOp.type;
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
         if (ft == null) {
-          op.addError("No such field type '" + type + "'");
-          return false;
+          throw new SolrException(
+              SolrException.ErrorCode.NOT_FOUND, "No such field type '" + type + "'");
         }
         try {
+          final String[] propsToOmit = new String[] {OPERATION_TYPE_PROP, NAME, TYPE};
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.replaceDynamicField(
-                  name, ft, op.getValuesExcluding(NAME, TYPE));
+                  name, ft, convertToMapExcluding(replaceDynFieldOp, propsToOmit));
           return true;
         } catch (Exception e) {
           log.error("Could not replace dynamic field", e);
-          op.addError(getErrorStr(e));
-          return false;
+          throw e;
         }
       }
     };
 
-    public abstract boolean perform(CommandOperation op, SchemaManager mgr);
+    public abstract boolean perform(SchemaChangeOperation op, SchemaManager mgr);
 
     public static OpType get(String label) {
       return Nested.OP_TYPES.get(label);
