@@ -159,16 +159,16 @@ public class SchemaXmlWriter extends TextResponseWriter {
         Object fieldTypePropValue = fieldTypeProperty.getValue();
 
         switch (fieldTypePropName) {
-          case FieldType.ANALYZER ->
-              analyzerProperties = (SimpleOrderedMap<Object>) fieldTypePropValue;
-          case FieldType.INDEX_ANALYZER ->
-              indexAnalyzerProperties = (SimpleOrderedMap<Object>) fieldTypePropValue;
-          case FieldType.QUERY_ANALYZER ->
-              queryAnalyzerProperties = (SimpleOrderedMap<Object>) fieldTypePropValue;
-          case FieldType.MULTI_TERM_ANALYZER ->
-              multiTermAnalyzerProperties = (SimpleOrderedMap<Object>) fieldTypePropValue;
-          case FieldType.SIMILARITY ->
-              perFieldSimilarityProperties = (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.ANALYZER -> analyzerProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.INDEX_ANALYZER -> indexAnalyzerProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.QUERY_ANALYZER -> queryAnalyzerProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.MULTI_TERM_ANALYZER -> multiTermAnalyzerProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.SIMILARITY -> perFieldSimilarityProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
           default -> writeAttr(fieldTypePropName, fieldTypePropValue.toString());
         }
       }
@@ -229,8 +229,8 @@ public class SchemaXmlWriter extends TextResponseWriter {
       String name = analyzerProperty.getKey();
       Object value = analyzerProperty.getValue();
       switch (name) {
-        case FieldType.CHAR_FILTERS ->
-            charFilterPropertiesList = (List<SimpleOrderedMap<Object>>) value;
+        case FieldType.CHAR_FILTERS -> charFilterPropertiesList =
+            (List<SimpleOrderedMap<Object>>) value;
         case FieldType.TOKENIZER -> tokenizerProperties = (SimpleOrderedMap<Object>) value;
         case FieldType.FILTERS -> filterPropertiesList = (List<SimpleOrderedMap<Object>>) value;
         case FieldType.CLASS_NAME -> {
