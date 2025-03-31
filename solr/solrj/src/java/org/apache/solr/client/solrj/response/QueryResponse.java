@@ -123,8 +123,8 @@ public class QueryResponse extends SolrResponseBase {
         case "sort_values" -> _sortvalues = (NamedList<ArrayList>) val;
         case "facet_counts" -> _facetInfo = (NamedList<Object>) val;
 
-        // extractFacetInfo inspects _results, so defer calling it
-        // in case it hasn't been populated yet.
+          // extractFacetInfo inspects _results, so defer calling it
+          // in case it hasn't been populated yet.
         case "debug" -> {
           _debugInfo = (NamedList<Object>) val;
           extractDebugInfo(_debugInfo);
@@ -151,7 +151,7 @@ public class QueryResponse extends SolrResponseBase {
         }
         case "facets" -> _jsonFacetingInfo = (NamedList<Object>) val;
 
-        // Don't call extractJsonFacetingInfo(_jsonFacetingInfo) here in an effort to do it lazily
+          // Don't call extractJsonFacetingInfo(_jsonFacetingInfo) here in an effort to do it lazily
         case "suggest" -> {
           _suggestInfo = (NamedList<NamedList<Object>>) val;
           extractSuggesterInfo(_suggestInfo);

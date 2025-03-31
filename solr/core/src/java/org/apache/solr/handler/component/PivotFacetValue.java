@@ -145,9 +145,8 @@ public class PivotFacetValue {
         case STATS -> statsValues = (NamedList<NamedList<NamedList<?>>>) value;
         case QUERIES -> queryCounts = (NamedList<Number>) value;
         case RANGES -> ranges = (SimpleOrderedMap<SimpleOrderedMap<Object>>) value;
-        default ->
-            throw new RuntimeException(
-                "PivotListEntry contains unaccounted for item: " + pivotEntry);
+        default -> throw new RuntimeException(
+            "PivotListEntry contains unaccounted for item: " + pivotEntry);
       }
     }
 
