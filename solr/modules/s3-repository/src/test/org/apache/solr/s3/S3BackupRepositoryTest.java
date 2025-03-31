@@ -19,14 +19,16 @@ package org.apache.solr.s3;
 import static org.apache.solr.s3.S3BackupRepository.S3_SCHEME;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
@@ -53,11 +55,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder()
-          .silent()
-          .withInitialBuckets(BUCKET_NAME)
-          .withSecureConnection(false)
-          .build();
+      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
 
   /**
    * Sent by {@link org.apache.solr.handler.ReplicationHandler}, ensure we don't choke on the bare
@@ -177,8 +175,8 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     try (S3BackupRepository repo = getRepository()) {
 
       // A file on the local disk
-      File tmp = temporaryFolder.newFolder();
-      try (OutputStream os = FileUtils.openOutputStream(new File(tmp, "from-file"));
+      Path tmp = temporaryFolder.newFolder().toPath();
+      try (OutputStream os = PathUtils.newOutputStream(tmp.resolve("from-file"), false);
           IndexOutput indexOutput = new OutputStreamIndexOutput("", "", os, content.length())) {
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
         indexOutput.writeBytes(bytes, bytes.length);
@@ -186,18 +184,18 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
         CodecUtil.writeFooter(indexOutput);
       }
 
-      try (Directory sourceDir = newFSDirectory(tmp.toPath())) {
+      try (Directory sourceDir = newFSDirectory(tmp)) {
         repo.copyIndexFileFrom(sourceDir, "from-file", new URI("s3://to-folder"), "to-file");
       }
 
       // Sanity check: we do have different files
-      File actualSource = new File(tmp, "from-file");
-      File actualDest = pullObject("to-folder/to-file");
+      Path actualSource = tmp.resolve("from-file");
+      Path actualDest = pullObject("to-folder/to-file");
       assertNotEquals(actualSource, actualDest);
 
       // Check the copied content
-      assertTrue(actualDest.isFile());
-      assertTrue(FileUtils.contentEquals(actualSource, actualDest));
+      assertTrue(Files.isRegularFile(actualDest));
+      assertTrue(PathUtils.fileContentEquals(actualSource, actualDest));
     }
   }
 
@@ -207,23 +205,23 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     try (S3BackupRepository repo = getRepository()) {
 
       // Local folder for destination
-      File tmp = temporaryFolder.newFolder();
+      Path tmp = temporaryFolder.newFolder().toPath();
 
       // Directly create a file on S3
       pushObject("from-file", content);
 
-      try (Directory destDir = newFSDirectory(tmp.toPath())) {
+      try (Directory destDir = newFSDirectory(tmp)) {
         repo.copyIndexFileTo(new URI("s3:///"), "from-file", destDir, "to-file");
       }
 
       // Sanity check: we do have different files
-      File actualSource = pullObject("from-file");
-      File actualDest = new File(tmp, "to-file");
+      Path actualSource = pullObject("from-file");
+      Path actualDest = tmp.resolve("to-file");
       assertNotEquals(actualSource, actualDest);
 
       // Check the copied content
-      assertTrue(actualDest.isFile());
-      assertTrue(FileUtils.contentEquals(actualSource, actualDest));
+      assertTrue(Files.isRegularFile(actualDest));
+      assertTrue(PathUtils.fileContentEquals(actualSource, actualDest));
     }
   }
 
@@ -335,11 +333,11 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     }
   }
 
-  private File pullObject(String path) throws IOException {
+  private Path pullObject(String path) throws IOException {
     try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
-      File file = temporaryFolder.newFile();
+      Path file = temporaryFolder.newFile().toPath();
       InputStream input = s3.getObject(b -> b.bucket(BUCKET_NAME).key(path));
-      FileUtils.copyInputStreamToFile(input, file);
+      Files.copy(input, file, StandardCopyOption.REPLACE_EXISTING);
       return file;
     }
   }

@@ -39,6 +39,8 @@ Improvements
 
 * SOLR-17640: Support different filesystem implementations with EmbeddedSolrServer (Andrey Bozhko)
 
+* SOLR-17685: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of existing SOLR_HOST ENV variable. (Eric Pugh, Houston Putnam)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -107,7 +109,9 @@ Deprecation Removals
 
 * SOLR-17540: Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. (Eric Pugh)
 
-* SOLR-17609: Removd the HDFS module and therefore support for storing indexes in HDFS.  Existing "blockcache" code preserved by migrating it to core o.a.s.blackcache package.
+* SOLR-17609: Removed the HDFS module and therefore support for storing indexes in HDFS.  Existing "blockcache" code preserved by migrating it to core o.a.s.blackcache package.
+
+* SOLR-17518: Removed deprecated methods `getXml()` and `writeXml()` from `UpdateRequest`. (Pierre Salagnac)
 
 Dependency Upgrades
 ---------------------
@@ -154,6 +158,18 @@ Other Changes
 
 * SOLR-16903: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
 
+* SOLR-17682: QueryResponseWriter: refactor the hierarchy.  Base abstraction is now byte oriented,
+  thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
+  Stopped using RawResponseWriter when not needed.  Rename BinaryResponseWriter to JavaBinResponseWriter.
+  (David Smiley)
+
+* SOLR-17706: SolrJ DocumentObjectBinder is now a global singleton via an INSTANCE field and that
+  which is pluggable via Java SPI/ServiceLoader.  SolrClient.getBinder is gone.  (David Smiley)
+
+* SOLR-17584: There is no longer a distinction between trusted and untrusted configSets; all are now trusted.
+  To ensure security, Solr should enforce authentication and authorization,
+  allowing only authorized admins to publish them. (Abhishek Umarjikar)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -164,6 +180,12 @@ New Features
 * SOLR-17626: Add RawTFSimilarityFactory class. (Christine Poerschke)
 
 * SOLR-17656: New 'skipLeaderRecovery' replica property allows PULL replicas with existing indexes to immediately become ACTIVE (hossman)
+
+* SOLR-17309: Certificate based authentication plugin now has richer flexible cert principal resolution. (Lamine Idjeraoui via Eric Pugh)
+
+* SOLR-17632: Added update request processor to encode text to vector at indexing time through external LLM services. (Alessandro Benedetti)
+
+* SOLR-17714: Added a FuzzyQParser to enable all FuzzyQuery customizations. (Houston Putman, Siju Varghese)
 
 Improvements
 ---------------------
@@ -181,20 +203,20 @@ Improvements
   `org.apache.solr.client.solrj.request.FileStoreApi`. The older form of this endpoint (`GET /api/node/files`) is deprecated and will be
   removed. (Jason Gerlowski)
 
+* SOLR-17607: SolrJ CloudSolrClient configured with HTTP URLs will no longer eagerly connect to
+  anything. (David Smiley)
+
+* SOLR-10998: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt' is unspecified.  JSON is still used as a default when
+  neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
 
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
+* SOLR-17669: Reduced memory usage in SolrJ getBeans() method when handling dynamic fields with wildcards. (Martin Anzinger)
+
 Bug Fixes
 ---------------------
-* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
-  (Matthew Biscocho via David Smiley)
-
-* SOLR-17221: If multiple query param keys are sent that only vary by case, they were wrongly merged when
-  doing distributed search (sharded collections). This could likely occur for fielded parameters such as
-  f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
-
 * SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
   it needs to close the stream to cleanup resources but wasn't. (David Smiley)
 
@@ -202,16 +224,13 @@ Bug Fixes
   current live nodes list is stale. CloudSolrClient now retains the initial configured list of passed URLs as backup
   used for fetching cluster state when all live nodes have failed. (Matthew Biscocho via David Smiley, Houston Putman)
 
-* SOLR-17637: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
-  This can cause the HttpShardHandler to indefinitely wait on a completed response that will never come. (Houston Putman)
+* SOLR-17700: Use Core Operation lock when unloading cores. This fixes errors that occur when a collection deletion and reload
+  occur at the same time. (Houston Putman)
 
-* SOLR-17652: Fix a bug that could cause long leader elections to leave PULL replicas in DOWN state forever. (hossman)
+* SOLR-17699: Fixed performance regression since 9.0 with "frange" queries embedded in other queries.
+  May also affect some numeric range queries when the minimum is negative.  (David Smiley)
 
-* SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
-
-* SOLR-17673: Disable multi-threaded search execution by default at the node-level.
-  Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
-  (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
+* SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
 
 Dependency Upgrades
 ---------------------
@@ -250,9 +269,44 @@ Other Changes
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
+* SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
+
+* SOLR-17716: Handle interrupted exception in SolrCores.waitAddPendingCoreOps. (Bruno Roustant)
+
+* SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
+
+==================  9.8.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17587: Metrics: wt=prometheus fix for non-compliant exposition format containing duplicate TYPE lines.
+  (Matthew Biscocho via David Smiley)
+
+* SOLR-17637: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
+  This can cause the HttpShardHandler to indefinitely wait on a completed response that will never come. (Houston Putman)
+
+* SOLR-17673: Disable multi-threaded search execution by default at the node-level.
+  Users can still opt-in by providing a "indexSearcherExecutorThreads" > 0.
+  (Houston Putman, Varun Thacker, David Smiley, Luke Kot-Zaniewski)
+
+* SOLR-17652: Fix a bug that could cause long leader elections to leave PULL replicas in DOWN state forever. (hossman)
+
+* SOLR-17649: Fix a regression of faceting on multi-valued EnumFieldType, introduced by an earlier 9.x version. (Thomas Wöckinger, David Smiley)
+
+* SOLR-17221: If multiple query param keys are sent that only vary by case, they were wrongly merged when
+  doing distributed search (sharded collections). This could likely occur for fielded parameters such as
+  f.CASE_SENSITIVE_FIELD.facet.limit=50. (Yue Yu, David Smiley)
+
 * SOLR-17670: Fix unnecessary memory allocation caused by a large reRankDocs param. (JiaBao Gao)
 
-* SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
+* SOLR-17677: Before attempting a delete by query ("DBQ"), Solr now checks whether the provided query can be run using a Lucene IndexSearcher,
+  and aborts the operation with a '400' error if it cannot. (Jason Gerlowski)
+
+* SOLR-17644: Fixes collection creation failure when using a replica placement plugin with basic auth. SolrCloudManager
+  now directly uses HttpSolrClientProvider's client, resolving missing auth listeners. (Sanjay Dutt, David Smiley)
+
+Dependency Upgrades
+---------------------
+(No changes)
 
 ==================  9.8.0 ==================
 New Features

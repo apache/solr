@@ -1135,28 +1135,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     return baos.toByteArray();
   }
 
-  public boolean isConfigSetTrusted(String configSetName) {
-    try {
-      return cc.getConfigSetService().isConfigSetTrusted(configSetName);
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Could not load conf " + configSetName + ": " + e.getMessage(),
-          e);
-    }
-  }
-
-  public void removeConfigSetTrust(String configSetName) {
-    try {
-      cc.getConfigSetService().setConfigSetTrust(configSetName, false);
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Could not remove trusted flag for configSet " + configSetName + ": " + e.getMessage(),
-          e);
-    }
-  }
-
   protected ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {
     SolrResourceLoader loader = cc.getResourceLoader();
     return new ZkSolrResourceLoader(

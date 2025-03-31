@@ -16,11 +16,11 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -66,7 +67,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Pattern ENDS_WITH_INT_DIGITS = Pattern.compile("\\d+$");
-  private File backupDir;
+  private Path backupDir;
   private SolrClient adminClient;
   private SolrClient coreClient;
   private String coreName;
@@ -83,7 +84,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   @Before
   public void beforeTest() throws Exception {
-    backupDir = createTempDir(getTestClass().getSimpleName() + "_backups").toFile();
+    backupDir = createTempDir(getTestClass().getSimpleName() + "_backups");
 
     // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
     // bring myself to deal with the nonsense that is SolrJettyTestBase.
@@ -150,7 +151,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
                     "name",
                     backupName,
                     CoreAdminParams.BACKUP_LOCATION,
-                    backupDir.getAbsolutePath());
+                    backupDir.toString());
             if (null != snapName) {
               p.add(CoreAdminParams.COMMIT_NAME, snapName);
             }
@@ -285,13 +286,14 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
       log.info(
           "Validating {} random backups to ensure they are un-affected by deleting all docs...",
           numBackupsToCheck);
-      final List<File> allBackups = Arrays.asList(backupDir.listFiles());
-      // insure consistent (arbitrary) ordering before shuffling
-      Collections.sort(allBackups);
-      Collections.shuffle(allBackups, random());
-      for (int i = 0; i < numBackupsToCheck; i++) {
-        final File backup = allBackups.get(i);
-        validateBackup(backup);
+      try (Stream<Path> files = Files.list(backupDir)) {
+        // insure consistent (arbitrary) ordering before shuffling
+        final List<Path> allBackups = files.sorted().toList();
+        Collections.shuffle(allBackups, random());
+        for (int i = 0; i < numBackupsToCheck; i++) {
+          final Path backup = allBackups.get(i);
+          validateBackup(backup);
+        }
       }
     }
   }
@@ -312,10 +314,10 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
    * Validates a backup exists, passes check index, and contains a number of "real" documents that
    * match its name
    *
-   * @see #validateBackup(File)
+   * @see #validateBackup(Path)
    */
   private void validateBackup(final String backupName) throws IOException {
-    final File backup = new File(backupDir, "snapshot." + backupName);
+    final Path backup = backupDir.resolve("snapshot." + backupName);
     validateBackup(backup);
   }
 
@@ -323,14 +325,14 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
    * Validates a backup dir exists, passes check index, and contains a number of "real" documents
    * that match its name
    */
-  private void validateBackup(final File backup) throws IOException {
+  private void validateBackup(final Path backup) throws IOException {
     log.info("Checking Validity of {}", backup);
-    assertTrue(backup.toString() + ": isDir?", backup.isDirectory());
-    final Matcher m = ENDS_WITH_INT_DIGITS.matcher(backup.getName());
+    assertTrue(backup.toString() + ": isDir?", Files.isDirectory(backup));
+    final Matcher m = ENDS_WITH_INT_DIGITS.matcher(backup.getFileName().toString());
     assertTrue("Backup dir name does not end with int digits: " + backup, m.find());
     final int numRealDocsExpected = Integer.parseInt(m.group());
 
-    try (Directory dir = FSDirectory.open(backup.toPath())) {
+    try (Directory dir = FSDirectory.open(backup)) {
       TestUtil.checkIndex(dir, true, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals(
@@ -402,7 +404,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
               CoreAdminParams.NAME,
               backupName,
               CoreAdminParams.BACKUP_LOCATION,
-              backupDir.getAbsolutePath(),
+              backupDir.toString(),
               CoreAdminParams.BACKUP_INCREMENTAL,
               "false");
       if (null != snapName) {

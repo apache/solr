@@ -40,7 +40,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -461,7 +460,7 @@ public class ReplicationHandler extends RequestHandlerBase
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
           currentIndexFetcher.destroy();
         }
-        currentIndexFetcher = new IndexFetcher(solrParams.toNamedList(), this, core);
+        currentIndexFetcher = new IndexFetcher(new SimpleOrderedMap<>(solrParams), this, core);
       } else {
         currentIndexFetcher = pollingIndexFetcher;
       }
@@ -514,7 +513,7 @@ public class ReplicationHandler extends RequestHandlerBase
       }
     }
     if ("file".equals(repo.createURI("x").getScheme())) {
-      core.getCoreContainer().assertPathAllowed(Paths.get(location));
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
     }
 
     URI locationUri = repo.createDirectoryURI(location);
@@ -664,7 +663,7 @@ public class ReplicationHandler extends RequestHandlerBase
       }
     }
     if ("file".equals(repo.createURI("x").getScheme())) {
-      core.getCoreContainer().assertPathAllowed(Paths.get(location));
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
     }
 
     // small race here before the commit point is saved

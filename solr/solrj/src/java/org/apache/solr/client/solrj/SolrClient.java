@@ -52,7 +52,6 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   private static final long serialVersionUID = 1L;
 
-  private DocumentObjectBinder binder;
   protected String defaultCollection;
 
   /**
@@ -261,7 +260,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public UpdateResponse addBean(String collection, Object obj, int commitWithinMs)
       throws IOException, SolrServerException {
-    return add(collection, getBinder().toSolrInputDocument(obj), commitWithinMs);
+    return add(collection, DocumentObjectBinder.INSTANCE.toSolrInputDocument(obj), commitWithinMs);
   }
 
   /**
@@ -277,7 +276,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public UpdateResponse addBean(Object obj, int commitWithinMs)
       throws IOException, SolrServerException {
-    return add(null, getBinder().toSolrInputDocument(obj), commitWithinMs);
+    return add(null, DocumentObjectBinder.INSTANCE.toSolrInputDocument(obj), commitWithinMs);
   }
 
   /**
@@ -324,15 +323,14 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
    * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   * @see SolrClient#getBinder()
+   * @see DocumentObjectBinder
    * @since solr 5.1
    */
   public UpdateResponse addBeans(String collection, Collection<?> beans, int commitWithinMs)
       throws SolrServerException, IOException {
-    DocumentObjectBinder binder = this.getBinder();
     ArrayList<SolrInputDocument> docs = new ArrayList<>(beans.size());
     for (Object bean : beans) {
-      docs.add(binder.toSolrInputDocument(bean));
+      docs.add(DocumentObjectBinder.INSTANCE.toSolrInputDocument(bean));
     }
     return add(collection, docs, commitWithinMs);
   }
@@ -348,7 +346,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
    * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   * @see SolrClient#getBinder()
+   * @see DocumentObjectBinder
    * @since solr 3.5
    */
   public UpdateResponse addBeans(Collection<?> beans, int commitWithinMs)
@@ -380,7 +378,7 @@ public abstract class SolrClient implements Serializable, Closeable {
           public SolrInputDocument next() {
             Object o = beanIterator.next();
             if (o == null) return null;
-            return getBinder().toSolrInputDocument(o);
+            return DocumentObjectBinder.INSTANCE.toSolrInputDocument(o);
           }
 
           @Override
@@ -1193,20 +1191,6 @@ public abstract class SolrClient implements Serializable, Closeable {
   public final NamedList<Object> request(final SolrRequest<?> request)
       throws SolrServerException, IOException {
     return request(request, null);
-  }
-
-  /**
-   * Get the {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder} for this client.
-   *
-   * @return a DocumentObjectBinder
-   * @see SolrClient#addBean
-   * @see SolrClient#addBeans
-   */
-  public DocumentObjectBinder getBinder() {
-    if (binder == null) {
-      binder = new DocumentObjectBinder();
-    }
-    return binder;
   }
 
   /**

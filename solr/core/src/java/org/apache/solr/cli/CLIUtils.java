@@ -26,7 +26,6 @@ import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.exec.OS;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -70,7 +70,7 @@ public final class CLIUtils {
   public static String getDefaultSolrUrl() {
     // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
     String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
-    String host = EnvUtils.getProperty("solr.tool.host", "localhost");
+    String host = EnvUtils.getProperty("solr.host", "localhost");
     String port = EnvUtils.getProperty("jetty.port", "8983"); // from SOLR_PORT env
     return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
@@ -233,8 +233,7 @@ public final class CLIUtils {
               new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
 
       // convert raw JSON into user-friendly output
-      StatusTool statusTool = new StatusTool();
-      Map<String, Object> status = statusTool.reportStatus(systemInfo, solrClient);
+      Map<String, Object> status = StatusTool.reportStatus(systemInfo, solrClient);
       @SuppressWarnings("unchecked")
       Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
       if (cloud != null) {
@@ -343,7 +342,10 @@ public final class CLIUtils {
   }
 
   public static Path getConfigSetsDir(Path solrInstallDir) {
-    Path configSetsPath = Paths.get("server/solr/configsets/");
-    return solrInstallDir.resolve(configSetsPath);
+    return solrInstallDir.resolve("server/solr/configsets");
+  }
+
+  public static boolean isWindows() {
+    return (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
   }
 }

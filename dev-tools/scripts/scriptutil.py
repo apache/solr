@@ -22,6 +22,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import json
 from enum import Enum
 
 
@@ -81,6 +82,52 @@ class Version(object):
     if not self.on_or_after(other):
       raise Exception('Back compat check disallowed for newer version: %s < %s' % (self, other))
     return other.major + 1 >= self.major
+
+
+class CommitterPgp():
+    """
+    A class to resolve a commiter's committer's PGP key from ASF records.
+    The class looks up the committer's ASF id in a json file downloaded from
+    https://whimsy.apache.org/public/public_ldap_people.json
+    and if the committer has a PGP key, it's fingerprint is made available.
+    """
+    def __init__(self, asf_id, json_content = None):
+        self.asf_id = asf_id
+        self.fingerprint = None
+        self.ldap_url = 'https://whimsy.apache.org/public/public_ldap_people.json'
+        self.fingerprint = None
+        self.fingerprint_short = None
+        if json_content:
+            self.ldap_json = json_content
+        else:
+            self.ldap_json = self.load_ldap()
+        self.resolve()
+
+
+    def load_ldap(self):
+        try:
+            with urllib.request.urlopen(self.ldap_url) as f:
+                return json.load(f)
+        except urllib.error.HTTPError as e:
+            raise Exception(f'Failed to load {self.ldap_url}: {e}')
+
+
+    def resolve(self):
+        """ Resolve the PGP key fingerprint for the committer's ASF id """
+        try:
+            self.fingerprint = self.ldap_json['people'][self.asf_id]['key_fingerprints'][0].replace(" ", "").upper()
+            self.fingerprint_short = self.fingerprint[-8:]
+        except KeyError:
+            raise Exception(f'No PGP key found for {self.asf_id}')
+
+
+    def get_fingerprint(self):
+        return self.fingerprint
+
+
+    def get_short_fingerprint(self):
+        return self.fingerprint_short
+
 
 def run(cmd, cwd=None):
   try:

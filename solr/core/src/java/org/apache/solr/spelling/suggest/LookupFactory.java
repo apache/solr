@@ -17,7 +17,7 @@
 package org.apache.solr.spelling.suggest;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
@@ -50,7 +50,7 @@ public abstract class LookupFactory {
         throw new RuntimeException("Java has no temporary folder property (java.io.tmpdir)?");
       }
       try {
-        tmpBuildDir = FSDirectory.open(Paths.get(tempDirPath));
+        tmpBuildDir = FSDirectory.open(Path.of(tempDirPath));
       } catch (IOException ioe) {
         throw new RuntimeException(ioe);
       }

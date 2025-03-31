@@ -33,7 +33,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Locale;
@@ -390,7 +389,7 @@ public class CoreContainerProvider implements ServletContextListener {
       home = "solr/";
       source = "defaulted to '" + home + "' ... could not find system property or JNDI";
     }
-    final Path solrHome = Paths.get(home).toAbsolutePath().normalize();
+    final Path solrHome = Path.of(home).toAbsolutePath().normalize();
     log.info("Solr Home: {} (source: {})", solrHome, source);
 
     return solrHome;
