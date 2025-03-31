@@ -1172,7 +1172,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * is in place.
    */
   protected void seedSolrHome(Path jettyHome) throws IOException {
-    PathUtils.copyDirectory(getSolrHome(), jettyHome);
+    PathUtils.copyDirectory(getSolrHome(), jettyHome, StandardCopyOption.REPLACE_EXISTING);
     String solrxml = getSolrXml();
     if (solrxml != null) {
       Files.copy(
