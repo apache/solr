@@ -18,17 +18,25 @@ package org.apache.solr.search.join;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.KnnByteVectorQuery;
+import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
+import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
@@ -38,6 +46,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
 
@@ -67,7 +76,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
   }
 
   @Override
-  protected Query wrapSubordinateClause(Query subordinate) throws SyntaxError {
+  protected Query wrapSubordinateClause(BooleanQuery subordinate) throws SyntaxError {
     String scoreMode = localParams.get("score", ScoreMode.None.name());
     Query parentQ = parseParentFilter();
     return createQuery(parentQ, subordinate, scoreMode);
@@ -78,10 +87,42 @@ public class BlockJoinParentQParser extends FiltersQParser {
     return new BitSetProducerQuery(getBitSetProducer(parseParentFilter()));
   }
 
-  protected Query createQuery(final Query parentList, Query query, String scoreMode)
-      throws SyntaxError {
-    return new AllParentsAware(
-        query, getBitSetProducer(parentList), ScoreModeParser.parse(scoreMode), parentList);
+  protected Query createQuery(final Query allParents, BooleanQuery query, String scoreMode)
+          throws SyntaxError {
+    List<BooleanClause> clauses = query.clauses();
+    if (clauses.size() == 1 && clauses.get(0).getQuery().getClass().equals(KnnByteVectorQuery.class)) {
+      Query acceptedParents = getAcceptedParents(allParents);
+      KnnByteVectorQuery childQuery = (KnnByteVectorQuery) clauses.get(0).getQuery();
+      String vectorField = childQuery.getField();
+      byte[] queryVector = childQuery.getTargetCopy();
+      int topK = childQuery.getK();
+      BitSetProducer parentFilter = getBitSetProducer(acceptedParents);
+      Query childrenFilter = childQuery.getFilter();
+      return new DiversifyingChildrenByteKnnVectorQuery(vectorField, queryVector, childrenFilter, topK, parentFilter);
+    } else if (clauses.size() == 1 && clauses.get(0).getQuery().getClass().equals(KnnFloatVectorQuery.class)) {
+      Query acceptedParents = getAcceptedParents(allParents);
+      KnnFloatVectorQuery childQuery = (KnnFloatVectorQuery) clauses.get(0).getQuery();
+      String vectorField = childQuery.getField();
+      float[] queryVector = childQuery.getTargetCopy();
+      int topK = childQuery.getK();
+      BitSetProducer parentFilter = getBitSetProducer(acceptedParents);
+      Query childrenFilter = childQuery.getFilter();
+      return new DiversifyingChildrenFloatKnnVectorQuery(vectorField, queryVector, childrenFilter, topK, parentFilter);
+    } else {
+      return new AllParentsAware(
+              query, getBitSetProducer(allParents), ScoreModeParser.parse(scoreMode), allParents);
+    }
+  }
+
+  private Query getAcceptedParents(Query allParents) throws SyntaxError {
+    List<Query> parentFilterQueries = QueryUtils.parseFilterQueries(req);
+    BooleanQuery.Builder acceptedParentsBuilder = createBuilder();
+    for (Query filter:parentFilterQueries) {
+      acceptedParentsBuilder.add(filter, BooleanClause.Occur.MUST);
+    }
+    acceptedParentsBuilder.add(allParents, BooleanClause.Occur.MUST);
+    Query acceptedParents = acceptedParentsBuilder.build();
+    return acceptedParents;
   }
 
   BitSetProducer getBitSetProducer(Query query) {
