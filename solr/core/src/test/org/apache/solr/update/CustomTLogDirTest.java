@@ -19,9 +19,13 @@ package org.apache.solr.update;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import com.carrotsearch.randomizedtesting.RandomizedContext;
 import org.apache.lucene.tests.mockfile.FilterPath;
+import org.apache.lucene.tests.mockfile.WindowsFS;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -53,7 +57,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
-    Path ulogDir = LuceneTestCase.createTempDir();
+    Path ulogDir = FilterPath.unwrap(LuceneTestCase.createTempDir());
     // absolute path spec that falls outside of the instance and data dirs for the
     // associated core, is assumed to already by namespaced by purpose (tlog). We
     // expect it to be further namespaced by core name.
