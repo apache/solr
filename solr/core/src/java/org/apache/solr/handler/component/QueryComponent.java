@@ -1173,7 +1173,7 @@ public class QueryComponent extends SearchComponent {
                 segmentTerminatedEarly);
       }
     }
-    if (maxHitsTerminatedEarlyq) {
+    if (maxHitsTerminatedEarly) {
       rb.rsp
           .getResponseHeader()
           .add(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, Boolean.TRUE);
