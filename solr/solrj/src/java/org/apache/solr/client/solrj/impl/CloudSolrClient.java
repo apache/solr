@@ -173,7 +173,6 @@ public abstract class CloudSolrClient extends SolrClient {
      * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
      * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
      *     java.util.Optional.empty()} if no ZK chroot is used.
-     * @deprecated Recommended way is bootstrapping from Solr URLs: {@link Builder#Builder(List)}
      */
     @Deprecated(since = "10.0")
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {

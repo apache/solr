@@ -168,8 +168,7 @@ Other Changes
   To ensure security, Solr should enforce authentication and authorization,
   allowing only authorized admins to publish them. (Abhishek Umarjikar)
 
-* SOLR-14070: Deprecate CloudSolrClient's ZKHost constructor, recommended way is bootstrapping from Solr URLs
-  i.e. using constructor that takes solr urls. (Abhishek Umarjikar)
+* SOLR-14070: Deprecate CloudSolrClient's ZooKeeper Hosts constructor. (Abhishek Umarjikar)
 
 ==================  9.9.0 ==================
 New Features
