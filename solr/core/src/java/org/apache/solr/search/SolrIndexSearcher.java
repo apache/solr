@@ -327,6 +327,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       qr.setPartialResults(true);
       qr.setMaxHitsTerminatedEarly(true);
+      qr.setPartialResultsDetails(etce.getDetails());
     } finally {
       if (earlyTerminatingSortingCollector != null) {
         qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
@@ -1969,17 +1970,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.trace("MULTI-THREADED search, using CollectorManager int getDocListNC");
         final MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
-                .searchCollectorManagers(len, cmd, query, true, needScores, false);
+                .searchCollectorManagers(len, cmd, query, true, needScores, false, qr);
         scoreModeUsed = searchResult.scoreMode;
 
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;
-        if (searchResult.earlyTerminationReason
-            == MultiThreadedSearcher.SearchResult.EarlyTerminationReason.MAX_HITS) {
-          qr.setMaxHitsTerminatedEarly(true);
-          qr.setPartialResults(Boolean.TRUE);
-        }
         maxScore = searchResult.getMaxScore(totalHits);
       }
 
@@ -2105,7 +2101,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         boolean needMaxScore = needScores;
         MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
-                .searchCollectorManagers(len, cmd, query, true, needMaxScore, true);
+                .searchCollectorManagers(len, cmd, query, true, needMaxScore, true, qr);
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;

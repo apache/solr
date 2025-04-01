@@ -21,6 +21,7 @@ public class QueryResult {
 
   // Object for back compatibility so that we render true not "true" in json
   private Object partialResults;
+  private Object partialResultsDetails;
   private Boolean segmentTerminatedEarly;
   private Boolean terminatedEarly;
   private DocListAndSet docListAndSet;
@@ -62,6 +63,14 @@ public class QueryResult {
 
   public void setPartialResults(Object partialResults) {
     this.partialResults = partialResults;
+  }
+
+  public Object getPartialResultsDetails() {
+    return partialResultsDetails;
+  }
+
+  public void setPartialResultsDetails(Object partialResultsDetails) {
+    this.partialResultsDetails = partialResultsDetails;
   }
 
   public Boolean getSegmentTerminatedEarly() {

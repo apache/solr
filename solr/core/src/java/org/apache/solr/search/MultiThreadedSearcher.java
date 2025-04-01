@@ -52,7 +52,8 @@ public class MultiThreadedSearcher {
       Query query,
       boolean needTopDocs,
       boolean needMaxScore,
-      boolean needDocSet)
+      boolean needDocSet,
+      QueryResult queryResult)
       throws IOException {
     Collection<CollectorManager<Collector, Object>> collectors = new ArrayList<>();
 
@@ -91,15 +92,16 @@ public class MultiThreadedSearcher {
     @SuppressWarnings({"unchecked", "rawtypes"})
     CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
     final SolrMultiCollectorManager manager = new SolrMultiCollectorManager(cmd, colls);
-    SearchResult.EarlyTerminationReason earlyTerminationReason = null;
     Object[] ret;
     try {
       ret = searcher.search(query, manager);
+    } catch (EarlyTerminatingCollectorException ex) {
+      ret = manager.reduce();
+      queryResult.setMaxHitsTerminatedEarly(true);
+      queryResult.setPartialResults(Boolean.TRUE);
+      queryResult.setPartialResultsDetails(ex.getDetails());
     } catch (Exception ex) {
-      if (ex instanceof EarlyTerminatingCollectorException) {
-        ret = manager.reduce();
-        earlyTerminationReason = SearchResult.EarlyTerminationReason.MAX_HITS;
-      } else if (ex instanceof RuntimeException
+      if (ex instanceof RuntimeException
           && ex.getCause() != null
           && ex.getCause() instanceof ExecutionException
           && ex.getCause().getCause() != null
@@ -112,7 +114,7 @@ public class MultiThreadedSearcher {
 
     ScoreMode scoreMode = SolrMultiCollectorManager.scoreMode(firstCollectors);
 
-    return new SearchResult(scoreMode, ret, earlyTerminationReason);
+    return new SearchResult(scoreMode, ret);
   }
 
   static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd) {
@@ -194,17 +196,10 @@ public class MultiThreadedSearcher {
   static class SearchResult {
     final ScoreMode scoreMode;
     private final Object[] result;
-    final EarlyTerminationReason earlyTerminationReason;
 
-    public static enum EarlyTerminationReason {
-      MAX_HITS
-    }
-
-    SearchResult(
-        ScoreMode scoreMode, Object[] result, EarlyTerminationReason earlyTerminationReason) {
+    SearchResult(ScoreMode scoreMode, Object[] result) {
       this.scoreMode = scoreMode;
       this.result = result;
-      this.earlyTerminationReason = earlyTerminationReason;
     }
 
     public TopDocsResult getTopDocsResult() {

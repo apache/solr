@@ -452,6 +452,10 @@ public class ResponseBuilder {
         getResults().docList =
             new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
       }
+      final Object partialResponseDetail = result.getPartialResultsDetails();
+      if (partialResponseDetail != null) {
+        rsp.addPartialResponseDetail(partialResponseDetail);
+      }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();
     if (segmentTerminatedEarly != null) {
@@ -460,10 +464,12 @@ public class ResponseBuilder {
               SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
               segmentTerminatedEarly);
     }
-    final Boolean terminatedEarly = result.getMaxHitsTerminatedEarly();
-    if (terminatedEarly != null) {
+    final Boolean maxHitsTerminatedEarly = result.getMaxHitsTerminatedEarly();
+    if (maxHitsTerminatedEarly != null) {
       rsp.getResponseHeader()
-          .add(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, terminatedEarly);
+          .add(
+              SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY,
+              maxHitsTerminatedEarly);
     }
     if (null != cursorMark) {
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";

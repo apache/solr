@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import java.util.Locale;
+
 /**
  * Thrown by {@link EarlyTerminatingCollector} when the maximum to abort the scoring / collection
  * process early, when the specified maximum number of documents were collected.
@@ -52,5 +54,13 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
   /** The number of documents collected that resulted in early termination */
   public int getNumberCollected() {
     return numberCollected;
+  }
+
+  public String getDetails() {
+    return String.format(
+        Locale.ROOT,
+        "maxHits reached: %d documents collected out of %d scanned",
+        numberCollected,
+        numberScanned);
   }
 }
