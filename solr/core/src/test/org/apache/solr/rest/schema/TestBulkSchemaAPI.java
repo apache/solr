@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -866,9 +867,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
                 "source": "bleh_s",
                 "dest": "%s"
               }
-            }
-            """
-            .formatted(newFieldName);
+            }""";
+    payload = String.format(Locale.ROOT, payload, newFieldName);
     response = harness.post("/schema", json(payload));
 
     map = (Map) fromJSONString(response);

@@ -70,6 +70,8 @@ dependencies {
 
     testImplementation project(':solr:test-framework')
     testImplementation project(':solr:api')
+    testImplementation libs.junit.junit
+    testImplementation libs.hamcrest.hamcrest
     testImplementation libs.apache.lucene.testframework
     testImplementation libs.fasterxml.jackson.core.databind
 
