@@ -94,8 +94,7 @@ public class SchemaChangeOperation {
   }
 
   public static class AddField extends SchemaChangeOperation {
-    @JsonProperty(required = true)
-    public String name;
+    @JsonProperty public String name;
 
     @JsonProperty public String type;
 
