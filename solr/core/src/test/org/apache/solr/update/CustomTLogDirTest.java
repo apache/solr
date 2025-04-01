@@ -19,13 +19,9 @@ package org.apache.solr.update;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
-import com.carrotsearch.randomizedtesting.RandomizedContext;
 import org.apache.lucene.tests.mockfile.FilterPath;
-import org.apache.lucene.tests.mockfile.WindowsFS;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
