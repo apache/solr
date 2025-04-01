@@ -341,15 +341,17 @@ httpBasicAuthPassword=secretPassword
 == Using the Solr Control Script with Basic Auth
 
 Once Basic authentication is enabled, all requests to the Solr Control Script (`bin/solr`) must contain user credentials.
-To ensure this, add the following line to the `solr.in.sh` or `solr.in.cmd` file.
+While you can pass credentials into `bin/solr` directly when invoking a command, you can also globally define the credentials in the `solr.in.sh` or `solr.in.cmd` file.
 
-This example tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks":
+Add the following line to the `solr.in.sh` or `solr.in.cmd` file:
 
 [source,bash]
 ----
 SOLR_AUTH_TYPE="basic"
 SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 ----
+
+This tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks".
 
 Alternatively, the `SOLR_AUTHENTICATION_OPTS` can take a path to a file, as in:
 
