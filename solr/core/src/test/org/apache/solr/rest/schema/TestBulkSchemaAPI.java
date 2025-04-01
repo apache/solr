@@ -19,8 +19,8 @@ package org.apache.solr.rest.schema;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.hamcrest.Matchers.containsString;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.misc.SweetSpotSimilarity;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DFISimilarity;
@@ -58,19 +58,14 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
-        "solrconfig-managed-schema.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        null);
+        tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml", "/solr", true, null);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(

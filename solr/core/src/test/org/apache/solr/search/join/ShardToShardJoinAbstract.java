@@ -194,7 +194,7 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
                     + " to=id}"
                     + fromQ;
             QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "*"));
-            QueryResponse rsp = new QueryResponse(client.request(qr), client);
+            QueryResponse rsp = qr.process(client);
             SolrDocumentList hits = rsp.getResults();
             assertEquals("Expected 1 doc, got " + hits, 1, hits.getNumFound());
             SolrDocument doc = hits.get(0);
@@ -216,7 +216,7 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
             QueryRequest qr =
                 new QueryRequest(
                     params("collection", fromColl, "q", joinQ, "fl", "*", "rows", "20"));
-            QueryResponse rsp = new QueryResponse(client.request(qr), client);
+            QueryResponse rsp = new QueryResponse(client.request(qr));
             SolrDocumentList hits = rsp.getResults();
             assertEquals("Expected 11 doc, got " + hits, 10 + 1, hits.getNumFound());
             for (SolrDocument doc : hits) {
@@ -246,7 +246,7 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
               + " to=id}"
               + fromQ;
       QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "*"));
-      QueryResponse rsp = new QueryResponse(client.request(qr), client);
+      QueryResponse rsp = qr.process(client);
       SolrDocumentList hits = rsp.getResults();
       final Set<String> expect =
           new HashSet<>(

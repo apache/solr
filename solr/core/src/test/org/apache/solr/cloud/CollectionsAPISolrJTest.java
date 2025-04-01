@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -450,7 +449,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Replica replica1 = testCollection.getReplicas().iterator().next();
     final var coreStatus = getCoreStatus(replica1);
 
-    assertEquals(Paths.get(coreStatus.dataDir).toString(), dataDir.toString());
+    assertEquals(Path.of(coreStatus.dataDir).toString(), dataDir.toString());
   }
 
   @Test

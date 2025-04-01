@@ -56,11 +56,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
   @ClassRule
   @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder()
-          .silent()
-          .withInitialBuckets(BUCKET_NAME)
-          .withSecureConnection(false)
-          .build();
+      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
 
   @BeforeClass
   public static void setupClass() throws Exception {

@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -33,7 +32,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -45,23 +44,23 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static String shard1;
   private static String shard2;
 
-  private static File createSolrHome() throws Exception {
+  private static Path createSolrHome() throws Exception {
     Path workDir = createTempDir();
-    setupJettyTestHome(workDir.toFile(), "collection1");
+    setupJettyTestHome(workDir, "collection1");
     Files.copy(
         Path.of(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
         workDir.resolve("collection1").resolve("conf").resolve("solrconfig.xml"),
         StandardCopyOption.REPLACE_EXISTING);
     FileUtils.copyDirectory(
         workDir.resolve("collection1").toFile(), workDir.resolve("collection2").toFile());
-    return workDir.toFile();
+    return workDir;
   }
 
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
-    File solrHome = createSolrHome();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    Path solrHome = createSolrHome();
+    createAndStartJetty(solrHome);
     String url = getBaseUrl();
     collection1 = getHttpSolrClient(url, "collection1");
     collection2 = getHttpSolrClient(url, "collection2");
@@ -247,7 +246,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     expectThrows(SolrException.class, () -> collection1.query(query));
   }
 
-  public static class BadResponseWriter extends BinaryResponseWriter {
+  public static class BadResponseWriter extends JavaBinResponseWriter {
 
     private static boolean failOnGetFields = false;
     private static boolean failOnGetTopIds = false;
@@ -258,7 +257,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     }
 
     @Override
-    public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+    public void write(
+        OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
         throws IOException {
 
       // I want to fail on the shard request, not the original user request, and only on the
@@ -281,7 +281,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Dummy exception in BadResponseWriter");
       }
-      super.write(out, req, response);
+      super.write(out, req, response, contentType);
     }
   }
 }

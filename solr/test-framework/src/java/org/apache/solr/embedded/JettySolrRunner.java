@@ -31,7 +31,6 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -674,11 +673,11 @@ public class JettySolrRunner {
     }
   }
 
-  public void outputMetrics(File outputDirectory, String fileName) throws IOException {
+  public void outputMetrics(Path outputDirectory, String fileName) throws IOException {
     if (getCoreContainer() != null) {
 
       if (outputDirectory != null) {
-        Path outDir = outputDirectory.toPath();
+        Path outDir = outputDirectory;
         Files.createDirectories(outDir);
       }
 
@@ -691,7 +690,7 @@ public class JettySolrRunner {
             outputDirectory == null
                 ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)
                 : new PrintStream(
-                    new File(outputDirectory, registryName + "_" + fileName),
+                    outputDirectory.resolve(registryName + "_" + fileName).toString(),
                     StandardCharsets.UTF_8)) {
           ConsoleReporter reporter =
               ConsoleReporter.forRegistry(metricsRegisty)

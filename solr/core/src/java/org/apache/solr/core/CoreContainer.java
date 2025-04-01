@@ -35,7 +35,6 @@ import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1078,19 +1077,23 @@ public class CoreContainer {
           coreLoadExecutor.execute(
               () -> {
                 SolrCore core;
+                boolean pendingCoreOpAdded = false;
                 try {
                   if (zkSys.getZkController() != null) {
                     zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
                   }
                   MDCLoggingContext.setCoreDescriptor(this, cd);
                   solrCores.waitAddPendingCoreOps(cd.getName());
+                  pendingCoreOpAdded = true;
                   core = createFromDescriptor(cd, false, false);
                 } catch (Exception e) {
                   log.error("SolrCore failed to load on startup", e);
                   MDCLoggingContext.clear();
                   return;
                 } finally {
-                  solrCores.removeFromPendingOps(cd.getName());
+                  if (pendingCoreOpAdded) {
+                    solrCores.removeFromPendingOps(cd.getName());
+                  }
                   if (asyncSolrCoreLoad) {
                     solrCores.markCoreAsNotLoading(cd);
                   }
@@ -1593,7 +1596,7 @@ public class CoreContainer {
 
       // Validate paths are relative to known locations to avoid path traversal
       assertPathAllowed(cd.getInstanceDir());
-      assertPathAllowed(Paths.get(cd.getDataDir()));
+      assertPathAllowed(Path.of(cd.getDataDir()));
 
       boolean preExistingZkEntry = false;
       try {
@@ -1610,8 +1613,8 @@ public class CoreContainer {
         coresLocator.create(this, cd);
 
         SolrCore core;
+        solrCores.waitAddPendingCoreOps(cd.getName());
         try {
-          solrCores.waitAddPendingCoreOps(cd.getName());
           core = createFromDescriptor(cd, true, newCollection);
           // Write out the current core properties in case anything changed when the core was
           // created
@@ -1737,13 +1740,11 @@ public class CoreContainer {
       }
 
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
-      dcore.setConfigSetTrusted(coreConfig.isTrusted());
       if (log.isInfoEnabled()) {
         log.info(
-            "Creating SolrCore '{}' using configuration from {}, trusted={}",
+            "Creating SolrCore '{}' using configuration from {}",
             dcore.getName(),
-            coreConfig.getName(),
-            dcore.isConfigSetTrusted());
+            coreConfig.getName());
       }
       try {
         core = new SolrCore(this, dcore, coreConfig);
@@ -1773,7 +1774,9 @@ public class CoreContainer {
             (deleteUnknownCores
                 ? " It will be deleted. See SOLR-13396 for more information."
                 : ""));
-        unload(dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
+        // We alreday have an ongoing CoreOp, so do not wait to start another one
+        unloadWithoutCoreOp(
+            dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
         throw e;
       }
       solrCores.removeCoreDescriptor(dcore);
@@ -2045,8 +2048,8 @@ public class CoreContainer {
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
       boolean success = false;
+      solrCores.waitAddPendingCoreOps(cd.getName());
       try {
-        solrCores.waitAddPendingCoreOps(cd.getName());
         ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
         if (log.isInfoEnabled()) {
           log.info(
@@ -2103,8 +2106,8 @@ public class CoreContainer {
       if (coreId != null) return; // yeah, this core is already reloaded/unloaded return right away
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
+        solrCores.waitAddPendingCoreOps(clf.cd.getName());
         try {
-          solrCores.waitAddPendingCoreOps(clf.cd.getName());
           createFromDescriptor(clf.cd, true, false);
         } finally {
           solrCores.removeFromPendingOps(clf.cd.getName());
@@ -2147,7 +2150,22 @@ public class CoreContainer {
    */
   public void unload(
       String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
+    solrCores.waitAddPendingCoreOps(name);
+    try {
+      unloadWithoutCoreOp(name, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+    } finally {
+      solrCores.removeFromPendingOps(name);
+    }
+  }
 
+  /**
+   * This is the actual logic of unloading a core, but does not obtain a lock on the core for the
+   * operation. This method should only be used internally when "unloading" is required within
+   * another core operation. Otherwise, use the public {@link #unload(String, boolean, boolean,
+   * boolean)} method, which will obtain a core operation lock.
+   */
+  private void unloadWithoutCoreOp(
+      String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
 
     if (name != null) {

@@ -76,9 +76,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     super.setUp();
     systemSetPropertySolrDisableUrlAllowList("true");
     // leader with Basic auth enabled via security.json
-    leader =
-        new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
     // Configuring basic auth for Leader
     Path solrLeaderHome = Path.of(leader.getHomeDir());
@@ -92,7 +90,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     // follower with no basic auth credentials for leader configured.
     follower =
         new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+            createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
     followerClient =
@@ -102,7 +100,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     // follower with basic auth credentials for leader configured in solrconfig.xml.
     followerWithAuth =
         new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "follower-auth", leaderJetty.getLocalPort());
+            createTempDir("solr-instance"), "follower-auth", leaderJetty.getLocalPort());
     followerWithAuth.setUp();
     followerJettyWithAuth = createAndStartJetty(followerWithAuth);
     followerClientWithAuth =

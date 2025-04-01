@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -43,8 +42,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
 
   protected CoreContainer cores;
   private String saveProp;
-  private File dataDir1;
-  private File dataDir2;
+  private Path dataDir1;
+  private Path dataDir2;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -63,20 +62,20 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
-    File dataDir1 = createTempDir().toFile();
+    Path dataDir1 = createTempDir();
     // setup datadirs
-    System.setProperty("solr.core0.data.dir", dataDir1.getCanonicalPath());
+    System.setProperty("solr.core0.data.dir", dataDir1.toRealPath().toString());
 
-    dataDir2 = createTempDir().toFile();
+    dataDir2 = createTempDir();
 
-    System.setProperty("solr.core1.data.dir", this.dataDir2.getCanonicalPath());
+    System.setProperty("solr.core1.data.dir", this.dataDir2.toRealPath().toString());
 
     setupCoreContainer();
     if (log.isInfoEnabled()) {
       log.info("CORES={} : {}", cores, cores.getLoadedCoreNames());
     }
-    cores.getAllowPaths().add(dataDir1.toPath());
-    cores.getAllowPaths().add(dataDir2.toPath());
+    cores.getAllowPaths().add(dataDir1);
+    cores.getAllowPaths().add(dataDir2);
   }
 
   @Override
