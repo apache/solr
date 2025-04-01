@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.common.SolrDocumentList;
@@ -102,21 +101,10 @@ public class QueryResponse extends SolrResponseBase {
   private Map<String, Object> _debugMap = null;
   private Map<String, Object> _explainMap = null;
 
-  // utility variable used for automatic binding -- it should not be serialized
-  private final transient SolrClient solrClient;
+  public QueryResponse() {}
 
-  public QueryResponse() {
-    solrClient = null;
-  }
-
-  /** Utility constructor to set the solrServer and namedList */
-  public QueryResponse(NamedList<Object> res, SolrClient solrClient) {
+  public QueryResponse(NamedList<Object> res) {
     this.setResponse(res);
-    this.solrClient = solrClient;
-  }
-
-  public QueryResponse(SolrClient solrClient) {
-    this.solrClient = solrClient;
   }
 
   @Override
@@ -643,9 +631,7 @@ public class QueryResponse extends SolrResponseBase {
   }
 
   public <T> List<T> getBeans(Class<T> type) {
-    return solrClient == null
-        ? new DocumentObjectBinder().getBeans(type, _results)
-        : solrClient.getBinder().getBeans(type, _results);
+    return DocumentObjectBinder.INSTANCE.getBeans(type, _results);
   }
 
   public Map<String, FieldStatsInfo> getFieldStatsInfo() {

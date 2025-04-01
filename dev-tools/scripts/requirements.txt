@@ -7,3 +7,5 @@ console-menu~=0.7.1
 PyGithub~=2.1.1
 jira~=3.4.1
 json
+bs4
+requests

@@ -31,16 +31,16 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BinaryResponseWriter.Resolver;
+import org.apache.solr.response.JavaBinResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 
 /**
- * Test for BinaryResponseWriter
+ * Test for JavaBinResponseWriter
  *
  * @since solr 1.4
  */
-public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
+public class TestJavaBinResponseWriter extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -73,10 +73,8 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     assertU(commit());
     LocalSolrQueryRequest req = lrf.makeRequest("q", "*:*");
     SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
-    BinaryQueryResponseWriter writer =
-        (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    writer.write(baos, req, rsp);
+    h.getCore().getQueryResponseWriter("javabin").write(baos, req, rsp);
     NamedList<?> res;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       res = (NamedList<?>) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
@@ -98,13 +96,13 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("q", "*:*", "omitHeader", "true");
     SolrQueryResponse rsp = h.queryAndResponse(null, req);
 
-    NamedList<Object> res = BinaryResponseWriter.getParsedResponse(req, rsp);
+    NamedList<Object> res = JavaBinResponseWriter.getParsedResponse(req, rsp);
     assertNull(res.get("responseHeader"));
     req.close();
 
     req = req("q", "*:*");
     rsp = h.queryAndResponse(null, req);
-    res = BinaryResponseWriter.getParsedResponse(req, rsp);
+    res = JavaBinResponseWriter.getParsedResponse(req, rsp);
     assertNotNull(res.get("responseHeader"));
     req.close();
   }

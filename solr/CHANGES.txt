@@ -37,6 +37,8 @@ Improvements
 
 * SOLR-17516: `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. (James Dyer)
 
+* SOLR-17685: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of existing SOLR_HOST ENV variable. (Eric Pugh, Houston Putnam)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -154,6 +156,18 @@ Other Changes
 
 * SOLR-16903: Switch CoreContainer#getSolrHome to return Path instead of String (Andrey Bozhko)
 
+* SOLR-17682: QueryResponseWriter: refactor the hierarchy.  Base abstraction is now byte oriented,
+  thus BinaryQueryResponseWriter is gone.  Added TextQueryResponseWriter for the text ones.
+  Stopped using RawResponseWriter when not needed.  Rename BinaryResponseWriter to JavaBinResponseWriter.
+  (David Smiley)
+
+* SOLR-17706: SolrJ DocumentObjectBinder is now a global singleton via an INSTANCE field and that
+  which is pluggable via Java SPI/ServiceLoader.  SolrClient.getBinder is gone.  (David Smiley)
+
+* SOLR-17584: There is no longer a distinction between trusted and untrusted configSets; all are now trusted.
+  To ensure security, Solr should enforce authentication and authorization,
+  allowing only authorized admins to publish them. (Abhishek Umarjikar)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -168,6 +182,8 @@ New Features
 * SOLR-17309: Certificate based authentication plugin now has richer flexible cert principal resolution. (Lamine Idjeraoui via Eric Pugh)
 
 * SOLR-17632: Added update request processor to encode text to vector at indexing time through external LLM services. (Alessandro Benedetti)
+
+* SOLR-17714: Added a FuzzyQParser to enable all FuzzyQuery customizations. (Houston Putman, Siju Varghese)
 
 Improvements
 ---------------------
@@ -188,7 +204,8 @@ Improvements
 * SOLR-17607: SolrJ CloudSolrClient configured with HTTP URLs will no longer eagerly connect to
   anything. (David Smiley)
 
-* SOLR-17685: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of existing SOLR_HOST ENV variable. (Eric Pugh, Houston Putnam)
+* SOLR-10998: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt' is unspecified.  JSON is still used as a default when
+  neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
 
 Optimizations
 ---------------------
@@ -208,6 +225,10 @@ Bug Fixes
 * SOLR-17700: Use Core Operation lock when unloading cores. This fixes errors that occur when a collection deletion and reload
   occur at the same time. (Houston Putman)
 
+* SOLR-17699: Fixed performance regression since 9.0 with "frange" queries embedded in other queries.
+  May also affect some numeric range queries when the minimum is negative.  (David Smiley)
+
+* SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
 
 Dependency Upgrades
 ---------------------
@@ -247,6 +268,10 @@ Other Changes
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
 * SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
+
+* SOLR-17716: Handle interrupted exception in SolrCores.waitAddPendingCoreOps. (Bruno Roustant)
+
+* SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
 
 ==================  9.8.1 ==================
 Bug Fixes

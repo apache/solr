@@ -71,7 +71,7 @@ public class NodeMutator {
     List<String> downedReplicas = new ArrayList<>();
     final Map<String, Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 
-    List<Replica> replicasOnNode = docCollection.getReplicas(nodeName);
+    List<Replica> replicasOnNode = docCollection.getReplicasOnNode(nodeName);
     if (replicasOnNode == null || replicasOnNode.isEmpty()) {
       return Optional.empty();
     }

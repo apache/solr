@@ -17,7 +17,6 @@
 package org.apache.solr.util;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -25,7 +24,7 @@ import org.apache.solr.core.CoreDescriptor;
 public class MockCoreContainer extends CoreContainer {
   public static class MockCoreDescriptor extends CoreDescriptor {
     public MockCoreDescriptor() {
-      super("mock", Paths.get("path").toAbsolutePath(), Collections.emptyMap(), null, null);
+      super("mock", Path.of("path").toAbsolutePath(), Collections.emptyMap(), null, null);
     }
   }
 
@@ -35,6 +34,6 @@ public class MockCoreContainer extends CoreContainer {
 
   @Override
   public Path getCoreRootDirectory() {
-    return Paths.get("coreroot");
+    return Path.of("coreroot");
   }
 }

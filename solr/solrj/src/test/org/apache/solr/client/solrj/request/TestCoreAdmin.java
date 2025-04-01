@@ -20,13 +20,11 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
 import com.codahale.metrics.MetricRegistry;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -52,13 +50,13 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   public void testConfigSet() throws Exception {
 
     SolrClient client = getSolrAdmin();
-    File testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
-    File newCoreInstanceDir = new File(testDir, "newcore");
-    cores.getAllowPaths().add(testDir.toPath()); // Allow the test dir
+    Path testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    Path newCoreInstanceDir = testDir.resolve("newcore");
+    cores.getAllowPaths().add(testDir); // Allow the test dir
 
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName("corewithconfigset");
-    req.setInstanceDir(newCoreInstanceDir.getAbsolutePath());
+    req.setInstanceDir(newCoreInstanceDir.toString());
     req.setConfigSet("configset-2");
 
     CoreAdminResponse response = req.process(client);
@@ -74,20 +72,20 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     try (SolrClient client = getSolrAdmin()) {
 
-      File dataDir = createTempDir("data").toFile();
+      Path dataDir = createTempDir("data");
 
-      File newCoreInstanceDir = createTempDir("instance").toFile();
-      cores.getAllowPaths().add(dataDir.toPath()); // Allow the test dir
-      cores.getAllowPaths().add(newCoreInstanceDir.toPath()); // Allow the test dir
+      Path newCoreInstanceDir = createTempDir("instance");
+      cores.getAllowPaths().add(dataDir); // Allow the test dir
+      cores.getAllowPaths().add(newCoreInstanceDir); // Allow the test dir
 
-      File instanceDir = cores.getSolrHome().toFile();
-      FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir, "newcore"));
+      Path instanceDir = cores.getSolrHome();
+      PathUtils.copyDirectory(instanceDir, newCoreInstanceDir.resolve("newcore"));
 
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("newcore");
-      req.setInstanceDir(newCoreInstanceDir.getAbsolutePath() + File.separator + "newcore");
-      req.setDataDir(dataDir.getAbsolutePath());
-      req.setUlogDir(new File(dataDir, "ulog").getAbsolutePath());
+      req.setInstanceDir(newCoreInstanceDir.resolve("newcore").toString());
+      req.setDataDir(dataDir.toString());
+      req.setUlogDir(dataDir.resolve("ulog").toString());
       req.setConfigSet("shared");
 
       // These should be the inverse of defaults.
@@ -97,7 +95,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
       // Show that the newly-created core has values for load on startup and transient that differ
       // from defaults due to the above.
-      File logDir;
+      Path logDir;
       try (SolrCore coreProveIt = cores.getCore("collection1");
           SolrCore core = cores.getCore("newcore")) {
 
@@ -107,12 +105,10 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
         assertFalse(core.getCoreDescriptor().isLoadOnStartup());
         assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
 
-        logDir = new File(core.getUpdateHandler().getUpdateLog().getTlogDir());
+        logDir = Path.of(core.getUpdateHandler().getUpdateLog().getTlogDir());
       }
 
-      assertEquals(
-          new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(),
-          logDir.getAbsolutePath());
+      assertEquals(dataDir.resolve("ulog").resolve("tlog").toString(), logDir.toString());
     }
   }
 
@@ -265,7 +261,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       cores = CoreContainer.createAndLoad(SOLR_HOME);
 
       String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).dataDir;
-      Path data = Paths.get(ddir, "index");
+      Path data = Path.of(ddir, "index");
       assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 
       getSolrCore0().add(new SolrInputDocument("id", "core0-1"));
