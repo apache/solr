@@ -91,14 +91,14 @@ public class MultiThreadedSearcher {
     @SuppressWarnings({"unchecked", "rawtypes"})
     CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
     final SolrMultiCollectorManager manager = new SolrMultiCollectorManager(cmd, colls);
-    boolean isTerminatedEarly = false;
+    SearchResult.EarlyTerminationReason earlyTerminationReason = null;
     Object[] ret;
     try {
       ret = searcher.search(query, manager);
     } catch (Exception ex) {
       if (ex instanceof EarlyTerminatingCollectorException) {
         ret = manager.reduce();
-        isTerminatedEarly = true;
+        earlyTerminationReason = SearchResult.EarlyTerminationReason.MAX_HITS;
       } else if (ex instanceof RuntimeException
           && ex.getCause() != null
           && ex.getCause() instanceof ExecutionException
@@ -112,7 +112,7 @@ public class MultiThreadedSearcher {
 
     ScoreMode scoreMode = SolrMultiCollectorManager.scoreMode(firstCollectors);
 
-    return new SearchResult(scoreMode, ret, isTerminatedEarly);
+    return new SearchResult(scoreMode, ret, earlyTerminationReason);
   }
 
   static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd) {
