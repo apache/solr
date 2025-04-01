@@ -222,14 +222,22 @@ public class SchemaManager {
     }
   }
 
+  private static <T> T ensureNotNull(String name, T value) throws SchemaOperationException {
+    if (value == null) {
+      throw new SchemaOperationException("'" + name + "' is a required field");
+    }
+
+    return value;
+  }
+
   public enum OpType {
     ADD_FIELD_TYPE("add-field-type") {
       @Override
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var addFieldTypeOp = (SchemaChangeOperation.AddFieldType) op;
-        String name = addFieldTypeOp.name;
-        String className = addFieldTypeOp.className;
+        String name = ensureNotNull("name", addFieldTypeOp.name);
+        String className = ensureNotNull("class", addFieldTypeOp.className);
         try {
           FieldType fieldType =
               mgr.managedIndexSchema.newFieldType(name, className, convertToMap(addFieldTypeOp));
@@ -247,8 +255,8 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var addCopyFieldOp = (SchemaChangeOperation.AddCopyField) op;
-        String src = addCopyFieldOp.source;
-        List<String> dests = addCopyFieldOp.destinations;
+        String src = ensureNotNull("source", addCopyFieldOp.source);
+        List<String> dests = ensureNotNull("dest", addCopyFieldOp.destinations);
 
         // If maxChars is not specified, there is no limit on copied chars
         final var maxChars =
@@ -271,12 +279,8 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var addFieldOp = (SchemaChangeOperation.AddField) op;
-        // TODO TestBulkSchemaAPI test is failing because Jackson isn't actually implementing the
-        // required-arg check that we previously had here through CommandOperation.getStr()...figure
-        // out why Jackson isn't enforcing '@JsonProperty(required = true)' when we go to serialize
-        // in SchemaHandler.handleRequestBody
-        String name = addFieldOp.name;
-        String type = addFieldOp.type;
+        String name = ensureNotNull("name", addFieldOp.name);
+        String type = ensureNotNull("type", addFieldOp.type);
         try {
           final String[] propsToOmit = new String[] {OPERATION_TYPE_PROP, NAME, TYPE};
           SchemaField field =
@@ -296,8 +300,8 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var addDynFieldOp = (SchemaChangeOperation.AddDynamicField) op;
-        String name = addDynFieldOp.name;
-        String type = addDynFieldOp.type;
+        String name = ensureNotNull("name", addDynFieldOp.name);
+        String type = ensureNotNull("type", addDynFieldOp.type);
         try {
           final String[] propsToOmit = new String[] {OPERATION_TYPE_PROP, NAME, TYPE};
           SchemaField field =
@@ -318,7 +322,7 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var deleteFieldTypeOp = (SchemaChangeOperation.DeleteFieldType) op;
-        String name = deleteFieldTypeOp.name;
+        String name = ensureNotNull("name", deleteFieldTypeOp.name);
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(singleton(name));
           return true;
@@ -333,8 +337,8 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var deleteCopyField = (SchemaChangeOperation.DeleteCopyField) op;
-        String source = deleteCopyField.source;
-        List<String> dests = deleteCopyField.destinations;
+        String source = ensureNotNull("source", deleteCopyField.source);
+        List<String> dests = ensureNotNull("dest", deleteCopyField.destinations);
         try {
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.deleteCopyFields(singletonMap(source, dests));
@@ -350,7 +354,7 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var deleteFieldOp = (SchemaChangeOperation.DeleteField) op;
-        String name = deleteFieldOp.name;
+        String name = ensureNotNull("name", deleteFieldOp.name);
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFields(singleton(name));
           return true;
@@ -365,7 +369,7 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var deleteDynFieldOp = (SchemaChangeOperation.DeleteDynamicField) op;
-        String name = deleteDynFieldOp.name;
+        String name = ensureNotNull("name", deleteDynFieldOp.name);
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(singleton(name));
           return true;
@@ -380,8 +384,8 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var replaceFieldTypeOp = (SchemaChangeOperation.ReplaceFieldType) op;
-        String name = replaceFieldTypeOp.name;
-        String className = replaceFieldTypeOp.className;
+        String name = ensureNotNull("name", replaceFieldTypeOp.name);
+        String className = ensureNotNull("class", replaceFieldTypeOp.className);
         try {
           mgr.managedIndexSchema =
               mgr.managedIndexSchema.replaceFieldType(
@@ -398,8 +402,8 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var replaceFieldOp = (SchemaChangeOperation.ReplaceField) op;
-        String name = replaceFieldOp.name;
-        String type = replaceFieldOp.type;
+        String name = ensureNotNull("name", replaceFieldOp.name);
+        String type = ensureNotNull("type", replaceFieldOp.type);
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
         if (ft == null) {
           throw new SchemaOperationException("No such field type '" + type + "'");
@@ -421,8 +425,8 @@ public class SchemaManager {
       public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
           throws SchemaOperationException {
         final var replaceDynFieldOp = (SchemaChangeOperation.ReplaceDynamicField) op;
-        String name = replaceDynFieldOp.name;
-        String type = replaceDynFieldOp.type;
+        String name = ensureNotNull("name", replaceDynFieldOp.name);
+        String type = ensureNotNull("type", replaceDynFieldOp.type);
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
         if (ft == null) {
           throw new SchemaOperationException("No such field type '" + type + "'");
