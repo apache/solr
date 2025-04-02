@@ -238,6 +238,9 @@ Bug Fixes
 
 * SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
 
+* SOLR-17692: Core unload/deletion now preempts all forms of ongoing "recovery", rather than inadvertently waiting for
+  completion in some cases. (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
