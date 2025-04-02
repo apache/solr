@@ -1038,7 +1038,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       return (int)
           files
               .filter(
-                  (file) -> Files.isDirectory(file) && !file.getFileName().startsWith("snapshot"))
+                  (file) ->
+                      Files.isDirectory(file)
+                          && !file.getFileName().toString().startsWith("snapshot"))
               .count();
     }
   }
