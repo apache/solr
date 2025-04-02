@@ -111,6 +111,8 @@ Deprecation Removals
 
 * SOLR-17518: Removed deprecated methods `getXml()` and `writeXml()` from `UpdateRequest`. (Pierre Salagnac)
 
+* SOLR-17655: Removed deprecated ExternalFileField field type. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
