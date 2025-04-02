@@ -80,5 +80,8 @@ public class TestEarlyTerminatingQueries extends SolrCloudTestCase {
         "should have maxHitsTerminatedEarly response header for maxHitsAllowed",
         Boolean.TRUE,
         rsp.getHeader().get("maxHitsTerminatedEarly"));
+    assertNotNull(
+        "should have approximateTotalHits response header for maxHitsAllowed",
+        rsp.getHeader().get("approximateTotalHits"));
   }
 }

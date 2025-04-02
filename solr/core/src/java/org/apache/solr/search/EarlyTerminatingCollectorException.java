@@ -64,11 +64,11 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
         numberScanned);
   }
 
-  public int getApproximateTotalHits(int maxDocId) {
+  public long getApproximateTotalHits(int maxDocId) {
     if (numberScanned == maxDocId) {
       return numberCollected;
     } else {
-      return (int) (maxDocId * ((double) numberCollected) / ((double) numberScanned));
+      return (long) (maxDocId * ((double) numberCollected) / ((double) numberScanned));
     }
   }
 }
