@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -146,7 +145,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .setCreateNodeSet("")
             .process(cluster.getSolrClient())
             .getStatus());
-    String dataDir = createTempDir().toFile().getAbsolutePath();
+    String dataDir = createTempDir().toString();
     // create a core that simulates something left over from a partially-deleted collection
     assertTrue(
         CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
@@ -523,7 +522,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
           "Could not find expected core.properties file",
           Files.exists(instancedir.resolve("core.properties")));
 
-      Path expected = Paths.get(jetty.getSolrHome()).toAbsolutePath().resolve(core.getName());
+      Path expected = Path.of(jetty.getSolrHome()).resolve(core.getName());
 
       assertTrue(
           "Expected: " + expected + "\nFrom core stats: " + instancedir,

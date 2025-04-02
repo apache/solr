@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import static org.apache.solr.core.FileSystemConfigSetService.METADATA_FILE;
 import static org.hamcrest.Matchers.hasItem;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -71,10 +70,7 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
 
     // Each of these will fail "quietly" as ConfigSetService opts to log warnings but otherwise not
     // surface validation errors to enable bulk uploading
-    final var invalidFilePaths =
-        List.of(
-            ".." + File.separator + "escapePath",
-            "foo" + File.separator + ".." + File.separator + ".." + File.separator + "bar");
+    final var invalidFilePaths = List.of("../escapePath", "foo/../../bar");
     for (String invalidFilePath : invalidFilePaths) {
       fileSystemConfigSetService.uploadFileToConfig(configName, invalidFilePath, testdata, true);
       assertFalse(Files.exists(specificConfigSetBase.resolve(invalidFilePath)));

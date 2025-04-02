@@ -16,10 +16,11 @@
  */
 package org.apache.solr.blockcache;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
@@ -289,12 +290,12 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
 
   private long getFileModified(String name) throws IOException {
     if (in instanceof FSDirectory) {
-      File directory = ((FSDirectory) in).getDirectory().toFile();
-      File file = new File(directory, name);
-      if (!file.exists()) {
+      Path directory = ((FSDirectory) in).getDirectory();
+      Path file = directory.resolve(name);
+      if (!Files.exists(file)) {
         throw new FileNotFoundException("File [" + name + "] not found");
       }
-      return file.lastModified();
+      return Files.getLastModifiedTime(file).toMillis();
     } else {
       throw new UnsupportedOperationException();
     }

@@ -39,6 +39,8 @@ Improvements
 
 * SOLR-17685: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of existing SOLR_HOST ENV variable. (Eric Pugh, Houston Putnam)
 
+* SOLR-17701: Simplify bin/solr scripts by removing AUTH_PORT export in favour of more commonly used SOLR_PORT export. (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -111,6 +113,10 @@ Deprecation Removals
 
 * SOLR-17518: Removed deprecated methods `getXml()` and `writeXml()` from `UpdateRequest`. (Pierre Salagnac)
 
+* SOLR-17655: Removed deprecated ExternalFileField field type. (Eric Pugh)
+
+* SOLR-17683: Removed deprecated CurrencyField field type. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -167,6 +173,8 @@ Other Changes
 * SOLR-17584: There is no longer a distinction between trusted and untrusted configSets; all are now trusted.
   To ensure security, Solr should enforce authentication and authorization,
   allowing only authorized admins to publish them. (Abhishek Umarjikar)
+
+* SOLR-14070: Deprecate CloudSolrClient's ZooKeeper Hosts constructor. (Abhishek Umarjikar)
 
 ==================  9.9.0 ==================
 New Features

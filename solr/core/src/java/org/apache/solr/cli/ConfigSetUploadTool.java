@@ -18,7 +18,6 @@ package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -79,7 +78,7 @@ public class ConfigSetUploadTool extends ToolBase {
     String zkHost = CLIUtils.getZkHost(cli);
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
-    Path solrInstallDirPath = Paths.get(solrInstallDir);
+    Path solrInstallDirPath = Path.of(solrInstallDir);
 
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION);
