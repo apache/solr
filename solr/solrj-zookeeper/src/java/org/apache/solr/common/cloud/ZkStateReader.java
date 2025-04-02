@@ -168,6 +168,11 @@ public class ZkStateReader implements SolrCloseable {
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
 
+  /** Live node JSON property keys. */
+  public static final String LIVE_NODE_SOLR_VERSION = "solrVersion";
+  public static final String LIVE_NODE_NODE_NAME = "nodeName";
+  public static final String LIVE_NODE_ROLES = ROLES_PROP;
+
   /** "Interesting" but not actively watched Collections. */
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates =
       new ConcurrentHashMap<>();
@@ -864,6 +869,76 @@ public class ZkStateReader implements SolrCloseable {
   public void removeLiveNodesListener(LiveNodesListener listener) {
     liveNodesListeners.remove(listener);
   }
+
+
+  /**
+   * Returns the lowest Solr version among all live nodes in the cluster.
+   *
+   * @return the lowest Solr version as a String, or null if no version is found
+   * @throws KeeperException if a ZooKeeper error occurs
+   * @throws InterruptedException if the thread is interrupted
+   */
+  public String getLowestSolrVersion() throws KeeperException, InterruptedException {
+    List<String> liveNodeNames = zkClient.getChildren(LIVE_NODES_ZKNODE, null, true);
+    String lowestVersion = null;
+
+    for (String nodeName : liveNodeNames) {
+      String path = LIVE_NODES_ZKNODE + "/" + nodeName;
+      byte[] data = zkClient.getData(path, null, null, true);
+      if (data == null || data.length == 0) {
+        continue;
+      }
+
+      @SuppressWarnings("unchecked")
+      Map<String, Object> props = (Map<String, Object>) Utils.fromJSON(data);
+      String nodeVersion = (String) props.get(LIVE_NODE_SOLR_VERSION);
+      if (nodeVersion != null) {
+        if (lowestVersion == null || compareVersions(nodeVersion, lowestVersion) < 0) {
+          lowestVersion = nodeVersion;
+        }
+      }
+    }
+
+    return lowestVersion;
+  }
+
+  /**
+   * Compares two version strings that are dot-separated numbers.
+   *
+   * For example, "9.8.1" is considered higher than "9.5.0".
+   *
+   * @param v1 the first version string
+   * @param v2 the second version string
+   * @return a negative integer if v1 is lower than v2, zero if they are equal, or a positive integer if v1 is higher than v2.
+   */
+  private int compareVersions(String v1, String v2) {
+    v1 = (v1 == null || v1.trim().isEmpty()) ? "0" : v1.trim();
+    v2 = (v2 == null || v2.trim().isEmpty()) ? "0" : v2.trim();
+
+    String[] parts1 = v1.split("\\.");
+    String[] parts2 = v2.split("\\.");
+    int length = Math.max(parts1.length, parts2.length);
+
+    for (int i = 0; i < length; i++) {
+      int num1 = 0;
+      int num2 = 0;
+      try {
+        if (i < parts1.length) {
+          num1 = Integer.parseInt(parts1[i]);
+        }
+        if (i < parts2.length) {
+          num2 = Integer.parseInt(parts2[i]);
+        }
+      } catch (NumberFormatException e) {
+        throw new NumberFormatException("Invalid solr version string: " + (i < parts1.length ? v1 : v2));
+      }
+      if (num1 != num2) {
+        return Integer.compare(num1, num2);
+      }
+    }
+    return 0;
+  }
+
 
   /**
    * @return information about the cluster from ZooKeeper
