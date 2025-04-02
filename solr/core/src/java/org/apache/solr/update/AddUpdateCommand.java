@@ -29,7 +29,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
@@ -257,9 +256,7 @@ public class AddUpdateCommand extends UpdateCommand {
   /** Extract all child documents from parent that are saved in fields */
   private void flattenLabelled(
       List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
-    IndexSchema schema = req.getSchema();
     for (SolrInputField field : currentDoc.values()) {
-      SchemaField sfield = schema.getFieldOrNull(field.getName());
       Object value = field.getFirstValue();
       // check if value is a childDocument
       if (value instanceof SolrInputDocument) {
@@ -273,15 +270,7 @@ public class AddUpdateCommand extends UpdateCommand {
         for (SolrInputDocument child : childrenList) {
           flattenLabelled(unwrappedDocs, child);
         }
-      } else if (sfield.getType() instanceof DenseVectorField && sfield.multiValued() && isRoot){
-        Collection<Object> vectorValues = field.getValues();
-        for(Object vectorValue:vectorValues){
-          SolrInputDocument singleVectorNestedDoc = new SolrInputDocument();
-          singleVectorNestedDoc.setField(field.getName(), vectorValue);
-          flattenLabelled(unwrappedDocs, singleVectorNestedDoc);
-        }
-        
-      } 
+      }
     }
 
     if (!isRoot) unwrappedDocs.add(currentDoc);

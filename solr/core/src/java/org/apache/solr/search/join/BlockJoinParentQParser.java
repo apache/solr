@@ -19,7 +19,6 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
