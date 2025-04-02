@@ -33,8 +33,8 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
   }
 
   @Override
-  protected Query createQuery(Query allParents, BooleanQuery query, String scoreMode) {
-    return new ToChildBlockJoinQuery(query, getBitSetProducer(allParents));
+  protected Query createQuery(Query parentListQuery, Query query, String scoreMode) {
+    return new ToChildBlockJoinQuery(query, getBitSetProducer(parentListQuery));
   }
 
   @Override
