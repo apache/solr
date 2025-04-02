@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
-import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_ROLES;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -29,20 +28,15 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.google.common.collect.Maps;
-import com.sun.source.tree.Tree;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -61,7 +55,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -211,7 +204,10 @@ public class ZkControllerTest extends SolrCloudTestCase {
       Map<String, Object> liveProps = (Map<String, Object>) Utils.fromJSON(actualData);
       String expectedSolrVersion = SolrVersion.LATEST.toString();
 
-      assertEquals("Live node solrVersion incorrect", expectedSolrVersion, liveProps.get(LIVE_NODE_SOLR_VERSION));
+      assertEquals(
+          "Live node solrVersion incorrect",
+          expectedSolrVersion,
+          liveProps.get(LIVE_NODE_SOLR_VERSION));
       assertEquals("Live node nodeName incorrect", nodeName, liveProps.get(LIVE_NODE_NODE_NAME));
 
       zkController.close();

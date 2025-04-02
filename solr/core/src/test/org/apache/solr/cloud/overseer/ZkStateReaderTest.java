@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -69,9 +72,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
-import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 
 @LogLevel(
     "org.apache.solr.common.cloud.ZkStateReader=DEBUG;org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG")
@@ -930,7 +930,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     assertEquals("Check lowest version", "8.0.3.3.1", lowestVersion);
   }
 
-
   public void testGetLowestSolrVersionMalformedVersion() throws Exception {
     SolrZkClient zkClient = fixture.zkClient;
     ZkStateReader reader = fixture.reader;
@@ -959,7 +958,4 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       assertTrue(e.getMessage().contains("Invalid solr version string"));
     }
   }
-
-
-
 }

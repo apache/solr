@@ -170,6 +170,7 @@ public class ZkStateReader implements SolrCloseable {
 
   /** Live node JSON property keys. */
   public static final String LIVE_NODE_SOLR_VERSION = "solrVersion";
+
   public static final String LIVE_NODE_NODE_NAME = "nodeName";
   public static final String LIVE_NODE_ROLES = ROLES_PROP;
 
@@ -870,7 +871,6 @@ public class ZkStateReader implements SolrCloseable {
     liveNodesListeners.remove(listener);
   }
 
-
   /**
    * Returns the lowest Solr version among all live nodes in the cluster.
    *
@@ -905,11 +905,12 @@ public class ZkStateReader implements SolrCloseable {
   /**
    * Compares two version strings that are dot-separated numbers.
    *
-   * For example, "9.8.1" is considered higher than "9.5.0".
+   * <p>For example, "9.8.1" is considered higher than "9.5.0".
    *
    * @param v1 the first version string
    * @param v2 the second version string
-   * @return a negative integer if v1 is lower than v2, zero if they are equal, or a positive integer if v1 is higher than v2.
+   * @return a negative integer if v1 is lower than v2, zero if they are equal, or a positive
+   *     integer if v1 is higher than v2.
    */
   private int compareVersions(String v1, String v2) {
     v1 = (v1 == null || v1.trim().isEmpty()) ? "0" : v1.trim();
@@ -930,7 +931,8 @@ public class ZkStateReader implements SolrCloseable {
           num2 = Integer.parseInt(parts2[i]);
         }
       } catch (NumberFormatException e) {
-        throw new NumberFormatException("Invalid solr version string: " + (i < parts1.length ? v1 : v2));
+        throw new NumberFormatException(
+            "Invalid solr version string: " + (i < parts1.length ? v1 : v2));
       }
       if (num1 != num2) {
         return Integer.compare(num1, num2);
@@ -938,7 +940,6 @@ public class ZkStateReader implements SolrCloseable {
     }
     return 0;
   }
-
 
   /**
    * @return information about the cluster from ZooKeeper
