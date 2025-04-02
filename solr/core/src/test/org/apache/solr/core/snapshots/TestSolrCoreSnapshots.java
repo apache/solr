@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core.snapshots;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -338,7 +338,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   }
 
   private List<IndexCommit> listCommits(String directory) throws Exception {
-    Directory dir = new NIOFSDirectory(Paths.get(directory));
+    Directory dir = new NIOFSDirectory(Path.of(directory));
     try {
       return DirectoryReader.listCommits(dir);
     } catch (IndexNotFoundException ex) {

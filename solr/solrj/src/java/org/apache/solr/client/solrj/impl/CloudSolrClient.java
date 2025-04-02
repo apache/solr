@@ -174,6 +174,7 @@ public abstract class CloudSolrClient extends SolrClient {
      * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
      *     java.util.Optional.empty()} if no ZK chroot is used.
      */
+    @Deprecated(since = "10.0")
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
     }
@@ -274,7 +275,15 @@ public abstract class CloudSolrClient extends SolrClient {
 
   public abstract ClusterStateProvider getClusterStateProvider();
 
+  /**
+   * @deprecated problematic as a 'get' method, since one implementation will do a remote request
+   *     each time this is called, potentially return lots of data that isn't even needed.
+   */
+  @Deprecated
   public ClusterState getClusterState() {
+    // The future of "ClusterState" isn't clear.  Could make it more of a cache instead of a
+    // snapshot, so we un-deprecate. Or we avoid it and maybe make the ClusterStateProvider as that
+    // cache.  SOLR-17604 is related.
     return getClusterStateProvider().getClusterState();
   }
 
@@ -304,7 +313,10 @@ public abstract class CloudSolrClient extends SolrClient {
   /**
    * Connect to the zookeeper ensemble. This is an optional method that may be used to force a
    * connection before any other requests are sent.
+   *
+   * @deprecated Call {@link ClusterStateProvider#getLiveNodes()} instead.
    */
+  @Deprecated
   public void connect() {
     getClusterStateProvider().connect();
   }
@@ -317,6 +329,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * @throws TimeoutException if the cluster is not ready after the timeout
    * @throws InterruptedException if the wait is interrupted
    */
+  @Deprecated
   public void connect(long duration, TimeUnit timeUnit)
       throws TimeoutException, InterruptedException {
     if (log.isInfoEnabled()) {

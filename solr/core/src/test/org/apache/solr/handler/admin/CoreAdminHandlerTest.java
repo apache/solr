@@ -23,7 +23,6 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Properties;
@@ -300,11 +299,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testDeleteInstanceDir() throws Exception {
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
 
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corerename");
+    copySolrHomeToTemp(solrHomeDirectory, "corerename");
 
     Path coreRename = solrHomeDirectory.resolve("corerename");
     Path renamePropFile = coreRename.resolve("core.properties");
@@ -381,7 +380,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testUnloadForever() throws Exception {
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
@@ -446,7 +445,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "Ignore test on windows because it does not delete data directory immediately after unload",
         Constants.WINDOWS);
     Path solrHomeDirectory = createTempDir("solr-home");
-    copySolrHomeToTemp(solrHomeDirectory.toFile(), "corex");
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
@@ -470,7 +469,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
       final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
       String dataDirectory = status.dataDir;
-      dataDir = Paths.get(dataDirectory);
+      dataDir = Path.of(dataDirectory);
       assertTrue(Files.exists(dataDir));
     }
 

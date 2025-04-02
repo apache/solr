@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -294,7 +293,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_CORE)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
       testUpdate(client, WT.XML, "application/xml; charset=UTF-8", MUST_ENCODE);

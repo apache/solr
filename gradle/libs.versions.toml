@@ -31,11 +31,11 @@ apache-commons-lang3 = "3.15.0"
 apache-commons-math3 = "3.6.1"
 # @keep for version alignment
 apache-commons-text = "1.12.0"
-apache-curator = "5.7.1"
+apache-curator = "5.8.0"
 apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
-apache-kafka = "3.7.1"
+apache-kafka = "3.9.0"
 apache-log4j = "2.21.0"
 apache-lucene = "9.12.1"
 apache-opennlp = "1.9.4"
@@ -63,6 +63,7 @@ benmanes-versions = "0.51.0"
 bouncycastle = "1.78.1"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
+bytebuddy = "1.17.4"
 carrot2-core = "4.5.1"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.1"
@@ -155,7 +156,7 @@ link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.4"
 lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
-mockito = "5.15.2"
+mockito = "5.16.1"
 morethan-jmhreport = "0.9.0"
 mvikotlin = "4.3.0"
 navsecurity = "0.5.10"
@@ -294,6 +295,8 @@ bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
 bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
+bytebuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddy" }
 carrot2-core = { module = "org.carrot2:carrot2-core", version.ref = "carrot2-core" }
 carrotsearch-hppc = { module = "com.carrotsearch:hppc", version.ref = "carrotsearch-hppc" }
 carrotsearch-randomizedtesting-runner = { module = "com.carrotsearch.randomizedtesting:randomizedtesting-runner", version.ref = "carrotsearch-randomizedtesting" }

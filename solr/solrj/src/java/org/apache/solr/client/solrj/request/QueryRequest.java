@@ -62,7 +62,7 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
 
   @Override
   protected QueryResponse createResponse(SolrClient client) {
-    return new QueryResponse(client);
+    return new QueryResponse();
   }
 
   @Override

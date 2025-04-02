@@ -524,7 +524,6 @@
   
   <fieldType name="binary" class="solr.BinaryField" />
   <fieldType name="collation" class="solr.CollationField" language="en" />
-  <fieldType name="externalFile" class="solr.ExternalFileField" />
   <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />
   <fieldType name="latLonPointSpatial" class="solr.LatLonPointSpatialField" />
   <fieldType name="randomSort" class="solr.RandomSortField" />
@@ -657,7 +656,6 @@
   <field name="datePointRemove" type="pdate" indexed="true" stored="true" multiValued="true"/>
   <field name="dateRangeRemove" type="dateRange" indexed="true" stored="true" multiValued="true"/>
   <field name="doublePointRemove" type="pdouble" indexed="true" stored="true" multiValued="true"/>
-  <field name="externalFileRemove" type="externalFile" indexed="true" stored="true" multiValued="true"/>
   <field name="floatPointRemove" type="pfloat" indexed="true" stored="true" multiValued="true"/>
   <field name="icuCollationRemove" type="icuCollation" indexed="true" stored="true" multiValued="true"/>
   <field name="intPointRemove" type="pint" indexed="true" stored="true" multiValued="true"/>

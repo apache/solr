@@ -154,6 +154,8 @@ This will match terms like roams & foam - but not foams since it has an edit dis
 
 IMPORTANT: In many cases, stemming (reducing terms to a common stem) can produce similar effects to fuzzy searches and wildcard searches.
 
+If more advanced fuzzy search options are required, such as `prefixLength` or `maxExpansions`, these can be enabled via the xref:other-parsers.adoc#fuzzy-query-parser[fuzzy query parser].
+
 === Proximity Searches
 
 A proximity search looks for terms that are within a specific distance from one another.

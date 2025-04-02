@@ -16,16 +16,13 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.util.ContentStream;
 
 /**
@@ -36,7 +33,7 @@ import org.apache.solr.common.util.ContentStream;
  *
  * @since solr 1.4
  */
-public class RequestWriter {
+public abstract class RequestWriter {
 
   public interface ContentWriter {
 
@@ -46,40 +43,20 @@ public class RequestWriter {
   }
 
   /**
-   * Use this to do a push writing instead of pull. If this method returns null {@link
-   * org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is invoked
-   * to do a pull write.
+   * To be implemented by subclasses to serialize update requests into the appropriate format.
+   *
+   * <p>If this method returns null, {@link
+   * org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is then
+   * invoked to get content.
    */
-  public ContentWriter getContentWriter(SolrRequest<?> req) {
-    if (req instanceof UpdateRequest updateRequest) {
-      if (isEmpty(updateRequest)) return null;
-      return new ContentWriter() {
-        @Override
-        public void write(OutputStream os) throws IOException {
-          OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
-          updateRequest.writeXML(writer);
-          writer.flush();
-        }
-
-        @Override
-        public String getContentType() {
-          return ClientUtils.TEXT_XML;
-        }
-      };
-    }
-    return req.getContentWriter(ClientUtils.TEXT_XML);
-  }
+  public abstract ContentWriter getContentWriter(SolrRequest<?> req);
 
   /**
    * @deprecated Use {@link #getContentWriter(SolrRequest)}.
    */
   @Deprecated
-  public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
-    if (req instanceof UpdateRequest) {
-      return null;
-    }
-    return req.getContentStreams();
-  }
+  public abstract Collection<ContentStream> getContentStreams(SolrRequest<?> req)
+      throws IOException;
 
   protected boolean isEmpty(UpdateRequest updateRequest) {
     return isNull(updateRequest.getDocuments())
@@ -88,18 +65,9 @@ public class RequestWriter {
         && updateRequest.getDocIterator() == null;
   }
 
-  public void write(SolrRequest<?> request, OutputStream os) throws IOException {
-    if (request instanceof UpdateRequest updateRequest) {
-      BufferedWriter writer =
-          new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
-      updateRequest.writeXML(writer);
-      writer.flush();
-    }
-  }
+  public abstract void write(SolrRequest<?> request, OutputStream os) throws IOException;
 
-  public String getUpdateContentType() {
-    return ClientUtils.TEXT_XML;
-  }
+  public abstract String getUpdateContentType();
 
   public static class StringPayloadContentWriter implements ContentWriter {
     public final String payload;

@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrDocument;
@@ -41,13 +42,22 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * A class to map objects to and from solr documents.
+ * Maps objects to and from Solr documents.
  *
  * @since solr 1.3
  */
 public class DocumentObjectBinder {
 
-  private final Map<Class<?>, List<DocField>> infocache = new ConcurrentHashMap<>();
+  /**
+   * The singleton/default instance. The implementation is loaded via {@link ServiceLoader}, so it's
+   * customizable.
+   */
+  public static final DocumentObjectBinder INSTANCE =
+      ServiceLoader.load(DocumentObjectBinder.class)
+          .findFirst()
+          .orElseGet(DocumentObjectBinder::new);
+
+  private final Map<Class<?>, List<DocField>> infoCache = new ConcurrentHashMap<>();
 
   public DocumentObjectBinder() {}
 
@@ -126,10 +136,11 @@ public class DocumentObjectBinder {
   }
 
   private List<DocField> getDocFields(Class<?> clazz) {
-    List<DocField> fields = infocache.get(clazz);
+    // can't use computeIfAbsent because collectInfo may recursively call getDocFields
+    List<DocField> fields = infoCache.get(clazz);
     if (fields == null) {
-      synchronized (infocache) {
-        infocache.put(clazz, fields = collectInfo(clazz));
+      synchronized (infoCache) {
+        infoCache.put(clazz, fields = collectInfo(clazz));
       }
     }
     return fields;
@@ -137,7 +148,7 @@ public class DocumentObjectBinder {
 
   @SuppressWarnings("removal")
   @SuppressForbidden(reason = "Needs access to possibly private @Field annotated fields/methods")
-  private List<DocField> collectInfo(Class<?> clazz) {
+  protected List<DocField> collectInfo(Class<?> clazz) {
     List<DocField> fields = new ArrayList<>();
     Class<?> superClazz = clazz;
     List<AccessibleObject> members = new ArrayList<>();
@@ -169,7 +180,7 @@ public class DocumentObjectBinder {
     return fields;
   }
 
-  private class DocField {
+  protected class DocField {
     private Field annotation;
     private String name;
     private java.lang.reflect.Field field;
@@ -186,7 +197,7 @@ public class DocumentObjectBinder {
      * is set to <code>TRUE</code> as well as <code>isList</code> is set to <code>TRUE</code>
      */
     private boolean isContainedInMap;
-    private Pattern dynamicFieldNamePatternMatcher;
+    private java.util.function.Predicate<String> dynamicFieldNamePatternMatcher;
 
     public DocField(AccessibleObject member) {
       if (member instanceof java.lang.reflect.Field) {
@@ -235,10 +246,24 @@ public class DocumentObjectBinder {
       } else if (annotation.value().indexOf('*') >= 0) {
         // dynamic fields are annotated as @Field("categories_*")
         // if the field was annotated as a dynamic field, convert the name into a pattern
-        // the wildcard (*) is supposed to be either a prefix or a suffix, hence the use of
-        // replaceFirst
-        name = annotation.value().replaceFirst("\\*", "\\.*");
-        dynamicFieldNamePatternMatcher = Pattern.compile("^" + name + "$");
+        // the wildcard (*) is supposed to be either a prefix or a suffix
+
+        if (annotation.value().startsWith("*")) {
+          // handle suffix
+          name = annotation.value();
+          String pattern = annotation.value().substring(1);
+          dynamicFieldNamePatternMatcher = fieldName -> fieldName.endsWith(pattern);
+        } else if (annotation.value().endsWith("*")) {
+          // handle prefix
+          name = annotation.value();
+          String pattern = annotation.value().substring(0, annotation.value().length() - 1);
+          dynamicFieldNamePatternMatcher = fieldName -> fieldName.startsWith(pattern);
+        } else {
+          // handle when wildcard is in the middle
+          name = annotation.value().replaceFirst("\\*", "\\.*");
+          Pattern compiledPattern = Pattern.compile("^" + name + "$");
+          dynamicFieldNamePatternMatcher = fieldName -> compiledPattern.matcher(fieldName).find();
+        }
       } else {
         name = annotation.value();
       }
@@ -397,7 +422,7 @@ public class DocumentObjectBinder {
       }
 
       for (String field : solrDocument.getFieldNames()) {
-        if (dynamicFieldNamePatternMatcher.matcher(field).find()) {
+        if (dynamicFieldNamePatternMatcher.test(field)) {
           Object val = solrDocument.getFieldValue(field);
           if (val == null) {
             continue;
