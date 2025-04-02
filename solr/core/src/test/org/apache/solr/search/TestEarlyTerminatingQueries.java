@@ -66,18 +66,18 @@ public class TestEarlyTerminatingQueries extends SolrCloudTestCase {
                 "id:*",
                 "sort",
                 "id asc",
-                "maxHits",
+                "maxHitsAllowed",
                 "5",
                 "rows",
                 "5",
                 "multiThreaded",
                 "false"));
     assertEquals(
-        "should have partial results for maxHitsPerShard",
+        "should have partial results for maxHitsAllowed",
         Boolean.TRUE,
         rsp.getHeader().get("partialResults"));
     assertEquals(
-        "should have maxHitsTerminatedEarly response header for maxHitsPerShard",
+        "should have maxHitsTerminatedEarly response header for maxHitsAllowed",
         Boolean.TRUE,
         rsp.getHeader().get("maxHitsTerminatedEarly"));
   }

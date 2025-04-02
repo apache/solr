@@ -27,6 +27,7 @@ public class QueryResult {
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
   private Boolean maxHitsTerminatedEarly;
+  private Integer approximateTotalHits;
 
   public Object groupedResults; // TODO: currently for testing
 
@@ -111,5 +112,13 @@ public class QueryResult {
 
   public void setMaxHitsTerminatedEarly(Boolean maxHitsTerminatedEarly) {
     this.maxHitsTerminatedEarly = maxHitsTerminatedEarly;
+  }
+
+  public Integer getApproximateTotalHits() {
+    return approximateTotalHits;
+  }
+
+  public void setApproximateTotalHits(int approximateTotalHits) {
+    this.approximateTotalHits = approximateTotalHits;
   }
 }

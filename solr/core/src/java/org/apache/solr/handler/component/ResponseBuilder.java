@@ -456,6 +456,12 @@ public class ResponseBuilder {
       if (partialResponseDetail != null) {
         rsp.addPartialResponseDetail(partialResponseDetail);
       }
+      final Object approximateTotalHits = result.getApproximateTotalHits();
+      if (approximateTotalHits != null) {
+        rsp.getResponseHeader()
+            .add(
+                SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
+      }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();
     if (segmentTerminatedEarly != null) {

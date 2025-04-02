@@ -53,7 +53,7 @@ public class SolrMultiCollectorManager
     this.collectorManagers = (CollectorManager[]) collectorManagers;
     if (queryCommand.shouldEarlyTerminateSearch()) {
       runningHits = new LongAdder();
-      maxDocsToCollect = queryCommand.getMaxHitsTerminateEarly();
+      maxDocsToCollect = queryCommand.getMaxHitsAllowed();
     }
   }
 

@@ -291,7 +291,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     if (cmd.shouldEarlyTerminateSearch()) {
-      collector = new EarlyTerminatingCollector(collector, cmd.getMaxHitsTerminateEarly());
+      collector = new EarlyTerminatingCollector(collector, cmd.getMaxHitsAllowed());
     }
 
     final long timeAllowed = cmd.getTimeAllowed();
@@ -328,6 +328,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setPartialResults(true);
       qr.setMaxHitsTerminatedEarly(true);
       qr.setPartialResultsDetails(etce.getDetails());
+      qr.setApproximateTotalHits(etce.getApproximateTotalHits(reader.maxDoc()));
     } finally {
       if (earlyTerminatingSortingCollector != null) {
         qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());

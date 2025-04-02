@@ -433,7 +433,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             });
   }
 
-  public void testMaxHits() throws Exception {
+  public void testMaxHitsAllowed() throws Exception {
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -468,7 +468,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
               // max hits < doc count
               QueryCommand cmd = createBasicQueryCommand(1000, 10, 20, "field1_s", "foo");
               final QueryResult search = searcher.search(cmd);
-              // in a single threaded search, the maxhits will be exact
+              // in a single threaded search, the maxHitsAllowed will be exact
               assertEquals(20, search.getDocList().matches());
               assertEquals(10, search.getDocList().size());
               assertTrue(search.isPartialResults());
@@ -484,13 +484,13 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
   }
 
   private QueryCommand createBasicQueryCommand(
-      int minExactCount, int length, int maxHits, String field, String q) {
+      int minExactCount, int length, int maxHitsAllowed, String field, String q) {
     QueryCommand cmd = new QueryCommand();
     cmd.setMinExactCount(minExactCount);
     cmd.setLen(length);
     cmd.setFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-    if (maxHits > 0) {
-      cmd.setMaxHitsTerminateEarly(maxHits);
+    if (maxHitsAllowed > 0) {
+      cmd.setMaxHitsAllowed(maxHitsAllowed);
     }
     cmd.setQuery(new TermQuery(new Term(field, q)));
     return cmd;

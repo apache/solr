@@ -42,7 +42,7 @@ public class QueryCommand {
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
   private boolean distribStatsDisabled;
-  private int maxHitsTerminateEarly = Integer.MAX_VALUE;
+  private int maxHitsAllowed = Integer.MAX_VALUE;
 
   public CursorMark getCursorMark() {
     return cursorMark;
@@ -199,7 +199,7 @@ public class QueryCommand {
   }
 
   public boolean shouldEarlyTerminateSearch() {
-    return getTerminateEarly() || getMaxHitsTerminateEarly() < Integer.MAX_VALUE;
+    return getTerminateEarly() || getMaxHitsAllowed() < Integer.MAX_VALUE;
   }
 
   public QueryCommand setTerminateEarly(boolean segmentTerminateEarly) {
@@ -251,11 +251,11 @@ public class QueryCommand {
     return searcher.search(this);
   }
 
-  public int getMaxHitsTerminateEarly() {
-    return maxHitsTerminateEarly;
+  public int getMaxHitsAllowed() {
+    return maxHitsAllowed;
   }
 
-  public void setMaxHitsTerminateEarly(int maxHitsTerminateEarly) {
-    this.maxHitsTerminateEarly = maxHitsTerminateEarly;
+  public void setMaxHitsAllowed(int maxHitsAllowed) {
+    this.maxHitsAllowed = maxHitsAllowed;
   }
 }

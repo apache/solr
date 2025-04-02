@@ -184,7 +184,7 @@ public interface CommonParams {
   String MEM_ALLOWED = "memAllowed";
 
   /** The max hits to be collected per shard. */
-  String MAX_HITS_PER_SHARD = "maxHits";
+  String MAX_HITS_ALLOWED = "maxHitsAllowed";
 
   /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";

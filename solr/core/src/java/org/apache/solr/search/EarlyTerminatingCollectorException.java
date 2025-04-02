@@ -59,8 +59,16 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
   public String getDetails() {
     return String.format(
         Locale.ROOT,
-        "maxHits reached: %d documents collected out of %d scanned",
+        "maxHitsAllowed reached: %d documents collected out of %d scanned",
         numberCollected,
         numberScanned);
+  }
+
+  public int getApproximateTotalHits(int maxDocId) {
+    if (numberScanned == maxDocId) {
+      return numberCollected;
+    } else {
+      return (int) (maxDocId * ((double) numberCollected) / ((double) numberScanned));
+    }
   }
 }

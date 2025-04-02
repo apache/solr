@@ -98,8 +98,10 @@ public class MultiThreadedSearcher {
     } catch (EarlyTerminatingCollectorException ex) {
       ret = manager.reduce();
       queryResult.setMaxHitsTerminatedEarly(true);
+      queryResult.setMaxHitsTerminatedEarly(true);
       queryResult.setPartialResults(Boolean.TRUE);
-      queryResult.setPartialResultsDetails(ex.getDetails());
+      queryResult.setApproximateTotalHits(
+          ex.getApproximateTotalHits(searcher.getIndexReader().maxDoc()));
     } catch (Exception ex) {
       if (ex instanceof RuntimeException
           && ex.getCause() != null
