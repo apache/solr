@@ -160,15 +160,19 @@ public class SpellCheckCollator {
         try {
           queryComponent.prepare(checkResponse);
           queryComponent.process(checkResponse);
-          hits =
-              ((Number)
-                      checkResponse
-                          .rsp
-                          .getResponseHeader()
-                          .getOrDefault(
-                              SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY,
-                              checkResponse.rsp.getToLog().get("hits")))
-                  .longValue();
+          if (checkResponse.rsp.getResponseHeader() != null) {
+            hits =
+                ((Number)
+                        checkResponse
+                            .rsp
+                            .getResponseHeader()
+                            .getOrDefault(
+                                SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY,
+                                checkResponse.rsp.getToLog().get("hits")))
+                    .longValue();
+          } else {
+            hits = ((Number) checkResponse.rsp.getToLog().get("hits")).longValue();
+          }
         } catch (Exception e) {
           log.warn(
               "Exception trying to re-query to check if a spell check possibility would return any hits.",
