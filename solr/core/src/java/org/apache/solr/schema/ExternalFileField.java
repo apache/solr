@@ -65,7 +65,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * fl=id,field(inventory_count)</code>.
  *
  * @see ExternalFileFieldReloader
- * @deprecated ExternalFileField is an old capability of Solr that pre-dated in-place partial updates of numeric DocValue fields.
+ * @deprecated ExternalFileField is an old capability of Solr that pre-dated in-place partial
+ *     updates of numeric DocValue fields.
  */
 @Deprecated(since = "9.9")
 public class ExternalFileField extends FieldType implements SchemaAware {
