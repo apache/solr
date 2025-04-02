@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -318,7 +317,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     // Throw exception on directory traversal attempts
     protected String validateFilenameOrError(String fileName) {
       if (fileName != null) {
-        Path filePath = Paths.get(fileName);
+        Path filePath = Path.of(fileName);
         filePath.forEach(
             subpath -> {
               if ("..".equals(subpath.toString())) {

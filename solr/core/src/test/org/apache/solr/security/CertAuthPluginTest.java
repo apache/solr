@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.security.cert.X509Certificate;
+import java.util.Collections;
 import javax.security.auth.x500.X500Principal;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +47,7 @@ public class CertAuthPluginTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     plugin = new CertAuthPlugin();
+    plugin.init(Collections.emptyMap());
   }
 
   @Test

@@ -121,12 +121,12 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
@@ -3030,7 +3030,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
     m.put("raw", new RawResponseWriter());
-    m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
+    m.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
     m.put("cbor", new CborResponseWriter());
     m.put("csv", new CSVResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
@@ -3050,10 +3050,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private static BinaryResponseWriter getFileStreamWriter() {
-    return new BinaryResponseWriter() {
+  private static JavaBinResponseWriter getFileStreamWriter() {
+    return new JavaBinResponseWriter() {
       @Override
-      public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+      public void write(
+          OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
           throws IOException {
         RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {

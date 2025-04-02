@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 import com.codahale.metrics.MetricRegistry;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
@@ -54,7 +53,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.servlet.Filter;
-import org.apache.curator.test.KillSession;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -581,7 +579,7 @@ public class MiniSolrCloudCluster {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir, true);
+      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir);
     }
   }
 
@@ -799,21 +797,7 @@ public class MiniSolrCloudCluster {
 
   /** Make the zookeeper session on a particular jetty lose connection and expire */
   public void expireZkSession(JettySolrRunner jetty) {
-    CoreContainer cores = jetty.getCoreContainer();
-    if (cores != null) {
-      ChaosMonkey.causeConnectionLoss(jetty);
-      SolrZkClient zkClient = cores.getZkController().getZkClient();
-      long sessionId = zkClient.getZkSessionId();
-      zkServer.expire(sessionId);
-      try {
-        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
-      } catch (Exception e) {
-        log.error("Exception killing session", e);
-      }
-      if (log.isInfoEnabled()) {
-        log.info("Expired zookeeper session from node {}", jetty.getBaseUrl());
-      }
-    }
+    ChaosMonkey.expireSession(jetty, zkServer);
   }
 
   // Currently not used ;-(
@@ -983,7 +967,7 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  public void dumpMetrics(File outputDirectory, String fileName) throws IOException {
+  public void dumpMetrics(Path outputDirectory, String fileName) throws IOException {
     for (JettySolrRunner jetty : jettys) {
       jetty.outputMetrics(outputDirectory, fileName);
     }

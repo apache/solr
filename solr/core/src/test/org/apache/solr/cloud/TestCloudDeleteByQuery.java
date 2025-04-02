@@ -270,8 +270,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     final var unsupportedQueryExamples =
         new String[] {
           "{!join from=expected_shard_s to=expected_shard_s v=\"expected_shard_s:5\"}",
-          "{!graph from=expected_shard_s to=expected_shard_s v=\"expected_shard_s:5\"}",
-          "{!hash_range f=\"foo_i\" l=\"0\" u=\"12345\"}"
+          "{!graph from=expected_shard_s to=expected_shard_s v=\"expected_shard_s:5\"}"
         };
 
     update(params()).add(doc(f("id", UUID.randomUUID().toString()))).process(COLLECTION_CLIENT);

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * <code>SimpleOrderedMap</code> is a {@link NamedList} where access by key is more important than
@@ -56,12 +59,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
   /**
    * Creates an instance backed by an explicitly specified list of pairwise names/values.
    *
-   * <p>TODO: this method was formerly public, now that it's not we can change the impl details of
-   * this class to be based on a Map.Entry[]
-   *
    * @param nameValuePairs underlying List which should be used to implement a SimpleOrderedMap;
    *     modifying this List will affect the SimpleOrderedMap.
-   * @lucene.internal
    */
   private SimpleOrderedMap(List<Object> nameValuePairs) {
     super(nameValuePairs);
@@ -71,7 +70,22 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     super(nameValuePairs);
   }
 
-  // TODO override asShallowMap in Solr 10
+  /** Can convert a {@link SolrParams} and other things. */
+  public SimpleOrderedMap(MapWriter mapWriter) {
+    try {
+      mapWriter.writeMap(
+          new EntryWriter() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public EntryWriter put(CharSequence k, Object v) throws IOException {
+              SimpleOrderedMap.this.add(k.toString(), (T) v);
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException(e); // impossible?
+    }
+  }
 
   @Override
   public SimpleOrderedMap<T> clone() {
@@ -79,6 +93,19 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     newList.addAll(nvPairs);
     return new SimpleOrderedMap<>(newList);
   }
+
+  @SuppressWarnings("EqualsDoesntCheckParameterClass")
+  @Override
+  public boolean equals(Object obj) {
+    return obj == this || new InnerMap().equals(obj); // Use AbstractMap's code
+  }
+
+  @Override
+  public int hashCode() {
+    return new InnerMap().hashCode(); // Use AbstractMap's code
+  }
+
+  // toString is inherited and implements the Map contract (and this is tested)
 
   @Override
   public boolean isEmpty() {
