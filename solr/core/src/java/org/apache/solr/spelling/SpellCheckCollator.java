@@ -32,6 +32,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -156,6 +157,7 @@ public class SpellCheckCollator {
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
         checkResponse.components = Arrays.asList(queryComponent);
+        checkResponse.rsp.addResponseHeader(new SimpleOrderedMap<>());
 
         try {
           queryComponent.prepare(checkResponse);
