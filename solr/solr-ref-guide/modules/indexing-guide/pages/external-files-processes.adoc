@@ -24,7 +24,8 @@ It can also consume a stream of tokens that have already undergone analysis with
 .ExternalFileField has been Deprecated
 [WARNING]
 ====
-ExternalFileField has been deprecated and will be removed in a future release.
+ExternalFileField has been deprecated and will be removed in a future release.  
+Please use xref:partial-document-updates.adoc#in-place-updates[in-place updates] for numeric fields.
 ====
 
 The `ExternalFileField` type makes it possible to specify the values for a field in a file outside the Solr index.
