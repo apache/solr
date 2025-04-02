@@ -189,8 +189,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
     close = true;
     cancelPrepRecoveryCmd();
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
-    if (replicationHandlerDoingFetch != null) {
-      replicationHandlerDoingFetch.abortFetch();
+    abortIndexFetchingIfNecessary(replicationHandlerDoingFetch);
+  }
+
+  private void abortIndexFetchingIfNecessary(ReplicationHandler fetcher) {
+    // a 'null' ReplicationHandler indicates that no full-recovery/index-fetching is ongoing to
+    // abort.
+    if (fetcher != null) {
+      fetcher.abortFetch();
     }
   }
 
