@@ -106,6 +106,8 @@ Users who that don't need to vary JAR access on a per-core basis have several op
 
 * ExternalFileField field type has been removed.
 
+* CurrencyField has been removed.  Users should migrate to the `CurrencyFieldType` implementation.
+
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.

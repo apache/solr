@@ -93,8 +93,6 @@ This shortcoming may be addressed in a future release.
 |===
 |Class |Description
 
-|CurrencyField |Use CurrencyFieldType instead.
-
 |EnumField |Use EnumFieldType instead.
 
 |TrieDateField |Use DatePointField instead.

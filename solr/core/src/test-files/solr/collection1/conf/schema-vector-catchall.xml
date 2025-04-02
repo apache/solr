@@ -434,27 +434,6 @@
     <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
     <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
 
-    <!-- Currency type -->
-    <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
-    <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar"
-               multiValued="false"/>
-    <fieldType name="oer_currency"
-               class="solr.CurrencyField"
-               multiValued="false"
-               providerClass="solr.OpenExchangeRatesOrgProvider"
-               ratesFileLocation="open-exchange-rates.json"/>
-    <fieldType name="currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
-               currencyConfig="currency.xml" multiValued="false"/>
-    <fieldType name="mock_currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
-               providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false"/>
-    <fieldType name="oer_currency_CFT"
-               class="solr.CurrencyFieldType"
-               amountLongSuffix="_l1_ns"
-               codeStrSuffix="_s1_ns"
-               multiValued="false"
-               providerClass="solr.OpenExchangeRatesOrgProvider"
-               ratesFileLocation="open-exchange-rates.json"/>
-
     <!-- omitPositions example -->
     <fieldType name="nopositions" class="solr.TextField" omitPositions="true">
         <analyzer>
@@ -571,14 +550,6 @@
     <field name="homed" type="xyd" indexed="true" stored="true" multiValued="false"/>
     <field name="home_ns" type="xy" indexed="true" stored="false" multiValued="false"/>
     <field name="work" type="xy" indexed="true" stored="true" multiValued="false"/>
-
-    <!-- Test currency -->
-    <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
-    <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
-    <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
-    <field name="amount_CFT" type="currency_CFT" indexed="true" stored="true" multiValued="false"/>
-    <field name="mock_amount_CFT" type="mock_currency_CFT" indexed="true" stored="true"/>
-    <field name="oer_amount_CFT" type="oer_currency_CFT" indexed="true" stored="true"/>
 
     <!-- test different combinations of indexed and stored -->
     <field name="bind" type="boolean" indexed="true" stored="false"/>
