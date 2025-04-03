@@ -39,7 +39,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
   private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
   private static final String CONF = COLLECTION + "_configSet";
 
-  private static String FIELD = "amount_CFT";
+  private static String FIELD = "amount";
 
   private static final List<String> STR_VALS = Arrays.asList("x0", "x1", "x2");
   // NOTE: in our test conversions EUR uses an asymmetric exchange rate
