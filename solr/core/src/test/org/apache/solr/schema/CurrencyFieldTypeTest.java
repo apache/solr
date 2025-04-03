@@ -45,14 +45,13 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     this.expectedProviderClass = expectedProviderClass;
   }
 
-  // remove cft later
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(
         new Object[][] {
-          {"amount_CFT", FileExchangeRateProvider.class}, // CurrencyFieldType
-          {"mock_amount_CFT", MockExchangeRateProvider.class}, // CurrencyFieldType
-          {"oer_amount_CFT", OpenExchangeRatesOrgProvider.class} // CurrencyFieldType
+          {"amount", FileExchangeRateProvider.class}, // CurrencyFieldType
+          {"mock_amount", MockExchangeRateProvider.class}, // CurrencyFieldType
+          {"oer_amount", OpenExchangeRatesOrgProvider.class} // CurrencyFieldType
         });
   }
 
