@@ -1033,13 +1033,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   protected String analyzeIfMultitermTermText(String field, String part, FieldType fieldType) {
-
     if (part == null
         || !(fieldType instanceof TextField)
         || ((TextField) fieldType).getMultiTermAnalyzer() == null) return part;
 
-    SchemaField sf = schema.getFieldOrNull((field));
-    if (sf == null || !(fieldType instanceof TextField)) return part;
     BytesRef out =
         TextField.analyzeMultiTerm(field, part, ((TextField) fieldType).getMultiTermAnalyzer());
     return out == null ? part : out.utf8ToString();

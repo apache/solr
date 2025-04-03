@@ -361,11 +361,17 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // TODO: could separate this out into a different test method, but this should suffice for
         // now
         pullJetty.start(true);
+        waitForState(
+            "Pull jetty replicas didn't become active in time",
+            COLL,
+            ((liveNodes, collectionState) ->
+                collectionState.getReplicasOnNode(pullJettyF.getNodeName()).stream()
+                    .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
         AtomicBoolean done = new AtomicBoolean();
         long runMinutes = 1;
         long finishTimeMs =
             new Date().getTime() + TimeUnit.MILLISECONDS.convert(runMinutes, TimeUnit.MINUTES);
-        JettySolrRunner[] jettys = new JettySolrRunner[] {nrtJettyF, pullJettyF};
+        JettySolrRunner[] jettys = new JettySolrRunner[] {pullJettyF, nrtJettyF};
         Random threadRandom = new Random(r.nextInt());
         Future<Integer> f =
             executor.submit(
@@ -386,6 +392,12 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                       log.info("restarting {} ...", idx);
                       toManipulate.start(true);
                       log.info("restarted {}.", idx);
+                      waitForState(
+                          toManipulate.getNodeName() + " replicas didn't become active in time",
+                          COLL,
+                          ((liveNodes, collectionState) ->
+                              collectionState.getReplicasOnNode(toManipulate.getNodeName()).stream()
+                                  .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
                     } catch (Exception e) {
                       throw new RuntimeException(e);
                     }

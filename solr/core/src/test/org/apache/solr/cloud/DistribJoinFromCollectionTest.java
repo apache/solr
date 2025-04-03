@@ -147,7 +147,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
               + fromQ;
       QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-      QueryResponse rsp = new QueryResponse(client.request(qr), client);
+      QueryResponse rsp = qr.process(client);
       SolrDocumentList hits = rsp.getResults();
       assertEquals("Expected 1 doc, got " + hits, 1, hits.getNumFound());
       SolrDocument doc = hits.get(0);
@@ -173,7 +173,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
               + fromQ;
       final QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-      final QueryResponse rsp = new QueryResponse(client.request(qr), client);
+      final QueryResponse rsp = qr.process(client);
       final SolrDocumentList hits = rsp.getResults();
       assertEquals("Expected 1 doc", 1, hits.getNumFound());
       SolrDocument doc = hits.get(0);
@@ -195,7 +195,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
               + " to=join_s}match_s:d";
       final QueryRequest qr =
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-      final QueryResponse rsp = new QueryResponse(client.request(qr), client);
+      final QueryResponse rsp = qr.process(client);
       final SolrDocumentList hits = rsp.getResults();
       assertEquals("Expected no hits", 0, hits.getNumFound());
     }

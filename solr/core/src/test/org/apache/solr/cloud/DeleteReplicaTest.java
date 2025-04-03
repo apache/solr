@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.Replica.State.DOWN;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
@@ -31,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -97,8 +95,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         getRandomReplica(
             shard, (r) -> (r.getState() == Replica.State.ACTIVE && !r.equals(shard.getLeader())));
 
-    CoreStatus coreStatus = getCoreStatus(replica);
-    Path dataDir = Paths.get(coreStatus.getDataDirectory());
+    final var coreStatus = getCoreStatus(replica);
+    Path dataDir = Path.of(coreStatus.dataDir);
 
     Exception e =
         expectThrows(
@@ -164,12 +162,9 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     Replica leader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
     // Confirm that the instance and data directory exist
-    CoreStatus coreStatus = getCoreStatus(leader);
-    assertTrue(
-        "Instance directory doesn't exist",
-        Files.exists(Paths.get(coreStatus.getInstanceDirectory())));
-    assertTrue(
-        "DataDirectory doesn't exist", Files.exists(Paths.get(coreStatus.getDataDirectory())));
+    final var coreStatus = getCoreStatus(leader);
+    assertTrue("Instance directory doesn't exist", Files.exists(Path.of(coreStatus.instanceDir)));
+    assertTrue("DataDirectory doesn't exist", Files.exists(Path.of(coreStatus.dataDir)));
 
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
         .process(cluster.getSolrClient());
@@ -179,11 +174,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     assertNotEquals(leader, newLeader);
 
     // Confirm that the instance and data directory were deleted by default
-    assertFalse(
-        "Instance directory still exists",
-        Files.exists(Paths.get(coreStatus.getInstanceDirectory())));
-    assertFalse(
-        "DataDirectory still exists", Files.exists(Paths.get(coreStatus.getDataDirectory())));
+    assertFalse("Instance directory still exists", Files.exists(Path.of(coreStatus.instanceDir)));
+    assertFalse("DataDirectory still exists", Files.exists(Path.of(coreStatus.dataDir)));
   }
 
   @Test
@@ -504,7 +496,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   private void waitForJettyInit(JettySolrRunner replica1Jetty, String replica1JettyNodeName)
       throws InterruptedException {
     TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!replica1Jetty.isRunning()) {
+    while (!replica1Jetty.isRunning() || replica1Jetty.getCoreContainer() == null) {
       Thread.sleep(100);
       if (timeOut.hasTimedOut())
         fail("Wait for " + replica1JettyNodeName + " replica to init failed!");

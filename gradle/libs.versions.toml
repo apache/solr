@@ -31,13 +31,11 @@ apache-commons-lang3 = "3.15.0"
 apache-commons-math3 = "3.6.1"
 # @keep for version alignment
 apache-commons-text = "1.12.0"
-apache-curator = "5.7.1"
-apache-hadoop = "3.4.0"
-apache-hadoop-thirdparty = "1.2.0"
+apache-curator = "5.8.0"
 apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
-apache-kafka = "3.7.1"
+apache-kafka = "3.9.0"
 apache-log4j = "2.21.0"
 apache-lucene = "9.12.1"
 apache-opennlp = "1.9.4"
@@ -65,6 +63,7 @@ benmanes-versions = "0.51.0"
 bouncycastle = "1.78.1"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
+bytebuddy = "1.17.4"
 carrot2-core = "4.5.1"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.1"
@@ -142,22 +141,22 @@ jetbrains-annotations = "26.0.2"
 joda-time = "2.13.0"
 junit = "4.13.2"
 junit-jupiter = "5.8.1"
-kotlin = "2.1.0"
+kotlin = "2.1.10"
 # @keep for version alignment
 kotlinx-atomicfu = "0.27.0"
 # @keep for version alignment
 kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
-kotlinx-datetime = "0.6.1"
+kotlinx-datetime = "0.6.2"
 kotlinx-serialization = "1.8.0"
-ktor = "3.0.3"
+ktor = "3.1.0"
 langchain4j = "0.35.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.4"
 lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
-mockito = "5.15.2"
+mockito = "5.16.1"
 morethan-jmhreport = "0.9.0"
 mvikotlin = "4.3.0"
 navsecurity = "0.5.10"
@@ -243,11 +242,6 @@ apache-curator-client = { module = "org.apache.curator:curator-client", version.
 apache-curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "apache-curator" }
 apache-curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "apache-curator" }
 apache-curator-test = { module = "org.apache.curator:curator-test", version.ref = "apache-curator" }
-apache-hadoop-client-api = { module = "org.apache.hadoop:hadoop-client-api", version.ref = "apache-hadoop" }
-apache-hadoop-client-minicluster = { module = "org.apache.hadoop:hadoop-client-minicluster", version.ref = "apache-hadoop" }
-apache-hadoop-client-runtime = { module = "org.apache.hadoop:hadoop-client-runtime", version.ref = "apache-hadoop" }
-apache-hadoop-hdfs = { module = "org.apache.hadoop:hadoop-hdfs", version.ref = "apache-hadoop" }
-apache-hadoop-thirdparty-shadedguava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version.ref = "apache-hadoop-thirdparty" }
 apache-httpcomponents-httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "apache-httpcomponents-httpclient" }
 apache-httpcomponents-httpcore = { module = "org.apache.httpcomponents:httpcore", version.ref = "apache-httpcomponents-httpcore" }
 apache-httpcomponents-httpmime = { module = "org.apache.httpcomponents:httpmime", version.ref = "apache-httpcomponents-httpmime" }
@@ -301,6 +295,8 @@ bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
 bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
+bytebuddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "bytebuddy" }
 carrot2-core = { module = "org.carrot2:carrot2-core", version.ref = "carrot2-core" }
 carrotsearch-hppc = { module = "com.carrotsearch:hppc", version.ref = "carrotsearch-hppc" }
 carrotsearch-randomizedtesting-runner = { module = "com.carrotsearch.randomizedtesting:randomizedtesting-runner", version.ref = "carrotsearch-randomizedtesting" }
@@ -435,7 +431,6 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere", version.ref = "langchain4j" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core", version.ref = "langchain4j" }

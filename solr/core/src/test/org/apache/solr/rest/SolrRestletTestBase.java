@@ -44,7 +44,7 @@ public abstract class SolrRestletTestBase extends RestTestBase {
     Path coresDir = tempDir.resolve("cores");
 
     System.setProperty("coreRootDirectory", coresDir.toString());
-    System.setProperty("configSetBaseDir", TEST_HOME());
+    System.setProperty("configSetBaseDir", TEST_HOME().toString());
 
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");

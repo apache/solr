@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,7 +33,7 @@ public final class SolrPaths {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Special path which means to accept all paths. */
-  public static final Path ALL_PATH = Paths.get("_ALL_");
+  public static final Path ALL_PATH = Path.of("_ALL_");
 
   /** Special singleton path set containing only {@link #ALL_PATH}. */
   private static final Set<Path> ALL_PATHS = Collections.singleton(ALL_PATH);
@@ -116,7 +115,7 @@ public final class SolrPaths {
       if (path.equals(WILDCARD_PATH)) {
         paths = ALL_PATHS;
       } else {
-        addPath(Paths.get(path));
+        addPath(Path.of(path));
       }
       return this;
     }

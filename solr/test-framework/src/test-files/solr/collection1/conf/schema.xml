@@ -437,14 +437,6 @@
   <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
 
   <!-- Currency type -->
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
-  <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar"
-             multiValued="false"/>
-  <fieldType name="oer_currency"
-             class="solr.CurrencyField"
-             multiValued="false"
-             providerClass="solr.OpenExchangeRatesOrgProvider"
-             ratesFileLocation="open-exchange-rates.json"/>
   <fieldType name="currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
              currencyConfig="currency.xml" multiValued="false"/>
   <fieldType name="mock_currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
@@ -532,7 +524,6 @@
   
   <fieldType name="binary" class="solr.BinaryField" />
   <fieldType name="collation" class="solr.CollationField" language="en" />
-  <fieldType name="externalFile" class="solr.ExternalFileField" />
   <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />
   <fieldType name="latLonPointSpatial" class="solr.LatLonPointSpatialField" />
   <fieldType name="randomSort" class="solr.RandomSortField" />
@@ -668,7 +659,6 @@
   <field name="datePointRemove" type="pdate" indexed="true" stored="true" multiValued="true"/>
   <field name="dateRangeRemove" type="dateRange" indexed="true" stored="true" multiValued="true"/>
   <field name="doublePointRemove" type="pdouble" indexed="true" stored="true" multiValued="true"/>
-  <field name="externalFileRemove" type="externalFile" indexed="true" stored="true" multiValued="true"/>
   <field name="floatPointRemove" type="pfloat" indexed="true" stored="true" multiValued="true"/>
   <field name="icuCollationRemove" type="icuCollation" indexed="true" stored="true" multiValued="true"/>
   <field name="intPointRemove" type="pint" indexed="true" stored="true" multiValued="true"/>

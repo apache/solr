@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -336,7 +335,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
    * @return list of certificates found in file
    */
   Collection<? extends X509Certificate> parseCertsFromFile(String certFileName) throws IOException {
-    Path certFilePath = Paths.get(certFileName);
+    Path certFilePath = Path.of(certFileName);
     if (coreContainer != null) {
       coreContainer.assertPathAllowed(certFilePath);
     }
