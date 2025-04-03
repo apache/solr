@@ -361,7 +361,7 @@ public class JettySolrRunner {
       server.setConnectors(new Connector[] {connector});
     }
 
-    Handler.Wrapper chain = new Handler.Wrapper();
+    Handler.Wrapper chain;
     {
       // Initialize the servlets
       final ServletContextHandler root =
