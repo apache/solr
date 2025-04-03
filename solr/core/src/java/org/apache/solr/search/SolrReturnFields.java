@@ -68,7 +68,6 @@ public class SolrReturnFields extends ReturnFields {
   private Set<String> reqFieldNames = null;
 
   protected DocTransformer transformer;
-  protected DocTransformer scoreTransformer;
   protected boolean _wantsScore = false;
   protected boolean _wantsAllFields = false;
   protected Map<String, String> renameFields = Collections.emptyMap();
@@ -119,7 +118,6 @@ public class SolrReturnFields extends ReturnFields {
         _wantsScore = true;
         _wantsAllFields = true;
         transformer = new ScoreAugmenter(SCORE);
-        scoreTransformer = transformer;
         scoreDependentFields.put(SCORE, "");
       } else {
         parseFieldList(new String[] {fl}, req);
@@ -150,7 +148,6 @@ public class SolrReturnFields extends ReturnFields {
     }
     if (docTransformer != null) {
       transformer = docTransformer;
-      scoreTransformer = null;
       // doc transformer can request extra fields.
       String[] extraRequestFields = docTransformer.getExtraRequestFields();
       if (extraRequestFields != null) {
@@ -213,7 +210,6 @@ public class SolrReturnFields extends ReturnFields {
     } else if (augmenters.size() > 1) {
       transformer = augmenters;
     }
-    scoreTransformer = augmenters.getScoreTransformer();
   }
 
   @Override
@@ -618,11 +614,6 @@ public class SolrReturnFields extends ReturnFields {
   @Override
   public DocTransformer getTransformer() {
     return transformer;
-  }
-
-  @Override
-  public DocTransformer getScoreTransformer() {
-    return scoreTransformer;
   }
 
   @Override

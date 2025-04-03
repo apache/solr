@@ -75,7 +75,7 @@ public abstract class ReturnFields {
    * A mapping of return fields that depend on score and the names they are associated with.
    *
    * @return a mapping from return field name to the string representation of its definition
-   * */
+   */
   public abstract Map<String, String> getScoreDependentReturnFields();
 
   /**
@@ -96,7 +96,4 @@ public abstract class ReturnFields {
 
   /** Returns the DocTransformer used to modify documents, or <code>null</code> */
   public abstract DocTransformer getTransformer();
-
-  /** Returns the DocTransformer used to modify documents to add score information, or <code>null</code> */
-  public abstract DocTransformer getScoreTransformer();
 }

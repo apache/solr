@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
@@ -201,7 +200,13 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
   /** Get the value or collection of values for a given field. */
   public Map<String, Object> getSubsetOfFields(Set<String> fieldNames) {
     final HashMap<String, Object> subset = CollectionUtil.newHashMap(fieldNames.size());
-    fieldNames.forEach(f -> subset.put(f, getFieldValue(f)));
+    fieldNames.forEach(
+        f -> {
+          Object v = getFieldValue(f);
+          if (v != null) {
+            subset.put(f, getFieldValue(f));
+          }
+        });
     return subset;
   }
 

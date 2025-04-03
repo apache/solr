@@ -45,9 +45,4 @@ public class MatchScoreAugmenter extends DocTransformer {
   public void transform(SolrDocument doc, int docid) {
     // No-op
   }
-
-  @Override
-  public boolean needsScore() {
-    return true;
-  }
 }

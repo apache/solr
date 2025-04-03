@@ -680,7 +680,13 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
 
   public void testAugmentersAndScore() {
     assertQ(
-        req("q", "*:*", "rows", "1", "fl", "[docid],x_alias:[value v=10 t=int],score,s_alias:score"),
+        req(
+            "q",
+            "*:*",
+            "rows",
+            "1",
+            "fl",
+            "[docid],x_alias:[value v=10 t=int],score,s_alias:score"),
         "//result[@numFound='5']",
         "//result/doc/int[@name='[docid]']",
         "//result/doc/int[@name='x_alias'][.=10]",

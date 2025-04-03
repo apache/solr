@@ -65,27 +65,6 @@ public class DocTransformers extends DocTransformer {
     return children.get(idx);
   }
 
-  /**
-   * Creates a copy of this {@link DocTransformers}, but containing only child transformers that affect score.
-   * @return a {@link DocTransformers} to add scores to documents
-   */
-  public DocTransformer getScoreTransformer() {
-    if (!needsScore()) {
-      return null;
-    }
-    DocTransformers scoreTransformers = new DocTransformers();
-    children.stream()
-        .filter(DocTransformer::needsScore)
-        .forEach(scoreTransformers::addTransformer);
-    if (scoreTransformers.size() > 1) {
-      return scoreTransformers;
-    } else if (scoreTransformers.size() == 1) {
-      return scoreTransformers.getTransformer(0);
-    } else {
-      return null;
-    }
-  }
-
   @Override
   public void setContext(ResultContext context) {
     for (DocTransformer a : children) {
@@ -111,10 +90,5 @@ public class DocTransformers extends DocTransformer {
   @Override
   public boolean needsSolrIndexSearcher() {
     return children.stream().anyMatch(DocTransformer::needsSolrIndexSearcher);
-  }
-
-  @Override
-  public boolean needsScore() {
-    return children.stream().anyMatch(DocTransformer::needsScore);
   }
 }

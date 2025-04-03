@@ -91,15 +91,6 @@ public abstract class DocTransformer {
   }
 
   /**
-   * Return whether this augmenter's functionality is dependent on score information.
-   *
-   * @return whether this augmenter needs scores
-   */
-  public boolean needsScore() {
-    return false;
-  }
-
-  /**
    * This is where implementations do the actual work. If implementations require a valid docId and
    * index access, the {@link #needsSolrIndexSearcher} method must return true
    *
