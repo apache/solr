@@ -52,7 +52,7 @@ public class CborResponseWriter implements QueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return JavaBinResponseParser.BINARY_CONTENT_TYPE;
+    return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
   }
 
   static class WriterImpl extends JSONWriter {

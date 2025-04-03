@@ -37,5 +37,5 @@ public class Constants {
 
   public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
 
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  public static final String JAVABIN_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }

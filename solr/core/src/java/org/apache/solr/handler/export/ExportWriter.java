@@ -149,7 +149,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   @Override
   public String getContentType() {
     if ("javabin".equals(wt)) {
-      return JavaBinResponseParser.BINARY_CONTENT_TYPE;
+      return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     } else return "json";
   }
 

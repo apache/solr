@@ -138,7 +138,7 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
       case '?':
         return XMLResponseParser.XML_CONTENT_TYPE;
       default:
-        return JavaBinResponseParser.BINARY_CONTENT_TYPE;
+        return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     }
   }
 

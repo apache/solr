@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import jakarta.ws.rs.core.MediaType;
@@ -55,7 +55,7 @@ public class V2ApiUtilsTest extends SolrTestCaseJ4 {
     assertEquals(MediaType.APPLICATION_XML, V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
     params.set("wt", "javabin");
-    assertEquals(BINARY_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+    assertEquals(JAVABIN_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
     params.set("wt", FILE_STREAM);
     assertEquals(

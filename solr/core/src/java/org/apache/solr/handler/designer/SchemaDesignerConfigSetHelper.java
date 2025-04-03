@@ -516,7 +516,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
       throws IOException {
     var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/blob/" + blobName);
-    request.withContent(bytes, JavaBinResponseParser.BINARY_CONTENT_TYPE);
+    request.withContent(bytes, JavaBinResponseParser.JAVABIN_CONTENT_TYPE);
     request.setRequiresCollection(true);
     try {
       request.process(cloudClient, BLOB_STORE_ID);

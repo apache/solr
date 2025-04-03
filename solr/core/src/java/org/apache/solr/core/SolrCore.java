@@ -3069,7 +3069,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         if (rawWriter != null) {
           return rawWriter.getContentType();
         } else {
-          return JavaBinResponseParser.BINARY_CONTENT_TYPE;
+          return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
         }
       }
     };
@@ -3082,7 +3082,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public interface RawWriter {
     default String getContentType() {
-      return JavaBinResponseParser.BINARY_CONTENT_TYPE;
+      return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     }
 
     void write(OutputStream os) throws IOException;

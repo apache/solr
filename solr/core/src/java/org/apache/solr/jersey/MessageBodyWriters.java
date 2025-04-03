@@ -17,7 +17,7 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
@@ -65,7 +65,7 @@ public class MessageBodyWriters {
     }
   }
 
-  @Produces(BINARY_CONTENT_TYPE_V2)
+  @Produces(JAVABIN_CONTENT_TYPE_V2)
   public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter
       implements MessageBodyWriter<Object> {
     @Override
@@ -75,7 +75,7 @@ public class MessageBodyWriters {
 
     @Override
     public String getSupportedMediaType() {
-      return BINARY_CONTENT_TYPE_V2;
+      return JAVABIN_CONTENT_TYPE_V2;
     }
   }
 
