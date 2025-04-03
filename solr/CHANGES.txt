@@ -73,6 +73,8 @@ Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
 
+* Upgrade forbiddenapis to 3.9. (Uwe Schindler)
+
 Other Changes
 ---------------------
 * SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
