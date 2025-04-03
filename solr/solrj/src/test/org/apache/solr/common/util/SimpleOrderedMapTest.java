@@ -17,6 +17,7 @@
 package org.apache.solr.common.util;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
@@ -36,6 +37,37 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertEquals(1, map.nvPairs.get(1));
     assertEquals("two", map.nvPairs.get(2));
     assertEquals(2, map.nvPairs.get(3));
+  }
+
+  @Test
+  public void testEquals() {
+    var map2 = new SimpleOrderedMap<Integer>();
+    map2.put("one", 1);
+    map2.put("two", 2);
+
+    var map3 = map2.clone();
+    assertNotSame(map2, map3);
+    assertEquals(map2, map3);
+    map3.put("three", 3);
+    assertNotEquals(map2, map3);
+    map3.remove("one");
+    map3.remove("three");
+    map3.add("one", 1); // now it's a different order
+    assertNotEquals(map2.toString(), map3.toString());
+    assertEquals(map2, map3); // but still equals despite different order
+    assertEquals(map2.hashCode(), map3.hashCode());
+
+    var nl2 = new NamedList<Object>(map2);
+    assertNotEquals(map2, nl2);
+    assertNotEquals(nl2, map2);
+  }
+
+  public void testToString() {
+    SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
+    map.add("one", 1);
+    map.add("two", 2);
+    map.add("aNull", null);
+    assertEquals(new LinkedHashMap<>(map).toString(), map.toString());
   }
 
   public void testPutReturnOldValue() {

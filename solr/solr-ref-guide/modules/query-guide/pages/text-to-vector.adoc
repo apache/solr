@@ -16,7 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This module brings the power of *Large Language Models* (*LLM*s) to Solr.  More specifically, it provides a text-to-vector capability, used on documents or queries, via integrating with popular external services that do this.  The state-of-the-art of such services use an LLM, hence the name of this module. 
+This module brings the power of *Large Language Models* (*LLM*s) to Solr.  
+
+More specifically, it provides a text-to-vector capability, used on documents or queries, via integrating with popular external services that do this.
+
+The state-of-the-art of such services use an LLM, hence the name of this module. 
 _Without_ this module, vectors must be supplied _to_ Solr for indexing & searching, possibly coordinating with such services.
 
 
@@ -25,12 +29,17 @@ _Without_ this module, vectors must be supplied _to_ Solr for indexing & searchi
 === From Text to Vector
 
 The aim of encoding text to numerical vectors is to represent text in a way that semantically similar sentences are encoded to vectors close in a vector space.
+
+Often this process is called 'text embedding' as it projects a piece of text into a high-dimensional latent vector space and embeds the text with such vector.
+
 Vector distance metrics (algorithms) can then be used to compute a pairwise similarity, producing a score.
 
 
 === Large Language Models 
 
 Specific Large Language Models are able to encode text to a numerical vector.
+
+These models are often called Embedding Models as they encode text to vector embeddings.
 
 For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
 
@@ -69,8 +78,9 @@ You need to register / configure the plugins provided by the LLM module that you
 +
 [source,xml]
 ----
-<queryParser name="knn_text_to_vector" class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin"/>
+<queryParser name="knn_text_to_vector" class="org.apache.solr.llm.textvectorisation.search.TextToVectorQParserPlugin"/>
 ----
+
 
 == Text to Vector Lifecycle
 
@@ -259,8 +269,142 @@ http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store
 
 ----
 
+Documentation Indexing time
+
+
+=== Enriching documents with vectors at indexing time
+To vectorise textual fields of your documents at indexing time you need to configure an {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[Update Request Processor Chain] that includes at least one `TextToVectorUpdateProcessor` update request processor (you can include more than one, if you want to vectorise multiple fields):
+
+[source,xml]
+----
+<updateRequestProcessorChain name="textToVector">
+  <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+   <str name="inputField">_text_</str>
+   <str name="outputField">vector</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+The `TextToVectorUpdateProcessor` update request processor vectorises the content of the 'inputField' for each document processed at indexing time.
+
+The resulting vector is added as a value for the 'outputField'.
+
+To perform the vectorisation it leverages a 'model' you have previously uploaded in the text-to-vector-model-store.
+
+[IMPORTANT]
+====
+This update processor sends your document field content off to some hosted service on the internet.
+There are serious performance implications that should be diligently examined before employing this component in production.
+It will slow down substantially your indexing pipeline so make sure to stress test your solution before going live.
+
+====
+
+For more details on how to work with update request processors in Apache Solr, please refer to the dedicated page: xref:configuration-guide:update-request-processors.adoc[Update Request Processor]
+
+=== Index first and enrich your documents with vectors on a second pass
+Vectorising text using a hosted service may be slow, so, depending on your use case it could be a good idea to index first your documents and then add vectors iteratively.
+
+This can be done in Solr defining two update request processors chains: one that includes all the processors you need, excluded the TextToVectorUpdateProcessor (let's call it 'no-vectorisation') and one that includes only the TextToVectorUpdateProcessor (let's call it 'vectorisation').
+
+[source,xml]
+----
+<updateRequestProcessorChain name="no-vectorisation">
+<processor class="solr.processor1">
+   ...
+  </processor>
+...
+<processor class="solr.processorN">
+   ...
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+[source,xml]
+----
+<updateRequestProcessorChain name="vectorisation">
+<processor class="solr.processor1">
+   ...
+  </processor>
+...
+<processor class="solr.processorN">
+   ...
+  </processor>
+<processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+   <str name="inputField">_text_</str>
+   <str name="outputField">vector</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+You would index your documents first using the 'no-vectorisation' and when finished, incrementally repeat the indexing targeting the 'vectorisation' chain.
+
+[IMPORTANT]
+====
+This implies you need to send the documents you want to index to Solr twice and re-run any other update request processor you need, in the second chain.
+This has data traffic implications(you transfer your documents over the network twice) and processing implications (if you have other update request processors in your chain, those must be repeated the second time as we are literally replacing the indexed documents one by one).
+====
+
+If your use case is compatible with xref:indexing-guide:partial-document-updates.adoc[Partial Updates], you can do better:
+
+You still define two chains, but this time the 'vectorisation' one only includes the 'TextToVectorUpdateProcessor' (and the xref:configuration-guide:update-request-processors.adoc[Mandatory Processors] )
+
+[source,xml]
+----
+<updateRequestProcessorChain name="no-vectorisation">
+<processor class="solr.processor1">
+   ...
+  </processor>
+...
+<processor class="solr.processorN">
+   ...
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+[source,xml]
+----
+<updateRequestProcessorChain name="vectorisation">
+<processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+   <str name="inputField">_text_</str>
+   <str name="outputField">vector</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
+----
+
+Add to your schema a simple field that will be useful to track the vectorisation and use atomic updates:
+
+[source,xml]
+----
+<field name="vectorised" type="boolean" indexed="true" stored="false" docValues="true" default="false"/>
+
+----
+
+In the first pass just index your documents using your reliable and fast 'no-vectorisation' chain.
+
+On the second pass, re-index all your documents using atomic updates and targeting the 'vectorisation' chain:
+
+[source,json]
+----
+{"id":"mydoc",
+ "vectorised":{"set":true}
+}
+----
+
+What will happen is that internally Solr fetches the stored content of the docs to update, all the existing fields are retrieved and a re-indexing happens, targeting the 'vectorisation' chain that will add the vector and set the boolean 'vectorised' field to 'true'.
+
+Faceting or querying on the boolean 'vectorised' field can also give you a quick idea on how many documents have been enriched with vectors.
+
+
 === Running a Text-to-Vector Query
-To run a query that embeds your query text, using a model you previously uploaded is simple:
+To run a query that vectorises your query text, using a model you previously uploaded is simple:
 
 [source,text]
 ?q={!knn_text_to_vector model=a-model f=vector topK=10}hello world query

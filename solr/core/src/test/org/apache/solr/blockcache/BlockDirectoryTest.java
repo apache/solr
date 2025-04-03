@@ -17,9 +17,9 @@
 package org.apache.solr.blockcache;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.store.Directory;
@@ -99,7 +99,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   private static final int MAX_BUFFER_SIZE = 12000;
   private static final int MAX_NUMBER_OF_READS = 20000;
   private BlockDirectory directory;
-  private File file;
+  private Path file;
   private Random random;
   private MapperCache mapperCache;
 
@@ -107,8 +107,8 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    file = createTempDir().toFile();
-    FSDirectory dir = FSDirectory.open(new File(file, "base").toPath());
+    file = createTempDir();
+    FSDirectory dir = FSDirectory.open(file.resolve("base"));
     mapperCache = new MapperCache();
 
     if (random().nextBoolean()) {
@@ -138,7 +138,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testEOF() throws IOException {
-    Directory fsDir = FSDirectory.open(new File(file, "normal").toPath());
+    Directory fsDir = FSDirectory.open(file.resolve("normal"));
     String name = "test.eof";
     createFile(name, fsDir, directory);
     long fsLength = fsDir.fileLength(name);
@@ -170,7 +170,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     int i = 0;
     try {
       for (; i < 10; i++) {
-        Directory fsDir = FSDirectory.open(new File(file, "normal").toPath());
+        Directory fsDir = FSDirectory.open(file.resolve("normal"));
         String name = getName();
         createFile(name, fsDir, directory);
         assertInputsEquals(name, fsDir, directory);
@@ -253,9 +253,9 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     return Long.toUnsignedString(random.nextLong());
   }
 
-  public static void rm(File file) {
+  public static void rm(Path file) {
     try {
-      IOUtils.rm(file.toPath());
+      IOUtils.rm(file);
     } catch (Throwable ignored) {
       // TODO: should this class care if a file couldnt be deleted?
       // this just emulates previous behavior, where only SecurityException would be handled.

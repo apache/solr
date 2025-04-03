@@ -106,6 +106,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
     Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
     tempDir.toFile().deleteOnExit();
+
     Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
     new KeystoreGenerator()
         .generateKeystore(
