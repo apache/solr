@@ -46,6 +46,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
@@ -874,14 +875,12 @@ public class ZkStateReader implements SolrCloseable {
   /**
    * Returns the lowest Solr version among all live nodes in the cluster.
    *
-   * @return the lowest Solr version as a String, or null if no version is found
-   * @throws KeeperException if a ZooKeeper error occurs
-   * @throws InterruptedException if the thread is interrupted
+   * @return the lowest Solr version as a String, or null if no version is found, throw Semver with
+   *     invalid version
    */
-  public String getLowestSolrVersion() throws KeeperException, InterruptedException {
+  public String fetchLowestSolrVersion() throws KeeperException, InterruptedException {
     List<String> liveNodeNames = zkClient.getChildren(LIVE_NODES_ZKNODE, null, true);
-    String lowestVersion = null;
-
+    SolrVersion lowest = null;
     for (String nodeName : liveNodeNames) {
       String path = LIVE_NODES_ZKNODE + "/" + nodeName;
       byte[] data = zkClient.getData(path, null, null, true);
@@ -891,54 +890,16 @@ public class ZkStateReader implements SolrCloseable {
 
       @SuppressWarnings("unchecked")
       Map<String, Object> props = (Map<String, Object>) Utils.fromJSON(data);
-      String nodeVersion = (String) props.get(LIVE_NODE_SOLR_VERSION);
-      if (nodeVersion != null) {
-        if (lowestVersion == null || compareVersions(nodeVersion, lowestVersion) < 0) {
-          lowestVersion = nodeVersion;
+      String nodeVersionStr = (String) props.get(LIVE_NODE_SOLR_VERSION);
+      if (nodeVersionStr != null) {
+        SolrVersion nodeVersion = SolrVersion.valueOf(nodeVersionStr);
+
+        if (lowest == null || nodeVersion.compareTo(lowest) < 0) {
+          lowest = nodeVersion;
         }
       }
     }
-
-    return lowestVersion;
-  }
-
-  /**
-   * Compares two version strings that are dot-separated numbers.
-   *
-   * <p>For example, "9.8.1" is considered higher than "9.5.0".
-   *
-   * @param v1 the first version string
-   * @param v2 the second version string
-   * @return a negative integer if v1 is lower than v2, zero if they are equal, or a positive
-   *     integer if v1 is higher than v2.
-   */
-  private int compareVersions(String v1, String v2) {
-    v1 = (v1 == null || v1.trim().isEmpty()) ? "0" : v1.trim();
-    v2 = (v2 == null || v2.trim().isEmpty()) ? "0" : v2.trim();
-
-    String[] parts1 = v1.split("\\.");
-    String[] parts2 = v2.split("\\.");
-    int length = Math.max(parts1.length, parts2.length);
-
-    for (int i = 0; i < length; i++) {
-      int num1 = 0;
-      int num2 = 0;
-      try {
-        if (i < parts1.length) {
-          num1 = Integer.parseInt(parts1[i]);
-        }
-        if (i < parts2.length) {
-          num2 = Integer.parseInt(parts2[i]);
-        }
-      } catch (NumberFormatException e) {
-        throw new NumberFormatException(
-            "Invalid solr version string: " + (i < parts1.length ? v1 : v2));
-      }
-      if (num1 != num2) {
-        return Integer.compare(num1, num2);
-      }
-    }
-    return 0;
+    return lowest == null ? null : lowest.toString();
   }
 
   /**
