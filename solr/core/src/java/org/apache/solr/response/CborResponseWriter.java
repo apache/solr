@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -52,7 +52,7 @@ public class CborResponseWriter implements QueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return BinaryResponseParser.BINARY_CONTENT_TYPE;
+    return JavaBinResponseParser.BINARY_CONTENT_TYPE;
   }
 
   static class WriterImpl extends JSONWriter {

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.TotalHits;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -61,7 +61,7 @@ public class JavaBinResponseWriter implements QueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return BinaryResponseParser.BINARY_CONTENT_TYPE;
+    return JavaBinResponseParser.BINARY_CONTENT_TYPE;
   }
 
   public static class Resolver
@@ -174,7 +174,7 @@ public class JavaBinResponseWriter implements QueryResponseWriter {
           };
 
       new JavaBinResponseWriter().write(out, req, rsp);
-      return new BinaryResponseParser().processResponse(out.toInputStream(), null);
+      return new JavaBinResponseParser().processResponse(out.toInputStream(), null);
 
     } catch (IOException ex) {
       throw new RuntimeException(ex); // almost impossible as we don't do real IO

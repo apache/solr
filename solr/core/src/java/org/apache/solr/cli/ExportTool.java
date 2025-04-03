@@ -64,7 +64,7 @@ import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
+import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrDocument;
@@ -683,8 +683,8 @@ public class ExportTool extends ToolBase {
                   runtime.println("Failed to write docs from" + e.getMessage());
                 }
               };
-          StreamingBinaryResponseParser responseParser =
-              new StreamingBinaryResponseParser(getStreamer(wrapper));
+          StreamingJavaBinResponseParser responseParser =
+              new StreamingJavaBinResponseParser(getStreamer(wrapper));
           while (true) {
             if (failed) return false;
             if (docsWritten.get() > limit) return true;

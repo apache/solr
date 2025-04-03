@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -445,7 +445,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     }
 
     assertEquals(6, ((ResultContext) response.getResponse()).getDocList().matches());
-    new BinaryResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
+    new JavaBinResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
     out.close();
   }
 

@@ -81,7 +81,7 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
   public void testDefaultsToBinaryResponseParserWhenNoneProvided() throws IOException {
     try (HttpSolrClient createdClient = new Builder(ANY_BASE_SOLR_URL).build()) {
       final ResponseParser usedParser = createdClient.getParser();
-      assertTrue(usedParser instanceof BinaryResponseParser);
+      assertTrue(usedParser instanceof JavaBinResponseParser);
     }
   }
 

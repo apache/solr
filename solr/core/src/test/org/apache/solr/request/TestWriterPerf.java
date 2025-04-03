@@ -22,7 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -191,7 +191,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
       if (writerName.equals("xml")) {
         rp = new XMLResponseParser();
       } else if (writerName.equals("javabin")) {
-        rp = new BinaryResponseParser();
+        rp = new JavaBinResponseParser();
       } else {
         break;
       }
