@@ -164,6 +164,8 @@ public class HttpSolrCall {
 
   protected RequestType requestType;
 
+  private Span span;
+
   public HttpSolrCall(
       SolrDispatchFilter solrDispatchFilter,
       CoreContainer cores,
@@ -173,6 +175,7 @@ public class HttpSolrCall {
     this.solrDispatchFilter = solrDispatchFilter;
     this.cores = cores;
     this.req = request;
+    this.span = TraceUtils.getSpan(req);
     this.response = response;
     this.retry = retry;
     this.requestType = RequestType.UNKNOWN;
@@ -639,12 +642,7 @@ public class HttpSolrCall {
 
   /** Get the Span for this request. Not null. */
   public Span getSpan() {
-    var s = TraceUtils.getSpan(req);
-    if (s != null) {
-      return s;
-    } else {
-      return Span.getInvalid();
-    }
+    return span != null ? span : Span.getInvalid();
   }
 
   // called after init().
