@@ -176,7 +176,7 @@ Other Changes
 
 * SOLR-14070: Deprecate CloudSolrClient's ZooKeeper Hosts constructor. (Abhishek Umarjikar)
 
-* SOLR-17703: Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to "JavaBin.." equivalent.
+* SOLR-17703: Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to "JavaBin.." equivalent. (Abhishek Umarjikar)
 
 ==================  9.9.0 ==================
 New Features
