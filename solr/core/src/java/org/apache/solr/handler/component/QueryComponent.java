@@ -27,6 +27,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -860,8 +861,8 @@ public class QueryComponent extends SearchComponent {
       }
     }
     if ((fields == null
-            || fields.getRequestedFieldNames() == null
-            || !fields.getRequestedFieldNames().contains(SolrReturnFields.SCORE))
+            || fields.getExplicitlyRequestedFieldNames() == null
+            || !fields.getExplicitlyRequestedFieldNames().contains(SolrReturnFields.SCORE))
         && shardQueryIncludeScore) {
       additionalAdded = addFL(additionalFL, SolrReturnFields.SCORE, additionalAdded);
     }
@@ -911,9 +912,12 @@ public class QueryComponent extends SearchComponent {
       sortFields = new SortField[] {SortField.FIELD_SCORE};
     }
 
-    Set<String> allScoreDependentFields =
-        rb.rsp.getReturnFields().getScoreDependentReturnFields().keySet();
-    boolean returnRawScore = allScoreDependentFields.contains(SolrReturnFields.SCORE);
+    Set<String> allScoreDependentFields;
+    if (rb.rsp.getReturnFields() != null) {
+      allScoreDependentFields = rb.rsp.getReturnFields().getScoreDependentReturnFields().keySet();
+    } else {
+      allScoreDependentFields = Collections.emptySet();
+    }
     Set<String> scoreDependentFields =
         allScoreDependentFields.stream()
             .filter(field -> !field.equals(SolrReturnFields.SCORE))
@@ -1103,7 +1107,6 @@ public class QueryComponent extends SearchComponent {
           } else {
             shardDoc.score = ((Number) scoreObj).floatValue();
           }
-          shardDoc.returnRawScore = returnRawScore;
         }
         if (!scoreDependentFields.isEmpty()) {
           shardDoc.scoreDependentFields = doc.getSubsetOfFields(scoreDependentFields);
@@ -1334,7 +1337,12 @@ public class QueryComponent extends SearchComponent {
       final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
       String keyFieldName = uniqueKey;
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
-      boolean removeScoreField = !rb.rsp.getReturnFields().wantsField(SolrReturnFields.SCORE);
+      boolean returnRawScore =
+          rb.rsp.getReturnFields().getExplicitlyRequestedFieldNames() != null
+              && rb.rsp
+                  .getReturnFields()
+                  .getExplicitlyRequestedFieldNames()
+                  .contains(SolrReturnFields.SCORE);
       if (rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName) != null) {
         // if id was renamed we need to use the new name
         keyFieldName = rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName);
@@ -1395,8 +1403,8 @@ public class QueryComponent extends SearchComponent {
             // If the score is requested, we will add it back right afterward
             if (!rb.onePassDistributedQuery) {
               doc.remove(SolrReturnFields.SCORE);
-              sdoc.consumeScoreDependentFields(doc::addField);
-            } else if (removeScoreField) {
+              sdoc.consumeScoreDependentFields(returnRawScore, doc::addField);
+            } else if (!returnRawScore) {
               // If we are doing a onePassDistributedQuery, and removeScoreField if it isn't
               // requested
               doc.remove(SolrReturnFields.SCORE);

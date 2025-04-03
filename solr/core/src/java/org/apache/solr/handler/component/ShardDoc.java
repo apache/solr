@@ -50,7 +50,6 @@ public class ShardDoc extends FieldDoc {
 
   public int positionInResponse;
 
-  boolean returnRawScore = false;
   public Map<String, Object> scoreDependentFields = Collections.emptyMap();
 
   // the ordinal position in the merged response arraylist
@@ -65,7 +64,8 @@ public class ShardDoc extends FieldDoc {
     super(-1, Float.NaN);
   }
 
-  public void consumeScoreDependentFields(BiConsumer<String, Object> consumer) {
+  public void consumeScoreDependentFields(
+      boolean returnRawScore, BiConsumer<String, Object> consumer) {
     if (returnRawScore) {
       consumer.accept(SolrReturnFields.SCORE, score);
     }
