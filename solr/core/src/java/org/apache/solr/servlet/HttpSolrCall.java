@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -175,7 +176,7 @@ public class HttpSolrCall {
     this.solrDispatchFilter = solrDispatchFilter;
     this.cores = cores;
     this.req = request;
-    this.span = TraceUtils.getSpan(req);
+    this.span = Optional.ofNullable(TraceUtils.getSpan(req)).orElse(Span.getInvalid());
     this.response = response;
     this.retry = retry;
     this.requestType = RequestType.UNKNOWN;
@@ -642,7 +643,7 @@ public class HttpSolrCall {
 
   /** Get the Span for this request. Not null. */
   public Span getSpan() {
-    return span != null ? span : Span.getInvalid();
+    return span;
   }
 
   // called after init().
