@@ -59,7 +59,7 @@ public interface UpdateSchemaApi {
       tags = {"schema"})
   SolrJerseyResponse addDynamicField(
       @PathParam("dynamicFieldName") String dynamicFieldName,
-      SchemaChangeOperation.AddDynamicField requestBody)
+      @RequestBody SchemaChangeOperation.AddDynamicField requestBody)
       throws Exception;
 
   @DELETE

@@ -25,15 +25,14 @@ import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.JerseyResource;
@@ -45,7 +44,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetSchema;
 import org.apache.solr.handler.admin.api.GetSchemaField;
-import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
+import org.apache.solr.handler.admin.api.UpdateSchema;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -300,16 +299,12 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-
-    final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SchemaBulkModifyAPI(this)));
-
-    return apis;
+    return Collections.EMPTY_LIST;
   }
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(GetSchema.class, GetSchemaField.class);
+    return List.of(GetSchema.class, GetSchemaField.class, UpdateSchema.class);
   }
 
   @Override

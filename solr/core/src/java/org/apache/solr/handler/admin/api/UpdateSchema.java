@@ -134,13 +134,15 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     return response;
   }
 
-  // TODO This is where I left off
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
   public SolrJerseyResponse bulkSchemaModification(List<SchemaChangeOperation> requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureSchemaMutable();
+    ensureRequiredRequestBodyProvided(requestBody);
+
+    runWithSchemaManager(requestBody, response);
 
     return response;
   }
