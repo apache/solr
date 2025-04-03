@@ -407,12 +407,12 @@ public class SolrCLI implements CLIO {
     print(
         "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export");
     print("");
-    print("  Start Solr on default port 8983:");
+    print("  Start Solr in SolrCloud mode on default port 8983:");
     print("");
     printGreen("    ./solr start");
     print("");
     print(
-        "  Start Solr connecting to external Zookeeper at localhost:2181, with 1g max heap size and remote Java debug options enabled:");
+        "  Start Solr in SolrCloud mode using an external Zookeeper at localhost:2181, with 1g max heap size and remote Java debug options enabled:");
     print("");
     printGreen(
         "    ./solr start -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
