@@ -212,12 +212,6 @@
           <Set name="contexts">
             <Ref refid="Contexts" />
           </Set>
-          <!--
-          <Call name="setContextAttribute">
-            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/servlet-api-[^/]*\.jar$</Arg>
-          </Call>
-          -->
           <Call name="addAppProvider">
             <Arg>
               <New class="org.eclipse.jetty.deploy.providers.ContextProvider">

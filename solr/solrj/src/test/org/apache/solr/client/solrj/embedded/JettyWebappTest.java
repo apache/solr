@@ -62,8 +62,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     server = new Server(port);
     // insecure: only use for tests!!!!
     server.addBean(new DefaultSessionIdManager(server, new Random(random().nextLong())));
-    var webAppContext = new WebAppContext(path, "/solr");
-    server.setHandler(webAppContext);
+    server.setHandler(new WebAppContext(path, "/solr"));
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);
