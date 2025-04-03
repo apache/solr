@@ -507,7 +507,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     SchemaField sf = h.getCore().getLatestSchema().getField(FIELD_NAME);
     Set<String> enumStrs =
-        ((AbstractEnumField) sf.getType()).getEnumMapping().enumStringToIntMap.keySet();
+        ((EnumFieldType) sf.getType()).getEnumMapping().enumStringToIntMap.keySet();
     assertTrue(enumStrs.size() > SolrQueryParser.TERMS_QUERY_THRESHOLD);
 
     Iterator<String> enumStrIter = enumStrs.iterator();
@@ -572,7 +572,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     SchemaField sf = h.getCore().getLatestSchema().getField(MV_FIELD_NAME);
     Set<String> enumStrs =
-        ((AbstractEnumField) sf.getType()).getEnumMapping().enumStringToIntMap.keySet();
+        ((EnumFieldType) sf.getType()).getEnumMapping().enumStringToIntMap.keySet();
     assertTrue(enumStrs.size() > SolrQueryParser.TERMS_QUERY_THRESHOLD);
 
     Iterator<String> enumStrIter = enumStrs.iterator();
