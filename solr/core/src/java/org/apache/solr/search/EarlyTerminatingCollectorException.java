@@ -28,6 +28,12 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
   private final int numberCollected;
 
   public EarlyTerminatingCollectorException(int numberCollected, int numberScanned) {
+    super(
+        String.format(
+            Locale.ROOT,
+            "maxHitsAllowed reached: %d documents collected out of %d scanned",
+            numberCollected,
+            numberScanned));
     assert numberCollected <= numberScanned : numberCollected + "<=" + numberScanned;
     assert 0 < numberCollected;
 
@@ -54,14 +60,6 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
   /** The number of documents collected that resulted in early termination */
   public int getNumberCollected() {
     return numberCollected;
-  }
-
-  public String getDetails() {
-    return String.format(
-        Locale.ROOT,
-        "maxHitsAllowed reached: %d documents collected out of %d scanned",
-        numberCollected,
-        numberScanned);
   }
 
   public long getApproximateTotalHits(int maxDocId) {

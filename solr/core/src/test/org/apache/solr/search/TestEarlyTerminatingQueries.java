@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.util.Locale;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -83,5 +84,13 @@ public class TestEarlyTerminatingQueries extends SolrCloudTestCase {
     assertNotNull(
         "should have approximateTotalHits response header for maxHitsAllowed",
         rsp.getHeader().get("approximateTotalHits"));
+    assertTrue(
+        String.format(
+            Locale.ROOT,
+            "approximateTotalHits (%s) response header should be greater than numFound (%d)",
+            rsp.getHeader().get("approximateTotalHits"),
+            rsp.getResults().getNumFound()),
+        ((Number) rsp.getHeader().get("approximateTotalHits")).longValue()
+            > rsp.getResults().getNumFound());
   }
 }

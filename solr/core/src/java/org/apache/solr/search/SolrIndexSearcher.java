@@ -315,19 +315,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     try {
-      super.search(query, collector);
+      try {
+        super.search(query, collector);
+      } finally {
+        // The complete() method can use the collectors, so this needs to be surrounded by the same
+        // catch logic that limit collecting
+        if (collector instanceof DelegatingCollector) {
+          ((DelegatingCollector) collector).complete();
+        }
+      }
     } catch (TimeLimitingCollector.TimeExceededException
         | ExitableDirectoryReader.ExitingReaderException
         | CancellableCollector.QueryCancelledException x) {
       log.warn("Query: [{}]; ", query, x);
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
-      if (collector instanceof DelegatingCollector) {
-        ((DelegatingCollector) collector).complete();
-      }
       qr.setPartialResults(true);
       qr.setMaxHitsTerminatedEarly(true);
-      qr.setPartialResultsDetails(etce.getDetails());
+      qr.setPartialResultsDetails(etce.getMessage());
       qr.setApproximateTotalHits(etce.getApproximateTotalHits(reader.maxDoc()));
     } finally {
       if (earlyTerminatingSortingCollector != null) {
@@ -336,9 +341,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (cmd.isQueryCancellable()) {
         core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
       }
-    }
-    if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).complete();
     }
 
     return collector;
