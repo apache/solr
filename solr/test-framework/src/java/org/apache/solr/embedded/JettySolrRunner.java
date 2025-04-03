@@ -366,7 +366,6 @@ public class JettySolrRunner {
       // Initialize the servlets
       final ServletContextHandler root =
           new ServletContextHandler("/solr", ServletContextHandler.SESSIONS);
-      chain.setHandler(root);
       root.setServer(server);
       root.setBaseResource(ResourceFactory.of(server).newResource("."));
       root.addEventListener(
@@ -411,6 +410,7 @@ public class JettySolrRunner {
 
       // Default servlet as a fall-through
       root.addServlet(Servlet404.class, "/");
+      chain = root;
     }
 
     chain = injectJettyHandlers(chain);
