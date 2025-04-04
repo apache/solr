@@ -22,6 +22,7 @@ import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
+import jakarta.inject.Named;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -817,6 +819,35 @@ public class SolrPluginUtils {
         destArr[idx] = new NamedList.NamedListEntry<>(id, namedList.getVal(i));
       }
     }
+  }
+
+  /**
+   * Loads all plugins on the classpath for the given type.
+   *
+   * @param pluginType
+   * @param classLoader
+   * @return non-null, mutable
+   */
+  public static <T> Map<String, T> loadPlugins(
+      Class<T> pluginType, ClassLoader classLoader) {
+    ServiceLoader<T> loader = ServiceLoader.load(pluginType, classLoader);
+    Map<String, T> result = new HashMap<>();
+    for (T plugin : loader) {
+      var nameAnnotation = plugin.getClass().getAnnotation(Named.class);
+      if (nameAnnotation != null) {
+        T prev = result.put(nameAnnotation.value(), plugin);
+        if (prev != null) {
+          log.warn(
+              "Duplicate plugin name '{}' found for class '{}'.  Previous instance: '{}'",
+              nameAnnotation.value(),
+              plugin.getClass().getName(),
+              prev.getClass().getName());
+        }
+      } else {
+        log.warn(plugin.getClass() + " has no @Named annotation, ignoring it");
+      }
+    }
+    return result;
   }
 
   /**
