@@ -17,11 +17,9 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -144,12 +142,8 @@ public class AssertTool extends ToolBase {
           .longOpt("exitcode")
           .build();
 
-  public AssertTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public AssertTool(PrintStream stdout) {
-    super(stdout);
+  public AssertTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -262,8 +256,8 @@ public class AssertTool extends ToolBase {
     return ret;
   }
 
-  public static int assertSolrRunning(String url, String credentials) throws Exception {
-    StatusTool status = new StatusTool();
+  public int assertSolrRunning(String url, String credentials) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     try {
       status.waitToSeeSolrUp(url, credentials, timeoutMs, TimeUnit.MILLISECONDS);
     } catch (Exception se) {
@@ -280,8 +274,8 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public static int assertSolrNotRunning(String url, String credentials) throws Exception {
-    StatusTool status = new StatusTool();
+  public int assertSolrNotRunning(String url, String credentials) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     long timeout =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
     try (SolrClient solrClient = CLIUtils.getSolrClient(url, credentials)) {
@@ -316,7 +310,7 @@ public class AssertTool extends ToolBase {
             + " seconds");
   }
 
-  public static int assertSolrRunningInCloudMode(String url, String credentials) throws Exception {
+  public int assertSolrRunningInCloudMode(String url, String credentials) throws Exception {
     if (!isSolrRunningOn(url, credentials)) {
       return exitOrException(
           "Solr is not running on url "
@@ -332,8 +326,7 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public static int assertSolrNotRunningInCloudMode(String url, String credentials)
-      throws Exception {
+  public int assertSolrNotRunningInCloudMode(String url, String credentials) throws Exception {
     if (!isSolrRunningOn(url, credentials)) {
       return exitOrException(
           "Solr is not running on url "
@@ -350,8 +343,8 @@ public class AssertTool extends ToolBase {
   }
 
   public static int sameUser(String directory) throws Exception {
-    if (Files.exists(Paths.get(directory))) {
-      String userForDir = userForDir(Paths.get(directory));
+    if (Files.exists(Path.of(directory))) {
+      String userForDir = userForDir(Path.of(directory));
       if (!currentUser().equals(userForDir)) {
         return exitOrException("Must run as user " + userForDir + ". We are " + currentUser());
       }
@@ -362,14 +355,14 @@ public class AssertTool extends ToolBase {
   }
 
   public static int assertFileExists(String directory) throws Exception {
-    if (!Files.exists(Paths.get(directory))) {
+    if (!Files.exists(Path.of(directory))) {
       return exitOrException("Directory " + directory + " does not exist.");
     }
     return 0;
   }
 
   public static int assertFileNotExists(String directory) throws Exception {
-    if (Files.exists(Paths.get(directory))) {
+    if (Files.exists(Path.of(directory))) {
       return exitOrException("Directory " + directory + " should not exist.");
     }
     return 0;
@@ -411,8 +404,8 @@ public class AssertTool extends ToolBase {
     }
   }
 
-  private static boolean isSolrRunningOn(String url, String credentials) throws Exception {
-    StatusTool status = new StatusTool();
+  private boolean isSolrRunningOn(String url, String credentials) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     try {
       status.waitToSeeSolrUp(url, credentials, timeoutMs, TimeUnit.MILLISECONDS);
       return true;

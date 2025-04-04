@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
@@ -72,12 +71,8 @@ public class ConfigTool extends ToolBase {
           .desc("Set the property to this value; accepts JSON objects and strings.")
           .build();
 
-  public ConfigTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ConfigTool(PrintStream stdout) {
-    super(stdout);
+  public ConfigTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

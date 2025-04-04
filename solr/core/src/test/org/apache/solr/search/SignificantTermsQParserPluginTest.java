@@ -17,14 +17,14 @@
 
 package org.apache.solr.search;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
@@ -46,9 +46,9 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setUpCore() throws Exception {
-    String tmpSolrHome = createTempDir().toFile().getAbsolutePath();
-    FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
-    initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
+    initCore("solrconfig.xml", "schema.xml", tmpSolrHome);
   }
 
   /**
