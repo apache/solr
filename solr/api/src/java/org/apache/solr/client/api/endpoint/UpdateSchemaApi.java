@@ -16,9 +16,12 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.ADDTL_FIELDS_PROPERTY;
 import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.POST;
@@ -26,7 +29,10 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import java.util.List;
-import org.apache.solr.client.api.model.SchemaChangeOperation;
+import org.apache.solr.client.api.model.AddDynamicFieldOperation;
+import org.apache.solr.client.api.model.AddFieldOperation;
+import org.apache.solr.client.api.model.AddFieldTypeOperation;
+import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
@@ -40,7 +46,12 @@ public interface UpdateSchemaApi {
       tags = {"schema"})
   SolrJerseyResponse addField(
       @PathParam("fieldName") String fieldName,
-      @RequestBody SchemaChangeOperation.AddField requestBody)
+      @RequestBody(
+              extensions = {
+                @Extension(
+                    properties = {@ExtensionProperty(name = ADDTL_FIELDS_PROPERTY, value = "true")})
+              })
+          AddFieldOperation requestBody)
       throws Exception;
 
   @DELETE
@@ -59,7 +70,12 @@ public interface UpdateSchemaApi {
       tags = {"schema"})
   SolrJerseyResponse addDynamicField(
       @PathParam("dynamicFieldName") String dynamicFieldName,
-      @RequestBody SchemaChangeOperation.AddDynamicField requestBody)
+      @RequestBody(
+              extensions = {
+                @Extension(
+                    properties = {@ExtensionProperty(name = ADDTL_FIELDS_PROPERTY, value = "true")})
+              })
+          AddDynamicFieldOperation requestBody)
       throws Exception;
 
   @DELETE
@@ -79,7 +95,12 @@ public interface UpdateSchemaApi {
       tags = {"schema"})
   SolrJerseyResponse addFieldType(
       @PathParam("fieldTypeName") String fieldTypeName,
-      @RequestBody SchemaChangeOperation.AddFieldType requestBody)
+      @RequestBody(
+              extensions = {
+                @Extension(
+                    properties = {@ExtensionProperty(name = ADDTL_FIELDS_PROPERTY, value = "true")})
+              })
+          AddFieldTypeOperation requestBody)
       throws Exception;
 
   @DELETE
@@ -117,6 +138,5 @@ public interface UpdateSchemaApi {
   @Operation(
       summary = "Perform the specified schema modifications.",
       tags = {"schema"})
-  SolrJerseyResponse bulkSchemaModification(@RequestBody List<SchemaChangeOperation> requestBody)
-      throws Exception;
+  SolrJerseyResponse bulkSchemaModification(List<SchemaChange> requestBody) throws Exception;
 }

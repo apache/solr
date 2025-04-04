@@ -25,7 +25,7 @@ import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 /**
- * Unit tests ensuring that {@link SchemaChangeOperation} deserializes as intended
+ * Unit tests ensuring that {@link SchemaChange} deserializes as intended
  *
  * <p>Not always necessary for model-type "serde" validation, but useful given the polymorphism at
  * play
@@ -53,17 +53,17 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.AddFieldType.class));
-    final var parsedSpecific = (SchemaChangeOperation.AddFieldType) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(AddFieldTypeOperation.class));
+    final var parsedSpecific = (AddFieldTypeOperation) parsedGeneric;
     assertEquals("my-new-field-type", parsedSpecific.name);
     assertEquals("org.apache.my.ClassName", parsedSpecific.className);
     // Arbitrary properties are put in a map, and can contain nesting
-    assertEquals(100, parsedSpecific.unknownProperties().get("positionIncrementGap"));
-    assertThat(parsedSpecific.unknownProperties().get("analyzer"), instanceOf(Map.class));
+    assertEquals(100, parsedSpecific.getAdditionalProperties().get("positionIncrementGap"));
+    assertThat(parsedSpecific.getAdditionalProperties().get("analyzer"), instanceOf(Map.class));
     final var analyzerProperties =
-        (Map<String, Object>) parsedSpecific.unknownProperties().get("analyzer");
+        (Map<String, Object>) parsedSpecific.getAdditionalProperties().get("analyzer");
     assertThat(analyzerProperties.keySet(), contains("charFilters", "tokenizer"));
     assertThat(analyzerProperties.get("tokenizer"), instanceOf(Map.class));
     final var tokenizerProperties = (Map<String, Object>) analyzerProperties.get("tokenizer");
@@ -82,10 +82,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.AddCopyField.class));
-    final var parsedSpecific = (SchemaChangeOperation.AddCopyField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(AddCopyFieldOperation.class));
+    final var parsedSpecific = (AddCopyFieldOperation) parsedGeneric;
     assertEquals("source1", parsedSpecific.source);
     assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
     assertEquals(Integer.valueOf(123), parsedSpecific.maxChars);
@@ -104,10 +104,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
                 }
                 """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.AddCopyField.class));
-    final var parsedSpecific = (SchemaChangeOperation.AddCopyField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(AddCopyFieldOperation.class));
+    final var parsedSpecific = (AddCopyFieldOperation) parsedGeneric;
     assertEquals("source1", parsedSpecific.source);
     assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
     assertEquals(Integer.valueOf(123), parsedSpecific.maxChars);
@@ -125,15 +125,15 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.AddField.class));
-    final var parsedSpecific = (SchemaChangeOperation.AddField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(AddFieldOperation.class));
+    final var parsedSpecific = (AddFieldOperation) parsedGeneric;
     assertEquals("my-new-field", parsedSpecific.name);
     assertEquals("fieldType", parsedSpecific.type);
 
     // Arbitrary properties are put in a map
-    assertEquals(Boolean.TRUE, parsedSpecific.unknownProperties().get("stored"));
+    assertEquals(Boolean.TRUE, parsedSpecific.getAdditionalProperties().get("stored"));
   }
 
   @Test
@@ -148,15 +148,15 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.AddDynamicField.class));
-    final var parsedSpecific = (SchemaChangeOperation.AddDynamicField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(AddDynamicFieldOperation.class));
+    final var parsedSpecific = (AddDynamicFieldOperation) parsedGeneric;
     assertEquals("_abc", parsedSpecific.name);
     assertEquals("fieldType", parsedSpecific.type);
 
     // Arbitrary properties are put in a map
-    assertEquals(Boolean.TRUE, parsedSpecific.unknownProperties().get("stored"));
+    assertEquals(Boolean.TRUE, parsedSpecific.getAdditionalProperties().get("stored"));
   }
 
   @Test
@@ -169,10 +169,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.DeleteFieldType.class));
-    final var parsedSpecific = (SchemaChangeOperation.DeleteFieldType) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(DeleteFieldTypeOperation.class));
+    final var parsedSpecific = (DeleteFieldTypeOperation) parsedGeneric;
     assertEquals("myFieldTypeName", parsedSpecific.name);
   }
 
@@ -187,10 +187,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
                 }
                 """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.DeleteCopyField.class));
-    final var parsedSpecific = (SchemaChangeOperation.DeleteCopyField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(DeleteCopyFieldOperation.class));
+    final var parsedSpecific = (DeleteCopyFieldOperation) parsedGeneric;
     assertEquals("source1", parsedSpecific.source);
     assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
   }
@@ -207,10 +207,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.DeleteCopyField.class));
-    final var parsedSpecific = (SchemaChangeOperation.DeleteCopyField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(DeleteCopyFieldOperation.class));
+    final var parsedSpecific = (DeleteCopyFieldOperation) parsedGeneric;
     assertEquals("source1", parsedSpecific.source);
     assertThat(parsedSpecific.destinations, contains("dest1", "dest2"));
   }
@@ -225,10 +225,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.DeleteField.class));
-    final var parsedSpecific = (SchemaChangeOperation.DeleteField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(DeleteFieldOperation.class));
+    final var parsedSpecific = (DeleteFieldOperation) parsedGeneric;
     assertEquals("myFieldName", parsedSpecific.name);
   }
 
@@ -242,10 +242,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.DeleteDynamicField.class));
-    final var parsedSpecific = (SchemaChangeOperation.DeleteDynamicField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(DeleteDynamicFieldOperation.class));
+    final var parsedSpecific = (DeleteDynamicFieldOperation) parsedGeneric;
     assertEquals("_abc", parsedSpecific.name);
   }
 
@@ -267,10 +267,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.ReplaceFieldType.class));
-    final var parsedSpecific = (SchemaChangeOperation.ReplaceFieldType) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(ReplaceFieldTypeOperation.class));
+    final var parsedSpecific = (ReplaceFieldTypeOperation) parsedGeneric;
     assertEquals("my-new-field-type", parsedSpecific.name);
     assertEquals("org.apache.my.ClassName", parsedSpecific.className);
     // Arbitrary properties are put in a map, and can contain nesting
@@ -296,10 +296,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.ReplaceField.class));
-    final var parsedSpecific = (SchemaChangeOperation.ReplaceField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(ReplaceFieldOperation.class));
+    final var parsedSpecific = (ReplaceFieldOperation) parsedGeneric;
     assertEquals("my-new-field", parsedSpecific.name);
     assertEquals("fieldType", parsedSpecific.type);
 
@@ -319,10 +319,10 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
             }
             """;
 
-    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChangeOperation.class);
+    final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(SchemaChangeOperation.ReplaceDynamicField.class));
-    final var parsedSpecific = (SchemaChangeOperation.ReplaceDynamicField) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(ReplaceDynamicFieldOperation.class));
+    final var parsedSpecific = (ReplaceDynamicFieldOperation) parsedGeneric;
     assertEquals("_abc", parsedSpecific.name);
     assertEquals("fieldType", parsedSpecific.type);
 

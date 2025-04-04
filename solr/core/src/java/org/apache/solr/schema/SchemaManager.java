@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.client.api.model.SchemaChangeOperation.OPERATION_TYPE_PROP;
+import static org.apache.solr.client.api.model.SchemaChange.OPERATION_TYPE_PROP;
 import static org.apache.solr.common.util.CommandOperation.ERR_MSGS;
 import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
 import static org.apache.solr.schema.IndexSchema.NAME;
@@ -38,7 +38,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.api.model.SchemaChangeOperation;
+import org.apache.solr.client.api.model.AddCopyFieldOperation;
+import org.apache.solr.client.api.model.AddDynamicFieldOperation;
+import org.apache.solr.client.api.model.AddFieldOperation;
+import org.apache.solr.client.api.model.AddFieldTypeOperation;
+import org.apache.solr.client.api.model.DeleteCopyFieldOperation;
+import org.apache.solr.client.api.model.DeleteDynamicFieldOperation;
+import org.apache.solr.client.api.model.DeleteFieldOperation;
+import org.apache.solr.client.api.model.DeleteFieldTypeOperation;
+import org.apache.solr.client.api.model.ReplaceDynamicFieldOperation;
+import org.apache.solr.client.api.model.ReplaceFieldOperation;
+import org.apache.solr.client.api.model.ReplaceFieldTypeOperation;
+import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -89,8 +100,7 @@ public class SchemaManager {
    *
    * @return List of errors. If the List is empty then the operation was successful.
    */
-  public List<Map<String, Object>> performOperations(List<SchemaChangeOperation> ops)
-      throws Exception {
+  public List<Map<String, Object>> performOperations(List<SchemaChange> ops) throws Exception {
     IndexSchema schema = req.getCore().getLatestSchema();
     if (schema instanceof ManagedIndexSchema && schema.isMutable()) {
       return doOperations(ops);
@@ -99,7 +109,7 @@ public class SchemaManager {
     }
   }
 
-  private List<Map<String, Object>> doOperations(List<SchemaChangeOperation> operations)
+  private List<Map<String, Object>> doOperations(List<SchemaChange> operations)
       throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(updateTimeOut, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
@@ -110,7 +120,7 @@ public class SchemaManager {
     synchronized (req.getSchema().getSchemaUpdateLock()) {
       while (!timeOut.hasTimedOut()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
-        for (SchemaChangeOperation op : operations) {
+        for (SchemaChange op : operations) {
           OpType opType = OpType.get(op.operationType);
           try {
             opType.perform(op, this);
@@ -233,9 +243,8 @@ public class SchemaManager {
   public enum OpType {
     ADD_FIELD_TYPE("add-field-type") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var addFieldTypeOp = (SchemaChangeOperation.AddFieldType) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var addFieldTypeOp = (AddFieldTypeOperation) op;
         String name = ensureNotNull("name", addFieldTypeOp.name);
         String className = ensureNotNull("class", addFieldTypeOp.className);
         try {
@@ -252,9 +261,8 @@ public class SchemaManager {
     },
     ADD_COPY_FIELD("add-copy-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var addCopyFieldOp = (SchemaChangeOperation.AddCopyField) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var addCopyFieldOp = (AddCopyFieldOperation) op;
         String src = ensureNotNull("source", addCopyFieldOp.source);
         List<String> dests = ensureNotNull("dest", addCopyFieldOp.destinations);
 
@@ -276,9 +284,8 @@ public class SchemaManager {
     },
     ADD_FIELD("add-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var addFieldOp = (SchemaChangeOperation.AddField) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var addFieldOp = (AddFieldOperation) op;
         String name = ensureNotNull("name", addFieldOp.name);
         String type = ensureNotNull("type", addFieldOp.type);
         try {
@@ -297,9 +304,8 @@ public class SchemaManager {
     },
     ADD_DYNAMIC_FIELD("add-dynamic-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var addDynFieldOp = (SchemaChangeOperation.AddDynamicField) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var addDynFieldOp = (AddDynamicFieldOperation) op;
         String name = ensureNotNull("name", addDynFieldOp.name);
         String type = ensureNotNull("type", addDynFieldOp.type);
         try {
@@ -319,9 +325,8 @@ public class SchemaManager {
     },
     DELETE_FIELD_TYPE("delete-field-type") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var deleteFieldTypeOp = (SchemaChangeOperation.DeleteFieldType) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var deleteFieldTypeOp = (DeleteFieldTypeOperation) op;
         String name = ensureNotNull("name", deleteFieldTypeOp.name);
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(singleton(name));
@@ -334,9 +339,8 @@ public class SchemaManager {
     },
     DELETE_COPY_FIELD("delete-copy-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var deleteCopyField = (SchemaChangeOperation.DeleteCopyField) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var deleteCopyField = (DeleteCopyFieldOperation) op;
         String source = ensureNotNull("source", deleteCopyField.source);
         List<String> dests = ensureNotNull("dest", deleteCopyField.destinations);
         try {
@@ -351,9 +355,8 @@ public class SchemaManager {
     },
     DELETE_FIELD("delete-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var deleteFieldOp = (SchemaChangeOperation.DeleteField) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var deleteFieldOp = (DeleteFieldOperation) op;
         String name = ensureNotNull("name", deleteFieldOp.name);
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFields(singleton(name));
@@ -366,9 +369,8 @@ public class SchemaManager {
     },
     DELETE_DYNAMIC_FIELD("delete-dynamic-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var deleteDynFieldOp = (SchemaChangeOperation.DeleteDynamicField) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var deleteDynFieldOp = (DeleteDynamicFieldOperation) op;
         String name = ensureNotNull("name", deleteDynFieldOp.name);
         try {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(singleton(name));
@@ -381,9 +383,8 @@ public class SchemaManager {
     },
     REPLACE_FIELD_TYPE("replace-field-type") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var replaceFieldTypeOp = (SchemaChangeOperation.ReplaceFieldType) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var replaceFieldTypeOp = (ReplaceFieldTypeOperation) op;
         String name = ensureNotNull("name", replaceFieldTypeOp.name);
         String className = ensureNotNull("class", replaceFieldTypeOp.className);
         try {
@@ -399,9 +400,8 @@ public class SchemaManager {
     },
     REPLACE_FIELD("replace-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var replaceFieldOp = (SchemaChangeOperation.ReplaceField) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var replaceFieldOp = (ReplaceFieldOperation) op;
         String name = ensureNotNull("name", replaceFieldOp.name);
         String type = ensureNotNull("type", replaceFieldOp.type);
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
@@ -422,9 +422,8 @@ public class SchemaManager {
     },
     REPLACE_DYNAMIC_FIELD("replace-dynamic-field") {
       @Override
-      public boolean perform(SchemaChangeOperation op, SchemaManager mgr)
-          throws SchemaOperationException {
-        final var replaceDynFieldOp = (SchemaChangeOperation.ReplaceDynamicField) op;
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var replaceDynFieldOp = (ReplaceDynamicFieldOperation) op;
         String name = ensureNotNull("name", replaceDynFieldOp.name);
         String type = ensureNotNull("type", replaceDynFieldOp.type);
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
@@ -444,7 +443,7 @@ public class SchemaManager {
       }
     };
 
-    public abstract boolean perform(SchemaChangeOperation op, SchemaManager mgr)
+    public abstract boolean perform(SchemaChange op, SchemaManager mgr)
         throws SchemaOperationException;
 
     public static OpType get(String label) {

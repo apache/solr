@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.api.model.SchemaChangeOperation;
+import org.apache.solr.client.api.model.ReplaceFieldOperation;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.junit.Test;
@@ -57,8 +57,8 @@ public class SchemaManagerUtilsTest extends SolrTestCase {
     final var replaceFieldSchemaOp =
         SchemaManagerUtils.convertToSchemaChangeOperations(replaceFieldGeneric);
 
-    assertThat(replaceFieldSchemaOp, instanceOf(SchemaChangeOperation.ReplaceField.class));
-    final var replaceFieldSchemaOpCast = (SchemaChangeOperation.ReplaceField) replaceFieldSchemaOp;
+    assertThat(replaceFieldSchemaOp, instanceOf(ReplaceFieldOperation.class));
+    final var replaceFieldSchemaOpCast = (ReplaceFieldOperation) replaceFieldSchemaOp;
     assertEquals("someFieldName", replaceFieldSchemaOpCast.name);
     assertEquals("my.FieldType", replaceFieldSchemaOpCast.type);
     assertEquals(Boolean.TRUE, replaceFieldSchemaOpCast.unknownProperties().get("stored"));

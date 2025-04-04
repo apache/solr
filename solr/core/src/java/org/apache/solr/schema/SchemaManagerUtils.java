@@ -16,17 +16,17 @@
  */
 package org.apache.solr.schema;
 
-import static org.apache.solr.client.api.model.SchemaChangeOperation.OPERATION_TYPE_PROP;
+import static org.apache.solr.client.api.model.SchemaChange.OPERATION_TYPE_PROP;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Map;
-import org.apache.solr.client.api.model.SchemaChangeOperation;
+import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.jersey.SolrJacksonMapper;
 
 public class SchemaManagerUtils {
-  public static SchemaChangeOperation convertToSchemaChangeOperations(CommandOperation toConvert) {
+  public static SchemaChange convertToSchemaChangeOperations(CommandOperation toConvert) {
     final var opName = toConvert.name;
     if (SchemaManager.OpType.get(opName) == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such operation: " + opName);
@@ -35,19 +35,18 @@ public class SchemaManagerUtils {
     final var operationData = toConvert.getDataMap();
     operationData.put(OPERATION_TYPE_PROP, opName);
 
-    return SolrJacksonMapper.getObjectMapper()
-        .convertValue(operationData, SchemaChangeOperation.class);
+    return SolrJacksonMapper.getObjectMapper().convertValue(operationData, SchemaChange.class);
   }
 
   // TODO This utility exists because ManagedIndexSchema currently consumes op data in "Map" form.
   // This should be switched over to using SchemaChangeOperation, and this utility removed.
-  public static Map<String, Object> convertToMap(SchemaChangeOperation toConvert) {
+  public static Map<String, Object> convertToMap(SchemaChange toConvert) {
 
     return convertToMapExcluding(toConvert, OPERATION_TYPE_PROP);
   }
 
   public static Map<String, Object> convertToMapExcluding(
-      SchemaChangeOperation toConvert, String... propsToOmit) {
+      SchemaChange toConvert, String... propsToOmit) {
     final var opMap =
         SolrJacksonMapper.getObjectMapper()
             .convertValue(toConvert, new TypeReference<Map<String, Object>>() {});
