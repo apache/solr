@@ -192,6 +192,14 @@ public class HttpSolrCall {
     return path;
   }
 
+  /**
+   * WARNING: While this returns a non-null ServletApiRequest (Jetty’s implementation of
+   * HttpServletRequest), any method that internally calls getRequest() — such as getAttribute(),
+   * getQueryString(), etc. — may throw NullPointerException if this is accessed outside the
+   * original servlet thread (e.g. async tasks).
+   *
+   * <p>Always cache required request state early if you plan to use it later.
+   */
   public HttpServletRequest getReq() {
     return req;
   }
