@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.response.transform.DocTransformer;
 
 /**
@@ -77,6 +78,24 @@ public abstract class ReturnFields {
    * @return a mapping from return field name to the string representation of its definition
    */
   public abstract Map<String, String> getScoreDependentReturnFields();
+
+  /**
+   * The requested field names (includes pseudo fields) that do not depend on a score
+   *
+   * @return Set of field names or <code>null</code> (all fields).
+   */
+  public Set<String> getNonScoreDependentReturnFieldNames() {
+    Set<String> allFieldNames = getRequestedFieldNames();
+    Map<String, String> scoreDependentFields = getScoreDependentReturnFields();
+    if (allFieldNames == null || scoreDependentFields == null) {
+      return allFieldNames;
+    } else {
+      Set<String> scoreDependentFieldNames = scoreDependentFields.keySet();
+      return allFieldNames.stream()
+          .filter(fieldName -> !scoreDependentFieldNames.contains(fieldName))
+          .collect(Collectors.toSet());
+    }
+  }
 
   /**
    * Returns <code>true</code> if the specified field should be returned <em>to the external

@@ -25,7 +25,6 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -783,13 +782,17 @@ public class QueryComponent extends SearchComponent {
     // distrib.singlePass=true forces a one-pass query regardless of requested fields
     boolean distribSinglePass = rb.req.getParams().getBool(ShardParams.DISTRIB_SINGLE_PASS, false);
 
-    if (distribSinglePass
-        || (fields != null
-            && fields.wantsField(keyFieldName)
-            && fields.getRequestedFieldNames() != null
-            && (!fields.hasPatternMatching()
-                && Arrays.asList(keyFieldName, SolrReturnFields.SCORE)
-                    .containsAll(fields.getRequestedFieldNames())))) {
+    boolean requiresNonIdAndScoreFields = true;
+    if (!distribSinglePass && fields != null) {
+      Set<String> nonScoreDependentFieldNames = fields.getNonScoreDependentReturnFieldNames();
+      requiresNonIdAndScoreFields =
+          fields.hasPatternMatching()
+              || nonScoreDependentFieldNames == null
+              || nonScoreDependentFieldNames.size() > 1
+              || (nonScoreDependentFieldNames.size() == 1
+                  && nonScoreDependentFieldNames.contains(keyFieldName));
+    }
+    if (distribSinglePass || !requiresNonIdAndScoreFields) {
       sreq.purpose |= ShardRequest.PURPOSE_GET_FIELDS;
       rb.onePassDistributedQuery = true;
     }
@@ -828,7 +831,7 @@ public class QueryComponent extends SearchComponent {
             || rb.getSortSpec().includesScore();
     StringBuilder additionalFL = new StringBuilder();
     boolean additionalAdded = false;
-    if (distribSinglePass) {
+    if (rb.onePassDistributedQuery) {
       String[] fls = rb.req.getParams().getParams(CommonParams.FL);
       if (fls != null && fls.length > 0 && (fls.length != 1 || !fls[0].isEmpty())) {
         // If the outer request contains actual FL's use them...
@@ -912,16 +915,18 @@ public class QueryComponent extends SearchComponent {
       sortFields = new SortField[] {SortField.FIELD_SCORE};
     }
 
-    Set<String> allScoreDependentFields;
-    if (rb.rsp.getReturnFields() != null) {
-      allScoreDependentFields = rb.rsp.getReturnFields().getScoreDependentReturnFields().keySet();
+    // If the shard request was also used to get fields (along with the scores), there is no reason
+    // to copy over the score dependent fields, since those will already exist in the document with
+    // the return fields
+    Set<String> scoreDependentFields;
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0 && rb.rsp.getReturnFields() != null) {
+      scoreDependentFields =
+          rb.rsp.getReturnFields().getScoreDependentReturnFields().keySet().stream()
+              .filter(field -> !field.equals(SolrReturnFields.SCORE))
+              .collect(Collectors.toSet());
     } else {
-      allScoreDependentFields = Collections.emptySet();
+      scoreDependentFields = Collections.emptySet();
     }
-    Set<String> scoreDependentFields =
-        allScoreDependentFields.stream()
-            .filter(field -> !field.equals(SolrReturnFields.SCORE))
-            .collect(Collectors.toSet());
 
     IndexSchema schema = rb.req.getSchema();
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
@@ -1397,16 +1402,15 @@ public class QueryComponent extends SearchComponent {
           final ShardDoc sdoc = rb.resultIds.get(lastKeyString);
           if (sdoc != null) {
             shardDocFoundInResults = Boolean.TRUE;
-            // Score might have been added (in createMainQuery) to shard-requests (and therefore
-            // in shard-response-docs) Remove score if the outer request did not ask for it
-            // returned.
-            // If the score is requested, we will add it back right afterward
+            // There is no need to add scores to a document if the documents were retrieved in
+            // one-pass (GET_FIELDS was done at the same time as GET_TOP_IDS), because the scores
+            // will already exist in the document
             if (!rb.onePassDistributedQuery) {
-              doc.remove(SolrReturnFields.SCORE);
-              sdoc.consumeScoreDependentFields(returnRawScore, doc::addField);
+              sdoc.consumeScoreDependentFields(returnRawScore, doc::setField);
             } else if (!returnRawScore) {
-              // If we are doing a onePassDistributedQuery, and removeScoreField if it isn't
-              // requested
+              // Score might have been added (in createMainQuery) to shard-requests (and therefore
+              // in shard-response-docs) Remove score if the outer request did not ask for it
+              // returned.
               doc.remove(SolrReturnFields.SCORE);
             }
             if (removeKeyField) {
