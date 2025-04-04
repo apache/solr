@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.exec.OS;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -379,7 +381,12 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         lastEvent.getType());
     // verify timestamp
     Instant now = Instant.now();
-    assertTrue("timestamp of the event is in the future", now.isAfter(lastEvent.getTimestamp()));
+    // JDK-8180466 - Windows does not have fine-grained Instant support, so accept equal times as well
+    if (OS.isFamilyWindows()) {
+      assertFalse("timestamp of the event is in the future", now.isBefore(lastEvent.getTimestamp()));
+    } else {
+      assertTrue("timestamp of the event is in the future", now.isAfter(lastEvent.getTimestamp()));
+    }
     assertEquals(collection, ((CollectionsAddedEvent) lastEvent).getCollectionNames().next());
 
     dummyEventLatch = new CountDownLatch(1);
@@ -398,7 +405,12 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         lastEvent.getType());
     // verify timestamp
     now = Instant.now();
-    assertTrue("timestamp of the event is in the future", now.isAfter(lastEvent.getTimestamp()));
+    // JDK-8180466 - Windows does not have fine-grained Instant support, so accept equal times as well
+    if (OS.isFamilyWindows()) {
+      assertFalse("timestamp of the event is in the future", now.isBefore(lastEvent.getTimestamp()));
+    } else {
+      assertTrue("timestamp of the event is in the future", now.isAfter(lastEvent.getTimestamp()));
+    }
     assertEquals(collection, ((CollectionsRemovedEvent) lastEvent).getCollectionNames().next());
 
     // test changing the ClusterEventProducer plugin dynamically
