@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.admin.api;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -28,9 +28,10 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CollectionStatusResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,15 +42,16 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class V2APISmokeTest extends SolrCloudTestCase {
 
-    // TODO: How is this normally done in these tests?
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final ObjectMapper objectMapper = JacksonContentWriter.DEFAULT_MAPPER;
     private URL baseUrl;
     private String baseUrlV2;
 
@@ -68,12 +70,6 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         baseUrlV2 = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
     }
 
-    @AfterClass
-    public static void teardownClass() {
-        System.clearProperty("enable.packages");
-        System.clearProperty("solr.allowPaths");
-    }
-
     @Test
     public void testCollectionsApi() throws Exception {
         canGet("/collections");
@@ -86,8 +82,9 @@ public class V2APISmokeTest extends SolrCloudTestCase {
                 """);
 
         final String collectionPath = "/collections/testCollection";
-        canGet(collectionPath);
-//        canGet(collectionPath+"-not-a-collection"); // TODO returns 500, should be 404
+        // TODO Uncomment when SOLR-17730 is fixed.
+//        canGet(collectionPath+"-not-a-collection", 404); // TODO returns 500, should be 404
+        var collectionStatusResponse = canGet(collectionPath, CollectionStatusResponse.class);
 
         canPut(collectionPath + "/properties/foo", """
                 {
@@ -102,6 +99,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
                 }
                 """);
 
+        // TODO: move under testBackupsApi()
         Path v2apiBackupPath = createTempDir("v2apiBackup");
         canPost(collectionPath + "/backups/testBackup/versions", String.format(Locale.ROOT, """
                 {
@@ -111,9 +109,8 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
         canPost(collectionPath + "/reload", "{}");
 
-        // TODO: is there a better API to GET the list of shards for a collection rather than the cluster status?
-        // Or use implict and create / delete
-        String shardName = canGet("/cluster", TestClusterResponseStub.class).cluster.collections.get("testCollection").shards.keySet().stream().findAny().get();
+        // TODO: Create a collection with implict routing to test the shard API
+        String shardName = collectionStatusResponse.shards.keySet().stream().findAny().get();
 
 //        canPost(collectionPath + "/shards", """
 //                {
@@ -136,7 +133,8 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 //        canDelete(shardPath);
 
         canGet(collectionPath + "/snapshots");
-        //canPost(collectionPath + "/snapshots/snap123", "{}"); // TODO expected:<200> but was:<405>
+        // TODO Uncomment when SOLR-17731 is fixed.
+//        canPost(collectionPath + "/snapshots/snap123", "{}"); // TODO expected:<200> but was:<405>
         canDelete(collectionPath + "/snapshots/snap123");
 
         testCollectionsAndCoresApi("collections", "testCollection");
@@ -175,7 +173,8 @@ public class V2APISmokeTest extends SolrCloudTestCase {
                   "collections": ["aCollection"]
                 }
                 """);
-        //canGet("/aliases/foo"); // TODO@ BUG = 405 - GET is hidden by overloaded @Path...
+        // TODO Uncomment when SOLR-17731 is fixed.
+//        canGet("/aliases/foo"); // TODO@ BUG = 405 - GET is hidden by overloaded @Path...
         canGet("/aliases/foo/properties");
         canPut("/aliases/foo/properties", """
                 {
@@ -206,15 +205,17 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 
     @Test
     public void testClusterApi() throws Exception {
-        canGet("/cluster"); // TODO: Missing from OA spec
+        canGet("/cluster"); // TODO: Missing from OA spec SOLR-17729
         String testFile = "testFile-" + Instant.now().toEpochMilli();
         String testFilePath = "/cluster/filestore/files/" + testFile;
         canPut(testFilePath, createTempFile().toFile());
         canGet(testFilePath);
         canGet("/cluster/filestore/metadata/" + testFile);
-//        canDelete(testFilePath); // TODO: 500 because delete cluster file calls delete local, which fails if file exists in cluster
+        // TODO Uncomment when SOLR-17733 is fixed.
+//        canDelete(testFilePath);
         canPost("/cluster/filestore/commands/fetch/" + testFile, "{}");
-//        canPost("/cluster/filestore/commands/sync/" + testFile, "{}"); // TODO: 500 - node already exists in ZK, how can this API be used?
+        // TODO Uncomment when SOLR-17733 is fixed.
+//        canPost("/cluster/filestore/commands/sync/" + testFile, "{}");
 
         canGet("/cluster/properties");
         canPut("/cluster/properties", """
@@ -247,7 +248,7 @@ public class V2APISmokeTest extends SolrCloudTestCase {
     }
 
     private String getNodeName() throws Exception {
-        TestNodesResponseStub nodesResponse = canGet("/cluster/nodes", TestNodesResponseStub.class); // TODO: Missing from OA Spec
+        TestNodesResponseStub nodesResponse = canGet("/cluster/nodes", TestNodesResponseStub.class); // TODO: Missing from OA Spec SOLR-17729
         return nodesResponse.nodes.get(0);
     }
 
@@ -305,8 +306,8 @@ public class V2APISmokeTest extends SolrCloudTestCase {
 //        canDelete(corePath + "/snapshots/{snapshotName}");
 //        canPost(corePath + "/swap");
 //        canPost(corePath + "/unload");
-
-        testCollectionsAndCoresApi("cores", "testCore");
+//
+//        testCollectionsAndCoresApi("cores", "testCore");
     }
 
 
@@ -381,9 +382,13 @@ public class V2APISmokeTest extends SolrCloudTestCase {
     }
 
     private <T> T canGet(String url, Class<T> responseType) throws Exception {
+        return canGet(url, 200, responseType);
+    }
+
+    private <T> T canGet(String url, int expectedResponse, Class<T> responseType) throws Exception {
         try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
             HttpResponse httpResponse = client.getHttpClient().execute(new HttpGet(baseUrlV2 + url));
-            assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+            assertEquals(expectedResponse, httpResponse.getStatusLine().getStatusCode());
             if (responseType == null) {
                 return null;
             }
@@ -398,22 +403,10 @@ public class V2APISmokeTest extends SolrCloudTestCase {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class TestNodesResponseStub {
         public List<String> nodes;
     }
-
-    private static class TestClusterResponseStub {
-        public TestClusterResponseCollectionStub cluster;
-    }
-
-    private static class TestClusterResponseCollectionStub {
-        public Map<String, TestClusterResponseCollectionShardsStub> collections;
-    }
-
-    private static class TestClusterResponseCollectionShardsStub {
-        public Map<String, Object> shards;
-    }
-
 
     // TODO Duplicated from TestConfigSetsAPI... should the configset v2 tests be there instead?
     private File createTempZipFile(String directoryPath) {
