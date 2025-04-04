@@ -30,10 +30,10 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.Utils;
@@ -138,8 +138,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
             .allowMultiPartPost(random().nextBoolean());
     if (random().nextBoolean()) {
       httpSolrClientBuilder
-          .withRequestWriter(new BinaryRequestWriter())
-          .withResponseParser(new BinaryResponseParser());
+          .withRequestWriter(new JavaBinRequestWriter())
+          .withResponseParser(new JavaBinResponseParser());
     }
     return httpSolrClientBuilder.build();
   }

@@ -37,16 +37,16 @@ import org.apache.solr.common.util.NamedList;
  *
  * @since solr 4.0
  */
-public class StreamingBinaryResponseParser extends BinaryResponseParser {
+public class StreamingJavaBinResponseParser extends JavaBinResponseParser {
   public final StreamingResponseCallback callback;
   public final FastStreamingDocsCallback fastCallback;
 
-  public StreamingBinaryResponseParser(StreamingResponseCallback cb) {
+  public StreamingJavaBinResponseParser(StreamingResponseCallback cb) {
     this.callback = cb;
     fastCallback = null;
   }
 
-  public StreamingBinaryResponseParser(FastStreamingDocsCallback cb) {
+  public StreamingJavaBinResponseParser(FastStreamingDocsCallback cb) {
     this.fastCallback = cb;
     this.callback = null;
   }

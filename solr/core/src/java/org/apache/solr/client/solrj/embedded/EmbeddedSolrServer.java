@@ -35,9 +35,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -78,7 +78,7 @@ public class EmbeddedSolrServer extends SolrClient {
 
   @SuppressWarnings("ImmutableEnumChecker")
   public enum RequestWriterSupplier {
-    JavaBin(BinaryRequestWriter::new),
+    JavaBin(JavaBinRequestWriter::new),
     XML(XMLRequestWriter::new);
 
     private final Supplier<RequestWriter> supplier;
@@ -246,7 +246,7 @@ public class EmbeddedSolrServer extends SolrClient {
     var params = request.getParams();
     var responseParser = request.getResponseParser();
     if (responseParser == null) {
-      responseParser = new BinaryResponseParser();
+      responseParser = new JavaBinResponseParser();
     }
     var addParams =
         new MapSolrParams(
@@ -262,7 +262,7 @@ public class EmbeddedSolrServer extends SolrClient {
       SolrRequest<?> request, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     ResponseParser responseParser = request.getResponseParser();
     if (responseParser == null) {
-      responseParser = new BinaryResponseParser();
+      responseParser = new JavaBinResponseParser();
     }
     StreamingResponseCallback callback = request.getStreamingResponseCallback();
     // TODO refactor callback to be a special responseParser that we check for
@@ -279,7 +279,7 @@ public class EmbeddedSolrServer extends SolrClient {
       req.getResponseWriter().write(byteBuffer, req, rsp);
     } else {
       // mostly stream results to the callback; rest goes into the byteBuffer
-      if (!(responseParser instanceof BinaryResponseParser))
+      if (!(responseParser instanceof JavaBinResponseParser))
         throw new IllegalArgumentException(
             "Only javabin is supported when using a streaming response callback");
       var resolver =

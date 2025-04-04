@@ -57,7 +57,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
         new Builder().withBaseEndpoint(ANY_BASE_SOLR_URL).build()) {
       final ResponseParser usedParser = createdClient.getParser();
 
-      assertTrue(usedParser instanceof BinaryResponseParser);
+      assertTrue(usedParser instanceof JavaBinResponseParser);
     }
   }
 
