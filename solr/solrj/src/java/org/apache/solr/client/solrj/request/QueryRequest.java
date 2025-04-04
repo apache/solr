@@ -30,17 +30,17 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
   private final SolrParams query;
 
   public QueryRequest() {
-    super(METHOD.GET, null);
+    super(METHOD.GET, null, SolrRequestType.QUERY);
     query = SolrParams.of();
   }
 
   public QueryRequest(SolrParams q) {
-    super(METHOD.GET, null);
+    super(METHOD.GET, null, SolrRequestType.QUERY);
     query = Objects.requireNonNull(q);
   }
 
   public QueryRequest(SolrParams q, METHOD method) {
-    super(method, null);
+    super(method, null, SolrRequestType.QUERY);
     query = Objects.requireNonNull(q);
   }
 
@@ -68,10 +68,5 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
   @Override
   public SolrParams getParams() {
     return query;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
   }
 }
