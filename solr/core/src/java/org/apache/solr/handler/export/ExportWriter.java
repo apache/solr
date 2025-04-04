@@ -39,7 +39,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -149,7 +149,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   @Override
   public String getContentType() {
     if ("javabin".equals(wt)) {
-      return BinaryResponseParser.BINARY_CONTENT_TYPE;
+      return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     } else return "json";
   }
 

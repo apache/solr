@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -25,7 +24,6 @@ import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -61,8 +59,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
-  private static final String CONF_DIR =
-      "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
+  private static final Path CONF_DIR = Path.of("solr", "collection1", "conf");
 
   boolean addNumberToKeepInRequest = true;
   String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
@@ -72,8 +69,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance)
       throws Exception {
     Files.copy(
-        Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        Path.of(instance.getHomeDir(), "solr.xml"));
+        SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), Path.of(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
@@ -101,11 +97,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       addNumberToKeepInRequest = false;
       backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
     }
-    leader =
-        new ReplicationTestHelper.SolrInstance(
-            createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
-    leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    leader.copyConfigFile(CONF_DIR.resolve(configFile).toString(), "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
@@ -141,7 +135,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
     final String newBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
     // Validate
-    verify(Paths.get(leader.getDataDir(), newBackupDir), nDocs);
+    verify(Path.of(leader.getDataDir(), newBackupDir), nDocs);
   }
 
   private void verify(Path backup, int nDocs) throws IOException {
@@ -168,7 +162,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     int nDocs = BackupRestoreUtils.indexDocs(leaderClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
 
     lastBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
-    snapDir[0] = Paths.get(leader.getDataDir(), lastBackupDir);
+    snapDir[0] = Path.of(leader.getDataDir(), lastBackupDir);
 
     final boolean namedBackup = random().nextBoolean();
 
@@ -191,7 +185,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         lastBackupDir = backupStatus.waitForBackupSuccess(backupName, 30);
         backupNames[i] = backupName;
       }
-      snapDir[i + 1] = Paths.get(leader.getDataDir(), lastBackupDir);
+      snapDir[i + 1] = Path.of(leader.getDataDir(), lastBackupDir);
       verify(snapDir[i + 1], nDocs);
     }
 
@@ -204,7 +198,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       final List<String> remainingBackups = new ArrayList<>();
 
       try (DirectoryStream<Path> stream =
-          Files.newDirectoryStream(Paths.get(leader.getDataDir()), "snapshot*")) {
+          Files.newDirectoryStream(Path.of(leader.getDataDir()), "snapshot*")) {
         Iterator<Path> iter = stream.iterator();
         while (iter.hasNext()) {
           remainingBackups.add(iter.next().getFileName().toString());
@@ -241,7 +235,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     final BackupStatusChecker backupStatus =
         new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
-      final Path p = Paths.get(leader.getDataDir(), "snapshot." + backupNames[i]);
+      final Path p = Path.of(leader.getDataDir(), "snapshot." + backupNames[i]);
       assertTrue("WTF: Backup doesn't exist: " + p, Files.exists(p));
       runBackupCommand(
           leaderJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" + backupNames[i]);

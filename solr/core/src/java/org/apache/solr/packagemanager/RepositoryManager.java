@@ -30,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -150,7 +149,7 @@ public class RepositoryManager {
 
     // put the public key into package store's trusted key store and request a sync.
     String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Paths.get(solrHome));
+    PackageUtils.uploadKey(key, path, Path.of(solrHome));
     final var syncRequest = new FileStoreApi.SyncFile(path);
     final var syncResponse = syncRequest.process(solrClient).getParsed();
     final var status = syncResponse.responseHeader.status;

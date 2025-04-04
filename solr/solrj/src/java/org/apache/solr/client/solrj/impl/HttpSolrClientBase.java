@@ -63,10 +63,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected final Set<String> urlParamNames;
 
-  protected RequestWriter requestWriter = new BinaryRequestWriter();
+  protected RequestWriter requestWriter = new JavaBinRequestWriter();
 
   // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
-  protected ResponseParser parser = new BinaryResponseParser();
+  protected ResponseParser parser = new JavaBinResponseParser();
 
   protected Set<String> defaultParserMimeTypes;
 

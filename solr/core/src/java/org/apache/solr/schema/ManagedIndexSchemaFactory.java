@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map.Entry;
 import net.jcip.annotations.NotThreadSafe;
@@ -147,12 +146,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    */
   public Path lookupLocalManagedSchemaPath() {
     final Path legacyManagedSchemaPath =
-        Paths.get(
-            loader.getConfigPath().toString(),
-            ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
+        loader
+            .getConfigPath()
+            .resolve(ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
 
-    Path managedSchemaPath =
-        Paths.get(loader.getConfigPath().toString(), managedSchemaResourceName);
+    Path managedSchemaPath = loader.getConfigPath().resolve(managedSchemaResourceName);
 
     // check if we are using the legacy managed-schema file name.
     if (Files.exists(legacyManagedSchemaPath)) {

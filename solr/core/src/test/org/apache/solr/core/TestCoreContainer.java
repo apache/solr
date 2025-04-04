@@ -23,12 +23,10 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -369,29 +367,29 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testSharedLib() throws Exception {
     Path tmpRoot = createTempDir("testSharedLib");
 
-    File lib = new File(tmpRoot.toFile(), "lib");
-    lib.mkdirs();
+    Path lib = tmpRoot.resolve("lib");
+    Files.createDirectories(lib);
 
     try (JarOutputStream jar1 =
-        new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")))) {
+        new JarOutputStream(Files.newOutputStream(lib.resolve("jar1.jar")))) {
       jar1.putNextEntry(new JarEntry("defaultSharedLibFile"));
       jar1.closeEntry();
     }
 
-    File customLib = new File(tmpRoot.toFile(), "customLib");
-    customLib.mkdirs();
+    Path customLib = tmpRoot.resolve("customLib");
+    Files.createDirectories(customLib);
 
     try (JarOutputStream jar2 =
-        new JarOutputStream(new FileOutputStream(new File(customLib, "jar2.jar")))) {
+        new JarOutputStream(Files.newOutputStream(customLib.resolve("jar2.jar")))) {
       jar2.putNextEntry(new JarEntry("customSharedLibFile"));
       jar2.closeEntry();
     }
 
-    File customLib2 = new File(tmpRoot.toFile(), "customLib2");
-    customLib2.mkdirs();
+    Path customLib2 = tmpRoot.resolve("customLib2");
+    Files.createDirectories(customLib2);
 
     try (JarOutputStream jar3 =
-        new JarOutputStream(new FileOutputStream(new File(customLib2, "jar3.jar")))) {
+        new JarOutputStream(Files.newOutputStream(customLib2.resolve("jar3.jar")))) {
       jar3.putNextEntry(new JarEntry("jar3File"));
       jar3.closeEntry();
     }
@@ -436,11 +434,10 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testModuleLibs() throws Exception {
     Path tmpRoot = createTempDir("testModLib");
 
-    File lib = Files.createDirectories(ModuleUtils.getModuleLibPath(tmpRoot, "mod1")).toFile();
-    ;
+    Path lib = Files.createDirectories(ModuleUtils.getModuleLibPath(tmpRoot, "mod1"));
 
     try (JarOutputStream jar1 =
-        new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")))) {
+        new JarOutputStream(Files.newOutputStream(lib.resolve("jar1.jar")))) {
       jar1.putNextEntry(new JarEntry("moduleLibFile"));
       jar1.closeEntry();
     }
@@ -568,7 +565,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     public void copyConfig(String fromConfig, String toConfig) {}
 
     @Override
-    protected void uploadConfig(String configName, Path dir) {}
+    public void uploadConfig(String configName, Path dir) {}
 
     @Override
     public void uploadFileToConfig(
@@ -635,9 +632,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Assume.assumeFalse(OS.isFamilyWindows());
     System.setProperty("solr.allowPaths", "/var/solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("/var/solr/foo"));
+    cc.assertPathAllowed(Path.of("/var/solr/foo"));
     try {
-      cc.assertPathAllowed(Paths.get("/tmp"));
+      cc.assertPathAllowed(Path.of("/tmp"));
       fail("Path /tmp should not be allowed");
     } catch (SolrException e) {
       /* Ignore */
@@ -652,9 +649,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Assume.assumeTrue(OS.isFamilyWindows());
     System.setProperty("solr.allowPaths", "C:\\solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("C:\\solr\\foo"));
+    cc.assertPathAllowed(Path.of("C:\\solr\\foo"));
     try {
-      cc.assertPathAllowed(Paths.get("C:\\tmp"));
+      cc.assertPathAllowed(Path.of("C:\\tmp"));
       fail("Path C:\\tmp should not be allowed");
     } catch (SolrException e) {
       /* Ignore */
@@ -696,12 +693,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Assume.assumeFalse(OS.isFamilyWindows());
     System.setProperty("solr.allowPaths", "/var/solr/../solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("/var/solr/foo"));
+    cc.assertPathAllowed(Path.of("/var/solr/foo"));
     assertThrows(
         "Path /tmp should not be allowed",
         SolrException.class,
         () -> {
-          cc.assertPathAllowed(Paths.get("/tmp"));
+          cc.assertPathAllowed(Path.of("/tmp"));
         });
     cc.shutdown();
     System.clearProperty("solr.allowPaths");
@@ -712,12 +709,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Assume.assumeTrue(OS.isFamilyWindows());
     System.setProperty("solr.allowPaths", "C:\\solr\\..\\solr");
     CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("C:\\solr\\foo"));
+    cc.assertPathAllowed(Path.of("C:\\solr\\foo"));
     assertThrows(
         "Path C:\\tmp should not be allowed",
         SolrException.class,
         () -> {
-          cc.assertPathAllowed(Paths.get("C:\\tmp"));
+          cc.assertPathAllowed(Path.of("C:\\tmp"));
         });
     cc.shutdown();
     System.clearProperty("solr.allowPaths");

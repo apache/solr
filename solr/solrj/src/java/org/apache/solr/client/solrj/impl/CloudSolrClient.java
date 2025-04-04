@@ -174,6 +174,7 @@ public abstract class CloudSolrClient extends SolrClient {
      * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
      *     java.util.Optional.empty()} if no ZK chroot is used.
      */
+    @Deprecated(since = "10.0")
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
     }

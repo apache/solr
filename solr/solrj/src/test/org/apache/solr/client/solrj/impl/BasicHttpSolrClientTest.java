@@ -540,8 +540,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     // javabin request
     try (HttpSolrClient client =
         new HttpSolrClient.Builder(getBaseUrl())
-            .withRequestWriter(new BinaryRequestWriter())
-            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
             .build()) {
       UpdateRequest req = new UpdateRequest();
       req.add(new SolrInputDocument());

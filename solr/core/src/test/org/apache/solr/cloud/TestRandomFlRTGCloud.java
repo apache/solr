@@ -624,7 +624,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     return getDocsFromRTGResponse(
         expectList,
         new QueryResponse(
-            new RawCapableXMLResponseParser().processResponse(new StringReader(rsp)), null));
+            new RawCapableXMLResponseParser().processResponse(new StringReader(rsp))));
   }
 
   /**

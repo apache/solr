@@ -18,7 +18,7 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,9 +30,9 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -94,9 +94,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
     testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new JsonMapResponseParser(), 404, notFoundPath, incorrectPayload);
-    testException(new BinaryResponseParser(), 404, notFoundPath, incorrectPayload);
+    testException(new JavaBinResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new XMLResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
-    testException(new BinaryResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
+    testException(new JavaBinResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
     testException(new JsonMapResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
   }
 
@@ -241,7 +241,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     backupParams.put("location", tempDir);
     cluster
         .getJettySolrRunners()
-        .forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
+        .forEach(j -> j.getCoreContainer().getAllowPaths().add(Path.of(tempDir)));
     client.request(
         new V2Request.Builder("/collections/" + COLL_NAME + "/backups/backup_test/versions")
             .withMethod(SolrRequest.METHOD.POST)

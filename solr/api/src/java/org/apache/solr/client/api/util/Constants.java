@@ -46,5 +46,5 @@ public class Constants {
   // request and response fields statically.
   public static final String ADDTL_FIELDS_PROPERTY = "hasAdditionalFields";
 
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  public static final String JAVABIN_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }
