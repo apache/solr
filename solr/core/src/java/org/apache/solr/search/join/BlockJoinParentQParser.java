@@ -38,6 +38,7 @@ import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
 import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
+import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
@@ -90,37 +91,61 @@ public class BlockJoinParentQParser extends FiltersQParser {
           throws SyntaxError {
     List<BooleanClause> clauses = query.clauses();
     if (clauses.size() == 1 && clauses.get(0).getQuery().getClass().equals(KnnByteVectorQuery.class)) {
-      Query acceptedParents = getAcceptedParents(allParents);
-      KnnByteVectorQuery childQuery = (KnnByteVectorQuery) clauses.get(0).getQuery();
-      String vectorField = childQuery.getField();
-      byte[] queryVector = childQuery.getTargetCopy();
-      int topK = childQuery.getK();
-      BitSetProducer parentFilter = getBitSetProducer(acceptedParents);
-      Query childrenFilter = childQuery.getFilter();
-      return new DiversifyingChildrenByteKnnVectorQuery(vectorField, queryVector, childrenFilter, topK, parentFilter);
+      BitSetProducer allParentsBitSet = getBitSetProducer(allParents);
+      BooleanQuery parentsFilter = getAdditionalParentFilters();
+
+      KnnByteVectorQuery knnChildrenQuery = (KnnByteVectorQuery) clauses.get(0).getQuery();
+      String vectorField = knnChildrenQuery.getField();
+      byte[] queryVector = knnChildrenQuery.getTargetCopy();
+      int topK = knnChildrenQuery.getK();
+
+      Query acceptedChildren = getAcceptedChildren(knnChildrenQuery.getFilter(), parentsFilter, allParentsBitSet);
+
+      Query knnChildren = new DiversifyingChildrenByteKnnVectorQuery(vectorField, queryVector, acceptedChildren, topK, allParentsBitSet);
+      return new ToParentBlockJoinQuery(knnChildren, allParentsBitSet, ScoreModeParser.parse(scoreMode));
     } else if (clauses.size() == 1 && clauses.get(0).getQuery().getClass().equals(KnnFloatVectorQuery.class)) {
-      Query acceptedParents = getAcceptedParents(allParents);
-      KnnFloatVectorQuery childQuery = (KnnFloatVectorQuery) clauses.get(0).getQuery();
-      String vectorField = childQuery.getField();
-      float[] queryVector = childQuery.getTargetCopy();
-      int topK = childQuery.getK();
-      BitSetProducer parentFilter = getBitSetProducer(acceptedParents);
-      Query childrenFilter = childQuery.getFilter();
-      return new DiversifyingChildrenFloatKnnVectorQuery(vectorField, queryVector, childrenFilter, topK, parentFilter);
+      BitSetProducer allParentsBitSet = getBitSetProducer(allParents);
+      BooleanQuery parentsFilter = getAdditionalParentFilters();
+      
+      KnnFloatVectorQuery knnChildrenQuery = (KnnFloatVectorQuery) clauses.get(0).getQuery();
+      String vectorField = knnChildrenQuery.getField();
+      float[] queryVector = knnChildrenQuery.getTargetCopy();
+      int topK = knnChildrenQuery.getK();
+
+      Query acceptedChildren = getAcceptedChildren(knnChildrenQuery.getFilter(), parentsFilter, allParentsBitSet);
+
+      Query knnChildren = new DiversifyingChildrenFloatKnnVectorQuery(vectorField, queryVector, acceptedChildren, topK, allParentsBitSet);
+      return new ToParentBlockJoinQuery(knnChildren, allParentsBitSet, ScoreModeParser.parse(scoreMode));
     } else {
       return new AllParentsAware(
               query, getBitSetProducer(allParents), ScoreModeParser.parse(scoreMode), allParents);
     }
   }
 
-  private Query getAcceptedParents(Query allParents) throws SyntaxError {
+  private Query getAcceptedChildren(Query knnChildrenQuery, BooleanQuery parentsFilter, BitSetProducer allParentsBitSet) {
+    Query childrenFilter = knnChildrenQuery;
+    Query acceptedChildren = childrenFilter;
+    
+    if (parentsFilter.clauses().size() >0) {
+      Query acceptedChildrenBasedOnParentsFilter = new ToChildBlockJoinQuery(parentsFilter, allParentsBitSet);
+      BooleanQuery.Builder acceptedChildrenBuilder = createBuilder();
+      if (childrenFilter != null) {
+        acceptedChildrenBuilder.add(childrenFilter, BooleanClause.Occur.MUST);
+      }
+      acceptedChildrenBuilder.add(acceptedChildrenBasedOnParentsFilter, BooleanClause.Occur.MUST);
+
+      acceptedChildren = acceptedChildrenBuilder.build();
+    }
+    return acceptedChildren;
+  }
+
+  private BooleanQuery getAdditionalParentFilters() throws SyntaxError {
     List<Query> parentFilterQueries = QueryUtils.parseFilterQueries(req);
     BooleanQuery.Builder acceptedParentsBuilder = createBuilder();
     for (Query filter:parentFilterQueries) {
       acceptedParentsBuilder.add(filter, BooleanClause.Occur.MUST);
     }
-    acceptedParentsBuilder.add(allParents, BooleanClause.Occur.MUST);
-    Query acceptedParents = acceptedParentsBuilder.build();
+    BooleanQuery acceptedParents = acceptedParentsBuilder.build();
     return acceptedParents;
   }
 

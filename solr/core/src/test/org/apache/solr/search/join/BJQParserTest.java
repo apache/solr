@@ -151,9 +151,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFull() {
-    //{!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq:acl:foo
-    String childb = "{!parent which=\"parent_s:[* TO *]\"}{!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]";
-    assertQ(req("q", childb,"fq","parent_s:a"), sixParents);
+    String childb = "{!parent which=\"parent_s:[* TO *]\"}child_s:l";
+    assertQ(req("q", childb), sixParents);
   }
 
   private static final String sixParents[] =
