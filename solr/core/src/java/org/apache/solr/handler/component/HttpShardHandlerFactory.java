@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
@@ -323,6 +324,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
             .withListenerFactory(List.of(this.httpListenerFactory, this.delayedReqLogger))
+            .withContext(SolrRequest.SolrClientContext.SERVER)
             .withDestinationIdleTimeout(destinationIdleTimeout)
             .build();
     this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient, new String[0]).build();

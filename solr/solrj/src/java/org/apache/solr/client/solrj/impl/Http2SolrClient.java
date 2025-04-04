@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -596,7 +597,20 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
-    req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    SolrRequest.SolrClientContext context = getContext();
+    Map<String, String> headers = solrRequest.getHeaders();
+    req.headers(h -> h.put(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, context.toString()));
+    if (context == SolrRequest.SolrClientContext.CLIENT) {
+      req.headers(
+          h -> {
+            if (headers == null || !headers.containsKey(CommonParams.SOLR_REQUEST_TYPE_PARAM)) {
+              // default to `solrRequest.getRequestType()`, but do not overwrite request type
+              // param if it's specified on the `solrRequest`.
+              h.put(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType());
+            }
+          });
+    }
+    req.headers(h -> h.remove(HttpHeader.ACCEPT_ENCODING));
 
     if (requestTimeoutMillis > 0) {
       req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
@@ -620,7 +634,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       req.onComplete(asyncTracker.completeListener);
     }
 
-    Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
       req.headers(h -> headers.forEach(h::add));
     }
@@ -902,6 +915,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     private List<HttpListenerFactory> listenerFactory;
 
+    private SolrRequest.SolrClientContext context = SolrRequest.SolrClientContext.CLIENT;
+
     private Long destinationIdleTimeout;
 
     public Builder() {
@@ -1069,7 +1084,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
         keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
       }
 
-      Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
+      final SolrRequest.SolrClientContext context = this.context;
+      Http2SolrClient client =
+          new Http2SolrClient(baseSolrUrl, this) {
+            @Override
+            public SolrRequest.SolrClientContext getContext() {
+              return context;
+            }
+          };
       try {
         httpClientBuilderSetup(client);
       } catch (RuntimeException e) {
@@ -1152,6 +1174,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
      */
     public Builder withCookieStore(CookieStore cookieStore) {
       this.cookieStore = cookieStore;
+      return this;
+    }
+
+    public Builder withContext(SolrRequest.SolrClientContext context) {
+      this.context = context;
       return this;
     }
   }

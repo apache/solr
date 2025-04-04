@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -116,6 +117,11 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Override
   protected SolrClient getClient(Endpoint endpoint) {
     return solrClient;
+  }
+
+  @Override
+  public SolrRequest.SolrClientContext getContext() {
+    return solrClient.getContext();
   }
 
   /**

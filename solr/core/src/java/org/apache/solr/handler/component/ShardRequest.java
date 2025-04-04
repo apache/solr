@@ -20,6 +20,7 @@ import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 // todo... when finalized make accessors
@@ -57,6 +58,9 @@ public class ShardRequest {
 
   /** may be null */
   public String nodeName;
+
+  /** may be null */
+  public Map<String, String> headers;
 
   /** Not null but may implement {@link io.opentracing.noop.NoopTracer}. */
   public final Tracer tracer = GlobalTracer.get();

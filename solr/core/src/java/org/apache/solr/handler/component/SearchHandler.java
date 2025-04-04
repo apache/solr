@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.queryparser.surround.query.TooManyBasicQueries;
 import org.apache.lucene.search.IndexSearcher;
@@ -53,6 +54,7 @@ import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -75,6 +77,7 @@ import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.servlet.PriorityBasedRateLimiter;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
@@ -92,6 +95,13 @@ public class SearchHandler extends RequestHandlerBase
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
+
+  private static final String DATA_NODE_ALLOW_RATE_LIMIT_ALWAYS_KEY =
+      "solr.dataNodeAllowRateLimitAlways";
+  private static final boolean DATA_NODE_ALLOW_RATE_LIMIT_ALWAYS_DEFAULT = false;
+  public static final boolean DATA_NODE_ALLOW_RATE_LIMIT_ALWAYS =
+      EnvUtils.getPropertyAsBool(
+          DATA_NODE_ALLOW_RATE_LIMIT_ALWAYS_KEY, DATA_NODE_ALLOW_RATE_LIMIT_ALWAYS_DEFAULT);
 
   protected static final String SHARD_HANDLER_SUFFIX = "[shard]";
 
@@ -540,6 +550,46 @@ public class SearchHandler extends RequestHandlerBase
       }
       rb.finished = new ArrayList<>();
 
+      final Map<String, String> headers;
+      if (DATA_NODE_ALLOW_RATE_LIMIT_ALWAYS
+          || ShardParams.getShardsTolerantAsBool(req.getParams())) {
+        // NOTE: if `shards.tolerant=false`, we may _not_ want to set the `Solr-Request-Type`
+        // header, because we could end up doing a lot of extra work at the cluster level,
+        // retrying requests that may only have failed to obtain a ratelimit permit on a
+        // single shard.
+        HttpServletRequest httpRequest = (HttpServletRequest) req.getContext().get("httpRequest");
+        String explicitRequestType;
+        if (httpRequest == null
+            || (explicitRequestType = httpRequest.getHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM))
+                == null) {
+          // TODO: currently, from `SearchHandler`, the `SolrRequestType` is indeed guaranteed
+          //  to be `SolrRequestType.QUERY`, so below is valid. But it feels wrong/brittle; should
+          //  probably be reconsidered.
+          headers = Map.of(CommonParams.SOLR_REQUEST_TYPE_PARAM, SolrRequestType.QUERY.toString());
+        } else {
+          // we have an explicit header available from the top-level httpRequest, then use that
+          String priority;
+          if (SolrRequestType.PRIORITY_BASED.toString().equals(explicitRequestType)
+              && (priority =
+                      httpRequest.getHeader(PriorityBasedRateLimiter.SOLR_REQUEST_PRIORITY_PARAM))
+                  != null) {
+            // TODO: this should really not be here. We should come up with a more generic way to
+            //  pass limiter-specific information (`PriorityBasedRateLimiter`, and everything
+            //  about it, would ideally be part of a plugin and thus out of scope here).
+            headers =
+                Map.of(
+                    CommonParams.SOLR_REQUEST_TYPE_PARAM,
+                    explicitRequestType,
+                    PriorityBasedRateLimiter.SOLR_REQUEST_PRIORITY_PARAM,
+                    priority);
+          } else {
+            headers = Map.of(CommonParams.SOLR_REQUEST_TYPE_PARAM, explicitRequestType);
+          }
+        }
+      } else {
+        headers = null;
+      }
+
       int nextStage = 0;
       do {
         rb.stage = nextStage;
@@ -557,6 +607,7 @@ public class SearchHandler extends RequestHandlerBase
           // submit all current request tasks at once
           while (rb.outgoing.size() > 0) {
             ShardRequest sreq = rb.outgoing.remove(0);
+            sreq.headers = headers;
             sreq.actualShards = sreq.shards;
             if (sreq.actualShards == ShardRequest.ALL_SHARDS) {
               sreq.actualShards = rb.shards;

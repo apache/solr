@@ -126,6 +126,9 @@ public class HttpShardHandler extends ShardHandler {
     params.remove(CommonParams.WT); // use default (currently javabin)
     params.remove(CommonParams.VERSION);
     QueryRequest req = makeQueryRequest(sreq, params, shard);
+    if (sreq.headers != null) {
+      sreq.headers.forEach(req::addHeader);
+    }
     req.setMethod(SolrRequest.METHOD.POST);
 
     LBSolrClient.Req lbReq = httpShardHandlerFactory.newLBHttpSolrClientReq(req, urls);

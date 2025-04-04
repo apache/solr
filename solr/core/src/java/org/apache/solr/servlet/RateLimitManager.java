@@ -127,10 +127,16 @@ public class RateLimitManager implements ClusterPropertiesListener {
     }
 
     // Do not throttle internal requests
-    if (requestContext != null
-        && requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
-      return RequestRateLimiter.UNLIMITED;
-    }
+    // TODO: the block below is disabled temporarily to evaluate datanode-level throttling,
+    //  which is where the resources actually are. It should be re-enabled and fixed upstream
+    //  to support datanode-level throttling in a more nuanced way. But for FS usecase, most
+    //  requests will be `shards.tolerant=true`, and we shouldn't hit throttling unless there
+    //  are real problems on a node, in which case we're probably better off rejecting the
+    //  requests anyway.
+    //    if (requestContext != null
+    //        && requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
+    //      return RequestRateLimiter.UNLIMITED;
+    //    }
 
     RequestRateLimiter requestRateLimiter = requestRateLimiterMap.get(typeOfRequest);
 
