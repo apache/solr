@@ -783,14 +783,14 @@ public class QueryComponent extends SearchComponent {
     boolean distribSinglePass = rb.req.getParams().getBool(ShardParams.DISTRIB_SINGLE_PASS, false);
 
     boolean requiresNonIdAndScoreFields = true;
-    if (!distribSinglePass && fields != null) {
+    if (!distribSinglePass) {
       Set<String> nonScoreDependentFieldNames = fields.getNonScoreDependentReturnFieldNames();
       requiresNonIdAndScoreFields =
           fields.hasPatternMatching()
               || nonScoreDependentFieldNames == null
               || nonScoreDependentFieldNames.size() > 1
               || (nonScoreDependentFieldNames.size() == 1
-                  && nonScoreDependentFieldNames.contains(keyFieldName));
+                  && !nonScoreDependentFieldNames.contains(keyFieldName));
     }
     if (distribSinglePass || !requiresNonIdAndScoreFields) {
       sreq.purpose |= ShardRequest.PURPOSE_GET_FIELDS;
@@ -848,23 +848,20 @@ public class QueryComponent extends SearchComponent {
       // reset so that only unique key is requested in shard requests
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
 
-      if (fields != null) {
-        final AtomicBoolean hasAdditionalAdded = new AtomicBoolean(additionalAdded);
-        fields
-            .getScoreDependentReturnFields()
-            .forEach(
-                (name, value) -> {
-                  if (value.isEmpty()) {
-                    addFL(additionalFL, name, hasAdditionalAdded.getAndSet(true));
-                  } else {
-                    addFL(additionalFL, name + ":" + value, hasAdditionalAdded.getAndSet(true));
-                  }
-                });
-        additionalAdded = hasAdditionalAdded.get();
-      }
+      final AtomicBoolean hasAdditionalAdded = new AtomicBoolean(additionalAdded);
+      fields
+          .getScoreDependentReturnFields()
+          .forEach(
+              (name, value) -> {
+                if (value.isEmpty()) {
+                  addFL(additionalFL, name, hasAdditionalAdded.getAndSet(true));
+                } else {
+                  addFL(additionalFL, name + ":" + value, hasAdditionalAdded.getAndSet(true));
+                }
+              });
+      additionalAdded = hasAdditionalAdded.get();
     }
-    if ((fields == null
-            || fields.getExplicitlyRequestedFieldNames() == null
+    if ((fields.getExplicitlyRequestedFieldNames() == null
             || !fields.getExplicitlyRequestedFieldNames().contains(SolrReturnFields.SCORE))
         && shardQueryIncludeScore) {
       additionalAdded = addFL(additionalFL, SolrReturnFields.SCORE, additionalAdded);
@@ -919,7 +916,7 @@ public class QueryComponent extends SearchComponent {
     // to copy over the score dependent fields, since those will already exist in the document with
     // the return fields
     Set<String> scoreDependentFields;
-    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0 && rb.rsp.getReturnFields() != null) {
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0) {
       scoreDependentFields =
           rb.rsp.getReturnFields().getScoreDependentReturnFields().keySet().stream()
               .filter(field -> !field.equals(SolrReturnFields.SCORE))
