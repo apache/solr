@@ -418,8 +418,6 @@ public class JettySolrRunner {
     if (config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);
-      // rwh.setRewriteRequestURI(true);
-      // rwh.setRewritePathInfo(false);
       rwh.setOriginalPathAttribute("requestedPath");
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
       chain = rwh;

@@ -80,7 +80,6 @@ decompose = "3.2.2"
 diffplug-spotless = "6.5.2"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
-# eclipse-jetty = "10.0.22"
 eclipse-jetty = "12.0.10"
 eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
@@ -325,11 +324,9 @@ eclipse-jetty-alpnserver = { module = "org.eclipse.jetty:jetty-alpn-server", ver
 eclipse-jetty-client = { module = "org.eclipse.jetty:jetty-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-deploy = { module = "org.eclipse.jetty:jetty-deploy", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee = { module = "org.eclipse.jetty:jetty-ee", version.ref = "eclipse-jetty" }
-# clipse-jetty-ee10-nested = { module = "org.eclipse.jetty.ee10:jetty-ee10-nested", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-servlet = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlet", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-servlets = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlets", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-webapp = { module = "org.eclipse.jetty.ee10:jetty-ee10-webapp", version.ref = "eclipse-jetty" }
-# eclipse-jetty-ee8-webapp = { module = "org.eclipse.jetty.ee8:jetty-ee8-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-http = { module = "org.eclipse.jetty:jetty-http", version.ref = "eclipse-jetty" }
 eclipse-jetty-http2-client = { module = "org.eclipse.jetty.http2:jetty-http2-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-http2-common = { module = "org.eclipse.jetty.http2:jetty-http2-common", version.ref = "eclipse-jetty" }
