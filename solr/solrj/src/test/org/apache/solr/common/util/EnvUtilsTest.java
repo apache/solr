@@ -80,7 +80,7 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals(ENV.get("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
     assertEquals(ENV.get("SOLR_PORT"), EnvUtils.getProperty("jetty.port"));
     assertEquals(ENV.get("SOLR_HOST"), EnvUtils.getProperty("host"));
-    assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.log.dir"));
+    assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.logs.dir"));
   }
 
   @Test
