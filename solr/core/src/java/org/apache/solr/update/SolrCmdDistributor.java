@@ -308,7 +308,7 @@ public class SolrCmdDistributor implements Closeable {
     // Copy user principal from the original request to the new update request, for later
     // authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
-      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
+      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getUserPrincipal());
     }
 
     if (req.synchronous) {
