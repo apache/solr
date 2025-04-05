@@ -1156,14 +1156,6 @@ else
   SECURITY_MANAGER_OPTS=()
 fi
 
-# Enable Admin UI by default, and give the option for users to disable it
-if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ]; then
-  SOLR_ADMIN_UI="-DdisableAdminUI=true"
-  echo -e "ADMIN UI Disabled"
-else
-  SOLR_ADMIN_UI="-DdisableAdminUI=false"
-fi
-
 JAVA_MEM_OPTS=()
 if [ -z "${SOLR_HEAP:-}" ] && [ -n "${SOLR_JAVA_MEM:-}" ]; then
   JAVA_MEM_OPTS=($SOLR_JAVA_MEM)
@@ -1316,7 +1308,7 @@ function start_solr() {
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" "-Dsolr.install.symDir=$SOLR_TIP_SYM" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SCRIPT_SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}" "${SOLR_OPTS[@]}")
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SCRIPT_SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_OPTS[@]}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
   if [[ -n "${SOLR_HEAP_DUMP_DIR:-}" ]]; then
