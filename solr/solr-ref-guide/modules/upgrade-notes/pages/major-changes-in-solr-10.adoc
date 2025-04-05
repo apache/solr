@@ -108,7 +108,8 @@ Users who that don't need to vary JAR access on a per-core basis have several op
 
 * CurrencyField has been removed.  Users should migrate to the `CurrencyFieldType` implementation.
 
-* EnumField has been removed.  Use EnumFieldType instead.
+* EnumField has been removed.  Users should migrate to the `EnumFieldType` implementation.
+
 
 === Security
 
