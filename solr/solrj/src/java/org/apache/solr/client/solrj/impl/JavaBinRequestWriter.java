@@ -33,7 +33,7 @@ import org.apache.solr.common.util.ContentStream;
  * @see org.apache.solr.client.solrj.request.RequestWriter
  * @since solr 1.4
  */
-public class BinaryRequestWriter extends RequestWriter {
+public class JavaBinRequestWriter extends RequestWriter {
 
   @Override
   public ContentWriter getContentWriter(SolrRequest<?> req) {

@@ -176,6 +176,8 @@ Other Changes
 
 * SOLR-14070: Deprecate CloudSolrClient's ZooKeeper Hosts constructor. (Abhishek Umarjikar)
 
+* SOLR-17703: SolrJ - Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to "JavaBin.." equivalent. (Abhishek Umarjikar)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -244,6 +246,8 @@ Bug Fixes
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
+
+* Upgrade forbiddenapis to 3.9. (Uwe Schindler)
 
 Other Changes
 ---------------------

@@ -58,9 +58,9 @@ import org.apache.lucene.util.IOSupplier;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -516,7 +516,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
       throws IOException {
     var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/blob/" + blobName);
-    request.withContent(bytes, BinaryResponseParser.BINARY_CONTENT_TYPE);
+    request.withContent(bytes, JavaBinResponseParser.JAVABIN_CONTENT_TYPE);
     request.setRequiresCollection(true);
     try {
       request.process(cloudClient, BLOB_STORE_ID);

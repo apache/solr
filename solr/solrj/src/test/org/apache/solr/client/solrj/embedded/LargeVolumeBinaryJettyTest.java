@@ -21,7 +21,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 /**
- * @see org.apache.solr.client.solrj.impl.BinaryRequestWriter
+ * @see org.apache.solr.client.solrj.impl.JavaBinRequestWriter
  * @see org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec
  */
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {

@@ -42,8 +42,8 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -839,7 +839,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(CommonParams.FL, "id,json_s:[json],xml_s:[xml]");
 
     QueryRequest req = new QueryRequest(query);
-    req.setResponseParser(new BinaryResponseParser());
+    req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
 
     SolrDocumentList out = rsp.getResults();
@@ -2371,7 +2371,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     // First Try with the BinaryResponseParser
     QueryRequest req = new QueryRequest(q);
-    req.setResponseParser(new BinaryResponseParser());
+    req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument) rsp.getResponse().get("doc");
     assertEquals("DOCID", out.get("id"));

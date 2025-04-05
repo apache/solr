@@ -437,11 +437,11 @@
   <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
 
   <!-- Currency type -->
-  <fieldType name="currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
+  <fieldType name="currency" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
              currencyConfig="currency.xml" multiValued="false"/>
-  <fieldType name="mock_currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
+  <fieldType name="mock_currency" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
              providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false"/>
-  <fieldType name="oer_currency_CFT"
+  <fieldType name="oer_currency"
              class="solr.CurrencyFieldType"
              amountLongSuffix="_l1_ns"
              codeStrSuffix="_s1_ns"
@@ -570,9 +570,9 @@
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
   <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
   <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
-  <field name="amount_CFT" type="currency_CFT" indexed="true" stored="true" multiValued="false"/>
-  <field name="mock_amount_CFT" type="mock_currency_CFT" indexed="true" stored="true"/>
-  <field name="oer_amount_CFT" type="oer_currency_CFT" indexed="true" stored="true"/>
+  <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
+  <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
+  <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
 
   <!-- test different combinations of indexed and stored -->
   <field name="bind" type="boolean" indexed="true" stored="false"/>
