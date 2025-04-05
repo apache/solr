@@ -45,7 +45,6 @@ import org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.LogListener;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.After;
@@ -67,16 +66,6 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     createJettyAndHarness(
         tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml", "/solr", true, null);
-    if (random().nextBoolean()) {
-      log.info("These tests are run with V2 API");
-      restTestHarness.setServerProvider(
-          new RESTfulServerProvider() {
-            @Override
-            public String getBaseURL() {
-              return getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
-            }
-          });
-    }
   }
 
   @After
