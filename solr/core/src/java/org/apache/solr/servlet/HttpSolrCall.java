@@ -146,6 +146,8 @@ public class HttpSolrCall {
   protected final HttpServletRequest req;
   protected final HttpServletResponse response;
   protected final boolean retry;
+  private final SolrVersion userAgentSolrVersion; // of the client
+  private final Span span;
   protected SolrCore core = null;
   protected SolrQueryRequest solrReq = null;
   private boolean mustClearSolrRequestInfo = false;
@@ -165,8 +167,6 @@ public class HttpSolrCall {
 
   protected RequestType requestType;
 
-  private Span span;
-
   public HttpSolrCall(
       SolrDispatchFilter solrDispatchFilter,
       CoreContainer cores,
@@ -176,16 +176,18 @@ public class HttpSolrCall {
     this.solrDispatchFilter = solrDispatchFilter;
     this.cores = cores;
     this.req = request;
-    this.span = Optional.ofNullable(TraceUtils.getSpan(req)).orElse(Span.getInvalid());
     this.response = response;
     this.retry = retry;
     this.requestType = RequestType.UNKNOWN;
+    this.userAgentSolrVersion = parseUserAgentSolrVersion();
+    this.span = Optional.ofNullable(TraceUtils.getSpan(req)).orElse(Span.getInvalid());
+    this.path = ServletUtils.getPathAfterContext(req);
+
     req.setAttribute(HttpSolrCall.class.getName(), this);
     // set a request timer which can be reused by requests if needed
     req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
     // put the core container in request attribute
     req.setAttribute("org.apache.solr.CoreContainer", cores);
-    path = ServletUtils.getPathAfterContext(req);
   }
 
   public String getPath() {
@@ -1182,6 +1184,10 @@ public class HttpSolrCall {
    * clients prior to 9.9 present themselves as 1.0 or 2.0.
    */
   public SolrVersion getUserAgentSolrVersion() {
+    return userAgentSolrVersion;
+  }
+
+  private SolrVersion parseUserAgentSolrVersion() {
     String header = req.getHeader("User-Agent");
     if (header == null || !header.startsWith("Solr")) {
       return null;
