@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
@@ -42,7 +41,7 @@ public final class LoadAdminUiServlet extends HttpServlet {
 
   // check system properties for whether the admin UI is disabled, default is false
   private static final boolean disabled =
-      Boolean.parseBoolean(EnvUtils.getProperty("solr.admin.ui.disabled", "false"));
+      Boolean.parseBoolean(System.getProperty("solr.admin.ui.disabled", "false"));
   // list of comma separated URLs to inject into the CSP connect-src directive
   public static final String SYSPROP_CSP_CONNECT_SRC_URLS = "solr.ui.headers.csp.connect-src.urls";
 
