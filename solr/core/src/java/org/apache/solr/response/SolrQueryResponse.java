@@ -68,6 +68,18 @@ public class SolrQueryResponse {
   public static final String RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY = "partialResultsDetails";
   public static final String RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY =
       "segmentTerminatedEarly";
+
+  /**
+   * Header to indicate that the search was terminated early because of hits exceeding the query
+   * configured limit (<code>maxHitsAllowed</code>). Presence of this flag also indicates the
+   * partialResults, however in the absence of <i>maxHitsTerminatedEarly</i>, <i>partialResults</i>
+   * would be due to other limits like time/cpu.
+   */
+  public static final String RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY =
+      "maxHitsTerminatedEarly";
+
+  public static final String RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY = "approximateTotalHits";
+
   public static final String RESPONSE_HEADER_KEY = "responseHeader";
   private static final String RESPONSE_KEY = "response";
 
