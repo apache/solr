@@ -56,6 +56,7 @@ public class MockResponseBuilder extends ResponseBuilder {
     Mockito.when(params.getBool(ShardParams.SHARDS_INFO)).thenReturn(false);
     Mockito.when(request.getParams()).thenReturn(params);
     Mockito.when(response.getResponseHeader()).thenReturn(responseHeader);
+    Mockito.when(response.getReturnFields()).thenCallRealMethod();
 
     List<SearchComponent> components = new ArrayList<>();
     return new MockResponseBuilder(request, response, components);

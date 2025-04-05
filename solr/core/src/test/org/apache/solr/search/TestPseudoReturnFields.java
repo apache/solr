@@ -680,12 +680,19 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
 
   public void testAugmentersAndScore() {
     assertQ(
-        req("q", "*:*", "rows", "1", "fl", "[docid],x_alias:[value v=10 t=int],score"),
+        req(
+            "q",
+            "*:*",
+            "rows",
+            "1",
+            "fl",
+            "[docid],x_alias:[value v=10 t=int],score,s_alias:score"),
         "//result[@numFound='5']",
         "//result/doc/int[@name='[docid]']",
         "//result/doc/int[@name='x_alias'][.=10]",
         "//result/doc/float[@name='score']",
-        "//result/doc[count(*)=3]");
+        "//result/doc/float[@name='s_alias']",
+        "//result/doc[count(*)=4]");
     for (SolrParams p :
         Arrays.asList(
             params("fl", "[docid],x_alias:[value v=10 t=int],[explain],score"),

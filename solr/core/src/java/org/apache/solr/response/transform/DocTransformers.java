@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.ResultContext;
+import org.apache.solr.search.DocIterationInfo;
 
 /** Transform a document before it gets sent out */
 public class DocTransformers extends DocTransformer {
@@ -72,9 +73,9 @@ public class DocTransformers extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score) throws IOException {
+  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) throws IOException {
     for (DocTransformer a : children) {
-      a.transform(doc, docid, score);
+      a.transform(doc, docid, docInfo);
     }
   }
 
@@ -88,11 +89,6 @@ public class DocTransformers extends DocTransformer {
   /** Returns true if and only if at least 1 child transformer returns true */
   @Override
   public boolean needsSolrIndexSearcher() {
-    for (DocTransformer kid : children) {
-      if (kid.needsSolrIndexSearcher()) {
-        return true;
-      }
-    }
-    return false;
+    return children.stream().anyMatch(DocTransformer::needsSolrIndexSearcher);
   }
 }
