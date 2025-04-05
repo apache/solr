@@ -117,6 +117,8 @@ Deprecation Removals
 
 * SOLR-17683: Removed deprecated CurrencyField field type. (Eric Pugh)
 
+* SOLR-17698: Removed deprecated EnumField field type. (Eric Pugh, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)

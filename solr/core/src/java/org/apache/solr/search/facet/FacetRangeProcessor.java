@@ -31,11 +31,11 @@ import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.schema.AbstractEnumField;
-import org.apache.solr.schema.AbstractEnumField.EnumMapping;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.CurrencyValue;
 import org.apache.solr.schema.DateRangeField;
+import org.apache.solr.schema.EnumFieldType;
+import org.apache.solr.schema.EnumFieldType.EnumMapping;
 import org.apache.solr.schema.ExchangeRateProvider;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -170,7 +170,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final FieldType ft = sf.getType();
 
     if (ft.getNumberType() != null) {
-      if (ft instanceof AbstractEnumField) {
+      if (ft instanceof EnumFieldType) {
         return new EnumCalc(sf);
       }
       switch (ft.getNumberType()) {
@@ -844,7 +844,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     public EnumCalc(final SchemaField f) {
       super(f);
-      mapping = ((AbstractEnumField) field.getType()).getEnumMapping();
+      mapping = ((EnumFieldType) field.getType()).getEnumMapping();
     }
 
     @Override

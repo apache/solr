@@ -37,8 +37,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.StatsField.Stat;
-import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.DatePointField;
+import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
@@ -85,7 +85,7 @@ public class StatsValuesFactory {
       return statsValue;
     } else if (StrField.class.isInstance(fieldType)) {
       return new StringStatsValues(statsField);
-    } else if (AbstractEnumField.class.isInstance(fieldType)) {
+    } else if (EnumFieldType.class.isInstance(fieldType)) {
       return new EnumStatsValues(statsField);
     } else {
       throw new SolrException(
