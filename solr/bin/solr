@@ -1214,9 +1214,6 @@ function start_solr() {
     SCRIPT_SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
   fi
 
-  if [ -n "${SOLR_DELETE_UNKNOWN_CORES:-}" ]; then
-    SCRIPT_SOLR_OPTS+=("-Dsolr.deleteUnknownCores=$SOLR_DELETE_UNKNOWN_CORES")
-  fi
 
   # If SSL-related system props are set, add them to SCRIPT_SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
