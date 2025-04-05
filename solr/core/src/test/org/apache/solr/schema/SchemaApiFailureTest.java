@@ -17,16 +17,17 @@
 
 package org.apache.solr.schema;
 
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
+
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -55,15 +56,13 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
         new SchemaRequest.AddField(Map.of("name", "myfield", "type", "string"));
     SchemaResponse.UpdateResponse updateResponse = fieldAddition.process(client, COLLECTION);
 
-    BaseHttpSolrClient.RemoteExecutionException ex =
+    final var thrown =
         expectThrows(
-            BaseHttpSolrClient.RemoteExecutionException.class,
-            () -> fieldAddition.process(client, COLLECTION));
+            SolrClient.RemoteSolrException.class,
+            () -> {
+              fieldAddition.process(client, COLLECTION);
+            });
 
-    assertTrue(
-        "expected error message 'Field 'myfield' already exists'.",
-        Utils.getObjectByPath(ex.getMetaData(), false, "error/details[0]/errorMessages[0]")
-            .toString()
-            .contains("Field 'myfield' already exists."));
+    assertThat(thrown.getMessage(), containsStringIgnoringCase("Field 'myfield' already exists."));
   }
 }

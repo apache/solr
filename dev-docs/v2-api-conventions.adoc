@@ -103,3 +103,39 @@ Please use the following conventions when implementing similar endpoints:
 2. Interface methods should return a type that implements the JAX-RS `StreamingOutput` interface.
 
 See the `fetchFile()` method in `ReplicationApis.java` for a concrete example.
+
+== Dynamic and Partially-Dynamic Request POJOs
+
+Many Solr APIs have a request body that is fully dynamic or open-ended, with users able to specify any property name and value.
+In these cases, the request-body should be represented in JAX-RS by using a map: typically a `Map<String,Object>`.
+
+Slightly more difficult are cases where the request-body allows dynamic/open-ended fields, but also has some fields that are known statically.
+In these cases, developers may:
+1. Represent the request-body using a POJO class.  The "known" fields can be annotated with `@JsonProperty` as in standard POJOs.  Dynamic fields can be allowed using Jackson's `@JsonAnyGetter` and `@JsonAnySetter` annotations as below:
++
+```
+  private Map<String, Object> additionalProperties = new HashMap<>();
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
+
+  @JsonAnySetter
+  public void setAdditionalProperty(String field, Object value) {
+    additionalProperties.put(field, value);
+  }
+```
+2. Annotate the request-body parameter with the `ADDTL_FIELDS_PROPERTY` Swagger extension when declaring the request body.  This tells our code-generation templates that the request-body takes additional properties the setters should be generated for.
++
+```
+  SolrJerseyResponse addField(
+      @PathParam("fieldName") String fieldName,
+      @RequestBody(
+              extensions = {
+                @Extension(
+                    properties = {@ExtensionProperty(name = ADDTL_FIELDS_PROPERTY, value = "true")})
+              })
+          AddFieldOperation requestBody)
+      throws Exception;
+```
