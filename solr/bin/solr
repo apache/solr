@@ -68,7 +68,7 @@ if [ $$ -ne $(ps -o pid='' -p $$ || echo 0) ] ; then
   exit 1
 fi
 
-# This helps with debugging when running bats tests but not the whole script is compliant yet
+# This helps with debugging when running bats tests however the whole script is not compliant yet
 # set -u
 # set -o pipefail
 
