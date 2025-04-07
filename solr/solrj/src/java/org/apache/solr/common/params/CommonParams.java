@@ -240,6 +240,7 @@ public interface CommonParams {
           AUTHC_PATH,
           AUTHZ_PATH,
           METRICS_PATH);
+
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 

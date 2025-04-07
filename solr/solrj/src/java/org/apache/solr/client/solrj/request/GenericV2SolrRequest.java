@@ -63,7 +63,8 @@ public class GenericV2SolrRequest extends GenericSolrRequest {
    * @param requestType the type of this request
    * @param params query parameter names and values for making this request.
    */
-  public GenericV2SolrRequest(METHOD m, String path, SolrRequestType requestType, SolrParams params) {
+  public GenericV2SolrRequest(
+      METHOD m, String path, SolrRequestType requestType, SolrParams params) {
     super(m, removeLeadingApiRoot(path), requestType, params);
   }
 

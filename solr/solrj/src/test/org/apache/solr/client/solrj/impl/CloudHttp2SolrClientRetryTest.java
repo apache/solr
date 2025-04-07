@@ -19,12 +19,10 @@ package org.apache.solr.client.solrj.impl;
 
 import java.util.Collections;
 import java.util.Optional;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -69,7 +67,8 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       params.set("indent", "true");
       params.set(CommonParams.WT, "xml");
 
-      var metricsRequest = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+      var metricsRequest =
+          new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
       metricsRequest.setRequiresCollection(false);
 
       NamedList<Object> namedList = solrClient.request(metricsRequest);
