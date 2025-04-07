@@ -797,7 +797,8 @@ public abstract class CloudSolrClient extends SolrClient {
     if (request instanceof V2Request) {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
-    boolean isAdmin = request.getRequestType() == SolrRequestType.ADMIN;
+    boolean isAdmin =
+        request.getRequestType() == SolrRequestType.ADMIN && !request.requiresCollection();
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests

@@ -142,13 +142,14 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
                 .build();
       } else {
         GenericSolrRequest genericSolrRequest =
-            new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix);
+            new GenericSolrRequest(
+                SolrRequest.METHOD.POST, authcPrefix, SolrRequest.SolrRequestType.ADMIN);
         genericSolrRequest.setContentWriter(
             new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
         genericReq = genericSolrRequest;
       }
 
-      // avoid bad connection races due to shutdown
+      // avoid bad connection races due to shutdownn
       final var httpClient = ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
       httpClient.getConnectionManager().closeExpiredConnections();
       httpClient.getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);

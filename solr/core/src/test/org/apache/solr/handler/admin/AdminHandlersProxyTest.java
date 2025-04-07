@@ -71,7 +71,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
     SimpleSolrResponse rsp = req.process(solrClient, null);
     NamedList<Object> nl = rsp.getResponse();
     assertEquals(3, nl.size());

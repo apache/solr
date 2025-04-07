@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -481,7 +480,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   }
 
   /**
-   * Given a SolrClient, sends various updates were {@link SolrRequest#shouldSendToLeaders} returns
+   * Given a SolrClient, sends various updates were {@link UpdateRequest#isSendToLeaders} returns
    * false, and asserts expectations that requests using {@link #prefPull} are all sent to PULL
    * replicas, regardless of how the client is configured.
    */

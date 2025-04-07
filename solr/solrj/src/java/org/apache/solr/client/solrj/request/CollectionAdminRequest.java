@@ -123,6 +123,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     return jsonStr();
   }
 
+  @Override
+  public boolean requiresCollection() {
+    return false;
+  }
+
   /**
    * Take the request specific basic auth creds on this admin request and propagate them to a
    * related request if does not already have credentials set, such as a

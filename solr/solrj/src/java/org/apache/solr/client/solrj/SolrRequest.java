@@ -208,6 +208,10 @@ public abstract class SolrRequest<T> implements Serializable {
     return requestType;
   }
 
+  public void setRequestType(SolrRequestType requestType) {
+    this.requestType = requestType;
+  }
+
   /**
    * The parameters for this request; never null. The runtime type may be mutable but modifications
    * <b>may</b> not affect this {@link SolrRequest} instance, as it may return a new instance here

@@ -30,7 +30,7 @@ public abstract class AbstractSchemaRequest<T extends SolrResponse>
   }
 
   public AbstractSchemaRequest(METHOD m, String path, SolrParams params) {
-    super(m, path, SolrRequestType.UNSPECIFIED);
+    super(m, path, SolrRequestType.ADMIN);
     this.params = params != null ? params : new ModifiableSolrParams();
   }
 
