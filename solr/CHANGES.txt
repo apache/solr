@@ -119,7 +119,8 @@ Deprecation Removals
 
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* SOLR-16984: Upgraded internal Jetty server from Jetty 10 to Jetty 12, including migration from javax.* to jakarta.* namespaces for Servlet and related APIs. (Sanjay Dutt, David Smiley)
 
 Other Changes
 ---------------------
