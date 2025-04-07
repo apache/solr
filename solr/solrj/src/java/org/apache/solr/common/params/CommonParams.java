@@ -227,6 +227,7 @@ public interface CommonParams {
   String OK = "OK";
   String FAILURE = "FAILURE";
 
+  /** /admin paths which don't require a target collection */
   Set<String> ADMIN_PATHS =
       Set.of(
           CORES_HANDLER_PATH,

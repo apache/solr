@@ -1047,7 +1047,7 @@ public abstract class CloudSolrClient extends SolrClient {
         requestEndpoints.add(new LBSolrClient.Endpoint(chosenNodeUrl));
       }
 
-    } else if (request.getRequestType() == SolrRequestType.ADMIN) {
+    } else if (request.getRequestType() == SolrRequestType.ADMIN && !request.requiresCollection()) {
       for (String liveNode : liveNodes) {
         final var nodeBaseUrl = Utils.getBaseUrlForNodeName(liveNode, urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl));

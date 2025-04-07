@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
@@ -206,12 +205,7 @@ public abstract class SolrRequest<T> implements Serializable {
    * CloudSolrClient}).
    */
   public SolrRequestType getRequestType() {
-    String path = getPath();
-    if (path != null && CommonParams.ADMIN_PATHS.contains(path)) {
-      return SolrRequestType.ADMIN;
-    } else {
-      return requestType;
-    }
+    return requestType;
   }
 
   /**

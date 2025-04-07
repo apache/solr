@@ -106,6 +106,11 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   }
 
   @Override
+  public boolean requiresCollection() {
+    return isPerCollectionRequest;
+  }
+
+  @Override
   public String getCollection() {
     return collection;
   }

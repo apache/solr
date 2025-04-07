@@ -35,7 +35,7 @@ public class ConfigRequest extends CollectionRequiringSolrRequest<SolrResponse> 
   protected final String message;
 
   public ConfigRequest(String message) {
-    super(SolrRequest.METHOD.POST, "/config", SolrRequestType.UNSPECIFIED);
+    super(SolrRequest.METHOD.POST, "/config", SolrRequestType.ADMIN);
     this.message = message;
   }
 
