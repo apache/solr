@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
 import org.apache.solr.common.util.ContentStreamBase.StringStream;
 import org.apache.solr.common.util.NamedList;
@@ -154,7 +154,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     // javabin
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     writerBinBase.write(bytes, req(), rsp);
-    BinaryResponseParser parser = new BinaryResponseParser();
+    JavaBinResponseParser parser = new JavaBinResponseParser();
     NamedList<Object> out =
         parser.processResponse(
             new ByteArrayInputStream(bytes.toByteArray()), /* encoding irrelevant */ null);

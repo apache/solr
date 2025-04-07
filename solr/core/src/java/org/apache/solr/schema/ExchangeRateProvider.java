@@ -21,7 +21,7 @@ import java.util.Set;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 
-/** Interface for providing pluggable exchange rate providers to @CurrencyField */
+/** Interface for providing pluggable exchange rate providers to {@link CurrencyFieldType} */
 public interface ExchangeRateProvider {
   /**
    * Get the exchange rate between the two given currencies

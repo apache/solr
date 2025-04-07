@@ -21,9 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.Set;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -514,37 +512,28 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
               + facetIntervals,
           facetQueries.size(),
           getCountDistinctIntervals(facetIntervals));
-      for (int i = 0; i < facetIntervals.size(); i++) {
-        assertEquals(
-            "Interval did not match: "
-                + field
-                + ": "
-                + facetIntervals.getName(i)
-                + "\nResponse: "
-                + rsp.getValues().get("facet_counts"),
-            facetQueries
-                .get(
-                    field
-                        + ":"
-                        + facetIntervals
-                            .getName(i)
-                            .replace(",", " TO ")
-                            .replace('(', '{')
-                            .replace(')', '}'))
-                .toString(),
-            facetIntervals.getVal(i).toString());
-      }
+      facetIntervals.forEach(
+          (name, val) -> {
+            assertEquals(
+                "Interval did not match: "
+                    + field
+                    + ": "
+                    + name
+                    + "\nResponse: "
+                    + rsp.getValues().get("facet_counts"),
+                facetQueries
+                    .get(
+                        field + ":" + name.replace(",", " TO ").replace('(', '{').replace(')', '}'))
+                    .toString(),
+                val.toString());
+          });
     } finally {
       req.close();
     }
   }
 
   private int getCountDistinctIntervals(NamedList<Object> facetIntervals) {
-    Set<String> distinctIntervals = new HashSet<>(facetIntervals.size());
-    for (int i = 0; i < facetIntervals.size(); i++) {
-      distinctIntervals.add(facetIntervals.getName(i));
-    }
-    return distinctIntervals.size();
+    return facetIntervals.asMap(0).size();
   }
 
   /**

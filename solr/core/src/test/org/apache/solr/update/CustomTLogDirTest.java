@@ -53,7 +53,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
-    Path ulogDir = LuceneTestCase.createTempDir();
+    Path ulogDir = FilterPath.unwrap(LuceneTestCase.createTempDir());
     // absolute path spec that falls outside of the instance and data dirs for the
     // associated core, is assumed to already by namespaced by purpose (tlog). We
     // expect it to be further namespaced by core name.

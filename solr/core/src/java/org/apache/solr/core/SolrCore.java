@@ -79,7 +79,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -3069,7 +3069,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         if (rawWriter != null) {
           return rawWriter.getContentType();
         } else {
-          return BinaryResponseParser.BINARY_CONTENT_TYPE;
+          return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
         }
       }
     };
@@ -3082,7 +3082,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public interface RawWriter {
     default String getContentType() {
-      return BinaryResponseParser.BINARY_CONTENT_TYPE;
+      return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     }
 
     void write(OutputStream os) throws IOException;

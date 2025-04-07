@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -376,10 +377,11 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(confsetname, collectionProps.getStr("configName"));
 
     // test down config
-    Path configSetDir =
-        tmpDir.resolve(
-            "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
-    assertFalse(Files.exists(configSetDir));
+    Path destDir =
+        FilterPath.unwrap(
+            tmpDir.resolve(
+                "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime()));
+    assertFalse(Files.exists(destDir));
 
     args =
         new String[] {
@@ -387,15 +389,14 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "--conf-name",
           confsetname,
           "--conf-dir",
-          configSetDir.toString(),
+          destDir.toString(),
           "-z",
           zkServer.getZkAddress()
         };
 
     assertEquals(0, CLITestHelper.runTool(args, ConfigSetDownloadTool.class));
 
-    Path confSetDir = configSetDir.resolve("conf");
-    try (Stream<Path> filesStream = Files.list(confSetDir)) {
+    try (Stream<Path> filesStream = Files.list(destDir.resolve("conf"))) {
       List<Path> files = filesStream.toList();
       zkFiles =
           zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
@@ -406,45 +407,35 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
       assertEquals("Comparing downloaded files to what is in ZK", files.size(), zkFiles.size());
     }
 
-    Path sourceConfDir = ExternalPaths.TECHPRODUCTS_CONFIGSET;
-    // filter out all directories starting with . (e.g. .svn)
-    try (Stream<Path> stream = Files.walk(sourceConfDir)) {
-      List<Path> files =
-          stream
-              .filter(Files::isRegularFile)
-              .filter(path -> path.getFileName().startsWith("."))
-              .toList();
-      files.forEach(
-          (sourceFile) -> {
-            int indexOfRelativePath =
-                sourceFile
-                    .toString()
-                    .lastIndexOf(
-                        "sample_techproducts_configs"
-                            + sourceFile.getFileSystem().getSeparator()
-                            + "conf");
-            String relativePathofFile = sourceFile.toString().substring(indexOfRelativePath + 33);
-            Path downloadedFile = confDir.resolve(relativePathofFile);
-            if (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN
-                .matcher(relativePathofFile)
-                .matches()) {
-              assertFalse(
-                  sourceFile + " exists in ZK, downloaded:" + downloadedFile,
-                  Files.exists(downloadedFile));
-            } else {
-              assertTrue(
-                  downloadedFile + " does not exist source:" + sourceFile,
-                  Files.exists(downloadedFile));
-              try {
-                assertEquals(
-                    relativePathofFile + " content changed",
-                    -1,
-                    Files.mismatch(sourceFile, downloadedFile));
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            }
-          });
+    // compare the original source with the downloaded destination
+    try (Stream<Path> stream = Files.walk(ExternalPaths.TECHPRODUCTS_CONFIGSET)) {
+      stream
+          .filter(Files::isRegularFile)
+          .forEach(
+              (sourceFile) -> {
+                Path sourceFileRelative =
+                    ExternalPaths.TECHPRODUCTS_CONFIGSET.relativize(sourceFile);
+                Path downloadedFile = destDir.resolve("conf").resolve(sourceFileRelative);
+                if (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN
+                    .matcher(sourceFileRelative.toString())
+                    .matches()) {
+                  assertFalse(
+                      sourceFile + " exists in ZK, downloaded:" + downloadedFile,
+                      Files.exists(downloadedFile));
+                } else {
+                  assertTrue(
+                      downloadedFile + " does not exist source:" + sourceFile,
+                      Files.exists(downloadedFile));
+                  try {
+                    assertEquals(
+                        sourceFileRelative + " content changed",
+                        -1,
+                        Files.mismatch(sourceFile, downloadedFile));
+                  } catch (IOException e) {
+                    throw new RuntimeException(e);
+                  }
+                }
+              });
     }
 
     // test reset zk
