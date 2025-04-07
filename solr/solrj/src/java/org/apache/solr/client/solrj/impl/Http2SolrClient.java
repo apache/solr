@@ -253,10 +253,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
 
-    if (builder.destinationIdleTimeout != null) {
-      httpClient.setDestinationIdleTimeout(builder.destinationIdleTimeout);
-    }
-
     setupProxy(builder, httpClient);
 
     try {
@@ -917,8 +913,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     private SolrRequest.SolrClientContext context = SolrRequest.SolrClientContext.CLIENT;
 
-    private Long destinationIdleTimeout;
-
     public Builder() {
       super();
     }
@@ -969,11 +963,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
       this.listenerFactory = listenerFactory;
-      return this;
-    }
-
-    public Http2SolrClient.Builder withDestinationIdleTimeout(Long idleTimeout) {
-      this.destinationIdleTimeout = idleTimeout;
       return this;
     }
 
