@@ -29,11 +29,13 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -408,13 +410,13 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.REBALANCELEADERS.toString());
     params.set("collection", COLLECTION_NAME);
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    QueryResponse resp = request.process(cluster.getSolrClient());
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
+    SimpleSolrResponse resp = request.process(cluster.getSolrClient());
     assertTrue(
         "All leaders should have been verified",
         resp.getResponse().get("Summary").toString().contains("Success"));
-    assertEquals("Call to rebalanceLeaders failed ", 0, resp.getStatus());
+    assertEquals("Call to rebalanceLeaders failed ", "0", resp.getResponse().get("status"));
   }
 
   private void rebalancePropUsingSolrJAPI(String prop) throws IOException, SolrServerException {
@@ -445,10 +447,11 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     if (prop.toLowerCase(Locale.ROOT).contains("preferredleader") == false) {
       params.set("shardUnique", true);
     }
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    QueryResponse resp = request.process(cluster.getSolrClient());
-    assertEquals("Call to rebalanceLeaders failed ", 0, resp.getStatus());
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
+    request.setRequiresCollection(false);
+    SimpleSolrResponse resp = request.process(cluster.getSolrClient());
+    assertEquals("Call to rebalanceLeaders failed ", "0", resp.getResponse().get("status"));
   }
 
   // This important. I've (Erick Erickson) run across a situation where the "standard request"
@@ -479,8 +482,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       params.set("shardUnique", "true");
     }
 
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
+    request.setRequiresCollection(false);
     cluster.getSolrClient().request(request);
     String propLC = prop.toLowerCase(Locale.ROOT);
     waitForState(
