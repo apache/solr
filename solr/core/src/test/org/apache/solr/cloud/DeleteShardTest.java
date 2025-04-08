@@ -23,7 +23,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.State;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.FileUtils;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,6 +56,8 @@ public class DeleteShardTest extends SolrCloudTestCase {
     DocCollection state = getCollectionState(collection);
     assertEquals(State.ACTIVE, state.getSlice("shard1").getState());
     assertEquals(State.ACTIVE, state.getSlice("shard2").getState());
+    assertShardMetadata(collection, "shard1", true);
+    assertShardMetadata(collection, "shard2", true);
 
     // Can't delete an ACTIVE shard
     expectThrows(
@@ -67,11 +71,13 @@ public class DeleteShardTest extends SolrCloudTestCase {
     // Can delete an INACTIVE shard
     CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient());
     waitForState("Expected 'shard1' to be removed", collection, c -> c.getSlice("shard1") == null);
+    assertShardMetadata(collection, "shard1", false);
 
     // Can delete a shard under construction
     setSliceState(collection, "shard2", Slice.State.CONSTRUCTION);
     CollectionAdminRequest.deleteShard(collection, "shard2").process(cluster.getSolrClient());
     waitForState("Expected 'shard2' to be removed", collection, c -> c.getSlice("shard2") == null);
+    assertShardMetadata(collection, "shard2", false);
   }
 
   @Test
@@ -124,5 +130,20 @@ public class DeleteShardTest extends SolrCloudTestCase {
         "Expected shard " + shardId + " to be in state " + state,
         collectionName,
         c -> c.getSlice(shardId).getState() == state);
+  }
+
+  /** Check whether shard metadata exist in Zookeeper. */
+  private void assertShardMetadata(String collection, String sliceId, boolean shouldExist)
+      throws KeeperException, InterruptedException {
+
+    String leaderElectPath =
+        ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/" + sliceId;
+    assertEquals(shouldExist, cluster.getZkClient().exists(leaderElectPath, true));
+
+    String leaderPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + sliceId;
+    assertEquals(shouldExist, cluster.getZkClient().exists(leaderPath, true));
+
+    String termPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + sliceId;
+    assertEquals(shouldExist, cluster.getZkClient().exists(termPath, true));
   }
 }
