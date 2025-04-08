@@ -65,6 +65,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
@@ -217,6 +218,10 @@ public class SearchHandler extends RequestHandlerBase
       shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
     } else {
       shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
+      if (shardHandlerFactory instanceof SolrMetricProducer) {
+        SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
+        metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
+      }
       core.addCloseHook(
           new CloseHook() {
             @Override

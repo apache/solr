@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -163,6 +164,7 @@ public class HttpShardHandler extends ShardHandler {
     }
 
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
+    ShardRequestCallback callback = onRequestSubmit(future, sreq, urls, params);
     future.whenComplete(
         (rsp, throwable) -> {
           if (rsp != null) {
@@ -170,6 +172,9 @@ public class HttpShardHandler extends ShardHandler {
             srsp.setShardAddress(rsp.getServer());
             ssr.elapsedTime =
                 TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+            if (callback != null) {
+              callback.onResponse(rsp, ssr.elapsedTime);
+            }
             responses.add(srsp);
           } else if (throwable != null) {
             ssr.elapsedTime =
@@ -178,11 +183,30 @@ public class HttpShardHandler extends ShardHandler {
             if (throwable instanceof SolrException) {
               srsp.setResponseCode(((SolrException) throwable).code());
             }
+            if (callback != null) {
+              callback.onException(throwable, ssr.elapsedTime);
+            }
             responses.add(srsp);
           }
         });
 
     responseFutureMap.put(srsp, future);
+  }
+
+  /** Subclasses should override this method to track ShardRequest */
+  protected ShardRequestCallback onRequestSubmit(
+      Future<LBSolrClient.Rsp> future,
+      ShardRequest shardRequest,
+      List<String> shardUrls,
+      ModifiableSolrParams params) {
+    // by default no callback
+    return null;
+  }
+
+  protected interface ShardRequestCallback {
+    void onResponse(LBSolrClient.Rsp response, long elapsedTime);
+
+    void onException(Throwable exception, long elapsedTime);
   }
 
   /** Subclasses could modify the request based on the shard */
