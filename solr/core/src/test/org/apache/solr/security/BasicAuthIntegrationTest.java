@@ -149,7 +149,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         genericReq = genericSolrRequest;
       }
 
-      // avoid bad connection races due to shutdownn
+      // avoid bad connection races due to shutdown
       final var httpClient = ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
       httpClient.getConnectionManager().closeExpiredConnections();
       httpClient.getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
