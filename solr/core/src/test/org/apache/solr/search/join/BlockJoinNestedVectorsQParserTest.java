@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search.join;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
@@ -24,15 +27,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-
 public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   private static final List<Float> FLOAT_QUERY_VECTOR = Arrays.asList(1.0f, 1.0f, 1.0f, 1.0f);
   private static final List<Integer> BYTE_QUERY_VECTOR = Arrays.asList(1, 1, 1, 1);
-  
+
   @ClassRule
   public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
@@ -41,7 +39,6 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema15.xml");
     prepareIndex();
   }
-
 
   public static void prepareIndex() throws Exception {
     List<SolrInputDocument> docsToIndex = prepareDocs();
@@ -52,12 +49,13 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * The documents in the index are 10 parents, with some parent level metadata and 
-   * 30 nested documents (with vectors and children level metadata)
-   * Each parent document has 3 nested documents with vectors.
-   * 
-   * This allows to run knn queries both at parent/children level and using various pre-filters both 
-   * for parent metadata and children.
+   * The documents in the index are 10 parents, with some parent level metadata and 30 nested
+   * documents (with vectors and children level metadata) Each parent document has 3 nested
+   * documents with vectors.
+   *
+   * <p>This allows to run knn queries both at parent/children level and using various pre-filters
+   * both for parent metadata and children.
+   *
    * @return
    */
   private static List<SolrInputDocument> prepareDocs() {
@@ -67,7 +65,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
 
     final String[] klm = new String[] {"k", "l", "m"};
     final String[] abcdef = new String[] {"a", "b", "c", "d", "e", "f"};
-    
+
     List<SolrInputDocument> docs = new ArrayList<>(totalParentDocuments);
     for (int i = 1; i < totalParentDocuments + 1; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -77,27 +75,29 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
       doc.setField("parent_s", abcdef[i % abcdef.length]);
       List<SolrInputDocument> children = new ArrayList<>(perParentChildren);
 
-      //nested vector documents have a distance from the query vector inversely proportional to their id
-      for(int j = 0; j < perParentChildren; j++) {
+      // nested vector documents have a distance from the query vector inversely proportional to
+      // their id
+      for (int j = 0; j < perParentChildren; j++) {
         SolrInputDocument child = new SolrInputDocument();
-        child.setField("id", i+""+j);
+        child.setField("id", i + "" + j);
         child.setField("child_s", klm[i % klm.length]);
         child.setField("vector", outDistanceFloat(FLOAT_QUERY_VECTOR, totalNestedVectors));
         child.setField("vector_byte", outDistanceByte(BYTE_QUERY_VECTOR, totalNestedVectors));
-        totalNestedVectors--; //the higher the id of the nested document, lower the distance with the query vector
+        totalNestedVectors--; // the higher the id of the nested document, lower the distance with
+        // the query vector
         children.add(child);
       }
-      doc.setField("vectors",children);
+      doc.setField("vectors", children);
       docs.add(doc);
     }
-    
+
     return docs;
   }
 
   /**
-   * Generate a resulting float vector with a distance from the original vector that is proportional to the value in input
-   * (higher the value, higher the distance from the original vector)
-   * 
+   * Generate a resulting float vector with a distance from the original vector that is proportional
+   * to the value in input (higher the value, higher the distance from the original vector)
+   *
    * @param vector
    * @param value
    * @return
@@ -115,14 +115,14 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Generate a resulting byte vector with a distance from the original vector that is proportional to the value in input
-   * (higher the value, higher the distance from the original vector)
+   * Generate a resulting byte vector with a distance from the original vector that is proportional
+   * to the value in input (higher the value, higher the distance from the original vector)
    *
    * @param vector
    * @param value
    * @return
    */
-  private static List<Integer> outDistanceByte(List<Integer> vector, int value){
+  private static List<Integer> outDistanceByte(List<Integer> vector, int value) {
     List<Integer> result = new ArrayList<>(vector.size());
     for (int i = 0; i < vector.size(); i++) {
       if (i == 0) {
@@ -137,124 +137,124 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   @Test
   public void childrenRetrievalFloat_filteringByParentMetadata_shouldReturnKnnChildren() {
     assertQ(
-            req(
-                    "fq", "{!child of=$allParents filters=$parent.fq}",
-                    "q", "{!knn f=vector topK=5}"+FLOAT_QUERY_VECTOR,
-                    "fl", "id",
-                    "parent.fq", "parent_s:(a c)",
-                    "allParents", "parent_s:[* TO *]"),
-            "//*[@numFound='5']",
-            "//result/doc[1]/str[@name='id'][.='82']",
-            "//result/doc[2]/str[@name='id'][.='81']",
-            "//result/doc[3]/str[@name='id'][.='80']",
-            "//result/doc[4]/str[@name='id'][.='62']",
-            "//result/doc[5]/str[@name='id'][.='61']");
+        req(
+            "fq", "{!child of=$allParents filters=$parent.fq}",
+            "q", "{!knn f=vector topK=5}" + FLOAT_QUERY_VECTOR,
+            "fl", "id",
+            "parent.fq", "parent_s:(a c)",
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='5']",
+        "//result/doc[1]/str[@name='id'][.='82']",
+        "//result/doc[2]/str[@name='id'][.='81']",
+        "//result/doc[3]/str[@name='id'][.='80']",
+        "//result/doc[4]/str[@name='id'][.='62']",
+        "//result/doc[5]/str[@name='id'][.='61']");
   }
 
   @Test
   public void childrenRetrievalByte_filteringByParentMetadata_shouldReturnKnnChildren() {
     assertQ(
-            req(
-                    "fq", "{!child of=$allParents filters=$parent.fq}",
-                    "q", "{!knn f=vector_byte topK=5}"+BYTE_QUERY_VECTOR,
-                    "fl", "id",
-                    "parent.fq", "parent_s:(a c)",
-                    "allParents", "parent_s:[* TO *]"),
-            "//*[@numFound='5']",
-            "//result/doc[1]/str[@name='id'][.='82']",
-            "//result/doc[2]/str[@name='id'][.='81']",
-            "//result/doc[3]/str[@name='id'][.='80']",
-            "//result/doc[4]/str[@name='id'][.='62']",
-            "//result/doc[5]/str[@name='id'][.='61']");
+        req(
+            "fq", "{!child of=$allParents filters=$parent.fq}",
+            "q", "{!knn f=vector_byte topK=5}" + BYTE_QUERY_VECTOR,
+            "fl", "id",
+            "parent.fq", "parent_s:(a c)",
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='5']",
+        "//result/doc[1]/str[@name='id'][.='82']",
+        "//result/doc[2]/str[@name='id'][.='81']",
+        "//result/doc[3]/str[@name='id'][.='80']",
+        "//result/doc[4]/str[@name='id'][.='62']",
+        "//result/doc[5]/str[@name='id'][.='61']");
   }
 
   @Test
   public void parentRetrievalFloat_knnChildren_shouldReturnKnnParents() {
     assertQ(
-            req(
-                   // "fq", "parent_s:(a c)",
-                    "q", "{!parent which=$allParents score=max v=$children.q}",
-                    "fl", "id,score",
-                    "children.q", "{!knn f=vector topK=3}"+FLOAT_QUERY_VECTOR,
-                    "allParents", "parent_s:[* TO *]"),
-            "//*[@numFound='3']",
-            "//result/doc[1]/str[@name='id'][.='10']",
-            "//result/doc[2]/str[@name='id'][.='9']",
-            "//result/doc[3]/str[@name='id'][.='8']");
+        req(
+            // "fq", "parent_s:(a c)",
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='10']",
+        "//result/doc[2]/str[@name='id'][.='9']",
+        "//result/doc[3]/str[@name='id'][.='8']");
   }
 
   @Test
   public void parentRetrievalFloat_knnChildrenWithParentFilter_shouldReturnKnnParents() {
     assertQ(
-            req(
-                    "fq", "parent_s:(a c)",
-                    "q", "{!parent which=$allParents score=max v=$children.q}",
-                    "fl", "id,score",
-                    "children.q", "{!knn f=vector topK=3}"+FLOAT_QUERY_VECTOR,
-                    "allParents", "parent_s:[* TO *]"),
-            "//*[@numFound='3']",
-            "//result/doc[1]/str[@name='id'][.='8']",
-            "//result/doc[2]/str[@name='id'][.='6']",
-            "//result/doc[3]/str[@name='id'][.='2']");
+        req(
+            "fq", "parent_s:(a c)",
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[3]/str[@name='id'][.='2']");
   }
 
   @Test
-  public void parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
+  public void
+      parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
     assertQ(
-            req(
-                    "fq", "parent_s:(a c)",
-                    "q", "{!parent which=$allParents score=max v=$children.q}",
-                    "fl", "id,score",
-                    "children.q", "{!knn f=vector topK=3 preFilter=child_s:m}"+FLOAT_QUERY_VECTOR,
-                    "allParents", "parent_s:[* TO *]"),
-            "//*[@numFound='2']",
-            "//result/doc[1]/str[@name='id'][.='8']",
-            "//result/doc[2]/str[@name='id'][.='2']");
+        req(
+            "fq", "parent_s:(a c)",
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q", "{!knn f=vector topK=3 preFilter=child_s:m}" + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='2']");
   }
 
   @Test
   public void parentRetrievalByte_knnChildren_shouldReturnKnnParents() {
     assertQ(
-            req(
-                    // "fq", "parent_s:(a c)",
-                    "q", "{!parent which=$allParents score=max v=$children.q}",
-                    "fl", "id,score",
-                    "children.q", "{!knn f=vector_byte topK=3}"+BYTE_QUERY_VECTOR,
-                    "allParents", "parent_s:[* TO *]"),
-            "//*[@numFound='3']",
-            "//result/doc[1]/str[@name='id'][.='10']",
-            "//result/doc[2]/str[@name='id'][.='9']",
-            "//result/doc[3]/str[@name='id'][.='8']");
+        req(
+            // "fq", "parent_s:(a c)",
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='10']",
+        "//result/doc[2]/str[@name='id'][.='9']",
+        "//result/doc[3]/str[@name='id'][.='8']");
   }
 
   @Test
   public void parentRetrievalByte_knnChildrenWithParentFilter_shouldReturnKnnParents() {
     assertQ(
-            req(
-                    "fq", "parent_s:(a c)",
-                    "q", "{!parent which=$allParents score=max v=$children.q}",
-                    "fl", "id,score",
-                    "children.q", "{!knn f=vector_byte topK=3}"+BYTE_QUERY_VECTOR,
-                    "allParents", "parent_s:[* TO *]"),
-            "//*[@numFound='3']",
-            "//result/doc[1]/str[@name='id'][.='8']",
-            "//result/doc[2]/str[@name='id'][.='6']",
-            "//result/doc[3]/str[@name='id'][.='2']");
+        req(
+            "fq", "parent_s:(a c)",
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[3]/str[@name='id'][.='2']");
   }
 
   @Test
-  public void parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
+  public void
+      parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
     assertQ(
-            req(
-                    "fq", "parent_s:(a c)",
-                    "q", "{!parent which=$allParents score=max v=$children.q}",
-                    "fl", "id,score",
-                    "children.q", "{!knn f=vector_byte topK=3 preFilter=child_s:m}"+BYTE_QUERY_VECTOR,
-                    "allParents", "parent_s:[* TO *]"),
-            "//*[@numFound='2']",
-            "//result/doc[1]/str[@name='id'][.='8']",
-            "//result/doc[2]/str[@name='id'][.='2']");
+        req(
+            "fq", "parent_s:(a c)",
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q", "{!knn f=vector_byte topK=3 preFilter=child_s:m}" + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='2']");
   }
-  
-  
 }
