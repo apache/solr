@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -416,7 +417,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     assertTrue(
         "All leaders should have been verified",
         resp.getResponse().get("Summary").toString().contains("Success"));
-    assertEquals("Call to rebalanceLeaders failed ", "0", resp.getResponse().get("status"));
+    NamedList<?> header = (NamedList) resp.getResponse().get("responseHeader");
+    assertEquals("Call to rebalanceLeaders failed ", 0, header.get("status"));
   }
 
   private void rebalancePropUsingSolrJAPI(String prop) throws IOException, SolrServerException {
@@ -451,7 +453,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
     request.setRequiresCollection(false);
     SimpleSolrResponse resp = request.process(cluster.getSolrClient());
-    assertEquals("Call to rebalanceLeaders failed ", "0", resp.getResponse().get("status"));
+    NamedList<?> header = (NamedList) resp.getResponse().get("responseHeader");
+    assertEquals("Call to rebalanceLeaders failed ", 0, header.get("status"));
   }
 
   // This important. I've (Erick Erickson) run across a situation where the "standard request"
