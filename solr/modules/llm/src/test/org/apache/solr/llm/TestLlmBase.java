@@ -60,7 +60,6 @@ public class TestLlmBase extends RestTestBase {
   protected static void initFolders(boolean isPersistent) throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
-    tmpConfDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
 
     final Path modelStore = tmpConfDir.resolve(MODEL_FILE_NAME);

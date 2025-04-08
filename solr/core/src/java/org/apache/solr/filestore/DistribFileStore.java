@@ -284,8 +284,8 @@ public class DistribFileStore implements FileStore {
         }
 
         @Override
-        public Date getTimeStamp() {
-          return new Date(realPath().toFile().lastModified());
+        public Date getTimeStamp() throws IOException {
+          return new Date(Files.getLastModifiedTime(realPath()).toMillis());
         }
 
         @Override
@@ -294,8 +294,8 @@ public class DistribFileStore implements FileStore {
         }
 
         @Override
-        public long size() {
-          return realPath().toFile().length();
+        public long size() throws IOException {
+          return Files.size(realPath());
         }
 
         @Override

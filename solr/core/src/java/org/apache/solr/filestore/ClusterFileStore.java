@@ -173,7 +173,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   @Override
   @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
-  public FileStoreDirectoryListingResponse getMetadata(String path) {
+  public FileStoreDirectoryListingResponse getMetadata(String path) throws IOException {
     if (path == null) {
       path = "";
     }
@@ -208,7 +208,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   @SuppressWarnings("fallthrough")
   public static FileStoreDirectoryListingResponse getMetadata(
-      FileStore.FileType type, String path, FileStore fileStore) {
+      FileStore.FileType type, String path, FileStore fileStore) throws IOException {
     final var dirListingResponse = new FileStoreDirectoryListingResponse();
     if (path == null) {
       path = "";
@@ -231,7 +231,14 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       case DIRECTORY:
         final var directoryContents =
             fileStore.list(path, null).stream()
-                .map(details -> convertToResponse(details))
+                .map(
+                    details -> {
+                      try {
+                        return convertToResponse(details);
+                      } catch (IOException e) {
+                        throw new RuntimeException(e);
+                      }
+                    })
                 .collect(Collectors.toList());
         dirListingResponse.files = Collections.singletonMap(path, directoryContents);
         break;
@@ -242,7 +249,8 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   // TODO Modify the filestore implementation itself to return this object, so conversion isn't
   // needed.
-  private static FileStoreEntryMetadata convertToResponse(FileStore.FileDetails details) {
+  private static FileStoreEntryMetadata convertToResponse(FileStore.FileDetails details)
+      throws IOException {
     final var entryMetadata = new FileStoreEntryMetadata();
 
     entryMetadata.name = details.getSimpleName();

@@ -105,7 +105,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
     Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
-    tempDir.toFile().deleteOnExit();
 
     Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
     new KeystoreGenerator()
