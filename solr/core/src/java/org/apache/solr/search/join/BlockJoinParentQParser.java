@@ -87,63 +87,70 @@ public class BlockJoinParentQParser extends FiltersQParser {
     return new BitSetProducerQuery(getBitSetProducer(parseParentFilter()));
   }
 
-  protected Query createQuery(final Query allParents, BooleanQuery query, String scoreMode)
+  protected Query createQuery(final Query allParents, BooleanQuery childrenQuery, String scoreMode)
           throws SyntaxError {
-    List<BooleanClause> clauses = query.clauses();
-    if (clauses.size() == 1 && clauses.get(0).getQuery().getClass().equals(KnnByteVectorQuery.class)) {
+    List<BooleanClause> childrenClauses = childrenQuery.clauses();
+    if (isByteKnnQuery(childrenClauses)) {
       BitSetProducer allParentsBitSet = getBitSetProducer(allParents);
-      BooleanQuery parentsFilter = getAdditionalParentFilters();
+      BooleanQuery parentsFilter = getParentsFilter();
 
-      KnnByteVectorQuery knnChildrenQuery = (KnnByteVectorQuery) clauses.get(0).getQuery();
+      KnnByteVectorQuery knnChildrenQuery = (KnnByteVectorQuery) childrenClauses.get(0).getQuery();
       String vectorField = knnChildrenQuery.getField();
       byte[] queryVector = knnChildrenQuery.getTargetCopy();
       int topK = knnChildrenQuery.getK();
 
-      Query acceptedChildren = getAcceptedChildren(knnChildrenQuery.getFilter(), parentsFilter, allParentsBitSet);
+      Query acceptedChildren = getChildrenFilter(knnChildrenQuery.getFilter(), parentsFilter, allParentsBitSet);
 
       Query knnChildren = new DiversifyingChildrenByteKnnVectorQuery(vectorField, queryVector, acceptedChildren, topK, allParentsBitSet);
       return new ToParentBlockJoinQuery(knnChildren, allParentsBitSet, ScoreModeParser.parse(scoreMode));
-    } else if (clauses.size() == 1 && clauses.get(0).getQuery().getClass().equals(KnnFloatVectorQuery.class)) {
+    } else if (isFloatKnnQuery(childrenClauses)) {
       BitSetProducer allParentsBitSet = getBitSetProducer(allParents);
-      BooleanQuery parentsFilter = getAdditionalParentFilters();
+      BooleanQuery parentsFilter = getParentsFilter();
       
-      KnnFloatVectorQuery knnChildrenQuery = (KnnFloatVectorQuery) clauses.get(0).getQuery();
+      KnnFloatVectorQuery knnChildrenQuery = (KnnFloatVectorQuery) childrenClauses.get(0).getQuery();
       String vectorField = knnChildrenQuery.getField();
       float[] queryVector = knnChildrenQuery.getTargetCopy();
       int topK = knnChildrenQuery.getK();
 
-      Query acceptedChildren = getAcceptedChildren(knnChildrenQuery.getFilter(), parentsFilter, allParentsBitSet);
+      Query childrenFilter = getChildrenFilter(knnChildrenQuery.getFilter(), parentsFilter, allParentsBitSet);
 
-      Query knnChildren = new DiversifyingChildrenFloatKnnVectorQuery(vectorField, queryVector, acceptedChildren, topK, allParentsBitSet);
+      Query knnChildren = new DiversifyingChildrenFloatKnnVectorQuery(vectorField, queryVector, childrenFilter, topK, allParentsBitSet);
       return new ToParentBlockJoinQuery(knnChildren, allParentsBitSet, ScoreModeParser.parse(scoreMode));
     } else {
       return new AllParentsAware(
-              query, getBitSetProducer(allParents), ScoreModeParser.parse(scoreMode), allParents);
+              childrenQuery, getBitSetProducer(allParents), ScoreModeParser.parse(scoreMode), allParents);
     }
   }
 
-  private Query getAcceptedChildren(Query knnChildrenQuery, BooleanQuery parentsFilter, BitSetProducer allParentsBitSet) {
-    Query childrenFilter = knnChildrenQuery;
-    Query acceptedChildren = childrenFilter;
+  private boolean isFloatKnnQuery(List<BooleanClause> childrenClauses) {
+    return childrenClauses.size() == 1 && childrenClauses.get(0).getQuery().getClass().equals(KnnFloatVectorQuery.class);
+  }
+
+  private boolean isByteKnnQuery(List<BooleanClause> childrenClauses) {
+    return childrenClauses.size() == 1 && childrenClauses.get(0).getQuery().getClass().equals(KnnByteVectorQuery.class);
+  }
+
+  private Query getChildrenFilter(Query childrenKnnPreFilter, BooleanQuery parentsFilter, BitSetProducer allParentsBitSet) {
+    Query childrenFilter = childrenKnnPreFilter;
     
     if (parentsFilter.clauses().size() >0) {
-      Query acceptedChildrenBasedOnParentsFilter = new ToChildBlockJoinQuery(parentsFilter, allParentsBitSet);
+      Query acceptedChildrenBasedOnParentsFilter = new ToChildBlockJoinQuery(parentsFilter, allParentsBitSet); //no scoring happens here
       BooleanQuery.Builder acceptedChildrenBuilder = createBuilder();
       if (childrenFilter != null) {
-        acceptedChildrenBuilder.add(childrenFilter, BooleanClause.Occur.MUST);
+        acceptedChildrenBuilder.add(childrenFilter, BooleanClause.Occur.FILTER);
       }
-      acceptedChildrenBuilder.add(acceptedChildrenBasedOnParentsFilter, BooleanClause.Occur.MUST);
+      acceptedChildrenBuilder.add(acceptedChildrenBasedOnParentsFilter, BooleanClause.Occur.FILTER);
 
-      acceptedChildren = acceptedChildrenBuilder.build();
+      childrenFilter = acceptedChildrenBuilder.build();
     }
-    return acceptedChildren;
+    return childrenFilter;
   }
 
-  private BooleanQuery getAdditionalParentFilters() throws SyntaxError {
+  private BooleanQuery getParentsFilter() throws SyntaxError {
     List<Query> parentFilterQueries = QueryUtils.parseFilterQueries(req);
     BooleanQuery.Builder acceptedParentsBuilder = createBuilder();
     for (Query filter:parentFilterQueries) {
-      acceptedParentsBuilder.add(filter, BooleanClause.Occur.MUST);
+      acceptedParentsBuilder.add(filter, BooleanClause.Occur.FILTER);
     }
     BooleanQuery acceptedParents = acceptedParentsBuilder.build();
     return acceptedParents;
