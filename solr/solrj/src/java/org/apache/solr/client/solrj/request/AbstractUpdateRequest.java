@@ -22,8 +22,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 
-public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse>
-    implements IsUpdateRequest {
+public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse> {
   protected ModifiableSolrParams params = new ModifiableSolrParams(); // maybe make final; no setter
   protected int commitWithin = -1;
 
