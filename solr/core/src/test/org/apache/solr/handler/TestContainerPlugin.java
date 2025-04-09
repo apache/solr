@@ -77,7 +77,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   /**
    * A package listener that will count how many times it has been triggered. Useful to wait for
-   * changes accross multiple cores.
+   * changes across multiple cores.
    *
    * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
    * block until <code>num</code> cores have been notified.
