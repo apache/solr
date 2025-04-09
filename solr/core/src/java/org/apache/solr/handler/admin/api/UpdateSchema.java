@@ -73,6 +73,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
 
     // Format operation as a 'SchemaChangeOperation' so it can be processed by SchemaManager
     final var deleteFieldOp = new DeleteFieldOperation();
+    deleteFieldOp.operationType = "delete-field";
     deleteFieldOp.name = fieldName;
 
     runWithSchemaManager(List.of(deleteFieldOp), response);
@@ -105,6 +106,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
 
     final var deleteDynamicFieldOp = new DeleteDynamicFieldOperation();
     deleteDynamicFieldOp.name = dynamicFieldName;
+    deleteDynamicFieldOp.operationType = "delete-dynamic-field";
     runWithSchemaManager(List.of(deleteDynamicFieldOp), response);
 
     return response;
@@ -134,6 +136,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
 
     final var deleteFieldTypeOp = new DeleteFieldTypeOperation();
     deleteFieldTypeOp.name = fieldTypeName;
+    deleteFieldTypeOp.operationType = "delete-field-type";
 
     runWithSchemaManager(List.of(deleteFieldTypeOp), response);
 
