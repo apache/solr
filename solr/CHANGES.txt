@@ -21,6 +21,8 @@ New Features
 
 * SOLR-17714: Added a FuzzyQParser to enable all FuzzyQuery customizations. (Houston Putman, Siju Varghese)
 
+* SOLR-17678: ReRank queries can now return the matchScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
+
 Improvements
 ---------------------
 * SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
@@ -42,6 +44,8 @@ Improvements
 
 * SOLR-10998: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt' is unspecified.  JSON is still used as a default when
   neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
+
+* SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
 
 Optimizations
 ---------------------
