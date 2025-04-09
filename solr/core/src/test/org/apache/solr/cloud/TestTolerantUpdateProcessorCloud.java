@@ -705,10 +705,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       Set<ToleratedUpdateError> actualKnownErrs =
           new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
-      for (int i = 0; i < remoteErrMetadata.size(); i++) {
+      for (var entry : remoteErrMetadata) {
         ToleratedUpdateError err =
             ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
-                remoteErrMetadata.getName(i), remoteErrMetadata.getVal(i));
+                entry.getKey(), entry.getValue());
         if (null == err) {
           // some metadata unrelated to this update processor
           continue;
@@ -912,10 +912,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       NamedList<String> remoteErrMetadata = e.getMetadata();
       assertNotNull("no metadata in: " + e, remoteErrMetadata);
       int actualKnownErrsCount = 0;
-      for (int i = 0; i < remoteErrMetadata.size(); i++) {
+      for (var entry : remoteErrMetadata) {
         ToleratedUpdateError err =
             ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
-                remoteErrMetadata.getName(i), remoteErrMetadata.getVal(i));
+                entry.getKey(), entry.getValue());
         if (null == err) {
           // some metadata unrelated to this update processor
           continue;
@@ -1105,10 +1105,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       Set<ToleratedUpdateError> actualKnownErrs =
           new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
-      for (int i = 0; i < remoteErrMetadata.size(); i++) {
+      for (var entry : remoteErrMetadata) {
         ToleratedUpdateError err =
             ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
-                remoteErrMetadata.getName(i), remoteErrMetadata.getVal(i));
+                entry.getKey(), entry.getValue());
         if (null == err) {
           // some metadata unrelated to this update processor
           continue;

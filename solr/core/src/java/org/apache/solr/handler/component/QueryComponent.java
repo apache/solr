@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -1211,7 +1212,7 @@ public class QueryComponent extends SearchComponent {
     List<SchemaField> schemaFields = sortSpec.getSchemaFields();
     SortField[] sortFields = sortSpec.getSort().getSort();
 
-    int marshalledFieldNum = 0;
+    Iterator<Entry<String, List<Object>>> sortFieldValuesIter = sortFieldValues.iterator();
     for (int sortFieldNum = 0; sortFieldNum < sortFields.length; sortFieldNum++) {
       final SortField sortField = sortFields[sortFieldNum];
       final SortField.Type type = sortField.getType();
@@ -1220,11 +1221,12 @@ public class QueryComponent extends SearchComponent {
       if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
 
       final String sortFieldName = sortField.getField();
-      final String valueFieldName = sortFieldValues.getName(marshalledFieldNum);
+      Map.Entry<String, List<Object>> sortFieldValuesEntry = sortFieldValuesIter.next();
+      final String valueFieldName = sortFieldValuesEntry.getKey();
       assert sortFieldName.equals(valueFieldName)
           : "sortFieldValues name key does not match expected SortField.getField";
 
-      List<Object> sortVals = sortFieldValues.getVal(marshalledFieldNum);
+      List<Object> sortVals = sortFieldValuesEntry.getValue();
 
       final SchemaField schemaField = schemaFields.get(sortFieldNum);
       if (null == schemaField) {
@@ -1237,7 +1239,6 @@ public class QueryComponent extends SearchComponent {
         }
         unmarshalledSortValsPerField.add(sortField.getField(), unmarshalledSortVals);
       }
-      marshalledFieldNum++;
     }
     return unmarshalledSortValsPerField;
   }

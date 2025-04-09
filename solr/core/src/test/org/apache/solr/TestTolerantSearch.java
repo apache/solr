@@ -149,9 +149,9 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     NamedList<Object> shardsInfo =
         ((NamedList<Object>) response.getResponse().get(ShardParams.SHARDS_INFO));
     boolean foundError = false;
-    for (int i = 0; i < shardsInfo.size(); i++) {
-      if (shardsInfo.getName(i).contains("collection2")) {
-        assertNotNull(((NamedList<Object>) shardsInfo.getVal(i)).get("error"));
+    for (var infoEntry : shardsInfo) {
+      if (infoEntry.getKey().contains("collection2")) {
+        assertNotNull(((NamedList<Object>) infoEntry.getValue()).get("error"));
         foundError = true;
         break;
       }
@@ -199,9 +199,9 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     NamedList<Object> shardsInfo =
         ((NamedList<Object>) response.getResponse().get(ShardParams.SHARDS_INFO));
     boolean foundError = false;
-    for (int i = 0; i < shardsInfo.size(); i++) {
-      if (shardsInfo.getName(i).contains("collection2")) {
-        assertNotNull(((NamedList<Object>) shardsInfo.getVal(i)).get("error"));
+    for (var infoEntry : shardsInfo) {
+      if (infoEntry.getKey().contains("collection2")) {
+        assertNotNull(((NamedList<Object>) infoEntry.getValue()).get("error"));
         foundError = true;
         break;
       }
