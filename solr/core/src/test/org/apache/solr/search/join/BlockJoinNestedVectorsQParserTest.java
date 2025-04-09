@@ -56,7 +56,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
    * <p>This allows to run knn queries both at parent/children level and using various pre-filters
    * both for parent metadata and children.
    *
-   * @return
+   * @return a list of documents to index
    */
   private static List<SolrInputDocument> prepareDocs() {
     int totalParentDocuments = 10;
@@ -98,9 +98,9 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
    * Generate a resulting float vector with a distance from the original vector that is proportional
    * to the value in input (higher the value, higher the distance from the original vector)
    *
-   * @param vector
-   * @param value
-   * @return
+   * @param vector a numerical vector
+   * @param value a numerical value to be added to the first element of the vector
+   * @return a numerical vector that has a distance from the input vector, proportional to the value
    */
   private static List<Float> outDistanceFloat(List<Float> vector, int value) {
     List<Float> result = new ArrayList<>(vector.size());
@@ -118,9 +118,9 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
    * Generate a resulting byte vector with a distance from the original vector that is proportional
    * to the value in input (higher the value, higher the distance from the original vector)
    *
-   * @param vector
-   * @param value
-   * @return
+   * @param vector a numerical vector
+   * @param value a numerical value to be added to the first element of the vector
+   * @return a numerical vector that has a distance from the input vector, proportional to the value
    */
   private static List<Integer> outDistanceByte(List<Integer> vector, int value) {
     List<Integer> result = new ArrayList<>(vector.size());
