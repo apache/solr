@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -307,7 +306,7 @@ public class NodeConfig {
       log.debug("solr.install.dir property not initialized.");
       return null;
     }
-    return Paths.get(prop);
+    return Path.of(prop);
   }
 
   /**

@@ -17,9 +17,10 @@
 package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -233,15 +234,15 @@ public class TestPullReplica extends SolrCloudTestCase {
    * otherwise returns the <code>tlog</code> subdirectory within {@link SolrCore#getDataDir()}.
    * (NOTE: the last of these is by far the most common default location of the tlog directory).
    */
-  static File getHypotheticalTlogDir(SolrCore core) {
+  static Path getHypotheticalTlogDir(SolrCore core) {
     String ulogDir;
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
     if (ulog != null) {
-      return new File(ulog.getTlogDir());
+      return Path.of(ulog.getTlogDir());
     } else if ((ulogDir = core.getCoreDescriptor().getUlogDir()) != null) {
-      return new File(ulogDir, UpdateLog.TLOG_NAME);
+      return Path.of(ulogDir, UpdateLog.TLOG_NAME);
     } else {
-      return new File(core.getDataDir(), UpdateLog.TLOG_NAME);
+      return Path.of(core.getDataDir(), UpdateLog.TLOG_NAME);
     }
   }
 
@@ -258,11 +259,11 @@ public class TestPullReplica extends SolrCloudTestCase {
         try (SolrCore core =
             cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName())) {
           assertNotNull(core);
-          File tlogDir = getHypotheticalTlogDir(core);
+          Path tlogDir = getHypotheticalTlogDir(core);
           assertFalse(
               "Update log should not exist for replicas of type Passive but file is present: "
                   + tlogDir,
-              tlogDir.exists());
+              Files.exists(tlogDir));
         }
       }
     }

@@ -52,7 +52,7 @@ public class TestBinaryField extends SolrJettyTestBase {
     Files.createDirectories(dataDir);
     Files.createDirectories(confDir);
 
-    Files.copy(Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), homeDir.resolve("solr.xml"));
+    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
 
     String src_dir = TEST_HOME() + "/collection1/conf";
     Files.copy(Path.of(src_dir, "schema-binaryfield.xml"), confDir.resolve("schema.xml"));
@@ -69,7 +69,7 @@ public class TestBinaryField extends SolrJettyTestBase {
       coreProps.store(w, "");
     }
 
-    createAndStartJetty(homeDir.toAbsolutePath().toString());
+    createAndStartJetty(homeDir);
   }
 
   public void testSimple() throws Exception {

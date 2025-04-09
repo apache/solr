@@ -16,9 +16,9 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -105,7 +105,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
         df.remove(pathString, addIfTrue(deleteAfter, pathString, after));
         df.doneWithDirectory(d);
         df.release(d);
-        boolean exists = Path.of(pathString).toFile().exists();
+        boolean exists = Files.exists(Path.of(pathString));
         if (after) {
           assertTrue(
               "Path " + pathString + " should be removed after, but it no longer exists", exists);
@@ -128,9 +128,9 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
             "There are subdirs to wait on, so the parent directory should still exist",
             pathA.toFile().exists()); // parent must still be present
         for (Map.Entry<String, Directory> e : subdirs) {
-          String pathString = e.getKey();
-          boolean exists = new File(pathString).exists();
-          if (deleteAfter.contains(pathString)) {
+          Path path = Path.of(e.getKey());
+          boolean exists = Files.exists(path);
+          if (deleteAfter.contains(path.toString())) {
             assertTrue(exists);
           } else {
             assertFalse(exists);
