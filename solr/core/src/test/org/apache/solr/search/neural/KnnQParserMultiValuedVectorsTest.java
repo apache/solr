@@ -22,9 +22,13 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,80 +38,109 @@ import java.util.List;
 import static org.apache.solr.search.neural.KnnQParser.DEFAULT_TOP_K;
 
 public class KnnQParserMultiValuedVectorsTest extends SolrTestCaseJ4 {
-  String IDField = "id";
-  String vectorField = "vector";
-  String vectorField2 = "vector2";
-  String vectorFieldByteEncoding = "vector_byte_encoding";
+  
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
-  @Before
-  public void prepareIndex() throws Exception {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     /* vectorDimension="4" similarityFunction="cosine" */
     initCore("solrconfig_codec.xml", "schema-densevector.xml");
+    prepareIndex();
+  }
 
-    List<SolrInputDocument> docsToIndex = this.prepareDocs();
+  public static void prepareIndex() throws Exception {
+    List<SolrInputDocument> docsToIndex = prepareDocs();
     for (SolrInputDocument doc : docsToIndex) {
       assertU(adoc(doc));
     }
-
     assertU(commit());
   }
 
-  private List<SolrInputDocument> prepareDocs() {
-    int docsCount = 13;
-    List<SolrInputDocument> docs = new ArrayList<>(docsCount);
-    for (int i = 1; i < docsCount + 1; i++) {
+  /**
+   * The documents in the index are 10 parents, with some parent level metadata and 30 nested
+   * documents (with vectors and children level metadata) Each parent document has 3 nested
+   * documents with vectors.
+   *
+   * <p>This allows to run knn queries both at parent/children level and using various pre-filters
+   * both for parent metadata and children.
+   *
+   * @return a list of documents to index
+   */
+  private static List<SolrInputDocument> prepareDocs() {
+    int totalParentDocuments = 10;
+    int totalNestedVectors = 30;
+    int perParentChildren = totalNestedVectors / totalParentDocuments;
+
+    final String[] klm = new String[] {"k", "l", "m"};
+    final String[] abcdef = new String[] {"a", "b", "c", "d", "e", "f"};
+
+    List<SolrInputDocument> docs = new ArrayList<>(totalParentDocuments);
+    for (int i = 1; i < totalParentDocuments + 1; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField(IDField, i);
+      doc.setField("id", i);
+      doc.setField("parent_b", true);
+
+      doc.setField("parent_s", abcdef[i % abcdef.length]);
+      List<SolrInputDocument> children = new ArrayList<>(perParentChildren);
+
+      // nested vector documents have a distance from the query vector inversely proportional to
+      // their id
+      for (int j = 0; j < perParentChildren; j++) {
+        SolrInputDocument child = new SolrInputDocument();
+        child.setField("id", i + "" + j);
+        child.setField("child_s", klm[i % klm.length]);
+        child.setField("vector", outDistanceFloat(FLOAT_QUERY_VECTOR, totalNestedVectors));
+        child.setField("vector_byte", outDistanceByte(BYTE_QUERY_VECTOR, totalNestedVectors));
+        totalNestedVectors--; // the higher the id of the nested document, lower the distance with
+        // the query vector
+        children.add(child);
+      }
+      doc.setField("vectors", children);
       docs.add(doc);
     }
 
-    docs.get(0)
-        .addField(vectorField, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector1= 1.0
-    docs.get(1)
-        .addField(
-            vectorField, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector1= 0.998
-    docs.get(2)
-        .addField(
-            vectorField,
-            Arrays.asList(7.5f, 15.5f, 17.5f, 22.5f)); // cosine distance vector1= 0.992
-    docs.get(3)
-        .addField(
-            vectorField, Arrays.asList(1.4f, 2.4f, 3.4f, 4.4f)); // cosine distance vector1= 0.999
-    docs.get(4)
-        .addField(vectorField, Arrays.asList(30f, 22f, 35f, 20f)); // cosine distance vector1= 0.862
-    docs.get(5)
-        .addField(vectorField, Arrays.asList(40f, 1f, 1f, 200f)); // cosine distance vector1= 0.756
-    docs.get(6)
-        .addField(vectorField, Arrays.asList(5f, 10f, 20f, 40f)); // cosine distance vector1= 0.970
-    docs.get(7)
-        .addField(
-            vectorField, Arrays.asList(120f, 60f, 30f, 15f)); // cosine distance vector1= 0.515
-    docs.get(8)
-        .addField(
-            vectorField, Arrays.asList(200f, 50f, 100f, 25f)); // cosine distance vector1= 0.554
-    docs.get(9)
-        .addField(
-            vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f)); // cosine distance vector1= 0.997
-    docs.get(10)
-        .addField(vectorField2, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector2= 1
-    docs.get(11)
-        .addField(
-            vectorField2,
-            Arrays.asList(7.5f, 15.5f, 17.5f, 22.5f)); // cosine distance vector2= 0.992
-    docs.get(12)
-        .addField(
-            vectorField2, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector2= 0.998
-
-    docs.get(0).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 3, 4));
-    docs.get(1).addField(vectorFieldByteEncoding, Arrays.asList(2, 2, 1, 4));
-    docs.get(2).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 1, 2));
-    docs.get(3).addField(vectorFieldByteEncoding, Arrays.asList(7, 2, 1, 3));
-    docs.get(4).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
-    docs.get(5).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
-    docs.get(6).addField(vectorFieldByteEncoding, Arrays.asList(18, 2, 4, 4));
-    docs.get(7).addField(vectorFieldByteEncoding, Arrays.asList(8, 3, 2, 4));
-
     return docs;
+  }
+
+  /**
+   * Generate a resulting float vector with a distance from the original vector that is proportional
+   * to the value in input (higher the value, higher the distance from the original vector)
+   *
+   * @param vector a numerical vector
+   * @param value a numerical value to be added to the first element of the vector
+   * @return a numerical vector that has a distance from the input vector, proportional to the value
+   */
+  private static List<Float> outDistanceFloat(List<Float> vector, int value) {
+    List<Float> result = new ArrayList<>(vector.size());
+    for (int i = 0; i < vector.size(); i++) {
+      if (i == 0) {
+        result.add(vector.get(i) + value);
+      } else {
+        result.add(vector.get(i));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Generate a resulting byte vector with a distance from the original vector that is proportional
+   * to the value in input (higher the value, higher the distance from the original vector)
+   *
+   * @param vector a numerical vector
+   * @param value a numerical value to be added to the first element of the vector
+   * @return a numerical vector that has a distance from the input vector, proportional to the value
+   */
+  private static List<Integer> outDistanceByte(List<Integer> vector, int value) {
+    List<Integer> result = new ArrayList<>(vector.size());
+    for (int i = 0; i < vector.size(); i++) {
+      if (i == 0) {
+        result.add(vector.get(i) + value);
+      } else {
+        result.add(vector.get(i));
+      }
+    }
+    return result;
   }
 
   @After
