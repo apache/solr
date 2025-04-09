@@ -28,6 +28,8 @@ public class TopDocsSlice extends DocSlice {
 
   private final TopDocs topDocs;
 
+  private final boolean hasScores;
+
   /**
    * Construct a slice off topDocs
    *
@@ -40,10 +42,12 @@ public class TopDocsSlice extends DocSlice {
       int len,
       TopDocs topDocs,
       long matches,
+      boolean hasScores,
       float maxScore,
       TotalHits.Relation matchesRelation) {
     super(offset, len, null, null, matches, maxScore, matchesRelation);
     this.topDocs = topDocs;
+    this.hasScores = hasScores;
     super.docLength = topDocs.scoreDocs.length;
   }
 
@@ -64,12 +68,13 @@ public class TopDocsSlice extends DocSlice {
     if (this.offset == offset && this.len == realLen) {
       return this;
     }
-    return new TopDocsSlice(offset, realLen, topDocs, matches, maxScore, matchesRelation);
+    return new TopDocsSlice(
+        offset, realLen, topDocs, matches, hasScores, maxScore, matchesRelation);
   }
 
   @Override
   public boolean hasScores() {
-    return topDocs != null;
+    return topDocs != null && hasScores;
   }
 
   @Override
