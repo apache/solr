@@ -80,3 +80,8 @@ teardown() {
   run cat ${SOLR_LOGS_DIR}/solr-${SOLR_PORT}-console.log
   refute_output --partial 'Exception'
 }
+
+@test "deprecated system properties converted to modern properties" {
+  solr start -Denable.packages=true  
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property enable.packages and should upgrade to using solr.enable.packages instead.'  
+}

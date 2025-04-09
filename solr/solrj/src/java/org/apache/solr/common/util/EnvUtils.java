@@ -222,7 +222,7 @@ public class EnvUtils {
                 + deprecatedKey
                 + " and should upgrade to using "
                 + key
-                + "instead.  The property will be removed in future version of Solr.");
+                + " instead.  The deprecated property support will be removed in future version of Solr.");
         setProperty(key, sysProperties.getProperty(deprecatedKey));
       }
     }

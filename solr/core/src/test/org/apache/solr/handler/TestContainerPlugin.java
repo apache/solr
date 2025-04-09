@@ -111,7 +111,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   @Before
   public void setup() throws Exception {
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.enable.packages", "true");
     phaser = new Phaser();
     forceV2 = random().nextBoolean();
 
@@ -142,7 +142,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   @After
   public void teardown() throws Exception {
     shutdownCluster();
-    System.clearProperty("enable.packages");
+    System.clearProperty("solr.enable.packages");
   }
 
   @SuppressWarnings("unchecked")
