@@ -19,6 +19,7 @@ package org.apache.solr.response.transform;
 import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.schema.IndexSchema;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,9 +35,10 @@ public class TestEqualTermsTransformer extends SolrTestCaseJ4 {
   @Before
   public void before() {
     clearIndex();
-    assertU(adoc("id", "1", "name", "John Smith"));
-    assertU(adoc("id", "2", "name", "Alice Jones"));
-    assertU(adoc("id", "3", "name", "Bob Miller"));
+    // Standard test documents
+    assertU(adoc("id", "1", "subject", "John Smith"));
+    assertU(adoc("id", "2", "subject", "Alice Jones"));
+    assertU(adoc("id", "3", "subject", "Bob Miller"));
     assertU(commit());
   }
 
@@ -44,17 +46,18 @@ public class TestEqualTermsTransformer extends SolrTestCaseJ4 {
   public void testBasicTransformation() throws IOException {
     // Test with matching value
     SolrDocument doc = new SolrDocument();
-    doc.addField("name", "John Smith");
+    doc.addField("subject", "John Smith");
 
+    IndexSchema schema = h.getCore().getLatestSchema();
     EqualTermsDocTransformer transformer =
-        new EqualTermsDocTransformer("isJohn", "name", "John Smith");
+        new EqualTermsDocTransformer("isJohn", "subject", "John Smith", schema);
     transformer.transform(doc, 0);
 
     assertEquals(true, doc.getFieldValue("isJohn"));
 
     // Test with non-matching value
     SolrDocument doc2 = new SolrDocument();
-    doc2.addField("name", "Alice Jones");
+    doc2.addField("subject", "Alice Jones");
 
     transformer.transform(doc2, 0);
 
@@ -72,18 +75,41 @@ public class TestEqualTermsTransformer extends SolrTestCaseJ4 {
   public void testQueryTimeTransformation() throws Exception {
     // Test with matching value
     assertJQ(
-        req("q", "*:*", "fl", "id,isJohn:[equalterms field=name value='John Smith']"),
+        req(
+            "q",
+            "*:*",
+            "sort",
+            "id asc",
+            "fl",
+            "id,isJohn:[equalterms field=subject value='John Smith']"),
         "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/isJohn==true",
         "/response/docs/[1]/isJohn==false",
         "/response/docs/[2]/isJohn==false");
 
-    //    // Test with value not present in any documents
-    //    assertJQ(
-    //        req("q", "*:*", "fl", "id,name,isUnknown:equalterms(field=name,value='Unknown
-    // Person')"),
-    //        "/response/docs/[0]/isUnknown==false",
-    //        "/response/docs/[1]/isUnknown==false",
-    //        "/response/docs/[2]/isUnknown==false");
+    // Test with value not present in any documents
+    assertJQ(
+        req(
+            "q",
+            "*:*",
+            "sort",
+            "id asc",
+            "fl",
+            "id,isUnknown:[equalterms field=subject value='Unknown Person']"),
+        "/response/docs/[0]/isUnknown==false",
+        "/response/docs/[1]/isUnknown==false",
+        "/response/docs/[2]/isUnknown==false");
+
+    // Test with case insensitivity (due to analyzer)
+    assertJQ(
+        req(
+            "q",
+            "*:*",
+            "sort",
+            "id asc",
+            "fl",
+            "id,isMatch:[equalterms field=subject value='john   smith']"),
+        "/response/docs/[0]/id=='1'", // John Smith
+        "/response/docs/[0]/isMatch==true");
   }
 }

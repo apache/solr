@@ -16,10 +16,13 @@
  */
 package org.apache.solr.response.transform;
 
+import java.io.IOException;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * Factory for {@link EqualTermsDocTransformer} instances.
@@ -49,7 +52,14 @@ public class EqualTermsTransformerFactory extends TransformerFactory {
       throw new SolrException(
           ErrorCode.BAD_REQUEST, "EqualTermsTransformer requires 'value' parameter");
     }
-
-    return new EqualTermsDocTransformer(field, sourceField, compareValue);
+    
+    IndexSchema schema = req.getSchema();
+    
+    try {
+      return new EqualTermsDocTransformer(field, sourceField, compareValue, schema);
+    } catch (IOException e) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Error creating EqualTermsDocTransformer: " + e.getMessage(), e);
+    }
   }
 }
