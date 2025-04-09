@@ -200,11 +200,6 @@ public class DenseVectorField extends FloatPointField {
   @Override
   public void checkSchemaField(final SchemaField field) throws SolrException {
     super.checkSchemaField(field);
-    if (field.multiValued()) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          getClass().getSimpleName() + " fields can not be multiValued: " + field.getName());
-    }
 
     if (field.hasDocValues()) {
       throw new SolrException(

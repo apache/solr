@@ -75,14 +75,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void fieldDefinition_multiValued_shouldThrowException() throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-multivalued.xml",
-        "DenseVectorField fields can not be multiValued: vector");
-  }
-
-  @Test
   public void fieldTypeDefinition_nullSimilarityDistance_shouldUseDefaultSimilarityEuclidean()
       throws Exception {
     try {

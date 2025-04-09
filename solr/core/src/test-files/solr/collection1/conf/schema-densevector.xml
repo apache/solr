@@ -25,8 +25,15 @@
   <fieldType name="high_dimensional_float_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="FLOAT32"/>
   <fieldType name="high_dimensional_byte_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="BYTE"/>
   <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
+  <fieldType name="_nest_path_" class="solr.NestPathField" />
   
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  
+  <!-- points to the root document of a block of nested documents -->
+  <field name="_root_" type="string" indexed="true" stored="true"/>
+  <!-- for nested documents (relationship tracking) -->
+  <field name="_nest_path_" type="_nest_path_" />
+  
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
   <field name="vector_multivalued" type="knn_vector" indexed="true" stored="true" multiValued="true"/>
   <field name="vector2" type="knn_vector" indexed="true" stored="true"/>
