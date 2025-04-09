@@ -38,6 +38,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.ChildDocTransformerFactory;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.response.transform.RenameFieldTransformer;
@@ -295,7 +296,6 @@ public class SolrReturnFields extends ReturnFields {
           sp.pos = start;
           field = null;
         }
-
         if (field == null) {
           // We didn't find a simple name, so let's see if it's a globbed field name.
           // Globbing only works with field names of the recommended form (roughly like java
@@ -536,6 +536,12 @@ public class SolrReturnFields extends ReturnFields {
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new ScoreAugmenter(disp));
     }
+    /*
+    if("vector_multivalued".equals(field)){
+      ChildDocTransformerFactory childFactory = new ChildDocTransformerFactory();
+      DocTransformer multiValuedTrans = childFactory.create("vector_multivalued", null, null);
+      augmenters.addTransformer(multiValuedTrans);
+    }*/
   }
 
   @Override

@@ -155,7 +155,18 @@ public class KnnQParserMultiValuedVectorsTest extends SolrTestCaseJ4 {
   @Test
   public void topKWithFilter_shouldReturnOnlyTopKResults() {
     assertQ(
-            req(CommonParams.Q, "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR, "fl", "id","fq","_text_:(b OR c)"),
+            req(CommonParams.Q, "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR, "fl", "id,[child childFilter=$allChildren limit=2 fl=id,vector_multivalued]","fq","_text_:(b OR c)","allChildren","_nest_path_:[* TO *]"),
+            "//result[@numFound='4']",
+            "//result/doc[1]/str[@name='id'][.='8']",
+            "//result/doc[2]/str[@name='id'][.='7']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[4]/str[@name='id'][.='1']");
+  }
+
+  @Test
+  public void topKWithFilterAndChildTransformer_shouldReturnOnlyTopKResults() {
+    assertQ(
+            req(CommonParams.Q, "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR, "fl", "id,score,vector_multivalued,[child fl=vector_multivalued]","fq","_text_:(b OR c)","allChildren","_nest_path_:[* TO *]"),
             "//result[@numFound='4']",
             "//result/doc[1]/str[@name='id'][.='8']",
             "//result/doc[2]/str[@name='id'][.='7']",

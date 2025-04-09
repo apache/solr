@@ -21,6 +21,7 @@ import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAUL
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_MAX_CONN;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.ChildDocTransformer;
+import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.join.BlockJoinParentQParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
@@ -430,9 +435,20 @@ public class DenseVectorField extends FloatPointField {
                 SolrException.ErrorCode.SERVER_ERROR,
                 "Unexpected state. Vector Encoding: " + vectorEncoding);
     }
-
-    return new ToParentBlockJoinQuery(
-            knnOnVectorField, allParentsBitSet, ScoreMode.Max);
+    try {
+      //TO DO: if no ChildDocTransformer, then we need to add this one
+      QueryLimits currentLimits = QueryLimits.getCurrentLimits();
+      DocTransformers transformers = (DocTransformers)currentLimits.getRsp().getReturnFields().getTransformer();
+      ChildDocTransformer child = (ChildDocTransformer) transformers.getTransformer(1);
+      child.setChildDocSet(request.getSearcher().getDocSet(knnOnVectorField));
+      
+      return new ToParentBlockJoinQuery(
+              knnOnVectorField, allParentsBitSet, ScoreMode.Max);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    
+    
   }
 
   /**
