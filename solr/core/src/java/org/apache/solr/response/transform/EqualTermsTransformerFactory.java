@@ -17,7 +17,6 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
@@ -52,9 +51,9 @@ public class EqualTermsTransformerFactory extends TransformerFactory {
       throw new SolrException(
           ErrorCode.BAD_REQUEST, "EqualTermsTransformer requires 'value' parameter");
     }
-    
+
     IndexSchema schema = req.getSchema();
-    
+
     try {
       return new EqualTermsDocTransformer(field, sourceField, compareValue, schema);
     } catch (IOException e) {
