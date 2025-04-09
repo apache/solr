@@ -151,4 +151,15 @@ public class KnnQParserMultiValuedVectorsTest extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='7']",
         "//result/doc[5]/str[@name='id'][.='6']");
   }
+
+  @Test
+  public void topKWithFilter_shouldReturnOnlyTopKResults() {
+    assertQ(
+            req(CommonParams.Q, "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR, "fl", "id","fq","_text_:(b OR c)"),
+            "//result[@numFound='4']",
+            "//result/doc[1]/str[@name='id'][.='8']",
+            "//result/doc[2]/str[@name='id'][.='7']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[4]/str[@name='id'][.='1']");
+  }
 }

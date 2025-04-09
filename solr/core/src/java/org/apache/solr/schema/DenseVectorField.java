@@ -49,6 +49,7 @@ import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
 import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
 import org.apache.lucene.search.join.ScoreMode;
+import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
@@ -396,7 +397,7 @@ public class DenseVectorField extends FloatPointField {
 
     DenseVectorParser vectorBuilder =
             getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
-
+    
     BooleanQuery allDocuments =
             new BooleanQuery.Builder()
                     .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
@@ -405,19 +406,24 @@ public class DenseVectorField extends FloatPointField {
                                     new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME),
                                     BooleanClause.Occur.MUST_NOT))
                     .build();
-
-    BitSetProducer acceptedDocuments = BlockJoinParentQParser.getCachedBitSetProducer(request, filterQuery);
+    
     BitSetProducer allParentsBitSet = BlockJoinParentQParser.getCachedBitSetProducer(request, allDocuments);
+    
+    Query acceptedVectorsBasedOnDocumentFilters = null;
+    if(filterQuery != null){
+       acceptedVectorsBasedOnDocumentFilters = new ToChildBlockJoinQuery(filterQuery, allParentsBitSet);
+    }
+    
 
     Query knnOnVectorField;
     switch (vectorEncoding) {
       case FLOAT32:
         knnOnVectorField =
-                new DiversifyingChildrenFloatKnnVectorQuery(fieldName, vectorBuilder.getFloatVector(), null, topK, acceptedDocuments);
+                new DiversifyingChildrenFloatKnnVectorQuery(fieldName, vectorBuilder.getFloatVector(), acceptedVectorsBasedOnDocumentFilters, topK, allParentsBitSet);
         break;
       case BYTE:
         knnOnVectorField =
-                new DiversifyingChildrenByteKnnVectorQuery(fieldName, vectorBuilder.getByteVector(), null, topK, acceptedDocuments);
+                new DiversifyingChildrenByteKnnVectorQuery(fieldName, vectorBuilder.getByteVector(), acceptedVectorsBasedOnDocumentFilters, topK, allParentsBitSet);
         break;
       default:
         throw new SolrException(
