@@ -218,11 +218,9 @@ public class EnvUtils {
         String deprecatedKey = key;
         key = DEPRECATED_MAPPINGS.get(deprecatedKey);
         log.warn(
-            "You are passing in deprecated system property "
-                + deprecatedKey
-                + " and should upgrade to using "
-                + key
-                + " instead.  The deprecated property support will be removed in future version of Solr.");
+            "You are passing in deprecated system property {} and should upgrade to using {} instead.  The deprecated property support will be removed in future version of Solr.",
+            deprecatedKey,
+            key);
         setProperty(key, sysProperties.getProperty(deprecatedKey));
       }
     }
