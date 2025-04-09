@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import static java.util.Optional.ofNullable;
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_MAX_CONN;
+import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -36,13 +37,19 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
 import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
+import org.apache.lucene.search.join.ScoreMode;
+import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
@@ -390,22 +397,41 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public Query getMultiValuedKnnVectorQuery(final SolrQueryRequest request,
-          String fieldName, String vectorToSearch, int topK, Query filterQuery) {
+                                            String fieldName, String vectorToSearch, int topK, Query filterQuery) {
 
     DenseVectorParser vectorBuilder =
             getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
+    BooleanQuery allDocuments =
+            new BooleanQuery.Builder()
+                    .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
+                    .add(
+                            new BooleanClause(
+                                    new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME),
+                                    BooleanClause.Occur.MUST_NOT))
+                    .build();
+
     BitSetProducer acceptedDocuments = BlockJoinParentQParser.getCachedBitSetProducer(request, filterQuery);
+    BitSetProducer allParentsBitSet = BlockJoinParentQParser.getCachedBitSetProducer(request, allDocuments);
+
+    Query knnOnVectorField;
     switch (vectorEncoding) {
       case FLOAT32:
-        return new DiversifyingChildrenFloatKnnVectorQuery(fieldName, vectorBuilder.getFloatVector(), null, topK, acceptedDocuments);
+        knnOnVectorField =
+                new DiversifyingChildrenFloatKnnVectorQuery(fieldName, vectorBuilder.getFloatVector(), null, topK, acceptedDocuments);
+        break;
       case BYTE:
-        return new DiversifyingChildrenByteKnnVectorQuery(fieldName, vectorBuilder.getByteVector(), null, topK, acceptedDocuments);
+        knnOnVectorField =
+                new DiversifyingChildrenByteKnnVectorQuery(fieldName, vectorBuilder.getByteVector(), null, topK, acceptedDocuments);
+        break;
       default:
         throw new SolrException(
                 SolrException.ErrorCode.SERVER_ERROR,
                 "Unexpected state. Vector Encoding: " + vectorEncoding);
     }
+
+    return new ToParentBlockJoinQuery(
+            knnOnVectorField, allParentsBitSet, ScoreMode.Max);
   }
 
   /**
