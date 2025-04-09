@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AddDynamicFieldOperation extends SchemaChange {
+public class UpsertDynamicFieldOperation extends SchemaChange {
   @JsonProperty public String name;
   @JsonProperty public String type;
 

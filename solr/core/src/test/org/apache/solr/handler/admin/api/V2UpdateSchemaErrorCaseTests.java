@@ -22,9 +22,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.mock;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.api.model.AddDynamicFieldOperation;
-import org.apache.solr.client.api.model.AddFieldOperation;
-import org.apache.solr.client.api.model.AddFieldTypeOperation;
+import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
+import org.apache.solr.client.api.model.UpsertFieldOperation;
+import org.apache.solr.client.api.model.UpsertFieldTypeOperation;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -50,7 +50,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
 
   @Test
   public void testAddFieldOperationRequiresFieldNameAndType() {
-    final var noFieldOp = new AddFieldOperation();
+    final var noFieldOp = new UpsertFieldOperation();
     noFieldOp.type = "text_general";
     var thrown =
         expectThrows(
@@ -61,7 +61,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
     assertEquals(BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: fieldName"));
 
-    final var noTypeOp = new AddFieldOperation();
+    final var noTypeOp = new UpsertFieldOperation();
     thrown =
         expectThrows(
             SolrException.class,
@@ -86,7 +86,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
 
   @Test
   public void testAddDynamicFieldOperationRequiresFieldNameAndType() {
-    final var noFieldOp = new AddDynamicFieldOperation();
+    final var noFieldOp = new UpsertDynamicFieldOperation();
     noFieldOp.type = "text_general";
     var thrown =
         expectThrows(
@@ -97,7 +97,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
     assertEquals(BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: dynamicFieldName"));
 
-    final var noTypeOp = new AddDynamicFieldOperation();
+    final var noTypeOp = new UpsertDynamicFieldOperation();
     thrown =
         expectThrows(
             SolrException.class,
@@ -122,7 +122,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
 
   @Test
   public void testAddFieldTypeOperationRequiresTypeNameAndClass() {
-    final var noTypeOp = new AddFieldTypeOperation();
+    final var noTypeOp = new UpsertFieldTypeOperation();
     noTypeOp.className = "solr.TextField";
     var thrown =
         expectThrows(
@@ -133,7 +133,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
     assertEquals(BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: fieldTypeName"));
 
-    final var noClassOp = new AddFieldTypeOperation();
+    final var noClassOp = new UpsertFieldTypeOperation();
     thrown =
         expectThrows(
             SolrException.class,

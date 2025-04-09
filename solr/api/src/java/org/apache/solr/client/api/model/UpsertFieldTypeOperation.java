@@ -22,20 +22,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ReplaceFieldOperation extends SchemaChange {
+public class UpsertFieldTypeOperation extends SchemaChange {
   @JsonProperty public String name;
-  @JsonProperty public String type;
 
-  // Used for setting index and stored settings, etc.
+  @JsonProperty("class")
+  public String className;
+
+  // Used for setting analyzers, index and stored settings, etc.
   private Map<String, Object> additionalProperties = new HashMap<>();
 
   @JsonAnyGetter
-  public Map<String, Object> unknownProperties() {
+  public Map<String, Object> getAdditionalProperties() {
     return additionalProperties;
   }
 
   @JsonAnySetter
-  public void setUnknownProperty(String field, Object value) {
+  public void setAdditionalProperty(String field, Object value) {
     additionalProperties.put(field, value);
   }
 }

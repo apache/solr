@@ -33,23 +33,21 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.AddCopyFieldOperation;
-import org.apache.solr.client.api.model.AddDynamicFieldOperation;
-import org.apache.solr.client.api.model.AddFieldOperation;
-import org.apache.solr.client.api.model.AddFieldTypeOperation;
 import org.apache.solr.client.api.model.DeleteCopyFieldOperation;
 import org.apache.solr.client.api.model.DeleteDynamicFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldTypeOperation;
-import org.apache.solr.client.api.model.ReplaceDynamicFieldOperation;
-import org.apache.solr.client.api.model.ReplaceFieldOperation;
-import org.apache.solr.client.api.model.ReplaceFieldTypeOperation;
 import org.apache.solr.client.api.model.SchemaChange;
+import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
+import org.apache.solr.client.api.model.UpsertFieldOperation;
+import org.apache.solr.client.api.model.UpsertFieldTypeOperation;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -244,7 +242,7 @@ public class SchemaManager {
     ADD_FIELD_TYPE("add-field-type") {
       @Override
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
-        final var addFieldTypeOp = (AddFieldTypeOperation) op;
+        final var addFieldTypeOp = (UpsertFieldTypeOperation) op;
         String name = ensureNotNull("name", addFieldTypeOp.name);
         String className = ensureNotNull("class", addFieldTypeOp.className);
         try {
@@ -282,10 +280,24 @@ public class SchemaManager {
         }
       }
     },
+    UPSERT_FIELD("upsert-field") { // Internal only
+      @Override
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var addFieldOp = (UpsertFieldOperation) op;
+        String name = ensureNotNull("name", addFieldOp.name);
+        String type = ensureNotNull("type", addFieldOp.type);
+
+        if (mgr.managedIndexSchema.fields.containsKey(addFieldOp.name)) {
+          return OpType.REPLACE_FIELD.perform(op, mgr);
+        } else {
+          return OpType.ADD_FIELD.perform(op, mgr);
+        }
+      }
+    },
     ADD_FIELD("add-field") {
       @Override
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
-        final var addFieldOp = (AddFieldOperation) op;
+        final var addFieldOp = (UpsertFieldOperation) op;
         String name = ensureNotNull("name", addFieldOp.name);
         String type = ensureNotNull("type", addFieldOp.type);
         try {
@@ -302,10 +314,26 @@ public class SchemaManager {
         }
       }
     },
+    UPSERT_DYNAMIC_FIELD("upsert-dynamic-field") { // Internal only
+      @Override
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var addDynFieldOp = (UpsertDynamicFieldOperation) op;
+        String name = ensureNotNull("name", addDynFieldOp.name);
+
+        final boolean fieldExists =
+            Arrays.stream(mgr.managedIndexSchema.dynamicFields)
+                .anyMatch(df -> df.getRegex().equals(name));
+        if (fieldExists) {
+          return OpType.REPLACE_DYNAMIC_FIELD.perform(op, mgr);
+        } else {
+          return OpType.ADD_DYNAMIC_FIELD.perform(op, mgr);
+        }
+      }
+    },
     ADD_DYNAMIC_FIELD("add-dynamic-field") {
       @Override
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
-        final var addDynFieldOp = (AddDynamicFieldOperation) op;
+        final var addDynFieldOp = (UpsertDynamicFieldOperation) op;
         String name = ensureNotNull("name", addDynFieldOp.name);
         String type = ensureNotNull("type", addDynFieldOp.type);
         try {
@@ -381,10 +409,23 @@ public class SchemaManager {
         }
       }
     },
+    UPSERT_FIELD_TYPE("upsert-field-type") { // Internal only, to support v2 API
+      @Override
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var upsertFieldTypeOp = (UpsertFieldTypeOperation) op;
+        String name = ensureNotNull("name", upsertFieldTypeOp.name);
+
+        if (mgr.managedIndexSchema.fieldTypes.containsKey(name)) {
+          return OpType.REPLACE_FIELD_TYPE.perform(op, mgr);
+        } else {
+          return OpType.ADD_FIELD_TYPE.perform(op, mgr);
+        }
+      }
+    },
     REPLACE_FIELD_TYPE("replace-field-type") {
       @Override
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
-        final var replaceFieldTypeOp = (ReplaceFieldTypeOperation) op;
+        final var replaceFieldTypeOp = (UpsertFieldTypeOperation) op;
         String name = ensureNotNull("name", replaceFieldTypeOp.name);
         String className = ensureNotNull("class", replaceFieldTypeOp.className);
         try {
@@ -401,7 +442,7 @@ public class SchemaManager {
     REPLACE_FIELD("replace-field") {
       @Override
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
-        final var replaceFieldOp = (ReplaceFieldOperation) op;
+        final var replaceFieldOp = (UpsertFieldOperation) op;
         String name = ensureNotNull("name", replaceFieldOp.name);
         String type = ensureNotNull("type", replaceFieldOp.type);
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
@@ -423,7 +464,7 @@ public class SchemaManager {
     REPLACE_DYNAMIC_FIELD("replace-dynamic-field") {
       @Override
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
-        final var replaceDynFieldOp = (ReplaceDynamicFieldOperation) op;
+        final var replaceDynFieldOp = (UpsertDynamicFieldOperation) op;
         String name = ensureNotNull("name", replaceDynFieldOp.name);
         String type = ensureNotNull("type", replaceDynFieldOp.type);
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);

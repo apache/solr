@@ -55,8 +55,8 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
 
     final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(AddFieldTypeOperation.class));
-    final var parsedSpecific = (AddFieldTypeOperation) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(UpsertFieldTypeOperation.class));
+    final var parsedSpecific = (UpsertFieldTypeOperation) parsedGeneric;
     assertEquals("my-new-field-type", parsedSpecific.name);
     assertEquals("org.apache.my.ClassName", parsedSpecific.className);
     // Arbitrary properties are put in a map, and can contain nesting
@@ -127,8 +127,8 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
 
     final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(AddFieldOperation.class));
-    final var parsedSpecific = (AddFieldOperation) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(UpsertFieldOperation.class));
+    final var parsedSpecific = (UpsertFieldOperation) parsedGeneric;
     assertEquals("my-new-field", parsedSpecific.name);
     assertEquals("fieldType", parsedSpecific.type);
 
@@ -150,8 +150,8 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
 
     final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(AddDynamicFieldOperation.class));
-    final var parsedSpecific = (AddDynamicFieldOperation) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(UpsertDynamicFieldOperation.class));
+    final var parsedSpecific = (UpsertDynamicFieldOperation) parsedGeneric;
     assertEquals("_abc", parsedSpecific.name);
     assertEquals("fieldType", parsedSpecific.type);
 
@@ -269,15 +269,15 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
 
     final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(ReplaceFieldTypeOperation.class));
-    final var parsedSpecific = (ReplaceFieldTypeOperation) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(UpsertFieldTypeOperation.class));
+    final var parsedSpecific = (UpsertFieldTypeOperation) parsedGeneric;
     assertEquals("my-new-field-type", parsedSpecific.name);
     assertEquals("org.apache.my.ClassName", parsedSpecific.className);
     // Arbitrary properties are put in a map, and can contain nesting
-    assertEquals(100, parsedSpecific.unknownProperties().get("positionIncrementGap"));
-    assertThat(parsedSpecific.unknownProperties().get("analyzer"), instanceOf(Map.class));
+    assertEquals(100, parsedSpecific.getAdditionalProperties().get("positionIncrementGap"));
+    assertThat(parsedSpecific.getAdditionalProperties().get("analyzer"), instanceOf(Map.class));
     final var analyzerProperties =
-        (Map<String, Object>) parsedSpecific.unknownProperties().get("analyzer");
+        (Map<String, Object>) parsedSpecific.getAdditionalProperties().get("analyzer");
     assertThat(analyzerProperties.keySet(), contains("charFilters", "tokenizer"));
     assertThat(analyzerProperties.get("tokenizer"), instanceOf(Map.class));
     final var tokenizerProperties = (Map<String, Object>) analyzerProperties.get("tokenizer");
@@ -298,13 +298,13 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
 
     final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(ReplaceFieldOperation.class));
-    final var parsedSpecific = (ReplaceFieldOperation) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(UpsertFieldOperation.class));
+    final var parsedSpecific = (UpsertFieldOperation) parsedGeneric;
     assertEquals("my-new-field", parsedSpecific.name);
     assertEquals("fieldType", parsedSpecific.type);
 
     // Arbitrary properties are put in a map
-    assertEquals(Boolean.TRUE, parsedSpecific.unknownProperties().get("stored"));
+    assertEquals(Boolean.TRUE, parsedSpecific.getAdditionalProperties().get("stored"));
   }
 
   @Test
@@ -321,12 +321,12 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
 
     final var parsedGeneric = OBJECT_MAPPER.readValue(inputJson, SchemaChange.class);
 
-    assertThat(parsedGeneric, instanceOf(ReplaceDynamicFieldOperation.class));
-    final var parsedSpecific = (ReplaceDynamicFieldOperation) parsedGeneric;
+    assertThat(parsedGeneric, instanceOf(UpsertDynamicFieldOperation.class));
+    final var parsedSpecific = (UpsertDynamicFieldOperation) parsedGeneric;
     assertEquals("_abc", parsedSpecific.name);
     assertEquals("fieldType", parsedSpecific.type);
 
     // Arbitrary properties are put in a map
-    assertEquals(Boolean.TRUE, parsedSpecific.unknownProperties().get("stored"));
+    assertEquals(Boolean.TRUE, parsedSpecific.getAdditionalProperties().get("stored"));
   }
 }

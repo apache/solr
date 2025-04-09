@@ -20,15 +20,15 @@ import jakarta.inject.Inject;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.UpdateSchemaApi;
-import org.apache.solr.client.api.model.AddDynamicFieldOperation;
-import org.apache.solr.client.api.model.AddFieldOperation;
-import org.apache.solr.client.api.model.AddFieldTypeOperation;
 import org.apache.solr.client.api.model.DeleteDynamicFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldTypeOperation;
 import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
+import org.apache.solr.client.api.model.UpsertFieldOperation;
+import org.apache.solr.client.api.model.UpsertFieldTypeOperation;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SolrConfigHandler;
@@ -50,7 +50,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
 
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
-  public SolrJerseyResponse addField(String fieldName, AddFieldOperation requestBody)
+  public SolrJerseyResponse addField(String fieldName, UpsertFieldOperation requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureSchemaMutable();
@@ -58,6 +58,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     ensureRequiredRequestBodyProvided(requestBody);
     ensureRequiredParameterProvided("type", requestBody.type);
     requestBody.name = fieldName;
+    requestBody.operationType = "upsert-field";
 
     runWithSchemaManager(List.of(requestBody), response);
 
@@ -84,13 +85,14 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
   public SolrJerseyResponse addDynamicField(
-      String dynamicFieldName, AddDynamicFieldOperation requestBody) throws Exception {
+      String dynamicFieldName, UpsertDynamicFieldOperation requestBody) throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureSchemaMutable();
     ensureRequiredRequestBodyProvided(requestBody);
     ensureRequiredParameterProvided("dynamicFieldName", dynamicFieldName);
     ensureRequiredParameterProvided("type", requestBody.type);
     requestBody.name = dynamicFieldName;
+    requestBody.operationType = "add-dynamic-field";
 
     runWithSchemaManager(List.of(requestBody), response);
 
@@ -114,13 +116,14 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
 
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
-  public SolrJerseyResponse addFieldType(String fieldTypeName, AddFieldTypeOperation requestBody)
+  public SolrJerseyResponse addFieldType(String fieldTypeName, UpsertFieldTypeOperation requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureSchemaMutable();
     ensureRequiredRequestBodyProvided(requestBody);
     ensureRequiredParameterProvided("fieldTypeName", fieldTypeName);
     ensureRequiredParameterProvided("class", requestBody.className);
+    requestBody.operationType = "add-field-type";
 
     runWithSchemaManager(List.of(requestBody), response);
 

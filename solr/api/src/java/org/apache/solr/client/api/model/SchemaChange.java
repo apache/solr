@@ -19,24 +19,29 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.OptBoolean;
 
 /** Modifications that can be made to elements of a schema, either individually or in bulk. */
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     property = SchemaChange.OPERATION_TYPE_PROP,
+    requireTypeIdForSubtypes = OptBoolean.FALSE,
     visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = AddFieldTypeOperation.class, name = "add-field-type"),
-  @JsonSubTypes.Type(value = AddCopyFieldOperation.class, name = "add-copy-field"),
-  @JsonSubTypes.Type(value = AddFieldOperation.class, name = "add-field"),
-  @JsonSubTypes.Type(value = AddDynamicFieldOperation.class, name = "add-dynamic-field"),
+  @JsonSubTypes.Type(
+      value = UpsertFieldTypeOperation.class,
+      names = {"add-field-type", "replace-field-type"}),
+  @JsonSubTypes.Type(
+      value = UpsertFieldOperation.class,
+      names = {"add-field", "replace-field"}),
+  @JsonSubTypes.Type(
+      value = UpsertDynamicFieldOperation.class,
+      names = {"add-dynamic-field", "replace-dynamic-field"}),
   @JsonSubTypes.Type(value = DeleteFieldTypeOperation.class, name = "delete-field-type"),
-  @JsonSubTypes.Type(value = DeleteCopyFieldOperation.class, name = "delete-copy-field"),
   @JsonSubTypes.Type(value = DeleteFieldOperation.class, name = "delete-field"),
   @JsonSubTypes.Type(value = DeleteDynamicFieldOperation.class, name = "delete-dynamic-field"),
-  @JsonSubTypes.Type(value = ReplaceFieldTypeOperation.class, name = "replace-field-type"),
-  @JsonSubTypes.Type(value = ReplaceFieldOperation.class, name = "replace-field"),
-  @JsonSubTypes.Type(value = ReplaceDynamicFieldOperation.class, name = "replace-dynamic-field"),
+  @JsonSubTypes.Type(value = AddCopyFieldOperation.class, name = "add-copy-field"),
+  @JsonSubTypes.Type(value = DeleteCopyFieldOperation.class, name = "delete-copy-field"),
 })
 public class SchemaChange {
 

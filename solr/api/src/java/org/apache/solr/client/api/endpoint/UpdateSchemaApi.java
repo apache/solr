@@ -29,11 +29,11 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import java.util.List;
-import org.apache.solr.client.api.model.AddDynamicFieldOperation;
-import org.apache.solr.client.api.model.AddFieldOperation;
-import org.apache.solr.client.api.model.AddFieldTypeOperation;
 import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
+import org.apache.solr.client.api.model.UpsertFieldOperation;
+import org.apache.solr.client.api.model.UpsertFieldTypeOperation;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
 @Path(INDEX_PATH_PREFIX + "/schema")
@@ -51,7 +51,7 @@ public interface UpdateSchemaApi {
                 @Extension(
                     properties = {@ExtensionProperty(name = ADDTL_FIELDS_PROPERTY, value = "true")})
               })
-          AddFieldOperation requestBody)
+          UpsertFieldOperation requestBody)
       throws Exception;
 
   @DELETE
@@ -75,7 +75,7 @@ public interface UpdateSchemaApi {
                 @Extension(
                     properties = {@ExtensionProperty(name = ADDTL_FIELDS_PROPERTY, value = "true")})
               })
-          AddDynamicFieldOperation requestBody)
+          UpsertDynamicFieldOperation requestBody)
       throws Exception;
 
   @DELETE
@@ -100,7 +100,7 @@ public interface UpdateSchemaApi {
                 @Extension(
                     properties = {@ExtensionProperty(name = ADDTL_FIELDS_PROPERTY, value = "true")})
               })
-          AddFieldTypeOperation requestBody)
+          UpsertFieldTypeOperation requestBody)
       throws Exception;
 
   @DELETE
