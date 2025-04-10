@@ -324,6 +324,127 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
             "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
             "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']");
-
   }
+
+  @Test
+  public void parentRetrievalFloat_topKWithOnlyChildTransformerWithNoFilter_shouldUseBestChildrenVectorTransformerFilter() {
+    assertQ(
+            req(
+                    "fq", "parent_s:(b c)",
+                    "q", "{!parent which=$allParents score=max v=$children.q}",
+                    "fl", "id,vectors,vector,[child fl=vector]",
+                    "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
+                    "allParents", "parent_s:[* TO *]"),
+            "//result[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.='8']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='8.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[2]/str[@name='id'][.='7']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='11.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='26.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']");
+  }
+
+  @Test
+  public void parentRetrievalByte_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter() {
+    assertQ(
+            req(
+                    "fq", "parent_s:(b c)",
+                    "q", "{!parent which=$allParents score=max v=$children.q}",
+                    "fl", "id,score,vectors,vector_byte,[child limit=2 fl=vector_byte childFilter=$all_children]",
+                    "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
+                    "allParents", "parent_s:[* TO *]",
+                    "all_children", "child_s:[* TO *]"),
+            "//result[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.='8']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='10']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[1][.='9']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[2]/str[@name='id'][.='7']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='13']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[1][.='12']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='28']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[1][.='27']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector_byte']/int[4][.='1']");
+  }
+
+  @Test
+  public void parentRetrievalByte_topKWithChildTransformerWithNoFilter_shouldUseBestChildrenVectorTransformerFilter() {
+    assertQ(
+            req(
+                    "fq", "parent_s:(b c)",
+                    "q", "{!parent which=$allParents score=max v=$children.q}",
+                    "fl", "id,score,vectors,vector_byte,[child fl=vector_byte]",
+                    "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
+                    "allParents", "parent_s:[* TO *]"),
+            "//result[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.='8']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='8']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[2]/str[@name='id'][.='7']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='11']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='26']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']");
+  }
+
+  @Test
+  public void parentRetrievalByte_topKWithOnlyChildTransformerWithNoFilter_shouldUseBestChildrenVectorTransformerFilter() {
+    assertQ(
+            req(
+                    "fq", "parent_s:(b c)",
+                    "q", "{!parent which=$allParents score=max v=$children.q}",
+                    "fl", "id,vectors,vector_byte,[child fl=vector_byte]",
+                    "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
+                    "allParents", "parent_s:[* TO *]"),
+            "//result[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.='8']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='8']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[2]/str[@name='id'][.='7']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='11']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='26']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']");
+  }
+  
 }

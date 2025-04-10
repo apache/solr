@@ -42,6 +42,7 @@ import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ChildDocTransformer;
@@ -145,7 +146,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
                 allParents);
           }
       } catch (IOException e) {
-          throw new RuntimeException(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
   }
 
