@@ -46,6 +46,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
@@ -166,6 +167,12 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
+
+  /** Live node JSON property keys. */
+  public static final String LIVE_NODE_SOLR_VERSION = "solrVersion";
+
+  public static final String LIVE_NODE_NODE_NAME = "nodeName";
+  public static final String LIVE_NODE_ROLES = ROLES_PROP;
 
   /** "Interesting" but not actively watched Collections. */
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates =
@@ -863,6 +870,36 @@ public class ZkStateReader implements SolrCloseable {
 
   public void removeLiveNodesListener(LiveNodesListener listener) {
     liveNodesListeners.remove(listener);
+  }
+
+  /**
+   * Returns the lowest Solr version among all live nodes in the cluster.
+   *
+   * @return the lowest Solr version as a String, or null if no version is found, throw Semver with
+   *     invalid version
+   */
+  public String fetchLowestSolrVersion() throws KeeperException, InterruptedException {
+    List<String> liveNodeNames = zkClient.getChildren(LIVE_NODES_ZKNODE, null, true);
+    SolrVersion lowest = null;
+    for (String nodeName : liveNodeNames) {
+      String path = LIVE_NODES_ZKNODE + "/" + nodeName;
+      byte[] data = zkClient.getData(path, null, null, true);
+      if (data == null || data.length == 0) {
+        continue;
+      }
+
+      @SuppressWarnings("unchecked")
+      Map<String, Object> props = (Map<String, Object>) Utils.fromJSON(data);
+      String nodeVersionStr = (String) props.get(LIVE_NODE_SOLR_VERSION);
+      if (nodeVersionStr != null) {
+        SolrVersion nodeVersion = SolrVersion.valueOf(nodeVersionStr);
+
+        if (lowest == null || nodeVersion.compareTo(lowest) < 0) {
+          lowest = nodeVersion;
+        }
+      }
+    }
+    return lowest == null ? null : lowest.toString();
   }
 
   /**
