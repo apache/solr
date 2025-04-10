@@ -38,7 +38,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.ChildDocTransformerFactory;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.response.transform.RenameFieldTransformer;
@@ -603,6 +602,11 @@ public class SolrReturnFields extends ReturnFields {
   @Override
   public DocTransformer getTransformer() {
     return transformer;
+  }
+
+  @Override
+  public void setTransformer(DocTransformer transformer) {
+this.transformer = transformer;
   }
 
   @Override

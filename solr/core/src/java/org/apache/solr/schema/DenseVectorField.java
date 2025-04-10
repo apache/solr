@@ -55,12 +55,15 @@ import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ChildDocTransformer;
+import org.apache.solr.response.transform.ChildDocTransformerFactory;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryLimits;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.join.BlockJoinParentQParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
@@ -402,7 +405,7 @@ public class DenseVectorField extends FloatPointField {
 
     DenseVectorParser vectorBuilder =
             getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
-    
+
     BooleanQuery allDocuments =
             new BooleanQuery.Builder()
                     .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
@@ -411,14 +414,14 @@ public class DenseVectorField extends FloatPointField {
                                     new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME),
                                     BooleanClause.Occur.MUST_NOT))
                     .build();
-    
+
     BitSetProducer allParentsBitSet = BlockJoinParentQParser.getCachedBitSetProducer(request, allDocuments);
-    
+
     Query acceptedVectorsBasedOnDocumentFilters = null;
-    if(filterQuery != null){
-       acceptedVectorsBasedOnDocumentFilters = new ToChildBlockJoinQuery(filterQuery, allParentsBitSet);
+    if (filterQuery != null) {
+      acceptedVectorsBasedOnDocumentFilters = new ToChildBlockJoinQuery(filterQuery, allParentsBitSet);
     }
-    
+
 
     Query knnOnVectorField;
     switch (vectorEncoding) {
@@ -436,19 +439,53 @@ public class DenseVectorField extends FloatPointField {
                 "Unexpected state. Vector Encoding: " + vectorEncoding);
     }
     try {
-      //TO DO: if no ChildDocTransformer, then we need to add this one
-      QueryLimits currentLimits = QueryLimits.getCurrentLimits();
-      DocTransformers transformers = (DocTransformers)currentLimits.getRsp().getReturnFields().getTransformer();
-      ChildDocTransformer child = (ChildDocTransformer) transformers.getTransformer(1);
-      child.setChildDocSet(request.getSearcher().getDocSet(knnOnVectorField));
-      
+      knnOnVectorField = knnOnVectorField.rewrite(request.getSearcher());
+      setAppropriateChildrenListingTransformer(request, fieldName, knnOnVectorField);
       return new ToParentBlockJoinQuery(
               knnOnVectorField, allParentsBitSet, ScoreMode.Max);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
+  }
+
+  private void setAppropriateChildrenListingTransformer(SolrQueryRequest request, String fieldName, Query knnOnVectorField) throws IOException {
+    QueryLimits currentLimits = QueryLimits.getCurrentLimits();
+    ReturnFields returnFields = currentLimits.getRsp().getReturnFields();
+    DocTransformer originalTransformer = returnFields.getTransformer();
     
-    
+    if (originalTransformer == null) {
+      ChildDocTransformer addBestVectorPerDocument = getDefaultVectorChildrenTransformer(request, fieldName, knnOnVectorField);
+      returnFields.setTransformer(addBestVectorPerDocument);
+    } else if (originalTransformer instanceof DocTransformers) {
+      DocTransformers transformers = (DocTransformers) originalTransformer;
+      boolean noChildTransformer = true;
+      for (int i = 0; i < transformers.size() && noChildTransformer; i++) {
+        DocTransformer t = transformers.getTransformer(i);
+        if (t instanceof ChildDocTransformer) {
+          noChildTransformer = false;
+        }
+      }
+      if (noChildTransformer) {
+        transformers.addTransformer(getDefaultVectorChildrenTransformer(request, fieldName, knnOnVectorField));
+      }
+    } else {
+      if (!(originalTransformer instanceof ChildDocTransformer)) {
+        DocTransformers transformers = new DocTransformers();
+        transformers.addTransformer(originalTransformer);
+        transformers.addTransformer(getDefaultVectorChildrenTransformer(request, fieldName, knnOnVectorField));
+        returnFields.setTransformer(transformers);
+      }
+    }
+  }
+
+  private static ChildDocTransformer getDefaultVectorChildrenTransformer(SolrQueryRequest request, String fieldName, Query knnOnVectorField) throws IOException {
+    ChildDocTransformerFactory childFactory = new ChildDocTransformerFactory();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("limit","1");
+    params.add("fl",fieldName);
+    ChildDocTransformer addVectors = (ChildDocTransformer)childFactory.create(fieldName,params, request);
+    addVectors.setChildDocSet(request.getSearcher().getDocSet(knnOnVectorField));
+    return addVectors;
   }
 
   /**
