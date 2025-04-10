@@ -310,12 +310,12 @@ public class SolrQueryResponse {
   /** Returns a string of the form "prefix name1=value1 name2=value2 ..." */
   public String getToLogAsString(String prefix) {
     StringBuilder sb = new StringBuilder(prefix);
-    for (int i = 0; i < toLog.size(); i++) {
-      if (sb.length() > 0) {
+    for (Map.Entry<String, Object> entry : toLog) {
+      if (!sb.isEmpty()) {
         sb.append(' ');
       }
-      String name = toLog.getName(i);
-      Object val = toLog.getVal(i);
+      String name = entry.getKey();
+      Object val = entry.getValue();
       if (name != null) {
         sb.append(name).append('=');
       }

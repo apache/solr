@@ -23,6 +23,7 @@ import org.apache.solr.core.PluginBag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.TextQueryResponseWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -77,7 +78,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
 
   ////////////////////////////////////////////////////////////////////////////
   /** An output writer that doesn't do anything useful. */
-  public static class UselessOutputWriter implements QueryResponseWriter {
+  public static class UselessOutputWriter implements TextQueryResponseWriter {
 
     public UselessOutputWriter() {}
 

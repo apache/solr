@@ -35,7 +35,7 @@ allprojects {
         "gradlewScriptsTweaked",
         "validateSourcePatterns",
         "validateLogCalls"
-    ] }.forEach { Task task ->
+    ] }.configureEach { Task task ->
     task.logger.info("Setting up ${task.path} as no-output.")
     setupDummyOutputs(task)
   }

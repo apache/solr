@@ -19,7 +19,6 @@ package org.apache.solr.response;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -80,7 +79,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
     final Path collDir = homeDir.resolve("collection1");
     final Path confDir = collDir.resolve("conf");
     Files.createDirectories(confDir);
-    Files.copy(Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), homeDir.resolve("solr.xml"));
+    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
     Files.copy(Path.of(src_dir, "schema_latest.xml"), confDir.resolve("schema.xml"));
     Files.copy(Path.of(src_dir, "solrconfig-minimal.xml"), confDir.resolve("solrconfig.xml"));
@@ -105,7 +104,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
 
   private static void initCloud() throws Exception {
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_HOME().resolve("collection1").resolve("conf");
 
     final int numNodes = 3;
     MiniSolrCloudCluster cloud =
@@ -283,12 +282,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
         strResponse.contains("\"links\":[\""));
   }
 
-  private static final NoOpResponseParser XML_NOOP_RESPONSE_PARSER = new NoOpResponseParser();
+  private static final NoOpResponseParser XML_NOOP_RESPONSE_PARSER = new NoOpResponseParser("xml");
   private static final NoOpResponseParser JSON_NOOP_RESPONSE_PARSER =
-      new NoOpResponseParser() {
-        @Override
-        public String getWriterType() {
-          return "json";
-        }
-      };
+      new NoOpResponseParser("json");
 }

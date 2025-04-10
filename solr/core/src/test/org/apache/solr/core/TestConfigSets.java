@@ -25,7 +25,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
@@ -55,21 +54,21 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testDefaultConfigSetBasePathResolution() {
-    Path solrHome = Paths.get("/path/to/solr/home");
+    Path solrHome = Path.of("/path/to/solr/home");
 
     NodeConfig config =
         SolrXmlConfig.fromString(
             solrHome, "<solr><str name=\"configSetBaseDir\">configsets</str></solr>");
     assertThat(
         config.getConfigSetBaseDirectory().toAbsolutePath(),
-        is(Paths.get("/path/to/solr/home/configsets").toAbsolutePath()));
+        is(Path.of("/path/to/solr/home/configsets").toAbsolutePath()));
 
     NodeConfig absConfig =
         SolrXmlConfig.fromString(
             solrHome, "<solr><str name=\"configSetBaseDir\">/path/to/configsets</str></solr>");
     assertThat(
         absConfig.getConfigSetBaseDirectory().toAbsolutePath(),
-        is(Paths.get("/path/to/configsets").toAbsolutePath()));
+        is(Path.of("/path/to/configsets").toAbsolutePath()));
   }
 
   @Test
@@ -82,7 +81,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
       SolrCore core1 = container.create("core1", Map.of("configSet", "configset-2"));
       assertThat(core1.getCoreDescriptor().getName(), is("core1"));
       assertThat(
-          Paths.get(core1.getDataDir()).toString(),
+          Path.of(core1.getDataDir()).toString(),
           is(solrHome.resolve("core1").resolve("data").toString()));
     } finally {
       if (container != null) container.shutdown();

@@ -36,7 +36,7 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
@@ -260,7 +260,7 @@ public class PackageAPI {
 
       final var request =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/cluster/package", solrParams);
-      request.setResponseParser(new BinaryResponseParser());
+      request.setResponseParser(new JavaBinResponseParser());
 
       for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
         final var baseUrl =
@@ -442,7 +442,7 @@ public class PackageAPI {
 
     final var request =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/cluster/package", solrParams);
-    request.setResponseParser(new BinaryResponseParser());
+    request.setResponseParser(new JavaBinResponseParser());
 
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
       var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);

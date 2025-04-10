@@ -21,12 +21,12 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 
 public interface OnDisconnect extends ConnectionStateListener {
-  public void command(boolean sessionExpired);
+  void onDisconnect(boolean sessionExpired);
 
   @Override
   default void stateChanged(CuratorFramework client, ConnectionState newState) {
     if (newState == ConnectionState.LOST || newState == ConnectionState.SUSPENDED) {
-      command(newState == ConnectionState.LOST);
+      onDisconnect(newState == ConnectionState.LOST);
     }
   }
 }

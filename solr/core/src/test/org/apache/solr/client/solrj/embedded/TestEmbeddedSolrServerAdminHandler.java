@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -57,7 +56,7 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected QueryResponse createResponse(final SolrClient client) {
+    protected QueryResponse createResponse(final NamedList<Object> namedList) {
       return new QueryResponse();
     }
 
