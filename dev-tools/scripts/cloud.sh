@@ -336,7 +336,7 @@ start(){
     mkdir -p "${CLUSTER_WD}/n${i}"
     argsArray=(-c --solr-home $CLUSTER_WD_FULL/n${i} -z localhost:${ZK_PORT}/solr_${SAFE_DEST} -p 898${i} -m $MEMORY \
     -a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=500${i} \
-    -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
+    -Dsolr.logs.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
     FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"
     echo ${FINAL_COMMAND}
     ${SOLR}/bin/solr start "${argsArray[@]}"

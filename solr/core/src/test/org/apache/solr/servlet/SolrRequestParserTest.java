@@ -64,8 +64,8 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     assumeWorkingMockito();
-    System.setProperty("solr.enableRemoteStreaming", "true");
-    System.setProperty("solr.enableStreamBody", "true");
+    System.setProperty("solr.enable.remote.streaming", "true");
+    System.setProperty("solr.enable.stream.body", "true");
     initCore("solrconfig.xml", "schema.xml");
     parser = new SolrRequestParsers(h.getCore().getSolrConfig());
   }

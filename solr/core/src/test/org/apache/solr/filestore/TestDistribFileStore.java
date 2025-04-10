@@ -67,12 +67,12 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
   @Before
   public void setup() {
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.enable.packages", "true");
   }
 
   @After
   public void teardown() {
-    System.clearProperty("enable.packages");
+    System.clearProperty("solr.enable.packages");
   }
 
   @Test
