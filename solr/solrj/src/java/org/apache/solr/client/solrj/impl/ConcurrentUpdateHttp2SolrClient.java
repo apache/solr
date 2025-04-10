@@ -29,8 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -66,14 +64,11 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private boolean shutdownClient;
   private boolean shutdownExecutor;
   private long pollQueueTimeMillis;
-  private long stallTimeMillis;
   private final boolean streamDeletes;
   private volatile boolean closed;
   private volatile CountDownLatch lock = null; // used to block everything
 
-  LongAdder processedCount;
-  volatile long lastProcessedCount;
-  AtomicLong startStallTime = new AtomicLong(-1);
+  protected StallDetection stallDetection;
 
   private static class CustomBlockingQueue<E> implements Iterable<E> {
     private final BlockingQueue<E> queue;
@@ -156,14 +151,18 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.basePath = builder.baseSolrUrl;
     this.defaultCollection = builder.defaultCollection;
     this.pollQueueTimeMillis = builder.pollQueueTimeMillis;
-    this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+
+    // Initialize stall detection
+    long stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
     long minimalStallTimeMillis = pollQueueTimeMillis * 2;
-    if (minimalStallTimeMillis > this.stallTimeMillis) {
-      this.stallTimeMillis = minimalStallTimeMillis;
+    if (minimalStallTimeMillis > stallTimeMillis) {
+      stallTimeMillis = minimalStallTimeMillis;
     }
+
+    this.stallDetection = new StallDetection(stallTimeMillis, queue::size);
 
     if (builder.executorService != null) {
       this.scheduler = builder.executorService;
@@ -175,8 +174,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       this.shutdownExecutor = true;
     }
 
-    this.processedCount = new LongAdder();
-    this.lastProcessedCount = 0;
+    // processedCount is now managed by StallDetection
   }
 
   /** Opens a connection and sends everything... */
@@ -298,7 +296,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             } else {
               onSuccess(response, rspBody);
             }
-            processedCount.increment();
+            stallDetection.incrementProcessedCount();
 
           } finally {
             try {
@@ -446,7 +444,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         }
         if (!success) {
           // stall prevention
-          stallCheck();
+          stallDetection.stallCheck();
         }
       }
     } catch (InterruptedException e) {
@@ -458,43 +456,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     NamedList<Object> dummy = new NamedList<>();
     dummy.add("NOTE", "the request is processed in a background stream");
     return dummy;
-  }
-
-  private void stallCheck() throws IOException {
-
-    int currentQueueSize = queue.size();
-    if (currentQueueSize == 0) {
-      startStallTime.set(-1);
-      return;
-    }
-
-    long processed = processedCount.sum();
-    if (processed != lastProcessedCount) {
-      // there's still some progress in processing the queue - not stalled
-      lastProcessedCount = processed;
-      startStallTime.set(-1);
-    } else {
-      long currentStartStallTime = startStallTime.get();
-      long currentTime = System.nanoTime();
-
-      // Start the timer if it hasn't been started yet
-      if (currentStartStallTime == 0 || currentStartStallTime == -1) {
-        startStallTime.set(currentTime);
-        return; // First detection, give it time before throwing exception
-      }
-
-      // Calculate elapsed time since stall was first detected
-      long timeElapsed = TimeUnit.NANOSECONDS.toMillis(currentTime - currentStartStallTime);
-
-      if (timeElapsed > stallTimeMillis) {
-        throw new IOException(
-            "Request processing has stalled for "
-                + timeElapsed
-                + "ms with "
-                + queue.size()
-                + " remaining elements in the queue.");
-      }
-    }
   }
 
   public synchronized void blockUntilFinished() throws IOException {
@@ -519,8 +480,10 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           // Need to check if the queue is empty before really considering this is finished
           // (SOLR-4260)
           int queueSize = queue.size();
-          // stall prevention
-          stallCheck();
+          // stall prevention - only if queue is not empty
+          if (queueSize > 0) {
+            stallDetection.stallCheck();
+          }
 
           if (queueSize > 0 && runners.isEmpty()) {
             // TODO: can this still happen?
@@ -591,7 +554,10 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
               queue.size());
         }
       }
-      stallCheck();
+      // Only check for stalls if the queue is not empty
+      if (!queue.isEmpty()) {
+        stallDetection.stallCheck();
+      }
     }
     if (threadInterrupted) {
       Thread.currentThread().interrupt();
