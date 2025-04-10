@@ -411,6 +411,17 @@ public class QueryComponent extends SearchComponent {
         params.getBool(
             CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT));
 
+    // max hits allowed per shard
+    final Integer maxHitsAllowed = params.getInt(CommonParams.MAX_HITS_ALLOWED);
+
+    if (maxHitsAllowed != null) {
+      int maxHits = Math.max(maxHitsAllowed, cmd.getLen());
+      if (cmd.getMinExactCount() < Integer.MAX_VALUE) {
+        maxHits = Math.max(cmd.getMinExactCount(), maxHits);
+      }
+      cmd.setMaxHitsAllowed(maxHits);
+    }
+
     //
     // grouping / field collapsing
     //
@@ -949,6 +960,8 @@ public class QueryComponent extends SearchComponent {
     Float maxScore = null;
     boolean thereArePartialResults = false;
     Boolean segmentTerminatedEarly = null;
+    boolean maxHitsTerminatedEarly = false;
+    long approximateTotalHits = 0;
     int failedShardCount = 0;
     for (ShardResponse srsp : sreq.responses) {
       SolrDocumentList docs = null;
@@ -983,6 +996,16 @@ public class QueryComponent extends SearchComponent {
               responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
           if (rhste != null) {
             nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
+          }
+          final Object rhmhte =
+              responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY);
+          if (rhmhte != null) {
+            nl.add(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, rhmhte);
+          }
+          final Object rhath =
+              responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
+          if (rhath != null) {
+            nl.add(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, rhath);
           }
           docs =
               (SolrDocumentList)
@@ -1041,6 +1064,19 @@ public class QueryComponent extends SearchComponent {
         } else if (Boolean.FALSE.equals(ste)) {
           segmentTerminatedEarly = Boolean.FALSE;
         }
+      }
+
+      if (!maxHitsTerminatedEarly) {
+        if (Boolean.TRUE.equals(
+            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY))) {
+          maxHitsTerminatedEarly = true;
+        }
+      }
+      Object ath = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
+      if (ath == null) {
+        approximateTotalHits += numFound;
+      } else {
+        approximateTotalHits += ((Number) ath).longValue();
       }
 
       // calculate global maxScore and numDocsFound
@@ -1183,6 +1219,17 @@ public class QueryComponent extends SearchComponent {
             .add(
                 SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
                 segmentTerminatedEarly);
+      }
+    }
+    if (maxHitsTerminatedEarly) {
+      rb.rsp
+          .getResponseHeader()
+          .add(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, Boolean.TRUE);
+      if (approximateTotalHits > 0) {
+        rb.rsp
+            .getResponseHeader()
+            .add(
+                SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
       }
     }
   }

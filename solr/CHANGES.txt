@@ -199,6 +199,8 @@ New Features
 
 * SOLR-17678: ReRank queries can now return the matchScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
 
+* SSOLR-17447 : Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
+
 Improvements
 ---------------------
 * SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
