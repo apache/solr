@@ -218,6 +218,10 @@ public class SearchHandler extends RequestHandlerBase
       shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
     } else {
       shardHandlerFactory = core.createInitInstance(shfInfo, ShardHandlerFactory.class, null, null);
+      if (shardHandlerFactory instanceof WrappedHttpShardHandlerFactory) {
+        ((WrappedHttpShardHandlerFactory) shardHandlerFactory)
+            .setHandlerFactory(core.getCoreContainer().getShardHandlerFactory());
+      }
       if (shardHandlerFactory instanceof SolrMetricProducer) {
         SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
         metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
