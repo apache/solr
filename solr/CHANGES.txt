@@ -41,6 +41,8 @@ Improvements
 
 * SOLR-17701: Simplify bin/solr scripts by removing AUTH_PORT export in favour of more commonly used SOLR_PORT export. (Eric Pugh)
 
+* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse. (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -113,10 +115,6 @@ Deprecation Removals
 
 * SOLR-17518: Removed deprecated methods `getXml()` and `writeXml()` from `UpdateRequest`. (Pierre Salagnac)
 
-* SOLR-17655: Removed deprecated ExternalFileField field type. (Eric Pugh)
-
-* SOLR-17683: Removed deprecated CurrencyField field type. (Eric Pugh)
-
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -170,14 +168,6 @@ Other Changes
 * SOLR-17706: SolrJ DocumentObjectBinder is now a global singleton via an INSTANCE field and that
   which is pluggable via Java SPI/ServiceLoader.  SolrClient.getBinder is gone.  (David Smiley)
 
-* SOLR-17584: There is no longer a distinction between trusted and untrusted configSets; all are now trusted.
-  To ensure security, Solr should enforce authentication and authorization,
-  allowing only authorized admins to publish them. (Abhishek Umarjikar)
-
-* SOLR-14070: Deprecate CloudSolrClient's ZooKeeper Hosts constructor. (Abhishek Umarjikar)
-
-* SOLR-17703: SolrJ - Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to "JavaBin.." equivalent. (Abhishek Umarjikar)
-
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -192,10 +182,6 @@ New Features
 * SOLR-17309: Certificate based authentication plugin now has richer flexible cert principal resolution. (Lamine Idjeraoui via Eric Pugh)
 
 * SOLR-17632: Added update request processor to encode text to vector at indexing time through external LLM services. (Alessandro Benedetti)
-
-* SOLR-17714: Added a FuzzyQParser to enable all FuzzyQuery customizations. (Houston Putman, Siju Varghese)
-
-* SOLR-17678: ReRank queries can now return the matchScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
 
 Improvements
 ---------------------
@@ -218,8 +204,6 @@ Improvements
 
 * SOLR-10998: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt' is unspecified.  JSON is still used as a default when
   neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
-
-* SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
 
 Optimizations
 ---------------------
@@ -244,14 +228,9 @@ Bug Fixes
 
 * SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
 
-* SOLR-17692: Core unload/deletion now preempts all forms of ongoing "recovery", rather than inadvertently waiting for
-  completion in some cases. (Jason Gerlowski)
-
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
-
-* Upgrade forbiddenapis to 3.9. (Uwe Schindler)
 
 Other Changes
 ---------------------
@@ -287,10 +266,6 @@ Other Changes
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
 * SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
-
-* SOLR-17716: Handle interrupted exception in SolrCores.waitAddPendingCoreOps. (Bruno Roustant)
-
-* SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
 
 ==================  9.8.1 ==================
 Bug Fixes
