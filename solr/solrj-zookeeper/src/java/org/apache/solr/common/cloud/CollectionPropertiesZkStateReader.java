@@ -393,19 +393,22 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   }
 
   public void removeCollectionPropsWatcher(String collection, CollectionPropsWatcher watcher) {
-    collectionPropsObservers.compute(
-        collection,
-        (k, v) -> {
-          if (v == null) return null;
-          v.stateWatchers.remove(watcher);
-          if (v.canBeRemoved()) {
-            // don't want this to happen in middle of other blocks that might add it back.
-            synchronized (getCollectionLock(collection)) {
+    // don't want removal from watchedCollectionProps to happen in middle of other blocks that might
+    // add it back.
+    // Need to lock outside of the compute() call or risk a deadlock with the locking done in
+    // collectionPropsObservers
+    synchronized (getCollectionLock(collection)) {
+      collectionPropsObservers.compute(
+          collection,
+          (k, v) -> {
+            if (v == null) return null;
+            v.stateWatchers.remove(watcher);
+            if (v.canBeRemoved()) {
               watchedCollectionProps.remove(collection);
               return null;
             }
-          }
-          return v;
-        });
+            return v;
+          });
+    }
   }
 }
