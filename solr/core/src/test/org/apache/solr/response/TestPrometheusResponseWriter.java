@@ -30,8 +30,10 @@ import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -79,9 +81,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   @Test
   public void testPrometheusStructureOutput() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/metrics");
     params.set("wt", "prometheus");
-    QueryRequest req = new QueryRequest(params);
+    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
     req.setResponseParser(new NoOpResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
@@ -135,9 +136,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     String expectedJvm = "solr_metrics_jvm_gc{item=\"dummyMetrics\"} 0.0";
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/metrics");
     params.set("wt", "prometheus");
-    QueryRequest req = new QueryRequest(params);
+    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
     req.setResponseParser(new NoOpResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {

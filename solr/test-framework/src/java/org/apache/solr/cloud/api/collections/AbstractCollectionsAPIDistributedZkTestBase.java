@@ -42,10 +42,12 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -192,8 +194,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     String collectionName = "badactioncollection";
     params.set("name", collectionName);
     params.set("numShards", 2);
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -208,8 +210,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set("action", CollectionAction.CREATE.toString());
     params.set("numShards", 2);
     // missing required collection parameter
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -227,8 +229,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set(REPLICATION_FACTOR, 10);
     params.set("collection.configName", "conf");
 
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -246,8 +248,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set("numShards", 0);
     params.set("collection.configName", "conf");
 
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
     expectThrows(
         Exception.class,
         () -> {
@@ -675,8 +677,9 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
               params.set("collection", collectionName);
               params.set("shard", "shard1");
               params.set("name", coreName);
-              QueryRequest request = new QueryRequest(params);
-              request.setPath("/admin/collections");
+              var request =
+                  new GenericSolrRequest(
+                      METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
               cluster.getSolrClient().request(request);
             });
 

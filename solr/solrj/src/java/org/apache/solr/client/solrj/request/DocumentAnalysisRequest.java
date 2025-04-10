@@ -47,7 +47,7 @@ public class DocumentAnalysisRequest
 
   /** Constructs a new request with a default uri of "/documentanalysis". */
   public DocumentAnalysisRequest() {
-    super(METHOD.POST, "/analysis/document");
+    super(METHOD.POST, "/analysis/document", SolrRequestType.QUERY);
   }
 
   /**
@@ -56,7 +56,7 @@ public class DocumentAnalysisRequest
    * @param uri The of the request handler.
    */
   public DocumentAnalysisRequest(String uri) {
-    super(METHOD.POST, uri);
+    super(METHOD.POST, uri, SolrRequestType.QUERY);
   }
 
   @Override
@@ -196,10 +196,5 @@ public class DocumentAnalysisRequest
    */
   public boolean isShowMatch() {
     return showMatch;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
   }
 }

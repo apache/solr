@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -129,7 +130,8 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   public void testAdminApi() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
-    cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics"));
+    cloudClient.request(
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN));
     var finishedSpans = getAndClearSpans();
     assertEquals("get:/admin/metrics", finishedSpans.get(0).getName());
 
