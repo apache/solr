@@ -454,9 +454,9 @@ public abstract class LBSolrClient extends SolrClient {
   public Rsp request(Req req) throws SolrServerException, IOException {
     Rsp rsp = new Rsp();
     Exception ex = null;
-    boolean isNonRetryable =
-        req.request.getRequestType() == SolrRequestType.UPDATE
-            || req.request.getRequestType() == SolrRequestType.ADMIN;
+    boolean isAdmin =
+        req.request.getRequestType() == SolrRequestType.ADMIN && !req.request.requiresCollection();
+    boolean isNonRetryable = req.request.getRequestType() == SolrRequestType.UPDATE || isAdmin;
     EndpointIterator endpointIterator = new EndpointIterator(req, zombieServers);
     Endpoint serverStr;
     while ((serverStr = endpointIterator.nextOrError(ex)) != null) {

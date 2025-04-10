@@ -136,9 +136,9 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
   public CompletableFuture<Rsp> requestAsync(Req req) {
     CompletableFuture<Rsp> apiFuture = new CompletableFuture<>();
     Rsp rsp = new Rsp();
-    boolean isNonRetryable =
-        req.request.getRequestType() == SolrRequestType.UPDATE
-            || req.request.getRequestType() == SolrRequestType.ADMIN;
+    boolean isAdmin =
+        req.request.getRequestType() == SolrRequestType.ADMIN && !req.request.requiresCollection();
+    boolean isNonRetryable = req.request.getRequestType() == SolrRequestType.UPDATE || isAdmin;
     EndpointIterator it = new EndpointIterator(req, zombieServers);
     AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture = new AtomicReference<>();
     RetryListener retryListener =
