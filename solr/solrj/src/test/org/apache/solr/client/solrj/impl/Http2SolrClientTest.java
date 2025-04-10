@@ -306,8 +306,8 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_CORE)
-            .withRequestWriter(new BinaryRequestWriter())
-            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
             .build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
     }

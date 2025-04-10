@@ -39,8 +39,9 @@ Improvements
 
 * SOLR-17685: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of existing SOLR_HOST ENV variable. (Eric Pugh, Houston Putnam)
 
-* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse.
-  (David Smiley)
+* SOLR-17701: Simplify bin/solr scripts by removing AUTH_PORT export in favour of more commonly used SOLR_PORT export. (Eric Pugh)
+
+* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse. (David Smiley)
 
 Optimizations
 ---------------------

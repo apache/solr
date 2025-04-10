@@ -53,9 +53,8 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
     System.setProperty("managed.schema.mutable", "" + random().nextBoolean());
     Path tmpHome = createTempDir("tmp-home");
     Path coreDir = tmpHome.resolve(DEFAULT_TEST_CORENAME);
-    copyMinConf(coreDir.toFile(), null, "solrconfig-managed-schema.xml");
-    initCore(
-        "solrconfig.xml" /*it's renamed to*/, "schema.xml", tmpHome.toAbsolutePath().toString());
+    copyMinConf(coreDir, null, "solrconfig-managed-schema.xml");
+    initCore("solrconfig.xml" /*it's renamed to*/, "schema.xml", tmpHome.toAbsolutePath());
 
     server = new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_TEST_CORENAME);
   }

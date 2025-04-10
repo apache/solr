@@ -35,8 +35,8 @@ import java.util.concurrent.Future;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -449,7 +449,7 @@ public class SolrCmdDistributor implements Closeable {
     private int getRfFromResponse(InputStream inputStream) {
       if (inputStream != null) {
         try {
-          BinaryResponseParser brp = new BinaryResponseParser();
+          JavaBinResponseParser brp = new JavaBinResponseParser();
           NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {

@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +37,7 @@ import org.junit.Test;
 
 public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
-  private static File solrHomeDirectory = null;
+  private static Path solrHomeDirectory = null;
 
   private static CoreAdminHandler admin = null;
 
@@ -50,9 +49,9 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
-    solrHomeDirectory = createTempDir().toFile();
+    solrHomeDirectory = createTempDir();
 
-    setupNoCoreTest(solrHomeDirectory.toPath(), null);
+    setupNoCoreTest(solrHomeDirectory, null);
 
     admin = new CoreAdminHandler(h.getCoreContainer());
   }
@@ -64,7 +63,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   }
 
   private static void setupCore(String coreName) throws IOException {
-    Path instDir = solrHomeDirectory.toPath().resolve(coreName);
+    Path instDir = solrHomeDirectory.resolve(coreName);
     Path subHome = instDir.resolve("conf");
     Files.createDirectories(subHome);
 
@@ -85,12 +84,12 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     // create a new core (using CoreAdminHandler) w/ properties
     // Just to be sure it's NOT written to the core.properties file
-    File workDir = new File(solrHomeDirectory, coreSysProps);
-    System.setProperty("INSTDIR_TEST", workDir.getAbsolutePath());
+    Path workDir = solrHomeDirectory.resolve(coreSysProps);
+    System.setProperty("INSTDIR_TEST", workDir.toString());
     System.setProperty("CONFIG_TEST", "solrconfig_ren.xml");
     System.setProperty("SCHEMA_TEST", "schema_ren.xml");
 
-    File dataDir = new File(workDir.getAbsolutePath(), "data_diff");
+    Path dataDir = workDir.resolve("data_diff");
     System.setProperty("DATA_TEST", "data_diff");
 
     SolrQueryResponse resp = new SolrQueryResponse();
@@ -115,31 +114,28 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     Properties props = new Properties();
     Path propFile =
-        solrHomeDirectory
-            .toPath()
-            .resolve(coreSysProps)
-            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+        solrHomeDirectory.resolve(coreSysProps).resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
     try (Reader r = Files.newBufferedReader(propFile, StandardCharsets.UTF_8)) {
       props.load(r);
     }
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile,
         props.getProperty(CoreAdminParams.NAME),
         coreSysProps);
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile,
         props.getProperty(CoreAdminParams.CONFIG),
         "${CONFIG_TEST}");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile,
         props.getProperty(CoreAdminParams.SCHEMA),
         "${SCHEMA_TEST}");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile,
         props.getProperty(CoreAdminParams.DATA_DIR),
         "${DATA_TEST}");
 
@@ -150,17 +146,15 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     // see SOLR-4982. Really, we should be able to just verify that the index files exist.
 
     // Should NOT be a datadir named ${DATA_TEST} (literal).
-    File badDir = new File(workDir, "${DATA_TEST}");
-    assertFalse(
-        "Should have substituted the sys var, found file " + badDir.getAbsolutePath(),
-        badDir.exists());
+    Path badDir = workDir.resolve("${DATA_TEST}");
+    assertFalse("Should have substituted the sys var, found file " + badDir, Files.exists(badDir));
 
     // For the other 3 vars, we couldn't get past creating the core if dereferencing didn't work
     // correctly.
 
     // Should have segments in the directory pointed to by the ${DATA_TEST}.
-    File test = new File(dataDir, "index");
-    assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
+    Path test = dataDir.resolve("index");
+    assertTrue("Should have found index dir at " + test, Files.exists(test));
   }
 
   @Test
@@ -168,8 +162,8 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     setupCore(coreDuplicate);
 
-    File workDir = new File(solrHomeDirectory, coreDuplicate);
-    File data = new File(workDir, "data");
+    Path workDir = solrHomeDirectory.resolve(coreDuplicate);
+    Path data = workDir.resolve("data");
 
     // Create one core
     SolrQueryResponse resp = new SolrQueryResponse();
@@ -180,13 +174,13 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
             CoreAdminParams.NAME,
             coreDuplicate,
             CoreAdminParams.INSTANCE_DIR,
-            workDir.getAbsolutePath(),
+            workDir.toString(),
             CoreAdminParams.CONFIG,
             "solrconfig_ren.xml",
             CoreAdminParams.SCHEMA,
             "schema_ren.xml",
             CoreAdminParams.DATA_DIR,
-            data.getAbsolutePath()),
+            data.toString()),
         resp);
     assertNull("Exception on create", resp.getException());
 
@@ -202,13 +196,13 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
                       CoreAdminParams.NAME,
                       "different_name_core",
                       CoreAdminParams.INSTANCE_DIR,
-                      workDir.getAbsolutePath(),
+                      workDir.toString(),
                       CoreAdminParams.CONFIG,
                       "solrconfig_ren.xml",
                       CoreAdminParams.SCHEMA,
                       "schema_ren.xml",
                       CoreAdminParams.DATA_DIR,
-                      data.getAbsolutePath()),
+                      data.toString()),
                   new SolrQueryResponse());
             });
     assertTrue(e.getMessage().contains("already defined there"));
@@ -220,8 +214,8 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     setupCore("testInstanceDirAsPropertyParam-XYZ");
 
     // make sure workDir is different even if core name is used as instanceDir
-    File workDir = new File(solrHomeDirectory, "testInstanceDirAsPropertyParam-XYZ");
-    File data = new File(workDir, "data");
+    Path workDir = solrHomeDirectory.resolve("testInstanceDirAsPropertyParam-XYZ");
+    Path data = workDir.resolve("data");
 
     // Create one core
     SolrQueryResponse resp = new SolrQueryResponse();
@@ -232,13 +226,13 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
             CoreAdminParams.NAME,
             "testInstanceDirAsPropertyParam",
             "property.instanceDir",
-            workDir.getAbsolutePath(),
+            workDir.toString(),
             CoreAdminParams.CONFIG,
             "solrconfig_ren.xml",
             CoreAdminParams.SCHEMA,
             "schema_ren.xml",
             CoreAdminParams.DATA_DIR,
-            data.getAbsolutePath()),
+            data.toString()),
         resp);
     assertNull("Exception on create", resp.getException());
 
@@ -257,12 +251,12 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     assertNotNull(statusByCore);
     final var coreProps = statusByCore.get("testInstanceDirAsPropertyParam");
     assertNotNull(coreProps);
-    String instanceDir = coreProps.instanceDir;
+    Path instanceDir = Path.of(coreProps.instanceDir);
     assertNotNull(instanceDir);
     assertEquals(
         "Instance dir does not match param given in property.instanceDir syntax",
-        workDir.getAbsolutePath(),
-        new File(instanceDir).getAbsolutePath());
+        workDir.toString(),
+        instanceDir.toString());
   }
 
   @Test
@@ -272,8 +266,8 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     // create a new core (using CoreAdminHandler) w/ properties
     // Just to be sure it's NOT written to the core.properties file
-    File workDir = new File(solrHomeDirectory, coreNormal);
-    File data = new File(workDir, "data");
+    Path workDir = solrHomeDirectory.resolve(coreNormal);
+    Path data = workDir.resolve("data");
 
     SolrQueryResponse resp = new SolrQueryResponse();
     admin.handleRequestBody(
@@ -283,46 +277,43 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
             CoreAdminParams.NAME,
             coreNormal,
             CoreAdminParams.INSTANCE_DIR,
-            workDir.getAbsolutePath(),
+            workDir.toString(),
             CoreAdminParams.CONFIG,
             "solrconfig_ren.xml",
             CoreAdminParams.SCHEMA,
             "schema_ren.xml",
             CoreAdminParams.DATA_DIR,
-            data.getAbsolutePath()),
+            data.toString()),
         resp);
     assertNull("Exception on create", resp.getException());
 
     // verify props are in persisted file
     Properties props = new Properties();
     Path propFile =
-        solrHomeDirectory
-            .toPath()
-            .resolve(coreNormal)
-            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+        solrHomeDirectory.resolve(coreNormal).resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
     try (Reader r = Files.newBufferedReader(propFile, StandardCharsets.UTF_8)) {
       props.load(r);
     }
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile,
         props.getProperty(CoreAdminParams.NAME),
         coreNormal);
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile,
         props.getProperty(CoreAdminParams.CONFIG),
         "solrconfig_ren.xml");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile,
         props.getProperty(CoreAdminParams.SCHEMA),
         "schema_ren.xml");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile,
         props.getProperty(CoreAdminParams.DATA_DIR),
-        data.getAbsolutePath());
+        data.toString());
 
     assertEquals(props.size(), 4);
 
@@ -331,7 +322,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     // correctly.
 
     // Should have segments in the directory pointed to by the ${DATA_TEST}.
-    File test = new File(data, "index");
-    assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
+    Path test = data.resolve("index");
+    assertTrue("Should have found index dir at " + test, Files.exists(test));
   }
 }
