@@ -16,6 +16,7 @@
  */
 package org.apache.solr.request;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -52,12 +52,12 @@ public class SolrRequestInfo {
   private SolrQueryRequest req;
   private SolrQueryResponse rsp;
   private Date now;
-  public HttpServletRequest httpRequest;
   private TimeZone tz;
   private ResponseBuilder rb;
   private List<Closeable> closeHooks;
   private SolrDispatchFilter.Action action;
   private boolean useServerToken = false;
+  private Principal principal;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -152,6 +152,7 @@ public class SolrRequestInfo {
   public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp) {
     this.req = req;
     this.rsp = rsp;
+    this.principal = req != null ? req.getUserPrincipal() : null;
   }
 
   public SolrRequestInfo(
@@ -161,8 +162,8 @@ public class SolrRequestInfo {
   }
 
   public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp) {
-    this.httpRequest = httpReq;
     this.rsp = rsp;
+    this.principal = httpReq != null ? httpReq.getUserPrincipal() : null;
   }
 
   public SolrRequestInfo(
@@ -172,9 +173,7 @@ public class SolrRequestInfo {
   }
 
   public Principal getUserPrincipal() {
-    if (req != null) return req.getUserPrincipal();
-    if (httpRequest != null) return httpRequest.getUserPrincipal();
-    return null;
+    return principal;
   }
 
   public Date getNOW() {
