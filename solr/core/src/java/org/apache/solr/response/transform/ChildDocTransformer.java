@@ -51,14 +51,14 @@ import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class ChildDocTransformer extends DocTransformer {
+public class ChildDocTransformer extends DocTransformer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String ANON_CHILD_KEY = "_childDocuments_";
 
   private final String name;
   private final BitSetProducer parentsFilter; // if null; resolve parent via uniqueKey instead
-  private final DocSet childDocSet;
+  private DocSet childDocSet;
   private final int limit;
   private final boolean isNestedSchema;
   private final SolrReturnFields childReturnFields;
@@ -94,6 +94,14 @@ class ChildDocTransformer extends DocTransformer {
   @Override
   public String[] getExtraRequestFields() {
     return extraRequestedFields;
+  }
+
+  public DocSet getChildDocSet() {
+    return childDocSet;
+  }
+
+  public void setChildDocSet(DocSet childDocSet) {
+    this.childDocSet = childDocSet;
   }
 
   private int getPrevRootGivenFilter(LeafReaderContext leafReaderContext, int segRootId)

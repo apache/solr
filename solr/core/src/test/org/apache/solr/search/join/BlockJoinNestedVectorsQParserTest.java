@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -256,5 +257,73 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='2']");
+  }
+  
+  @Test
+  public void parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter() {
+    assertQ(
+            req(
+                    "fq", "parent_s:(b c)",
+                    "q", "{!parent which=$allParents score=max v=$children.q}",
+                    "fl", "id,score,vectors,vector,[child limit=2 fl=vector childFilter=$all_children]",
+                    "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
+                    "allParents", "parent_s:[* TO *]",
+                    "all_children", "child_s:[* TO *]"),
+            "//result[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.='8']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='10.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[1][.='9.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[2]/str[@name='id'][.='7']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='13.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[1][.='12.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='28.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[1][.='27.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[4][.='1.0']");
+  }
+
+  @Test
+  public void parentRetrievalFloat_topKWithChildTransformerWithNoFilter_shouldUseBestChildrenVectorTransformerFilter() {
+    assertQ(
+            req(
+                    "fq", "parent_s:(b c)",
+                    "q", "{!parent which=$allParents score=max v=$children.q}",
+                    "fl", "id,score,vectors,vector,[child fl=vector]",
+                    "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
+                    "allParents", "parent_s:[* TO *]"),
+            "//result[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.='8']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='8.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[2]/str[@name='id'][.='7']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='11.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='26.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
+            "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']");
+
   }
 }

@@ -44,9 +44,14 @@ import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.ChildDocTransformer;
+import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
 
@@ -131,6 +136,34 @@ public class BlockJoinParentQParser extends FiltersQParser {
           getBitSetProducer(allParents),
           ScoreModeParser.parse(scoreMode),
           allParents);
+    }
+  }
+
+  private void setAppropriateChildrenListingTransformer(SolrQueryRequest request, String fieldName, Query knnOnVectorField) throws IOException {
+    QueryLimits currentLimits = QueryLimits.getCurrentLimits();
+    ReturnFields returnFields = currentLimits.getRsp().getReturnFields();
+    DocTransformer originalTransformer = returnFields.getTransformer();
+
+    if (originalTransformer instanceof DocTransformers) {
+      DocTransformers transformers = (DocTransformers) originalTransformer;
+      boolean noChildTransformer = true;
+      for (int i = 0; i < transformers.size() && noChildTransformer; i++) {
+        DocTransformer t = transformers.getTransformer(i);
+        if (t instanceof ChildDocTransformer) {
+          ChildDocTransformer childTransformer = (ChildDocTransformer) t;
+          if(childTransformer.getChildDocSet() == null) {
+            childTransformer.setChildDocSet();
+          }
+          noChildTransformer = false;
+        }
+      }
+    } else {
+      if ((originalTransformer instanceof ChildDocTransformer)) {
+        ChildDocTransformer childTransformer = (ChildDocTransformer) originalTransformer;
+        if(childTransformer.getChildDocSet() == null) {
+          childTransformer.setChildDocSet();
+        }
+      }
     }
   }
 
