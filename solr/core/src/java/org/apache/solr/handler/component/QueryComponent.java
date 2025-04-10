@@ -146,7 +146,6 @@ public class QueryComponent extends SearchComponent {
 
     if (rb.isDistrib) {
       boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
-
       if (isCancellableQuery) {
         // Generate Query ID
         rb.queryID = generateQueryID(req);
@@ -390,7 +389,7 @@ public class QueryComponent extends SearchComponent {
 
     if (isCancellableQuery) {
       // Set the queryID for the searcher to consume
-      String queryID = params.get(ShardParams.QUERY_ID);
+      String queryID = params.get(ShardParams.QUERY_ID, params.get(CommonParams.QUERY_UUID));
 
       cmd.setQueryCancellable(true);
 
