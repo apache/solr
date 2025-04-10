@@ -27,7 +27,6 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
@@ -273,7 +272,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
         // multiple shard addresses may be present separated by '|'
         List<String> list = StrUtils.splitSmart(entry.getKey(), '|');
         for (Map.Entry<String, Replica> replica : slice.getReplicasMap().entrySet()) {
-          String coreUrl = new ZkCoreNodeProps(replica.getValue()).getCoreUrl();
+          String coreUrl = replica.getValue().getCoreUrl();
           if (list.contains(coreUrl)) {
             return new ArrayList<>(entry.getValue());
           }

@@ -34,7 +34,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -184,7 +183,7 @@ public class ColStatus {
         if (!leader.isActive(clusterState.getLiveNodes())) {
           continue;
         }
-        String url = ZkCoreNodeProps.getCoreUrl(leader);
+        String url = leader.getCoreUrl();
         if (url == null) {
           continue;
         }

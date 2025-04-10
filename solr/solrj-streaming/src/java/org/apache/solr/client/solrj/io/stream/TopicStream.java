@@ -57,7 +57,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -551,8 +550,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       }
 
       Replica rep = shuffler.get(random.nextInt(shuffler.size()));
-      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-      String url = zkProps.getCoreUrl();
+      String url = rep.getCoreUrl();
       SolrStream solrStream = new SolrStream(url, localParams);
       solrStream.setSlice(slice.getName());
       solrStream.setCheckpoint(checkpoint);
