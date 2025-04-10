@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request;
 
-import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayDeque;
@@ -55,7 +54,7 @@ public class SolrRequestInfo {
   public HttpServletRequest httpRequest;
   private TimeZone tz;
   private ResponseBuilder rb;
-  private List<Closeable> closeHooks;
+  private List<AutoCloseable> closeHooks;
   private SolrDispatchFilter.Action action;
   private boolean useServerToken = false;
 
@@ -138,7 +137,7 @@ public class SolrRequestInfo {
     }
 
     if (closeHooks != null) {
-      for (Closeable hook : closeHooks) {
+      for (AutoCloseable hook : closeHooks) {
         try {
           hook.close();
         } catch (Exception e) {
@@ -218,7 +217,7 @@ public class SolrRequestInfo {
     this.rb = rb;
   }
 
-  public void addCloseHook(Closeable hook) {
+  public void addCloseHook(AutoCloseable hook) {
     // is this better here, or on SolrQueryRequest?
     synchronized (this) {
       if (isClosed()) {

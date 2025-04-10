@@ -36,7 +36,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryLimits;
 import org.slf4j.Logger;
@@ -150,7 +149,7 @@ public class SpellCheckCollator {
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse =
             new ResponseBuilder(
-                new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),
+                ultimateResponse.req.subRequest(params),
                 new SolrQueryResponse(),
                 Arrays.asList(queryComponent));
         checkResponse.setQparser(ultimateResponse.getQparser());
