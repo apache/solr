@@ -22,6 +22,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.search.DocIterationInfo;
 
 /** */
 public abstract class BaseEditorialTransformer extends DocTransformer {
@@ -42,7 +43,7 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
     // this only gets added if QueryElevationParams.MARK_EXCLUDED is true
     Set<BytesRef> ids = getIdSet();
     if (ids != null && ids.isEmpty() == false) {

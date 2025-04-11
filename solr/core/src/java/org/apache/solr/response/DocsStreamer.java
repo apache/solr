@@ -103,7 +103,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
         if (docs.hasScores()) {
           transformer.transform(sdoc, id, docIterator);
         } else {
-          transformer.transform(sdoc, id);
+          transformer.transform(sdoc, id, null);
         }
       } catch (IOException e) {
         throw new SolrException(

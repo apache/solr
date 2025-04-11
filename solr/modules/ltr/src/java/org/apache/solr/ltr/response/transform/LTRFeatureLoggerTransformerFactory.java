@@ -408,11 +408,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       implTransform(doc, docid, docInfo);
     }
 
-    @Override
-    public void transform(SolrDocument doc, int docid) throws IOException {
-      implTransform(doc, docid, null);
-    }
-
     private void implTransform(SolrDocument doc, int docid, DocIterationInfo docInfo)
         throws IOException {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];

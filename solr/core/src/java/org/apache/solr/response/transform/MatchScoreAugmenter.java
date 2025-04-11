@@ -38,11 +38,8 @@ public class MatchScoreAugmenter extends DocTransformer {
 
   @Override
   public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
-    doc.setField(name, docInfo.matchScore());
-  }
-
-  @Override
-  public void transform(SolrDocument doc, int docid) {
-    // No-op
+    if (docInfo != null) {
+      doc.setField(name, docInfo.matchScore());
+    }
   }
 }
