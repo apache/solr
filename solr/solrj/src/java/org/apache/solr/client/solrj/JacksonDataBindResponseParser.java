@@ -25,7 +25,11 @@ import java.util.List;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
-/** Parses JSON, deserializing to a domain type (class) via Jackson data-bind. */
+/**
+ * Parses JSON, deserializing to a domain type (class) via Jackson data-bind.
+ *
+ * @lucene.experimental
+ */
 public class JacksonDataBindResponseParser<T> extends ResponseParser {
 
   private final Class<T> typeParam;
@@ -49,6 +53,7 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
 
   @Override
   public NamedList<Object> processResponse(InputStream stream, String encoding) throws IOException {
+    // TODO SOLR-17549 for error handling, implying a significant ResponseParser API change
     // TODO generalize to CBOR, Smile, ...
     var mapper = JacksonContentWriter.DEFAULT_MAPPER;
 
