@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ClusterFileStoreApis;
@@ -229,7 +230,9 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
         break;
       case DIRECTORY:
         final var directoryContents =
-            fileStore.list(path, null).stream().map(ClusterFileStore::convertToResponse).toList();
+            fileStore.list(path, null).stream()
+                .map(details -> convertToResponse(details))
+                .collect(Collectors.toList());
         dirListingResponse.files = Collections.singletonMap(path, directoryContents);
         break;
     }
