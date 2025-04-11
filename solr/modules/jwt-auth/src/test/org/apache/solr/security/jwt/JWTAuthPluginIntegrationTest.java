@@ -48,6 +48,7 @@ import no.nav.security.mock.oauth2.OAuth2Config;
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper;
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback;
 import okhttp3.mockwebserver.MockWebServer;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -105,7 +106,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
     Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
-
+    PathUtils.deleteOnExit(tempDir);
     Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
     new KeystoreGenerator()
         .generateKeystore(

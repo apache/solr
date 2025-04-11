@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -80,6 +81,7 @@ public class DefaultPackageRepository extends PackageRepository {
   @Override
   public Path download(String artifactName) throws SolrException, IOException {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
+    PathUtils.deleteOnExit(tmpDirectory);
     URL url = getRepoUri().resolve(artifactName).toURL();
     String fileName = FilenameUtils.getName(url.getPath());
     Path destination = tmpDirectory.resolve(fileName);

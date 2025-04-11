@@ -995,7 +995,7 @@ public class CoreContainer {
           } catch (IOException e) {
             throw new SolrException(
                 ErrorCode.SERVER_ERROR,
-                "Error retrieving file store information for " + dataHome,
+                "Error retrieving total space for data home directory" + dataHome,
                 e);
           }
         },
@@ -1010,7 +1010,9 @@ public class CoreContainer {
             return Files.getFileStore(dataHome).getUsableSpace();
           } catch (IOException e) {
             throw new SolrException(
-                ErrorCode.SERVER_ERROR, "Error retrieving usable space for " + dataHome, e);
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for data home directory" + dataHome,
+                e);
           }
         },
         true,

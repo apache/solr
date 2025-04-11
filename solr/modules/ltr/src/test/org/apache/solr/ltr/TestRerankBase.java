@@ -136,6 +136,7 @@ public class TestRerankBase extends RestTestBase {
       throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
+    PathUtils.deleteOnExit(tmpConfDir);
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome);
 
     final Path fstore = tmpConfDir.resolve(FEATURE_FILE_NAME);
