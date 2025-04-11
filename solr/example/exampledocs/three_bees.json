@@ -1,0 +1,19 @@
+[
+  {
+    "id" : "1",
+    "text_ws" : "bumble bee",
+    "text_drtf" : "bee|3 bumble|2"
+  }
+,
+  {
+    "id" : "2",
+    "text_ws" : "honey bee",
+    "text_drtf" : "bee|3 honey|2 sugar|1"
+  }
+,
+  {
+    "id" : "3",
+    "text_ws" : "solitary bee",
+    "text_drtf" : "bee|3 solitary|2 alone|1"
+  }
+]
