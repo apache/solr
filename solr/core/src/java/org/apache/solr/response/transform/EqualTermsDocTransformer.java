@@ -26,37 +26,24 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.StoredField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * Compares a field from a document with a literal string value using analyzed (tokenized) text,
- * thus a configurable degree of matching.
- *
- * <p>This transformer takes a source field from the index and compares it with a literal string
- * value, applying the field's analyzer to both. The comparison is done at the term level using
- * TokenStream. The output is a boolean value added to the document that indicates whether the
- * analyzed terms are equal.
- *
- * <p>Example usage in a request: fl=id,isEqual:[equalterms field=subject value='John Smith']
+ * @see EqualTermsTransformerFactory
  */
 public class EqualTermsDocTransformer extends DocTransformer {
   private final String name;
-  private final String sourceField;
+  private final SchemaField sourceField;
   private final String compareValue;
-  private final IndexSchema schema;
   private final List<String> compareValueTerms;
 
-  public EqualTermsDocTransformer(
-      String name, String sourceField, String compareValue, IndexSchema schema) throws IOException {
+  public EqualTermsDocTransformer(String name, SchemaField sourceField, String compareValue) {
     this.name = name;
     this.sourceField = sourceField;
     this.compareValue = compareValue;
-    this.schema = schema;
 
     // Analyze the comparison value up front
-    SchemaField field = schema.getField(sourceField);
-    FieldType fieldType = field.getType();
+    FieldType fieldType = sourceField.getType();
     Analyzer analyzer = fieldType.getIndexAnalyzer();
 
     this.compareValueTerms = analyzeToTerms(analyzer, compareValue);
@@ -74,7 +61,7 @@ public class EqualTermsDocTransformer extends DocTransformer {
 
   @Override
   public String[] getExtraRequestFields() {
-    return new String[] {sourceField};
+    return new String[] {sourceField.getName()};
   }
 
   @Override
@@ -85,8 +72,7 @@ public class EqualTermsDocTransformer extends DocTransformer {
       return;
     }
 
-    SchemaField field = schema.getField(sourceField);
-    FieldType fieldType = field.getType();
+    FieldType fieldType = sourceField.getType();
     Analyzer analyzer = fieldType.getIndexAnalyzer();
 
     // Compare terms on-the-fly as we iterate through the token stream
@@ -99,7 +85,7 @@ public class EqualTermsDocTransformer extends DocTransformer {
    * Gets the string field value, or null if not present or if found a list of values other than 1.
    */
   private String getFieldValue(SolrDocument doc) {
-    Object fieldValue = doc.getFieldValue(sourceField);
+    Object fieldValue = doc.getFieldValue(sourceField.getName());
     if (fieldValue instanceof List<?> list) {
       if (list.size() != 1) return null;
       fieldValue = list.getFirst();
@@ -118,7 +104,7 @@ public class EqualTermsDocTransformer extends DocTransformer {
   private boolean compareTokensOnTheFly(Analyzer analyzer, String text) throws IOException {
     Iterator<String> compareIter = compareValueTerms.iterator();
 
-    try (TokenStream tokenStream = analyzer.tokenStream(sourceField, text)) {
+    try (TokenStream tokenStream = analyzer.tokenStream(sourceField.getName(), text)) {
       CharTermAttribute termAttr = tokenStream.addAttribute(CharTermAttribute.class);
       tokenStream.reset();
 
@@ -144,10 +130,10 @@ public class EqualTermsDocTransformer extends DocTransformer {
   }
 
   /** Analyzes text using the provided analyzer and returns a list of String terms. */
-  private List<String> analyzeToTerms(Analyzer analyzer, String text) throws IOException {
+  private List<String> analyzeToTerms(Analyzer analyzer, String text) {
     List<String> terms = new ArrayList<>();
 
-    try (TokenStream tokenStream = analyzer.tokenStream(sourceField, text)) {
+    try (TokenStream tokenStream = analyzer.tokenStream(sourceField.getName(), text)) {
       CharTermAttribute termAttr = tokenStream.addAttribute(CharTermAttribute.class);
       tokenStream.reset();
 
@@ -157,6 +143,8 @@ public class EqualTermsDocTransformer extends DocTransformer {
       }
 
       tokenStream.end();
+    } catch (IOException e) {
+      throw new RuntimeException(e); // really unexpected for strings (no IO)
     }
 
     return terms;

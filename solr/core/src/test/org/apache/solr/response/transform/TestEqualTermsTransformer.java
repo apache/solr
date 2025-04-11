@@ -50,7 +50,7 @@ public class TestEqualTermsTransformer extends SolrTestCaseJ4 {
 
     IndexSchema schema = h.getCore().getLatestSchema();
     EqualTermsDocTransformer transformer =
-        new EqualTermsDocTransformer("isJohn", "subject", "John Smith", schema);
+        new EqualTermsDocTransformer("isJohn", schema.getField("subject"), "John Smith");
     transformer.transform(doc, 0);
 
     assertEquals(true, doc.getFieldValue("isJohn"));

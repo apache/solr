@@ -16,29 +16,30 @@
  */
 package org.apache.solr.response.transform;
 
-import java.io.IOException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
 
 /**
- * Factory for {@link EqualTermsDocTransformer} instances.
+ * Compares two string values using terms from analyzed (tokenized) text, thus a configurable degree
+ * of matching based on schema configuration. One string comes from the document, the other is an
+ * input. The transformer yields a boolean result as a new field on the document.
  *
- * <p>Syntax: {fieldName}:equalterms({sourceField},{compareValue})
+ * <p>Example usage in a request: fl=id,isEqual:[equalterms field=subject value='John Smith']
  *
  * <p>Params:
  *
  * <ul>
- *   <li>sourceField: The field from the document to compare
- *   <li>compareValue: The literal string value to compare with
+ *   <li>field: The field from the document with text to compare, and points to the analyzer
+ *       configuration in the schema, used for equality comparison.
+ *   <li>value: The literal string value to compare with
  * </ul>
  */
 public class EqualTermsTransformerFactory extends TransformerFactory {
 
   @Override
-  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+  public DocTransformer create(String destField, SolrParams params, SolrQueryRequest req) {
     String sourceField = params.get("field");
     String compareValue = params.get("value");
 
@@ -52,13 +53,7 @@ public class EqualTermsTransformerFactory extends TransformerFactory {
           ErrorCode.BAD_REQUEST, "EqualTermsTransformer requires 'value' parameter");
     }
 
-    IndexSchema schema = req.getSchema();
-
-    try {
-      return new EqualTermsDocTransformer(field, sourceField, compareValue, schema);
-    } catch (IOException e) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Error creating EqualTermsDocTransformer: " + e.getMessage(), e);
-    }
+    return new EqualTermsDocTransformer(
+        destField, req.getSchema().getField(sourceField), compareValue);
   }
 }
