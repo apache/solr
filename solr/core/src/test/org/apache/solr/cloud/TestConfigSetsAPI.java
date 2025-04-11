@@ -205,7 +205,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws Exception {
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
-    tmpConfigDir.toFile().deleteOnExit();
+    PathUtils.deleteOnExit(tmpConfigDir);
     PathUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
       Files.writeString(
@@ -1565,7 +1565,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
-    tmpConfigDir.toFile().deleteOnExit();
+    PathUtils.deleteOnExit(tmpConfigDir);
     // Ensure ConfigSet is immutable
     PathUtils.copyDirectory(configDir, tmpConfigDir);
     Files.writeString(
