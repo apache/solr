@@ -284,8 +284,13 @@ public class DistribFileStore implements FileStore {
         }
 
         @Override
-        public Date getTimeStamp() throws IOException {
-          return new Date(Files.getLastModifiedTime(realPath()).toMillis());
+        public Date getTimeStamp() {
+          try {
+            return new Date(Files.getLastModifiedTime(realPath()).toMillis());
+          } catch (IOException e) {
+            throw new SolrException(
+                SERVER_ERROR, "Failed to retrieve the last modified time for: " + realPath(), e);
+          }
         }
 
         @Override
@@ -294,8 +299,13 @@ public class DistribFileStore implements FileStore {
         }
 
         @Override
-        public long size() throws IOException {
-          return Files.size(realPath());
+        public long size() {
+          try {
+            return Files.size(realPath());
+          } catch (IOException e) {
+            throw new SolrException(
+                SERVER_ERROR, "Failed to retrieve the file size for: " + realPath(), e);
+          }
         }
 
         @Override

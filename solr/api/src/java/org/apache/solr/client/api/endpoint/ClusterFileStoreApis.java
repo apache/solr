@@ -31,7 +31,6 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import org.apache.solr.client.api.model.FileStoreDirectoryListingResponse;
@@ -69,8 +68,7 @@ public interface ClusterFileStoreApis {
   FileStoreDirectoryListingResponse getMetadata(
       @Parameter(description = "Path to a file or directory within the filestore")
           @PathParam("path")
-          String path)
-      throws IOException;
+          String path);
 
   @GET
   @Operation(

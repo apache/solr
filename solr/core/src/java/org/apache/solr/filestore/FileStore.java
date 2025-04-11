@@ -114,9 +114,9 @@ public interface FileStore {
 
     MetaData getMetaData();
 
-    Date getTimeStamp() throws IOException;
+    Date getTimeStamp();
 
-    long size() throws IOException;
+    long size();
 
     boolean isDir();
   }

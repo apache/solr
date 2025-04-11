@@ -993,19 +993,24 @@ public class CoreContainer {
           try {
             return Files.getFileStore(dataHome).getTotalSpace();
           } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving file store information for " + dataHome,
+                e);
           }
         },
         true,
         "totalSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
         "fs");
+
     solrMetricsContext.gauge(
         () -> {
           try {
             return Files.getFileStore(dataHome).getUsableSpace();
           } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR, "Error retrieving usable space for " + dataHome, e);
           }
         },
         true,
@@ -1019,7 +1024,11 @@ public class CoreContainer {
           try {
             return Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace();
           } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error retrieving total space for core root directory: "
+                    + cfg.getCoreRootDirectory(),
+                e);
           }
         },
         true,
@@ -1032,7 +1041,11 @@ public class CoreContainer {
           try {
             return Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace();
           } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for core root directory: "
+                    + cfg.getCoreRootDirectory(),
+                e);
           }
         },
         true,

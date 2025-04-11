@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ClusterFileStoreApis;
@@ -173,7 +172,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   @Override
   @PermissionName(PermissionNameProvider.Name.FILESTORE_READ_PERM)
-  public FileStoreDirectoryListingResponse getMetadata(String path) throws IOException {
+  public FileStoreDirectoryListingResponse getMetadata(String path) {
     if (path == null) {
       path = "";
     }
@@ -208,7 +207,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   @SuppressWarnings("fallthrough")
   public static FileStoreDirectoryListingResponse getMetadata(
-      FileStore.FileType type, String path, FileStore fileStore) throws IOException {
+      FileStore.FileType type, String path, FileStore fileStore) {
     final var dirListingResponse = new FileStoreDirectoryListingResponse();
     if (path == null) {
       path = "";
@@ -230,16 +229,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
         break;
       case DIRECTORY:
         final var directoryContents =
-            fileStore.list(path, null).stream()
-                .map(
-                    details -> {
-                      try {
-                        return convertToResponse(details);
-                      } catch (IOException e) {
-                        throw new RuntimeException(e);
-                      }
-                    })
-                .collect(Collectors.toList());
+            fileStore.list(path, null).stream().map(ClusterFileStore::convertToResponse).toList();
         dirListingResponse.files = Collections.singletonMap(path, directoryContents);
         break;
     }
@@ -249,8 +239,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   // TODO Modify the filestore implementation itself to return this object, so conversion isn't
   // needed.
-  private static FileStoreEntryMetadata convertToResponse(FileStore.FileDetails details)
-      throws IOException {
+  private static FileStoreEntryMetadata convertToResponse(FileStore.FileDetails details) {
     final var entryMetadata = new FileStoreEntryMetadata();
 
     entryMetadata.name = details.getSimpleName();
