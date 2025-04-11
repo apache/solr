@@ -38,6 +38,9 @@ import org.apache.solr.request.SolrQueryRequest;
  */
 public class EqualTermsTransformerFactory extends TransformerFactory {
 
+  // TODO consider an option to choose the analyzer; not necessarily related to the input field's
+  //  analysis.
+
   @Override
   public DocTransformer create(String destField, SolrParams params, SolrQueryRequest req) {
     String sourceField = params.get("field");
