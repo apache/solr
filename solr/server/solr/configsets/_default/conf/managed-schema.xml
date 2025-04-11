@@ -164,6 +164,9 @@
     <dynamicField name="*_dpi" type="delimited_payloads_int" indexed="true"  stored="true"/>
     <dynamicField name="*_dps" type="delimited_payloads_string" indexed="true"  stored="true"/>
 
+    <!-- delimited raw term-frequency dynamic field(s) -->
+    <dynamicField name="*_drtf" type="delimited_rawtf" indexed="true" stored="true" omitPositions="true"/>
+
     <dynamicField name="attr_*" type="text_general" indexed="true" stored="true" multiValued="true"/>
 
     <!-- Field to use to determine and enforce document uniqueness.
@@ -561,6 +564,17 @@
         <tokenizer name="whitespace"/>
         <filter name="delimitedPayload" encoder="identity"/>
       </analyzer>
+    </fieldType>
+
+    <fieldType name="delimited_rawtf" stored="false" indexed="true" class="solr.TextField">
+      <analyzer>
+        <tokenizer name="whitespace"/>
+        <filter name="delimitedTermFrequency"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer name="whitespace"/>
+      </analyzer>
+      <similarity class="solr.RawTFSimilarityFactory"/>
     </fieldType>
 
     <!-- some examples for different languages (generally ordered by ISO code) -->

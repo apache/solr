@@ -1,0 +1,171 @@
+= Exercise 6: Using Learned Sparse Retrieval (LSR)
+:experimental:
+:tabs-sync-option:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[[exercise-6]]
+== Exercise 6: Using Learned Sparse Retrieval (LSR) in Solr
+
+...
+
+=== Getting Ready
+
+[,console]
+----
+bin/solr start -noprompt -e cloud
+----
+
+...
+
+[,console]
+----
+bin/solr create -c buzz
+----
+
+
+=== Indexing
+
+...
+
+[,console]
+----
+bin/solr post -c buzz example/exampledocs/three_bees.json
+----
+
+=== Searching
+
+...
+
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=text_ws:bee'
+----
+
+As can be seen the scores are the same for all documents.
+
+```
+...
+    "docs":[{
+      "text_ws":"bumble bee",
+      "text_drtf":"bee|3 bumble|2",
+      "score":0.06069608
+    },{
+      "text_ws":"honey bee",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":0.06069608
+    },{
+      "text_ws":"solitary bee",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":0.06069608
+    }]
+...
+```
+
+=== Searching with the raw term frequency similarity field
+
+...
+
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=text_drtf:bee'
+----
+
+As can be seen the scores are as supplied after the pipe delimiter for the `bee` term.
+
+```
+...
+   "docs":[{
+      "text_ws":"bumble bee",
+      "text_drtf":"bee|3 bumble|2",
+      "score":3.0
+    },{
+      "text_ws":"honey bee",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":3.0
+    },{
+      "text_ws":"solitary bee",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":3.0
+    }]
+...
+```
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=text_drtf:(honey+bee)'
+----
+
+As can be seen the scores are as supplied after the pipe delimiter, summed for the matching terms.
+
+```
+...
+    "docs":[{
+      "text_ws":"honey bee",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":5.0
+    },{
+      "text_ws":"bumble bee",
+      "text_drtf":"bee|3 bumble|2",
+      "score":3.0
+    },{
+      "text_ws":"solitary bee",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":3.0
+    }]
+...
+```
+
+...
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=text_drtf:(bumble^10+honey^2+bee)'
+----
+
+As can be seen the scores are as supplied after the pipe delimiter, summed for the matching terms and boosted as per the query.
+
+
+```
+...
+    "docs":[{
+      "text_ws":"bumble bee",
+      "text_drtf":"bee|3 bumble|2",
+      "score":23.0
+    },{
+      "text_ws":"honey bee",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":7.0
+    },{
+      "text_ws":"solitary bee",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":3.0
+    }]
+...
+```
+
+...
+
+=== Searching with payloaded fields
+
+...
+
+=== Searching with ??? fields
+
+...
