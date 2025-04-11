@@ -279,7 +279,7 @@ public class RealTimeGetComponent extends SearchComponent {
                           (SolrInputDocument) entry.get(entry.size() - 1), core.getLatestSchema());
                   // toSolrDoc filtered copy-field targets already
                   if (transformer != null) {
-                    transformer.transform(doc, -1); // unknown docID
+                    transformer.transform(doc, -1, null); // unknown docID
                   }
                 } else if (oper == UpdateLog.UPDATE_INPLACE) {
                   assert entry.size() == 5;
@@ -364,7 +364,7 @@ public class RealTimeGetComponent extends SearchComponent {
             transformer.setContext(
                 resultContext); // we avoid calling setContext unless searcher is new/changed
           }
-          transformer.transform(doc, docid);
+          transformer.transform(doc, docid, null);
         }
         docList.add(doc);
       } // loop on ids
@@ -511,7 +511,7 @@ public class RealTimeGetComponent extends SearchComponent {
           toSolrDoc(partialDoc, schema, forInPlaceUpdate); // filters copy-field targets TODO don't
       DocTransformer transformer = returnFields.getTransformer();
       if (transformer != null && !transformer.needsSolrIndexSearcher()) {
-        transformer.transform(solrDoc, -1); // no docId when from the ulog
+        transformer.transform(solrDoc, -1, null); // no docId when from the ulog
       } // if needs searcher, it must be [child]; tlog docs already have children
       return solrDoc;
     }
@@ -622,7 +622,7 @@ public class RealTimeGetComponent extends SearchComponent {
     if (transformer != null) {
       transformer.setContext(
           new RTGResultContext(returnFields, searcher, null)); // we get away with null req
-      transformer.transform(solrDoc, docId);
+      transformer.transform(solrDoc, docId, null);
     }
     return solrDoc;
   }
