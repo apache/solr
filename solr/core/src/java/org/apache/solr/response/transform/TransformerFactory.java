@@ -105,7 +105,7 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin {
     }
   }
 
-  public static final Map<String, TransformerFactory> defaultFactories = new HashMap<>(9, 1.0f);
+  public static final Map<String, TransformerFactory> defaultFactories = new HashMap<>();
 
   static {
     defaultFactories.put("explain", new ExplainAugmenterFactory());
@@ -118,5 +118,6 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin {
     defaultFactories.put("xml", new RawValueTransformerFactory("xml"));
     defaultFactories.put("geo", new GeoTransformerFactory());
     defaultFactories.put("core", new CoreAugmenterFactory());
+    defaultFactories.put("equalterms", new EqualTermsTransformerFactory());
   }
 }
