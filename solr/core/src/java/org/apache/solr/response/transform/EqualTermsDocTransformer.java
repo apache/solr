@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.Field;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -86,8 +86,8 @@ public class EqualTermsDocTransformer extends DocTransformer {
       fieldValue = list.getFirst();
     }
     if (fieldValue instanceof CharSequence) return fieldValue.toString();
-    if (fieldValue instanceof StoredField storedField) {
-      return storedField.stringValue();
+    if (fieldValue instanceof Field luceneField) {
+      return luceneField.stringValue();
     }
     return null;
   }

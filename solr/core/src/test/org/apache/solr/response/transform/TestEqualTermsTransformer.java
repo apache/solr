@@ -104,11 +104,11 @@ public class TestEqualTermsTransformer extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "q",
-            "*:*",
-            "sort",
-            "id asc",
+            "john   smith",
+            "df",
+            "subject",
             "fl",
-            "id,isMatch:[equalterms field=subject value='john   smith']"),
+            "id,isMatch:[equalterms field=subject value=$q]"),
         "/response/docs/[0]/id=='1'", // John Smith
         "/response/docs/[0]/isMatch==true");
   }

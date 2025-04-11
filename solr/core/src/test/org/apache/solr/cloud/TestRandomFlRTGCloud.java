@@ -1501,10 +1501,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public static final String FIXED_VALUE = "Billy";
     public static final String FIELD_NAME = "equalterms_s";
 
-    public EqualTermsValidator(final String fieldName) {
-      this(fieldName, "[" + NAME + "]");
-    }
-
     public EqualTermsValidator(final String fieldName, final String resultKey) {
       this.fieldName = fieldName;
       this.resultKey = resultKey;
