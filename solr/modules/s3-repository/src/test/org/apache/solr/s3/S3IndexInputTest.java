@@ -31,13 +31,12 @@ import org.junit.Test;
 /** Test for reading files from S3 'the Solr way'. */
 public class S3IndexInputTest extends SolrTestCaseJ4 {
 
-  //  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   public Path temporaryFolder;
 
   @Before
   public void setUp() throws Exception {
-    temporaryFolder = Files.createTempDirectory("myTempDir");
+    super.setUp();
+    temporaryFolder = Files.createTempDirectory("junit");
   }
 
   /** Simulates fetching a file from S3 in more than one read operation. */
@@ -68,8 +67,8 @@ public class S3IndexInputTest extends SolrTestCaseJ4 {
   private void doTestPartialRead(boolean directBuffer, String content, int slice)
       throws IOException {
 
-    //    Path tmp = temporaryFolder.newFolder().toPath();
     Path tmp = Files.createTempDirectory(temporaryFolder, "junit");
+
     Path file = tmp.resolve("content");
     Files.writeString(file, content, StandardCharsets.UTF_8);
 

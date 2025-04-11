@@ -50,8 +50,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   private static final String BUCKET_NAME = S3BackupRepositoryTest.class.getSimpleName();
 
-  //  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   public Path temporaryFolder;
 
   @ClassRule
@@ -60,7 +58,8 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   @Before
   public void setUp() throws Exception {
-    temporaryFolder = Files.createTempDirectory("myTempDir");
+    super.setUp();
+    temporaryFolder = Files.createTempDirectory("junit");
   }
 
   /**
@@ -181,8 +180,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     try (S3BackupRepository repo = getRepository()) {
 
       // A file on the local disk
-      //      Path tmp = temporaryFolder.newFolder().toPath();
-      Path tmp = temporaryFolder;
+      Path tmp = Files.createTempDirectory(temporaryFolder, "junit");
       try (OutputStream os = PathUtils.newOutputStream(tmp.resolve("from-file"), false);
           IndexOutput indexOutput = new OutputStreamIndexOutput("", "", os, content.length())) {
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
@@ -212,8 +210,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     try (S3BackupRepository repo = getRepository()) {
 
       // Local folder for destination
-      //      Path tmp = temporaryFolder.newFolder().toPath();
-      Path tmp = temporaryFolder;
+      Path tmp = Files.createTempDirectory(temporaryFolder, "junit");
 
       // Directly create a file on S3
       pushObject("from-file", content);
@@ -343,7 +340,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   private Path pullObject(String path) throws IOException {
     try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
-      //      Path file = temporaryFolder.newFile().toPath();
       Path file = Files.createTempFile(temporaryFolder, "junit", null);
       InputStream input = s3.getObject(b -> b.bucket(BUCKET_NAME).key(path));
       Files.copy(input, file, StandardCopyOption.REPLACE_EXISTING);
