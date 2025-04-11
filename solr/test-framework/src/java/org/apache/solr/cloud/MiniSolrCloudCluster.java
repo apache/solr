@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 import com.codahale.metrics.MetricRegistry;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
@@ -580,7 +579,7 @@ public class MiniSolrCloudCluster {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir, true);
+      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir);
     }
   }
 
@@ -968,7 +967,7 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  public void dumpMetrics(File outputDirectory, String fileName) throws IOException {
+  public void dumpMetrics(Path outputDirectory, String fileName) throws IOException {
     for (JettySolrRunner jetty : jettys) {
       jetty.outputMetrics(outputDirectory, fileName);
     }

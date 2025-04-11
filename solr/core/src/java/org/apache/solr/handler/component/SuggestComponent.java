@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -116,9 +115,10 @@ public class SuggestComponent extends SearchComponent
     if (initParams != null) {
       log.info("Initializing SuggestComponent");
       boolean hasDefault = false;
-      for (int i = 0; i < initParams.size(); i++) {
-        if (initParams.getName(i).equals(CONFIG_PARAM_LABEL)) {
-          NamedList<?> suggesterParams = (NamedList<?>) initParams.getVal(i);
+      for (Map.Entry<String, ?> initEntry : initParams) {
+        String name = initEntry.getKey();
+        if (CONFIG_PARAM_LABEL.equals(name)) {
+          NamedList<?> suggesterParams = (NamedList<?>) initEntry.getValue();
           SolrSuggester suggester = new SolrSuggester();
           String dictionary = suggester.init(suggesterParams, core);
           if (dictionary != null) {
@@ -485,34 +485,32 @@ public class SuggestComponent extends SearchComponent
       return result;
     }
     // for each token
-    for (Map.Entry<String, SimpleOrderedMap<NamedList<Object>>> entry : suggestionsMap) {
-      String suggesterName = entry.getKey();
-      for (Iterator<Map.Entry<String, NamedList<Object>>> suggestionsIter =
-              entry.getValue().iterator();
-          suggestionsIter.hasNext(); ) {
-        Map.Entry<String, NamedList<Object>> suggestions = suggestionsIter.next();
-        String tokenString = suggestions.getKey();
+    for (Map.Entry<String, SimpleOrderedMap<NamedList<Object>>> suggesterEntry : suggestionsMap) {
+      String suggesterName = suggesterEntry.getKey();
+      for (Map.Entry<String, NamedList<Object>> tokenEntry : suggesterEntry.getValue()) {
+        String tokenString = tokenEntry.getKey();
         List<LookupResult> lookupResults = new ArrayList<>();
-        NamedList<Object> suggestion = suggestions.getValue();
-        // for each suggestion
-        for (int j = 0; j < suggestion.size(); j++) {
-          String property = suggestion.getName(j);
-          if (property.equals(SuggesterResultLabels.SUGGESTIONS)) {
-            @SuppressWarnings("unchecked")
-            List<NamedList<Object>> suggestionEntries =
-                (List<NamedList<Object>>) suggestion.getVal(j);
-            for (NamedList<Object> suggestionEntry : suggestionEntries) {
-              String term = (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_TERM);
-              Long weight = (Long) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_WEIGHT);
-              String payload =
-                  (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_PAYLOAD);
-              LookupResult res =
-                  new LookupResult(new CharsRef(term), weight, new BytesRef(payload));
-              lookupResults.add(res);
-            }
-          }
-          result.add(suggesterName, tokenString, lookupResults);
-        }
+        tokenEntry
+            .getValue()
+            .forEach(
+                (property, value) -> {
+                  if (property.equals(SuggesterResultLabels.SUGGESTIONS)) {
+                    @SuppressWarnings("unchecked")
+                    List<NamedList<Object>> suggestionEntries = (List<NamedList<Object>>) value;
+                    for (NamedList<Object> suggestionEntry : suggestionEntries) {
+                      String term =
+                          (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_TERM);
+                      Long weight =
+                          (Long) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_WEIGHT);
+                      String payload =
+                          (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_PAYLOAD);
+                      LookupResult res =
+                          new LookupResult(new CharsRef(term), weight, new BytesRef(payload));
+                      lookupResults.add(res);
+                    }
+                  }
+                });
+        result.add(suggesterName, tokenString, lookupResults);
       }
     }
     return result;

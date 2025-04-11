@@ -88,11 +88,6 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid, float score) throws IOException {
-      implTransform(doc, docid);
-    }
-
-    @Override
     public void transform(SolrDocument doc, int docid) throws IOException {
       implTransform(doc, docid);
     }

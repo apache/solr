@@ -74,7 +74,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
@@ -2130,7 +2129,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           minMaxFieldType = searcher.getSchema().getField(text).getType();
         } else {
           SolrParams params = new ModifiableSolrParams();
-          try (SolrQueryRequest request = new LocalSolrQueryRequest(searcher.getCore(), params)) {
+          try (SolrQueryRequest request = SolrQueryRequest.wrapSearcher(searcher, params)) {
             FunctionQParser functionQParser = new FunctionQParser(text, null, params, request);
             funcQuery = (FunctionQuery) functionQParser.parse();
           } catch (SyntaxError e) {

@@ -18,12 +18,12 @@ package org.apache.solr;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.StandardCopyOption;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -41,9 +41,9 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    String tmpSolrHome = createTempDir().toFile().getAbsolutePath();
-    FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
-    initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome, StandardCopyOption.COPY_ATTRIBUTES);
+    initCore("solrconfig.xml", "schema.xml", tmpSolrHome);
   }
 
   @AfterClass
