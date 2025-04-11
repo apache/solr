@@ -97,7 +97,8 @@ public abstract class DocTransformer {
    * @param doc The document to alter
    * @param docid The Lucene internal doc id, or -1 in cases where the <code>doc</code> did not come
    *     from the index
-   * @param docInfo the document information for this document, including the score
+   * @param docInfo the document information for this document, including the score. Do not pass
+   *     <code>null</code>, instead use {@link DocIterationInfo#NONE}.
    * @throws IOException If there is a low-level I/O error.
    * @see #needsSolrIndexSearcher
    */
