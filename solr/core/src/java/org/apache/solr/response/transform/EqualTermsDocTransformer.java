@@ -55,11 +55,6 @@ public class EqualTermsDocTransformer extends DocTransformer {
   }
 
   @Override
-  public boolean needsSolrIndexSearcher() {
-    return true;
-  }
-
-  @Override
   public String[] getExtraRequestFields() {
     return new String[] {sourceField.getName()};
   }
@@ -114,10 +109,11 @@ public class EqualTermsDocTransformer extends DocTransformer {
           return false; // More tokens in source than in comparison value
         }
 
-        // Compare the current token with the corresponding token in our pre-analyzed list
-        String currentToken = termAttr.toString();
         String compareToken = compareIter.next();
-        if (!currentToken.equals(compareToken)) {
+
+        // Compare the current token with the corresponding token in our pre-analyzed list
+        if (termAttr.length() != compareToken.length()
+            || CharSequence.compare(termAttr, compareToken) != 0) {
           return false; // Token mismatch
         }
       }
