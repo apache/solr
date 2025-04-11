@@ -27,7 +27,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.MaxScoreCollector;
@@ -166,9 +167,13 @@ public class QueryCommand implements Command<QueryCommandResult> {
     Collector subCollector;
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
       subCollector =
-          topDocsCollector = TopScoreDocCollector.create(docsToCollect, Integer.MAX_VALUE);
+          topDocsCollector =
+              new TopScoreDocCollectorManager(docsToCollect, null, Integer.MAX_VALUE, false)
+                  .newCollector();
     } else {
-      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, Integer.MAX_VALUE);
+      topDocsCollector =
+          new TopFieldCollectorManager(sort, docsToCollect, null, Integer.MAX_VALUE, false)
+              .newCollector();
       if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         subCollector = MultiCollector.wrap(topDocsCollector, maxScoreCollector);
