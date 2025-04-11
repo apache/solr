@@ -60,6 +60,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   public void setUp() throws Exception {
     super.setUp();
     temporaryFolder = Files.createTempDirectory("junit");
+    PathUtils.deleteOnExit(temporaryFolder);
   }
 
   /**
