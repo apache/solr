@@ -147,6 +147,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           new ExplainValidator(),
           new ExplainValidator("explain_alias"),
           new SubQueryValidator(),
+          new EqualTermsValidator(EqualTermsValidator.FIELD_NAME, "my_equalterms_alias"),
           new NotIncludedValidator("score"),
           new NotIncludedValidator("score", "score_alias:score"));
 
@@ -365,26 +366,45 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     final SolrInputDocument doc =
         sdoc(
-            "id", "" + docId,
-            "aaa_i", random().nextInt(),
-            "bbb_i", random().nextInt(),
+            "id",
+            "" + docId,
+            "aaa_i",
+            random().nextInt(),
+            "bbb_i",
+            random().nextInt(),
             //
-            "ccc_s", TestUtil.randomSimpleString(random()),
-            "ddd_s", TestUtil.randomSimpleString(random()),
-            "eee_s", makeJson(TestUtil.randomSimpleString(random())),
-            "fff_s", makeJson(TestUtil.randomSimpleString(random())),
-            "ggg_s", makeXml(TestUtil.randomSimpleString(random())),
-            "hhh_s", makeXml(TestUtil.randomSimpleString(random())),
+            "ccc_s",
+            TestUtil.randomSimpleString(random()),
+            "ddd_s",
+            TestUtil.randomSimpleString(random()),
+            "eee_s",
+            makeJson(TestUtil.randomSimpleString(random())),
+            "fff_s",
+            makeJson(TestUtil.randomSimpleString(random())),
+            "ggg_s",
+            makeXml(TestUtil.randomSimpleString(random())),
+            "hhh_s",
+            makeXml(TestUtil.randomSimpleString(random())),
             //
-            "geo_1_srpt", GeoTransformerValidator.getValueForIndexing(random()),
-            "geo_2_srpt", GeoTransformerValidator.getValueForIndexing(random()),
+            "geo_1_srpt",
+            GeoTransformerValidator.getValueForIndexing(random()),
+            "geo_2_srpt",
+            GeoTransformerValidator.getValueForIndexing(random()),
+            // for testing EqualTerms transformer
+            EqualTermsValidator.FIELD_NAME,
+            EqualTermsValidator.FIXED_VALUE,
             // for testing sub-queries
-            "next_2_ids_ss", String.valueOf(docId + 1),
-            "next_2_ids_ss", String.valueOf(docId + 2),
+            "next_2_ids_ss",
+            String.valueOf(docId + 1),
+            "next_2_ids_ss",
+            String.valueOf(docId + 2),
             // for testing prefix globbing
-            "axx_i", random().nextInt(),
-            "ayy_i", random().nextInt(),
-            "azz_s", TestUtil.randomSimpleString(random()));
+            "axx_i",
+            random().nextInt(),
+            "ayy_i",
+            random().nextInt(),
+            "azz_s",
+            TestUtil.randomSimpleString(random()));
 
     log.info("ADD: {} = {}", docId, doc);
     assertEquals(0, client.add(doc).getStatus());
@@ -1469,6 +1489,54 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     @Override
     public String getDefaultTransformerFactoryName() {
       return NAME;
+    }
+  }
+
+  /** Validator for EqualTermsTransformerFactory */
+  private static class EqualTermsValidator implements FlValidator {
+    private static final String NAME = "equalterms";
+    private final String fieldName;
+    private final String resultKey;
+    // Use a fixed value for the field and comparison to ensure true result
+    public static final String FIXED_VALUE = "Billy";
+    public static final String FIELD_NAME = "equalterms_s";
+
+    public EqualTermsValidator(final String fieldName) {
+      this(fieldName, "[" + NAME + "]");
+    }
+
+    public EqualTermsValidator(final String fieldName, final String resultKey) {
+      this.fieldName = fieldName;
+      this.resultKey = resultKey;
+    }
+
+    @Override
+    public String getDefaultTransformerFactoryName() {
+      return NAME;
+    }
+
+    @Override
+    public String getFlParam() {
+      // Use the FIXED_VALUE for the comparison
+      return resultKey + ":[" + NAME + " field=" + fieldName + " value='" + FIXED_VALUE + "']";
+    }
+
+    @Override
+    public Collection<String> assertRTGResults(
+        final Collection<FlValidator> validators,
+        final SolrInputDocument expected,
+        final SolrDocument actual,
+        final String wt) {
+      Object value = actual.getFieldValue(resultKey);
+      assertNotNull(getFlParam() + " => no value in actual doc", value);
+      assertTrue(NAME + " must return a boolean value: " + value, value instanceof Boolean);
+
+      // If the field is our special equalterms_s field, we expect it to be true
+      if (fieldName.equals(FIELD_NAME)) {
+        assertEquals("EqualTerms transformer with fixed value should return true", true, value);
+      }
+
+      return Collections.singleton(resultKey);
     }
   }
 
