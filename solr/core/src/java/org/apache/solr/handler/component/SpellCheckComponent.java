@@ -717,9 +717,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (initParams != null) {
       log.debug("Initializing spell checkers");
       boolean hasDefault = false;
-      for (int i = 0; i < initParams.size(); i++) {
-        if (initParams.getName(i).equals("spellchecker")) {
-          Object cfg = initParams.getVal(i);
+      // TODO addSpellChecker response should set hasDefault!
+
+      for (Map.Entry<String, ?> initEntry : initParams) {
+        if ("spellchecker".equals(initEntry.getKey())) {
+          Object cfg = initEntry.getValue();
           if (cfg instanceof NamedList) {
             addSpellChecker(core, hasDefault, (NamedList<?>) cfg);
           } else if (cfg instanceof Map) {

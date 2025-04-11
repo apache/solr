@@ -16,7 +16,8 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -68,8 +69,8 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    File indexDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
-    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
+    Path indexDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toString());
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
     assertEquals(dictName + " is not equal to " + "external", "external", dictName);
@@ -117,9 +118,9 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    File indexDir = createTempDir().toFile();
-    indexDir.mkdirs();
-    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
+    Path indexDir = createTempDir();
+    Files.createDirectories(indexDir);
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.toString());
     spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop_type");
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);

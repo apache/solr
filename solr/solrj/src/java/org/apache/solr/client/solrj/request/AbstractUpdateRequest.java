@@ -17,10 +17,10 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Objects;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.NamedList;
 
 public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
@@ -121,7 +121,7 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   @Override
-  protected UpdateResponse createResponse(SolrClient client) {
+  protected UpdateResponse createResponse(NamedList<Object> namedList) {
     return new UpdateResponse();
   }
 

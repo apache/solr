@@ -21,7 +21,7 @@ import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -102,7 +102,9 @@ public class SolrExporter {
   }
 
   void stop() {
-    httpServer.stop();
+    if (httpServer != null) {
+      httpServer.stop();
+    }
 
     metricsCollector.removeObserver(prometheusCollector);
 
@@ -294,9 +296,9 @@ public class SolrExporter {
         log.info("SSL ENABLED");
 
         scrapeConfiguration.withSslConfiguration(
-            Paths.get(getSystemVariable("SOLR_SSL_KEY_STORE")),
+            Path.of(getSystemVariable("SOLR_SSL_KEY_STORE")),
             getSystemVariable("SOLR_SSL_KEY_STORE_PASSWORD"),
-            Paths.get(getSystemVariable("SOLR_SSL_TRUST_STORE")),
+            Path.of(getSystemVariable("SOLR_SSL_TRUST_STORE")),
             getSystemVariable("SOLR_SSL_TRUST_STORE_PASSWORD"));
       }
 

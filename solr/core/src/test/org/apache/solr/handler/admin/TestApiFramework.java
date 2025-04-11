@@ -33,7 +33,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -120,15 +119,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]", null));
-    assertTrue(methodNames.contains("POST"));
-
-    methodNames = new HashSet<>();
-
-    rsp =
-        invoke(
-            coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", mockCC);
-    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
-    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
   }
 
@@ -400,7 +390,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
         .when(mockCC)
         .unload(any(String.class), anyBoolean(), anyBoolean(), anyBoolean());
 
-    when(mockCC.getCoreRootDirectory()).thenReturn(Paths.get("coreroot"));
+    when(mockCC.getCoreRootDirectory()).thenReturn(Path.of("coreroot"));
     when(mockCC.getContainerProperties()).thenReturn(new Properties());
 
     when(mockCC.getRequestHandlers()).thenAnswer(invocationOnMock -> out.get("getRequestHandlers"));

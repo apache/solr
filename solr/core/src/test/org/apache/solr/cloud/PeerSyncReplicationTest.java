@@ -26,7 +26,7 @@ import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -325,7 +325,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
             + "/data/replication.properties";
     assertTrue(
         "PeerSync failed. Had to fail back to replication",
-        Files.notExists(Paths.get(replicationProperties)));
+        Files.notExists(Path.of(replicationProperties)));
   }
 
   private void waitTillNodesActive() throws Exception {

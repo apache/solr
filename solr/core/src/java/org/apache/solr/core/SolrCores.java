@@ -346,26 +346,31 @@ public class SolrCores {
             }
           }
         }
-        if (container.isShutDown()) return null; // Just stop already.
+        if (container.isShutDown()) {
+          // Just stop already.
+          // Seems best to throw a SolrException if shutting down, because returning any value,
+          // including null, would mean the waiting is complete.
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Server is shutting down");
+        }
 
         if (pending) {
           try {
             modifyLock.wait();
           } catch (InterruptedException e) {
-            return null; // Seems best not to do anything at all if the thread is interrupted
+            // Seems best to throw a SolrException if interrupted, because returning any value,
+            // including null, would mean the waiting is complete.
+            Thread.currentThread().interrupt();
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           }
         }
       } while (pending);
       // We _really_ need to do this within the synchronized block!
-      if (!container.isShutDown()) {
-        if (!pendingCoreOps.add(name)) {
-          log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
-        }
-        // we might have been _unloading_ the core, so return the core if it was loaded.
-        return getCoreFromAnyList(name, false);
+      if (!pendingCoreOps.add(name)) {
+        log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
       }
+      // we might have been _unloading_ the core, so return the core if it was loaded.
+      return getCoreFromAnyList(name, false);
     }
-    return null;
   }
 
   // We should always be removing the first thing in the list with our name! The idea here is to NOT

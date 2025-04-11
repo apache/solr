@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -62,7 +63,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.params.GroupParams;
@@ -493,10 +493,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         if (ex == null) {
           continue;
         }
-        for (int i = 0; i < ex.size(); i++) {
-          String name = ex.getName(i);
-          SolrDocumentList val = (SolrDocumentList) ex.getVal(i);
-          expanded.add(name, val);
+        for (Map.Entry<String, ?> entry : ex) {
+          expanded.add(entry.getKey(), entry.getValue());
         }
       }
     }

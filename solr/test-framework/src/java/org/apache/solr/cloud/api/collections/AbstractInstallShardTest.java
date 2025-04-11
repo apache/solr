@@ -21,6 +21,7 @@ import static org.apache.solr.client.solrj.request.CollectionAdminRequest.delete
 
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -290,12 +291,12 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
             .get();
     final CoreDescriptor cd = cc.getCoreDescriptor(coreName);
     final Path coreInstanceDir = cd.getInstanceDir();
-    assert coreInstanceDir.toFile().exists();
-    assert coreInstanceDir.toFile().isDirectory();
+    assert Files.exists(coreInstanceDir);
+    assert Files.isDirectory(coreInstanceDir);
 
     final Path coreIndexDir = coreInstanceDir.resolve("data").resolve("index");
-    assert coreIndexDir.toFile().exists();
-    assert coreIndexDir.toFile().isDirectory();
+    assert Files.exists(coreIndexDir);
+    assert Files.isDirectory(coreIndexDir);
 
     try (final BackupRepository backupRepository = cc.newBackupRepository(BACKUP_REPO_NAME);
         final SolrCore core = cc.getCore(coreName)) {

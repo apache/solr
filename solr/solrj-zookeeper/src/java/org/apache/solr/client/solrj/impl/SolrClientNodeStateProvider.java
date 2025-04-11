@@ -286,7 +286,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
       GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
-      request.setResponseParser(new BinaryResponseParser());
+      request.setResponseParser(new JavaBinResponseParser());
 
       try {
         return cloudSolrClient.getHttpClient().requestWithBaseUrl(url, request::process);

@@ -30,7 +30,6 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.TRUSTED;
 import static org.hamcrest.Matchers.containsString;
 
 import java.util.List;
@@ -133,7 +132,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     final var remoteMessage =
         restoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
 
-    assertEquals(8, remoteMessage.size());
+    assertEquals(7, remoteMessage.size());
     assertEquals("restore", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
     assertEquals("/some/location/path", remoteMessage.get(BACKUP_LOCATION));
@@ -141,7 +140,6 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals("someRepositoryName", remoteMessage.get(BACKUP_REPOSITORY));
     assertEquals("someAsyncId", remoteMessage.get(ASYNC));
     assertEquals("someBackupName", remoteMessage.get(NAME));
-    assertFalse((Boolean) remoteMessage.get(TRUSTED));
   }
 
   @Test
@@ -164,7 +162,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     final var remoteMessage =
         restoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
 
-    assertEquals(15, remoteMessage.size());
+    assertEquals(14, remoteMessage.size());
     assertEquals("restore", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
     assertEquals("/some/location/path", remoteMessage.get(BACKUP_LOCATION));
@@ -178,7 +176,6 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals(Integer.valueOf(456), remoteMessage.get(TLOG_REPLICAS));
     assertEquals(Integer.valueOf(789), remoteMessage.get(PULL_REPLICAS));
     assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
-    assertFalse((Boolean) remoteMessage.get(TRUSTED));
     assertEquals("bar", remoteMessage.get("property.foo"));
   }
 
