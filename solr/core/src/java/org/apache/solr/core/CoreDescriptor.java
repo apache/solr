@@ -16,11 +16,11 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -64,14 +64,7 @@ public class CoreDescriptor {
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE =
-      "conf" + File.separator + "solrcore.properties";
-
-  /**
-   * Whether this core was configured using a configSet that was trusted. This helps in avoiding the
-   * loading of plugins that have potential vulnerabilities, when the configSet was not uploaded
-   * from a trusted user.
-   */
-  private boolean trustedConfigSet = true;
+      "conf" + FileSystems.getDefault().getSeparator() + "solrcore.properties";
 
   /**
    * Get the standard properties in persistable form
@@ -96,7 +89,7 @@ public class CoreDescriptor {
           CORE_CONFIG, "solrconfig.xml",
           CORE_SCHEMA, "schema.xml",
           CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
-          CORE_DATADIR, "data" + File.separator,
+          CORE_DATADIR, "data" + FileSystems.getDefault().getSeparator(),
           CORE_TRANSIENT, "false",
           CORE_LOADONSTARTUP, "true");
 
@@ -174,7 +167,6 @@ public class CoreDescriptor {
     this.coreProperties.setProperty(CORE_NAME, coreName);
     this.originalCoreProperties.setProperty(CORE_NAME, coreName);
     this.substitutableProperties.setProperty(SOLR_CORE_PROP_PREFIX + CORE_NAME, coreName);
-    this.trustedConfigSet = other.trustedConfigSet;
   }
 
   /**
@@ -395,14 +387,5 @@ public class CoreDescriptor {
 
   public String getConfigSetPropertiesName() {
     return coreProperties.getProperty(CORE_CONFIGSET_PROPERTIES);
-  }
-
-  public boolean isConfigSetTrusted() {
-    return trustedConfigSet;
-  }
-
-  /** TODO remove mutability */
-  public void setConfigSetTrusted(boolean trusted) {
-    this.trustedConfigSet = trusted;
   }
 }

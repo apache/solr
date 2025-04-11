@@ -29,7 +29,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -46,7 +45,6 @@ import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
@@ -58,7 +56,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   private String urlScheme;
   private List<URL> configuredNodes;
-  volatile Set<String> liveNodes;
+  volatile Set<String> liveNodes; // initially null then never null
   long liveNodesTimestamp = 0;
   volatile Map<String, List<String>> aliases;
   volatile Map<String, Map<String, String>> aliasProperties;
@@ -67,41 +65,24 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   // the liveNodes and aliases cache will be invalidated after 5 secs
   private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.solrj.cache.timeout.sec", 5);
 
-  public void init(List<String> solrUrls) throws Exception {
+  protected void initConfiguredNodes(List<String> solrUrls) throws Exception {
     this.configuredNodes =
         solrUrls.stream()
-            .map(
-                (solrUrl) -> {
-                  try {
-                    return new URI(solrUrl).toURL();
-                  } catch (MalformedURLException | URISyntaxException e) {
-                    throw new IllegalArgumentException(
-                        "Failed to parse base Solr URL " + solrUrl, e);
-                  }
-                })
+            .map(BaseHttpClusterStateProvider::stringToUrl)
             .collect(Collectors.toList());
+  }
 
-    for (String solrUrl : solrUrls) {
-      urlScheme = solrUrl.startsWith("https") ? "https" : "http";
-      try (SolrClient initialClient = getSolrClient(solrUrl)) {
-        this.liveNodes = fetchLiveNodes(initialClient);
-        liveNodesTimestamp = System.nanoTime();
-        break;
-      } catch (SolrServerException | IOException e) {
-        log.warn("Attempt to fetch cluster state from {} failed.", solrUrl, e);
-      }
+  private static URL stringToUrl(String solrUrl) {
+    try {
+      return new URI(solrUrl).toURL();
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new IllegalArgumentException("Failed to parse base Solr URL " + solrUrl, e);
     }
+  }
 
-    if (this.liveNodes == null || this.liveNodes.isEmpty()) {
-      throw new RuntimeException(
-          "Tried fetching live_nodes using Solr URLs provided, i.e. "
-              + solrUrls
-              + ". However, "
-              + "succeeded in obtaining the cluster state from none of them."
-              + "If you think your Solr cluster is up and is accessible,"
-              + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s).");
-    }
+  @Override
+  public void connect() {
+    getLiveNodes();
   }
 
   /** Create a SolrClient implementation that uses the specified Solr node URL */
@@ -116,7 +97,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public ClusterState.CollectionRef getState(String collection) {
-    for (String nodeName : liveNodes) {
+    for (String nodeName : getLiveNodes()) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
         DocCollection docCollection = fetchCollectionState(client, collection);
@@ -160,15 +141,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       liveNodesTimestamp = System.nanoTime();
     }
 
-    var collectionsNl = (NamedList<Map<String, Object>>) cluster.get("collections");
+    var collectionsMap = (Map<String, Map<String, Object>>) cluster.get("collections");
 
     Map<String, DocCollection> collStateByName =
-        CollectionUtil.newLinkedHashMap(collectionsNl.size());
-    for (Entry<String, Map<String, Object>> entry : collectionsNl) {
-      collStateByName.put(
-          entry.getKey(), getDocCollectionFromObjects(entry.getKey(), entry.getValue()));
-    }
-
+        CollectionUtil.newLinkedHashMap(collectionsMap.size());
+    collectionsMap.forEach(
+        (key, value) -> collStateByName.put(key, getDocCollectionFromObjects(key, value)));
     return new ClusterState(this.liveNodes, collStateByName);
   }
 
@@ -205,7 +183,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     SimpleOrderedMap<?> cluster =
         submitClusterStateRequest(client, collection, ClusterStateRequestType.FETCH_COLLECTION);
 
-    var collStateMap = (Map<String, Object>) cluster.findRecursive("collections", collection);
+    var collStateMap = (Map<String, Object>) cluster._get(List.of("collections", collection), null);
     if (collStateMap == null) {
       throw new NotACollectionException(); // probably an alias
     }
@@ -235,43 +213,44 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   @Override
-  public Set<String> getLiveNodes() {
-    if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
-        > getCacheTimeout()) {
+  public synchronized Set<String> getLiveNodes() {
+    // synchronized because there's no value in multiple doing this at the same time
+
+    // only in the initial state, liveNodes is null
+    if (liveNodes != null) {
+      if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
+          <= getCacheTimeout()) {
+        return this.liveNodes; // cached copy is fresh enough
+      }
 
       if (liveNodes.stream()
-          .anyMatch((node) -> updateLiveNodes(URLUtil.getBaseUrlForNodeName(node, urlScheme))))
-        return this.liveNodes;
+          .map(node -> URLUtil.getBaseUrlForNodeName(node, urlScheme))
+          .map(BaseHttpClusterStateProvider::stringToUrl)
+          .anyMatch(this::updateLiveNodes)) return this.liveNodes;
 
-      log.warn(
-          "Attempt to fetch cluster state from all known live nodes {} failed. Trying backup nodes",
-          liveNodes);
-
-      if (configuredNodes.stream().anyMatch((node) -> updateLiveNodes(node.toString())))
-        return this.liveNodes;
-
-      throw new RuntimeException(
-          "Tried fetching live_nodes using all the node names we knew of, i.e. "
-              + liveNodes
-              + ". However, "
-              + "succeeded in obtaining the cluster state from none of them."
-              + "If you think your Solr cluster is up and is accessible,"
-              + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s).");
-    } else {
-      return this.liveNodes; // cached copy is fresh enough
+      log.warn("Failed fetching live_nodes from {}. Trying configured nodes...", liveNodes);
     }
+
+    if (configuredNodes.stream().anyMatch(this::updateLiveNodes)) return this.liveNodes;
+
+    throw new RuntimeException(
+        "Failed fetching live_nodes from "
+            + configuredNodes
+            + ". If you think your Solr cluster is up and is accessible,"
+            + " you could try re-creating a new CloudSolrClient using working"
+            + " solr URLs.");
   }
 
-  private boolean updateLiveNodes(String liveNode) {
-    try (SolrClient client = getSolrClient(liveNode)) {
+  private boolean updateLiveNodes(URL url) {
+    try (SolrClient client = getSolrClient(url.toString())) {
       this.liveNodes = fetchLiveNodes(client);
       liveNodesTimestamp = System.nanoTime();
+      urlScheme = url.getProtocol();
       return true;
     } catch (Exception e) {
-      log.warn("Attempt to fetch cluster state from {} failed.", liveNode, e);
+      log.warn("Attempt to fetch live_nodes from {} failed.", url, e);
+      return false;
     }
-    return false;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -296,20 +275,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   private Map<String, List<String>> getAliases(boolean forceFetch) {
-    if (this.liveNodes == null) {
-      throw new RuntimeException(
-          "We don't know of any live_nodes to fetch the"
-              + " latest aliases information from. "
-              + "If you think your Solr cluster is up and is accessible,"
-              + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s).");
-    }
-
     if (forceFetch
         || this.aliases == null
         || TimeUnit.SECONDS.convert((System.nanoTime() - aliasesTimestamp), TimeUnit.NANOSECONDS)
             > getCacheTimeout()) {
-      for (String nodeName : liveNodes) {
+      for (String nodeName : getLiveNodes()) {
         String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
         try (SolrClient client = getSolrClient(baseUrl)) {
 
@@ -356,7 +326,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public ClusterState getClusterState() {
-    for (String nodeName : liveNodes) {
+    for (String nodeName : getLiveNodes()) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
         return fetchClusterState(client);
@@ -382,7 +352,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   @SuppressWarnings("unchecked")
   @Override
   public Map<String, Object> getClusterProperties() {
-    for (String nodeName : liveNodes) {
+    for (String nodeName : getLiveNodes()) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
         SimpleOrderedMap<?> cluster =
@@ -417,9 +387,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
     return getClusterProperties().get(propertyName);
   }
-
-  @Override
-  public void connect() {}
 
   public int getCacheTimeout() {
     return cacheTimeout;

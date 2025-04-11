@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.util;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -30,7 +29,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -97,6 +95,8 @@ public class ClientUtils {
   private static String buildReplacementV2Path(String existingPath) {
     if (existingPath.contains("/solr")) {
       return existingPath.replaceFirst("/solr", "/api");
+    } else if (existingPath.endsWith("/api")) {
+      return existingPath;
     } else {
       return existingPath + "/api";
     }
@@ -184,15 +184,6 @@ public class ClientUtils {
         XML.writeXML(writer, "field", valWriter, "name", name, "update", update);
       }
     }
-  }
-
-  public static String toXML(SolrInputDocument doc) {
-    StringWriter str = new StringWriter();
-    try {
-      writeXML(doc, str);
-    } catch (Exception ex) {
-    }
-    return str.toString();
   }
 
   // ---------------------------------------------------------------------------------------
@@ -294,7 +285,7 @@ public class ClientUtils {
    * @param request the {@link SolrRequest} being executed
    */
   public static boolean shouldApplyDefaultCollection(
-      String providedCollection, SolrRequest<? extends SolrResponse> request) {
+      String providedCollection, SolrRequest<?> request) {
     return providedCollection == null && request.requiresCollection();
   }
 }

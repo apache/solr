@@ -56,6 +56,11 @@ Users who previously relied on collection-specific URLs to avoid including the c
 
 * Minimum Java version for Solrj 10.x is Java 17.
 
+* Deprecate CloudSolrClient’s ZooKeeper Hosts constructor. Users are encouraged to supply Solr URLs instead of communicating with ZooKeeper. It’s not likely to be removed before Solr 11.
+
+* Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to JavaBinRequestWriter, JavaBinResponseParser, StreamingJavaBinResponseParser.
+This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
+
 === Service installer
 
 The service installer now installs a `systemd` startup script instead of an `init.d` startup script. It is up to the user to uninstall any existing `init.d` script when upgrading.
@@ -99,3 +104,13 @@ Users that need to vary JAR accessibility on a per-core basis can use Solr's xre
 Users who that don't need to vary JAR access on a per-core basis have several options, including the xref:configuration-guide:configuring-solr-xml.adoc[`<sharedLib/>` tag supported by solr.xml] or manipulation of Solr's classpath prior to JVM startup.
 
 * Kerberos based authentication has been removed.  This results in changes to SolrJ, the Solr Admin app, and the removal of the `hadoop-auth` module.
+
+* Storing indexes and snapshots in HDFS has been removed.  This results in changes to solrconfig.xml and related configuration files and removal of the `hdfs` module.
+
+* ExternalFileField field type has been removed.
+
+* CurrencyField has been removed.  Users should migrate to the `CurrencyFieldType` implementation.
+
+=== Security
+
+* There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.

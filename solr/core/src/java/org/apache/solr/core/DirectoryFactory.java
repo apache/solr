@@ -17,17 +17,15 @@
 package org.apache.solr.core;
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -57,10 +55,16 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   // Absolute.
   protected Path dataHomePath;
 
-  // hint about what the directory contains - default is index directory
+  /** Hint about what the directory will be used for. */
   public enum DirContext {
+    /** Directory used to read or write the index. */
     DEFAULT,
-    META_DATA
+    /** Directory used to read or write metadata. */
+    META_DATA,
+    /** Directory used to copy raw files during replication. */
+    REPLICATION,
+    /** Directory used to copy raw files during backup. */
+    BACKUP,
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -86,7 +90,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   public abstract void addCloseListener(Directory dir, CloseListener closeListener);
 
   /**
-   * Close this factory and all of the Directories it contains.
+   * Close this factory and all the Directories it contains.
    *
    * @throws IOException If there is a low-level I/O error.
    */
@@ -98,8 +102,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
    *
    * @throws IOException If there is a low-level I/O error.
    */
-  protected abstract Directory create(String path, LockFactory lockFactory, DirContext dirContext)
-      throws IOException;
+  protected abstract Directory create(String path, LockFactory lockFactory) throws IOException;
 
   /**
    * Creates a new LockFactory for a given path.
@@ -338,59 +341,68 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   }
 
   public void cleanupOldIndexDirectories(
-      final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {
+      final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload)
+      throws IOException {
 
-    // TODO SOLR-8282 move to PATH
-    File dataDir = new File(dataDirPath);
-    if (!dataDir.isDirectory()) {
+    Path dataDirFile = Path.of(dataDirPath);
+    if (!Files.isDirectory(dataDirFile)) {
       log.debug(
           "{} does not point to a valid data directory; skipping clean-up of old index directories.",
           dataDirPath);
       return;
     }
 
-    final File currentIndexDir = new File(currentIndexDirPath);
-    File[] oldIndexDirs =
-        dataDir.listFiles(
-            new FileFilter() {
-              @Override
-              public boolean accept(File file) {
-                String fileName = file.getName();
-                return file.isDirectory()
-                    && !file.equals(currentIndexDir)
-                    && (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
-              }
-            });
+    final Path currentIndexDir = Path.of(currentIndexDirPath);
+    List<Path> dirsList;
+    try (Stream<Path> oldIndexDirs = Files.list(dataDirFile)) {
+      dirsList =
+          oldIndexDirs
+              .filter(
+                  (file) -> {
+                    String fileName = file.getFileName().toString();
+                    return Files.isDirectory(file)
+                        && !file.equals(currentIndexDir)
+                        && (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
+                  })
+              .sorted(Comparator.reverseOrder())
+              .toList();
+    }
+    ;
 
-    if (oldIndexDirs == null || oldIndexDirs.length == 0)
+    if (dirsList.isEmpty()) {
       return; // nothing to do (no log message needed)
-
-    List<File> dirsList = Arrays.asList(oldIndexDirs);
-    dirsList.sort(Collections.reverseOrder());
+    }
 
     int i = 0;
     if (afterCoreReload) {
-      log.info("Will not remove most recent old directory after reload {}", oldIndexDirs[0]);
+      if (log.isInfoEnabled())
+        log.info("Will not remove most recent old directory after reload {}", dirsList.getFirst());
       i = 1;
     }
-    log.info(
-        "Found {} old index directories to clean-up under {} afterReload={}",
-        oldIndexDirs.length - i,
-        dataDirPath,
-        afterCoreReload);
-    for (; i < dirsList.size(); i++) {
-      File dir = dirsList.get(i);
-      String dirToRmPath = dir.getAbsolutePath();
-      try {
-        if (deleteOldIndexDirectory(dirToRmPath)) {
-          log.info("Deleted old index directory: {}", dirToRmPath);
-        } else {
-          log.warn("Delete old index directory {} failed.", dirToRmPath);
-        }
-      } catch (IOException ioExc) {
-        log.error("Failed to delete old directory {} due to: ", dir.getAbsolutePath(), ioExc);
-      }
-    }
+
+    if (log.isInfoEnabled())
+      log.info(
+          "Found {} old index directories to clean-up under {} afterReload={}",
+          dirsList.size() - i,
+          dataDirPath,
+          afterCoreReload);
+
+    dirsList.stream()
+        .skip(i)
+        .forEach(
+            (entry) -> {
+              String dirToRmPath = entry.toAbsolutePath().toString();
+              try {
+                if (deleteOldIndexDirectory(dirToRmPath)) {
+                  log.info("Deleted old index directory: {}", dirToRmPath);
+                } else {
+                  log.warn("Delete old index directory {} failed.", dirToRmPath);
+                }
+              } catch (IOException ioExc) {
+                log.error(
+                    "Failed to delete old directory {} due to: ", entry.toAbsolutePath(), ioExc);
+              }
+            });
   }
 
   // Extension point to allow subclasses to infuse additional code when deleting old index

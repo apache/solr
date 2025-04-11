@@ -38,6 +38,7 @@ dependencies {
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
 
   testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"

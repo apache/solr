@@ -19,7 +19,6 @@ package org.apache.solr.embedded;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -34,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -58,16 +56,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.CoreAdminOperation;
-import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -96,7 +92,6 @@ import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
-import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -677,11 +672,11 @@ public class JettySolrRunner {
     }
   }
 
-  public void outputMetrics(File outputDirectory, String fileName) throws IOException {
+  public void outputMetrics(Path outputDirectory, String fileName) throws IOException {
     if (getCoreContainer() != null) {
 
       if (outputDirectory != null) {
-        Path outDir = outputDirectory.toPath();
+        Path outDir = outputDirectory;
         Files.createDirectories(outDir);
       }
 
@@ -694,7 +689,7 @@ public class JettySolrRunner {
             outputDirectory == null
                 ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)
                 : new PrintStream(
-                    new File(outputDirectory, registryName + "_" + fileName),
+                    outputDirectory.resolve(registryName + "_" + fileName).toString(),
                     StandardCharsets.UTF_8)) {
           ConsoleReporter reporter =
               ConsoleReporter.forRegistry(metricsRegisty)
@@ -714,21 +709,14 @@ public class JettySolrRunner {
 
   public void dumpCoresInfo(PrintStream pw) throws IOException {
     if (getCoreContainer() != null) {
-      List<SolrCore> cores = getCoreContainer().getCores();
-      for (SolrCore core : cores) {
-        NamedList<Object> coreStatus =
-            CoreAdminOperation.getCoreStatus(getCoreContainer(), core.getName(), false);
-        core.withSearcher(
-            solrIndexSearcher -> {
-              SimpleOrderedMap<Object> lukeIndexInfo =
-                  LukeRequestHandler.getIndexInfo(solrIndexSearcher.getIndexReader());
-              Map<String, Object> indexInfoMap = coreStatus.toMap(new LinkedHashMap<>());
-              indexInfoMap.putAll(lukeIndexInfo.toMap(new LinkedHashMap<>()));
-              pw.println(JSONUtil.toJSON(indexInfoMap, 2));
-
-              pw.println();
-              return null;
-            });
+      final var coreStatusReq = new CoresApi.GetAllCoreStatus();
+      coreStatusReq.setIndexInfo(true);
+      try (final var client = newClient()) {
+        final var coreStatusRsp = coreStatusReq.process(client).getParsed();
+        Utils.writeJson(coreStatusRsp, pw, true);
+      } catch (SolrServerException | IOException e) {
+        // Worth logging but not re-throwing
+        log.error("Unable to dump info for all cores", e);
       }
     }
   }

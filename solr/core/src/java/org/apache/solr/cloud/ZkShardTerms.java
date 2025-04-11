@@ -419,7 +419,15 @@ public class ZkShardTerms implements AutoCloseable {
           // Only refresh the data if the node was created or its data changed.
           if (Watcher.Event.EventType.NodeCreated == event.getType()
               || Watcher.Event.EventType.NodeDataChanged == event.getType()) {
-            refreshTerms();
+            try {
+              refreshTerms();
+            } catch (SolrException e) {
+              log.warn(
+                  "Error refreshing shard terms for collection: {}, shard: {}",
+                  collection,
+                  shard,
+                  e);
+            }
           }
         };
     try {

@@ -22,6 +22,10 @@ import org.apache.solr.client.api.util.SolrVersion;
 
 public class VersionTool extends ToolBase {
 
+  public VersionTool(ToolRuntime runtime) {
+    super(runtime);
+  }
+
   @Override
   public String getName() {
     return "version";

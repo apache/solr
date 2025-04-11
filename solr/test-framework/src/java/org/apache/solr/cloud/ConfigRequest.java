@@ -16,21 +16,21 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A class for making a request to the config handler. Tests can use this e.g. to add custom
  * components, handlers, parsers, etc. to an otherwise generic configset.
  */
-@SuppressWarnings({"rawtypes"})
-public class ConfigRequest extends CollectionRequiringSolrRequest {
+public class ConfigRequest extends CollectionRequiringSolrRequest<SolrResponse> {
 
   protected final String message;
 
@@ -41,7 +41,7 @@ public class ConfigRequest extends CollectionRequiringSolrRequest {
 
   @Override
   public SolrParams getParams() {
-    return null;
+    return new ModifiableSolrParams();
   }
 
   @Override
@@ -52,7 +52,7 @@ public class ConfigRequest extends CollectionRequiringSolrRequest {
   }
 
   @Override
-  public SolrResponse createResponse(SolrClient client) {
+  public SolrResponse createResponse(NamedList<Object> client) {
     return new SolrResponseBase();
   }
 

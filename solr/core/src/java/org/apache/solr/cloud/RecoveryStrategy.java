@@ -106,6 +106,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 2500);
   private int maxRetries = 500;
   private int startingRecoveryDelayMilliSeconds = 2000;
+  private ReplicationHandler replicationHandlerDoingFetch;
 
   public static interface RecoveryListener {
     public void recovered();
@@ -188,6 +189,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
     close = true;
     cancelPrepRecoveryCmd();
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
+    abortIndexFetchingIfNecessary(replicationHandlerDoingFetch);
+  }
+
+  private void abortIndexFetchingIfNecessary(ReplicationHandler fetcher) {
+    // a 'null' ReplicationHandler indicates that no full-recovery/index-fetching is ongoing to
+    // abort.
+    if (fetcher != null) {
+      fetcher.abortFetch();
+    }
   }
 
   private final void recoveryFailed(final ZkController zkController, final CoreDescriptor cd)
@@ -240,10 +250,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
         ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
 
     if (isClosed()) return; // we check closed on return
-    boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();
-
-    if (!success) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
+    try {
+      // Stash the RH so the fetch can be aborted if RecoveryStrategy is closed mid-fetch
+      replicationHandlerDoingFetch = replicationHandler;
+      boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();
+      if (!success) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
+      }
+    } finally {
+      replicationHandlerDoingFetch = null;
     }
 
     // solrcloud_debug
@@ -282,7 +297,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       throws SolrServerException, IOException {
     try (SolrClient client = recoverySolrClientBuilder(leaderBaseUrl, coreName).build()) {
       UpdateRequest ureq = new UpdateRequest();
-      ureq.setParams(new ModifiableSolrParams());
       // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
       // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);
       // Why do we need to open searcher if "onlyLeaderIndexes"?

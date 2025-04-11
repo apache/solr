@@ -38,7 +38,7 @@ public class TestDocumentObjectBinder extends SolrTestCase {
     DocumentObjectBinder binder = new DocumentObjectBinder();
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> nl = parser.processResponse(new StringReader(xml));
-    QueryResponse res = new QueryResponse(nl, null);
+    QueryResponse res = new QueryResponse(nl);
 
     SolrDocumentList solDocList = res.getResults();
     List<Item> l = binder.getBeans(Item.class, res.getResults());
@@ -83,7 +83,7 @@ public class TestDocumentObjectBinder extends SolrTestCase {
     DocumentObjectBinder binder = new DocumentObjectBinder();
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> nl = parser.processResponse(new StringReader(xml));
-    QueryResponse res = new QueryResponse(nl, null);
+    QueryResponse res = new QueryResponse(nl);
     List<Item> l = binder.getBeans(Item.class, res.getResults());
 
     assertArrayEquals(
@@ -98,6 +98,12 @@ public class TestDocumentObjectBinder extends SolrTestCase {
 
     List<String> supplierTwo = l.get(3).supplier.get("supplier_2");
     assertEquals("CCTV Store", supplierTwo.get(0));
+
+    String supplierMiddle = l.get(3).supplier_middle.get("supmiddle_mobile_middle");
+    assertEquals("Mobile Store in Middle", supplierMiddle);
+
+    String supplierBeginning = l.get(3).sup_beginning.get("mobile_supbeginning");
+    assertEquals("Mobile Store with Beginning Wildcard", supplierBeginning);
   }
 
   public void testChild() throws Exception {
@@ -182,6 +188,12 @@ public class TestDocumentObjectBinder extends SolrTestCase {
     @Field("sup_simple_*")
     Map<String, String> supplier_simple;
 
+    @Field("supmiddle_*_middle")
+    Map<String, String> supplier_middle;
+
+    @Field("*_supbeginning")
+    Map<String, String> sup_beginning;
+
     private String[] allSuppliers;
 
     @Field("supplier_*")
@@ -191,6 +203,22 @@ public class TestDocumentObjectBinder extends SolrTestCase {
 
     public String[] getAllSuppliers() {
       return this.allSuppliers;
+    }
+
+    public Map<String, String> getSupplier_middle() {
+      return supplier_middle;
+    }
+
+    public void setSupplier_middle(Map<String, String> supplier_middle) {
+      this.supplier_middle = supplier_middle;
+    }
+
+    public Map<String, String> getSup_beginning() {
+      return sup_beginning;
+    }
+
+    public void setSup_beginning(Map<String, String> sup_beginning) {
+      this.sup_beginning = sup_beginning;
     }
 
     @Field
@@ -275,6 +303,7 @@ public class TestDocumentObjectBinder extends SolrTestCase {
           + "<str name=\"manu\">Belkin</str><str name=\"name\">iPod &amp; iPod Mini USB 2.0 Cable</str>"
           + "<int name=\"popularity\">1</int><float name=\"price\">11.5</float><str name=\"sku\">IW-02</str>"
           + "<str name=\"supplier_1\">Mobile Store</str><str name=\"supplier_1\">iPod Store</str><str name=\"supplier_2\">CCTV Store</str>"
+          + "<str name=\"supmiddle_mobile_middle\">Mobile Store in Middle</str><str name=\"mobile_supbeginning\">Mobile Store with Beginning Wildcard</str>"
           + "<date name=\"timestamp\">2008-04-16T10:35:57.140Z</date><float name=\"weight\">2.0</float></doc></result>\n"
           + "</response>";
 }

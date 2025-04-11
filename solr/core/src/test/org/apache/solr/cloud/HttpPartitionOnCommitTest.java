@@ -16,8 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -40,7 +40,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   @BeforeClass
   public static void setupSysProps() {
-    System.setProperty("socketTimeout", "5000");
+    System.setProperty("socketTimeout", "10000");
     System.setProperty("distribUpdateSoTimeout", "5000");
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
@@ -175,7 +175,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
   /** Overrides the parent implementation to install a SocketProxy in-front of the Jetty server. */
   @Override
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
