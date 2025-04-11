@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -168,7 +167,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     q.setParam("a", MUST_ENCODE);
 
     HttpJdkSolrClient.Builder b =
-        builder(someOtherUrl).withResponseParser(new BinaryResponseParser());
+        builder(someOtherUrl).withResponseParser(new JavaBinResponseParser());
     try (HttpJdkSolrClient client = b.build()) {
       client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
       assertEquals(
@@ -326,7 +325,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
     try (HttpJdkSolrClient client =
         builder(url)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .useHttp1_1(http11)
             .build()) {
@@ -348,8 +347,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client =
         builder(url)
-            .withRequestWriter(new BinaryRequestWriter())
-            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
             .build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
       assertNoHeadRequestWithSsl(client);
@@ -441,7 +440,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       queryToHelpJdkReleaseThreads(client);
     }
 
-    rp = new BinaryResponseParser();
+    rp = new JavaBinResponseParser();
     try (HttpJdkSolrClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
       assertTrue(
           client.processorAcceptsMimeType(

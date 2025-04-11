@@ -16,15 +16,15 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.client.solrj.SolrClient;
+import java.util.Objects;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.NamedList;
 
-/** */
 public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
-  protected ModifiableSolrParams params;
+  protected ModifiableSolrParams params = new ModifiableSolrParams(); // maybe make final; no setter
   protected int commitWithin = -1;
 
   public enum ACTION {
@@ -53,8 +53,6 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
 
   public AbstractUpdateRequest setAction(
       ACTION action, boolean waitFlush, boolean waitSearcher, boolean softCommit, int maxSegments) {
-    if (params == null) params = new ModifiableSolrParams();
-
     if (action == ACTION.OPTIMIZE) {
       params.set(UpdateParams.OPTIMIZE, "true");
       params.set(UpdateParams.MAX_OPTIMIZE_SEGMENTS, maxSegments);
@@ -104,20 +102,17 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
    * @since Solr 1.4
    */
   public AbstractUpdateRequest rollback() {
-    if (params == null) params = new ModifiableSolrParams();
-
     params.set(UpdateParams.ROLLBACK, "true");
     return this;
   }
 
   public void setParam(String param, String value) {
-    if (params == null) params = new ModifiableSolrParams();
     params.set(param, value);
   }
 
   /** Sets the parameters for this update request, overwriting any previous */
   public void setParams(ModifiableSolrParams params) {
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
   }
 
   @Override
@@ -126,7 +121,7 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   @Override
-  protected UpdateResponse createResponse(SolrClient client) {
+  protected UpdateResponse createResponse(NamedList<Object> namedList) {
     return new UpdateResponse();
   }
 
@@ -136,11 +131,10 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   public boolean isWaitSearcher() {
-    return params != null && params.getBool(UpdateParams.WAIT_SEARCHER, false);
+    return params.getBool(UpdateParams.WAIT_SEARCHER, false);
   }
 
   public ACTION getAction() {
-    if (params == null) return null;
     if (params.getBool(UpdateParams.COMMIT, false)) return ACTION.COMMIT;
     if (params.getBool(UpdateParams.OPTIMIZE, false)) return ACTION.OPTIMIZE;
     return null;

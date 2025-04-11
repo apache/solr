@@ -17,22 +17,23 @@
 package org.apache.solr.client.solrj;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.Utils;
@@ -44,22 +45,23 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File tempSolrHome = createTempDir().toFile();
+    Path tempSolrHome = createTempDir();
     // Schemaless renames schema.xml -> schema.xml.bak, and creates + modifies conf/managed-schema,
     // which violates the test security manager's rules, which disallow writes outside the build
     // dir, so we copy the example/example-schemaless/solr/ directory to a new temp dir where writes
     // are allowed.
-    FileUtils.copyFileToDirectory(new File(ExternalPaths.SERVER_HOME, "solr.xml"), tempSolrHome);
-    File collection1Dir = new File(tempSolrHome, "collection1");
-    FileUtils.forceMkdir(collection1Dir);
-    FileUtils.copyDirectoryToDirectory(new File(ExternalPaths.DEFAULT_CONFIGSET), collection1Dir);
+    final Path sourceFile = ExternalPaths.SERVER_HOME.resolve("solr.xml");
+    Files.copy(sourceFile, tempSolrHome.resolve("solr.xml"));
+    Path collection1Dir = tempSolrHome.resolve("collection1");
+    Files.createDirectories(collection1Dir);
+    PathUtils.copyDirectory(ExternalPaths.DEFAULT_CONFIGSET, collection1Dir);
     Properties props = new Properties();
     props.setProperty("name", "collection1");
     OutputStreamWriter writer = null;
     try {
       writer =
           new OutputStreamWriter(
-              FileUtils.openOutputStream(new File(collection1Dir, "core.properties")),
+              PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
               StandardCharsets.UTF_8);
       props.store(writer, null);
     } finally {
@@ -70,7 +72,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         }
       }
     }
-    createAndStartJetty(tempSolrHome.getAbsolutePath());
+    createAndStartJetty(tempSolrHome);
   }
 
   @Test
@@ -136,8 +138,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
             .allowMultiPartPost(random().nextBoolean());
     if (random().nextBoolean()) {
       httpSolrClientBuilder
-          .withRequestWriter(new BinaryRequestWriter())
-          .withResponseParser(new BinaryResponseParser());
+          .withRequestWriter(new JavaBinRequestWriter())
+          .withResponseParser(new JavaBinResponseParser());
     }
     return httpSolrClientBuilder.build();
   }

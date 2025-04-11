@@ -140,7 +140,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected void uploadConfig(String configName, Path source) throws IOException {
+  public void uploadConfig(String configName, Path source) throws IOException {
     Path dest = getConfigDir(configName);
     copyRecursively(source, dest);
   }

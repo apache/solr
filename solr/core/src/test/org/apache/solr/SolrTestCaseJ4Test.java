@@ -16,10 +16,9 @@
  */
 package org.apache.solr;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,24 +30,24 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest
     // configuration sets we can, so we don't copy that much junk around.
-    String tmpSolrHome = createTempDir().toFile().getAbsolutePath();
+    Path tmpSolrHome = createTempDir();
 
-    Path subHome = Path.of(tmpSolrHome, "core0", "conf");
+    Path subHome = tmpSolrHome.resolve("core0/conf");
     Files.createDirectories(subHome);
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(top, "schema-tiny.xml"), subHome.resolve("schema-tiny.xml"));
-    Files.copy(Path.of(top, "solrconfig-minimal.xml"), subHome.resolve("solrconfig-minimal.xml"));
+    Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1/conf");
+    Files.copy(top.resolve("schema-tiny.xml"), subHome.resolve("schema-tiny.xml"));
+    Files.copy(top.resolve("solrconfig-minimal.xml"), subHome.resolve("solrconfig-minimal.xml"));
     Files.copy(
-        Path.of(top, "solrconfig.snippet.randomindexconfig.xml"),
+        top.resolve("solrconfig.snippet.randomindexconfig.xml"),
         subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
-    FileUtils.copyDirectory(new File(tmpSolrHome, "core0"), new File(tmpSolrHome, "core1"));
+    PathUtils.copyDirectory(tmpSolrHome.resolve("core0"), tmpSolrHome.resolve("core1"));
     // Core discovery will default to the name of the dir the core.properties file is in. So if
     // everything else is OK as defaults, just the _presence_ of this file is sufficient.
-    FileUtils.touch(new File(tmpSolrHome, "core0/core.properties"));
-    FileUtils.touch(new File(tmpSolrHome, "core1/core.properties"));
+    PathUtils.touch(tmpSolrHome.resolve("core0/core.properties"));
+    PathUtils.touch(tmpSolrHome.resolve("core1/core.properties"));
 
-    Files.copy(getFile("solr/solr.xml"), Path.of(tmpSolrHome, "solr.xml"));
+    Files.copy(getFile("solr/solr.xml"), tmpSolrHome.resolve("solr.xml"));
 
     initCore("solrconfig-minimal.xml", "schema-tiny.xml", tmpSolrHome, "core1");
   }

@@ -18,15 +18,16 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import org.apache.solr.client.solrj.SolrClient;
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
-  public SolrParams params;
+  private final SolrParams params; // not null
   public SimpleSolrResponse response = new SimpleSolrResponse();
   public ContentWriter contentWriter;
   public boolean requiresCollection;
@@ -50,7 +51,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
    */
   public GenericSolrRequest(METHOD m, String path, SolrParams params) {
     super(m, path);
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
   }
 
   /**
@@ -103,7 +104,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   }
 
   @Override
-  protected SimpleSolrResponse createResponse(SolrClient client) {
+  protected SimpleSolrResponse createResponse(NamedList<Object> namedList) {
     return response;
   }
 

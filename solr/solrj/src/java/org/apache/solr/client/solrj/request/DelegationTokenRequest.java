@@ -19,13 +19,13 @@ package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
 import java.util.TreeSet;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Class for making Solr delegation token requests.
@@ -49,7 +49,7 @@ public abstract class DelegationTokenRequest<
   protected abstract Q getThis();
 
   @Override
-  protected abstract R createResponse(SolrClient client);
+  protected abstract R createResponse(NamedList<Object> namedList);
 
   public static class Get extends DelegationTokenRequest<Get, DelegationTokenResponse.Get> {
     protected String renewer;
@@ -79,7 +79,7 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public DelegationTokenResponse.Get createResponse(SolrClient client) {
+    public DelegationTokenResponse.Get createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Get();
     }
 
@@ -113,7 +113,7 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public DelegationTokenResponse.Renew createResponse(SolrClient client) {
+    public DelegationTokenResponse.Renew createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Renew();
     }
 
@@ -130,7 +130,7 @@ public abstract class DelegationTokenRequest<
     public Cancel(String token) {
       super(METHOD.PUT);
       this.token = token;
-      setResponseParser(new NoOpResponseParser());
+      setResponseParser(new NoOpResponseParser("xml"));
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 
@@ -148,7 +148,7 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public DelegationTokenResponse.Cancel createResponse(SolrClient client) {
+    public DelegationTokenResponse.Cancel createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Cancel();
     }
 
