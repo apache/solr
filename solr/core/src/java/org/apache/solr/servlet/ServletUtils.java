@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -252,8 +253,11 @@ public abstract class ServletUtils {
   static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
     try {
       ServletInputStream is = req.getInputStream();
-      //noinspection StatementWithEmptyBody
-      while (!is.isFinished() && is.read() != -1) {}
+      if (!is.isFinished() && is.read() != -1) {
+        is.skipNBytes(Long.MAX_VALUE); // throws EOF
+      }
+    } catch (EOFException e) {
+      // ignore / expected for skipNBytes
     } catch (IOException e) {
       if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
         log.debug("No input stream to consume from client");
