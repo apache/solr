@@ -254,6 +254,8 @@ Bug Fixes
 * SOLR-5386: Fix various methods of invoking "local" solr requests to re-use the same searcher as the original request.
   This notably fixes the use of spellcheck.maxCollationTries in firstSearcher warming queries to prevent deadlock (hossman)
 
+* SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
