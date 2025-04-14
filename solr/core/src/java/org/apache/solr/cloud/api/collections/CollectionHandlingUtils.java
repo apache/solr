@@ -55,7 +55,6 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -221,13 +220,12 @@ public class CollectionHandlingUtils {
 
   static void commit(NamedList<Object> results, String slice, Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
-    final var zkCoreProps = new ZkCoreNodeProps(parentShardLeader);
-    String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
+    String coreUrl = parentShardLeader.getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
     // and we force open a searcher so that we have documents to show upon switching states
     UpdateResponse updateResponse = null;
     try {
-      updateResponse = softCommit(zkCoreProps.getBaseUrl(), zkCoreProps.getCoreName());
+      updateResponse = softCommit(parentShardLeader.getBaseUrl(), parentShardLeader.getCoreName());
       CollectionHandlingUtils.processResponse(
           results, null, coreUrl, updateResponse, slice, Collections.emptySet());
     } catch (Exception e) {

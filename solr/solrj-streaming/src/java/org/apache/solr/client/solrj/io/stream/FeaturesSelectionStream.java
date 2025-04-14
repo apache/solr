@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 
@@ -285,8 +284,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
         Collections.shuffle(shuffler, new Random());
         Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
+        String url = rep.getCoreUrl();
         baseUrls.add(url);
       }
 
