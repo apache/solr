@@ -40,9 +40,11 @@ $ curl --request POST \
 --url http://localhost:8983/api/collections \
 --header 'Content-Type: application/json' \
 --data '{
-  "name": "techproducts",
-  "numShards": 1,
-  "replicationFactor": 1
+  "create": {
+    "name": "techproducts",
+    "numShards": 1,
+    "replicationFactor": 1
+  }
 }'
 ----
 
