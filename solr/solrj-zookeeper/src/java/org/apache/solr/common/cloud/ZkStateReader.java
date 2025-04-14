@@ -911,8 +911,7 @@ public class ZkStateReader implements SolrCloseable {
     if (replica == null || replica.getBaseUrl() == null) {
       return null;
     }
-    ZkCoreNodeProps props = new ZkCoreNodeProps(replica);
-    return props.getCoreUrl();
+    return replica.getCoreUrl();
   }
 
   public Replica getLeader(Set<String> liveNodes, DocCollection docCollection, String shard) {
