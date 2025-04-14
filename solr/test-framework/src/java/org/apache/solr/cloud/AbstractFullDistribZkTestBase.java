@@ -1534,7 +1534,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (CloudJettyRunner cjetty : solrJetties) {
       Replica replica = cjetty.info;
       log.debug("client{}", cnt);
-      log.debug("PROPS:{}", replica);
+      log.debug("REPLICA:{}", replica);
       cnt++;
 
       try {
@@ -1608,7 +1608,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       for (CloudJettyRunner cjetty : solrJetties) {
         Replica info = cjetty.info;
-        log.debug("PROPS:{}", info);
+        log.debug("REPLICA:{}", info);
 
         try {
           SolrParams query =
