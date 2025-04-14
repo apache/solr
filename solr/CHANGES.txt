@@ -119,7 +119,7 @@ Deprecation Removals
 
 * SOLR-17683: Removed deprecated CurrencyField field type. (Eric Pugh)
 
-* SOLR-17738: Removed deprecated `transform()` from `DocTransformer`. (Abhishek Umarjikar)
+* SOLR-17738: Removed deprecated `transform()` from `DocTransformer`. (Abhishek Umarjikar, Houston Putman)
 
 Dependency Upgrades
 ---------------------
