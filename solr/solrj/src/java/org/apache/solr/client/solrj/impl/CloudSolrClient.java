@@ -1363,10 +1363,9 @@ public abstract class CloudSolrClient extends SolrClient {
       for (Slice slice : coll.getActiveSlicesArr()) {
         Replica leader = slice.getLeader();
         if (leader != null) {
-          ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
-          String leaderUrl = zkProps.getBaseUrl() + "/" + zkProps.getCoreName();
+          String leaderUrl = leader.getBaseUrl() + "/" + leader.getCoreName();
           leaders.put(leaderUrl, slice.getName());
-          String altLeaderUrl = zkProps.getBaseUrl() + "/" + collection;
+          String altLeaderUrl = leader.getBaseUrl() + "/" + collection;
           leaders.put(altLeaderUrl, slice.getName());
         }
       }
