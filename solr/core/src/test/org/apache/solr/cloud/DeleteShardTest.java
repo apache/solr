@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -25,7 +23,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.FileUtils;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -81,7 +78,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDirectoryCleanupAfterDeleteShard() throws IOException, SolrServerException {
+  public void testDirectoryCleanupAfterDeleteShard() throws Exception {
 
     final String collection = "deleteshard_test";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", 1)
@@ -134,16 +131,21 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
   /** Check whether shard metadata exist in Zookeeper. */
   private void assertShardMetadata(String collection, String sliceId, boolean shouldExist)
-      throws KeeperException, InterruptedException {
+      throws Exception {
+    String collectionRoot = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
 
-    String leaderElectPath =
-        ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/" + sliceId;
+    String leaderElectPath = collectionRoot + "/leader_elect/" + sliceId;
     assertEquals(shouldExist, cluster.getZkClient().exists(leaderElectPath, true));
 
-    String leaderPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + sliceId;
+    String leaderPath = collectionRoot + "/leaders/" + sliceId;
     assertEquals(shouldExist, cluster.getZkClient().exists(leaderPath, true));
 
-    String termPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + sliceId;
+    String termPath = collectionRoot + "/terms/" + sliceId;
     assertEquals(shouldExist, cluster.getZkClient().exists(termPath, true));
+
+    // Check if the shard name is present in any node under the collection root.
+    // This way, new/unexpected stuff could be detected.
+    String layout = cluster.getZkClient().listZnode(collectionRoot, true);
+    assertEquals(shouldExist, layout.contains(sliceId));
   }
 }
