@@ -51,8 +51,6 @@ public class TestConfigOverlay extends SolrTestCase {
     assertTrue(
         isEditableProp("requestDispatcher.requestParsers.enableRemoteStreaming", false, null));
     assertTrue(isEditableProp("requestDispatcher.requestParsers.enableStreamBody", false, null));
-    assertTrue(
-        isEditableProp("requestDispatcher.requestParsers.addHttpRequestToContext", false, null));
 
     assertTrue(isEditableProp("requestDispatcher.handleSelect", false, null));
 

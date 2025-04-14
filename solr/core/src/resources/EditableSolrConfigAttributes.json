@@ -61,6 +61,5 @@
       "multipartUploadLimitInKB":0,
       "formdataUploadLimitInKB":0,
       "enableRemoteStreaming":10,
-      "enableStreamBody":10,
-      "addHttpRequestToContext":0}},
+      "enableStreamBody":10}}
 }
