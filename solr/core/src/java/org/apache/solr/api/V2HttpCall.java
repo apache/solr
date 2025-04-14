@@ -156,8 +156,9 @@ public class V2HttpCall extends HttpSolrCall {
                   + this.collectionsList);
         } else {
           String collectionName = collectionsList.get(0);
-          // Certain HTTP methods are only used for admin APIs, check for those and short-circuit
-          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))) {
+          // Short-circuit for coll-deletion, so it can happen without acquiring a 'SolrCore' ref.
+          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))
+              && pathSegments.size() == 2) {
             initAdminRequest(path);
             return;
           }

@@ -133,13 +133,6 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     }
   }
 
-  @Test(expected = AssertionError.class)
-  public void testHealthCheckHandlerWithCloudClient() throws IOException, SolrServerException {
-    // negative check of a HealthCheckRequest using cloud solr client
-    HealthCheckRequest req = new HealthCheckRequest();
-    req.process(cluster.getSolrClient());
-  }
-
   @Test
   public void testHealthCheckV2Api() throws Exception {
     V2Response res = new V2Request.Builder("/node/health").build().process(cluster.getSolrClient());

@@ -41,6 +41,8 @@ Improvements
 
 * SOLR-17701: Simplify bin/solr scripts by removing AUTH_PORT export in favour of more commonly used SOLR_PORT export. (Eric Pugh)
 
+* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse. (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -196,6 +198,10 @@ New Features
 
 * SOLR-17714: Added a FuzzyQParser to enable all FuzzyQuery customizations. (Houston Putman, Siju Varghese)
 
+* SOLR-17678: ReRank queries can now return the matchScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
+
+* SSOLR-17447 : Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
+
 Improvements
 ---------------------
 * SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
@@ -217,6 +223,8 @@ Improvements
 
 * SOLR-10998: v2 APIs now obey the "Accept" request header for content-negotiation if 'wt' is unspecified.  JSON is still used as a default when
   neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
+
+* SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
 
 Optimizations
 ---------------------
@@ -243,6 +251,9 @@ Bug Fixes
 
 * SOLR-17692: Core unload/deletion now preempts all forms of ongoing "recovery", rather than inadvertently waiting for
   completion in some cases. (Jason Gerlowski)
+
+* SOLR-5386: Fix various methods of invoking "local" solr requests to re-use the same searcher as the original request.
+  This notably fixes the use of spellcheck.maxCollationTries in firstSearcher warming queries to prevent deadlock (hossman)
 
 Dependency Upgrades
 ---------------------

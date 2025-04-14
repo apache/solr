@@ -17,10 +17,10 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Objects;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * @since solr 1.3
@@ -61,7 +61,7 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
   // ---------------------------------------------------------------------------------
 
   @Override
-  protected QueryResponse createResponse(SolrClient client) {
+  protected QueryResponse createResponse(NamedList<Object> namedList) {
     return new QueryResponse();
   }
 

@@ -14,33 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.handler.admin.api;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.apache.solr.handler.SchemaHandler;
-import org.apache.solr.handler.admin.V2ApiMappingTest;
-import org.junit.Test;
-
-/** Unit tests for the GET and POST /v2/c/collectionName/schema APIs. */
-public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
-
-  @Override
-  public void populateApiBag() {
-    apiBag.registerObject(new SchemaBulkModifyAPI(getRequestHandler()));
-  }
-
-  @Override
-  public SchemaHandler createUnderlyingRequestHandler() {
-    return createMock(SchemaHandler.class);
-  }
-
-  @Override
-  public boolean isCoreSpecific() {
-    return true;
-  }
-
-  @Test
-  public void testSchemaBulkModificationApiMapping() {
-    assertAnnotatedApiExistsFor("POST", "/schema");
-  }
+public class DeleteFieldTypeOperation extends SchemaChange {
+  @JsonProperty public String name;
 }

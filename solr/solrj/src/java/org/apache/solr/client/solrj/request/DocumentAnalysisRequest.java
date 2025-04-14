@@ -25,13 +25,13 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.DocumentAnalysisResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
@@ -81,7 +81,7 @@ public class DocumentAnalysisRequest
   }
 
   @Override
-  protected DocumentAnalysisResponse createResponse(SolrClient client) {
+  protected DocumentAnalysisResponse createResponse(NamedList<Object> namedList) {
     return new DocumentAnalysisResponse();
   }
 
