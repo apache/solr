@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -77,7 +78,7 @@ public class MirroredSolrRequestSerializer
       throw new RuntimeException(e);
     }
     MirroredSolrRequest.Type type = MirroredSolrRequest.Type.get((String) requestMap.get("type"));
-    SolrRequest<?> request;
+    SolrRequest<? extends SolrResponse> request;
     int attempt = Integer.parseInt(String.valueOf(requestMap.getOrDefault("attempt", "-1")));
     long submitTimeNanos =
         Long.parseLong(String.valueOf(requestMap.getOrDefault("submitTimeNanos", "-1")));

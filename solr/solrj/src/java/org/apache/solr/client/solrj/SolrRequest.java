@@ -29,11 +29,20 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 
 /**
+ * The SolrJ base class for a request into Solr. If you create one of these, then call {@link
+ * #process(SolrClient)} to send it and get a typed response. There are some convenience methods on
+ * {@link SolrClient} that avoids the need to even create these explicitly for common cases.
+ *
+ * @param <T> the response type, that which is returned from a {@code process} method. For V1 APIs,
+ *     it's a {@link SolrResponse}.
+ * @see org.apache.solr.client.solrj.request.QueryRequest
+ * @see org.apache.solr.client.solrj.request.UpdateRequest
  * @since solr 1.3
  */
-public abstract class SolrRequest<T extends SolrResponse> implements Serializable {
+public abstract class SolrRequest<T> implements Serializable {
   // This user principal is typically used by Auth plugins during distributed/sharded search
   private Principal userPrincipal;
 
@@ -238,11 +247,13 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   /**
-   * Create a new SolrResponse to hold the response from the server
+   * Create a new SolrResponse to hold the response from the server. If the response extends {@link
+   * SolrResponse}, then there's no need to use the arguments, as {@link
+   * SolrResponse#setResponse(NamedList)} will be called right after this method.
    *
-   * @param client the {@link SolrClient} the request will be sent to
+   * @param namedList from {@link SolrClient#request(SolrRequest, String)}.
    */
-  protected abstract T createResponse(SolrClient client);
+  protected abstract T createResponse(NamedList<Object> namedList);
 
   /**
    * Send this request to a {@link SolrClient} and return the response
@@ -256,12 +267,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public final T process(SolrClient client, String collection)
       throws SolrServerException, IOException {
     long startNanos = System.nanoTime();
-    T res = createResponse(client);
     var namedList = client.request(this, collection);
-    res.setResponse(namedList);
     long endNanos = System.nanoTime();
-    res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
-    return res;
+    final T typedResponse = createResponse(namedList);
+    // SolrResponse is pre-V2 API
+    if (typedResponse instanceof SolrResponse res) {
+      res.setResponse(namedList); // TODO insist createResponse does this ?
+      res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
+    }
+    return typedResponse;
   }
 
   /**
