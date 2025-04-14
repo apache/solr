@@ -122,7 +122,7 @@ Deprecation Removals
 Dependency Upgrades
 ---------------------
 
-* SOLR-16984: Upgraded internal Jetty server from Jetty 10 to Jetty 12, including migration from javax.* to jakarta.* namespaces for Servlet and related APIs. (Sanjay Dutt, David Smiley)
+* SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
 
 Other Changes
 ---------------------
