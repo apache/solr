@@ -58,9 +58,9 @@ import org.apache.lucene.util.IOSupplier;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -516,7 +516,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
       throws IOException {
     var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/blob/" + blobName);
-    request.withContent(bytes, BinaryResponseParser.BINARY_CONTENT_TYPE);
+    request.withContent(bytes, JavaBinResponseParser.JAVABIN_CONTENT_TYPE);
     request.setRequiresCollection(true);
     try {
       request.process(cloudClient, BLOB_STORE_ID);
@@ -1133,28 +1133,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       PathUtils.deleteDirectory(tmpDirectory);
     }
     return baos.toByteArray();
-  }
-
-  public boolean isConfigSetTrusted(String configSetName) {
-    try {
-      return cc.getConfigSetService().isConfigSetTrusted(configSetName);
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Could not load conf " + configSetName + ": " + e.getMessage(),
-          e);
-    }
-  }
-
-  public void removeConfigSetTrust(String configSetName) {
-    try {
-      cc.getConfigSetService().setConfigSetTrust(configSetName, false);
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Could not remove trusted flag for configSet " + configSetName + ": " + e.getMessage(),
-          e);
-    }
   }
 
   protected ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {

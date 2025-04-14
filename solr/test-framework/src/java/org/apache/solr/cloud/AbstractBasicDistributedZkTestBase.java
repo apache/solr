@@ -1524,7 +1524,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             if (shardId == null) {
               createCmd.setNumShards(2);
             }
-            createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
+            createCmd.setDataDir(getDataDir(createTempDir(collection).toString()));
             if (shardId != null) {
               createCmd.setShardId(shardId);
             }

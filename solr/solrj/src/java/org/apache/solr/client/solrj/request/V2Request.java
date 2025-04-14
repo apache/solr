@@ -28,12 +28,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 
 public class V2Request extends SolrRequest<V2Response> implements MapWriter {
@@ -116,7 +116,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   }
 
   @Override
-  protected V2Response createResponse(SolrClient client) {
+  protected V2Response createResponse(NamedList<Object> namedList) {
     return new V2Response();
   }
 

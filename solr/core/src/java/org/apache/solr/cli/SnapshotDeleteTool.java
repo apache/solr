@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -45,12 +44,8 @@ public class SnapshotDeleteTool extends ToolBase {
           .desc("Name of the snapshot to delete")
           .build();
 
-  public SnapshotDeleteTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public SnapshotDeleteTool(PrintStream stdout) {
-    super(stdout);
+  public SnapshotDeleteTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override

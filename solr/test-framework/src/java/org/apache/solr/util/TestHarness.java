@@ -18,7 +18,6 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,7 +138,7 @@ public class TestHarness extends BaseTestHarness {
               + SOLR_HOME
               + " sys prop to be set by test first");
     }
-    return Paths.get(home).toAbsolutePath().normalize();
+    return Path.of(home).toAbsolutePath().normalize();
   }
 
   /**
