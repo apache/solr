@@ -344,14 +344,20 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
           "creating target collection " + targetCollection, cmdResults, true);
 
       // create the checkpoint collection - use RF=1 and 1 shard
-      cmd =
-          new ZkNodeProps(
-              Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
-              CommonParams.NAME, chkCollection,
-              ZkStateReader.NUM_SHARDS_PROP, "1",
-              ZkStateReader.REPLICATION_FACTOR, "1",
-              CollectionAdminParams.COLL_CONF, chkConfigName,
-              CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
+      cmd = new ZkNodeProps(
+              Overseer.QUEUE_OPERATION,
+              CollectionParams.CollectionAction.CREATE.toLower(),
+              CommonParams.NAME,
+              chkCollection,
+              ZkStateReader.NUM_SHARDS_PROP,
+              "1",
+              ZkStateReader.REPLICATION_FACTOR,
+              "1",
+              CollectionAdminParams.COLL_CONF,
+              chkConfigName,
+              CommonAdminParams.WAIT_FOR_FINAL_STATE,
+              "true"
+      );
       cmdResults = new NamedList<>();
       new CreateCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
       CollectionHandlingUtils.checkResults(
