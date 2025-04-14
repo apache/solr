@@ -590,7 +590,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               CREATE_NODE_SET,
               CREATE_NODE_SET_SHUFFLE,
               "shards",
-              "chkConfigName",
+              ReindexCollectionCmd.CHK_CONFIG_NAME,
               CommonParams.ROWS,
               CommonParams.Q,
               CommonParams.FL,
