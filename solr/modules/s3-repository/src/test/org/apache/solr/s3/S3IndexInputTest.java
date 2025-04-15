@@ -24,7 +24,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,8 +36,7 @@ public class S3IndexInputTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    temporaryFolder = Files.createTempDirectory("junit");
-    PathUtils.deleteOnExit(temporaryFolder);
+    temporaryFolder = createTempDir("junit");
   }
 
   /** Simulates fetching a file from S3 in more than one read operation. */
