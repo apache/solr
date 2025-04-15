@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
@@ -55,8 +54,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
     SolrProcessManager.enableTestingMode = true;
     System.setProperty("jetty.port", Integer.toString(processHttp.getKey()));
-    Path pidDir = Files.createTempDirectory("solr-pid-dir").toAbsolutePath();
-    PathUtils.deleteOnExit(pidDir);
+    Path pidDir = createTempDir("solr-pid-dir");
     System.setProperty("solr.pid.dir", pidDir.toString());
     Files.writeString(
         pidDir.resolve("solr-" + processHttpValue + PID_SUFFIX), Long.toString(processHttpValue));
