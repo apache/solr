@@ -24,6 +24,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -664,8 +665,13 @@ public class Utils {
    * @throws IOException on problem with IO
    */
   public static void readFully(InputStream is) throws IOException {
-    is.skip(is.available());
-    while (is.read() != -1) {}
+    if (is.read() != -1) { // not needed but avoids a buffer allocation soon if found data
+      try {
+        is.skipNBytes(Long.MAX_VALUE); // throws EOF
+      } catch (EOFException e) {
+        // ignore / expected for skipNBytes
+      }
+    }
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern.compile("(\\S*?)\\[([-]?\\d+)\\]");
