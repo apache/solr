@@ -98,10 +98,10 @@ public class BlockJoinParentQParser extends FiltersQParser {
     try {
       List<BooleanClause> childrenClauses = childrenQuery.clauses();
       KnnByteVectorQuery knnByteChildrenQuery = getBytetKnnQuery(childrenClauses);
-      if (knnByteChildrenQuery != null) {
-        BitSetProducer allParentsBitSet = getBitSetProducer(allParents);
-        BooleanQuery parentsFilter = getParentsFilter();
+      BitSetProducer allParentsBitSet = getBitSetProducer(allParents);
+      BooleanQuery parentsFilter = getParentsFilter();
 
+      if (knnByteChildrenQuery != null) {
         String vectorField = knnByteChildrenQuery.getField();
         byte[] queryVector = knnByteChildrenQuery.getTargetCopy();
         int topK = knnByteChildrenQuery.getK();
@@ -120,9 +120,6 @@ public class BlockJoinParentQParser extends FiltersQParser {
       } else {
         KnnFloatVectorQuery knnFLoatChildrenQuery = getFloatKnnQuery(childrenClauses);
         if (knnFLoatChildrenQuery != null) {
-          BitSetProducer allParentsBitSet = getBitSetProducer(allParents);
-          BooleanQuery parentsFilter = getParentsFilter();
-
           String vectorField = knnFLoatChildrenQuery.getField();
           float[] queryVector = knnFLoatChildrenQuery.getTargetCopy();
           int topK = knnFLoatChildrenQuery.getK();
@@ -140,10 +137,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
               knnChildren, allParentsBitSet, ScoreModeParser.parse(scoreMode));
         } else {
           return new AllParentsAware(
-              childrenQuery,
-              getBitSetProducer(allParents),
-              ScoreModeParser.parse(scoreMode),
-              allParents);
+              childrenQuery, allParentsBitSet, ScoreModeParser.parse(scoreMode), allParents);
         }
       }
     } catch (IOException e) {
