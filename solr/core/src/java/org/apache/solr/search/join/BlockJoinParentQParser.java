@@ -164,13 +164,11 @@ public class BlockJoinParentQParser extends FiltersQParser {
           noChildTransformer = false;
         }
       }
-    } else {
-      if ((originalTransformer instanceof ChildDocTransformer)) {
+    } else if ((originalTransformer instanceof ChildDocTransformer)) {
         ChildDocTransformer childTransformer = (ChildDocTransformer) originalTransformer;
         if (childTransformer.getChildDocSet() == null) {
           childTransformer.setChildDocSet(request.getSearcher().getDocSet(knnOnVectorField));
         }
-      }
     }
   }
 
