@@ -196,7 +196,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
       Query childrenKnnPreFilter, BooleanQuery parentsFilter, BitSetProducer allParentsBitSet) {
     Query childrenFilter = childrenKnnPreFilter;
 
-    if (parentsFilter.clauses().size() > 0) {
+    if (!parentsFilter.clauses().isEmpty()) {
       Query acceptedChildrenBasedOnParentsFilter =
           new ToChildBlockJoinQuery(parentsFilter, allParentsBitSet); // no scoring happens here
       BooleanQuery.Builder acceptedChildrenBuilder = createBuilder();
