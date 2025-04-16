@@ -665,7 +665,7 @@ public class Utils {
    * @throws IOException on problem with IO
    */
   public static void readFully(InputStream is) throws IOException {
-    if (is.read() != -1) { // not needed but avoids a buffer allocation soon if found data
+    if (is.read() != -1) { // not needed but avoids skipNBytes's internal buffer allocation
       try {
         is.skipNBytes(Long.MAX_VALUE); // throws EOF
       } catch (EOFException e) {
