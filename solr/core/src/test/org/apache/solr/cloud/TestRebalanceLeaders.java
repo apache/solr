@@ -451,8 +451,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     }
     var request =
         new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-    request.setRequiresCollection(false);
-    SimpleSolrResponse resp = request.process(cluster.getSolrClient());
+    var resp = request.process(cluster.getSolrClient());
     NamedList<?> header = (NamedList) resp.getResponse().get("responseHeader");
     assertEquals("Call to rebalanceLeaders failed ", 0, header.get("status"));
   }
@@ -487,7 +486,6 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
     var request =
         new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-    request.setRequiresCollection(false);
     cluster.getSolrClient().request(request);
     String propLC = prop.toLowerCase(Locale.ROOT);
     waitForState(

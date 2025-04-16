@@ -1002,8 +1002,7 @@ public abstract class CloudSolrClient extends SolrClient {
     if (request.getRequestType() == SolrRequestType.UPDATE) {
       sendToLeaders = this.isUpdatesToLeaders();
 
-      if (sendToLeaders && request instanceof UpdateRequest) {
-        var updateRequest = (UpdateRequest) request;
+      if (sendToLeaders && request instanceof UpdateRequest updateRequest) {
         sendToLeaders = sendToLeaders && updateRequest.isSendToLeaders();
 
         // Check if we can do a "directUpdate" ...

@@ -134,15 +134,18 @@ public abstract class SolrScraper implements Closeable {
       zkHostLabelValue = ((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts();
     }
 
-    SolrRequestType requestType = SolrRequestType.QUERY;
-    boolean requiresCollection = true;
+    GenericSolrRequest request = null;
     if (ADMIN_PATHS.contains(query.getPath())) {
-      requestType = SolrRequestType.ADMIN;
-      requiresCollection = false;
+      request =
+          new GenericSolrRequest(
+              METHOD.GET, query.getPath(), SolrRequestType.ADMIN, query.getParameters());
+    } else {
+      request =
+          new GenericSolrRequest(
+              METHOD.GET, query.getPath(), SolrRequestType.ADMIN, query.getParameters());
+      request.setRequiresCollection(true);
     }
-    var request =
-        new GenericSolrRequest(METHOD.GET, query.getPath(), requestType, query.getParameters());
-    request.setRequiresCollection(requiresCollection);
+
     NamedList<Object> response;
     try {
       if (query.getCollection().isEmpty() && query.getCore().isEmpty()) {
