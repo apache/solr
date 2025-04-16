@@ -34,6 +34,7 @@ public class S3IndexInputTest extends SolrTestCaseJ4 {
   public Path temporaryFolder;
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     temporaryFolder = createTempDir("junit");

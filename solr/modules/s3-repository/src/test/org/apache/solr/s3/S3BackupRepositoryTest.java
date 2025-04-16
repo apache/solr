@@ -57,6 +57,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     temporaryFolder = createTempDir("junit");
