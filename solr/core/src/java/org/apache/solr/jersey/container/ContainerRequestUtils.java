@@ -19,18 +19,12 @@ package org.apache.solr.jersey.container;
 
 import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.SecurityContext;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
 import java.util.Enumeration;
-import java.util.Iterator;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.request.SolrQueryRequest;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.internal.ContainerUtils;
@@ -79,7 +73,6 @@ public class ContainerRequestUtils {
   public static ContainerRequest createContainerRequest(
       HttpServletRequest httpServletRequest,
       HttpServletResponse httpServletResponse,
-      SolrQueryRequest solrReq,
       Configuration appConfig) {
     final ContainerResponseWriter responseWriter =
         new JettyBridgeResponseWriter(httpServletResponse);
@@ -94,47 +87,19 @@ public class ContainerRequestUtils {
               DEFAULT_SECURITY_CONTEXT,
               new MapPropertiesDelegate(),
               appConfig);
-
+      requestContext.setEntityStream(httpServletRequest.getInputStream());
       final Enumeration<String> headerNames = httpServletRequest.getHeaderNames();
       while (headerNames.hasMoreElements()) {
         final String headerName = headerNames.nextElement();
         String headerValue = httpServletRequest.getHeader(headerName);
         requestContext.headers(headerName, headerValue == null ? "" : headerValue);
       }
-
-      if (solrReq != null) {
-        // SolrRequestParsers has already looked at the inputStream
-        InputStream inputStream = getInputStream(solrReq);
-        if (inputStream != null) {
-          requestContext.setEntityStream(inputStream);
-        }
-      } else {
-        requestContext.setEntityStream(httpServletRequest.getInputStream());
-      }
-
       requestContext.setWriter(responseWriter);
       return requestContext;
     } catch (Exception e) {
       // TODO Should we handle URISyntaxException any differently here?
       throw new RuntimeException(e);
     }
-  }
-
-  private static InputStream getInputStream(SolrQueryRequest solrReq) throws IOException {
-    var contentStreams = solrReq.getContentStreams(); // TODO make non-null
-    if (contentStreams != null) {
-      Iterator<ContentStream> contentStreamIterator = contentStreams.iterator();
-      if (contentStreamIterator.hasNext()) {
-        ContentStream stream = contentStreamIterator.next();
-        if (contentStreamIterator.hasNext()) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Only one content stream is allowed for Jersey requests");
-        }
-        return stream.getStream();
-      }
-    }
-    return null;
   }
 
   private static URI getBaseUri(HttpServletRequest httpServletRequest) {

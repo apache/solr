@@ -62,6 +62,7 @@ import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.glassfish.jersey.server.ApplicationHandler;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -315,9 +316,9 @@ public class V2HttpCall extends HttpSolrCall {
       PluginBag<SolrRequestHandler> requestHandlers,
       SolrQueryResponse rsp,
       Map<String, String> additionalProperties) {
-    final var containerRequest =
+    final ContainerRequest containerRequest =
         ContainerRequestUtils.createContainerRequest(
-            req, response, solrReq, jerseyHandler.getConfiguration());
+            req, response, jerseyHandler.getConfiguration());
 
     // Set properties that may be used by Jersey filters downstream
     containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_REQUEST, solrReq);
