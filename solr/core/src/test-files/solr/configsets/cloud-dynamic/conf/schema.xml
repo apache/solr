@@ -230,6 +230,22 @@
   <field name="payload" type="sortable_binary" indexed="false"
          stored="true" multiValued="false"/>
 
+  <!-- to test copyField in MLT qf -->
+  <field name="copyfield_dest" type="nametext" indexed="true" stored="true" multiValued="true"/>
+  <copyField source="copyfield_source" dest="copyfield_dest" />
+
+  <field name="copyfield_dest_not_stored" type="nametext" indexed="true" stored="false" multiValued="true"/>
+  <copyField source="copyfield_source" dest="copyfield_dest_not_stored" />
+
+  <field name="copyfield_source_not_stored" type="string" indexed="true" stored="false" multiValued="true"/>
+  <field name="copyfield_dest_stored" type="nametext" indexed="true" stored="true" multiValued="true"/>
+  <copyField source="copyfield_source_not_stored" dest="copyfield_dest_stored" />
+
+  <field name="copyfield_source_multiple" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="copyfield_dest_multiple" type="nametext" indexed="true" stored="true" multiValued="true"/>
+  <copyField source="copyfield_source" dest="copyfield_dest_multiple" />
+  <copyField source="copyfield_source_multiple" dest="copyfield_dest_multiple" />
+
   <!-- for versioning -->
   <field name="_version_" type="long" indexed="true" stored="true"/>
   <!-- points to the root document of a block of nested documents -->
