@@ -50,6 +50,9 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     String id = "id";
     String FIELD1 = "lowerfilt_u";
     String FIELD2 = "lowerfilt1_u";
+    String FIELD3 = "copyfield_source";
+    String FIELD4 = "copyfield_source_not_stored";
+    String FIELD5 = "copyfield_source_multiple";
 
     new UpdateRequest()
         .add(sdoc(id, "1", FIELD1, "toyota"))
@@ -119,6 +122,13 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
                 "The slim red fox jumped over the lazy brown dogs.",
                 FIELD2,
                 "yellow white black"))
+        .add(
+            sdoc(
+                id, "33", FIELD3, "hard rock", FIELD4, "hard rock", FIELD5, "instrumental version"))
+        .add(
+            sdoc(
+                id, "34", FIELD3, "hard rock", FIELD4, "hard rock", FIELD5, "instrumental version"))
+        .add(sdoc(id, "35", FIELD3, "pop rock", FIELD4, "pop rock", FIELD5, "full version"))
         .commit(client, COLLECTION);
   }
 
@@ -338,5 +348,93 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
             cluster
                 .getSolrClient()
                 .query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999")));
+  }
+
+  @Test
+  public void testUsesACopyFieldInQf_shouldUseTheSourceFieldAndReturnResults() throws Exception {
+    QueryResponse queryResponse =
+        cluster
+            .getSolrClient()
+            .query(COLLECTION, new SolrQuery("{!mlt qf=copyfield_dest mindf=0 mintf=1}33"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    int[] expectedIds = new int[] {34, 35};
+    int[] actualIds = new int[solrDocuments.size()];
+    int i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+
+    Arrays.sort(actualIds);
+    Arrays.sort(expectedIds);
+    assertArrayEquals(expectedIds, actualIds);
+  }
+
+  @Test
+  public void testCopyFieldSourceMissing_shouldReturnNoResults() throws Exception {
+    QueryResponse queryResponse =
+        cluster
+            .getSolrClient()
+            .query(COLLECTION, new SolrQuery("{!mlt qf=copyfield_dest mindf=0 mintf=1}30"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    assertEquals("Expected no results if source field is missing", 0, solrDocuments.size());
+  }
+
+  @Test
+  public void testCopyFieldDestinationNotStored_shouldReturnResults() throws Exception {
+    // Even if the copyField destination field used in the MLT query (qf) is NOT stored, documents
+    // can still
+    // be returned, as long as its source field is stored and contains the text used
+    // to build the similarity query.
+    QueryResponse queryResponse =
+        cluster
+            .getSolrClient()
+            .query(
+                COLLECTION, new SolrQuery("{!mlt qf=copyfield_dest_not_stored mindf=0 mintf=1}33"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    int[] expectedIds = new int[] {34, 35};
+    int[] actualIds = new int[solrDocuments.size()];
+    int i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+
+    Arrays.sort(actualIds);
+    Arrays.sort(expectedIds);
+    assertArrayEquals(expectedIds, actualIds);
+  }
+
+  @Test
+  public void testCopyFieldSourceNotStored_shouldReturnNoResults() throws Exception {
+    // Even when the copyField destination field is stored and used in the MLT query (qf),
+    // documents CANNOT be returned if the source field is not stored,
+    // because Solr needs the original text from the source to build the similarity query.
+    QueryResponse queryResponse =
+        cluster
+            .getSolrClient()
+            .query(COLLECTION, new SolrQuery("{!mlt qf=copyfield_dest_stored mindf=0 mintf=1}33"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    assertEquals("Expected no results if source field is not stored", 0, solrDocuments.size());
+  }
+
+  @Test
+  public void testCopyFieldDestinationMultiple_shouldReturnResults() throws Exception {
+    // Checks that values from multiple source fields are properly retrieved when merged into the
+    // same destination field via copyField.
+    QueryResponse queryResponse =
+        cluster
+            .getSolrClient()
+            .query(
+                COLLECTION, new SolrQuery("{!mlt qf=copyfield_dest_multiple mindf=0 mintf=1}33"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    int[] expectedIds = new int[] {34, 35};
+    int[] actualIds = new int[solrDocuments.size()];
+    int i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+
+    Arrays.sort(actualIds);
+    Arrays.sort(expectedIds);
+    assertArrayEquals(expectedIds, actualIds);
   }
 }
