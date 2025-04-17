@@ -56,7 +56,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -567,13 +566,12 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     if (collectionState != null) {
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
-          ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
           CoreStatusResponse.SingleCoreData coreStatus;
-          try (SolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
-            coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
+          try (SolrClient server = getHttpSolrClient(replica.getBaseUrl())) {
+            coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
           }
           long before = coreStatus.startTime.getTime();
-          urlToTime.put(coreProps.getCoreUrl(), before);
+          urlToTime.put(replica.getCoreUrl(), before);
         }
       }
     } else {

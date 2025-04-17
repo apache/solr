@@ -69,8 +69,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
@@ -1163,13 +1161,13 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   @Override
-  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
+  protected Replica getLeaderFromZk(String collection, String slice) {
     ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
-    ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
+    Replica leader = clusterState.getCollection(collection).getLeader(slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
     }
-    return new ZkCoreNodeProps(leader);
+    return leader;
   }
 
   /**
@@ -1371,12 +1369,11 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
         zkStateReader.getClusterState().getCollection(oneInstanceCollection2).getSlicesMap();
     assertNotNull(slices);
 
-    ZkCoreNodeProps props =
-        new ZkCoreNodeProps(
-            getCommonCloudSolrClient()
-                .getClusterState()
-                .getCollection(oneInstanceCollection2)
-                .getLeader("shard1"));
+    Replica leader =
+        getCommonCloudSolrClient()
+            .getClusterState()
+            .getCollection(oneInstanceCollection2)
+            .getLeader("shard1");
 
     // now test that unloading a core gets us a new leader
     try (SolrClient unloadClient =
@@ -1385,9 +1382,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       Unload unloadCmd = new Unload(true);
-      unloadCmd.setCoreName(props.getCoreName());
+      unloadCmd.setCoreName(leader.getCoreName());
 
-      String leader = props.getCoreUrl();
+      String leaderUrl = leader.getCoreUrl();
 
       testExecutor.execute(
           new Runnable() {
@@ -1412,7 +1409,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                 TimeUnit.MILLISECONDS,
                 (n, c) -> {
                   try {
-                    if (leader.equals(
+                    if (leaderUrl.equals(
                         zkStateReader.getLeaderUrl(oneInstanceCollection2, "shard1", 10000))) {
                       return false;
                     }

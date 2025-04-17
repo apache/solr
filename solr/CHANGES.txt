@@ -251,6 +251,12 @@ Bug Fixes
 * SOLR-17692: Core unload/deletion now preempts all forms of ongoing "recovery", rather than inadvertently waiting for
   completion in some cases. (Jason Gerlowski)
 
+* SOLR-5386: Fix various methods of invoking "local" solr requests to re-use the same searcher as the original request.
+  This notably fixes the use of spellcheck.maxCollationTries in firstSearcher warming queries to prevent deadlock (hossman)
+
+* SOLR-12831: Clean up shard metadata in ZooKeeper nodes after shard deletion is invoked. This makes sure Zookeeper
+ nodes for leader election and terms are not left behind (Andy Vuong, Pierre Salagnac).
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
