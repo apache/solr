@@ -405,20 +405,24 @@ public class SolrCLI implements CLIO {
     print(
         "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(
-        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
+        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export");
     print("");
-    print("  Standalone server example (start Solr running in the background on port 8984):");
+    print("  Start Solr in SolrCloud mode on default port 8983:");
     print("");
-    printGreen("    ./solr start -p 8984");
+    printGreen("    ./solr start");
     print("");
     print(
-        "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
+        "  Start Solr in SolrCloud mode using an external Zookeeper at localhost:2181, with 1g max heap size and remote Java debug options enabled:");
     print("");
     printGreen(
         "    ./solr start -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
     print("");
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
+    print("");
+    print("  Start Solr in User Managed (aka Standalone) mode:");
+    print("");
+    printGreen("    ./solr start --user-managed");
     print("");
     print("Global Options:");
     print("  -v,  --version           Print version information and quit");

@@ -28,18 +28,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
+import org.apache.solr.client.solrj.JacksonDataBindResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.client.solrj.JacksonParsingResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.InputStreamResponse;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.common.util.NamedList;
 
 {{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}
 {{#imports}}
@@ -76,7 +76,7 @@ import {{modelPackage}}.{{dataType}};
 // changes should be made to the underlying template and not this file directly.
 
 /**
- * Experimental SolrRequest's and SolrResponse's for {{classVarName}}, generated from an OAS.
+ * Experimental {@link SolrRequest}s for {{classVarName}}, generated from an OAS.
  *
  * <p>See individual request and response classes for more detailed and relevant information.
  *
@@ -90,17 +90,13 @@ public class {{classname}} {
     {{#operation}}
     {{^vendorExtensions.x-omitFromCodegen}}
         {{#vendorExtensions.x-rawOutput}}
-        public static class {{operationIdCamelCase}}Response extends InputStreamResponse {}
+            public static class {{operationIdCamelCase}} extends SolrRequest
+          <InputStreamResponse> {
         {{/vendorExtensions.x-rawOutput}}
         {{^vendorExtensions.x-rawOutput}}
-        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
-            public {{operationIdCamelCase}}Response() {
-                super({{modelPackage}}.{{returnType}}.class);
-            }
-        }
+            public static class {{operationIdCamelCase}} extends SolrRequest<{{modelPackage}}
+            .{{returnType}}> {
         {{/vendorExtensions.x-rawOutput}}
-
-        public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
             {{#bodyParam}}
             private final {{{dataType}}} requestBody;
             {{/bodyParam}}
@@ -122,10 +118,12 @@ public class {{classname}} {
              {{/requiredParams}}
              */
             public {{operationIdCamelCase}}({{#allParams}}{{#required}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{#isBodyParam}}{{#vendorExtensions.x-genericEntity}}{{^-first}}, {{/-first}}{{{dataType}}} requestBody{{/vendorExtensions.x-genericEntity}}{{/isBodyParam}}{{/required}}{{/allParams}}) {
+                // TODO Hardcode request type for now, but in reality we'll want to parse this out of the Operation data somehow
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
                   "{{{path}}}"{{#pathParams}}
-                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{^isString}}.toString(){{/isString}}){{/pathParams}}
+                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{^isString}}.toString(){{/isString}}){{/pathParams}},
+                    SolrRequestType.ADMIN
                 );
 
                 {{#requiredParams}}
@@ -190,8 +188,17 @@ public class {{classname}} {
              {{/description}}
              public void {{setter}}({{{dataType}}} {{baseName}}) {
                this.requestBody.{{baseName}} = {{baseName}};
-            }
+             }
             {{/vars}}
+
+            {{#vendorExtensions.x-hasAdditionalFields}}
+            /**
+             * Set additional properties to be included in the request body.
+             */
+            public void setAdditionalProperty(String property, Object value) {
+                requestBody.setAdditionalProperty(property, value);
+            }
+            {{/vendorExtensions.x-hasAdditionalFields}}
 
             @Override
             @SuppressWarnings("unchecked")
@@ -218,12 +225,6 @@ public class {{classname}} {
             }
             {{/bodyParam}}
 
-            // TODO Hardcode this for now, but in reality we'll want to parse this out of the Operation data somehow
-            @Override
-            public String getRequestType() {
-              return SolrRequestType.ADMIN.toString();
-            }
-
             @Override
             public ApiVersion getApiVersion() {
               return ApiVersion.V2;
@@ -249,16 +250,31 @@ public class {{classname}} {
               {{/queryParams}}
               return queryParams;
             }
+        {{#vendorExtensions.x-rawOutput}}
+            @Override
+          protected InputStreamResponse createResponse(NamedList
+          <Object> namedList) {
+            return new InputStreamResponse();
+            }
 
             @Override
-            protected {{operationIdCamelCase}}Response createResponse(SolrClient client) {
-              return new {{operationIdCamelCase}}Response();
+            public InputStreamResponseParser getResponseParser() {
+            return new InputStreamResponseParser("json");
+            }
+        {{/vendorExtensions.x-rawOutput}}
+        {{^vendorExtensions.x-rawOutput}}
+            @Override
+            protected {{modelPackage}}.{{returnType}} createResponse(NamedList
+          <Object> namedList) {
+            return ({{modelPackage}}.{{returnType}}) namedList.get("response");
             }
 
             @Override
             public ResponseParser getResponseParser() {
-              return new InputStreamResponseParser("json");
+            return new JacksonDataBindResponseParser<>({{modelPackage}}.{{returnType}}.class);
             }
+        {{/vendorExtensions.x-rawOutput}}
+
         }
     {{/vendorExtensions.x-omitFromCodegen}}
     {{/operation}}

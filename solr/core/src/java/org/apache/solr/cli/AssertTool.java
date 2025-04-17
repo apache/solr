@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -344,8 +343,8 @@ public class AssertTool extends ToolBase {
   }
 
   public static int sameUser(String directory) throws Exception {
-    if (Files.exists(Paths.get(directory))) {
-      String userForDir = userForDir(Paths.get(directory));
+    if (Files.exists(Path.of(directory))) {
+      String userForDir = userForDir(Path.of(directory));
       if (!currentUser().equals(userForDir)) {
         return exitOrException("Must run as user " + userForDir + ". We are " + currentUser());
       }
@@ -356,14 +355,14 @@ public class AssertTool extends ToolBase {
   }
 
   public static int assertFileExists(String directory) throws Exception {
-    if (!Files.exists(Paths.get(directory))) {
+    if (!Files.exists(Path.of(directory))) {
       return exitOrException("Directory " + directory + " does not exist.");
     }
     return 0;
   }
 
   public static int assertFileNotExists(String directory) throws Exception {
-    if (Files.exists(Paths.get(directory))) {
+    if (Files.exists(Path.of(directory))) {
       return exitOrException("Directory " + directory + " should not exist.");
     }
     return 0;

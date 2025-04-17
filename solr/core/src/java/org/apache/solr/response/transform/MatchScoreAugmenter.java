@@ -14,31 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.response.transform;
 
-package org.apache.solr.client.solrj;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.search.DocIterationInfo;
 
-import java.io.InputStream;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ObjectReleaseTracker;
+/**
+ * Simple Augmenter that adds the matchScore
+ *
+ * @since solr 4.0
+ */
+public class MatchScoreAugmenter extends DocTransformer {
+  final String name;
 
-public class JacksonParsingResponse<T> extends SimpleSolrResponse {
-
-  private final Class<T> typeParam;
-
-  public JacksonParsingResponse(Class<T> typeParam) {
-    this.typeParam = typeParam;
+  public MatchScoreAugmenter(String display) {
+    this.name = display;
   }
 
-  public T getParsed() {
-    final NamedList<Object> resp = getResponse();
-    final var stream = (InputStream) resp.get("stream");
-    try {
-      final T parsedVal = JacksonContentWriter.DEFAULT_MAPPER.readValue(stream, typeParam);
-      assert ObjectReleaseTracker.release(stream);
-      return parsedVal;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
+    doc.setField(name, docInfo.matchScore());
+  }
+
+  @Override
+  public void transform(SolrDocument doc, int docid) {
+    // No-op
   }
 }

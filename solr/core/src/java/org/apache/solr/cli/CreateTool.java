@@ -19,14 +19,13 @@ package org.apache.solr.cli;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
@@ -151,8 +150,8 @@ public class CreateTool extends ToolBase {
         cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
 
     // we allow them to pass a directory instead of a configset name
-    Path configsetDir = Paths.get(confDirName);
-    Path solrInstallDirPath = Paths.get(solrInstallDir);
+    Path configsetDir = Path.of(confDirName);
+    Path solrInstallDirPath = Path.of(solrInstallDir);
 
     if (!Files.isDirectory(configsetDir)) {
       ensureConfDirExists(solrInstallDirPath, configsetDir);
@@ -176,7 +175,7 @@ public class CreateTool extends ToolBase {
               + "' already exists!\nChecked core existence using Core API command");
     }
 
-    Path coreInstanceDir = Paths.get(coreRootDirectory, coreName);
+    Path coreInstanceDir = Path.of(coreRootDirectory, coreName);
     Path confDir = getFullConfDir(solrInstallDirPath, configsetDir).resolve("conf");
     if (!Files.isDirectory(coreInstanceDir)) {
       Files.createDirectories(coreInstanceDir);
@@ -185,7 +184,7 @@ public class CreateTool extends ToolBase {
             "Failed to create new core instance directory: " + coreInstanceDir.toAbsolutePath());
       }
 
-      FileUtils.copyDirectoryToDirectory(confDir.toFile(), coreInstanceDir.toFile());
+      PathUtils.copyDirectory(confDir, coreInstanceDir, StandardCopyOption.COPY_ATTRIBUTES);
 
       echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"
@@ -232,8 +231,8 @@ public class CreateTool extends ToolBase {
     final String solrInstallDir = System.getProperty("solr.install.dir");
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
-    Path solrInstallDirPath = Paths.get(solrInstallDir);
-    Path confDirPath = Paths.get(confDir);
+    Path solrInstallDirPath = Path.of(solrInstallDir);
+    Path confDirPath = Path.of(confDir);
     ensureConfDirExists(solrInstallDirPath, confDirPath);
     printDefaultConfigsetWarningIfNecessary(cli);
 

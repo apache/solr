@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import java.nio.file.Path;
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -75,7 +76,7 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
     }
     try (LogListener warnLog =
         LogListener.warn(XmlConfigFile.class).substring(ICUCollationField.UDVAS_MESSAGE)) {
-      initCore("solrconfig.xml", "schema.xml", home);
+      initCore("solrconfig.xml", "schema.xml", Path.of(home));
       switch (mode) {
         case FAIL:
           fail("expected failure for version " + useVersion);

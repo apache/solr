@@ -209,7 +209,7 @@ public class HttpShardHandler extends ShardHandler {
     req.setMethod(SolrRequest.METHOD.POST);
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
     if (requestInfo != null) {
-      req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
+      req.setUserPrincipal(requestInfo.getUserPrincipal());
     }
 
     return httpShardHandlerFactory.newLBHttpSolrClientReq(req, urls);

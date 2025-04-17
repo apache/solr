@@ -94,3 +94,9 @@ java.net.URL#<init>(**)
 
 @defaultMessage Use Locale.Builder instead.
 java.util.Locale#<init>(**)
+
+@defaultMessage Use Path.of(...) methods instead.
+java.nio.file.Paths#get(**)
+
+@defaultMessage You probably meant to call String.startsWith
+java.nio.file.Path#startsWith(java.lang.String)

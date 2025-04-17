@@ -239,7 +239,7 @@ public class DistribFileStore implements FileStore {
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
           final var metadataRequest = new FileStoreApi.GetMetadata(path);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
-          final var metadataResponse = metadataRequest.process(client).getParsed();
+          final var metadataResponse = metadataRequest.process(client);
           boolean nodeHasBlob =
               metadataResponse.files != null && metadataResponse.files.containsKey(path);
 
@@ -387,7 +387,7 @@ public class DistribFileStore implements FileStore {
           pullFileRequest.setGetFrom(nodeToFetchFrom);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
           // fire and forget
-          pullFileRequest.process(client).getParsed();
+          pullFileRequest.process(client);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception
