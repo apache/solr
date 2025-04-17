@@ -353,6 +353,8 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
   @Test
   public void testUsesACopyFieldInQf_shouldUseTheSourceFieldAndReturnResults() throws Exception {
+    // Verifies that when a copyField destination is used in the qf parameter, the MLT query correctly
+    // retrieves values from the source field(s) and returns relevant results.
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
@@ -372,6 +374,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
   @Test
   public void testCopyFieldSourceMissing_shouldReturnNoResults() throws Exception {
+    // Ensures that no results are returned when the copyField source field is missing in the source document.
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
@@ -383,8 +386,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   @Test
   public void testCopyFieldDestinationNotStored_shouldReturnResults() throws Exception {
     // Even if the copyField destination field used in the MLT query (qf) is NOT stored, documents
-    // can still
-    // be returned, as long as its source field is stored and contains the text used
+    // can still be returned, as long as its source field is stored and contains the text used
     // to build the similarity query.
     QueryResponse queryResponse =
         cluster
@@ -419,8 +421,8 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
   @Test
   public void testCopyFieldDestinationMultiple_shouldReturnResults() throws Exception {
-    // Checks that values from multiple source fields are properly retrieved when merged into the
-    // same destination field via copyField.
+    // Validates that when multiple source fields map to a single copyField destination, their values are
+    // correctly combined to construct the MLT query, and appropriate results are returned.
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
