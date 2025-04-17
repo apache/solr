@@ -204,6 +204,7 @@ public class {{classname}} {
             @Override
             @SuppressWarnings("unchecked")
             public RequestWriter.ContentWriter getContentWriter(String _expectedTypeIGNORE) {
+                // v2 only supports JSON request bodies, so we ignore this type coming from the RequestWriter
                 {{#vendorExtensions.x-genericEntity}}
                 return new RequestWriter.ContentWriter() {
                   @Override
