@@ -1052,7 +1052,6 @@ The options are: `min`, `max`, `average`, or `sum`.
 A search operator.
 The options are:
 
-
 * `or` will generate either a `SpanTermQuery` or a `SpanOrQuery` depending on the number of tokens emitted.
 * `phrase` will generate either `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted.
 
