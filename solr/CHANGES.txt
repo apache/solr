@@ -45,6 +45,8 @@ Improvements
   Simplified the V2 API to remove the needless SolrResponse.  And moved JSON/Jackson binding into
   a new JacksonDataBindResponseParser (David Smiley)
 
+* SOLR-17043: "LB" and "Cloud" clients no longer use brittle URL pattern-matching when routing requests. (Jude Muriithi via David Smiley, Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
