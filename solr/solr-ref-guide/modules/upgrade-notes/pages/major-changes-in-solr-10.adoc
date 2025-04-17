@@ -112,6 +112,7 @@ Users who that don't need to vary JAR access on a per-core basis have several op
 * CurrencyField has been removed.  Users should migrate to the `CurrencyFieldType` implementation.
 
 * The `addHttpRequestToContext` option in `solrconfig.xml` has been removed; it's obsolete.
+Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.getHttpSolrCall().getReq()`.
 
 === Security
 
