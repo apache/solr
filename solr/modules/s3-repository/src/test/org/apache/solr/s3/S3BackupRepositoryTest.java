@@ -53,6 +53,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+  @SuppressWarnings("removal")
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
       S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
