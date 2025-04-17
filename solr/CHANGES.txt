@@ -261,6 +261,8 @@ Bug Fixes
 * SOLR-12831: Clean up shard metadata in ZooKeeper nodes after shard deletion is invoked. This makes sure Zookeeper
  nodes for leader election and terms are not left behind (Andy Vuong, Pierre Salagnac).
 
+* SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
