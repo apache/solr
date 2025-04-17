@@ -2,18 +2,21 @@
   {
     "id" : "1",
     "text_ws" : "bumble bee",
+    "text_dpf" : "bee|0.3 bumble|0.2",
     "text_drtf" : "bee|3 bumble|2"
   }
 ,
   {
     "id" : "2",
     "text_ws" : "honey bee",
+    "text_dpf" : "bee|0.3 honey|0.2 sugar|0.1",
     "text_drtf" : "bee|3 honey|2 sugar|1"
   }
 ,
   {
     "id" : "3",
     "text_ws" : "solitary bee",
+    "text_dpf" : "bee|0.3 solitary|0.2 alone|0.1",
     "text_drtf" : "bee|3 solitary|2 alone|1"
   }
 ]

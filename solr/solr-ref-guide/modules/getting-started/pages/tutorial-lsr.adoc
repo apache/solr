@@ -63,14 +63,17 @@ As can be seen the scores are the same for all documents.
 ...
     "docs":[{
       "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
       "text_drtf":"bee|3 bumble|2",
       "score":0.06069608
     },{
       "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
       "text_drtf":"bee|3 honey|2 sugar|1",
       "score":0.06069608
     },{
       "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
       "text_drtf":"bee|3 solitary|2 alone|1",
       "score":0.06069608
     }]
@@ -81,7 +84,6 @@ As can be seen the scores are the same for all documents.
 
 ...
 
-
 [,console]
 ----
 curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=text_drtf:bee'
@@ -91,16 +93,19 @@ As can be seen the scores are as supplied after the pipe delimiter for the `bee`
 
 ```
 ...
-   "docs":[{
+    "docs":[{
       "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
       "text_drtf":"bee|3 bumble|2",
       "score":3.0
     },{
       "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
       "text_drtf":"bee|3 honey|2 sugar|1",
       "score":3.0
     },{
       "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
       "text_drtf":"bee|3 solitary|2 alone|1",
       "score":3.0
     }]
@@ -118,21 +123,22 @@ As can be seen the scores are as supplied after the pipe delimiter, summed for t
 ...
     "docs":[{
       "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
       "text_drtf":"bee|3 honey|2 sugar|1",
       "score":5.0
     },{
       "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
       "text_drtf":"bee|3 bumble|2",
       "score":3.0
     },{
       "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
       "text_drtf":"bee|3 solitary|2 alone|1",
       "score":3.0
     }]
 ...
 ```
-
-...
 
 [,console]
 ----
@@ -146,25 +152,111 @@ As can be seen the scores are as supplied after the pipe delimiter, summed for t
 ...
     "docs":[{
       "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
       "text_drtf":"bee|3 bumble|2",
       "score":23.0
     },{
       "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
       "text_drtf":"bee|3 honey|2 sugar|1",
       "score":7.0
     },{
       "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
       "text_drtf":"bee|3 solitary|2 alone|1",
       "score":3.0
     }]
 ...
 ```
 
-...
-
 === Searching with payloaded fields
 
 ...
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!payload_score+f=text_dpf+func=sum+operator=or\}bee'
+----
+
+As can be seen the scores are as supplied after the pipe delimiter for the `bee` term.
+
+```
+...
+    "docs":[{
+      "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
+      "text_drtf":"bee|3 bumble|2",
+      "score":0.3
+    },{
+      "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":0.3
+    },{
+      "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":0.3
+    }]
+...
+```
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!payload_score+f=text_dpf+func=sum+operator=or\}honey+bee'
+----
+
+As can be seen the scores are as supplied after the pipe delimiter, summed for the matching terms.
+
+```
+...
+    "docs":[{
+      "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":0.5
+    },{
+      "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
+      "text_drtf":"bee|3 bumble|2",
+      "score":0.3
+    },{
+      "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":0.3
+    }]
+...
+```
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$ref\}&ref=\{!boost+b=10\}\{!payload_score+f=text_dpf+func=sum+operator=or\}bumble&ref=\{!boost+b=2\}\{!payload_score+f=text_dpf+func=sum+operator=or\}honey&ref=\{!payload_score+f=text_dpf+func=sum+operator=or\}bee'
+----
+
+As can be seen the scores are as supplied after the pipe delimiter, summed for the matching terms and boosted as per the query.
+
+
+```
+...
+    "docs":[{
+      "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
+      "text_drtf":"bee|3 bumble|2",
+      "score":2.3
+    },{
+      "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":0.70000005
+    },{
+      "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":0.3
+    }]
+...
+```
 
 === Searching with ??? fields
 
