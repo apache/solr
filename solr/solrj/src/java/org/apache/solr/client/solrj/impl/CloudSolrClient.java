@@ -1047,12 +1047,13 @@ public abstract class CloudSolrClient extends SolrClient {
         requestEndpoints.add(new LBSolrClient.Endpoint(chosenNodeUrl));
       }
 
-    } else if (request.getRequestType() == SolrRequestType.ADMIN && !request.requiresCollection()) {
+    } else if (!request.requiresCollection()) {
       for (String liveNode : liveNodes) {
         final var nodeBaseUrl = Utils.getBaseUrlForNodeName(liveNode, urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl));
       }
-    } else { // Typical...
+    } else { // API call to a particular collection / core / alias (i.e.
+      // request.requiresCollection() == true)
       Set<String> collectionNames = resolveAliases(inputCollections);
       if (collectionNames.isEmpty()) {
         throw new SolrException(
