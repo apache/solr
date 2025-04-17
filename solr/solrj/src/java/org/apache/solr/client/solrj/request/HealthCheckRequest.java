@@ -20,13 +20,11 @@ package org.apache.solr.client.solrj.request;
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
 import java.util.OptionalInt;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.response.HealthCheckResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
   public static final String PARAM_MAX_GENERATION_LAG = "maxGenerationLag";
@@ -55,10 +53,9 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
   }
 
   @Override
-  protected HealthCheckResponse createResponse(SolrClient client) {
+  protected HealthCheckResponse createResponse(NamedList<Object> namedList) {
     // TODO: Accept requests w/ CloudSolrClient while ensuring that the request doesn't get routed
     // to an unintended recipient.
-    assert client instanceof BaseHttpSolrClient || client instanceof HttpSolrClientBase;
     return new HealthCheckResponse();
   }
 

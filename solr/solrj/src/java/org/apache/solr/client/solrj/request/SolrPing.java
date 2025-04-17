@@ -16,10 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Verify that there is a working Solr core at the URL of a {@link
@@ -43,7 +43,7 @@ public class SolrPing extends CollectionRequiringSolrRequest<SolrPingResponse> {
   }
 
   @Override
-  protected SolrPingResponse createResponse(SolrClient client) {
+  protected SolrPingResponse createResponse(NamedList<Object> namedList) {
     return new SolrPingResponse();
   }
 
