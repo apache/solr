@@ -41,7 +41,9 @@ Improvements
 
 * SOLR-17701: Simplify bin/solr scripts by removing AUTH_PORT export in favour of more commonly used SOLR_PORT export. (Eric Pugh)
 
-* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse. (David Smiley)
+* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse.
+  Simplified the V2 API to remove the needless SolrResponse.  And moved JSON/Jackson binding into
+  a new JacksonDataBindResponseParser (David Smiley)
 
 Optimizations
 ---------------------
@@ -203,7 +205,7 @@ New Features
 
 Improvements
 ---------------------
-* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
+* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about
   specific collections or cores.  Collection information can be fetched by a call to `GET /api/collections/collectionName`, and core
   information with a call to `GET /api/cores/coreName/segments`. (Jason Gerlowski)
 
@@ -265,7 +267,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
+* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public
   LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
 
 * GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
