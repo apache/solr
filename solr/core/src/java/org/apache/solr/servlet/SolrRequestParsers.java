@@ -169,7 +169,7 @@ public class SolrRequestParsers {
     SolrParams params = parser.parseParamsAndFillStreams(req, streams);
 
     SolrQueryRequest sreq =
-        buildRequestFrom(core, params, streams, getRequestTimer(req), req, null);
+        buildRequestFrom(core, params, streams, getRequestTimer(req), req, req.getUserPrincipal());
 
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
@@ -200,7 +200,7 @@ public class SolrRequestParsers {
       Collection<ContentStream> streams, // might be added to but caller shouldn't depend on it
       RTimerTree requestTimer,
       final HttpServletRequest req,
-      final Principal principal)
+      final Principal principal) // from req, if req was provided, otherwise from elsewhere
       throws Exception {
     // ensure streams is non-null and mutable so we can easily add to it
     if (streams == null) {
@@ -267,11 +267,7 @@ public class SolrRequestParsers {
         new SolrQueryRequestBase(core, params, requestTimer) {
           @Override
           public Principal getUserPrincipal() {
-            if (principal != null) {
-              return principal;
-            } else {
-              return req == null ? null : req.getUserPrincipal();
-            }
+            return principal;
           }
 
           @Override
