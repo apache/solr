@@ -194,6 +194,14 @@ public class ShortestPathStream extends TupleStream implements Expressible {
           Integer.parseInt(((StreamExpressionValue) depthExpression.getParameter()).getValue());
     }
 
+    boolean legacyJoin = false;
+
+    StreamExpressionNamedParameter legacyJoinExpression = factory.getNamedOperand(expression, "legacyJoin");
+
+    if(legacyJoinExpression != null) {
+      legacyJoin = Boolean.valueOf(((StreamExpressionValue)legacyJoinExpression.getParameter()).getValue());
+    }
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if (!namedParam.getName().equals("zkHost")
@@ -262,6 +270,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     this.joinBatchSize = joinBatchSize;
     this.threads = threads;
     this.maxDepth = maxDepth;
+    this.legacyJoin = legacyJoin;
   }
 
   @Override
