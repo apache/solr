@@ -858,7 +858,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             .add("key", indexSizeMetricName)
             .add("key", freeDiskSpaceMetricName);
     SolrResponse rsp =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params)
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params)
             .process(cloudManager.getSolrClient());
 
     Number size = (Number) rsp.getResponse().findRecursive("metrics", indexSizeMetricName);
