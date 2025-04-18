@@ -27,8 +27,7 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 public class SolrCoreHandlerMetric extends SolrCoreMetric {
   public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests";
   public static final String CORE_REQUESTS_UPDATE_HANDLER = "solr_metrics_core_update_handler";
-  public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_time";
-  public static final String CORE_REQUEST_TIMES = "solr_metrics_core_average_request_time";
+  public static final String CORE_REQUEST_TIMES = "solr_metrics_core_request_time_ms";
 
   public SolrCoreHandlerMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
@@ -58,10 +57,6 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
     } else if (dropwizardMetric instanceof Counter) {
       if (metricName.endsWith("requests")) {
         formatter.exportCounter(CORE_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());
-      } else if (metricName.endsWith("totalTime")) {
-        // Do not need type label for total time
-        labels.remove("type");
-        formatter.exportCounter(CORE_REQUESTS_TOTAL_TIME, (Counter) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Gauge) {
       if (!metricName.endsWith("handlerStart")) {
