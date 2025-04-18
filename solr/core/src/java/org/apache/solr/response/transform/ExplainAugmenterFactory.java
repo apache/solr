@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
@@ -96,7 +97,8 @@ public class ExplainAugmenterFactory extends TransformerFactory {
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid) throws IOException {
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+        throws IOException {
       if (context != null && context.getQuery() != null) {
         Explanation exp = context.getSearcher().explain(context.getQuery(), docid);
         if (style == Style.nl) {

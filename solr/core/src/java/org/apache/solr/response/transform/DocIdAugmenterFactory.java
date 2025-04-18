@@ -19,6 +19,7 @@ package org.apache.solr.response.transform;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.DocIterationInfo;
 
 /**
  * Augments the document with a <code>[docid]</code> integer containing it's current (internal) id
@@ -46,7 +47,7 @@ public class DocIdAugmenterFactory extends TransformerFactory {
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid) {
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
       assert -1 <= docid;
       doc.setField(name, docid);
     }

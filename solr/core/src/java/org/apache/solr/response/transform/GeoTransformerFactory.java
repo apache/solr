@@ -41,6 +41,7 @@ import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.schema.AbstractSpatialFieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocIterationInfo;
 import org.locationtech.spatial4j.io.GeoJSONWriter;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.io.SupportedFormats;
@@ -141,7 +142,8 @@ public class GeoTransformerFactory extends TransformerFactory
     if (shapes != null) {
       return new GeoDocTransformer(updater) {
         @Override
-        public void transform(SolrDocument doc, int docid) throws IOException {
+        public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+            throws IOException {
           int leafOrd =
               ReaderUtil.subIndex(docid, context.getSearcher().getTopReaderContext().leaves());
           LeafReaderContext ctx = context.getSearcher().getTopReaderContext().leaves().get(leafOrd);
@@ -167,7 +169,8 @@ public class GeoTransformerFactory extends TransformerFactory
     return new GeoDocTransformer(updater) {
 
       @Override
-      public void transform(SolrDocument doc, int docid) throws IOException {
+      public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+          throws IOException {
         Object val = copy ? doc.get(updater.field) : doc.remove(updater.field);
         if (val != null) {
           updater.setValue(doc, val);
