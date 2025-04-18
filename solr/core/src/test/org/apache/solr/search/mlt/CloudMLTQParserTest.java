@@ -353,7 +353,8 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
   @Test
   public void testUsesACopyFieldInQf_shouldUseTheSourceFieldAndReturnResults() throws Exception {
-    // Verifies that when a copyField destination is used in the qf parameter, the MLT query correctly
+    // Verifies that when a copyField destination is used in the qf parameter, the MLT query
+    // correctly
     // retrieves values from the source field(s) and returns relevant results.
     QueryResponse queryResponse =
         cluster
@@ -374,7 +375,8 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
   @Test
   public void testCopyFieldSourceMissing_shouldReturnNoResults() throws Exception {
-    // Ensures that no results are returned when the copyField source field is missing in the source document.
+    // Ensures that no results are returned when the copyField source field is missing in the source
+    // document.
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
@@ -421,7 +423,8 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
   @Test
   public void testCopyFieldDestinationMultiple_shouldReturnResults() throws Exception {
-    // Validates that when multiple source fields map to a single copyField destination, their values are
+    // Validates that when multiple source fields map to a single copyField destination, their
+    // values are
     // correctly combined to construct the MLT query, and appropriate results are returned.
     QueryResponse queryResponse =
         cluster
