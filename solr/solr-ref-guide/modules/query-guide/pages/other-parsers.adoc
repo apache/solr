@@ -1051,6 +1051,7 @@ The options are: `min`, `max`, `average`, or `sum`.
 +
 A search operator.
 The options are:
+
 * `or` will generate either a `SpanTermQuery` or a `SpanOrQuery` depending on the number of tokens emitted.
 * `phrase` will generate either `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted.
 
@@ -1114,6 +1115,7 @@ Integer, float, and identity (string) encodings are supported with the same mean
 +
 The inequality operation to apply to the payload check.
 All operations require that consecutive tokens derived from the analysis of the query match consecutive tokens in the document, and additionally the payloads on the document tokens must be:
+
  * `eq`: equal to the specified payloads
  * `gt`: greater than the specified payloads
  * `lt`: less than the specified payloads
