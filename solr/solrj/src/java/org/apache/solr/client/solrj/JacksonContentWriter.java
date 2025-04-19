@@ -22,15 +22,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
+/**
+ * @lucene.internal
+ */
 public class JacksonContentWriter implements RequestWriter.ContentWriter {
 
   public static final ObjectMapper DEFAULT_MAPPER = new ObjectMapper();
 
   private final Object toWrite;
-  private final String contentType;
 
-  public JacksonContentWriter(String contentType, Object toWrite) {
-    this.contentType = contentType;
+  public JacksonContentWriter(Object toWrite) {
     this.toWrite = toWrite;
   }
 
@@ -41,6 +42,6 @@ public class JacksonContentWriter implements RequestWriter.ContentWriter {
 
   @Override
   public String getContentType() {
-    return contentType;
+    return "application/json; charset=UTF-8";
   }
 }
