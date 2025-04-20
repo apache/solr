@@ -520,6 +520,8 @@
   </fieldType>
   <copyField source="*_commongrams" dest="*_commongrams_stop" />
   
+  <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  
   <fieldType name="binary" class="solr.BinaryField" />
   <fieldType name="collation" class="solr.CollationField" language="en" />
   <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />
@@ -778,6 +780,8 @@
   <dynamicField name="*_path" type="path" indexed="true" stored="true" omitNorms="true" multiValued="true"/>
   <dynamicField name="*_ancestor" type="ancestor_path" indexed="true" stored="true" omitNorms="true"
                 multiValued="true"/>
+
+  <dynamicField name="*_sev_enum" type="severityType" indexed="true" stored="true" docValues="true" multiValued="true"/>
 
   <!-- With DocValues=true -->
   <dynamicField name="*_i_dv" type="int" indexed="true" stored="true" docValues="true"/>
