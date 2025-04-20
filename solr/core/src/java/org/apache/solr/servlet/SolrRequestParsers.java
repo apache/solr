@@ -88,7 +88,6 @@ public class SolrRequestParsers {
   private final boolean enableStreamBody;
   private StandardRequestParser standard;
   private boolean handleSelect = true;
-  private boolean addHttpRequestToContext;
 
   /**
    * Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote
@@ -106,7 +105,6 @@ public class SolrRequestParsers {
       enableRemoteStreams = false;
       enableStreamBody = false;
       handleSelect = false;
-      addHttpRequestToContext = false;
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
 
@@ -118,8 +116,6 @@ public class SolrRequestParsers {
 
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.isHandleSelect();
-
-      addHttpRequestToContext = globalConfig.isAddHttpRequestToContext();
     }
     init(multipartUploadLimitKB, formUploadLimitKB);
   }
@@ -128,7 +124,6 @@ public class SolrRequestParsers {
     enableRemoteStreams = false;
     enableStreamBody = false;
     handleSelect = false;
-    addHttpRequestToContext = false;
     init(Integer.MAX_VALUE, Integer.MAX_VALUE);
   }
 
@@ -174,10 +169,6 @@ public class SolrRequestParsers {
     // the handler could use it for RESTful URLs
     sreq.getContext().put(PATH, RequestHandlers.normalize(path));
     sreq.getContext().put("httpMethod", req.getMethod());
-
-    if (addHttpRequestToContext) {
-      sreq.getContext().put("httpRequest", req);
-    }
     return sreq;
   }
 
@@ -531,14 +522,6 @@ public class SolrRequestParsers {
 
   public void setHandleSelect(boolean handleSelect) {
     this.handleSelect = handleSelect;
-  }
-
-  public boolean isAddRequestHeadersToContext() {
-    return addHttpRequestToContext;
-  }
-
-  public void setAddRequestHeadersToContext(boolean addRequestHeadersToContext) {
-    this.addHttpRequestToContext = addRequestHeadersToContext;
   }
 
   public boolean isEnableRemoteStreams() {
