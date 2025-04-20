@@ -27,7 +27,7 @@ New Features
 
 Improvements
 ---------------------
-* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
+* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about
   specific collections or cores.  Collection information can be fetched by a call to `GET /api/collections/collectionName`, and core
   information with a call to `GET /api/cores/coreName/segments`. (Jason Gerlowski)
 
@@ -83,6 +83,8 @@ Bug Fixes
 
 * SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
 
+* SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
@@ -91,7 +93,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
+* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public
   LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
 
 * GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
