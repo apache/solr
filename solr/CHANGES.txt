@@ -128,6 +128,8 @@ Other Changes
 
 * SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
 
+* SOLR-17741: Deprecated 'addHttpRequestToContext', removed in 10.  (David Smiley)
+
 ==================  9.8.1 ==================
 Bug Fixes
 ---------------------
