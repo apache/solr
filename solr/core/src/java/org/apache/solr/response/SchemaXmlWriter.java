@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -109,10 +110,8 @@ public class SchemaXmlWriter extends TextResponseWriter {
         List<SimpleOrderedMap<Object>> fieldPropertiesList = (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> fieldProperties : fieldPropertiesList) {
           openStartTag(IndexSchema.FIELD);
-          for (int fieldPropNum = 0; fieldPropNum < fieldProperties.size(); ++fieldPropNum) {
-            writeAttr(
-                fieldProperties.getName(fieldPropNum),
-                fieldProperties.getVal(fieldPropNum).toString());
+          for (Entry<String, Object> fieldProperty : fieldProperties) {
+            writeAttr(fieldProperty.getKey(), fieldProperty.getValue().toString());
           }
           closeStartTag(true);
         }
@@ -121,12 +120,8 @@ public class SchemaXmlWriter extends TextResponseWriter {
             (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> dynamicFieldProperties : dynamicFieldPropertiesList) {
           openStartTag(IndexSchema.DYNAMIC_FIELD);
-          for (int dynamicFieldPropNum = 0;
-              dynamicFieldPropNum < dynamicFieldProperties.size();
-              ++dynamicFieldPropNum) {
-            writeAttr(
-                dynamicFieldProperties.getName(dynamicFieldPropNum),
-                dynamicFieldProperties.getVal(dynamicFieldPropNum).toString());
+          for (Entry<String, Object> dynamicFieldProperty : dynamicFieldProperties) {
+            writeAttr(dynamicFieldProperty.getKey(), dynamicFieldProperty.getValue().toString());
           }
           closeStartTag(true);
         }
@@ -135,12 +130,8 @@ public class SchemaXmlWriter extends TextResponseWriter {
             (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> copyFieldProperties : copyFieldPropertiesList) {
           openStartTag(IndexSchema.COPY_FIELD);
-          for (int copyFieldPropNum = 0;
-              copyFieldPropNum < copyFieldProperties.size();
-              ++copyFieldPropNum) {
-            writeAttr(
-                copyFieldProperties.getName(copyFieldPropNum),
-                copyFieldProperties.getVal(copyFieldPropNum).toString());
+          for (Entry<String, Object> copyFieldProperty : copyFieldProperties) {
+            writeAttr(copyFieldProperty.getKey(), copyFieldProperty.getValue().toString());
           }
           closeStartTag(true);
         }
@@ -162,29 +153,26 @@ public class SchemaXmlWriter extends TextResponseWriter {
       SimpleOrderedMap<Object> multiTermAnalyzerProperties = null;
       SimpleOrderedMap<Object> perFieldSimilarityProperties = null;
       openStartTag(IndexSchema.FIELD_TYPE);
-      for (int fieldTypePropNum = 0;
-          fieldTypePropNum < fieldTypeProperties.size();
-          ++fieldTypePropNum) {
-        String fieldTypePropName = fieldTypeProperties.getName(fieldTypePropNum);
-        if (fieldTypePropName.equals(FieldType.ANALYZER)) {
-          analyzerProperties =
-              (SimpleOrderedMap<Object>) fieldTypeProperties.getVal(fieldTypePropNum);
-        } else if (fieldTypePropName.equals(FieldType.INDEX_ANALYZER)) {
-          indexAnalyzerProperties =
-              (SimpleOrderedMap<Object>) fieldTypeProperties.getVal(fieldTypePropNum);
-        } else if (fieldTypePropName.equals(FieldType.QUERY_ANALYZER)) {
-          queryAnalyzerProperties =
-              (SimpleOrderedMap<Object>) fieldTypeProperties.getVal(fieldTypePropNum);
-        } else if (fieldTypePropName.equals(FieldType.MULTI_TERM_ANALYZER)) {
-          multiTermAnalyzerProperties =
-              (SimpleOrderedMap<Object>) fieldTypeProperties.getVal(fieldTypePropNum);
-        } else if (fieldTypePropName.equals(FieldType.SIMILARITY)) {
-          perFieldSimilarityProperties =
-              (SimpleOrderedMap<Object>) fieldTypeProperties.getVal(fieldTypePropNum);
-        } else {
-          writeAttr(fieldTypePropName, fieldTypeProperties.getVal(fieldTypePropNum).toString());
+
+      for (Entry<String, Object> fieldTypeProperty : fieldTypeProperties) {
+        String fieldTypePropName = fieldTypeProperty.getKey();
+        Object fieldTypePropValue = fieldTypeProperty.getValue();
+
+        switch (fieldTypePropName) {
+          case FieldType.ANALYZER -> analyzerProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.INDEX_ANALYZER -> indexAnalyzerProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.QUERY_ANALYZER -> queryAnalyzerProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.MULTI_TERM_ANALYZER -> multiTermAnalyzerProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case FieldType.SIMILARITY -> perFieldSimilarityProperties =
+              (SimpleOrderedMap<Object>) fieldTypePropValue;
+          default -> writeAttr(fieldTypePropName, fieldTypePropValue.toString());
         }
       }
+
       boolean isEmptyTag =
           null == analyzerProperties
               && null == indexAnalyzerProperties
@@ -236,20 +224,21 @@ public class SchemaXmlWriter extends TextResponseWriter {
     List<SimpleOrderedMap<Object>> charFilterPropertiesList = null;
     SimpleOrderedMap<Object> tokenizerProperties = null;
     List<SimpleOrderedMap<Object>> filterPropertiesList = null;
-    for (int i = 0; i < analyzerProperties.size(); ++i) {
-      String name = analyzerProperties.getName(i);
-      if (name.equals(FieldType.CHAR_FILTERS)) {
-        charFilterPropertiesList = (List<SimpleOrderedMap<Object>>) analyzerProperties.getVal(i);
-      } else if (name.equals(FieldType.TOKENIZER)) {
-        tokenizerProperties = (SimpleOrderedMap<Object>) analyzerProperties.getVal(i);
-      } else if (name.equals(FieldType.FILTERS)) {
-        filterPropertiesList = (List<SimpleOrderedMap<Object>>) analyzerProperties.getVal(i);
-      } else if (name.equals(FieldType.CLASS_NAME)) {
-        if (!"solr.TokenizerChain".equals(analyzerProperties.getVal(i))) {
-          writeAttr(name, analyzerProperties.getVal(i).toString());
+
+    for (Entry<String, Object> analyzerProperty : analyzerProperties) {
+      String name = analyzerProperty.getKey();
+      Object value = analyzerProperty.getValue();
+      switch (name) {
+        case FieldType.CHAR_FILTERS -> charFilterPropertiesList =
+            (List<SimpleOrderedMap<Object>>) value;
+        case FieldType.TOKENIZER -> tokenizerProperties = (SimpleOrderedMap<Object>) value;
+        case FieldType.FILTERS -> filterPropertiesList = (List<SimpleOrderedMap<Object>>) value;
+        case FieldType.CLASS_NAME -> {
+          if (!"solr.TokenizerChain".equals(value)) {
+            writeAttr(name, value.toString());
+          }
         }
-      } else if (name.equals(IndexSchema.LUCENE_MATCH_VERSION_PARAM)) {
-        writeAttr(name, analyzerProperties.getVal(i).toString());
+        case IndexSchema.LUCENE_MATCH_VERSION_PARAM -> writeAttr(name, value.toString());
       }
     }
     boolean isEmptyTag =
@@ -264,24 +253,24 @@ public class SchemaXmlWriter extends TextResponseWriter {
       if (null != charFilterPropertiesList) {
         for (SimpleOrderedMap<Object> charFilterProperties : charFilterPropertiesList) {
           openStartTag(FieldType.CHAR_FILTER);
-          for (int i = 0; i < charFilterProperties.size(); ++i) {
-            writeAttr(charFilterProperties.getName(i), charFilterProperties.getVal(i).toString());
+          for (Entry<String, Object> entry : charFilterProperties) {
+            writeAttr(entry.getKey(), entry.getValue().toString());
           }
           closeStartTag(true);
         }
       }
       if (null != tokenizerProperties) {
         openStartTag(FieldType.TOKENIZER);
-        for (int i = 0; i < tokenizerProperties.size(); ++i) {
-          writeAttr(tokenizerProperties.getName(i), tokenizerProperties.getVal(i).toString());
+        for (Entry<String, Object> entry : tokenizerProperties) {
+          writeAttr(entry.getKey(), entry.getValue().toString());
         }
         closeStartTag(true);
       }
       if (null != filterPropertiesList) {
         for (SimpleOrderedMap<Object> filterProperties : filterPropertiesList) {
           openStartTag(FieldType.FILTER);
-          for (int i = 0; i < filterProperties.size(); ++i) {
-            writeAttr(filterProperties.getName(i), filterProperties.getVal(i).toString());
+          for (Entry<String, Object> entry : filterProperties) {
+            writeAttr(entry.getKey(), entry.getValue().toString());
           }
           closeStartTag(true);
         }
@@ -337,11 +326,10 @@ public class SchemaXmlWriter extends TextResponseWriter {
   @Override
   public void writeNamedList(String name, NamedList<?> val) throws IOException {
     // name is ignored - this method is only used for SimilarityFactory
-    int sz = val.size();
-    for (int i = 0; i < sz; i++) {
-      String valName = val.getName(i);
+    for (Map.Entry<String, ?> entry : val) {
+      String valName = entry.getKey();
       if (!valName.equals(SimilarityFactory.CLASS_NAME)) {
-        writeVal(valName, val.getVal(i));
+        writeVal(valName, entry.getValue());
       }
     }
   }

@@ -350,8 +350,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public static Path ulogToTlogDir(
       String coreName, Path ulogDirPath, Path instancePath, String coreDataDir) {
+    final Path coreDataPath = ulogDirPath.getFileSystem().getPath(coreDataDir);
     boolean unscopedDataDir =
-        !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataDir);
+        !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataPath);
 
     // if the ulog dataDir is unscoped (neither under core instanceDir, nor core dataDir),
     // then we must scope it to the core; otherwise, scope to purpose (TLOG_NAME).

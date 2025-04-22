@@ -1038,7 +1038,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       return (int)
           files
               .filter(
-                  (file) -> Files.isDirectory(file) && !file.getFileName().startsWith("snapshot"))
+                  (file) ->
+                      Files.isDirectory(file)
+                          && !file.getFileName().toString().startsWith("snapshot"))
               .count();
     }
   }
@@ -1667,7 +1669,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       final var statusRequest = new CoresApi.GetCoreStatus("collection1");
       while (timeSlept < TIMEOUT) {
         try {
-          final var statusResponse = statusRequest.process(adminClient).getParsed();
+          final var statusResponse = statusRequest.process(adminClient);
           assertNotNull(statusResponse.status);
           assertTrue(statusResponse.status.containsKey("collection1"));
           final var coreStatus = statusResponse.status.get("collection1");

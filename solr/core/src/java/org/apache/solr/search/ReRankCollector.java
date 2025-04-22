@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import com.carrotsearch.hppc.IntFloatHashMap;
+import com.carrotsearch.hppc.IntFloatMap;
 import com.carrotsearch.hppc.IntIntHashMap;
 import java.io.IOException;
 import java.util.Arrays;
@@ -129,7 +130,8 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
       boolean zeroOutScores = reRankScaler != null && reRankScaler.scaleScores();
-      ScoreDoc[] mainScoreDocsClone = deepClone(mainScoreDocs, zeroOutScores);
+      IntFloatMap docToOriginalScore = new IntFloatHashMap();
+      ScoreDoc[] mainScoreDocsClone = deepClone(mainScoreDocs, docToOriginalScore, zeroOutScores);
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
@@ -175,7 +177,6 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
               reRankScaler.scaleScores(
                   mainScoreDocsClone, rescoredDocs.scoreDocs, reRankScoreDocs.length);
         }
-        return rescoredDocs; // Just return the rescoredDocs
       } else if (howMany > rescoredDocs.scoreDocs.length) {
         // We need to return more then we've reRanked, so create the combined page.
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
@@ -193,7 +194,6 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
               reRankScaler.scaleScores(
                   mainScoreDocsClone, rescoredDocs.scoreDocs, reRankScoreDocs.length);
         }
-        return rescoredDocs;
       } else {
         // We've rescored more then we need to return.
 
@@ -205,18 +205,29 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
         rescoredDocs.scoreDocs = scoreDocs;
-        return rescoredDocs;
       }
+      return toRescoredDocs(rescoredDocs, docToOriginalScore);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
 
-  private ScoreDoc[] deepClone(ScoreDoc[] scoreDocs, boolean zeroOut) {
+  private TopDocs toRescoredDocs(TopDocs topDocs, IntFloatMap originalScores) {
+    ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+    final RescoreDoc[] rescoredDocs = new RescoreDoc[scoreDocs.length];
+    for (int i = 0; i < scoreDocs.length; i++) {
+      rescoredDocs[i] = new RescoreDoc(scoreDocs[i], originalScores.get(scoreDocs[i].doc));
+    }
+    return new TopDocs(topDocs.totalHits, rescoredDocs);
+  }
+
+  private ScoreDoc[] deepClone(
+      ScoreDoc[] scoreDocs, IntFloatMap originalScoreMap, boolean zeroOut) {
     ScoreDoc[] scoreDocs1 = new ScoreDoc[scoreDocs.length];
     for (int i = 0; i < scoreDocs.length; i++) {
       ScoreDoc scoreDoc = scoreDocs[i];
       if (scoreDoc != null) {
+        originalScoreMap.put(scoreDoc.doc, scoreDoc.score);
         scoreDocs1[i] = new ScoreDoc(scoreDoc.doc, scoreDoc.score);
         if (zeroOut) {
           scoreDoc.score = 0f;
@@ -256,6 +267,15 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       return -Float.compare(score1, score2);
+    }
+  }
+
+  static class RescoreDoc extends ScoreDoc {
+    public float matchScore;
+
+    public RescoreDoc(ScoreDoc scoreDoc, float matchScore) {
+      super(scoreDoc.doc, scoreDoc.score, scoreDoc.shardIndex);
+      this.matchScore = matchScore;
     }
   }
 }

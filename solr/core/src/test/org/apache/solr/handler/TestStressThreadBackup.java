@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
@@ -288,7 +289,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
           numBackupsToCheck);
       try (Stream<Path> files = Files.list(backupDir)) {
         // insure consistent (arbitrary) ordering before shuffling
-        final List<Path> allBackups = files.sorted().toList();
+        final List<Path> allBackups = files.sorted().collect(Collectors.toList());
         Collections.shuffle(allBackups, random());
         for (int i = 0; i < numBackupsToCheck; i++) {
           final Path backup = allBackups.get(i);

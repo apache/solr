@@ -37,8 +37,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -116,7 +116,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     try (SolrClient client =
         new HttpSolrClient.Builder(getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new BinaryRequestWriter())
+            .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);

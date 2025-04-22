@@ -27,8 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
@@ -240,7 +240,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @SuppressWarnings("rawtypes")
   private static RequestWriter cborRequestWriter() {
-    return new BinaryRequestWriter() {
+    return new JavaBinRequestWriter() {
 
       @Override
       public ContentWriter getContentWriter(SolrRequest<?> request) {
