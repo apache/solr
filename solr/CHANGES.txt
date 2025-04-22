@@ -229,6 +229,9 @@ Improvements
 
 * SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
 
+* SOLR-16951: Add PKI Auth Caching for both generation of the PKI Auth Tokens and validation of received tokens.
+  The default PKI Auth validity TTL has been increased from 5 seconds to 10 seconds. (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
