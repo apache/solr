@@ -230,6 +230,8 @@ Bug Fixes
 
 * SOLR-17709: Fix race condition when checking distrib async cmd status (Houston Putman)
 
+* SOLR-17720: Fix rare deadlock in CollectionProperties internals.  (Aparna Suresh, Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
