@@ -267,6 +267,8 @@ Bug Fixes
 
 * SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
 
+* SOLR-17720: Fix rare deadlock in CollectionProperties internals.  (Aparna Suresh, Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
