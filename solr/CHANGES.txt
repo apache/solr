@@ -265,6 +265,8 @@ Bug Fixes
 
 * SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
 
+* SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
