@@ -132,7 +132,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     // We must expire much earlier than the max validity, because these cached Auth tokens still
     // need to be sent to the server, which will validate the TTL. If we expire at maxValidity, the
     // TTL check will always fail before the cache entry is expired.
-    long expireAfterTime = Math.min(1000, MAX_VALIDITY / 5);
+    long expireAfterTime = MAX_VALIDITY / 4;
     // Refreshing is done asynchronously, so we want to do it before expiration. This means that
     // requests are not synchronously blocked when generating new Auth tokens. However, the refresh
     // will only happen when the cached header is requested. Therefore, we want to give a long-ish
