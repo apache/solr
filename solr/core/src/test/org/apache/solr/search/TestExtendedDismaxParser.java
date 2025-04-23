@@ -151,7 +151,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       for (String q : Arrays.asList("*:*", "*")) {
         try (SolrQueryRequest req = req("sow", sow, "qf", "id")) {
           QParser qParser = QParser.getParser(q, "edismax", req);
-          MatcherAssert.assertThat(qParser.getQuery(), isA(MatchAllDocsQuery.class));
+          assertThat(qParser.getQuery(), isA(MatchAllDocsQuery.class));
         }
       }
     }
