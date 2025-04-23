@@ -92,8 +92,6 @@ public interface CommonParams {
   /** stylesheet to apply to XML results */
   String XSL = "xsl";
 
-  @Deprecated String VERSION = "version";
-
   /** query and init param for field list */
   String FL = "fl";
 
