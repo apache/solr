@@ -22,15 +22,25 @@ import com.arkivanov.mvikotlin.core.store.SimpleBootstrapper
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
+import io.ktor.http.URLParserException
+import io.ktor.http.Url
+import io.ktor.http.parseUrl
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.start.store.StartStore.Intent
+import org.apache.solr.ui.components.start.store.StartStore.Label
 import org.apache.solr.ui.components.start.store.StartStore.State
+import org.apache.solr.ui.errors.UnauthorizedException
+import org.apache.solr.ui.errors.parseError
+import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
 
 /**
  * Store provider that [provide]s instances of [StartStore].
  *
  * @property storeFactory Store factory to use for creating the store.
- * @property client Client implementation to use for resolving [Intent]s and [Action]s.
+ * @property client Client implementation to use for resolving [Intent]s.
  * @property ioContext Coroutine context used for IO activity.
  */
 internal class StartStoreProvider(
@@ -41,7 +51,7 @@ internal class StartStoreProvider(
 
     fun provide(): StartStore = object :
         StartStore,
-        Store<Intent, State, Nothing> by storeFactory.create(
+        Store<Intent, State, Label> by storeFactory.create(
             name = "StartStore",
             initialState = State(),
             bootstrapper = SimpleBootstrapper(),
@@ -57,14 +67,51 @@ internal class StartStoreProvider(
          * @property url The new Solr URL.
          */
         data class UrlUpdated(val url: String) : Message
+
+        /**
+         * Message that is dispatch when an unknown error occurs during connection.
+         *
+         * @property error Error that was thrown.
+         */
+        data class ConnectionFailed(val error: Throwable) : Message
     }
 
-    private inner class ExecutorImpl : CoroutineExecutor<Intent, Unit, State, Message, Nothing>() {
+    private inner class ExecutorImpl : CoroutineExecutor<Intent, Unit, State, Message, Label>() {
         override fun executeIntent(intent: Intent) {
             when (intent) {
                 is Intent.UpdateSolrUrl -> dispatch(Message.UrlUpdated(intent.url))
                 is Intent.Connect -> {
-                    // TODO Initiate connect
+                    var urlValue = state().url
+                    if (urlValue == "") urlValue = DEFAULT_SOLR_URL // use placeholder value if empty
+
+                    try {
+                        val url = parseUrl(urlValue) ?: throw URLParserException(
+                            urlString = urlValue,
+                            cause = Error("Invalid URL"),
+                        )
+
+                        scope.launch(context = CoroutineExceptionHandler { _, throwable ->
+                            // error returned here is platform-specific and needs further parsing
+                            dispatch(Message.ConnectionFailed(error = parseError(throwable)))
+                        }) {
+                            withContext(ioContext) {
+                                client.connect(url)
+                            }.onSuccess {
+                                // Solr server found with no auth active
+                                publish(Label.Connected(url))
+                            }.onFailure { error ->
+                                when (error) {
+                                    is UnauthorizedException -> {
+                                        // Solr server found, but user is unauthorized
+                                        publish(Label.AuthRequired(url))
+                                    }
+                                    else -> dispatch(Message.ConnectionFailed(error))
+                                }
+                            }
+                        }
+                    } catch (error: Exception) {
+                        dispatch(Message.ConnectionFailed(error))
+                    }
                 }
             }
         }
@@ -75,7 +122,8 @@ internal class StartStoreProvider(
      */
     private object ReducerImpl : Reducer<State, Message> {
         override fun State.reduce(msg: Message): State = when (msg) {
-            is Message.UrlUpdated -> copy(url = msg.url)
+            is Message.UrlUpdated -> copy(url = msg.url, error = null)
+            is Message.ConnectionFailed -> copy(error = msg.error)
         }
     }
 
@@ -90,6 +138,6 @@ internal class StartStoreProvider(
          * @param url The Solr URL to connect to.
          * @return Result of whether the connection was established.
          */
-        suspend fun connect(url: String): Result<Unit>
+        suspend fun connect(url: Url): Result<Unit>
     }
 }
