@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -93,12 +94,18 @@ public class ZkClientClusterStateProvider
    * @param liveNodes list of live nodes
    * @param coll collection name
    * @param zkClient ZK client
+   * @param createTime creation time of the data/bytes
    * @return the ClusterState
    */
   @SuppressWarnings({"unchecked"})
   @Deprecated
   public static ClusterState createFromJsonSupportingLegacyConfigName(
-      int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
+      int version,
+      byte[] bytes,
+      Set<String> liveNodes,
+      String coll,
+      SolrZkClient zkClient,
+      Instant createTime) {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(liveNodes, Collections.emptyMap());
     }
@@ -129,6 +136,7 @@ public class ZkClientClusterStateProvider
         version,
         stateMap,
         liveNodes,
+        createTime,
         PerReplicaStatesOps.getZkClientPrsSupplier(
             zkClient, DocCollection.getCollectionPath(coll)));
   }

@@ -116,7 +116,7 @@ public class ValueSourceRangeFilter extends Query {
           valueSource
               .getValues(vsContext, context)
               .getRangeScorer(this, context, lowerVal, upperVal, includeLower, includeUpper);
-      return new ConstantScoreScorer(this, score(), scoreMode, scorer.iterator());
+      return new ConstantScoreScorer(this, score(), scoreMode, scorer.twoPhaseIterator());
     }
 
     @Override
@@ -147,9 +147,8 @@ public class ValueSourceRangeFilter extends Query {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof ValueSourceRangeFilter)) return false;
+    if (!(o instanceof ValueSourceRangeFilter other)) return false;
 
-    ValueSourceRangeFilter other = (ValueSourceRangeFilter) o;
     return Objects.equals(this.valueSource, other.valueSource)
         && this.includeLower == other.includeLower
         && this.includeUpper == other.includeUpper

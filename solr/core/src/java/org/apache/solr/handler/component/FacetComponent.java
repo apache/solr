@@ -48,6 +48,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
@@ -262,6 +263,7 @@ public class FacetComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
 
     if (rb.doFacets) {
+      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       SolrParams params = rb.req.getParams();
       SimpleFacets f = newSimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
@@ -275,6 +277,10 @@ public class FacetComponent extends SearchComponent {
       }
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
+      rb.rsp.add(FACET_COUNTS_KEY, counts);
+      if (queryLimits.maybeExitWithPartialResults("Faceting counts")) {
+        return;
+      }
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
       if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
@@ -283,14 +289,15 @@ public class FacetComponent extends SearchComponent {
         if (v != null) {
           counts.add(PIVOT_KEY, v);
         }
+        if (queryLimits.maybeExitWithPartialResults("Faceting pivots")) {
+          return;
+        }
       }
 
       if (fdebug != null) {
         long timeElapsed = (long) timer.getTime();
         fdebug.setElapse(timeElapsed);
       }
-
-      rb.rsp.add(FACET_COUNTS_KEY, counts);
     }
   }
 
@@ -489,14 +496,13 @@ public class FacetComponent extends SearchComponent {
     shardsRefineRequestPivot.params.set(FacetParams.FACET_PIVOT_MINCOUNT, -1);
     shardsRefineRequestPivot.params.remove(FacetParams.FACET_OFFSET);
 
-    for (int pivotIndex = 0; pivotIndex < fi.pivotFacets.size(); pivotIndex++) {
-      String pivotFacetKey = fi.pivotFacets.getName(pivotIndex);
-      PivotFacet pivotFacet = fi.pivotFacets.getVal(pivotIndex);
+    for (Entry<String, PivotFacet> pfEntry : fi.pivotFacets) {
+      String pivotFacetKey = pfEntry.getKey();
+      PivotFacet pivotFacet = pfEntry.getValue();
 
       List<PivotFacetValue> queuedRefinementsForShard = pivotFacet.getQueuedRefinements(shardNum);
 
       if (!queuedRefinementsForShard.isEmpty()) {
-
         String fieldsKey = PivotFacet.REFINE_PARAM + fi.pivotRefinementCounter;
         String command;
 
@@ -723,9 +729,9 @@ public class FacetComponent extends SearchComponent {
       // handle facet queries
       NamedList<?> facet_queries = (NamedList<?>) facet_counts.get(FACET_QUERY_KEY);
       if (facet_queries != null) {
-        for (int i = 0; i < facet_queries.size(); i++) {
-          String returnedKey = facet_queries.getName(i);
-          long count = ((Number) facet_queries.getVal(i)).longValue();
+        for (Map.Entry<String, ?> fqEntry : facet_queries) {
+          String returnedKey = fqEntry.getKey();
+          long count = ((Number) fqEntry.getValue()).longValue();
           QueryFacet qf = fi.queryFacets.get(returnedKey);
           qf.count += count;
         }
@@ -985,16 +991,16 @@ public class FacetComponent extends SearchComponent {
 
       if (facet_fields == null) continue; // this can happen when there's an exception
 
-      for (int i = 0; i < facet_fields.size(); i++) {
-        String key = facet_fields.getName(i);
+      for (Map.Entry<String, ?> fieldEntry : facet_fields) {
+        String key = fieldEntry.getKey();
         DistribFieldFacet dff = fi.facets.get(key);
         if (dff == null) continue;
 
-        NamedList<?> shardCounts = (NamedList<?>) facet_fields.getVal(i);
+        NamedList<?> shardCounts = (NamedList<?>) fieldEntry.getValue();
 
-        for (int j = 0; j < shardCounts.size(); j++) {
-          String name = shardCounts.getName(j);
-          long count = ((Number) shardCounts.getVal(j)).longValue();
+        for (Map.Entry<String, ?> countEntry : shardCounts) {
+          String name = countEntry.getKey();
+          long count = ((Number) countEntry.getValue()).longValue();
           ShardFacetCount sfc = dff.counts.get(name);
           if (sfc == null) {
             // we got back a term we didn't ask for?
@@ -1171,6 +1177,8 @@ public class FacetComponent extends SearchComponent {
     rb.rsp.add(FACET_COUNTS_KEY, facet_counts);
 
     rb._facetInfo = null; // could be big, so release asap
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithPartialResults("Faceting finish");
   }
 
   private SimpleOrderedMap<List<NamedList<Object>>> createPivotFacetOutput(ResponseBuilder rb) {
@@ -1461,15 +1469,18 @@ public class FacetComponent extends SearchComponent {
 
     void add(int shardNum, NamedList<?> shardCounts, int numRequested) {
       // shardCounts could be null if there was an exception
-      int sz = shardCounts == null ? 0 : shardCounts.size();
+      if (shardCounts == null) {
+        shardCounts = SimpleOrderedMap.of();
+      }
+      int sz = shardCounts.size();
       int numReceived = sz;
 
       FixedBitSet terms = new FixedBitSet(termNum + sz);
 
       long last = 0;
-      for (int i = 0; i < sz; i++) {
-        String name = shardCounts.getName(i);
-        long count = ((Number) shardCounts.getVal(i)).longValue();
+      for (Entry<String, ?> countEntry : shardCounts) {
+        String name = countEntry.getKey();
+        long count = ((Number) countEntry.getValue()).longValue();
         if (name == null) {
           missingCount += count;
           numReceived--;

@@ -20,8 +20,8 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -166,10 +166,11 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
-    final String clientUrl = jettys.get(0).getBaseUrl() + "/" + "collection1";
+    final String clientUrl = jettys.get(0).getBaseUrl().toString();
     try (SolrClient client =
         new HttpSolrClient.Builder(clientUrl)
-            .withResponseParser(new BinaryResponseParser())
+            .withDefaultCollection("collection1")
+            .withResponseParser(new JavaBinResponseParser())
             .build(); ) {
       SolrQuery solrQuery =
           new SolrQuery("XXXX")

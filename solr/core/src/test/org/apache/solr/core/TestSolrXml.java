@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,7 +39,6 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.TestThinCache;
 import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Ignore;
 
@@ -86,7 +84,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("core sorter class", "testCoreSorter", cfg.getCoreSorterClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
     assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
-    MatcherAssert.assertThat(
+    assertThat(
         "core root dir",
         cfg.getCoreRootDirectory().toString(),
         containsString("testCoreRootDirectory"));
@@ -165,19 +163,20 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
   public void testPropertySub() throws IOException {
+    Path testSrcRoot = TEST_PATH();
 
     System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
-    System.setProperty("coreRootDirectory", "myCoreRoot" + File.separator);
+    System.setProperty(
+        "coreRootDirectory", "myCoreRoot" + testSrcRoot.getFileSystem().getSeparator());
     System.setProperty("hostPort", "8888");
     System.setProperty("shareSchema", "false");
     System.setProperty("socketTimeout", "220");
     System.setProperty("connTimeout", "200");
 
-    Path testSrcRoot = TEST_PATH();
     Files.copy(testSrcRoot.resolve("solr-50-all.xml"), solrHome.resolve("solr.xml"));
 
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
-    MatcherAssert.assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
+    assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
     assertEquals("solr host port", 8888, cfg.getCloudConfig().getSolrHostPort());
     assertFalse("schema cache", cfg.hasSchemaCache());
   }

@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -336,7 +335,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
    * @return list of certificates found in file
    */
   Collection<? extends X509Certificate> parseCertsFromFile(String certFileName) throws IOException {
-    Path certFilePath = Paths.get(certFileName);
+    Path certFilePath = Path.of(certFileName);
     if (coreContainer != null) {
       coreContainer.assertPathAllowed(certFilePath);
     }
@@ -956,10 +955,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
   @Override
   protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    if (httpContext instanceof HttpClientContext) {
-      HttpClientContext httpClientContext = (HttpClientContext) httpContext;
-      if (httpClientContext.getUserToken() instanceof JWTPrincipal) {
-        JWTPrincipal jwtPrincipal = (JWTPrincipal) httpClientContext.getUserToken();
+    if (httpContext instanceof HttpClientContext httpClientContext) {
+      if (httpClientContext.getUserToken() instanceof JWTPrincipal jwtPrincipal) {
         httpRequest.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
         return true;
       }
@@ -970,8 +967,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   @Override
   protected boolean interceptInternodeRequest(Request request) {
     Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
-    if (userToken instanceof JWTPrincipal) {
-      JWTPrincipal jwtPrincipal = (JWTPrincipal) userToken;
+    if (userToken instanceof JWTPrincipal jwtPrincipal) {
       request.headers(h -> h.put(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken()));
       return true;
     }

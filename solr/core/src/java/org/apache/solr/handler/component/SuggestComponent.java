@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +49,7 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.suggest.SolrSuggester;
 import org.apache.solr.spelling.suggest.SuggesterOptions;
@@ -115,9 +115,10 @@ public class SuggestComponent extends SearchComponent
     if (initParams != null) {
       log.info("Initializing SuggestComponent");
       boolean hasDefault = false;
-      for (int i = 0; i < initParams.size(); i++) {
-        if (initParams.getName(i).equals(CONFIG_PARAM_LABEL)) {
-          NamedList<?> suggesterParams = (NamedList<?>) initParams.getVal(i);
+      for (Map.Entry<String, ?> initEntry : initParams) {
+        String name = initEntry.getKey();
+        if (CONFIG_PARAM_LABEL.equals(name)) {
+          NamedList<?> suggesterParams = (NamedList<?>) initEntry.getValue();
           SolrSuggester suggester = new SolrSuggester();
           String dictionary = suggester.init(suggesterParams, core);
           if (dictionary != null) {
@@ -190,17 +191,23 @@ public class SuggestComponent extends SearchComponent
     } else {
       querysuggesters = getSuggesters(params);
     }
-
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     if (params.getBool(SUGGEST_BUILD, false) || buildAll) {
+      rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
       for (SolrSuggester suggester : querysuggesters) {
         suggester.build(rb.req.getCore(), rb.req.getSearcher());
+        if (queryLimits.maybeExitWithPartialResults("Suggester build " + suggester.getName())) {
+          return;
+        }
       }
-      rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
     } else if (params.getBool(SUGGEST_RELOAD, false) || reloadAll) {
+      rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
       for (SolrSuggester suggester : querysuggesters) {
         suggester.reload();
+        if (queryLimits.maybeExitWithPartialResults("Suggester reload " + suggester.getName())) {
+          return;
+        }
       }
-      rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
     }
   }
 
@@ -229,7 +236,7 @@ public class SuggestComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    log.info("SuggestComponent process with : {}", params);
+    log.debug("SuggestComponent process with : {}", params);
     if (!params.getBool(COMPONENT_NAME, false) || suggesters.isEmpty()) {
       return;
     }
@@ -272,11 +279,15 @@ public class SuggestComponent extends SearchComponent
               new CharsRef(query), count, contextFilter, allTermsRequired, highlight);
       SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults =
           new SimpleOrderedMap<>();
+      rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
+      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       for (SolrSuggester suggester : querySuggesters) {
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
         toNamedList(suggesterResult, namedListResults);
+        if (queryLimits.maybeExitWithPartialResults("Suggester process " + suggester.getName())) {
+          return;
+        }
       }
-      rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
     }
   }
 
@@ -290,6 +301,7 @@ public class SuggestComponent extends SearchComponent
     int count = params.getInt(SUGGEST_COUNT, 1);
 
     List<SuggesterResult> suggesterResults = new ArrayList<>();
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
 
     // Collect Shard responses
     for (ShardRequest sreq : rb.finished) {
@@ -306,9 +318,12 @@ public class SuggestComponent extends SearchComponent
           log.info("{} : {}", srsp.getShard(), namedList);
         }
         suggesterResults.add(toSuggesterResult(namedList));
+        // may have tripped the mem limits
+        if (queryLimits.maybeExitWithPartialResults("Suggester finish")) {
+          break;
+        }
       }
     }
-
     // Merge Shard responses
     SuggesterResult suggesterResult = merge(suggesterResults, count);
     SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults =
@@ -316,6 +331,9 @@ public class SuggestComponent extends SearchComponent
     toNamedList(suggesterResult, namedListResults);
 
     rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
+
+    // either throw or mark
+    queryLimits.maybeExitWithPartialResults("Suggester finish");
   }
 
   /**
@@ -467,34 +485,32 @@ public class SuggestComponent extends SearchComponent
       return result;
     }
     // for each token
-    for (Map.Entry<String, SimpleOrderedMap<NamedList<Object>>> entry : suggestionsMap) {
-      String suggesterName = entry.getKey();
-      for (Iterator<Map.Entry<String, NamedList<Object>>> suggestionsIter =
-              entry.getValue().iterator();
-          suggestionsIter.hasNext(); ) {
-        Map.Entry<String, NamedList<Object>> suggestions = suggestionsIter.next();
-        String tokenString = suggestions.getKey();
+    for (Map.Entry<String, SimpleOrderedMap<NamedList<Object>>> suggesterEntry : suggestionsMap) {
+      String suggesterName = suggesterEntry.getKey();
+      for (Map.Entry<String, NamedList<Object>> tokenEntry : suggesterEntry.getValue()) {
+        String tokenString = tokenEntry.getKey();
         List<LookupResult> lookupResults = new ArrayList<>();
-        NamedList<Object> suggestion = suggestions.getValue();
-        // for each suggestion
-        for (int j = 0; j < suggestion.size(); j++) {
-          String property = suggestion.getName(j);
-          if (property.equals(SuggesterResultLabels.SUGGESTIONS)) {
-            @SuppressWarnings("unchecked")
-            List<NamedList<Object>> suggestionEntries =
-                (List<NamedList<Object>>) suggestion.getVal(j);
-            for (NamedList<Object> suggestionEntry : suggestionEntries) {
-              String term = (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_TERM);
-              Long weight = (Long) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_WEIGHT);
-              String payload =
-                  (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_PAYLOAD);
-              LookupResult res =
-                  new LookupResult(new CharsRef(term), weight, new BytesRef(payload));
-              lookupResults.add(res);
-            }
-          }
-          result.add(suggesterName, tokenString, lookupResults);
-        }
+        tokenEntry
+            .getValue()
+            .forEach(
+                (property, value) -> {
+                  if (property.equals(SuggesterResultLabels.SUGGESTIONS)) {
+                    @SuppressWarnings("unchecked")
+                    List<NamedList<Object>> suggestionEntries = (List<NamedList<Object>>) value;
+                    for (NamedList<Object> suggestionEntry : suggestionEntries) {
+                      String term =
+                          (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_TERM);
+                      Long weight =
+                          (Long) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_WEIGHT);
+                      String payload =
+                          (String) suggestionEntry.get(SuggesterResultLabels.SUGGESTION_PAYLOAD);
+                      LookupResult res =
+                          new LookupResult(new CharsRef(term), weight, new BytesRef(payload));
+                      lookupResults.add(res);
+                    }
+                  }
+                });
+        result.add(suggesterName, tokenString, lookupResults);
       }
     }
     return result;

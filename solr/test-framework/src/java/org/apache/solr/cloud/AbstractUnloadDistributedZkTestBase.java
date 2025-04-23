@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -33,20 +34,16 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +81,9 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     testUnloadShardAndCollection();
   }
 
+  /**
+   * @param url a Solr node base URL. Should <em>not</em> contain a core or collection name.
+   */
   private SolrClient newSolrClient(String url) {
     return new HttpSolrClient.Builder(url)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
@@ -94,42 +94,37 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
   private void checkCoreNamePresenceAndSliceCount(
       String collectionName, String coreName, boolean shouldBePresent, int expectedSliceCount)
       throws Exception {
-    final TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    Boolean isPresent = null; // null meaning "don't know"
-    while (null == isPresent || shouldBePresent != isPresent) {
-      getCommonCloudSolrClient();
-      final DocCollection docCollection =
-          cloudClient.getClusterState().getCollectionOrNull(collectionName);
-      final Collection<Slice> slices =
-          (docCollection != null) ? docCollection.getSlices() : Collections.emptyList();
-      if (timeout.hasTimedOut()) {
-        printLayout();
-        fail(
-            "checkCoreNamePresenceAndSliceCount failed:"
-                + " collection="
-                + collectionName
-                + " CoreName="
-                + coreName
-                + " shouldBePresent="
-                + shouldBePresent
-                + " isPresent="
-                + isPresent
-                + " expectedSliceCount="
-                + expectedSliceCount
-                + " actualSliceCount="
-                + slices.size());
-      }
-      if (expectedSliceCount == slices.size()) {
-        isPresent = false;
-        for (Slice slice : slices) {
-          for (Replica replica : slice.getReplicas()) {
-            if (coreName.equals(replica.get("core"))) {
-              isPresent = true;
+    ZkStateReader reader = ZkStateReader.from(cloudClient);
+    try {
+      reader.waitForState(
+          collectionName,
+          45,
+          TimeUnit.SECONDS,
+          c -> {
+            final Collection<Slice> slices = (c != null) ? c.getSlices() : Collections.emptyList();
+            if (expectedSliceCount == slices.size()) {
+              for (Slice slice : slices) {
+                for (Replica replica : slice.getReplicas()) {
+                  if (coreName.equals(replica.get("core"))) {
+                    return shouldBePresent;
+                  }
+                }
+              }
+              return !shouldBePresent;
+            } else {
+              return false;
             }
-          }
-        }
-      }
-      Thread.sleep(1000);
+          });
+    } catch (TimeoutException e) {
+      printLayout();
+      fail(
+          "checkCoreNamePresenceAndSliceCount failed:"
+              + " collection="
+              + collectionName
+              + " CoreName="
+              + coreName
+              + " shouldBePresent="
+              + shouldBePresent);
     }
   }
 
@@ -246,11 +241,12 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
 
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
 
-    ZkCoreNodeProps leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
+    Replica leader = getLeaderFromZk("unloadcollection", "shard1");
 
     Random random = random();
     if (random.nextBoolean()) {
-      try (SolrClient collectionClient = getHttpSolrClient(leaderProps.getCoreUrl())) {
+      try (SolrClient collectionClient =
+          getHttpSolrClient(leader.getBaseUrl(), leader.getCoreName())) {
         // lets try and use the solrj client to index and retrieve a couple
         // documents
         SolrInputDocument doc1 =
@@ -279,7 +275,8 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     TestInjection.skipIndexWriterCommitOnClose = true;
 
     try (SolrClient addClient =
-        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3")
+        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
+            .withDefaultCollection("unloadcollection_shard1_replica3")
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {
 
@@ -294,10 +291,10 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     // collectionClient.commit();
 
     // unload the leader
-    try (SolrClient collectionClient = newSolrClient(leaderProps.getBaseUrl())) {
+    try (SolrClient collectionClient = newSolrClient(leader.getBaseUrl())) {
 
       Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(leaderProps.getCoreName());
+      unloadCmd.setCoreName(leader.getCoreName());
       ModifiableSolrParams p = (ModifiableSolrParams) unloadCmd.getParams();
 
       collectionClient.request(unloadCmd);
@@ -306,7 +303,7 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     //    printLayout();
 
     int tries = 50;
-    while (leaderProps
+    while (leader
         .getCoreUrl()
         .equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
       Thread.sleep(100);
@@ -319,7 +316,8 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
 
     try (SolrClient addClient =
-        new HttpSolrClient.Builder(jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2")
+        new HttpSolrClient.Builder(jettys.get(1).getBaseUrl().toString())
+            .withDefaultCollection("unloadcollection_shard1_replica2")
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -342,15 +340,15 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
 
     // unload the leader again
-    leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
-    try (SolrClient collectionClient = newSolrClient(leaderProps.getBaseUrl())) {
+    leader = getLeaderFromZk("unloadcollection", "shard1");
+    try (SolrClient collectionClient = newSolrClient(leader.getBaseUrl())) {
 
       Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(leaderProps.getCoreName());
+      unloadCmd.setCoreName(leader.getCoreName());
       collectionClient.request(unloadCmd);
     }
     tries = 50;
-    while (leaderProps
+    while (leader
         .getCoreUrl()
         .equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
       Thread.sleep(100);
@@ -364,9 +362,9 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     TestInjection.skipIndexWriterCommitOnClose = false; // set this back
     assertTrue(
         CollectionAdminRequest.addReplicaToShard("unloadcollection", "shard1")
-            .setCoreName(leaderProps.getCoreName())
+            .setCoreName(leader.getCoreName())
             .setDataDir(core1DataDir)
-            .setNode(leaderProps.getNodeName())
+            .setNode(leader.getNodeName())
             .process(cloudClient)
             .isSuccess());
 
@@ -383,7 +381,8 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     }
 
     try (SolrClient adminClient =
-        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3")
+        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
+            .withDefaultCollection("unloadcollection_shard1_replica3")
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {

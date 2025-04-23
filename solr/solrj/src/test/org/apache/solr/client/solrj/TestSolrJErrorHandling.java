@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -36,10 +37,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
@@ -102,8 +102,10 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getCoreUrl()).withRequestWriter(new RequestWriter()).build()) {
-
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withRequestWriter(new XMLRequestWriter())
+            .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }
@@ -112,8 +114,9 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getCoreUrl())
-            .withRequestWriter(new BinaryRequestWriter())
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
@@ -212,7 +215,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   void doSingle(SolrClient client, int threadNum) {
     try {
       client.add(manyDocs(threadNum * 1000000, 1000));
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+    } catch (SolrClient.RemoteSolrException e) {
       String msg = e.getMessage();
       assertTrue(msg, msg.contains("field_does_not_exist"));
     } catch (Throwable e) {
@@ -277,7 +280,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     String urlString = getCoreUrl() + "/update";
 
     HttpURLConnection conn = null;
-    URL url = new URL(urlString);
+    URL url = URI.create(urlString).toURL();
 
     conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");

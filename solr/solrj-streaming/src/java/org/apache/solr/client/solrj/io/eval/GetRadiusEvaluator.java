@@ -32,7 +32,7 @@ public class GetRadiusEvaluator extends RecursiveObjectEvaluator implements OneV
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof EnclosingBall)) {
+    if (!(value instanceof EnclosingBall<?, ?> enclosingBall)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -40,7 +40,6 @@ public class GetRadiusEvaluator extends RecursiveObjectEvaluator implements OneV
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      EnclosingBall<?, ?> enclosingBall = (EnclosingBall<?, ?>) value;
       return enclosingBall.getRadius();
     }
   }

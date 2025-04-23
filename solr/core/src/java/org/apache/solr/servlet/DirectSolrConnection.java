@@ -16,13 +16,10 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -30,8 +27,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
@@ -42,7 +37,9 @@ import org.apache.solr.response.SolrQueryResponse;
  * interface to Solr.
  *
  * @since solr 1.2
+ * @deprecated see {@link org.apache.solr.client.solrj.embedded.EmbeddedSolrServer}
  */
+@Deprecated
 public class DirectSolrConnection {
   protected final SolrCore core;
   protected final SolrRequestParsers parser;
@@ -69,7 +66,7 @@ public class DirectSolrConnection {
       params = SolrRequestParsers.parseQueryString(pathAndParams.substring(idx + 1));
     } else {
       path = pathAndParams;
-      params = new MapSolrParams(new HashMap<>());
+      params = SolrParams.of();
     }
 
     return request(path, params, body);
@@ -80,7 +77,7 @@ public class DirectSolrConnection {
     SolrRequestHandler handler = core.getRequestHandler(path);
     if (handler == null) {
       if ("/select".equals(path) || "/select/".equalsIgnoreCase(path)) {
-        if (params == null) params = new MapSolrParams(new HashMap<>());
+        if (params == null) params = SolrParams.of();
         String qt = params.get(CommonParams.QT);
         handler = core.getRequestHandler(qt);
         if (handler == null) {
@@ -97,7 +94,7 @@ public class DirectSolrConnection {
 
   public String request(SolrRequestHandler handler, SolrParams params, String body)
       throws Exception {
-    if (params == null) params = new MapSolrParams(new HashMap<>());
+    if (params == null) params = SolrParams.of();
 
     // Make a stream for the 'body' content
     List<ContentStream> streams = new ArrayList<>(1);
@@ -116,14 +113,7 @@ public class DirectSolrConnection {
       }
 
       // Now write it out
-      QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-      if (responseWriter instanceof BinaryResponseWriter) {
-        return ((BinaryResponseWriter) responseWriter).serializeResponse(req, rsp);
-      } else {
-        StringWriter out = new StringWriter();
-        responseWriter.write(out, req, rsp);
-        return out.toString();
-      }
+      return req.getResponseWriter().writeToString(req, rsp);
     } finally {
       if (req != null) {
         req.close();

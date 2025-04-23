@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -118,7 +119,7 @@ public class JWTIssuerConfig {
     }
     if (wellKnownUrl != null) {
       try {
-        wellKnownDiscoveryConfig = fetchWellKnown(new URL(wellKnownUrl));
+        wellKnownDiscoveryConfig = fetchWellKnown(URI.create(wellKnownUrl).toURL());
       } catch (MalformedURLException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -469,7 +470,7 @@ public class JWTIssuerConfig {
     private HttpsJwks create(String url) {
       final URL jwksUrl;
       try {
-        jwksUrl = new URL(url);
+        jwksUrl = URI.create(url).toURL();
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
       } catch (MalformedURLException e) {
         throw new SolrException(
@@ -506,7 +507,7 @@ public class JWTIssuerConfig {
     }
 
     public static WellKnownDiscoveryConfig parse(String urlString) throws MalformedURLException {
-      return parse(new URL(urlString), null);
+      return parse(URI.create(urlString).toURL(), null);
     }
 
     /**

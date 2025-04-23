@@ -302,7 +302,7 @@ public class SolrStream extends TupleStream {
 
     var client = clientCache.getHttpSolrClient(baseUrl);
     NamedList<Object> genericResponse = client.request(query);
-    InputStream stream = (InputStream) genericResponse.get("stream");
+    InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
 
     CloseableHttpResponse httpResponse =
         (CloseableHttpResponse) genericResponse.get("closeableResponse");

@@ -59,8 +59,7 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
 
   protected BytesRef getKey(SolrDocument doc) {
     Object obj = doc.get(idFieldName);
-    if (obj instanceof IndexableField) {
-      IndexableField f = (IndexableField) obj;
+    if (obj instanceof IndexableField f) {
       BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
       Number n = f.numericValue();
       if (n != null) {

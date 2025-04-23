@@ -141,15 +141,18 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
 
     s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
 
+    compileJDK = '21'
+    if 'solrj' in desc or 'api' in desc:
+      compileJDK = '17'
     for verify in (
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       'Specification-Title: Apache Solr Search Server:',
       'Implementation-Title: org.apache.solr',
-      'X-Compile-Source-JDK: 11',
-      'X-Compile-Target-JDK: 11',
+      'X-Compile-Source-JDK: %s' % compileJDK,
+      'X-Compile-Target-JDK: %s' % compileJDK,
       'Specification-Version: %s' % version,
-      'X-Build-JDK: 11.',
+      'X-Build-JDK: 21.',
       'Extension-Name: org.apache.solr'):
       if type(verify) is not tuple:
         verify = (verify,)
@@ -203,7 +206,7 @@ def checkAllJARs(topDir, gitRevision, version):
 
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
+        if ((normRoot.endswith('/modules/extraction/lib') and (file.startswith('jakarta.activation-') or file.startswith('jakarta.xml')))
             or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
             or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
             or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
@@ -625,10 +628,10 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   #     in_root_folder.remove(fileName)
 
   if isSrc:
-    expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
-    expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
+    expected_src_root_folders = ['build-tools', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
+    expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'settings-gradle.lockfile', 'versions.lock']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'cross-dc-manager', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -638,7 +641,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   elif isSlim:
     is_in_list(in_root_folder, ['bin', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
   else:
-    is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
@@ -660,47 +663,47 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
     validateCmd = './gradlew --no-daemon check -p solr/documentation'
     print('    run "%s"' % validateCmd)
-    java.run_java11(validateCmd, '%s/validate.log' % unpackPath)
+    java.run_java21(validateCmd, '%s/validate.log' % unpackPath)
 
-    print("    run tests w/ Java 11 and testArgs='%s'..." % testArgs)
-    java.run_java11('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
-    print("    run integration tests w/ Java 11")
-    java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
-    print("    build binary release w/ Java 11")
-    java.run_java11('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
-    testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java11_home)
+    print("    run tests w/ Java 21 and testArgs='%s'..." % testArgs)
+    java.run_java21('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
+    print("    run integration tests w/ Java 21")
+    java.run_java21('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
+    print("    build binary release w/ Java 21")
+    java.run_java21('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
+    testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java21_home, False)
 
-    if java.run_java17:
-      print("    run tests w/ Java 17 and testArgs='%s'..." % testArgs)
-      java.run_java17('./gradlew --no-daemon clean test %s' % testArgs, '%s/test-java17.log' % unpackPath)
-      print("    run integration tests w/ Java 17")
-      java.run_java17('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java17.log' % unpackPath)
-      print("    build binary release w/ Java 17")
-      java.run_java17('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java17.log' % unpackPath)
-      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java17_home)
+    if java.run_java25:
+      print("    run tests w/ Java 25 and testArgs='%s'..." % testArgs)
+      java.run_java25('./gradlew --no-daemon clean test %s' % testArgs, '%s/test-java25.log' % unpackPath)
+      print("    run integration tests w/ Java 25")
+      java.run_java25('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java25.log' % unpackPath)
+      print("    build binary release w/ Java 25")
+      java.run_java25('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java25.log' % unpackPath)
+      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java25_home, False)
 
   else:
     # Binary tarball
     checkAllJARs(os.getcwd(), gitRevision, version)
 
-    print('    copying unpacked distribution for Java 11 ...')
-    java11UnpackPath = '%s-java11' % unpackPath
-    if os.path.exists(java11UnpackPath):
-      shutil.rmtree(java11UnpackPath)
-    shutil.copytree(unpackPath, java11UnpackPath)
-    os.chdir(java11UnpackPath)
-    print('    test solr example w/ Java 11...')
-    testSolrExample(java11UnpackPath, java.java11_home)
+    print('    copying unpacked distribution for Java 21 ...')
+    java21UnpackPath = '%s-java21' % unpackPath
+    if os.path.exists(java21UnpackPath):
+      shutil.rmtree(java21UnpackPath)
+    shutil.copytree(unpackPath, java21UnpackPath)
+    os.chdir(java21UnpackPath)
+    print('    test solr example w/ Java 21...')
+    testSolrExample(java21UnpackPath, java.java21_home, isSlim)
 
-    if java.run_java17:
-      print('    copying unpacked distribution for Java 17 ...')
-      java17UnpackPath = '%s-java17' % unpackPath
-      if os.path.exists(java17UnpackPath):
-        shutil.rmtree(java17UnpackPath)
-      shutil.copytree(unpackPath, java17UnpackPath)
-      os.chdir(java17UnpackPath)
-      print('    test solr example w/ Java 17...')
-      testSolrExample(java17UnpackPath, java.java17_home)
+    if java.run_java25:
+      print('    copying unpacked distribution for Java 25 ...')
+      java25UnpackPath = '%s-java25' % unpackPath
+      if os.path.exists(java25UnpackPath):
+        shutil.rmtree(java25UnpackPath)
+      shutil.copytree(unpackPath, java25UnpackPath)
+      os.chdir(java25UnpackPath)
+      print('    test solr example w/ Java 25...')
+      testSolrExample(java25UnpackPath, java.java25_home, isSlim)
 
     os.chdir(unpackPath)
 
@@ -742,7 +745,7 @@ def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
-def testSolrExample(binaryDistPath, javaPath):
+def testSolrExample(binaryDistPath, javaPath, isSlim):
   # test solr using some examples it comes with
   logFile = '%s/solr-example.log' % binaryDistPath
   old_cwd = os.getcwd() # So we can back-track
@@ -754,6 +757,10 @@ def testSolrExample(binaryDistPath, javaPath):
   env['JAVA_HOME'] = javaPath
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
 
+  example = "techproducts"
+  if isSlim:
+    example = "films"
+
   # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
   try:
       if not cygwin:
@@ -763,22 +770,20 @@ def testSolrExample(binaryDistPath, javaPath):
   except:
      print('      Stop failed due to: '+sys.exc_info()[0])
 
-  print('      Running techproducts example on port 8983 from %s' % binaryDistPath)
+  print('      Running %s example on port 8983 from %s' % (example, binaryDistPath))
   try:
     if not cygwin:
-      runExampleStatus = subprocess.call(['bin/solr','start','-e','techproducts'])
+      runExampleStatus = subprocess.call(['bin/solr','start','-e',example])
     else:
-      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e ' + example, shell=True)
 
     if runExampleStatus != 0:
-      raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
+      raise RuntimeError('Failed to run the %s example, check log for previous errors.' % example)
 
     os.chdir('example')
-    print('      test utf8...')
-    run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
-    s = load('http://localhost:8983/solr/techproducts/select/?q=video')
-    if s.find('"numFound":3,') == -1:
+    s = load('http://localhost:8983/solr/%s/select/?q=video' % example)
+    if s.find('"numFound":%d,' % (8 if isSlim else 3)) == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
     s = load('http://localhost:8983/api/cores')
@@ -1017,7 +1022,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         sys.stdout.write('.')
 
 
-def make_java_config(parser, java17_home):
+def make_java_config(parser, java25_home):
   def _make_runner(java_home, version):
     print('Java %s JAVA_HOME=%s' % (version, java_home))
     if cygwin:
@@ -1031,23 +1036,23 @@ def make_java_config(parser, java17_home):
     def run_java(cmd, logfile):
       run('%s; %s' % (cmd_prefix, cmd), logfile)
     return run_java
-  java11_home =  os.environ.get('JAVA_HOME')
-  if java11_home is None:
+  java21_home =  os.environ.get('JAVA_HOME')
+  if java21_home is None:
     parser.error('JAVA_HOME must be set')
-  run_java11 = _make_runner(java11_home, '11')
-  run_java17 = None
-  if java17_home is not None:
-    run_java17 = _make_runner(java17_home, '17')
+  run_java21 = _make_runner(java21_home, '21')
+  run_java25 = None
+  if java25_home is not None:
+    run_java25 = _make_runner(java25_home, '25')
 
-  jc = namedtuple('JavaConfig', 'run_java11 java11_home run_java17 java17_home')
-  return jc(run_java11, java11_home, run_java17, java17_home)
+  jc = namedtuple('JavaConfig', 'run_java21 java21_home run_java25 java25_home')
+  return jc(run_java21, java21_home, run_java25, java25_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev-([a-f\d]+)')
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage:
-    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-9.0.0-RC1-rev-c7510a0...
+    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
   ''')
   description = 'Utility to test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
@@ -1062,8 +1067,8 @@ def parse_config():
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
-  parser.add_argument('--test-java17', metavar='java17_home',
-                      help='Path to Java17 home directory, to run tests with if specified')
+  parser.add_argument('--test-java25', metavar='java25_home',
+                      help='Path to Java25 home directory, to run tests with if specified')
   parser.add_argument('--download-only', action='store_true', default=False,
                       help='Only perform download and sha hash check steps')
   parser.add_argument('--dev-mode', action='store_true', default=False,
@@ -1092,7 +1097,7 @@ def parse_config():
   if c.local_keys is not None and not os.path.exists(c.local_keys):
     parser.error('Local KEYS file "%s" not found' % c.local_keys)
 
-  c.java = make_java_config(parser, c.test_java17)
+  c.java = make_java_config(parser, c.test_java25)
 
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)

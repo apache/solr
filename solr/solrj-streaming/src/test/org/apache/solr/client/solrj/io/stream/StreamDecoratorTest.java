@@ -87,19 +87,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
                 .resolve("conf"))
         .addConfig(
             "ml",
-            getFile("solrj")
-                .toPath()
-                .resolve("solr")
-                .resolve("configsets")
-                .resolve("ml")
-                .resolve("conf"))
+            getFile("solrj").resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
 
     String collection;
@@ -111,7 +105,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collection, 2, 2);
@@ -3115,7 +3108,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("destinationCollection", 2, 2);
 
@@ -3227,7 +3219,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection", 2, 2);
 
@@ -3349,7 +3340,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelDaemonUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
@@ -3549,7 +3539,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     Assume.assumeTrue(!useAlias);
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
@@ -3759,7 +3748,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("destinationCollection", 2, 2);
 
@@ -3870,7 +3858,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection", 2, 2);
 
@@ -3994,7 +3981,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelDaemonCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
@@ -4240,15 +4226,12 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     Assume.assumeTrue(!useAlias);
 
     CollectionAdminRequest.createCollection("modelCollection", "ml", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("modelCollection", 2, 2);
     CollectionAdminRequest.createCollection("uknownCollection", "ml", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("uknownCollection", 2, 2);
     CollectionAdminRequest.createCollection("checkpointCollection", "ml", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("checkpointCollection", 2, 2);
 
@@ -4492,15 +4475,12 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("workQueue", 2, 2);
     CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("mainCorpus", 2, 2);
     CollectionAdminRequest.createCollection("destination", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("destination", 2, 2);
 
@@ -4573,15 +4553,12 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testParallelExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     CollectionAdminRequest.createCollection("mainCorpus1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     CollectionAdminRequest.createCollection("destination1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     cluster.waitForActiveCollection("workQueue1", 2, 2);
@@ -5169,12 +5146,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     return tuples;
   }
 
-  protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {
-    return assertOrderOf(tuples, "id", ids);
+  protected void assertOrder(List<Tuple> tuples, int... ids) throws Exception {
+    assertOrderOf(tuples, "id", ids);
   }
 
-  protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, int... ids)
-      throws Exception {
+  protected void assertOrderOf(List<Tuple> tuples, String fieldName, int... ids) throws Exception {
     int i = 0;
     for (int val : ids) {
       Tuple t = tuples.get(i);
@@ -5184,10 +5160,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       }
       ++i;
     }
-    return true;
   }
 
-  protected boolean assertFields(List<Tuple> tuples, String... fields) throws Exception {
+  protected void assertFields(List<Tuple> tuples, String... fields) throws Exception {
     for (Tuple tuple : tuples) {
       for (String field : fields) {
         if (!tuple.getFields().containsKey(field)) {
@@ -5195,10 +5170,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         }
       }
     }
-    return true;
   }
 
-  protected boolean assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
+  protected void assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
     for (Tuple tuple : tuples) {
       for (String field : fields) {
         if (tuple.getFields().containsKey(field)) {
@@ -5206,7 +5180,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         }
       }
     }
-    return true;
   }
 
   protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {

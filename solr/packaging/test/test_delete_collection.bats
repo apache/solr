@@ -19,12 +19,12 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c
+  solr start
 }
 
 teardown_file() {
   common_setup
-  solr stop -all
+  solr stop --all
 }
 
 setup() {
@@ -44,21 +44,23 @@ teardown() {
 
   solr delete -c "COLL_NAME"
   refute collection_exists "COLL_NAME"
+  assert config_exists "COLL_NAME"
 }
 
-@test "can delete collections with solrUrl" {
+@test "can delete collections with solr-url" {
   solr create -c "COLL_NAME"
   assert collection_exists "COLL_NAME"
 
-  solr delete -c "COLL_NAME" -solrUrl http://localhost:${SOLR_PORT}
+  solr delete -c "COLL_NAME" --solr-url http://localhost:${SOLR_PORT}
   refute collection_exists "COLL_NAME"
+  assert config_exists "COLL_NAME"
 }
 
 @test "collection delete also deletes zk config" {
   solr create -c "COLL_NAME"
   assert config_exists "COLL_NAME"
 
-  solr delete -c "COLL_NAME"
+  solr delete -c "COLL_NAME" --delete-config
   refute config_exists "COLL_NAME"
 }
 
@@ -66,14 +68,14 @@ teardown() {
   solr create -c "COLL_NAME" -n "NONDEFAULT_CONFIG_NAME"
   assert config_exists "NONDEFAULT_CONFIG_NAME"
 
-  solr delete -c "COLL_NAME"
+  solr delete -c "COLL_NAME" --delete-config
   refute config_exists "NONDEFAULT_CONFIG_NAME"
 }
 
-@test "deleteConfig option can opt to leave config in zk" {
+@test "delete-config option can opt to leave config in zk" {
   solr create -c "COLL_NAME"
   assert config_exists "COLL_NAME"
 
-  solr delete -c "COLL_NAME" -deleteConfig false
+  solr delete -c "COLL_NAME"
   assert config_exists "COLL_NAME"
 }

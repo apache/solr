@@ -50,7 +50,7 @@ pathlib.Path("./models/").mkdir(parents=True, exist_ok=True)
 model = SentenceTransformer("all-mpnet-base-v2")
 
 # New size for the embeddings
-new_dimension = 10
+new_dimension = films.FILMS_MODEL_NEW_DIMENSION
 
 
 ######## Evaluate performance of full model ########

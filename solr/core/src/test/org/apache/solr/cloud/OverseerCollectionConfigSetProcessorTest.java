@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -688,6 +689,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                       props.getProperties(),
                       DocRouter.DEFAULT,
                       0,
+                      Instant.EPOCH,
                       distribStateManagerMock.getPrsSupplier(collName))));
       }
       if (CollectionParams.CollectionAction.ADDREPLICA.isEqual(props.getStr("operation"))) {

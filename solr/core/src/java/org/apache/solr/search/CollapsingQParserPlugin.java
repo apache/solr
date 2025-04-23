@@ -55,6 +55,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
@@ -73,7 +74,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
@@ -248,8 +248,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(final Object other) {
-      if (other instanceof GroupHeadSelector) {
-        final GroupHeadSelector that = (GroupHeadSelector) other;
+      if (other instanceof GroupHeadSelector that) {
         return (this.type == that.type) && this.selectorText.equals(that.selectorText);
       }
       return false;
@@ -535,7 +534,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                   fieldInfo.getVectorDimension(),
                   fieldInfo.getVectorEncoding(),
                   fieldInfo.getVectorSimilarityFunction(),
-                  fieldInfo.isSoftDeletesField());
+                  fieldInfo.isSoftDeletesField(),
+                  fieldInfo.isParentField());
           newInfos.add(f);
         } else {
           newInfos.add(fieldInfo);
@@ -2129,8 +2129,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           minMaxFieldType = searcher.getSchema().getField(text).getType();
         } else {
           SolrParams params = new ModifiableSolrParams();
-          try (SolrQueryRequest request = new LocalSolrQueryRequest(searcher.getCore(), params)) {
-            FunctionQParser functionQParser = new FunctionQParser(text, null, null, request);
+          try (SolrQueryRequest request = SolrQueryRequest.wrapSearcher(searcher, params)) {
+            FunctionQParser functionQParser = new FunctionQParser(text, null, params, request);
             funcQuery = (FunctionQuery) functionQParser.parse();
           } catch (SyntaxError e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -3583,7 +3583,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       for (int clause = 0; clause < numClauses; clause++) {
         SortField sf = sorts[clause];
         // we only need one slot for every comparator
-        fieldComparators[clause] = sf.getComparator(1, clause == 0);
+        fieldComparators[clause] =
+            sf.getComparator(
+                1,
+                clause == 0
+                    ? (numClauses > 1 ? Pruning.GREATER_THAN : Pruning.GREATER_THAN_OR_EQUAL_TO)
+                    : Pruning.NONE);
+
         reverseMul[clause] = sf.getReverse() ? -1 : 1;
       }
       groupHeadValues = new Object[initNumGroups][];

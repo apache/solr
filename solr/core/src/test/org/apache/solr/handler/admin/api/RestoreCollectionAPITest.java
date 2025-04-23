@@ -36,24 +36,40 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
+import org.apache.solr.client.api.model.RestoreCollectionRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.hamcrest.MatcherAssert;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit tests for {@link RestoreCollectionAPI} */
+/** Unit tests for {@link RestoreCollection} */
 public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
+
+  private static RestoreCollection restoreCollectionAPI;
+
+  @BeforeClass
+  public static void setUpApi() {
+    restoreCollectionAPI =
+        new RestoreCollection(
+            new CoreContainer(
+                new NodeConfig.NodeConfigBuilder("testnode", createTempDir()).build()),
+            new LocalSolrQueryRequest(null, new NamedList<>()),
+            null);
+  }
 
   @Test
   public void testReportsErrorIfBackupNameMissing() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollection";
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection(null, requestBody);
+              restoreCollectionAPI.restoreCollection(null, requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -66,8 +82,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", null);
+              restoreCollectionAPI.restoreCollection("someBackupName", null);
             });
 
     assertEquals(400, thrown.code());
@@ -77,13 +92,12 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
     // No 'collection' set on the requestBody
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", requestBody);
+              restoreCollectionAPI.restoreCollection("someBackupName", requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -92,24 +106,23 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfProvidedCollectionNameIsInvalid() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "invalid$collection@name";
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", requestBody);
+              restoreCollectionAPI.restoreCollection("someBackupName", requestBody);
             });
 
     assertEquals(400, thrown.code());
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(), containsString("Invalid collection: [invalid$collection@name]"));
   }
 
   @Test
   public void testCreatesValidRemoteMessageForExistingCollectionRestore() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollectionName";
     requestBody.location = "/some/location/path";
     requestBody.backupId = 123;
@@ -117,7 +130,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.async = "someAsyncId";
 
     final var remoteMessage =
-        RestoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
+        restoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
 
     assertEquals(7, remoteMessage.size());
     assertEquals("restore", remoteMessage.get(QUEUE_OPERATION));
@@ -131,7 +144,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreatesValidRemoteMessageForNewCollectionRestore() {
-    final var requestBody = new RestoreCollectionAPI.RestoreCollectionRequestBody();
+    final var requestBody = new RestoreCollectionRequestBody();
     requestBody.collection = "someCollectionName";
     requestBody.location = "/some/location/path";
     requestBody.backupId = 123;
@@ -147,7 +160,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     createParams.properties = Map.of("foo", "bar");
 
     final var remoteMessage =
-        RestoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
+        restoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
 
     assertEquals(14, remoteMessage.size());
     assertEquals("restore", remoteMessage.get(QUEUE_OPERATION));
@@ -182,8 +195,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     v1Params.add("createNodeSet", "node1,node2");
     v1Params.add("createNodeSet.shuffle", "false");
 
-    final var requestBody =
-        RestoreCollectionAPI.RestoreCollectionRequestBody.fromV1Params(v1Params);
+    final var requestBody = RestoreCollection.createRequestBodyFromV1Params(v1Params);
 
     assertEquals("someCollectionName", requestBody.collection);
     assertEquals("/some/location/str", requestBody.location);

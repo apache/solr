@@ -16,9 +16,10 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Random;
 import org.apache.http.Header;
@@ -48,15 +49,15 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.solr.home", legacyExampleCollection1SolrHome());
+    System.setProperty("solr.solr.home", legacyExampleCollection1SolrHome().toString());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 
-    File dataDir = createTempDir().toFile();
-    dataDir.mkdirs();
+    Path dataDir = createTempDir();
+    Files.createDirectories(dataDir);
 
-    System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
-    String path = ExternalPaths.WEBAPP_HOME;
+    System.setProperty("solr.data.dir", dataDir.toRealPath().toString());
+    String path = ExternalPaths.WEBAPP_HOME.toString();
 
     server = new Server(port);
     // insecure: only use for tests!!!!
@@ -89,7 +90,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   public void testAdminUI() throws Exception {
     // Not an extensive test, but it does connect to Solr and verify the Admin ui shows up.
     String adminPath = "http://127.0.0.1:" + port + "/solr/";
-    try (InputStream is = new URL(adminPath).openStream()) {
+    try (InputStream is = URI.create(adminPath).toURL().openStream()) {
       assertNotNull(is.readAllBytes()); // real error will be an exception
     }
 

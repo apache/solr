@@ -20,7 +20,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,9 +39,12 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -69,12 +72,12 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.util.LogLevel;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -103,7 +106,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -139,7 +141,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String COLLECTION = getSaferTestName();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
     UpdateRequest req = new UpdateRequest();
@@ -157,7 +158,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testOverwriteOption() throws Exception {
 
     CollectionAdminRequest.createCollection("overwrite", "conf", 1, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection("overwrite", 1, 1);
 
@@ -188,12 +188,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String COLLECTION2 = "2nd_collection";
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
     CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION2, 2, 2);
 
@@ -249,7 +247,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void testRouting() throws Exception {
     CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("routing_collection", 2, 2);
 
@@ -269,7 +266,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Iterator<Map.Entry<String, LBSolrClient.Req>> it = routes.entrySet().iterator();
     while (it.hasNext()) {
       Map.Entry<String, LBSolrClient.Req> entry = it.next();
-      String url = entry.getKey();
+      String coreUrl = entry.getKey();
+      final String baseUrl = URLUtil.extractBaseUrl(coreUrl);
+      final String coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
       UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
       SolrInputDocument doc = updateRequest.getDocuments().get(0);
       String id = doc.getField("id").getValue().toString();
@@ -277,7 +276,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       params.add("q", "id:" + id);
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
-      try (SolrClient solrClient = getHttpSolrClient(url)) {
+      try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
         assertEquals(1, docList.getNumFound());
@@ -316,7 +315,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       it = routes.entrySet().iterator();
       while (it.hasNext()) {
         Map.Entry<String, LBSolrClient.Req> entry = it.next();
-        String url = entry.getKey();
+        String coreUrl = entry.getKey();
+        final String baseUrl = URLUtil.extractBaseUrl(coreUrl);
+        final String coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
         UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
         SolrInputDocument doc = updateRequest.getDocuments().get(0);
         String id = doc.getField("id").getValue().toString();
@@ -324,7 +325,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (SolrClient solrClient = getHttpSolrClient(url)) {
+        try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
           assertEquals(1, docList.getNumFound());
@@ -436,9 +437,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     int liveNodes = cluster.getJettySolrRunners().size();
 
     // For this case every shard should have all its cores on the same node.
-    // Hence the below configuration for our collection
+    // Hence, the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
     // Add some new documents
@@ -493,8 +493,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // Make sure the distributed queries were directed to a single node only
     Set<Integer> ports = new HashSet<Integer>();
     for (String shardAddr : shardAddresses) {
-      URL url = new URL(shardAddr);
-      ports.add(url.getPort());
+      URI uri = URI.create(shardAddr);
+      ports.add(uri.getPort());
     }
 
     // This assertion would hold true as long as every shard has a core on each node
@@ -513,7 +513,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // For testing replica.type, we want to have all replica types available for the collection
     CollectionAdminRequest.createCollection(
             collectionName, "conf", 1, liveNodes / 3, liveNodes / 3, liveNodes / 3)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, 1, liveNodes);
 
@@ -594,7 +593,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     NamedList<Object> resp;
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl + "/" + collectionName)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(collectionName)
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -669,11 +669,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           }
 
           ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set("qt", adminPath);
           params.set("action", "foobar"); // this should cause an error
-          QueryRequest req = new QueryRequest(params);
+
+          var request =
+              new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params);
           try {
-            NamedList<Object> resp = client.request(req);
+            NamedList<Object> resp = client.request(request);
             fail("call to foo for admin path " + adminPath + " should have failed");
           } catch (Exception e) {
             // expected
@@ -713,11 +714,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
       String async1 =
           CollectionAdminRequest.createCollection("multicollection1", "conf", 2, 1)
-              .setPerReplicaState(USE_PER_REPLICA_STATE)
               .processAsync(client);
       String async2 =
           CollectionAdminRequest.createCollection("multicollection2", "conf", 2, 1)
-              .setPerReplicaState(USE_PER_REPLICA_STATE)
               .processAsync(client);
 
       CollectionAdminRequest.waitForAsyncRequest(async1, client, TIMEOUT);
@@ -764,10 +763,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
-    BaseHttpSolrClient.RemoteSolrException sse = null;
+    SolrClient.RemoteSolrException sse = null;
 
-    final String url = r.getBaseUrl() + "/" + COLLECTION;
-    try (SolrClient solrClient = getHttpSolrClient(url)) {
+    try (SolrClient solrClient = getHttpSolrClient(r.getBaseUrl(), COLLECTION)) {
 
       if (log.isInfoEnabled()) {
         log.info("should work query, result {}", solrClient.query(q));
@@ -813,14 +811,13 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     log.info("the node which does not serve this collection{} ", theNode);
     assertNotNull(theNode);
 
-    final String solrClientUrl = theNode + "/" + COLLECTION;
-    try (SolrClient solrClient = getHttpSolrClient(solrClientUrl)) {
+    try (SolrClient solrClient = getHttpSolrClient(theNode, COLLECTION)) {
 
       q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1));
       try {
         QueryResponse rsp = solrClient.query(q);
         log.info("error was expected");
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         sse = e;
       }
       assertNotNull(sse);
@@ -855,11 +852,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkConnectTimeout(1000 * 60);
         SolrException ex = expectThrows(SolrException.class, client::connect);
-        MatcherAssert.assertThat(
+        assertThat(
             "Wrong error message for empty chRoot",
             ex.getMessage(),
             Matchers.containsString("cluster not found/not ready"));
-        MatcherAssert.assertThat(
+        assertThat(
             "Wrong node missing message for empty chRoot",
             ex.getMessage(),
             Matchers.containsString(
@@ -889,7 +886,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String collection = getSaferTestName();
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collection, 2, 2);
 
@@ -942,7 +938,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String COLLECTION = getSaferTestName();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
     CloudSolrClient client = httpBasedCloudSolrClient;
@@ -1042,9 +1037,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     while (it.hasNext()) {
       Map.Entry<String, LBSolrClient.Req> entry = it.next();
       assertEquals(
-          "wrong number of servers: " + entry.getValue().getServers(),
+          "wrong number of servers: " + entry.getValue().getEndpoints(),
           1,
-          entry.getValue().getServers().size());
+          entry.getValue().getEndpoints().size());
     }
   }
 
@@ -1060,7 +1055,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     int liveNodes = cluster.getJettySolrRunners().size();
 
     // For these tests we need to have multiple replica types.
-    // Hence the below configuration for our collection
+    // Hence, the below configuration for our collection
     int pullReplicas = Math.max(1, liveNodes - 2);
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, pullReplicas)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
@@ -1120,7 +1115,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       for (Replica replica : slice.getReplicas()) {
         String coreUrl = replica.getCoreUrl();
         // It seems replica reports its core URL with a trailing slash while shard
-        // info returned from the query doesn't. Oh well.
+        // info returned from the query doesn't.
         if (coreUrl.endsWith("/")) {
           coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
         }
@@ -1154,7 +1149,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testPing() throws Exception {
     final String testCollection = "ping_test";
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(testCollection, 2, 2);
     final SolrClient clientUnderTest = getRandomClient();

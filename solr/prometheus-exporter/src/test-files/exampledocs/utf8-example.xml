@@ -17,7 +17,7 @@
 -->
 
 <!-- 
-  After posting this to Solr with bin/post, searching for "êâîôû" from
+  After posting this to Solr with bin/solr post, searching for "êâîôû" from
   the solr/admin/ search page must return this document.
  -->
 
@@ -39,4 +39,3 @@
     <field name="inStock">true</field>
   </doc>
 </add>
-

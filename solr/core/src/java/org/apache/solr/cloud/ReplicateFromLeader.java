@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -28,6 +27,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -88,31 +88,9 @@ public class ReplicateFromLeader {
       log.info("Will start replication from leader with poll interval: {}", pollIntervalStr);
 
       NamedList<Object> followerConfig = new NamedList<>();
-      followerConfig.add("fetchFromLeader", Boolean.TRUE);
-
-      // don't commit on leader version zero for PULL replicas as PULL should only get its index
-      // state from leader
-      boolean skipCommitOnLeaderVersionZero = switchTransactionLog;
-      if (!skipCommitOnLeaderVersionZero) {
-        CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
-        if (cloudDescriptor != null) {
-          Replica replica =
-              cc.getZkController()
-                  .getZkStateReader()
-                  .getCollection(cloudDescriptor.getCollectionName())
-                  .getSlice(cloudDescriptor.getShardId())
-                  .getReplica(cloudDescriptor.getCoreNodeName());
-          if (replica != null && replica.getType() == Replica.Type.PULL) {
-            // only set this to true if we're a PULL replica, otherwise use value of
-            // switchTransactionLog
-            skipCommitOnLeaderVersionZero = true;
-          }
-        }
-      }
-      followerConfig.add(
-          ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, skipCommitOnLeaderVersionZero);
-
-      followerConfig.add("pollInterval", pollIntervalStr);
+      followerConfig.add(ReplicationHandler.FETCH_FROM_LEADER, Boolean.TRUE);
+      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, Boolean.TRUE);
+      followerConfig.add(ReplicationAPIBase.POLL_INTERVAL, pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("follower", followerConfig);
 

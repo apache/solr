@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -88,9 +87,9 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-    BaseHttpSolrClient.RemoteSolrException remoteSolrException =
+    SolrClient.RemoteSolrException remoteSolrException =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             "Expected an exception in case split.key is not specified",
             () -> {
               CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
@@ -134,7 +133,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.getReplicas().get(0);
-    try (SolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient collectionClient = getHttpSolrClient(replica)) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals(
@@ -172,7 +171,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       waitForState(
           "Expected to find routing rule for split key " + splitKey,
           sourceCollection,
-          (n, c) -> {
+          c -> {
             if (c == null) return false;
             Slice shard = c.getSlice("shard2");
             if (shard == null) return false;

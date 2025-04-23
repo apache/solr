@@ -17,23 +17,29 @@
 
 package {{package}};
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.JacksonDataBindResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.client.solrj.JacksonParsingResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.InputStreamResponse;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.common.util.NamedList;
 
 {{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}
 {{#imports}}
@@ -45,9 +51,21 @@ import {{import}};
 {{#operation}}
 {{#bodyParam}}
 {{#vars}}
+
+{{! Catches all model types used "directly" (i.e. not in a container) in request/response classes. }}
 {{#isModel}}
 import {{modelPackage}}.{{dataType}};
 {{/isModel}}
+
+{{! Catches all model types used in a List<Foo>, Map<Bar>, or other container in request/response classes. }}
+{{#isContainer}}
+{{#items}}
+{{#isModel}}
+import {{modelPackage}}.{{dataType}};
+{{/isModel}}
+{{/items}}
+{{/isContainer}}
+
 {{/vars}}
 {{/bodyParam}}
 {{/operation}}
@@ -58,7 +76,7 @@ import {{modelPackage}}.{{dataType}};
 // changes should be made to the underlying template and not this file directly.
 
 /**
- * Experimental SolrRequest's and SolrResponse's for {{classVarName}}, generated from an OAS.
+ * Experimental {@link SolrRequest}s for {{classVarName}}, generated from an OAS.
  *
  * <p>See individual request and response classes for more detailed and relevant information.
  *
@@ -70,13 +88,15 @@ import {{modelPackage}}.{{dataType}};
 public class {{classname}} {
 
     {{#operation}}
-        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{returnType}}> {
-          public {{operationIdCamelCase}}Response() {
-            super({{returnType}}.class);
-          }
-        }
-
-        public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
+    {{^vendorExtensions.x-omitFromCodegen}}
+        {{#vendorExtensions.x-rawOutput}}
+            public static class {{operationIdCamelCase}} extends SolrRequest
+          <InputStreamResponse> {
+        {{/vendorExtensions.x-rawOutput}}
+        {{^vendorExtensions.x-rawOutput}}
+            public static class {{operationIdCamelCase}} extends SolrRequest<{{modelPackage}}
+            .{{returnType}}> {
+        {{/vendorExtensions.x-rawOutput}}
             {{#bodyParam}}
             private final {{{dataType}}} requestBody;
             {{/bodyParam}}
@@ -98,10 +118,12 @@ public class {{classname}} {
              {{/requiredParams}}
              */
             public {{operationIdCamelCase}}({{#allParams}}{{#required}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{#isBodyParam}}{{#vendorExtensions.x-genericEntity}}{{^-first}}, {{/-first}}{{{dataType}}} requestBody{{/vendorExtensions.x-genericEntity}}{{/isBodyParam}}{{/required}}{{/allParams}}) {
+                // TODO Hardcode request type for now, but in reality we'll want to parse this out of the Operation data somehow
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
                   "{{{path}}}"{{#pathParams}}
-                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{^isString}}.toString(){{/isString}}){{/pathParams}}
+                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{^isString}}.toString(){{/isString}}){{/pathParams}},
+                    SolrRequestType.ADMIN
                 );
 
                 {{#requiredParams}}
@@ -117,11 +139,30 @@ public class {{classname}} {
                 {{/requiredParams}}
                 {{#bodyParam}}
                 {{^vendorExtensions.x-genericEntity}}
+                {{#isMap}}
+                    this.requestBody = new HashMap<>();
+                {{/isMap}}
+                {{#isArray}}
+                    this.requestBody = new ArrayList<>();
+                {{/isArray}}
+                {{^isMap}}
+                {{^isArray}}
                     this.requestBody = new {{{dataType}}}();
+                {{/isArray}}
+                {{/isMap}}
                     addHeader("Content-type", "application/json");
                 {{/vendorExtensions.x-genericEntity}}
                 {{/bodyParam}}
             }
+
+            {{! If the request body is a list, provide methods to add to it}}
+            {{#bodyParam}}
+            {{#isArray}}
+            public void add{{items.dataType}}({{items.dataType}} entry) {
+                this.requestBody.add(entry);
+            }
+            {{/isArray}}
+            {{/bodyParam}}
 
             {{#optionalParams}}
             {{^isBodyParam}}
@@ -147,8 +188,17 @@ public class {{classname}} {
              {{/description}}
              public void {{setter}}({{{dataType}}} {{baseName}}) {
                this.requestBody.{{baseName}} = {{baseName}};
-            }
+             }
             {{/vars}}
+
+            {{#vendorExtensions.x-hasAdditionalFields}}
+            /**
+             * Set additional properties to be included in the request body.
+             */
+            public void setAdditionalProperty(String property, Object value) {
+                requestBody.setAdditionalProperty(property, value);
+            }
+            {{/vendorExtensions.x-hasAdditionalFields}}
 
             @Override
             @SuppressWarnings("unchecked")
@@ -156,16 +206,28 @@ public class {{classname}} {
                 {{#vendorExtensions.x-genericEntity}}
                 if (requestBody instanceof String) {
                     return new RequestWriter.StringPayloadContentWriter((String) requestBody, expectedType);
+                } else if (requestBody instanceof InputStream) {
+                    final var inputStream = (InputStream) requestBody;
+                    return new RequestWriter.ContentWriter() {
+                        @Override
+                        public void write(OutputStream os) throws IOException {
+                            inputStream.transferTo(os);
+                        }
+
+                        @Override
+                        public String getContentType() {
+                            return expectedType;
+                        }
+                    };
                 }
                 {{/vendorExtensions.x-genericEntity}}
                 return new JacksonContentWriter(expectedType, requestBody);
             }
             {{/bodyParam}}
 
-            // TODO Hardcode this for now, but in reality we'll want to parse this out of the Operation data somehow
             @Override
-            public String getRequestType() {
-              return SolrRequestType.ADMIN.toString();
+            public ApiVersion getApiVersion() {
+              return ApiVersion.V2;
             }
 
             @Override
@@ -181,15 +243,40 @@ public class {{classname}} {
             }
 
             @Override
-            protected {{operationIdCamelCase}}Response createResponse(SolrClient client) {
-              return new {{operationIdCamelCase}}Response();
+            public Set<String> getQueryParams() {
+              final var queryParams = new HashSet<String>();
+              {{#queryParams}}
+              queryParams.add("{{baseName}}");
+              {{/queryParams}}
+              return queryParams;
+            }
+        {{#vendorExtensions.x-rawOutput}}
+            @Override
+          protected InputStreamResponse createResponse(NamedList
+          <Object> namedList) {
+            return new InputStreamResponse();
+            }
+
+            @Override
+            public InputStreamResponseParser getResponseParser() {
+            return new InputStreamResponseParser("json");
+            }
+        {{/vendorExtensions.x-rawOutput}}
+        {{^vendorExtensions.x-rawOutput}}
+            @Override
+            protected {{modelPackage}}.{{returnType}} createResponse(NamedList
+          <Object> namedList) {
+            return ({{modelPackage}}.{{returnType}}) namedList.get("response");
             }
 
             @Override
             public ResponseParser getResponseParser() {
-              return new InputStreamResponseParser("json");
+            return new JacksonDataBindResponseParser<>({{modelPackage}}.{{returnType}}.class);
             }
+        {{/vendorExtensions.x-rawOutput}}
+
         }
+    {{/vendorExtensions.x-omitFromCodegen}}
     {{/operation}}
 }
 {{/operations}}

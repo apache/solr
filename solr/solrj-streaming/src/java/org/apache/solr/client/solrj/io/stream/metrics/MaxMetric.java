@@ -82,14 +82,12 @@ public class MaxMetric extends Metric {
       if (d > doubleMax) {
         doubleMax = d;
       }
-    } else if (o instanceof Float) {
-      Float f = (Float) o;
+    } else if (o instanceof Float f) {
       double d = f.doubleValue();
       if (d > doubleMax) {
         doubleMax = d;
       }
-    } else if (o instanceof Integer) {
-      Integer i = (Integer) o;
+    } else if (o instanceof Integer i) {
       long l = i.longValue();
       if (l > longMax) {
         longMax = l;

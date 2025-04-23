@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.CollectionUtil;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -81,12 +80,14 @@ public class CacheConfig implements MapSerializable {
 
   public static Map<String, CacheConfig> getMultipleConfigs(
       SolrResourceLoader loader, SolrConfig solrConfig, String configPath, List<ConfigNode> nodes) {
-    if (nodes == null || nodes.size() == 0) return new LinkedHashMap<>();
+    if (nodes == null || nodes.isEmpty()) {
+      return new LinkedHashMap<>();
+    }
     Map<String, CacheConfig> result = CollectionUtil.newHashMap(nodes.size());
     for (ConfigNode node : nodes) {
       if (node.boolAttr("enabled", true)) {
         CacheConfig config =
-            getConfig(loader, solrConfig, node.name(), node.attributes().asMap(), configPath);
+            getConfig(loader, solrConfig, node.name(), node.attributes(), configPath);
         result.put(config.args.get(NAME), config);
       }
     }
@@ -94,13 +95,10 @@ public class CacheConfig implements MapSerializable {
   }
 
   public static CacheConfig getConfig(SolrConfig solrConfig, ConfigNode node, String xpath) {
-    if (!node.exists() || !"true".equals(node.attributes().get("enabled", "true"))) {
-      Map<String, Object> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
-      if (m == null) return null;
-      List<String> parts = StrUtils.splitSmart(xpath, '/');
-      return getConfig(solrConfig, parts.get(parts.size() - 1), Collections.emptyMap(), xpath);
+    if (!node.boolAttr("enabled", true) || !node.exists()) {
+      return null;
     }
-    return getConfig(solrConfig, node.name(), node.attributes().asMap(), xpath);
+    return getConfig(solrConfig, node.name(), node.attributes(), xpath);
   }
 
   public static CacheConfig getConfig(
@@ -178,7 +176,7 @@ public class CacheConfig implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
+  public Map<String, Object> toMap(Map<String, Object> argsMap) {
     // TODO: Should not create new HashMap?
     return new HashMap<>(args);
   }

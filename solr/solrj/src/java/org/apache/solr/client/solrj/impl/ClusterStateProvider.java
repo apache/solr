@@ -53,7 +53,7 @@ public interface ClusterStateProvider extends SolrCloseable {
   /**
    * Obtain the state of the collection (cluster status).
    *
-   * @return the collection state, or null is collection doesn't exist
+   * @return the collection state, or null only if collection doesn't exist
    */
   ClusterState.CollectionRef getState(String collection);
 
@@ -91,7 +91,11 @@ public interface ClusterStateProvider extends SolrCloseable {
         .anyMatch(e -> e.getKey().startsWith(CollectionAdminParams.ROUTER_PREFIX));
   }
 
-  /** Obtain the current cluster state. */
+  /**
+   * Obtain the current cluster state. WARNING: This method is quite expensive as it involves
+   * fetching remote information. Use with caution and be aware of the potential performance
+   * implications.
+   */
   ClusterState getClusterState();
 
   default DocCollection getCollection(String name) throws IOException {
@@ -108,19 +112,18 @@ public interface ClusterStateProvider extends SolrCloseable {
   /** Obtain a cluster property, or the default value if it doesn't exist. */
   default <T> T getClusterProperty(String key, T defaultValue) {
     @SuppressWarnings({"unchecked"})
-    T value = (T) getClusterProperties().get(key);
+    T value = (T) getClusterProperty(key);
     if (value == null) return defaultValue;
     return value;
   }
 
   /** Obtain a cluster property, or null if it doesn't exist. */
-  default Object getClusterProperty(String propertyName) {
-    return getClusterProperties().get(propertyName);
-  }
+  Object getClusterProperty(String propertyName);
 
   /** Get the collection-specific policy */
   String getPolicyNameByCollection(String coll);
 
+  @Deprecated // just call getLiveNodes()
   void connect();
 
   String getQuorumHosts();

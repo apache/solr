@@ -24,6 +24,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
 import org.junit.BeforeClass;
 
 /**
@@ -48,7 +49,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     Files.createDirectories(dataDir);
     Files.createDirectories(confDir);
 
-    Files.copy(Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), homeDir.resolve("solr.xml"));
+    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
     Files.copy(Path.of(src_dir, "schema-tiny.xml"), confDir.resolve("schema.xml"));
     Files.copy(
@@ -70,10 +71,10 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     Properties nodeProperties = new Properties();
     // this sets the property for jetty starting SolrDispatchFilter
     if (System.getProperty("solr.data.dir") == null) {
-      nodeProperties.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
+      nodeProperties.setProperty("solr.data.dir", createTempDir().toRealPath().toString());
     }
 
-    solrClientTestRule.startSolr(homeDir, nodeProperties, buildJettyConfig());
+    solrClientTestRule.startSolr(homeDir, nodeProperties, JettyConfig.builder().build());
 
     // createJetty(homeDir.getAbsolutePath(), null, null);
   }

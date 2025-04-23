@@ -40,6 +40,7 @@ import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
+import org.apache.solr.response.transform.MatchScoreAugmenter;
 import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -50,6 +51,7 @@ import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
 public class SolrReturnFields extends ReturnFields {
   // Special Field Keys
   public static final String SCORE = "score";
+  public static final String MATCH_SCORE = "matchScore";
 
   private final List<String> globs = new ArrayList<>(1);
 
@@ -69,6 +71,8 @@ public class SolrReturnFields extends ReturnFields {
   protected boolean _wantsScore = false;
   protected boolean _wantsAllFields = false;
   protected Map<String, String> renameFields = Collections.emptyMap();
+
+  private final Map<String, String> scoreDependentFields = new HashMap<>();
 
   // Only set currently with the SolrDocumentFetcher.solrDoc method. Primarily used
   // at this time for testing to ensure we get fields from the expected places.
@@ -107,13 +111,14 @@ public class SolrReturnFields extends ReturnFields {
     if (fl == null) {
       parseFieldList((String[]) null, req);
     } else {
-      if (fl.trim().length() == 0) {
+      if (fl.trim().isEmpty()) {
         // legacy thing to support fl='  ' => fl=*,score!
         // maybe time to drop support for this?
         // See ConvertedLegacyTest
         _wantsScore = true;
         _wantsAllFields = true;
         transformer = new ScoreAugmenter(SCORE);
+        scoreDependentFields.put(SCORE, "");
       } else {
         parseFieldList(new String[] {fl}, req);
       }
@@ -381,8 +386,7 @@ public class SolrReturnFields extends ReturnFields {
         ValueSource vs = null;
 
         try {
-          if (parser instanceof FunctionQParser) {
-            FunctionQParser fparser = (FunctionQParser) parser;
+          if (parser instanceof FunctionQParser fparser) {
             fparser.setParseMultipleSources(false);
             fparser.setParseToEnd(false);
 
@@ -536,6 +540,13 @@ public class SolrReturnFields extends ReturnFields {
 
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new ScoreAugmenter(disp));
+      scoreDependentFields.put(disp, disp.equals(SCORE) ? "" : SCORE);
+    } else if (MATCH_SCORE.equals(field)) {
+      _wantsScore = true;
+
+      String disp = (key == null) ? field : key;
+      augmenters.addTransformer(new MatchScoreAugmenter(disp));
+      scoreDependentFields.put(disp, disp.equals(MATCH_SCORE) ? "" : MATCH_SCORE);
     }
   }
 
@@ -593,6 +604,11 @@ public class SolrReturnFields extends ReturnFields {
   @Override
   public boolean wantsScore() {
     return _wantsScore;
+  }
+
+  @Override
+  public Map<String, String> getScoreDependentReturnFields() {
+    return scoreDependentFields;
   }
 
   @Override

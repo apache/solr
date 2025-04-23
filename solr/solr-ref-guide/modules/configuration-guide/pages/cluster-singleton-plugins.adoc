@@ -1,0 +1,93 @@
+= Cluster Singleton Plugins
+:toclevels: 3
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Solr distribution includes some Cluster Singleton plugins.
+Additional plugins can be added - they have to implement the ClusterSingleton interface.
+The configuration entry may also contain a config element if the plugin implements the ConfigurablePlugin interface.
+
+== Plugin Configuration
+Cluster Singleton plugins can be configured in two ways, either by using the xref:cluster-plugins.adoc[cluster plugins API] or by declaring them in xref:configuring-solr-xml.adoc[solr.xml].
+
+All cluster plugins must be declared using the same method. It is not possible to declare some plugins in solr.xml and use the cluster plugins API to manage other plugins.
+
+== Cluster Singleton Plugins Included with Solr
+Solr includes the following plugins out-of-the-box.
+
+=== Inactive Shard Remover
+This plugin will periodically find and delete shards that have an INACTIVE shard state.
+Shards become INACTIVE when they are split, and the documents they contain are now managed by two or more sub-shards.
+
+Configuration using the cluster plugin API
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "add":{
+        "name": ".inactive-shard-remover",
+        "class": "org.apache.solr.cluster.maintenance.InactiveShardRemover",
+        "config": {
+          "scheduleIntervalSeconds": 3600,
+          "ttlSeconds": 1800,
+          "maxDeletesPerCycle": 20
+        }
+    }}'
+  http://localhost:8983/api/cluster/plugin
+----
+
+Configuration in solr.xml
+[source,xml]
+----
+<clusterSingleton name=".inactive-shard-remover" class="org.apache.solr.cluster.maintenance.InactiveShardRemover">
+  <long name="scheduleIntervalSeconds">3600</long>
+  <long name="ttlSeconds">1800</long>
+  <int name="maxDeletesPerCycle">20</int>
+</clusterSingleton>
+----
+
+NOTE: The Inactive Shard Remover plugin configuration MUST use the predefined name `.inactive-shard-remover`.
+There can be only one (or none) of these configurations defined.
+
+==== Configuration
+
+`scheduleIntervalSeconds`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `900` Seconds
+|===
++
+This value determines how often the inactive shard remover will run
+
+`ttlSeconds`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `900` Seconds
+|===
++
+This value defines the minimum period of time that a Shard must be INACTIVE before it is considered for deletion.
+
+`maxDeletesPerCycle`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `20`
+|===
++
+This is the maximum number of shards that will be deleted each time the inactive shard remover runs.
+If there are more Shards that could be deleted, they will be considered during the next cycle.

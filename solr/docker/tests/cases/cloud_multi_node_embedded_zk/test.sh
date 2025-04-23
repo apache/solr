@@ -20,7 +20,7 @@ TEST_DIR="${TEST_DIR:-$(dirname -- "${BASH_SOURCE[0]}")}"
 source "${TEST_DIR}/../../shared.sh"
 
 echo "Running base solr node w/embeddedZk - $container_name"
-docker run --name "${container_name}" -d "$tag" solr-fg -c
+docker run --name "${container_name}" -d "$tag" solr-fg
 
 wait_for_container_and_solr "${container_name}"
 
@@ -32,7 +32,7 @@ container_cleanup "${container_name}-2"
 echo "Running additional solr node - $container_name-2"
 docker run --name "$container_name-2" -d \
   --env "ZK_HOST=${solr_ip}:9983" \
-  "$tag" solr-fg -c
+  "$tag" solr-fg
 
 wait_for_container_and_solr "${container_name}-2"
 
@@ -46,7 +46,7 @@ if ! grep -q "${solr_ip}:8983" <<<"$data"; then
 fi
 
 echo "Creating distributed collection"
-data=$(docker exec --user=solr "$container_name" solr create -c test -rf 1 -s 2)
+data=$(docker exec --user=solr "$container_name" solr create -c test -rf 1 --shards 2)
 
 if ! grep -q "Created collection 'test'" <<<"$data"; then
   echo "Test $TEST_NAME $tag failed; could not create distributed collection"

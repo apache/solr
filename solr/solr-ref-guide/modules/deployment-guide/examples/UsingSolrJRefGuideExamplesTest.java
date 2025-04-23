@@ -17,7 +17,6 @@
  */
 package org.apache.solr.client.ref_guide_examples;
 
-import java.io.File;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,12 +65,11 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setUpCluster() throws Exception {
     configureCluster(NUM_LIVE_NODES)
-        .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
+        .addConfig("conf", ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .configure();
 
     CollectionAdminResponse response =
         CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("techproducts", 1, 1);
   }

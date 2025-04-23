@@ -20,7 +20,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -41,6 +45,11 @@ public class BinaryField extends FieldType {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Field type " + this + " is 'large'; not supported (yet)");
+    }
+    if (field.hasDocValues() && field.multiValued()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Field type " + this + " does not support multiple doc values");
     }
   }
 
@@ -94,13 +103,16 @@ public class BinaryField extends FieldType {
       log.trace("Ignoring unstored binary field: {}", field);
       return null;
     }
+    return new org.apache.lucene.document.StoredField(field.getName(), getBytesRef(val));
+  }
+
+  private static BytesRef getBytesRef(Object val) {
     byte[] buf = null;
     int offset = 0, len = 0;
     if (val instanceof byte[]) {
       buf = (byte[]) val;
       len = buf.length;
-    } else if (val instanceof ByteBuffer && ((ByteBuffer) val).hasArray()) {
-      ByteBuffer byteBuf = (ByteBuffer) val;
+    } else if (val instanceof ByteBuffer byteBuf && byteBuf.hasArray()) {
       buf = byteBuf.array();
       offset = byteBuf.arrayOffset() + byteBuf.position();
       len = byteBuf.limit() - byteBuf.position();
@@ -112,15 +124,38 @@ public class BinaryField extends FieldType {
       len = buf.length;
     }
 
-    return new org.apache.lucene.document.StoredField(field.getName(), buf, offset, len);
+    return new BytesRef(buf, offset, len);
+  }
+
+  @Override
+  public List<IndexableField> createFields(SchemaField field, Object val) {
+    IndexableField fval = createField(field, val);
+
+    if (field.hasDocValues() && !field.multiValued()) {
+      IndexableField docval = new BinaryDocValuesField(field.getName(), getBytesRef(val));
+
+      // Only create list if we have 2 values...
+      if (fval != null) {
+        List<IndexableField> fields = new ArrayList<>(2);
+        fields.add(fval);
+        fields.add(docval);
+        return fields;
+      }
+
+      fval = docval;
+    }
+    return Collections.singletonList(fval);
+  }
+
+  @Override
+  protected void checkSupportsDocValues() { // we support DocValues
   }
 
   @Override
   public Object toNativeType(Object val) {
     if (val instanceof byte[]) {
       return ByteBuffer.wrap((byte[]) val);
-    } else if (val instanceof CharSequence) {
-      final CharSequence valAsCharSequence = (CharSequence) val;
+    } else if (val instanceof CharSequence valAsCharSequence) {
       return ByteBuffer.wrap(Base64.getDecoder().decode(valAsCharSequence.toString()));
     }
     return super.toNativeType(val);

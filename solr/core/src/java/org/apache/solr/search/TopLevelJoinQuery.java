@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * {@link JoinQuery} implementation using global (top-level) DocValues ordinals to efficiently
  * compare values in the "from" and "to" fields.
  */
-public class TopLevelJoinQuery extends JoinQuery {
+public class TopLevelJoinQuery extends JoinQuery implements SolrSearcherRequirer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public TopLevelJoinQuery(String fromField, String toField, String coreName, Query subQuery) {
@@ -56,14 +56,14 @@ public class TopLevelJoinQuery extends JoinQuery {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
-    if (!(searcher instanceof SolrIndexSearcher)) {
+    if (!(searcher instanceof SolrIndexSearcher solrSearcher)) {
       log.debug(
           "Falling back to JoinQueryWeight because searcher [{}] is not the required SolrIndexSearcher",
           searcher);
+      // TODO This check no longer makes sense as super.createWeight *also* requires a SIS
       return super.createWeight(searcher, scoreMode, boost);
     }
 
-    final SolrIndexSearcher solrSearcher = (SolrIndexSearcher) searcher;
     final JoinQueryWeight weight =
         new JoinQueryWeight(solrSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
     final SolrIndexSearcher fromSearcher = weight.fromSearcher;

@@ -19,27 +19,26 @@ package org.apache.solr.embedded;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,6 +46,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -56,18 +56,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.CoreAdminOperation;
-import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -93,11 +89,9 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.Source;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
-import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -145,8 +139,6 @@ public class JettySolrRunner {
   private String host;
 
   private volatile boolean started = false;
-
-  private CoreContainerProvider coreContainerProvider;
 
   public static class DebugFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -375,22 +367,12 @@ public class JettySolrRunner {
           new ServletContextHandler(server, "/solr", ServletContextHandler.SESSIONS);
       root.setResourceBase(".");
 
-      server.addEventListener(
-          new LifeCycle.Listener() {
-
+      root.addEventListener(
+          // Install CCP first.  Subclass CCP to do some pre-initialization
+          new CoreContainerProvider() {
             @Override
-            public void lifeCycleStopping(LifeCycle arg0) {}
-
-            @Override
-            public synchronized void lifeCycleStopped(LifeCycle arg0) {
-              coreContainerProvider.close();
-            }
-
-            @Override
-            public void lifeCycleStarting(LifeCycle arg0) {}
-
-            @Override
-            public synchronized void lifeCycleStarted(LifeCycle arg0) {
+            public void contextInitialized(ServletContextEvent event) {
+              // awkwardly, parts of Solr want to know the port but we don't know that until now
               jettyPort = getFirstConnectorPort();
               int port = jettyPort;
               if (proxyPort != -1) port = proxyPort;
@@ -400,41 +382,31 @@ public class JettySolrRunner {
                   .setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
               root.getServletContext()
                   .setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
+
               SSLConfigurationsFactory.current().init(); // normally happens in jetty-ssl.xml
-              coreContainerProvider = new CoreContainerProvider();
-              coreContainerProvider.init(root.getServletContext());
+
               log.info("Jetty properties: {}", nodeProperties);
 
-              debugFilter =
-                  root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-              extraFilters = new ArrayList<>();
-              for (Map.Entry<Class<? extends Filter>, String> entry :
-                  config.extraFilters.entrySet()) {
-                extraFilters.add(
-                    root.addFilter(
-                        entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
-              }
-
-              for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
-                root.addServlet(entry.getKey(), entry.getValue());
-              }
-              dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-              dispatchFilter.setHeldClass(SolrDispatchFilter.class);
-              dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
-              // Map dispatchFilter in same path as in web.xml
-              root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
-
-              synchronized (JettySolrRunner.this) {
-                waitOnSolr = true;
-                JettySolrRunner.this.notify();
-              }
-            }
-
-            @Override
-            public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
-              System.clearProperty("hostPort");
+              super.contextInitialized(event);
             }
           });
+
+      debugFilter = root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+      extraFilters = new ArrayList<>();
+      for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
+        extraFilters.add(
+            root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
+      }
+
+      for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
+        root.addServlet(entry.getKey(), entry.getValue());
+      }
+      dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      dispatchFilter.setHeldClass(SolrDispatchFilter.class);
+      dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
+      // Map dispatchFilter in same path as in web.xml
+      root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+
       // Default servlet as a fall-through
       root.addServlet(Servlet404.class, "/");
       chain = root;
@@ -451,6 +423,7 @@ public class JettySolrRunner {
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
       chain = rwh;
     }
+
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
 
@@ -479,15 +452,14 @@ public class JettySolrRunner {
    * @return the {@link CoreContainer} for this node
    */
   public CoreContainer getCoreContainer() {
+    final var solrDispatchFilter = getSolrDispatchFilter();
+    if (solrDispatchFilter == null) {
+      return null;
+    }
     try {
-      if (getSolrDispatchFilter() == null || getSolrDispatchFilter().getCores() == null) {
-        return null;
-      }
-      return getSolrDispatchFilter().getCores();
+      return solrDispatchFilter.getCores();
     } catch (UnavailableException e) {
-      // Since this is only used in tests, this is just a straight-up failure
-      // If this is converted for other use something else might be better here
-      throw new RuntimeException(e);
+      return null;
     }
   }
 
@@ -554,15 +526,7 @@ public class JettySolrRunner {
           server.start();
         }
       }
-      synchronized (JettySolrRunner.this) {
-        int cnt = 0;
-        while (!waitOnSolr || !dispatchFilter.isRunning()) {
-          this.wait(100);
-          if (cnt++ == 15) {
-            throw new RuntimeException("Jetty/Solr unresponsive");
-          }
-        }
-      }
+      assert dispatchFilter.isRunning();
 
       if (config.waitForLoadingCoresToFinishMs != null
           && config.waitForLoadingCoresToFinishMs > 0L) {
@@ -659,20 +623,10 @@ public class JettySolrRunner {
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
-      Filter filter = dispatchFilter.getFilter();
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
       server.stop();
-
-      if (server.getState().equals(Server.FAILED)) {
-        filter.destroy();
-        if (extraFilters != null) {
-          for (FilterHolder f : extraFilters) {
-            f.getFilter().destroy();
-          }
-        }
-      }
 
       // stop timeout is 0, so we will interrupt right away
       while (!qtp.isStopped()) {
@@ -697,12 +651,6 @@ public class JettySolrRunner {
         timeout.waitFor("Timeout waiting for reserved executor to stop.", rte::isStopped);
       }
 
-      // we want to shutdown outside of jetty cutting us off
-      SolrDispatchFilter sdf = getSolrDispatchFilter();
-      if (sdf != null) {
-        ExecutorUtil.shutdownAndAwaitTermination(getJettyShutDownThreadPool());
-      }
-
       do {
         try {
           server.join();
@@ -724,15 +672,11 @@ public class JettySolrRunner {
     }
   }
 
-  private ExecutorService getJettyShutDownThreadPool() {
-    return ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
-  }
-
-  public void outputMetrics(File outputDirectory, String fileName) throws IOException {
+  public void outputMetrics(Path outputDirectory, String fileName) throws IOException {
     if (getCoreContainer() != null) {
 
       if (outputDirectory != null) {
-        Path outDir = outputDirectory.toPath();
+        Path outDir = outputDirectory;
         Files.createDirectories(outDir);
       }
 
@@ -745,7 +689,7 @@ public class JettySolrRunner {
             outputDirectory == null
                 ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)
                 : new PrintStream(
-                    new File(outputDirectory, registryName + "_" + fileName),
+                    outputDirectory.resolve(registryName + "_" + fileName).toString(),
                     StandardCharsets.UTF_8)) {
           ConsoleReporter reporter =
               ConsoleReporter.forRegistry(metricsRegisty)
@@ -765,21 +709,14 @@ public class JettySolrRunner {
 
   public void dumpCoresInfo(PrintStream pw) throws IOException {
     if (getCoreContainer() != null) {
-      List<SolrCore> cores = getCoreContainer().getCores();
-      for (SolrCore core : cores) {
-        NamedList<Object> coreStatus =
-            CoreAdminOperation.getCoreStatus(getCoreContainer(), core.getName(), false);
-        core.withSearcher(
-            solrIndexSearcher -> {
-              SimpleOrderedMap<Object> lukeIndexInfo =
-                  LukeRequestHandler.getIndexInfo(solrIndexSearcher.getIndexReader());
-              Map<String, Object> indexInfoMap = coreStatus.toMap(new LinkedHashMap<>());
-              indexInfoMap.putAll(lukeIndexInfo.toMap(new LinkedHashMap<>()));
-              pw.println(JSONUtil.toJSON(indexInfoMap, 2));
-
-              pw.println();
-              return null;
-            });
+      final var coreStatusReq = new CoresApi.GetAllCoreStatus();
+      coreStatusReq.setIndexInfo(true);
+      try (final var client = newClient()) {
+        final var coreStatusRsp = coreStatusReq.process(client);
+        Utils.writeJson(coreStatusRsp, pw, true);
+      } catch (SolrServerException | IOException e) {
+        // Worth logging but not re-throwing
+        log.error("Unable to dump info for all cores", e);
       }
     }
   }
@@ -832,13 +769,12 @@ public class JettySolrRunner {
     this.proxyPort = proxyPort;
   }
 
-  /**
-   * Returns a base URL consisting of the protocol, host, and port for a Connector in use by the
-   * Jetty Server contained in this runner.
-   */
+  /** Returns a base URL like {@code http://localhost:8983/solr} */
   public URL getBaseUrl() {
     try {
-      return new URL(protocol, host, jettyPort, "/solr");
+      return new URI(protocol, null, host, jettyPort, "/solr", null, null).toURL();
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
@@ -846,8 +782,10 @@ public class JettySolrRunner {
 
   public URL getBaseURLV2() {
     try {
-      return new URL(protocol, host, jettyPort, "/api");
+      return new URI(protocol, null, host, jettyPort, "/api", null, null).toURL();
     } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
+    } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }
@@ -858,8 +796,10 @@ public class JettySolrRunner {
    */
   public URL getProxyBaseUrl() {
     try {
-      return new URL(protocol, host, getLocalPort(), "/solr");
+      return new URI(protocol, null, host, getLocalPort(), "/solr", null, null).toURL();
     } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
+    } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }
@@ -919,11 +859,7 @@ public class JettySolrRunner {
       } catch (UnavailableException e) {
         throw new IllegalStateException("The CoreContainer is unavailable!");
       }
-      if (cores != null) {
-        cores.waitForLoadingCoresToFinish(timeoutMs);
-      } else {
-        throw new IllegalStateException("The CoreContainer is not set!");
-      }
+      cores.waitForLoadingCoresToFinish(timeoutMs);
     } else {
       throw new IllegalStateException("The dispatchFilter is not set!");
     }

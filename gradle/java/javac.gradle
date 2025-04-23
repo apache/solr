@@ -19,14 +19,19 @@
 
 allprojects {
   plugins.withType(JavaPlugin) {
-    sourceCompatibility = rootProject.minJavaVersion
-    targetCompatibility = rootProject.minJavaVersion
-
+    sourceCompatibility = project.minJavaVersion
+    targetCompatibility = project.minJavaVersion
     // Use 'release' flag instead of 'source' and 'target'
     tasks.withType(JavaCompile) {
-      options.compilerArgs += ["--release", rootProject.minJavaVersion.toString()]
+      compileTestJava {
+        sourceCompatibility = project.minJavaTestVersion
+        targetCompatibility = project.minJavaTestVersion
+        options.compilerArgs += ["--release", project.minJavaTestVersion.toString()]
+      }
+      compileJava {
+        options.compilerArgs += ["--release", project.minJavaVersion.toString()]
+      }
     }
-
     // Configure warnings.
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
@@ -51,21 +56,11 @@ allprojects {
         "-Xdoclint:all/protected",
         "-Xdoclint:-missing",
         "-Xdoclint:-accessibility",
+        "-Xlint:synchronization",
+        "-Xlint:text-blocks",
         "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
+        "-Xlint:removal"
       ]
-
-      // enable some warnings only relevant to newer language features
-      if (rootProject.runtimeJavaVersion >= JavaVersion.VERSION_15) {
-        options.compilerArgs += [
-          "-Xlint:text-blocks",
-        ]
-      }
-
-      if (rootProject.runtimeJavaVersion >= JavaVersion.VERSION_16) {
-        options.compilerArgs += [
-          "-Xlint:synchronization",
-        ]
-      }
 
       if (propertyOrDefault("javac.failOnWarnings", true).toBoolean()) {
         options.compilerArgs += "-Werror"

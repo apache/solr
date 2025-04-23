@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -131,10 +132,10 @@ public class SolrXmlConfig {
     // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
         readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
-            .asMap()
+            .asShallowMap()
             .entrySet()
             .stream()
-            .collect(Collectors.toMap(item -> item.getKey(), item -> item.getValue().toString()));
+            .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
@@ -288,7 +289,7 @@ public class SolrXmlConfig {
   }
 
   private static NamedList<Object> readNodeListAsNamedList(ConfigNode cfg, String section) {
-    NamedList<Object> nl = DOMUtil.readNamedListChildren(cfg);
+    NamedList<Object> nl = cfg.childNodesToNamedList();
     Set<String> keys = new HashSet<>();
     for (Map.Entry<String, Object> entry : nl) {
       if (!keys.add(entry.getKey()))
@@ -379,6 +380,9 @@ public class SolrXmlConfig {
                 break;
               case "replayUpdatesThreads":
                 builder.setReplayUpdatesThreads(it.intVal(-1));
+                break;
+              case "indexSearcherExecutorThreads":
+                builder.setIndexSearcherExecutorThreads(it.intVal(-1));
                 break;
               case "transientCacheSize":
                 log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
@@ -636,17 +640,10 @@ public class SolrXmlConfig {
   }
 
   private static PluginInfo[] getBackupRepositoryPluginInfos(List<ConfigNode> cfg) {
-    if (cfg.isEmpty()) {
-      return new PluginInfo[0];
-    }
-
-    PluginInfo[] configs = new PluginInfo[cfg.size()];
-    for (int i = 0; i < cfg.size(); i++) {
-      ConfigNode c = cfg.get(i);
-      configs[i] = new PluginInfo(c, "BackupRepositoryFactory", true, true);
-    }
-
-    return configs;
+    return cfg.stream()
+        .map(c -> new PluginInfo(c, "BackupRepositoryFactory", true, true))
+        .filter(PluginInfo::isEnabled)
+        .toArray(PluginInfo[]::new);
   }
 
   private static PluginInfo[] getClusterPlugins(SolrResourceLoader loader, ConfigNode root) {
@@ -679,6 +676,7 @@ public class SolrXmlConfig {
     List<PluginInfo> plugins =
         nodes.stream()
             .map(n -> new PluginInfo(n, n.name(), true, true))
+            .filter(PluginInfo::isEnabled)
             .collect(Collectors.toList());
 
     // Cluster plugin names must be unique
@@ -726,7 +724,7 @@ public class SolrXmlConfig {
     builder.setHistogramSupplier(getPluginInfo(metrics.get("suppliers").get("histogram")));
 
     if (metrics.get("missingValues").exists()) {
-      NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(metrics.get("missingValues"));
+      NamedList<Object> missingValues = metrics.get("missingValues").childNodesToNamedList();
       builder.setNullNumber(decodeNullValue(missingValues.get("nullNumber")));
       builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
       builder.setNullString(decodeNullValue(missingValues.get("nullString")));
@@ -736,7 +734,7 @@ public class SolrXmlConfig {
     ConfigNode caching = metrics.get("solr/metrics/caching");
     if (caching != null) {
       Object threadsCachingIntervalSeconds =
-          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds", null);
+          caching.childNodesToNamedList().get("threadsIntervalSeconds");
       builder.setCacheConfig(
           new MetricsConfig.CacheConfig(
               threadsCachingIntervalSeconds == null
@@ -763,8 +761,7 @@ public class SolrXmlConfig {
   }
 
   private static Object decodeNullValue(Object o) {
-    if (o instanceof String) { // check if it's a JSON object
-      String str = (String) o;
+    if (o instanceof String str) { // check if it's a JSON object
       if (!str.isBlank() && (str.startsWith("{") || str.startsWith("["))) {
         try {
           o = Utils.fromJSONString((String) o);
@@ -781,6 +778,9 @@ public class SolrXmlConfig {
     boolean hasJmxReporter = false;
     for (ConfigNode node : metrics.getAll("reporter")) {
       PluginInfo info = getPluginInfo(node);
+      if (info == null) {
+        continue;
+      }
       String clazz = info.className;
       if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
         hasJmxReporter = true;
@@ -825,6 +825,7 @@ public class SolrXmlConfig {
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {
     if (cfg == null || !cfg.exists()) return null;
-    return new PluginInfo(cfg, cfg.name(), false, true);
+    final var pluginInfo = new PluginInfo(cfg, cfg.name(), false, true);
+    return pluginInfo.isEnabled() ? pluginInfo : null;
   }
 }

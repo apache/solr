@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -53,10 +52,6 @@ public class RequestHandlerUtils {
   public static boolean handleCommit(
       SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force)
       throws IOException {
-    if (params == null) {
-      params = new MapSolrParams(new HashMap<>());
-    }
-
     boolean optimize = params.getBool(UpdateParams.OPTIMIZE, false);
     boolean commit = params.getBool(UpdateParams.COMMIT, false);
     boolean softCommit = params.getBool(UpdateParams.SOFT_COMMIT, false);
@@ -97,8 +92,6 @@ public class RequestHandlerUtils {
 
   /** Modify UpdateCommand based on request parameters */
   public static void updateCommit(CommitUpdateCommand cmd, SolrParams params) {
-    if (params == null) return;
-
     cmd.openSearcher = params.getBool(UpdateParams.OPEN_SEARCHER, cmd.openSearcher);
     cmd.waitSearcher = params.getBool(UpdateParams.WAIT_SEARCHER, cmd.waitSearcher);
     cmd.softCommit = params.getBool(UpdateParams.SOFT_COMMIT, cmd.softCommit);
@@ -114,13 +107,7 @@ public class RequestHandlerUtils {
   public static boolean handleRollback(
       SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force)
       throws IOException {
-    if (params == null) {
-      params = new MapSolrParams(new HashMap<>());
-    }
-
-    boolean rollback = params.getBool(UpdateParams.ROLLBACK, false);
-
-    if (rollback || force) {
+    if (force || params.getBool(UpdateParams.ROLLBACK, false)) {
       RollbackUpdateCommand cmd = new RollbackUpdateCommand(req);
       processor.processRollback(cmd);
       return true;

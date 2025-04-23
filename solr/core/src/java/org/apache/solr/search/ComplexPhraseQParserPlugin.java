@@ -119,6 +119,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       String defaultField = getParam(CommonParams.DF);
 
       SolrQueryParserDelegate reverseAwareParser = new SolrQueryParserDelegate(this, defaultField);
+      final var qParserReference = this;
 
       lparser =
           new ComplexPhraseQueryParser(defaultField, getReq().getSchema().getQueryAnalyzer()) {
@@ -132,6 +133,14 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
               } catch (SyntaxError e) {
                 throw new RuntimeException(e);
               }
+            }
+
+            @Override
+            protected Query getPrefixQuery(String field, String termStr) throws ParseException {
+              final var query = super.getPrefixQuery(field, termStr);
+              QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(
+                  qParserReference, query, termStr);
+              return query;
             }
 
             private Query setRewriteMethod(org.apache.lucene.search.Query query) {

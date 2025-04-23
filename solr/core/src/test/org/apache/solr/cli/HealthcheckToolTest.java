@@ -17,11 +17,7 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
 import java.util.Set;
-import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -47,10 +43,8 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
   public void testHealthcheckWithZkHostParameter() throws Exception {
 
     String[] args =
-        new String[] {
-          "healthcheck", "-c", "bob", "-zkHost", cluster.getZkClient().getZkServerAddress()
-        };
-    assertEquals(0, runTool(args));
+        new String[] {"healthcheck", "-c", "bob", "-z", cluster.getZkClient().getZkServerAddress()};
+    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
   }
 
   @Test
@@ -61,8 +55,8 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
     String solrUrl =
         ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(firstLiveNode);
 
-    String[] args = new String[] {"healthcheck", "-c", "bob", "-solrUrl", solrUrl};
-    assertEquals(0, runTool(args));
+    String[] args = new String[] {"healthcheck", "-c", "bob", "--solr-url", solrUrl};
+    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
   }
 
   @Test
@@ -75,14 +69,7 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
 
     solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
 
-    String[] args = new String[] {"healthcheck", "-c", "bob", "-solrUrl", solrUrl};
-    assertEquals(0, runTool(args));
-  }
-
-  private int runTool(String[] args) throws Exception {
-    Tool tool = findTool(args);
-    assertTrue(tool instanceof HealthcheckTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
-    return tool.runTool(cli);
+    String[] args = new String[] {"healthcheck", "-c", "bob", "--solr-url", solrUrl};
+    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
   }
 }
