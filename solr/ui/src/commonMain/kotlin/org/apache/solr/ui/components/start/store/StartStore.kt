@@ -18,7 +18,9 @@
 package org.apache.solr.ui.components.start.store
 
 import com.arkivanov.mvikotlin.core.store.Store
+import io.ktor.http.Url
 import org.apache.solr.ui.components.start.store.StartStore.Intent
+import org.apache.solr.ui.components.start.store.StartStore.Label
 import org.apache.solr.ui.components.start.store.StartStore.State
 
 /**
@@ -26,7 +28,7 @@ import org.apache.solr.ui.components.start.store.StartStore.State
  *
  * Implementations of this state store manage detailed information of the environment.
  */
-internal interface StartStore : Store<Intent, State, Nothing> {
+internal interface StartStore : Store<Intent, State, Label> {
 
     /**
      * Intent for interacting with the environment store.
@@ -44,11 +46,29 @@ internal interface StartStore : Store<Intent, State, Nothing> {
         data object Connect: Intent
     }
 
+    sealed interface Label {
+
+        /**
+         * Label that is published when a connection to a Solr instance has been established
+         * successful.
+         *
+         * @property url URL of the Solr instance.
+         */
+        data class Connected(val url: Url): Label
+
+        /**
+         * Label that is published when a Solr server was found, but authentication is required.
+         *
+         * @property url URL of the Solr instance that requires authentication.
+         */
+        data class AuthRequired(val url: Url): Label
+    }
+
     /**
      * State class that holds the data of the [StartStore].
      */
     data class State(
         val url: String = "",
-        // TODO Add connection state (like connecting, connected, failed, auth required)
+        val error: Throwable? = null,
     )
 }

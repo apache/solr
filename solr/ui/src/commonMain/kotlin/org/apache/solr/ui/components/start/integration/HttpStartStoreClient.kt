@@ -18,7 +18,15 @@
 package org.apache.solr.ui.components.start.integration
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.get
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
+import io.ktor.http.path
 import org.apache.solr.ui.components.start.store.StartStoreProvider
+import org.apache.solr.ui.errors.UnauthorizedException
+import org.apache.solr.ui.errors.UnknownResponseException
 
 /**
  * Client implementation of the [StartStoreProvider.Client] that makes use
@@ -33,8 +41,21 @@ class HttpStartStoreClient(
     private val httpClient: HttpClient,
 ) : StartStoreProvider.Client {
 
-    override suspend fun connect(url: String): Result<Unit> {
-        // TODO Implement me
-        return Result.failure(NotImplementedError())
+    override suspend fun connect(url: Url): Result<Unit> {
+        val url = URLBuilder(url).apply {
+            // Try getting system data for checking if Solr host exists,
+            // since there is no explicit endpoint for the connection establishment.
+            path("api/node/system")
+        }.build()
+
+        val response = httpClient.get(url) {
+            timeout { connectTimeoutMillis = 5000 }
+        }
+
+        return when (response.status) {
+            HttpStatusCode.OK -> Result.success(Unit)
+            HttpStatusCode.Unauthorized -> Result.failure(UnauthorizedException())
+            else -> Result.failure(UnknownResponseException(response))
+        }
     }
 }

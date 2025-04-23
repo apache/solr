@@ -29,6 +29,8 @@
 
   <!-- Errors (error) -->
   <string name="error_invalid_url">The provided URL is invalid.</string>
+  <string name="error_solr_host_not_found">Solr host could not be found.</string>
+  <string name="error_unknown">An unknown error occurred.</string>
 
   <!-- Navigation (nav) -->
   <string name="nav_cluster">Cluster</string>
