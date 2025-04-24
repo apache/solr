@@ -85,7 +85,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   }
 
   public CollectionAdminRequest(String path, CollectionAction action) {
-    super(METHOD.GET, path);
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
     this.action = checkNotNull(CoreAdminParams.ACTION, action);
   }
 
@@ -124,8 +124,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
+  public boolean requiresCollection() {
+    return false;
   }
 
   /**

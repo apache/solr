@@ -142,7 +142,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
                 .build();
       } else {
         GenericSolrRequest genericSolrRequest =
-            new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix);
+            new GenericSolrRequest(
+                SolrRequest.METHOD.POST, authcPrefix, SolrRequest.SolrRequestType.ADMIN);
         genericSolrRequest.setContentWriter(
             new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
         genericReq = genericSolrRequest;

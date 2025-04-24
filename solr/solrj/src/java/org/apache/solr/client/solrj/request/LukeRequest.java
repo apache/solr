@@ -35,11 +35,12 @@ public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
   private Boolean includeIndexFieldFlags = null;
 
   public LukeRequest() {
-    super(METHOD.GET, "/admin/luke");
+    // this request is not processed as an ADMIN request
+    super(METHOD.GET, "/admin/luke", SolrRequestType.ADMIN);
   }
 
   public LukeRequest(String path) {
-    super(METHOD.GET, path);
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
   }
 
   // ---------------------------------------------------------------------------------
@@ -123,10 +124,5 @@ public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
     }
 
     return params;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
   }
 }

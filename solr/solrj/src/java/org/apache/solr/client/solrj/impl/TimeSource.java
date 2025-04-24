@@ -14,18 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.request;
+package org.apache.solr.client.solrj.impl;
 
-import org.apache.solr.client.solrj.SolrRequest;
+/**
+ * Interface to abstract time measurements for easier testing. This allows tests to control time
+ * advancement rather than relying on actual wall clock time.
+ */
+public interface TimeSource {
 
-/** Parent {@link SolrRequest} class that requires a target collection or core. */
-public abstract class CollectionRequiringSolrRequest<T> extends SolrRequest<T> {
-  public CollectionRequiringSolrRequest(METHOD m, String path, SolrRequestType requestType) {
-    super(m, path, requestType);
-  }
+  /**
+   * Returns the current value of the running Java Virtual Machine's high-resolution time source, in
+   * nanoseconds.
+   *
+   * @return the current value of the running Java Virtual Machine's high-resolution time source.
+   */
+  long nanoTime();
 
-  @Override
-  public boolean requiresCollection() {
-    return true;
-  }
+  /** Default implementation that uses System.nanoTime(). */
+  TimeSource SYSTEM = System::nanoTime;
 }
