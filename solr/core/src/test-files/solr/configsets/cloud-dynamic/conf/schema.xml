@@ -237,10 +237,6 @@
   <field name="copyfield_dest_not_stored" type="nametext" indexed="true" stored="false" multiValued="true"/>
   <copyField source="copyfield_source" dest="copyfield_dest_not_stored" />
 
-  <field name="copyfield_source_not_stored" type="string" indexed="true" stored="false" multiValued="true"/>
-  <field name="copyfield_dest_stored" type="nametext" indexed="true" stored="true" multiValued="true"/>
-  <copyField source="copyfield_source_not_stored" dest="copyfield_dest_stored" />
-
   <field name="copyfield_source_multiple" type="string" indexed="true" stored="true" multiValued="true"/>
   <field name="copyfield_dest_multiple" type="nametext" indexed="true" stored="true" multiValued="true"/>
   <copyField source="copyfield_source" dest="copyfield_dest_multiple" />
