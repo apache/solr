@@ -94,51 +94,16 @@ public abstract class DocTransformer {
    * This is where implementations do the actual work. If implementations require a valid docId and
    * index access, the {@link #needsSolrIndexSearcher} method must return true
    *
-   * <p>Default implementation calls {@link #transform(SolrDocument, int)}.
-   *
    * @param doc The document to alter
    * @param docid The Lucene internal doc id, or -1 in cases where the <code>doc</code> did not come
    *     from the index
-   * @param score the score for this document
-   * @throws IOException If there is a low-level I/O error.
-   * @see #needsSolrIndexSearcher
-   * @deprecated use {@link #transform(SolrDocument, int, DocIterationInfo)} instead
-   */
-  @Deprecated(forRemoval = true, since = "9.9.0")
-  public void transform(SolrDocument doc, int docid, float score) throws IOException {
-    transform(doc, docid);
-  }
-
-  /**
-   * This is where implementations do the actual work. If implementations require a valid docId and
-   * index access, the {@link #needsSolrIndexSearcher} method must return true
-   *
-   * <p>Default implementation calls {@link #transform(SolrDocument, int)}.
-   *
-   * @param doc The document to alter
-   * @param docid The Lucene internal doc id, or -1 in cases where the <code>doc</code> did not come
-   *     from the index
-   * @param docInfo the document information for this document, including the score
+   * @param docInfo the document information for this document, including the score. Do not pass
+   *     <code>null</code>, instead use {@link DocIterationInfo#NONE}.
    * @throws IOException If there is a low-level I/O error.
    * @see #needsSolrIndexSearcher
    */
-  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) throws IOException {
-    transform(doc, docid, docInfo.score());
-  }
-
-  /**
-   * This is where implementations do the actual work. If implementations require a valid docId and
-   * index access, the {@link #needsSolrIndexSearcher} method must return true
-   *
-   * @param doc The document to alter
-   * @param docid The Lucene internal doc id, or -1 in cases where the <code>doc</code> did not come
-   *     from the index
-   * @throws IOException If there is a low-level I/O error.
-   * @see #needsSolrIndexSearcher
-   * @deprecated use {@link #transform(SolrDocument, int, DocIterationInfo)} instead
-   */
-  @Deprecated(since = "9.9.0")
-  public abstract void transform(SolrDocument doc, int docid) throws IOException;
+  public abstract void transform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+      throws IOException;
 
   /**
    * When a transformer needs access to fields that are not automatically derived from the input
@@ -183,7 +148,7 @@ public abstract class DocTransformer {
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid) {
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
       // No-Op
     }
   }
