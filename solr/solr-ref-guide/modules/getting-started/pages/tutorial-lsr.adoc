@@ -356,7 +356,7 @@ curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$r
 
 [,console]
 ----
-curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$ref\}&ref=\{!boost+b=10\}\{!rank+f=bumble_rank+function=linear\}&ref=\{!boost+b=2\}\{!rank+f=honey_rank+function=linear\}&ref=\{!rank+f=bee_rank+function=linear\}'
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$ref\}&ref=\{!rank+f=bumble_rank+weight=10+function=linear\}&ref=\{!rank+f=honey_rank+weight=2+function=linear\}&ref=\{!rank+f=bee_rank+function=linear\}'
 ----
 
 ```
@@ -449,7 +449,7 @@ curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$r
 
 [,console]
 ----
-curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$ref\}&ref=\{!boost+b=10\}\{!rank+f=lsr_term3+function=linear\}&ref=\{!boost+b=2\}\{!rank+f=lsr_term6+function=linear\}&ref=\{!rank+f=lsr_term2+function=linear\}'
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$ref\}&ref=\{!rank+f=lsr_term3+weight=10+function=linear\}&ref=\{!rank+f=lsr_term6+weight=2+function=linear\}&ref=\{!rank+f=lsr_term2+function=linear\}'
 ----
 
 ```
