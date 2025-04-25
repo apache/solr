@@ -18,12 +18,18 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -35,6 +41,13 @@ import org.slf4j.LoggerFactory;
 public class StallDetectionTest extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // testConcurrentStallDetection config
+  private static final int NUM_INCREMENTERS = 5;
+  private static final int NUM_CHECKERS = 5;
+  private static final long STALL_TIME_MILLIS = 200;
+  private static final long CHECKER_INTERVAL_MILLIS = 10;
+  private static final long TIME_ADVANCE_STEP_MILLIS = 50;
 
   @Test
   public void testNoStallWithEmptyQueue() throws IOException {
@@ -281,82 +294,282 @@ public class StallDetectionTest extends SolrTestCase {
   }
 
   @Test
-  public void testConcurrentAccess() throws Exception {
+  public void testConcurrentStallDetection() throws Exception {
+    // Test components
+    ExecutorService executor = null;
+    FakeTimeSource timeSource = new FakeTimeSource();
+    BlockingQueue<Integer> testQueue = new LinkedBlockingQueue<>();
 
-    final long stallTimeMillis = 1000;
-    final FakeTimeSource timeSource = new FakeTimeSource();
-    final AtomicInteger queueSize = new AtomicInteger(10);
-    final StallDetection stallDetection =
-        new StallDetection(stallTimeMillis, queueSize::get, timeSource);
+    // Add initial items to queue
+    for (int i = 0; i < 10; i++) {
+      testQueue.add(i);
+    }
 
-    // Initialize the timer
-    stallDetection.stallCheck();
-
-    final int threadCount = 10;
-
-    final CyclicBarrier barrier = new CyclicBarrier(threadCount);
-    final CountDownLatch allDone = new CountDownLatch(threadCount);
-    final AtomicBoolean exceptionThrown = new AtomicBoolean(false);
-
-    ExecutorService executor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            threadCount, new SolrNamedThreadFactory("StallDetectionTest"));
+    IntSupplier queueSizeSupplier = () -> testQueue.size();
+    StallDetection stallDetection =
+        new StallDetection(STALL_TIME_MILLIS, queueSizeSupplier, timeSource);
 
     try {
-      for (int i = 0; i < threadCount; i++) {
-        final int threadId = i;
-        executor.submit(
-            () -> {
-              try {
-                // Wait for all threads to be ready
-                barrier.await();
+      executor =
+          ExecutorUtil.newMDCAwareCachedThreadPool(
+              new SolrNamedThreadFactory("EnhancedStallDetectionTest"));
+      // Thread synchronization
+      final CyclicBarrier startBarrier = new CyclicBarrier(NUM_INCREMENTERS + NUM_CHECKERS + 1);
+      final CountDownLatch phase1Complete = new CountDownLatch(1);
+      final CountDownLatch phase2Complete = new CountDownLatch(1);
+      final CountDownLatch allComplete = new CountDownLatch(NUM_INCREMENTERS + NUM_CHECKERS);
 
-                // Half the threads increment the progress counter
-                // The other half call stallCheck
-                if (threadId % 2 == 0) {
-                  // Increment progress
-                  for (int j = 0; j < 100; j++) {
-                    stallDetection.incrementProcessedCount();
-                    Thread.yield(); // Hint to allow other threads to run
-                  }
-                } else {
-                  // Check for stalls
-                  for (int j = 0; j < 100; j++) {
-                    try {
-                      stallDetection.stallCheck();
-                      // Advance time a bit between checks, but not enough to trigger a stall
-                      synchronized (timeSource) {
-                        timeSource.advanceMillis(5);
+      // Control flags
+      final AtomicBoolean keepRunning = new AtomicBoolean(true);
+      final AtomicBoolean shouldStall = new AtomicBoolean(false);
+
+      // Result tracking
+      final AtomicReference<Throwable> unexpectedException = new AtomicReference<>(null);
+      final AtomicReference<IOException> expectedStallException = new AtomicReference<>(null);
+      final AtomicInteger prematureStallCount = new AtomicInteger(0);
+      final AtomicInteger correctStallCount = new AtomicInteger(0);
+      int missedStallCount = 0;
+
+      // For checking queue transitions
+      final AtomicBoolean queueWasEmpty = new AtomicBoolean(false);
+      AtomicInteger queueTransitionCount = new AtomicInteger();
+
+      List<Future<?>> futures = new ArrayList<>();
+
+      log.info(
+          "Setting up test with {} incrementers and {} checkers", NUM_INCREMENTERS, NUM_CHECKERS);
+
+      // Submit incrementer tasks
+      for (int i = 0; i < NUM_INCREMENTERS; i++) {
+        final int incrementerId = i;
+        futures.add(
+            executor.submit(
+                () -> {
+                  try {
+                    log.debug("Incrementer {} waiting at barrier", incrementerId);
+                    startBarrier.await(10, TimeUnit.SECONDS);
+                    log.debug("Incrementer {} started", incrementerId);
+
+                    // Phase 1: Normal operation
+                    while (keepRunning.get() && !shouldStall.get()) {
+                      // Process items from queue
+                      Integer item = testQueue.poll();
+                      if (item != null) {
+                        stallDetection.incrementProcessedCount();
+                        // Simulate some work
+                        Thread.sleep(random().nextInt(5));
+                        // Add a new item to keep queue non-empty
+                        if (random().nextBoolean()) {
+                          testQueue.add(random().nextInt(100));
+                        }
+                      } else {
+                        // Queue is empty, nothing to process
+                        if (!queueWasEmpty.getAndSet(true)) {
+                          queueTransitionCount.getAndIncrement();
+                          log.debug("Queue became empty");
+                        }
+                        Thread.sleep(5); // Wait briefly before checking again
                       }
-                      Thread.yield(); // Hint to allow other threads to run
-                    } catch (IOException e) {
-                      exceptionThrown.set(true);
-                      fail("Unexpected IOException: " + e.getMessage());
+
+                      // Occasionally empty the queue completely to test transitions
+                      if (random().nextInt(100) == 0) {
+                        testQueue.clear();
+                        log.debug("Queue cleared by incrementer {}", incrementerId);
+                      }
                     }
+
+                    // Phase 2: Stall if instructed
+                    if (shouldStall.get()) {
+                      log.debug("Incrementer {} stopping to induce stall", incrementerId);
+                      // Stop incrementing, but don't exit yet
+                      phase2Complete.await(20, TimeUnit.SECONDS);
+                    }
+
+                  } catch (Exception e) {
+                    if (!(e instanceof InterruptedException)) {
+                      log.error("Incrementer {} failed", incrementerId, e);
+                      unexpectedException.compareAndSet(null, e);
+                    }
+                  } finally {
+                    log.debug("Incrementer {} completing", incrementerId);
+                    allComplete.countDown();
                   }
-                }
-              } catch (Exception e) {
-                exceptionThrown.set(true);
-                log.error("Exception in thread {}", threadId, e);
-              } finally {
-                allDone.countDown();
-              }
-            });
+                }));
       }
 
-      // Wait for all threads to complete
-      assertTrue("Timed out waiting for threads to complete", allDone.await(30, TimeUnit.SECONDS));
+      // Submit checker tasks
+      for (int i = 0; i < NUM_CHECKERS; i++) {
+        final int checkerId = i;
+        futures.add(
+            executor.submit(
+                () -> {
+                  try {
+                    log.debug("Checker {} waiting at barrier", checkerId);
+                    startBarrier.await(10, TimeUnit.SECONDS);
+                    log.debug("Checker {} started", checkerId);
 
-      // Verify no exceptions were thrown
-      assertFalse("Exception was thrown during concurrent operation", exceptionThrown.get());
+                    while (keepRunning.get()) {
+                      try {
+                        stallDetection.stallCheck();
+                      } catch (IOException e) {
+                        if (shouldStall.get()) {
+                          if (log.isWarnEnabled()) {
+                            log.warn("Checker {} detected expected stall: {}", checkerId, e);
+                          }
+                          expectedStallException.compareAndSet(null, e);
+                          correctStallCount.incrementAndGet();
+                          phase2Complete.countDown(); // Signal to complete phase 2
+                          break; // Exit loop after detecting stall
+                        } else {
+                          if (log.isErrorEnabled()) {
+                            log.error("Checker {} detected unexpected stall in phase 1", checkerId);
+                          }
+                          prematureStallCount.incrementAndGet();
+                          unexpectedException.compareAndSet(null, e);
+                        }
+                      }
 
-      // Verify the final processed count is correct
-      assertEquals(
-          "Processed count should equal number of incrementing threads × 100",
-          (threadCount / 2) * 100,
-          stallDetection.getProcessedCount());
+                      // Check less frequently than incrementers
+                      Thread.sleep(CHECKER_INTERVAL_MILLIS);
+
+                      // Occasionally reset the stall timer to test that functionality
+                      if (random().nextInt(50) == 0) {
+                        stallDetection.resetStallTimer();
+                        log.debug("Checker {} reset stall timer", checkerId);
+                      }
+                    }
+
+                  } catch (Exception e) {
+                    if (!(e instanceof InterruptedException)) {
+                      log.error("Checker {} failed", checkerId, e);
+                      unexpectedException.compareAndSet(null, e);
+                    }
+                  } finally {
+                    log.debug("Checker {} completing", checkerId);
+                    allComplete.countDown();
+                  }
+                }));
+      }
+
+      log.info("Starting all threads");
+      startBarrier.await(10, TimeUnit.SECONDS); // Start all threads
+
+      // Phase 1: Verify normal operation with continuous processing
+      log.info("Phase 1: Testing normal operation with continuous processing");
+      long phase1StartTime = System.nanoTime();
+
+      // Monitor and advance time during phase 1
+      for (int step = 0; step < 10; step++) {
+        // Let threads run for a while
+        Thread.sleep(TIME_ADVANCE_STEP_MILLIS);
+
+        // Advance fake time
+        timeSource.advanceMillis(TIME_ADVANCE_STEP_MILLIS);
+
+        // Check for premature stall detection
+        if (prematureStallCount.get() > 0) {
+          fail("Stall detected prematurely during Phase 1");
+        }
+
+        // Check for unexpected exceptions
+        if (unexpectedException.get() != null) {
+          fail("Unexpected exception in Phase 1: " + unexpectedException.get());
+        }
+        if (log.isDebugEnabled()) {
+          log.debug("Phase 1 step {} complete, queue size: {}", step, testQueue.size());
+        }
+      }
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Phase 1 complete after {} ms. No stalls detected.",
+            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - phase1StartTime));
+      }
+      phase1Complete.countDown();
+
+      // Phase 2: Induce stall and verify detection
+      log.info("Phase 2: Inducing stall");
+      shouldStall.set(true); // Signal incrementers to stop processing
+
+      // Wait for incrementers to notice the signal
+      Thread.sleep(100);
+
+      // Add items to the queue to ensure it's not empty during stall
+      testQueue.clear();
+      for (int i = 0; i < 5; i++) {
+        testQueue.add(i);
+      }
+
+      // Advance time until stall should be detected
+      long startTime = System.nanoTime();
+      long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(STALL_TIME_MILLIS * 3 + 1000);
+
+      boolean stallDetected = false;
+      while (System.nanoTime() - startTime < timeoutNanos) {
+        // Advance time in smaller steps to ensure stall detection
+        timeSource.advanceMillis(TIME_ADVANCE_STEP_MILLIS);
+        Thread.sleep(20); // Let checkers run with new time
+
+        if (expectedStallException.get() != null) {
+          stallDetected = true;
+          break;
+        }
+
+        // Check for unexpected exceptions
+        if (unexpectedException.get() != null) {
+          fail("Unexpected exception in Phase 2: " + unexpectedException.get());
+        }
+      }
+
+      // If stall wasn't detected, mark as missed and allow test to complete
+      if (!stallDetected) {
+        missedStallCount++;
+        if (log.isErrorEnabled()) {
+          log.error("Stall was not detected within timeout");
+        }
+        phase2Complete.countDown();
+      }
+
+      // Complete test
+      log.info("Completing test, waiting for all threads to finish");
+      keepRunning.set(false);
+
+      // Wait for all futures to complete
+      for (Future<?> future : futures) {
+        try {
+          future.get(15, TimeUnit.SECONDS);
+        } catch (Exception e) {
+          log.warn("Exception during future cleanup get", e);
+        }
+      }
+
+      // Also wait for all threads to complete via the latch
+      assertTrue("Threads did not complete in time", allComplete.await(10, TimeUnit.SECONDS));
+
+      // Verify results
+      if (unexpectedException.get() != null) {
+        fail("Unexpected exception occurred: " + unexpectedException.get());
+      }
+
+      assertEquals("Premature stalls detected", 0, prematureStallCount.get());
+      assertEquals("Missed stalls", 0, missedStallCount);
+      assertTrue("No stall detected in phase 2", correctStallCount.get() > 0);
+
+      IOException stallException = expectedStallException.get();
+      assertNotNull("Stall exception was null", stallException);
+      String msg = stallException.getMessage();
+      log.info("Stall exception message: {}", msg);
+
+      assertTrue(
+          "Incorrect stall exception message",
+          stallException.getMessage().contains("Request processing has stalled"));
+
+      log.info("Queue transitions observed: {}", queueTransitionCount);
+      log.info("Test completed successfully");
+
     } finally {
-      executor.shutdownNow();
+      if (executor != null) {
+        ExecutorUtil.shutdownAndAwaitTermination(executor);
+      }
     }
   }
 
