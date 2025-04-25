@@ -167,6 +167,8 @@
     <!-- delimited raw term-frequency dynamic field(s) -->
     <dynamicField name="*_drtf" type="delimited_rawtf" indexed="true" stored="true" omitPositions="true"/>
 
+    <dynamicField name="*_rank" type="rank"/>
+
     <dynamicField name="attr_*" type="text_general" indexed="true" stored="true" multiValued="true"/>
 
     <!-- Field to use to determine and enforce document uniqueness.

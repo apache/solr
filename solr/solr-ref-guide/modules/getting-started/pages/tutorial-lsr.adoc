@@ -261,3 +261,36 @@ As can be seen the scores are as supplied after the pipe delimiter, summed for t
 === Searching with ??? fields
 
 ...
+
+
+=== Ranking (not searching) with a rank field
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!rank+f=text_rank+function=linear\}'
+----
+
+As can be seen the scores are not exactly as provided due to `FeatureField` storage precision limitation.
+
+```
+...
+    "docs":[{
+      "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":9984.0
+    },{
+      "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
+      "text_drtf":"bee|3 bumble|2",
+      "score":100.0
+    },{
+      "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":1.0
+    }]
+...
+```
+
+...
