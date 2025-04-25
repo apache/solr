@@ -23,6 +23,10 @@
 
 ...
 
+https://en.wikipedia.org/wiki/Learned_sparse_retrieval[Learned sparse retrieval]
+
+...
+
 === Getting Ready
 
 [,console]
@@ -288,7 +292,7 @@ As can be seen the scores are not exactly as provided due to `FeatureField` stor
 ...
 ```
 
-=== Searching with rank fields
+=== Searching with (plain) rank fields
 
 ...
 
@@ -353,6 +357,99 @@ curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$r
 [,console]
 ----
 curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$ref\}&ref=\{!boost+b=10\}\{!rank+f=bumble_rank+function=linear\}&ref=\{!boost+b=2\}\{!rank+f=honey_rank+function=linear\}&ref=\{!rank+f=bee_rank+function=linear\}'
+----
+
+```
+...
+    "docs":[{
+      "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
+      "text_drtf":"bee|3 bumble|2",
+      "score":2.296875
+    },{
+      "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":0.69921875
+    },{
+      "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":0.2998047
+    }]
+...
+```
+
+=== Searching with (opaque) rank fields
+
+...
+
+... TODO: 'plain' and 'opaque' is not the right terminology to use here ...
+
+
+ * plain: alone bee bumble flower food honey nature solitary sugar
+
+ * opaque: 1 2 3 4 5 6 7 8 9
+
+ * mapping: alone=1 bee=2 bumble=3 flower=4 food=5 honey=6 nature=7 solitary=8 sugar=9
+
+...
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!rank+f=lsr_term2+function=linear\}'
+----
+
+```
+...
+    "docs":[{
+      "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
+      "text_drtf":"bee|3 bumble|2",
+      "score":0.2998047
+    },{
+      "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":0.2998047
+    },{
+      "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":0.2998047
+    }]
+...
+```
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$ref\}&ref=\{!rank+f=lsr_term6+function=linear\}&ref=\{!rank+f=lsr_term2+function=linear\}'
+----
+
+```
+...
+    "docs":[{
+      "text_ws":"honey bee",
+      "text_dpf":"bee|0.3 honey|0.2 sugar|0.1",
+      "text_drtf":"bee|3 honey|2 sugar|1",
+      "score":0.49951172
+    },{
+      "text_ws":"bumble bee",
+      "text_dpf":"bee|0.3 bumble|0.2",
+      "text_drtf":"bee|3 bumble|2",
+      "score":0.2998047
+    },{
+      "text_ws":"solitary bee",
+      "text_dpf":"bee|0.3 solitary|0.2 alone|0.1",
+      "text_drtf":"bee|3 solitary|2 alone|1",
+      "score":0.2998047
+    }]
+...
+```
+
+[,console]
+----
+curl 'http://localhost:8983/solr/buzz/select?fl=text_*,score&q=\{!bool+should=$ref\}&ref=\{!boost+b=10\}\{!rank+f=lsr_term3+function=linear\}&ref=\{!boost+b=2\}\{!rank+f=lsr_term6+function=linear\}&ref=\{!rank+f=lsr_term2+function=linear\}'
 ----
 
 ```
