@@ -269,6 +269,8 @@ Bug Fixes
 
 * SOLR-17720: Fix rare deadlock in CollectionProperties internals.  (Aparna Suresh, Houston Putman)
 
+* SOLR-17638: Some CLI errors not logged when starting prometheus exporter (Alex Deparvu)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
