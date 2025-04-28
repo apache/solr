@@ -14,30 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response.transform;
-
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.search.DocIterationInfo;
+package org.apache.solr.client.solrj.impl;
 
 /**
- * Simple Augmenter that adds the matchScore
- *
- * @since solr 4.0
+ * Interface to abstract time measurements for easier testing. This allows tests to control time
+ * advancement rather than relying on actual wall clock time.
  */
-public class MatchScoreAugmenter extends DocTransformer {
-  final String name;
+public interface TimeSource {
 
-  public MatchScoreAugmenter(String display) {
-    this.name = display;
-  }
+  /**
+   * Returns the current value of the running Java Virtual Machine's high-resolution time source, in
+   * nanoseconds.
+   *
+   * @return the current value of the running Java Virtual Machine's high-resolution time source.
+   */
+  long nanoTime();
 
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
-    doc.setField(name, docInfo.matchScore());
-  }
+  /** Default implementation that uses System.nanoTime(). */
+  TimeSource SYSTEM = System::nanoTime;
 }

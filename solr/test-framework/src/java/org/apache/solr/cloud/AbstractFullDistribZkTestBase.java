@@ -49,13 +49,15 @@ import java.util.function.Consumer;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -2066,8 +2068,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     params.set("name", collectionName);
     @SuppressWarnings({"rawtypes"})
-    SolrRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    SolrRequest request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
@@ -2542,7 +2544,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.RELOAD.toString());
       params.set("name", testCollectionName);
-      QueryRequest request = new QueryRequest(params);
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       request.setPath("/admin/collections");
       client.request(request);
       Thread.sleep(2000); // reload can take a short while

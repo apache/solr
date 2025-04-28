@@ -41,7 +41,11 @@ Improvements
 
 * SOLR-17701: Simplify bin/solr scripts by removing AUTH_PORT export in favour of more commonly used SOLR_PORT export. (Eric Pugh)
 
-* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse. (David Smiley)
+* SOLR-17705: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse.
+  Simplified the V2 API to remove the needless SolrResponse.  And moved JSON/Jackson binding into
+  a new JacksonDataBindResponseParser (David Smiley)
+
+* SOLR-17043: "LB" and "Cloud" clients no longer use brittle URL pattern-matching when routing requests. (Jude Muriithi via David Smiley, Jason Gerlowski)
 
 Optimizations
 ---------------------
@@ -118,6 +122,8 @@ Deprecation Removals
 * SOLR-17655: Removed deprecated ExternalFileField field type. (Eric Pugh)
 
 * SOLR-17683: Removed deprecated CurrencyField field type. (Eric Pugh)
+
+* SOLR-17738: Removed deprecated `transform()` from `DocTransformer`. (Abhishek Umarjikar, Houston Putman)
 
 Dependency Upgrades
 ---------------------
@@ -203,7 +209,7 @@ New Features
 
 Improvements
 ---------------------
-* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about 
+* SOLR-15751: The v2 API now has parity with the v1 "COLSTATUS" and "segments" APIs, which can be used to fetch detailed information about
   specific collections or cores.  Collection information can be fetched by a call to `GET /api/collections/collectionName`, and core
   information with a call to `GET /api/cores/coreName/segments`. (Jason Gerlowski)
 
@@ -254,6 +260,19 @@ Bug Fixes
 * SOLR-5386: Fix various methods of invoking "local" solr requests to re-use the same searcher as the original request.
   This notably fixes the use of spellcheck.maxCollationTries in firstSearcher warming queries to prevent deadlock (hossman)
 
+* SOLR-12831: Clean up shard metadata in ZooKeeper nodes after shard deletion is invoked. This makes sure Zookeeper
+ nodes for leader election and terms are not left behind (Andy Vuong, Pierre Salagnac).
+
+* SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
+
+* SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
+
+* SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
+
+* SOLR-17720: Fix rare deadlock in CollectionProperties internals.  (Aparna Suresh, Houston Putman)
+
+* SOLR-17638: Some CLI errors not logged when starting prometheus exporter (Alex Deparvu)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
@@ -262,7 +281,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public 
+* SOLR-17579: Remove unused code and other refactorings in ReplicationHandler and tests.  Removed unused public
   LOCAL_ACTIVITY_DURING_REPLICATION variable. (Eric Pugh)
 
 * GITHUB#2869: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has).  Added LogLevelTestRule
