@@ -775,9 +775,11 @@ public class MiniSolrCloudCluster {
       try {
         future.get();
       } catch (ExecutionException e) {
+        log.error(message, e);
         parsed.addSuppressed(e.getCause());
         ok = false;
       } catch (InterruptedException e) {
+        log.error(message, e);
         Thread.interrupted();
         throw e;
       }

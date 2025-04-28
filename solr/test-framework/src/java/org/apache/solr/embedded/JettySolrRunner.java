@@ -83,6 +83,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -431,6 +432,12 @@ public class JettySolrRunner {
     gzipHandler.setIncludedMethods("GET");
 
     server.setHandler(gzipHandler);
+
+    // Mimic "graceful.mod"
+    final StatisticsHandler graceful = new StatisticsHandler();
+    graceful.setGracefulShutdownWaitsForRequests(true);
+    server.insertHandler(graceful);
+    server.setStopTimeout(15 * 1000);
   }
 
   /**

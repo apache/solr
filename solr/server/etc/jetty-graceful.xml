@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure Jetty to finish existing requests on STOP.            -->
+<!--                                                                 -->
+<!-- This is inspired by the "official" Jetty 12 graceful module,    -->
+<!-- adapted to use StatisticsHandler for Jetty 10 and 11.           -->
+<!--                                                                 -->
+<!-- IF THIS IS MODIFIED, JettySolrRunner MUST BE MODIFIED!          -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="GracefulHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler">
+        <Set name="gracefulShutdownWaitsForRequests">true</Set>
+      </New>
+    </Arg>
+  </Call>
+  <Set name="stopTimeout"><Property name="solr.jetty.stop.timeout" default="15000"/></Set>
+</Configure>
