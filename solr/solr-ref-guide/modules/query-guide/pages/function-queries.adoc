@@ -447,6 +447,17 @@ In these cases, an appropriate `map()` function could be used as a workaround to
 * `scale(x, minTarget, maxTarget)`
 * `scale(x,1,2)`: scales the values of x such that all values will be between 1 and 2 inclusive.
 
+=== score Function
+Returns the score of the current document.
+
+The function can only be used in a few specific ways - see examples below for what is currently supported.
+
+*Syntax Examples*
+
+* `fl=*,score,score_plus_one:add(1,score())`: a xref:common-query-parameters.adoc#functions-with-fl[pseudo-field] that computes the field value based on the document score,
+* `fq={!frange cache=false l=4}score()`: a xref:common-query-parameters.adoc#cache-local-parameter[post filter] that filters the hits based on their score,
+* `q={!boost b=if(gte(score(),10),2,1)}solrrocks`: a boost query that determines the boost factor from the document score produced by the underlying query.
+
 === sqedist Function
 The Square Euclidean distance calculates the 2-norm (Euclidean distance) but does not take the square root, thus saving a fairly expensive operation.
 It is often the case that applications that care about Euclidean distance do not need the actual distance, but instead can use the square of the distance.

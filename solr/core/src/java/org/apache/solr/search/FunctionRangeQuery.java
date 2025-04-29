@@ -25,6 +25,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.common.SolrException;
@@ -68,6 +69,14 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
     public FunctionRangeCollector(Map<Object, Object> fcontext, Weight weight) {
       this.fcontext = fcontext;
       this.weight = weight;
+      // It would make sense to put this.scorer into the context,
+      // so that the context can be consumed in the call to
+      // doSetNextReader. But this.scorer is null, and will only be
+      // set at a later point by DelegatingCollector#setScorer
+      // (which happens *after* the call to doSetNextReader).
+      // So instead of using this.scorer directly, we wrap this collector
+      // as scorable - to work around the late initialization of this.scorer.
+      this.fcontext.put("scorer", new DelegatingCollectorWrapper(this));
     }
 
     @Override
@@ -112,5 +121,27 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
   @Override
   public int hashCode() {
     return 31 * classHash() + rangeFilt.hashCode();
+  }
+
+  private static class DelegatingCollectorWrapper extends Scorable {
+    private final DelegatingCollector collector;
+
+    DelegatingCollectorWrapper(DelegatingCollector collector) {
+      this.collector = collector;
+    }
+
+    @Override
+    public float score() throws IOException {
+      assert collector.scorer != null
+          : "scorer must first be set via DelegatingCollector#setScorer";
+      return collector.scorer.score();
+    }
+
+    @Override
+    public int docID() {
+      assert collector.scorer != null
+          : "scorer must first be set via DelegatingCollector#setScorer";
+      return collector.scorer.docID();
+    }
   }
 }
