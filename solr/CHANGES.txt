@@ -231,6 +231,8 @@ Improvements
 
 * SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
 
+* SOLR-17744: Solr now enables Jetty's Graceful Shutdown features to prevent client connections from being abruptly terminated on orderly shutdown (hossman)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
