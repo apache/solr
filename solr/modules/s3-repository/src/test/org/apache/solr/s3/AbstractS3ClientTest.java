@@ -40,7 +40,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
       S3MockRule.builder().withInitialBuckets(BUCKET_NAME).build();
 
   S3StorageClient client;
-  protected SocketProxy proxy;
+  private SocketProxy proxy;
 
   @Before
   public void setUpClient() throws Exception {
@@ -49,6 +49,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
     setS3ConfFile();
 
+    // We are using a proxy in front of S3Mock to be able to test connection loss
     proxy = new SocketProxy();
     proxy.open(URI.create("http://localhost:" + S3_MOCK_RULE.getHttpPort()));
     client =
@@ -95,5 +96,14 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
     } catch (IOException e) {
       throw new S3Exception(e);
     }
+  }
+
+  /**
+   * Test a connection loss in S3. This will close the existing connections receiving socket, while
+   * keeping S3 open to new connections. This affects all connections open to S3 at the time of
+   * calling.
+   */
+  void initiateS3ConnectionLoss() {
+    proxy.halfClose();
   }
 }

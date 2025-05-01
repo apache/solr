@@ -22,6 +22,8 @@ import com.carrotsearch.randomizedtesting.generators.RandomBytes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import org.apache.solr.common.util.ResumableInputStream;
+import org.apache.solr.util.LogListener;
 import org.junit.Test;
 
 /** Basic test that write data and read them through the S3 client. */
@@ -112,20 +114,31 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
     int numBytes = 10_000_000;
     pushContent(key, RandomBytes.randomBytesOfLength(random(), numBytes));
 
-    int numExceptions = 10;
+    int numExceptions = 5;
     int bytesPerException = numBytes / numExceptions;
     // Check we can re-read same content
-    try (InputStream input = client.pullStream(key)) {
-      long byteCount = 0;
-      while (input.read() != -1) {
-        byteCount++;
-        if ((byteCount % bytesPerException == bytesPerException / 2)) {
-          // Initiate a connection loss
-          proxy.close();
-          proxy.reopen();
+
+    try (LogListener logListener = LogListener.warn(ResumableInputStream.class)) {
+      try (InputStream input = client.pullStream(key)) {
+        long byteCount = 0;
+        while (input.read() != -1) {
+          byteCount++;
+          // Initiate a connection loss at the beginning of every "bytesPerException" cycle.
+          // The input stream will not immediately see an error, it will have pre-loaded some data.
+          if ((byteCount % bytesPerException == 0)) {
+            initiateS3ConnectionLoss();
+          }
         }
+        assertEquals("Wrong amount of data found from InputStream", numBytes, byteCount);
       }
-      assertEquals("Wrong amount of data found from InputStream", numBytes, byteCount);
+      // We just need to ensure we saw at least one IOException
+      assertNotEquals(
+          "There was no logging of an IOException that caused the InputStream to be resumed",
+          0,
+          logListener.getCount());
+      // LogListener will fail because we haven't polled for each warning.
+      // Just clear the queue instead, we only care that the queue is not empty.
+      logListener.getQueue().clear();
     }
   }
 }
