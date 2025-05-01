@@ -233,7 +233,7 @@ Improvements
 
 * SOLR-17744: Solr now enables Jetty's Graceful Shutdown features to prevent client connections from being abruptly terminated on orderly shutdown (hossman)
 
-* SOLR-17750: S3 File downloads now handle connection issues more gracefully (Houston Putman)
+* SOLR-17750: S3 File downloads now handle connection issues more gracefully (Houston Putman, Mark Miller)
 
 Optimizations
 ---------------------

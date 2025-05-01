@@ -19,7 +19,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,10 +31,9 @@ public class ResumableInputStream extends InputStream {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final long contentLength;
   private long bytesRead;
   private long markedBytesRead;
-  private final BiFunction<Long, Long, InputStream> nextInputStreamSupplier;
+  private final Function<Long, InputStream> nextInputStreamSupplier;
   private InputStream delegate;
 
   /**
@@ -43,17 +42,15 @@ public class ResumableInputStream extends InputStream {
    * @param delegate The original {@link InputStream} that will be used as a delegate
    * @param contentLength The full length of the content being read.
    * @param nextInputStreamSupplier A function to create the next InputStream given the number of
-   *     bytes already read and the total content length of the input. These inputs can, for
-   *     example, be used to populate the <a
+   *     bytes already read. These inputs can, for example, be used to populate the <a
    *     href="https://www.rfc-editor.org/rfc/rfc9110.html#name-range">HTTP Range header</a>.
    */
   public ResumableInputStream(
       InputStream delegate,
       long contentLength,
-      BiFunction<Long, Long, InputStream> nextInputStreamSupplier) {
+      Function<Long, InputStream> nextInputStreamSupplier) {
     this.delegate = delegate;
     this.nextInputStreamSupplier = nextInputStreamSupplier;
-    this.contentLength = contentLength;
     bytesRead = 0;
     markedBytesRead = 0;
   }
@@ -65,12 +62,14 @@ public class ResumableInputStream extends InputStream {
 
   public int read(boolean isRetry) throws IOException {
     if (delegate == null) {
-      delegate = nextInputStreamSupplier.apply(bytesRead, contentLength);
+      delegate = nextInputStreamSupplier.apply(bytesRead);
     }
     int val;
     try {
       val = delegate.read();
-      bytesRead += 1;
+      if (val >= 0) {
+        bytesRead += 1;
+      }
     } catch (IOException e) {
       // Only retry once on a single read
       if (isRetry) {
@@ -85,6 +84,34 @@ public class ResumableInputStream extends InputStream {
   }
 
   @Override
+  public int read(byte[] b, int off, int len) throws IOException {
+    return read(b, off, len, false);
+  }
+
+  public int read(byte[] b, int off, int len, boolean isRetry) throws IOException {
+    if (delegate == null) {
+      delegate = nextInputStreamSupplier.apply(bytesRead);
+    }
+    int readLen;
+    try {
+      readLen = delegate.read(b, off, len);
+      if (len >= 0) {
+        bytesRead += readLen;
+      }
+    } catch (IOException e) {
+      // Only retry once on a single read
+      if (isRetry) {
+        throw e;
+      }
+      log.warn(
+          "Exception thrown while consuming InputStream, retrying from byte: {}", bytesRead, e);
+      resetInputStream();
+      readLen = read(b, off, len, true);
+    }
+    return readLen;
+  }
+
+  @Override
   public boolean markSupported() {
     return true;
   }
@@ -95,8 +122,8 @@ public class ResumableInputStream extends InputStream {
   }
 
   @Override
-  public int available() {
-    return (int) (contentLength - bytesRead);
+  public int available() throws IOException {
+    return delegate.available();
   }
 
   @Override

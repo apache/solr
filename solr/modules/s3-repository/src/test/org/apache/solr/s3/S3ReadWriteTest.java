@@ -118,14 +118,32 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
     int bytesPerException = numBytes / numExceptions;
     // Check we can re-read same content
 
+    int maxBuffer = 100;
+    byte[] buffer = new byte[maxBuffer];
+    boolean done = false;
     try (LogListener logListener = LogListener.warn(ResumableInputStream.class)) {
       try (InputStream input = client.pullStream(key)) {
         long byteCount = 0;
-        while (input.read() != -1) {
-          byteCount++;
+        while (!done) {
+          // test both read() and read(buffer, off, len)
+          if (random().nextBoolean()) {
+            done = input.read() == -1;
+            if (!done) {
+              byteCount++;
+            }
+          } else {
+            int readLen = input.read(buffer, 0, random().nextInt(maxBuffer) + 1);
+            done = readLen < 0;
+            if (readLen > 0) {
+              byteCount += readLen;
+            } else {
+              // We are done when readLen = -1
+              done = true;
+            }
+          }
           // Initiate a connection loss at the beginning of every "bytesPerException" cycle.
           // The input stream will not immediately see an error, it will have pre-loaded some data.
-          if ((byteCount % bytesPerException == 0)) {
+          if ((byteCount % bytesPerException <= maxBuffer)) {
             initiateS3ConnectionLoss();
           }
         }

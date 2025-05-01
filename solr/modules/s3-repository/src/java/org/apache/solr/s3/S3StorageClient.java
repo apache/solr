@@ -387,10 +387,9 @@ public class S3StorageClient {
                   new ResumableInputStream(
                       inputStream,
                       response.contentLength(),
-                      (bytesRead, contentLength) -> {
+                      bytesRead -> {
                         if (bytesRead > 0) {
-                          getBuilder.range(
-                              String.format(Locale.ROOT, "bytes=%d-%d", bytesRead, contentLength));
+                          getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
                         }
                         return s3Client.getObject(getBuilder.build());
                       })));
