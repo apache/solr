@@ -388,7 +388,7 @@ public class S3StorageClient {
                 return new ResumableInputStream(
                     inputStream,
                     bytesRead -> {
-                      if (bytesRead > contentLength) {
+                      if (contentLength > 0 && bytesRead >= contentLength) {
                         // No more bytes to read
                         return null;
                       } else if (bytesRead > 0) {
