@@ -156,7 +156,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
           logListener.getCount());
       // LogListener will fail because we haven't polled for each warning.
       // Just clear the queue instead, we only care that the queue is not empty.
-      logListener.getQueue().clear();
+      logListener.clearQueue();
     }
   }
 }
