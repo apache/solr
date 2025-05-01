@@ -40,15 +40,12 @@ public class ResumableInputStream extends InputStream {
    * Create a new ResumableInputStream
    *
    * @param delegate The original {@link InputStream} that will be used as a delegate
-   * @param contentLength The full length of the content being read.
    * @param nextInputStreamSupplier A function to create the next InputStream given the number of
    *     bytes already read. These inputs can, for example, be used to populate the <a
    *     href="https://www.rfc-editor.org/rfc/rfc9110.html#name-range">HTTP Range header</a>.
    */
   public ResumableInputStream(
-      InputStream delegate,
-      long contentLength,
-      Function<Long, InputStream> nextInputStreamSupplier) {
+      InputStream delegate, Function<Long, InputStream> nextInputStreamSupplier) {
     this.delegate = delegate;
     this.nextInputStreamSupplier = nextInputStreamSupplier;
     bytesRead = 0;
