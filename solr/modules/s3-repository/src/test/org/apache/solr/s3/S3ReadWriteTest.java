@@ -18,6 +18,8 @@ package org.apache.solr.s3;
 
 import static org.hamcrest.Matchers.containsString;
 
+import com.carrotsearch.randomizedtesting.generators.RandomBytes;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.Test;
@@ -100,5 +102,30 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   public void testNotFound() {
     assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
     assertThrows(S3NotFoundException.class, () -> client.length("/not-found"));
+  }
+
+  /** Check that a read can succeed even with Connection Loss. */
+  @Test
+  public void testReadWithConnectionLoss() throws IOException {
+    String key = "flush-very-large";
+
+    int numBytes = 10_000_000;
+    pushContent(key, RandomBytes.randomBytesOfLength(random(), numBytes));
+
+    int numExceptions = 10;
+    int bytesPerException = numBytes / numExceptions;
+    // Check we can re-read same content
+    try (InputStream input = client.pullStream(key)) {
+      long byteCount = 0;
+      while (input.read() != -1) {
+        byteCount++;
+        if ((byteCount % bytesPerException == bytesPerException / 2)) {
+          // Initiate a connection loss
+          proxy.close();
+          proxy.reopen();
+        }
+      }
+      assertEquals("Wrong amount of data found from InputStream", numBytes, byteCount);
+    }
   }
 }

@@ -31,6 +31,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.solr.common.util.ResumableInputStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
 import software.amazon.awssdk.regions.Region;
@@ -53,6 +55,7 @@ import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
 import software.amazon.awssdk.services.s3.model.DeletedObject;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -374,8 +377,23 @@ public class S3StorageClient {
     final String s3Path = sanitizedFilePath(path);
 
     try {
+      GetObjectRequest.Builder getBuilder =
+          GetObjectRequest.builder().bucket(bucketName).key(s3Path);
       // This InputStream instance needs to be closed by the caller
-      return s3Client.getObject(b -> b.bucket(bucketName).key(s3Path));
+      return s3Client.getObject(
+          getBuilder.build(),
+          ResponseTransformer.unmanaged(
+              (response, inputStream) ->
+                  new ResumableInputStream(
+                      inputStream,
+                      response.contentLength(),
+                      (bytesRead, contentLength) -> {
+                        if (bytesRead > 0) {
+                          getBuilder.range(
+                              String.format(Locale.ROOT, "bytes=%d-%d", bytesRead, contentLength));
+                        }
+                        return s3Client.getObject(getBuilder.build());
+                      })));
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
