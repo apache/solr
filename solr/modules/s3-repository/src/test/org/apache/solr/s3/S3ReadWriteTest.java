@@ -133,7 +133,6 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
             }
           } else {
             int readLen = input.read(buffer, 0, random().nextInt(maxBuffer) + 1);
-            done = readLen < 0;
             if (readLen > 0) {
               byteCount += readLen;
             } else {

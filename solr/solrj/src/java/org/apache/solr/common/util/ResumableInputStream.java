@@ -92,7 +92,7 @@ public class ResumableInputStream extends InputStream {
     int readLen;
     try {
       readLen = delegate.read(b, off, len);
-      if (len >= 0) {
+      if (readLen >= 0) {
         bytesRead += readLen;
       }
     } catch (IOException e) {
