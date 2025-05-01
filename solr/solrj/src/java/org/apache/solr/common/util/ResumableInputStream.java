@@ -42,7 +42,9 @@ public class ResumableInputStream extends InputStream {
    * @param delegate The original {@link InputStream} that will be used as a delegate
    * @param nextInputStreamSupplier A function to create the next InputStream given the number of
    *     bytes already read. These inputs can, for example, be used to populate the <a
-   *     href="https://www.rfc-editor.org/rfc/rfc9110.html#name-range">HTTP Range header</a>.
+   *     href="https://www.rfc-editor.org/rfc/rfc9110.html#name-range">HTTP Range header</a>. If an
+   *     unsupported input is provided (more bytes than exist), then a <code>null</code> {@link
+   *     InputStream} should be returned.
    */
   public ResumableInputStream(
       InputStream delegate, Function<Long, InputStream> nextInputStreamSupplier) {
@@ -52,15 +54,17 @@ public class ResumableInputStream extends InputStream {
     markedBytesRead = 0;
   }
 
+  /**
+   * If an IOException is thrown by the delegate while reading, the delegate will be recreated and
+   * the read will be retried once during this read call.
+   */
   @Override
   public int read() throws IOException {
     return read(false);
   }
 
   public int read(boolean isRetry) throws IOException {
-    if (delegate == null) {
-      delegate = nextInputStreamSupplier.apply(bytesRead);
-    }
+    checkAndRefreshDelegate();
     int val;
     try {
       val = delegate.read();
@@ -74,21 +78,23 @@ public class ResumableInputStream extends InputStream {
       }
       log.warn(
           "Exception thrown while consuming InputStream, retrying from byte: {}", bytesRead, e);
-      resetInputStream();
+      closeDelegate();
       val = read(true);
     }
     return val;
   }
 
+  /**
+   * If an IOException is thrown by the delegate while reading, the delegate will be recreated and
+   * the read will be retried once during this read call.
+   */
   @Override
   public int read(byte[] b, int off, int len) throws IOException {
     return read(b, off, len, false);
   }
 
   public int read(byte[] b, int off, int len, boolean isRetry) throws IOException {
-    if (delegate == null) {
-      delegate = nextInputStreamSupplier.apply(bytesRead);
-    }
+    checkAndRefreshDelegate();
     int readLen;
     try {
       readLen = delegate.read(b, off, len);
@@ -102,10 +108,40 @@ public class ResumableInputStream extends InputStream {
       }
       log.warn(
           "Exception thrown while consuming InputStream, retrying from byte: {}", bytesRead, e);
-      resetInputStream();
+      closeDelegate();
       readLen = read(b, off, len, true);
     }
     return readLen;
+  }
+
+  /**
+   * If an IOException is thrown by the delegate while skipping, the delegate will be recreated from
+   * the position being skipped to and the return value will be <code>n</code>. This may be longer
+   * than the remaining number of bytes, and if so the delegate will be set to a NullInputStream.
+   */
+  @Override
+  public long skip(final long n) throws IOException {
+    checkAndRefreshDelegate();
+    long skippedBytes;
+    try {
+      skippedBytes = delegate.skip(n);
+      bytesRead += skippedBytes;
+    } catch (IOException e) {
+      closeDelegate();
+
+      // Go ahead and skip the bytes before refreshing the delegate. Tell the caller we skipped n
+      // bytes, even though we don't know if that many bytes actually exist.
+      // This might be more than exist, and if so, the delegate will be set to a NullInputStream
+      bytesRead += n;
+      log.warn(
+          "Exception thrown while skipping {} bytes in InputStream, resuming at byte: {}",
+          n,
+          bytesRead,
+          e);
+      checkAndRefreshDelegate();
+      skippedBytes = n;
+    }
+    return skippedBytes;
   }
 
   @Override
@@ -120,13 +156,14 @@ public class ResumableInputStream extends InputStream {
 
   @Override
   public int available() throws IOException {
+    checkAndRefreshDelegate();
     return delegate.available();
   }
 
   @Override
   public void reset() {
     bytesRead = markedBytesRead;
-    resetInputStream();
+    closeDelegate();
   }
 
   @Override
@@ -136,8 +173,18 @@ public class ResumableInputStream extends InputStream {
     }
   }
 
-  private void resetInputStream() {
+  private void closeDelegate() {
     IOUtils.closeQuietly(delegate);
     delegate = null;
+  }
+
+  private void checkAndRefreshDelegate() {
+    if (delegate == null) {
+      delegate = nextInputStreamSupplier.apply(bytesRead);
+      // The supplier returning null tells us there is nothing else to read
+      if (delegate == null) {
+        delegate = InputStream.nullInputStream();
+      }
+    }
   }
 }

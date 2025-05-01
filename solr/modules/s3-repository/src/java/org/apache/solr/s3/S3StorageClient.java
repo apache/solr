@@ -383,15 +383,20 @@ public class S3StorageClient {
       return s3Client.getObject(
           getBuilder.build(),
           ResponseTransformer.unmanaged(
-              (response, inputStream) ->
-                  new ResumableInputStream(
-                      inputStream,
-                      bytesRead -> {
-                        if (bytesRead > 0) {
-                          getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
-                        }
-                        return s3Client.getObject(getBuilder.build());
-                      })));
+              (response, inputStream) -> {
+                final long contentLength = response.contentLength();
+                return new ResumableInputStream(
+                    inputStream,
+                    bytesRead -> {
+                      if (bytesRead > contentLength) {
+                        // No more bytes to read
+                        return null;
+                      } else if (bytesRead > 0) {
+                        getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
+                      }
+                      return s3Client.getObject(getBuilder.build());
+                    });
+              }));
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }

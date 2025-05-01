@@ -111,10 +111,10 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   public void testReadWithConnectionLoss() throws IOException {
     String key = "flush-very-large";
 
-    int numBytes = 10_000_000;
+    int numBytes = 20_000_000;
     pushContent(key, RandomBytes.randomBytesOfLength(random(), numBytes));
 
-    int numExceptions = 5;
+    int numExceptions = 20;
     int bytesPerException = numBytes / numExceptions;
     // Check we can re-read same content
 
@@ -125,20 +125,45 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
       try (InputStream input = client.pullStream(key)) {
         long byteCount = 0;
         while (!done) {
+          // Use the same number of bytes no matter which method we are testing
+          int numBytesToRead = random().nextInt(maxBuffer) + 1;
           // test both read() and read(buffer, off, len)
-          if (random().nextBoolean()) {
-            done = input.read() == -1;
-            if (!done) {
-              byteCount++;
-            }
-          } else {
-            int readLen = input.read(buffer, 0, random().nextInt(maxBuffer) + 1);
-            if (readLen > 0) {
-              byteCount += readLen;
-            } else {
-              // We are done when readLen = -1
-              done = true;
-            }
+          switch (random().nextInt(3)) {
+              // read()
+            case 0:
+              {
+                for (int i = 0; i < numBytesToRead && !done; i++) {
+                  done = input.read() == -1;
+                  if (!done) {
+                    byteCount++;
+                  }
+                }
+              }
+              break;
+              // read(byte, off, len)
+            case 1:
+              {
+                int readLen = input.read(buffer, 0, numBytesToRead);
+                if (readLen > 0) {
+                  byteCount += readLen;
+                } else {
+                  // We are done when readLen = -1
+                  done = true;
+                }
+              }
+              break;
+              // skip(len)
+            case 2:
+              {
+                // We only want to skip 1 because
+                long bytesSkipped = input.skip(numBytesToRead);
+                byteCount += bytesSkipped;
+                if (bytesSkipped < numBytesToRead) {
+                  // We are done when no bytes are skipped
+                  done = true;
+                }
+              }
+              break;
           }
           // Initiate a connection loss at the beginning of every "bytesPerException" cycle.
           // The input stream will not immediately see an error, it will have pre-loaded some data.
