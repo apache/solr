@@ -61,7 +61,7 @@ public class SolrReturnFields extends ReturnFields {
 
   // Field names that are OK to include in the response.
   // This will include pseudo fields, lucene fields, and matching globs
-  private Set<String> okFieldNames = new HashSet<>();
+  private final Set<String> okFieldNames = new HashSet<>();
 
   // The list of explicitly requested fields
   // Order is important for CSVResponseWriter
@@ -547,6 +547,12 @@ public class SolrReturnFields extends ReturnFields {
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new MatchScoreAugmenter(disp));
       scoreDependentFields.put(disp, disp.equals(MATCH_SCORE) ? "" : MATCH_SCORE);
+    } else if (key != null && isPseudoField) {
+      // SOLR-15030: a pseudo-field based on the function query may need scores,
+      // so we consider all pseudo-fields as potentially requiring scores.
+      // At the same time, we don't set _wantScore = true because the field
+      // list must explicitly include 'score' field to enable scores
+      scoreDependentFields.put(key, "");
     }
   }
 
@@ -608,7 +614,7 @@ public class SolrReturnFields extends ReturnFields {
 
   @Override
   public Map<String, String> getScoreDependentReturnFields() {
-    return scoreDependentFields;
+    return _wantsScore ? scoreDependentFields : Map.of();
   }
 
   @Override
