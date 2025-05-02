@@ -42,6 +42,34 @@ bin/solr create -c buzz
 ----
 
 
+=== Placeholder section with draft content
+
+terminology? -- transparent? explainable? interpretable? -- why did this document (not) match? why did this document get this score? why did document X score higher than document Y?
+
+Somewhat == can explain why document got the score but can less so explain why the term weights are what they are
+
+
+[cols=",,",options="header",]
+|===
+|Approach                        |transparent w.r.t. match |term expansion |term weights |transparent w.r.t. score |Large Language Model involved
+|?lexical?                       |Yes                      |No             |No           |Yes                      |No
+|?lexical? with curated synonyms |Yes                      |Yes            |if curated   |Yes                      |No
+|learned sparse                  |Yes                      |Yes            |learned      |Somewhat                 |Yes
+|dense vector                    |No                       |n/a            |n/a          |No                       |Yes
+|===
+
+terminology? -- value? weight? score? something else?
+
+[cols=",,",options="header",]
+|===
+|Approach                            |Value Indexed |Value Retrievable |Value Storage Precision |Extra(?) data structure since not internally encoded as term frequency
+|raw term frequency similarity field |Yes           |Yes               |Y                       |N
+|payloaded fields                    |Yes           |Yes               |Y                       |Y
+|(plain) rank fields                 |Yes           |No                |No                      |N
+|(opaque) rank fields                |Yes           |No                |No                      |N
+|===
+
+
 === Indexing
 
 ...
