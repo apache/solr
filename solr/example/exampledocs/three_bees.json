@@ -7,8 +7,7 @@
     "bee_rank" : "0.3",
     "lsr_term2" : "0.3",
     "bumble_rank" : "0.2",
-    "lsr_term3" : "0.2",
-    "text_rank" : "100"
+    "lsr_term3" : "0.2"
   }
 ,
   {
@@ -21,8 +20,7 @@
     "honey_rank" : "0.2",
     "lsr_term6" : "0.2",
     "sugar_rank" : "0.1",
-    "lsr_term9" : "0.1",
-    "text_rank" : "10000"
+    "lsr_term9" : "0.1"
   }
 ,
   {
@@ -35,7 +33,6 @@
     "solitary_rank" : "0.2",
     "lsr_term8_" : "0.2",
     "alone_rank" : "0.1",
-    "lsr_term1" : "0.1",
-    "text_rank" : "1"
+    "lsr_term1" : "0.1"
   }
 ]
