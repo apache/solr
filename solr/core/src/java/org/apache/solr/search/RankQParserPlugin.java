@@ -78,8 +78,7 @@ public class RankQParserPlugin extends QParserPlugin {
       public Query createQuery(String fieldName, SolrParams params) throws SyntaxError {
         float weight = params.getFloat(WEIGHT, 1f);
         try {
-          return FeatureField.newLinearQuery(
-              RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight);
+          return FeatureField.newLinearQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight);
         } catch (IllegalArgumentException iae) {
           throw new SyntaxError(iae.getMessage());
         }

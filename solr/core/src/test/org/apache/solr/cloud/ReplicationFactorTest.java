@@ -37,7 +37,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -267,8 +266,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   protected void sendNonDirectUpdateRequestReplica(
       Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    try (SolrClient solrServer = getHttpSolrClient(zkProps.getBaseUrl(), collection)) {
+    try (SolrClient solrServer = getHttpSolrClient(replica.getBaseUrl(), collection)) {
       NamedList<?> resp = solrServer.request(up);
       NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
       Integer batchRf = (Integer) hdr.get(UpdateRequest.REPFACT);

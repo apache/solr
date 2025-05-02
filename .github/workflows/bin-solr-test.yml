@@ -34,7 +34,7 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
@@ -46,7 +46,7 @@ jobs:
       run: ./gradlew integrationTests
     - name: Archive logs
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: logs
         path: solr/packaging/build/test-output

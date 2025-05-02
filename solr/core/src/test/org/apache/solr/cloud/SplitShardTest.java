@@ -390,6 +390,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         (s, replica) -> {
           if (replica.getNodeName().equals(jetty.getNodeName())
               && !replica.isLeader()
+              && replica.getState().equals(Replica.State.ACTIVE)
               && set.contains(replica.shard)) {
             set.remove(replica.shard);
           }

@@ -69,6 +69,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
@@ -382,6 +383,9 @@ public class SolrConfig implements MapSerializable {
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
       addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
+      if (addHttpRequestToContext) {
+        DeprecationLog.log("addHttpRequestToContext", "addHttpRequestToContext is deprecated");
+      }
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
