@@ -1,10 +1,12 @@
 package org.apache.solr.handler.component;
 
+import com.carrotsearch.hppc.ObjectIntHashMap;
+import com.carrotsearch.hppc.ObjectIntMap;
+import com.carrotsearch.hppc.cursors.ObjectIntCursor;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +35,8 @@ class SlowNodeDetector implements SolrMetricProducer {
   /**
    * @param latencyDropRatioThreshold identify as a latency drop point when current latency is < 0.5
    *     of previous
-   * @param maxSlowResponsePercentage If more than this percentage of potential slow nodes detected,
-   *     do not return any slow node at all
+   * @param maxSlowResponsePercentage Only up to this percentage of responses can be considered
+   *     "slow". The rest of the responses are considered "normal"
    * @param minShardCountPerRequest minimum number of shards per Shard Request to be considered for
    *     slow node detection
    * @param slowLatencyThreshold minimum latency in millisec to be considered as slow node
@@ -72,16 +74,20 @@ class SlowNodeDetector implements SolrMetricProducer {
   }
 
   void notifyRequestStats(RequestStats stats) {
-    Set<String> newSlowNodes = computeSlowNodes(stats);
+    ComputeResult computeResult = computeSlowNodes(stats);
+    ;
 
-    if (newSlowNodes != null) {
-      for (String slowNode : newSlowNodes) {
+    if (computeResult != null) {
+      for (String slowNode : computeResult.newSlowNodes) {
         slowNodes.put(slowNode, Boolean.TRUE);
+      }
+      for (String purgingSlowNode : computeResult.recoveredSlowNodes) {
+        slowNodes.remove(purgingSlowNode);
       }
     }
   }
 
-  private Set<String> computeSlowNodes(RequestStats stats) {
+  private ComputeResult computeSlowNodes(RequestStats stats) {
     if (stats.responseLatencies.size() < minShardCountPerRequest) {
       return null; // not enough responses to make a decision
     }
@@ -98,13 +104,13 @@ class SlowNodeDetector implements SolrMetricProducer {
 
     Long previousLatency = null;
     boolean foundLatencyDrop = false;
-    Map<String, Integer> iteratedResponseCountByNode = new HashMap<>();
+    ObjectIntMap<String> iteratedResponseCountByNode = new ObjectIntHashMap<>();
 
+    // iterate response to find slow nodes
     int index = 0;
     for (RequestStats.NodeLatency current : stats.responseLatencies) {
-      if (index++
-          > maxSlowResponseCount) { // too many potential slow responses, not a good data as we
-        // assume they are minority
+      if (index++ > maxSlowResponseCount) {
+        // too many potential slow responses, not a good data as we assume they are minority
         break;
       }
       if (previousLatency != null
@@ -125,30 +131,82 @@ class SlowNodeDetector implements SolrMetricProducer {
       }
 
       previousLatency = current.latency;
-      iteratedResponseCountByNode.compute(current.node, (k, v) -> v == null ? 1 : v + 1);
+      iteratedResponseCountByNode.putOrAdd(current.node, 1, 1);
     }
 
     Set<String> slowNodes = new HashSet<>();
-    if (foundLatencyDrop) { // then that means there are some nodes that are significantly slower
-      // than others
-      for (Map.Entry<String, Integer> nodeWithSlowResponseCount :
-          iteratedResponseCountByNode.entrySet()) {
-        String potentialSlowNode = nodeWithSlowResponseCount.getKey();
+    if (foundLatencyDrop) {
+      // then that means there are some nodes that are significantly slower than others
+      for (ObjectIntCursor<String> nodeWithSlowResponseCount : iteratedResponseCountByNode) {
+        String potentialSlowNode = nodeWithSlowResponseCount.key;
 
-        // all responses of this node is slow, it is a slow node
-        if (nodeWithSlowResponseCount
-            .getValue()
-            .equals(stats.responseCountByNode.get(potentialSlowNode))) {
+        if (nodeWithSlowResponseCount.value
+            == stats.responseCountByNode.getOrDefault(potentialSlowNode, 0)) {
+          // all responses of this node is slow, it is a slow node
           slowNodes.add(potentialSlowNode);
         }
       }
     }
 
-    if (log.isInfoEnabled() && !slowNodes.isEmpty()) {
-      log.info("Slow nodes detected: {}", slowNodes);
+    // find previous slow nodes that might have recovered
+    Set<String> recoveredNodes = new HashSet<>();
+    Set<String> recoveredSlowNodeCandidates = new HashSet<>(this.slowNodes.keySet());
+    recoveredSlowNodeCandidates.removeAll(slowNodes);
+
+    if (!recoveredSlowNodeCandidates.isEmpty()) {
+      // the threshold for sorted response to be considered as normal latency
+      int normalNodeResponseCount = stats.responseLatencies.size() - maxSlowResponseCount;
+      iteratedResponseCountByNode.clear();
+      for (int i = stats.responseLatencies.size() - 1; i >= normalNodeResponseCount; i--) {
+        RequestStats.NodeLatency latency = stats.responseLatencies.get(i);
+        if (!recoveredSlowNodeCandidates.contains(latency.node)) {
+          continue;
+        }
+        iteratedResponseCountByNode.putOrAdd(latency.node, 1, 1);
+      }
+
+      // if the all responses of such node are considered normal, then consider the node as
+      // recovered
+      for (ObjectIntCursor<String> nodeWithNormalResponseCount : iteratedResponseCountByNode) {
+        String potentialRecoveredNode = nodeWithNormalResponseCount.key;
+
+        if (nodeWithNormalResponseCount.value
+            == stats.responseCountByNode.getOrDefault(potentialRecoveredNode, 0)) {
+          recoveredNodes.add(potentialRecoveredNode);
+        }
+      }
     }
 
-    return slowNodes;
+    ComputeResult result = null;
+    if (!slowNodes.isEmpty() || !recoveredNodes.isEmpty()) {
+      result = new ComputeResult(slowNodes, recoveredNodes);
+    }
+
+    if (log.isInfoEnabled() && result != null) {
+      log.info("Slow nodes compute result: {}", result);
+    }
+
+    return result;
+  }
+
+  private static class ComputeResult {
+    Set<String> newSlowNodes;
+    Set<String> recoveredSlowNodes; // previously slow nodes that are no longer slow
+
+    ComputeResult(Set<String> newSlowNodes, Set<String> recoveredSlowNodes) {
+      this.newSlowNodes = newSlowNodes;
+      this.recoveredSlowNodes = recoveredSlowNodes;
+    }
+
+    @Override
+    public String toString() {
+      return "ComputeResult{"
+          + "newSlowNodes="
+          + newSlowNodes
+          + ", recoveredSlowNodes="
+          + recoveredSlowNodes
+          + '}';
+    }
   }
 
   @Override

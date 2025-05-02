@@ -220,6 +220,48 @@ public class TestTimeLimitingShardHandler extends SolrTestCaseJ4 {
     }
   }
 
+  /**
+   * This ensures previous detected slow nodes, if recovered, should not be timeout nor stay in the
+   * slow node list
+   */
+  @Test
+  public void testExecutionRecoveredNodes() throws IOException {
+    List<String> shards = new ArrayList<>();
+    final int SHARD_COUNT = 512;
+    Map<String, Long> latenciesByShard = new HashMap<>();
+    for (int i = 0; i < SHARD_COUNT; i++) {
+      int serverIndex = (i / 8 + 1);
+      String shard =
+          "http://solr-" + serverIndex + ":8983/solr/coll_shard" + (i + 1) + "_replica_n" + (i + 1);
+      if (serverIndex == 10 || serverIndex == 11) { // 2 recovered nodes
+        latenciesByShard.put(shard, 1800L);
+      }
+      shards.add(shard);
+    }
+    try (TestFixture fixture =
+        buildTestFixture("solr-shardhandler-timelimited.xml", latenciesByShard, 2000)) {
+      org.apache.solr.handler.component.ShardHandler handler = fixture.factory.getShardHandler();
+      org.apache.solr.handler.component.ShardRequest sreq =
+          new org.apache.solr.handler.component.ShardRequest();
+      fixture.slowNodeDetector.setSlowNodes(
+          Set.of("solr-10:8983", "solr-11:8983")); // simulate slow nodes in previous run
+      sreq.params = new ModifiableSolrParams();
+      sreq.params.set(ShardParams.SHARDS_TOLERANT, true);
+      sreq.actualShards = shards.toArray(new String[0]);
+      for (String shard : shards) {
+        handler.submit(sreq, shard, new ModifiableSolrParams());
+      }
+
+      org.apache.solr.handler.component.ShardResponse response =
+          handler.takeCompletedIncludingErrors();
+      assertEquals(SHARD_COUNT, response.getShardRequest().responses.size());
+
+      assertNull(response.getException());
+      assertTrue(fixture.slowNodeDetector.getSlowNodes().isEmpty());
+      assertEquals(0, fixture.factory.cancelledSlowNodeRequests.getCount());
+    }
+  }
+
   /** This ensures slow node execution would NOT be affected if shards.tolerant is not true */
   @Test
   public void testExecutionSlowNodesNotShardsTolerant() throws IOException {
