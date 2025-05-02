@@ -76,7 +76,7 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
       // (which happens *after* the call to doSetNextReader).
       // So instead of using this.scorer directly, we wrap this collector
       // as scorable - to work around the late initialization of this.scorer.
-      this.fcontext.put("scorer", new DelegatingCollectorWrapper(this));
+      this.fcontext.put("scorer", new ScorableView(this));
     }
 
     @Override
@@ -123,10 +123,10 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
     return 31 * classHash() + rangeFilt.hashCode();
   }
 
-  private static class DelegatingCollectorWrapper extends Scorable {
+  private static class ScorableView extends Scorable {
     private final DelegatingCollector collector;
 
-    DelegatingCollectorWrapper(DelegatingCollector collector) {
+    ScorableView(DelegatingCollector collector) {
       this.collector = collector;
     }
 
