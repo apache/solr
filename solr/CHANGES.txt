@@ -23,7 +23,7 @@ New Features
 
 * SOLR-17678: ReRank queries can now return the matchScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
 
-* SSOLR-17447 : Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
+* SOLR-17447: Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
 
 * SOLR-17749: Added linear function support for RankField via RankQParserPlugin. (Christine Poerschke)
 
