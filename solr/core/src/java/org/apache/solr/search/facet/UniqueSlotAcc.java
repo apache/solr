@@ -27,7 +27,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.hll.HLL;
 
-abstract class UniqueSlotAcc extends SlotAcc {
+public abstract class UniqueSlotAcc extends SlotAcc {
   HLLAgg.HLLFactory factory;
   SchemaField field;
   FixedBitSet[] arr;
