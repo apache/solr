@@ -198,6 +198,7 @@ This can be any string, but is most often an HTML or XML tag.
 +
 If blank, then the stored text will be returned without any escaping/encoding performed by the highlighter.
 If set to `html` then special HTML/XML characters will be encoded (e.g., `&` becomes `\&amp;`).
+If set to `stripHTML` then special HTML/XML characters will be removed.
 The pre- and post-snippet characters are never encoded.
 
 `hl.maxAnalyzedChars`::
