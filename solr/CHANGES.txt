@@ -123,6 +123,8 @@ Deprecation Removals
 
 * SOLR-17683: Removed deprecated CurrencyField field type. (Eric Pugh)
 
+* SOLR-17738: Removed deprecated `transform()` from `DocTransformer`. (Abhishek Umarjikar, Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -203,7 +205,9 @@ New Features
 
 * SOLR-17678: ReRank queries can now return the matchScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
 
-* SSOLR-17447 : Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
+* SOLR-17447: Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
+
+* SOLR-17749: Added linear function support for RankField via RankQParserPlugin. (Christine Poerschke)
 
 Improvements
 ---------------------
@@ -228,6 +232,8 @@ Improvements
   neither 'Accept' or 'wt' are specified. (Jason Gerlowski)
 
 * SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
+
+* SOLR-17744: Solr now enables Jetty's Graceful Shutdown features to prevent client connections from being abruptly terminated on orderly shutdown (hossman)
 
 * SOLR-16951: Add PKI Auth Caching for both generation of the PKI Auth Tokens and validation of received tokens.
   The default PKI Auth validity TTL has been increased from 5 seconds to 10 seconds. (Houston Putman)
@@ -269,6 +275,10 @@ Bug Fixes
 * SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
 
 * SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
+
+* SOLR-17720: Fix rare deadlock in CollectionProperties internals.  (Aparna Suresh, Houston Putman)
+
+* SOLR-17638: Some CLI errors not logged when starting prometheus exporter (Alex Deparvu)
 
 Dependency Upgrades
 ---------------------
