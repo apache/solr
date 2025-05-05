@@ -53,10 +53,13 @@ public class CSVParser {
   // the token types
   /** Token has no valid content, i.e. is in its initialized state. */
   protected static final int TT_INVALID = -1;
+
   /** Token with content, at beginning or in the middle of a line. */
   protected static final int TT_TOKEN = 0;
+
   /** Token (which can have content) when end of file is reached. */
   protected static final int TT_EOF = 1;
+
   /** Token with content when end of a line is reached. */
   protected static final int TT_EORECORD = 2;
 
@@ -84,8 +87,10 @@ public class CSVParser {
   static class Token {
     /** Token type, see TT_xxx constants. */
     int type = TT_INVALID;
+
     /** The content buffer. */
     CharBuffer content = new CharBuffer(INITIAL_TOKEN_LENGTH);
+
     /** Token ready flag: indicates a valid token with content (ready for the parser). */
     boolean isReady;
 
@@ -212,7 +217,7 @@ public class CSVParser {
       }
     }
     if (!record.isEmpty()) {
-      ret = record.toArray(new String[record.size()]);
+      ret = record.toArray(new String[0]);
     }
     return ret;
   }

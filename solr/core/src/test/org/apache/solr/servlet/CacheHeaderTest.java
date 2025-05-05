@@ -16,12 +16,10 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
 import org.apache.http.Header;
@@ -30,7 +28,6 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,30 +36,29 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File solrHomeDirectory = createTempDir().toFile();
-    setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
-  }
+    System.setProperty("solr.enableRemoteStreaming", "true"); // needed for testCacheVetoHandler
 
-  @AfterClass
-  public static void afterTest() {}
+    Path solrHomeDirectory = createTempDir();
+    setupJettyTestHome(solrHomeDirectory, "collection1");
+    createAndStartJetty(solrHomeDirectory);
+  }
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 
   @Test
   public void testCacheVetoHandler() throws Exception {
-    File f = makeFile(CacheHeaderTest.CONTENTS, StandardCharsets.UTF_8.name());
+    Path f = makeFile(CacheHeaderTest.CONTENTS, StandardCharsets.UTF_8.name());
     HttpRequestBase m =
         getUpdateMethod(
             "GET",
             CommonParams.STREAM_FILE,
-            f.getCanonicalPath(),
+            f.toRealPath().toString(),
             CommonParams.STREAM_CONTENTTYPE,
             "text/csv");
     HttpResponse response = getHttpClient().execute(m);
     assertEquals(200, response.getStatusLine().getStatusCode());
     checkVetoHeaders(response, true);
-    Files.delete(f.toPath());
+    Files.delete(f);
   }
 
   @Test
@@ -269,12 +265,10 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     }
   }
 
-  protected File makeFile(String contents, String charset) {
+  protected Path makeFile(String contents, String charset) {
     try {
-      File f = createTempFile("cachetest", "csv").toFile();
-      try (Writer out = new OutputStreamWriter(new FileOutputStream(f), charset)) {
-        out.write(contents);
-      }
+      Path f = createTempFile("cachetest", "csv");
+      Files.writeString(f, contents, Charset.forName(charset));
       return f;
     } catch (Exception e) {
       throw new RuntimeException(e);

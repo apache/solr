@@ -19,24 +19,35 @@ package org.apache.solr.prometheus.collector;
 
 import io.prometheus.client.Collector;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MetricSamples {
 
   private final Map<String, Collector.MetricFamilySamples> samplesByMetricName;
 
+  private final Set<Collector.MetricFamilySamples.Sample> seenSamples;
+
   public MetricSamples(Map<String, Collector.MetricFamilySamples> input) {
     samplesByMetricName = input;
+    seenSamples = new HashSet<>();
+    for (Collector.MetricFamilySamples metricFamilySamples : input.values()) {
+      seenSamples.addAll(metricFamilySamples.samples);
+    }
   }
 
   public MetricSamples() {
     this(new HashMap<>());
   }
 
-  public void addSamplesIfNotPresent(String metricName, Collector.MetricFamilySamples samples) {
-    samplesByMetricName.putIfAbsent(metricName, samples);
+  public void addSamplesIfNotPresent(
+      String metricName, Collector.MetricFamilySamples metricFamilySamples) {
+    if (samplesByMetricName.putIfAbsent(metricName, metricFamilySamples) == null) {
+      seenSamples.addAll(metricFamilySamples.samples);
+    }
   }
 
   public void addSampleIfMetricExists(
@@ -47,7 +58,7 @@ public class MetricSamples {
       return;
     }
 
-    if (!sampleFamily.samples.contains(sample)) {
+    if (seenSamples.add(sample)) {
       sampleFamily.samples.add(sample);
     }
   }
@@ -62,6 +73,7 @@ public class MetricSamples {
         }
       } else {
         this.samplesByMetricName.put(key, entry.getValue());
+        seenSamples.addAll(entry.getValue().samples);
       }
     }
   }

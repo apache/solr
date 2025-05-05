@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -38,7 +38,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -437,7 +437,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(request, response));
       String handlerName = request.getParams().get(CommonParams.QT);
       h.getCore().execute(h.getCore().getRequestHandler(handlerName), request, response);
-      BinaryResponseWriter responseWriter = new BinaryResponseWriter();
+      JavaBinResponseWriter responseWriter = new JavaBinResponseWriter();
       responseWriter.write(out, request, response);
     } finally {
       request.close();
@@ -445,7 +445,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     }
 
     assertEquals(6, ((ResultContext) response.getResponse()).getDocList().matches());
-    new BinaryResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
+    new JavaBinResponseParser().processResponse(new ByteArrayInputStream(out.toByteArray()), "");
     out.close();
   }
 
@@ -458,7 +458,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(add(doc("id", "5")));
     assertU(commit());
 
-    // Just checking if no errors occur
+    // should exceed timeAllowed
+    // TODO: this always succeeds now, regardless of partialResults=true
+    // needs SOLR-17151 to fix how QueryLimitsExceeded exception is handled
     assertJQ(
         req(
             "q",
@@ -470,7 +472,23 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.query",
             "id:2",
             "timeAllowed",
-            "1"));
+            "0"),
+        "/responseHeader/partialResults==true");
+    // should succeed
+    assertJQ(
+        req(
+            "q",
+            "*:*",
+            "group",
+            "true",
+            "group.query",
+            "id:1",
+            "group.query",
+            "id:2",
+            "timeAllowed",
+            "200"),
+        "/grouped/id:1/matches==5",
+        "/grouped/id:2/matches==5");
   }
 
   @Test
@@ -1991,7 +2009,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     public Doc maxDoc; // the document highest according to the "sort" param
 
     public void setMaxDoc(Comparator<Doc> comparator) {
-      Doc[] arr = docs.toArray(new Doc[docs.size()]);
+      Doc[] arr = docs.toArray(new Doc[0]);
       Arrays.sort(arr, comparator);
       maxDoc = arr.length > 0 ? arr[0] : null;
     }

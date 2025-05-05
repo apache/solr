@@ -224,8 +224,7 @@ public class BitDocSet extends DocSet {
   @Override
   public DocSet union(DocSet other) {
     FixedBitSet newbits = bits.clone();
-    if (other instanceof BitDocSet) {
-      BitDocSet otherDocSet = (BitDocSet) other;
+    if (other instanceof BitDocSet otherDocSet) {
       newbits = FixedBitSet.ensureCapacity(newbits, otherDocSet.bits.length());
       newbits.or(otherDocSet.bits);
     } else {
@@ -248,11 +247,6 @@ public class BitDocSet extends DocSet {
   public DocIdSetIterator iterator(LeafReaderContext context) {
     if (context.isTopLevel) {
       switch (size) {
-        case 0:
-          return null;
-        default:
-          // we have an explicit size; use it
-          return new BitSetIterator(bits, size);
         case -1:
           // size has not been computed; use bits.length() as an upper bound on cost
           final int maxSize = bits.length();
@@ -261,6 +255,11 @@ public class BitDocSet extends DocSet {
           } else {
             return new BitSetIterator(bits, maxSize);
           }
+        case 0:
+          return null;
+        default:
+          // we have an explicit size; use it
+          return new BitSetIterator(bits, size);
       }
     }
 

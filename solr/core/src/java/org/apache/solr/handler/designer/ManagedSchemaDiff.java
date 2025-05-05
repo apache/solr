@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
@@ -215,7 +216,7 @@ public class ManagedSchemaDiff {
    * @param simpleOrderedMap2 Map to treat as "right" map
    * @return List containing the left diff and right diff
    */
-  @SuppressWarnings("unchecked")
+  @SuppressForbidden(reason = "Maps.difference")
   private static List<Map<String, Object>> getMapDifference(
       SimpleOrderedMap<Object> simpleOrderedMap1, SimpleOrderedMap<Object> simpleOrderedMap2) {
     Map<String, Object> map1 = simpleOrderedMap1.toMap(new HashMap<>());

@@ -76,7 +76,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     solrClient =
-        new CloudSolrClientBuilder(
+        new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(zkController.getZkServerAddress()), Optional.empty())
             .build();
     CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
@@ -101,7 +101,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     DocCollection coll =
         cloudManager.getClusterStateProvider().getCollection(CollectionAdminParams.SYSTEM_COLL);
     for (Replica r : coll.getReplicas()) {
-      coreStartTimes.put(r.getName(), getCoreStatus(r).getCoreStartTime().getTime());
+      coreStartTimes.put(r.getName(), getCoreStatus(r).startTime.getTime());
     }
     // trigger compat report by changing the schema
     SchemaRequest req = new SchemaRequest();
@@ -130,7 +130,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
           for (Replica r : coll.getReplicas()) {
             long previousTime = coreStartTimes.get(r.getName());
             try {
-              long currentTime = getCoreStatus(r).getCoreStartTime().getTime();
+              long currentTime = getCoreStatus(r).startTime.getTime();
               allReloaded = allReloaded && (previousTime < currentTime);
             } catch (Exception e) {
               log.warn("Error retrieving replica status of {}", Utils.toJSONString(r), e);

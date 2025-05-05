@@ -23,13 +23,13 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation ('org.apache.tika:tika-core') { transitive = false }
-  implementation 'commons-io:commons-io'
-  implementation 'com.cybozu.labs:langdetect'
-  implementation 'org.apache.opennlp:opennlp-tools'
-  implementation 'org.slf4j:slf4j-api'
+  implementation(libs.apache.tika.core) { transitive = false }
+  implementation libs.commonsio.commonsio
+  implementation libs.cybozulabs.langdetect
+  implementation libs.apache.opennlp.tools
+  implementation libs.slf4j.api
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
 }

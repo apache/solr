@@ -1,4 +1,5 @@
 = Monitoring with Prometheus and Grafana
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,16 +17,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr includes a Prometheus exporter to collect metrics and other data.
+If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr provides 2 solutions to collect metrics and other data:
+
+* Prometheus Exporter
+* Metrics API with Prometheus format
+
+The Prometheus exporter is included with the full Solr distribution, and is located under `prometheus-exporter/`.
+It is not included in the `slim` Solr distribution.
 
 A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from the xref:metrics-reporting.adoc#metrics-api[Metrics API], but also facet counts which come from xref:query-guide:faceting.adoc[] and responses to xref:configuration-guide:collections-api.adoc[] commands and xref:ping.adoc[] requests.
+
+The Metrics API provides a Prometheus Response Writer to output Solr metrics natively to be scraped. 
+It is more efficient and drops the need of running the Prometheus Exporter but at the cost of a fixed output and not as flexible in terms of configurability.  
+
+== Prometheus Exporter
 
 This graphic provides a more detailed view:
 
 .solr-exporter Diagram
 image::monitoring-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
-
-The Prometheus exporter is included with the Solr distribution, and is located under `prometheus-exporter/`.
 
 There are three aspects to running `solr-exporter`:
 
@@ -36,51 +46,51 @@ See the section below <<Starting the Exporter>>.
 * Modify your Prometheus configuration to listen on the correct port.
 See the section below <<Prometheus Configuration>>
 
-== Starting the Exporter
+=== Starting the Exporter
 You can start `solr-exporter` by running `./bin/solr-exporter` (Linux) or `.\bin\solr-exporter.cmd` (Windows) from the `prometheus-exporter/` directory.
+
+The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
 
 See the commands below depending on your operating system and Solr operating mode:
 
-[.dynamic-tabs]
---
-[example.tab-pane#solr-exporter-linux]
+[tabs#solr-exporter]
+======
+Linux::
++
 ====
-[.tab-label]*Linux*
-
 .User-managed / Single-node
 [source,bash]
 ----
 $ cd prometheus-exporter
-$ ./bin/solr-exporter -p 9854 -b http://localhost:8983/solr -f ./conf/solr-exporter-config.xml -n 8
+$ ./bin/solr-exporter -p 9854 --solr-url http://localhost:8983/solr --config-file ./conf/solr-exporter-config.xml --num-threads 8
 ----
 
 .SolrCloud
 [source,bash]
 ----
 $ cd prometheus-exporter
-$ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-config.xml -n 16
+$ ./bin/solr-exporter -p 9854 -z localhost:2181/solr --config-file ./conf/solr-exporter-config.xml --num-threads 16
 ----
 ====
 
-[example.tab-pane#solr-exporter-windows]
+Windows::
++
 ====
-[.tab-label]*Windows*
-
 .User-managed / Single-node
 [source,text]
 ----
 > cd prometheus-exporter
-> .\bin\solr-exporter.cmd -p 9854 -b http://localhost:8983/solr -f .\conf\solr-exporter-config.xml -n 8
+> .\bin\solr-exporter.cmd -p 9854 --solr-url http://localhost:8983/solr --config-file .\conf\solr-exporter-config.xml --num-threads 8
 ----
 
 .SolrCloud
 [source,text]
 ----
 > cd prometheus-exporter
-> .\bin\solr-exporter -p 9854 -z localhost:2181/solr -f .\conf\solr-exporter-config.xml -n 16
+> .\bin\solr-exporter -p 9854 -z localhost:2181/solr --config-file .\conf\solr-exporter-config.xml --num-threads 16
 ----
 ====
---
+======
 
 === Command Line Parameters
 
@@ -107,18 +117,18 @@ The port where Prometheus will listen for new data.
 This port will be used to configure Prometheus.
 It can be any port not already in use on your server.
 
-`-b`, `--baseurl`, `$SOLR_URL`::
+`-s`, `--solr-url`, `$SOLR_URL`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: _see description_
 |===
 +
-The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in a user-managed cluster or a single-node installation.
+The Solr base URL (such as `http://localhost:8983/solr`) when Solr is running in a user-managed cluster or a single-node installation.
 If you are running SolrCloud, do not specify this parameter.
-If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
+If neither the `-s` parameter nor the `-z` parameter are defined, the default is `--solr-url http://localhost:8983/solr`.
 
-`-z`, `--zkhost`, `$ZK_HOST`::
+`-z`, `--zk-host`, `$ZK_HOST`::
 +
 [%autowidth,frame=none]
 |===
@@ -127,9 +137,9 @@ If neither the `-b` parameter nor the `-z` parameter are defined, the default is
 +
 The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`) when Solr is running SolrCloud.
 If you are running a user-managed cluster or single-node installation, do not specify this parameter.
-If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
+If neither the `--solr-url` parameter nor the `-z` parameter are defined, the `--solr-url` parameter default is used.
 
-`-f`, `--config-file`, `$CONFIG_FILE`::
+`--config-file`, `$CONFIG_FILE`::
 +
 [%autowidth,frame=none]
 |===
@@ -138,7 +148,7 @@ If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` param
 +
 The path to the configuration file that defines the Solr metrics to read.
 
-`-n`, `--num-threads`, `$NUM_THREADS`::
+`--num-threads`, `$NUM_THREADS`::
 +
 [%autowidth,frame=none]
 |===
@@ -149,7 +159,7 @@ The number of threads.
 The `solr-exporter` creates thread pools for requests to Solr.
 Request latency can be improved by increasing the number of threads.
 
-`-s`, `--scrape-interval`, `$SCRAPE_INTERVAL`::
+`--scrape-interval`, `$SCRAPE_INTERVAL`::
 +
 [%autowidth,frame=none]
 |===
@@ -161,16 +171,35 @@ The `solr-exporter` collects metrics from Solr every few seconds controlled by t
 These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool.
 The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr.
 
-`-i`, `--cluster-id`, `$CLUSTER_ID`::
+`--cluster-id`, `$CLUSTER_ID`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: _see description_
 |===
 +
-A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `baseUrl` or `zkHost` will be used as ID by default.
+A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `--solr-url` or `--zk-host` will be used as ID by default.
 
-The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
+`-u`, `--credentials`, `$CREDENTIALS`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Specify the credentials in the format `username:password`. Example: `--credentials solr:SolrRocks`.
+
+
+`--ssl-enabled`, `$SSL_ENABLED`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+
+Enable mTLS connection to Solr. Expects following env variables: SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE, SOLR_SSL_TRUST_STORE_PASSWORD. Example: `--ssl-enabled`
+The environment variables are the same that Solr uses to enable mTLS.
 
 === Environment Variable Options
 
@@ -221,7 +250,7 @@ Extra JVM options.
 |===
 +
 Credentials for connecting to a ZooKeeper host that is protected with ACLs.
-For more information on what to include in this variable, refer to the section xref:zookeeper-access-control.adoc#zookeeper-acls-in-solr-scripts[ZooKeeper ACLs in Solr Scripts] or the example <<getting-metrics-from-a-secured-solrcloud>> below.
+For more information on what to include in this variable, refer to the section xref:zookeeper-access-control.adoc#zookeeper-acls-in-solr-cli[ZooKeeper ACLs in Solr CLI] or the example <<getting-metrics-from-a-secured-solrcloud>> below.
 
 `CLASSPATH_PREFIX`::
 +
@@ -256,14 +285,14 @@ $ cd prometheus-exporter
 $ export JAVA_OPTS="-Djavax.net.ssl.trustStore=truststore.p12 -Djavax.net.ssl.trustStorePassword=truststorePassword -Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory -Dsolr.httpclient.config=basicauth.properties"
 $ export ZK_CREDS_AND_ACLS="-DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=readonly-user -DzkDigestPassword=zkUserPassword"
 $ export CLASSPATH_PREFIX="../server/solr-webapp/webapp/WEB-INF/lib/commons-codec-1.11.jar"
-$ ./bin/solr-exporter -p 9854 -z zk1:2181,zk2:2181,zk3:2181 -f ./conf/solr-exporter-config.xml -n 16
+$ ./bin/solr-exporter -p 9854 -z zk1:2181,zk2:2181,zk3:2181 --config-file ./conf/solr-exporter-config.xml --num-threads 16
 ----
 
 NOTE:: The Exporter needs the `commons-codec` library for SSL/BasicAuth, but does not bring it.
 Therefore the example reuses it from the Solr web app.
 Of course, you can use a different source.
 
-== Exporter Configuration
+=== Exporter Configuration
 The configuration for the `solr-exporter` defines the data to get from Solr.
 This includes the metrics, but can also include queries to the PingRequestHandler, the Collections API, and a query to any query request handler.
 
@@ -536,7 +565,7 @@ For example, `solr-exporter` converts the JSON in the previous section to the fo
 solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 ----
 
-== Prometheus Configuration
+=== Prometheus Configuration
 
 Prometheus is a separate server that you need to download and deploy.
 More information can be found at the Prometheus https://prometheus.io/docs/prometheus/latest/getting_started/[Getting Started] page.
@@ -561,7 +590,7 @@ doing a query for `solr_ping` metric in the Prometheus GUI:
 .Prometheus Solr Ping expression
 image::monitoring-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
 
-== Sample Grafana Dashboard
+=== Sample Grafana Dashboard
 
 To use Grafana for visualization, it must be downloaded and deployed separately.
 More information can be found on the Grafana https://grafana.com/docs/grafana/latest/[Documentation] site.
@@ -576,3 +605,29 @@ This screenshot shows what it might look like:
 
 .Grafana Dashboard
 image::monitoring-with-prometheus-and-grafana/grafana-solr-dashboard.png[image,width=800]
+
+== Metrics API with Prometheus format
+
+Prometheus Metrics are available natively directly from Solr by leveraging the Metrics API and setting `wt` parameter to `prometheus`:
+
+[source,text]
+localhost:8983/solr/admin/metrics?wt=prometheus
+
+The Metrics API with the `prometheus` parameter does not provide any configurability and the Prometheus output is fixed. 
+Any metrics aggregations and/or filtering must be done on Grafana or the Prometheus server.
+
+=== Prometheus Configuration
+
+Like the Prometheus Exporter, the `prometheus.yml` needs to be configured for the Prometheus Server to ingest metrics.
+The difference is it must instead scrape the Metrics API with the `wt=prometheus` parameter directly from each host/port Solr is running on as in this example:
+
+[source,plain]
+----
+scrape_configs:
+  - job_name: 'solr'
+    metrics_path: "/solr/admin/metrics"
+    static_configs:
+      - targets: ['localhost:8983', 'localhost:7574']
+    params:
+      wt: ['prometheus']
+----

@@ -69,8 +69,7 @@ public class ClusterSingletons {
             }
             // register new api
             Object instance = plugin.getInstance();
-            if (instance instanceof ClusterSingleton) {
-              ClusterSingleton singleton = (ClusterSingleton) instance;
+            if (instance instanceof ClusterSingleton singleton) {
               singletonMap.put(singleton.getName(), singleton);
               // check to see if we should immediately start this singleton
               if (isReady() && runSingletons.get()) {
@@ -89,8 +88,7 @@ public class ClusterSingletons {
               return;
             }
             Object instance = plugin.getInstance();
-            if (instance instanceof ClusterSingleton) {
-              ClusterSingleton singleton = (ClusterSingleton) instance;
+            if (instance instanceof ClusterSingleton singleton) {
               singleton.stop();
               singletonMap.remove(singleton.getName());
             }
@@ -99,8 +97,8 @@ public class ClusterSingletons {
           @Override
           public void modified(
               ContainerPluginsRegistry.ApiInfo old, ContainerPluginsRegistry.ApiInfo replacement) {
-            added(replacement);
             deleted(old);
+            added(replacement);
           }
         };
   }

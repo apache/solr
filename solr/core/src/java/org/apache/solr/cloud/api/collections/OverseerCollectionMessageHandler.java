@@ -16,10 +16,11 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.addExceptionToNamedList;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logFailedOperation;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
@@ -43,7 +44,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
@@ -113,7 +113,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   @Override
   public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
-    MDCLoggingContext.setCollection(message.getStr(COLLECTION));
+    // sometimes overseer messages have the collection name in 'name' field, not 'collection'
+    MDCLoggingContext.setCollection(
+        message.getStr(COLLECTION_PROP) != null
+            ? message.getStr(COLLECTION_PROP)
+            : message.getStr(NAME));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
     log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
@@ -131,18 +135,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       String collName = message.getStr("collection");
       if (collName == null) collName = message.getStr(NAME);
 
-      if (collName == null) {
-        SolrException.log(log, "Operation " + operation + " failed", e);
-      } else {
-        SolrException.log(
-            log, "Collection: " + collName + " operation: " + operation + " failed", e);
-      }
-
-      results.add("Operation " + operation + " caused exception:", e);
-      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
-      nl.add("msg", e.getMessage());
-      nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
-      results.add("exception", nl);
+      logFailedOperation(operation, e, collName);
+      addExceptionToNamedList(operation, e, results);
     }
     return new OverseerSolrResponse(results);
   }

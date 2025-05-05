@@ -16,23 +16,31 @@
  */
 package org.apache.solr.search;
 
+import java.util.Locale;
+
 /**
  * Thrown by {@link EarlyTerminatingCollector} when the maximum to abort the scoring / collection
  * process early, when the specified maximum number of documents were collected.
  */
 public class EarlyTerminatingCollectorException extends RuntimeException {
   private static final long serialVersionUID = 5939241340763428118L;
-  private int numberScanned;
-  private int numberCollected;
+  private final int numberScanned;
+  private final int numberCollected;
 
   public EarlyTerminatingCollectorException(int numberCollected, int numberScanned) {
+    super(
+        String.format(
+            Locale.ROOT,
+            "maxHitsAllowed reached: %d documents collected out of %d scanned",
+            numberCollected,
+            numberScanned));
     assert numberCollected <= numberScanned : numberCollected + "<=" + numberScanned;
     assert 0 < numberCollected;
-    assert 0 < numberScanned;
 
     this.numberCollected = numberCollected;
     this.numberScanned = numberScanned;
   }
+
   /**
    * The total number of documents in the index that were "scanned" by the index when collecting the
    * {@link #getNumberCollected()} documents that triggered this exception.
@@ -48,8 +56,17 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
   public int getNumberScanned() {
     return numberScanned;
   }
+
   /** The number of documents collected that resulted in early termination */
   public int getNumberCollected() {
     return numberCollected;
+  }
+
+  public long getApproximateTotalHits(int maxDocId) {
+    if (numberScanned == maxDocId) {
+      return numberCollected;
+    } else {
+      return (long) (maxDocId * ((double) numberCollected) / ((double) numberScanned));
+    }
   }
 }

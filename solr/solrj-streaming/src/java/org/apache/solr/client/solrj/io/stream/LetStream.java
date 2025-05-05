@@ -44,7 +44,7 @@ public class LetStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private TupleStream stream;
-  private StreamContext streamContext;
+  private transient StreamContext streamContext;
   private Map<String, Object> letParams = new LinkedHashMap<>();
 
   public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -173,9 +173,8 @@ public class LetStream extends TupleStream implements Expressible {
     for (Map.Entry<String, Object> entry : entries) {
       String name = entry.getKey();
       Object o = entry.getValue();
-      if (o instanceof TupleStream) {
+      if (o instanceof TupleStream tStream) {
         List<Tuple> tuples = new ArrayList<>();
-        TupleStream tStream = (TupleStream) o;
         tStream.setStreamContext(streamContext);
         try {
           tStream.open();
@@ -192,12 +191,11 @@ public class LetStream extends TupleStream implements Expressible {
         } finally {
           tStream.close();
         }
-      } else if (o instanceof StreamEvaluator) {
+      } else if (o instanceof StreamEvaluator evaluator) {
         // Add the data from the StreamContext to a tuple.
         // Let the evaluator works from this tuple.
         // This will allow columns to be created from tuples already in the StreamContext.
         Tuple eTuple = new Tuple(lets);
-        StreamEvaluator evaluator = (StreamEvaluator) o;
         evaluator.setStreamContext(streamContext);
         Object eo = evaluator.evaluate(eTuple);
         if (evaluator instanceof MemsetEvaluator) {

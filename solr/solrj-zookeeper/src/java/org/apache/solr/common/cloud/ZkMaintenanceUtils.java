@@ -17,25 +17,26 @@
 
 package org.apache.solr.common.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class ZkMaintenanceUtils {
   public static final String CONFIGS_ZKNODE = "/configs";
 
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+
   /** files matching this pattern will not be uploaded to ZkNode /configs */
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN =
       Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
@@ -63,28 +65,27 @@ public class ZkMaintenanceUtils {
    * Lists a ZNode child and (optionally) the znodes of all the children. No data is dumped.
    *
    * @param path The node to remove on Zookeeper
-   * @param recurse Whether to remove children.
+   * @param recursive Whether to remove children.
    * @throws KeeperException Could not perform the Zookeeper operation.
    * @throws InterruptedException Thread interrupted
-   * @throws SolrServerException zookeeper node has children and recurse not specified.
    * @return an indented list of the znodes suitable for display
    */
-  public static String listZnode(SolrZkClient zkClient, String path, Boolean recurse)
-      throws KeeperException, InterruptedException, SolrServerException {
+  public static String listZnode(SolrZkClient zkClient, String path, Boolean recursive)
+      throws KeeperException, InterruptedException {
     String root = path;
 
     if (path.toLowerCase(Locale.ROOT).startsWith("zk:")) {
       root = path.substring(3);
     }
-    if (root.equals("/") == false && root.endsWith("/")) {
+    if (!root.equals("/") && root.endsWith("/")) {
       root = root.substring(0, root.length() - 1);
     }
 
     StringBuilder sb = new StringBuilder();
 
-    if (recurse == false) {
+    if (!recursive) {
       for (String node : zkClient.getChildren(root, null, true)) {
-        if (node.equals("zookeeper") == false) {
+        if (!node.equals("zookeeper")) {
           sb.append(node).append(System.lineSeparator());
         }
       }
@@ -97,9 +98,11 @@ public class ZkMaintenanceUtils {
         VISIT_ORDER.VISIT_PRE,
         znode -> {
           if (znode.startsWith("/zookeeper")) return; // can't do anything with this node!
-          int iPos = znode.lastIndexOf("/");
+          int iPos = znode.lastIndexOf('/');
           if (iPos > 0) {
-            for (int idx = 0; idx < iPos; ++idx) sb.append(" ");
+            for (int idx = 0; idx < iPos; ++idx) {
+              sb.append(" ");
+            }
             sb.append(znode.substring(iPos + 1)).append(System.lineSeparator());
           } else {
             sb.append(znode).append(System.lineSeparator());
@@ -114,9 +117,9 @@ public class ZkMaintenanceUtils {
    * copying recursively.
    *
    * @param src Source to copy from. Both src and dst may be Znodes. However, both may NOT be local
-   * @param dst The place to copy the files too. Both src and dst may be Znodes. However both may
+   * @param dst The place to copy the files too. Both src and dst may be Znodes. However, both may
    *     NOT be local
-   * @param recurse if the source is a directory, reccursively copy the contents iff this is true.
+   * @param recursive if the source is a directory, recursively copy the contents iff this is true.
    * @throws SolrServerException Explanatory exception due to bad params, failed operation, etc.
    * @throws KeeperException Could not perform the Zookeeper operation.
    * @throws InterruptedException Thread interrupted
@@ -127,25 +130,23 @@ public class ZkMaintenanceUtils {
       Boolean srcIsZk,
       String dst,
       Boolean dstIsZk,
-      Boolean recurse)
+      Boolean recursive)
       throws SolrServerException, KeeperException, InterruptedException, IOException {
 
-    if (srcIsZk == false && dstIsZk == false) {
+    if (!srcIsZk && !dstIsZk) {
       throw new SolrServerException("One or both of source or destination must specify ZK nodes.");
     }
 
-    // Make sure -recurse is specified if the source has children.
-    if (recurse == false) {
+    // Make sure --recursive is specified if the source has children.
+    if (!recursive) {
       if (srcIsZk) {
         if (zkClient.getChildren(src, null, true).size() != 0) {
           throw new SolrServerException(
-              "Zookeeper node " + src + " has children and recurse is false");
+              "Zookeeper node " + src + " has children and recursive is false");
         }
-      } else if (Files.isDirectory(Paths.get(src))) {
+      } else if (Files.isDirectory(Path.of(src))) {
         throw new SolrServerException(
-            "Local path "
-                + Paths.get(src).toAbsolutePath()
-                + " is a directory and recurse is false");
+            "Local path " + Path.of(src).toAbsolutePath() + " is a directory and recurse is false");
       }
     }
 
@@ -162,7 +163,7 @@ public class ZkMaintenanceUtils {
 
     // local -> ZK copy
     if (dstIsZk) {
-      uploadToZK(zkClient, Paths.get(src), dst, null);
+      uploadToZK(zkClient, Path.of(src), dst, null);
       return;
     }
 
@@ -170,18 +171,23 @@ public class ZkMaintenanceUtils {
     // node has children. This is kind of a weak test for the notion of "directory" on Zookeeper. ZK
     // -> local copy where ZK is a parent node
     if (zkClient.getChildren(src, null, true).size() > 0) {
-      downloadFromZK(zkClient, src, Paths.get(dst));
+      downloadFromZK(zkClient, src, Path.of(dst));
       return;
     }
 
     // Single file ZK -> local copy where ZK is a leaf node
-    if (Files.isDirectory(Paths.get(dst))) {
-      if (dst.endsWith(File.separator) == false) dst += File.separator;
+    if (Files.isDirectory(Path.of(dst))) {
+      if (!dst.endsWith(FileSystems.getDefault().getSeparator())) {
+        dst += FileSystems.getDefault().getSeparator();
+      }
       dst = normalizeDest(src, dst, srcIsZk, dstIsZk);
     }
     byte[] data = zkClient.getData(src, null, null, true);
-    Path filename = Paths.get(dst);
-    Files.createDirectories(filename.getParent());
+    Path filename = Path.of(dst);
+    Path parentDir = filename.getParent();
+    if (parentDir != null) {
+      Files.createDirectories(parentDir);
+    }
     log.info("Writing file {}", filename);
     Files.write(filename, data);
   }
@@ -192,11 +198,11 @@ public class ZkMaintenanceUtils {
       String srcName, String dstName, boolean srcIsZk, boolean dstIsZk) {
     // Special handling for "."
     if (dstName.equals(".")) {
-      return Paths.get(".").normalize().toAbsolutePath().toString();
+      return Path.of(".").normalize().toAbsolutePath().toString();
     }
 
-    String dstSeparator = (dstIsZk) ? "/" : File.separator;
-    String srcSeparator = (srcIsZk) ? "/" : File.separator;
+    String dstSeparator = (dstIsZk) ? "/" : FileSystems.getDefault().getSeparator();
+    String srcSeparator = (srcIsZk) ? "/" : FileSystems.getDefault().getSeparator();
 
     // Dest is a directory or non-leaf znode, append last element of the src path.
     if (dstName.endsWith(dstSeparator)) {
@@ -231,13 +237,13 @@ public class ZkMaintenanceUtils {
     clean(zkClient, src);
   }
 
-  // Insure that all the nodes in one path match the nodes in the other as a safety check before
+  // Ensure that all the nodes in one path match the nodes in the other as a safety check before
   // removing the source in a 'mv' command.
   private static void checkAllZnodesThere(SolrZkClient zkClient, String src, String dst)
       throws KeeperException, InterruptedException, SolrServerException {
 
     for (String node : zkClient.getChildren(src, null, true)) {
-      if (zkClient.exists(dst + "/" + node, true) == false) {
+      if (!zkClient.exists(dst + "/" + node, true)) {
         throw new SolrServerException(
             "mv command did not move node " + dst + "/" + node + " source left intact");
       }
@@ -315,9 +321,11 @@ public class ZkMaintenanceUtils {
       path = path.substring(0, path.length() - 1);
     }
 
-    final Path rootPath = Paths.get(path);
+    final Path rootPath = Path.of(path);
 
-    if (!Files.exists(rootPath)) throw new IOException("Path " + rootPath + " does not exist");
+    if (!Files.exists(rootPath)) {
+      throw new IOException("Path " + rootPath + " does not exist");
+    }
 
     int partsOffset =
         Path.of(zkPath).getNameCount() - rootPath.getNameCount() - 1; // will be negative
@@ -328,22 +336,34 @@ public class ZkMaintenanceUtils {
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
             String filename = file.getFileName().toString();
-            if (filenameExclusions != null && filenameExclusions.matcher(filename).matches()) {
+            if ((filenameExclusions != null && filenameExclusions.matcher(filename).matches())) {
               log.info(
                   "uploadToZK skipping '{}' due to filenameExclusions '{}'",
                   filename,
                   filenameExclusions);
               return FileVisitResult.CONTINUE;
             }
+            if (isFileForbiddenInConfigSets(filename)) {
+              log.info(
+                  "uploadToZK skipping '{}' due to forbidden file types '{}'",
+                  filename,
+                  USE_FORBIDDEN_FILE_TYPES);
+              return FileVisitResult.CONTINUE;
+            }
+            // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
             String zkNode = createZkNodeName(zkPath, rootPath, file);
             try {
               // if the path exists (and presumably we're uploading data to it) just set its data
-              if (file.toFile().getName().equals(ZKNODE_DATA_FILE)
+              if (file.getFileName().toString().equals(ZKNODE_DATA_FILE)
                   && zkClient.exists(zkNode, true)) {
                 zkClient.setData(zkNode, file, true);
               } else if (file == rootPath) {
                 // We are only uploading a single file, preVisitDirectory was never called
-                zkClient.makePath(zkNode, file, false, true);
+                if (zkClient.exists(zkPath, true)) {
+                  zkClient.setData(zkPath, file, true);
+                } else {
+                  zkClient.makePath(zkPath, Files.readAllBytes(file), false, true);
+                }
               } else {
                 // Skip path parts here because they should have been created during
                 // preVisitDirectory
@@ -357,6 +377,7 @@ public class ZkMaintenanceUtils {
                     true,
                     pathParts);
               }
+
             } catch (KeeperException | InterruptedException e) {
               throw new IOException(
                   "Error uploading file " + file + " to zookeeper path " + zkNode,
@@ -417,12 +438,17 @@ public class ZkMaintenanceUtils {
     try {
       List<String> children = zkClient.getChildren(zkPath, null, true);
       // If it has no children, it's a leaf node, write the associated data from the ZNode.
-      // Otherwise, continue recursing, but write the associated data to a special file if any
+      // Otherwise, continue recursively traversing, but write any associated data to a special file
       if (children.size() == 0) {
         // If we didn't copy data down, then we also didn't create the file. But we still need a
         // marker on the local disk so create an empty file.
-        if (copyDataDown(zkClient, zkPath, file) == 0) {
-          Files.createFile(file);
+        if (isFileForbiddenInConfigSets(zkPath)) {
+          log.warn("Skipping download of file from ZK, as it is a forbidden type: {}", zkPath);
+        } else {
+          // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
+          if (copyDataDown(zkClient, zkPath, file) == 0) {
+            Files.createFile(file);
+          }
         }
       } else {
         Files.createDirectories(file); // Make parent dir.
@@ -432,7 +458,9 @@ public class ZkMaintenanceUtils {
 
         for (String child : children) {
           String zkChild = zkPath;
-          if (zkChild.endsWith("/") == false) zkChild += "/";
+          if (!zkChild.endsWith("/")) {
+            zkChild += "/";
+          }
           zkChild += child;
           if (isEphemeral(zkClient, zkChild)) { // Don't copy ephemeral nodes
             continue;
@@ -465,10 +493,10 @@ public class ZkMaintenanceUtils {
 
   /**
    * Recursively visit a zk tree rooted at path and apply the given visitor to each path. Exists as
-   * a separate method because some of the logic can get nuanced.
+   * a separate method because the logic can get nuanced.
    *
    * @param path the path to start from
-   * @param visitOrder whether to call the visitor at the at the ending or beginning of the run.
+   * @param visitOrder whether to call the visitor at the ending or beginning of the run.
    * @param visitor the operation to perform on each path
    */
   public static void traverseZkTree(
@@ -506,7 +534,7 @@ public class ZkMaintenanceUtils {
   // Will return empty string if the path is just "/"
   // Will return empty string if the path is just ""
   public static String getZkParent(String path) {
-    if (StringUtils.isEmpty(path) || "/".equals(path)) {
+    if (StrUtils.isNullOrEmpty(path) || "/".equals(path)) {
       return "";
     }
     // Remove trailing slash if present.
@@ -514,7 +542,7 @@ public class ZkMaintenanceUtils {
     if (path.endsWith("/")) {
       endIndex--;
     }
-    int index = path.lastIndexOf("/", endIndex);
+    int index = path.lastIndexOf('/', endIndex);
     if (index == -1) {
       return "";
     }
@@ -527,14 +555,17 @@ public class ZkMaintenanceUtils {
   public static String createZkNodeName(String zkRoot, Path root, Path file) {
     String relativePath = root.relativize(file).toString();
     // Windows shenanigans
-    if ("\\".equals(File.separator)) relativePath = relativePath.replaceAll("\\\\", "/");
+    if ("\\".equals(FileSystems.getDefault().getSeparator()))
+      relativePath = relativePath.replace("\\", "/");
     // It's possible that the relative path and file are the same, in which case
     // adding the bare slash is A Bad Idea unless it's a non-leaf data node
-    boolean isNonLeafData = file.toFile().getName().equals(ZKNODE_DATA_FILE);
-    if (relativePath.length() == 0 && isNonLeafData == false) return zkRoot;
+    boolean isNonLeafData = file.getFileName().toString().equals(ZKNODE_DATA_FILE);
+    if (relativePath.length() == 0 && !isNonLeafData) return zkRoot;
 
     // Important to have this check if the source is file:whatever/ and the destination is just zk:/
-    if (zkRoot.endsWith("/") == false) zkRoot += "/";
+    if (!zkRoot.endsWith("/")) {
+      zkRoot += "/";
+    }
 
     String ret = zkRoot + relativePath;
 
@@ -548,28 +579,114 @@ public class ZkMaintenanceUtils {
     }
     return ret;
   }
-}
 
-class ZkCopier implements ZkMaintenanceUtils.ZkVisitor {
+  public static final String FORBIDDEN_FILE_TYPES_PROP = "solrConfigSetForbiddenFileTypes";
+  public static final String FORBIDDEN_FILE_TYPES_ENV = "SOLR_CONFIG_SET_FORBIDDEN_FILE_TYPES";
+  public static final Set<String> DEFAULT_FORBIDDEN_FILE_TYPES =
+      Set.of("class", "java", "jar", "tgz", "zip", "tar", "gz");
+  private static volatile Set<String> USE_FORBIDDEN_FILE_TYPES = null;
 
-  String source;
-  String dest;
-  SolrZkClient zkClient;
-
-  ZkCopier(SolrZkClient zkClient, String source, String dest) {
-    this.source = source;
-    this.dest = dest;
-    if (dest.endsWith("/")) {
-      this.dest = dest.substring(0, dest.length() - 1);
+  public static boolean isFileForbiddenInConfigSets(String filePath) {
+    // Try to set the forbidden file types just once, since it is set by SysProp/EnvVar
+    if (USE_FORBIDDEN_FILE_TYPES == null) {
+      synchronized (DEFAULT_FORBIDDEN_FILE_TYPES) {
+        if (USE_FORBIDDEN_FILE_TYPES == null) {
+          String userForbiddenFileTypes =
+              System.getProperty(
+                  FORBIDDEN_FILE_TYPES_PROP, System.getenv(FORBIDDEN_FILE_TYPES_ENV));
+          if (StrUtils.isNullOrEmpty(userForbiddenFileTypes)) {
+            USE_FORBIDDEN_FILE_TYPES = DEFAULT_FORBIDDEN_FILE_TYPES;
+          } else {
+            USE_FORBIDDEN_FILE_TYPES = Set.of(userForbiddenFileTypes.split(","));
+          }
+        }
+      }
     }
-    this.zkClient = zkClient;
+    int lastDot = filePath.lastIndexOf('.');
+    return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
   }
 
-  @Override
-  public void visit(String path) throws InterruptedException, KeeperException {
-    String finalDestination = dest;
-    if (path.equals(source) == false) finalDestination += "/" + path.substring(source.length() + 1);
-    zkClient.makePath(finalDestination, false, true);
-    zkClient.setData(finalDestination, zkClient.getData(path, null, null, true), true);
+  /**
+   * Create a persistent znode with no data if it does not already exist
+   *
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
+  public static void ensureExists(String path, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, null, CreateMode.PERSISTENT, zkClient, 0);
+  }
+
+  /**
+   * Create a persistent znode with the given data if it does not already exist
+   *
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
+  public static void ensureExists(String path, final byte[] data, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, data, CreateMode.PERSISTENT, zkClient, 0);
+  }
+
+  /**
+   * Create a znode with the given mode and data if it does not already exist
+   *
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
+  public static void ensureExists(
+      String path, final byte[] data, CreateMode createMode, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, data, createMode, zkClient, 0);
+  }
+
+  /**
+   * Create a node if it does not exist
+   *
+   * @param path the path at which to create the znode
+   * @param data the optional data to set on the znode
+   * @param createMode the mode with which to create the znode
+   * @param zkClient the client to use to check and create
+   * @param skipPathParts how many path elements to skip
+   */
+  public static void ensureExists(
+      final String path,
+      final byte[] data,
+      CreateMode createMode,
+      final SolrZkClient zkClient,
+      int skipPathParts)
+      throws KeeperException, InterruptedException {
+
+    if (zkClient.exists(path, true)) {
+      return;
+    }
+    try {
+      zkClient.makePath(path, data, createMode, null, true, true, skipPathParts);
+    } catch (NodeExistsException ignored) {
+      // it's okay if another beats us creating the node
+    }
+  }
+
+  static class ZkCopier implements ZkMaintenanceUtils.ZkVisitor {
+
+    String source;
+    String dest;
+    SolrZkClient zkClient;
+
+    ZkCopier(SolrZkClient zkClient, String source, String dest) {
+      this.source = source;
+      this.dest = dest;
+      if (dest.endsWith("/")) {
+        this.dest = dest.substring(0, dest.length() - 1);
+      }
+      this.zkClient = zkClient;
+    }
+
+    @Override
+    public void visit(String path) throws InterruptedException, KeeperException {
+      String finalDestination = dest;
+      if (!path.equals(source)) {
+        finalDestination += "/" + path.substring(source.length() + 1);
+      }
+      zkClient.makePath(finalDestination, false, true);
+      zkClient.setData(finalDestination, zkClient.getData(path, null, null, true), true);
+    }
   }
 }

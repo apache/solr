@@ -67,12 +67,13 @@ public class FieldCacheImpl implements FieldCache {
   }
 
   private synchronized void init() {
-    caches = new HashMap<>(6);
-    caches.put(Long.TYPE, new LongCache(this));
-    caches.put(BinaryDocValues.class, new BinaryDocValuesCache(this));
-    caches.put(SortedDocValues.class, new SortedDocValuesCache(this));
-    caches.put(DocTermOrds.class, new DocTermOrdsCache(this));
-    caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
+    caches =
+        Map.ofEntries(
+            Map.entry(Long.TYPE, new LongCache(this)),
+            Map.entry(BinaryDocValues.class, new BinaryDocValuesCache(this)),
+            Map.entry(SortedDocValues.class, new SortedDocValuesCache(this)),
+            Map.entry(DocTermOrds.class, new DocTermOrdsCache(this)),
+            Map.entry(DocsWithFieldCache.class, new DocsWithFieldCache(this)));
   }
 
   @Override
@@ -108,7 +109,7 @@ public class FieldCacheImpl implements FieldCache {
         }
       }
     }
-    return result.toArray(new CacheEntry[result.size()]);
+    return result.toArray(new CacheEntry[0]);
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.
@@ -224,8 +225,7 @@ public class FieldCacheImpl implements FieldCache {
     /** Two of these are equal iff they reference the same field and type. */
     @Override
     public boolean equals(Object o) {
-      if (o instanceof CacheKey) {
-        CacheKey other = (CacheKey) o;
+      if (o instanceof CacheKey other) {
         if (other.field.equals(field)) {
           if (other.custom == null) {
             if (custom == null) return true;
@@ -783,7 +783,7 @@ public class FieldCacheImpl implements FieldCache {
           u.docsWithField == null ? new Bits.MatchNoBits(reader.maxDoc()) : u.docsWithField;
       if (values == null) {
         return new LongsFromArray(
-            key.field, new PackedInts.NullReader(reader.maxDoc()), 0L, docsWithField);
+            key.field, PackedInts.NullReader.forCount(reader.maxDoc()), 0L, docsWithField);
       }
       return new LongsFromArray(
           key.field, values.writer.getMutable(), values.minValue, docsWithField);

@@ -23,13 +23,10 @@ import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -125,16 +122,14 @@ public class ApiBag {
 
       // If 'o' and 'node.obj' aren't both AnnotatedApi's then we can't aggregate the commands, so
       // fallback to the default behavior
-      if ((!(o instanceof AnnotatedApi)) || (!(node.getObject() instanceof AnnotatedApi))) {
+      if ((!(o instanceof AnnotatedApi beingRegistered))
+          || (!(node.getObject() instanceof AnnotatedApi alreadyRegistered))) {
         super.attachValueToNode(node, o);
         return;
       }
 
-      final AnnotatedApi beingRegistered = (AnnotatedApi) o;
-      final AnnotatedApi alreadyRegistered = (AnnotatedApi) node.getObject();
-      if (alreadyRegistered instanceof CommandAggregatingAnnotatedApi) {
-        final CommandAggregatingAnnotatedApi alreadyRegisteredAsCollapsing =
-            (CommandAggregatingAnnotatedApi) alreadyRegistered;
+      if (alreadyRegistered
+          instanceof CommandAggregatingAnnotatedApi alreadyRegisteredAsCollapsing) {
         alreadyRegisteredAsCollapsing.combineWith(beingRegistered);
       } else {
         final CommandAggregatingAnnotatedApi wrapperApi =
@@ -150,8 +145,8 @@ public class ApiBag {
     private Collection<AnnotatedApi> combinedApis;
 
     protected CommandAggregatingAnnotatedApi(AnnotatedApi api) {
-      super(api.spec, api.getEndPoint(), Maps.newHashMap(api.getCommands()), null);
-      combinedApis = Lists.newArrayList();
+      super(api.spec, api.getEndPoint(), new HashMap<>(api.getCommands()), null);
+      combinedApis = new ArrayList<>();
     }
 
     public void combineWith(AnnotatedApi api) {
@@ -375,20 +370,20 @@ public class ApiBag {
   }
 
   public static List<Api> wrapRequestHandlers(final SolrRequestHandler rh, String... specs) {
-    ImmutableList.Builder<Api> b = ImmutableList.builder();
-    for (String spec : specs) b.add(new ReqHandlerToApi(rh, Utils.getSpec(spec)));
-    return b.build();
+    return Arrays.stream(specs)
+        .map(spec -> new ReqHandlerToApi(rh, Utils.getSpec(spec)))
+        .collect(Collectors.toUnmodifiableList());
   }
 
   public static final String HANDLER_NAME = "handlerName";
   public static final SpecProvider EMPTY_SPEC = () -> ValidatingJsonMap.EMPTY;
   public static final Set<String> KNOWN_TYPES =
-      ImmutableSet.of("string", "boolean", "list", "int", "double", "object");
+      Set.of("string", "boolean", "list", "int", "double", "object");
   // A Spec template for GET AND POST APIs using the /$handlerName template-variable.
   public static final SpecProvider HANDLER_NAME_SPEC_PROVIDER =
       () -> {
         final ValidatingJsonMap spec = new ValidatingJsonMap();
-        spec.put("methods", Lists.newArrayList("GET", "POST"));
+        spec.put("methods", List.of("GET", "POST"));
         final ValidatingJsonMap urlMap = new ValidatingJsonMap();
         urlMap.put("paths", Collections.singletonList("$" + HANDLER_NAME));
         spec.put("url", urlMap);
@@ -407,11 +402,10 @@ public class ApiBag {
 
   public static SpecProvider constructSpec(PluginInfo info) {
     Object specObj = info == null ? null : info.attributes.get("spec");
-    if (specObj != null && specObj instanceof Map) {
+    if (specObj != null && specObj instanceof Map<?, ?> map) {
       // Value from Map<String,String> can be a Map because in PluginInfo(String, Map) we assign a
       // Map<String, Object>
       // assert false : "got a map when this should only be Strings";
-      Map<?, ?> map = (Map<?, ?>) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
       return HANDLER_NAME_SPEC_PROVIDER;

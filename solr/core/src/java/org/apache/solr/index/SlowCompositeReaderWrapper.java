@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
@@ -29,6 +30,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
@@ -45,9 +47,10 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.VectorValues;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.PackedInts;
@@ -73,8 +76,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   // also have a cached FieldInfos instance so this is consistent. SOLR-12878
   private final FieldInfos fieldInfos;
 
-  final Map<String, Terms> cachedTerms = new ConcurrentHashMap<>();
-
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,
   // but do we really need to optimize slow-wrapper any more?
   final Map<String, OrdinalMap> cachedOrdMaps = new ConcurrentHashMap<>();
@@ -96,7 +97,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     in = reader;
     in.registerParentReader(this);
     if (reader.leaves().isEmpty()) {
-      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null, false);
     } else {
       Version minVersion = Version.LATEST;
       for (LeafReaderContext leafReaderContext : reader.leaves()) {
@@ -108,9 +109,13 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           minVersion = leafVersion;
         }
       }
-      int createdVersionMajor =
-          reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor();
-      metaData = new LeafMetaData(createdVersionMajor, minVersion, null);
+      LeafMetaData leafMetaData = reader.leaves().get(0).reader().getMetaData();
+      metaData =
+          new LeafMetaData(
+              leafMetaData.getCreatedVersionMajor(),
+              minVersion,
+              leafMetaData.getSort(),
+              leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
@@ -136,23 +141,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Terms terms(String field) throws IOException {
     ensureOpen();
-    try {
-      return cachedTerms.computeIfAbsent(
-          field,
-          f -> {
-            try {
-              return MultiTerms.getTerms(in, f);
-            } catch (IOException e) {
-              // yuck!  ...sigh... checked exceptions with built-in lambdas are a pain
-              throw new RuntimeException("unwrapMe", e);
-            }
-          });
-    } catch (RuntimeException e) {
-      if (e.getMessage().equals("unwrapMe") && e.getCause() instanceof IOException) {
-        throw (IOException) e.getCause();
-      }
-      throw e;
-    }
+    return MultiTerms.getTerms(in, field);
   }
 
   @Override
@@ -324,8 +313,21 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  @Deprecated
   public Fields getTermVectors(int docID) throws IOException {
     return in.getTermVectors(docID);
+  }
+
+  @Override
+  public TermVectors termVectors() throws IOException {
+    ensureOpen();
+    return in.termVectors();
+  }
+
+  @Override
+  public StoredFields storedFields() throws IOException {
+    ensureOpen();
+    return in.storedFields();
   }
 
   @Override
@@ -341,6 +343,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  @Deprecated
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     in.document(docID, visitor);
@@ -355,19 +358,31 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public PointValues getPointValues(String field) {
     ensureOpen();
-    return null; // because not supported.  Throw UOE?
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public VectorValues getVectorValues(String field) {
+  public FloatVectorValues getFloatVectorValues(String field) {
     ensureOpen();
-    return VectorValues.EMPTY;
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public TopDocs searchNearestVectors(
-      String field, float[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
-    return null;
+  public ByteVectorValues getByteVectorValues(String field) {
+    ensureOpen();
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void searchNearestVectors(
+      String field, float[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void searchNearestVectors(
+      String field, byte[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   @Override

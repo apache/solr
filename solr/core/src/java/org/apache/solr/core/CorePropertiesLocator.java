@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.Lists;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +52,11 @@ public class CorePropertiesLocator implements CoresLocator {
 
   private final Path rootDirectory;
 
+  public CorePropertiesLocator(NodeConfig nodeConfig) {
+    this(nodeConfig.getCoreRootDirectory());
+  }
+
+  @VisibleForTesting
   public CorePropertiesLocator(Path coreDiscoveryRoot) {
     this.rootDirectory = coreDiscoveryRoot;
     log.debug("Config-defined core root directory: {}", this.rootDirectory);
@@ -135,7 +141,7 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public List<CoreDescriptor> discover(final CoreContainer cc) {
     log.debug("Looking for core definitions underneath {}", rootDirectory);
-    final List<CoreDescriptor> cds = Lists.newArrayList();
+    final List<CoreDescriptor> cds = new ArrayList<>();
     try {
       Set<FileVisitOption> options = new HashSet<>();
       options.add(FileVisitOption.FOLLOW_LINKS);
@@ -191,6 +197,11 @@ public class CorePropertiesLocator implements CoresLocator {
       }
     }
     return cds;
+  }
+
+  @Override
+  public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+    return buildCoreDescriptor(cd.getInstanceDir().resolve(PROPERTIES_FILENAME), cc);
   }
 
   protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {

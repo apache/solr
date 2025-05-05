@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -71,11 +70,10 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     CloudDescriptor cloudDescriptor;
     try (SolrCore core = coreContainer.getCore(cname)) {
       if (core == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found: " + cname);
       collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
       cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
     }
-    AtomicReference<String> errorMessage = new AtomicReference<>();
     try {
       coreContainer
           .getZkController()
@@ -86,11 +84,15 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
               TimeUnit.MILLISECONDS,
               (n, c) -> {
                 if (c == null) return false;
+                if (coreContainer.isShutDown()) {
+                  log.info("Not going to wait for replica to recover - Solr is shutting down");
+                  return false;
+                }
 
                 try (SolrCore core = coreContainer.getCore(cname)) {
                   if (core == null)
                     throw new SolrException(
-                        SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+                        SolrException.ErrorCode.BAD_REQUEST, "core not found: " + cname);
                   if (onlyIfLeader != null && onlyIfLeader) {
                     if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
                       throw new SolrException(
@@ -160,7 +162,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                               + cname
                               + ", leaderDoesNotNeedRecovery="
                               + leaderDoesNotNeedRecovery
-                              + ", isLeader? "
+                              + ", isLeader="
                               + cloudDescriptor.isLeader()
                               + ", live="
                               + live
@@ -193,17 +195,11 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                   }
                 }
 
-                if (coreContainer.isShutDown()) {
-                  throw new SolrException(
-                      SolrException.ErrorCode.BAD_REQUEST, "Solr is shutting down");
-                }
-
                 return false;
               });
     } catch (TimeoutException | InterruptedException e) {
-      String error = errorMessage.get();
-      if (error == null) error = "Timeout waiting for collection state.";
-      throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+      throw new NotInClusterStateException(
+          ErrorCode.SERVER_ERROR, "Timeout waiting for collection state.");
     }
   }
 }

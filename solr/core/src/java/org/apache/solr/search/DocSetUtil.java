@@ -42,7 +42,13 @@ import org.apache.lucene.util.FixedBitSet;
  */
 public class DocSetUtil {
 
-  /** The cut-off point for small sets (SortedIntDocSet) vs large sets (BitDocSet) */
+  /**
+   * The cut-off point for small sets (SortedIntDocSet) vs large sets (BitDocSet)
+   *
+   * <p>For ridiculously small sets, we'll just use a sorted int[]. {@code maxDoc >>> 6} is a good
+   * value if you want to save memory, lower values such as {@code maxDoc >>> 11} should provide
+   * faster building but at the expense of using a full bitset even for quite sparse data.
+   */
   public static int smallSetSize(int maxDoc) {
     return (maxDoc >> 6) + 5; // The +5 is for better test coverage for small sets
   }

@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1298,6 +1297,43 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             .contains("Must have useDocValuesAsStored='true'"));
   }
 
+  @Test
+  public void testGlobFields() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+    createLargeIndex();
+    SolrQueryRequest req =
+        req("q", "*:*", "qt", "/export", "fl", "id,*_udvas,*_i_p", "sort", "id asc");
+    assertJQ(
+        req,
+        "response/numFound==100000",
+        "response/docs/[0]/id=='0'",
+        "response/docs/[1]/id=='1'",
+        "response/docs/[0]/sortabledv_udvas=='0'",
+        "response/docs/[1]/sortabledv_udvas=='1'",
+        "response/docs/[0]/small_i_p==0",
+        "response/docs/[1]/small_i_p==1");
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+    createLargeIndex();
+    req = req("q", "*:*", "qt", "/export", "fl", "*", "sort", "id asc");
+    assertJQ(
+        req,
+        "response/numFound==100000",
+        "response/docs/[0]/id=='0'",
+        "response/docs/[1]/id=='1'",
+        "response/docs/[0]/sortabledv_udvas=='0'",
+        "response/docs/[1]/sortabledv_udvas=='1'",
+        "response/docs/[0]/small_i_p==0",
+        "response/docs/[1]/small_i_p==1");
+
+    String jq = JQ(req);
+    assertFalse(
+        "Fields without docvalues and useDocValuesAsStored should not be returned",
+        jq.contains("\"sortabledv\""));
+  }
+
   @SuppressWarnings("rawtypes")
   private void validateSort(int numDocs) throws Exception {
     // 10 fields
@@ -1331,82 +1367,47 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String sortStr = String.join(",", fieldWithOrderStrs); // sort : field1 asc, field2 desc
     String fieldsStr = String.join(",", fieldStrs); // fl :  field1, field2
 
-    String resp =
-        h.query(req("q", "*:*", "qt", "/export", "fl", "id," + fieldsStr, "sort", sortStr));
-    HashMap respMap = mapper.readValue(resp, HashMap.class);
-    List docs = (ArrayList) ((HashMap) respMap.get("response")).get("docs");
+    List<?> exportDocs =
+        queryJsonReturnDocs(
+            req("q", "*:*", "qt", "/export", "fl", "id," + fieldsStr, "sort", sortStr));
+    assertEquals(exportDocs.size(), numDocs);
 
-    SolrQueryRequest selectReq =
-        req(
-            "q",
-            "*:*",
-            "qt",
-            "/select",
-            "fl",
-            "id," + fieldsStr,
-            "sort",
-            sortStr,
-            "rows",
-            Integer.toString(numDocs),
-            "wt",
-            "json");
-    String response = h.query(selectReq);
-    Map rsp = (Map) Utils.fromJSONString(response);
-    List doclist = (List) (((Map) rsp.get("response")).get("docs"));
+    // equivalent for /select
+    List<?> selectDocs =
+        queryJsonReturnDocs(
+            req(
+                "q",
+                "*:*",
+                "qt",
+                "/select",
+                "fl",
+                "id," + fieldsStr,
+                "sort",
+                sortStr,
+                "rows",
+                Integer.toString(numDocs),
+                "wt",
+                "json"));
 
-    assertEquals(docs.size(), numDocs);
+    assertEquals(selectDocs.size(), numDocs);
 
-    for (int i = 0; i < docs.size() - 1; i++) { // docs..
-      assertEquals(
-          "Position:" + i + " has different id value",
-          ((LinkedHashMap) doclist.get(i)).get("id"),
-          String.valueOf(((HashMap<?, ?>) docs.get(i)).get("id")));
-
-      for (SortFields fieldSort : fieldSorts) { // fields ..
-        String field = fieldSort.getField();
-        String sort = fieldSort.getSort();
-        String fieldVal1 = String.valueOf(((HashMap) docs.get(i)).get(field)); // 1st doc
-        String fieldVal2 = String.valueOf(((HashMap) docs.get(i + 1)).get(field)); // 2nd obj
-        if (fieldVal1.equals(fieldVal2)) {
-          continue;
-        } else {
-          if (sort.equals("asc")) {
-            if (field.equals("stringdv")
-                || field.equals("field1_s_dv")
-                || field.equals("datedv")
-                || field.equals("booleandv")) { // use string comparator
-              assertTrue(fieldVal1.compareTo(fieldVal2) < 0);
-            } else if (field.equals("doubledv")) {
-              assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) <= 0);
-            } else if (field.equals("floatdv")) {
-              assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) <= 0);
-            } else if (field.equals("intdv") || "field2_i_p".equals(field)) {
-              assertTrue(
-                  Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) <= 0);
-            } else if (field.equals("longdv") || field.equals("field3_l_p")) {
-              assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) <= 0);
-            }
-          } else {
-            if (field.equals("stringdv")
-                || field.equals("field1_s_dv")
-                || field.equals("datedv")
-                || field.equals("booleandv")) { // use string comparator
-              assertTrue(fieldVal1.compareTo(fieldVal2) > 0);
-            } else if (field.equals("doubledv")) {
-              assertTrue(Double.compare(Double.valueOf(fieldVal1), Double.valueOf(fieldVal2)) >= 0);
-            } else if (field.equals("floatdv")) {
-              assertTrue(Float.compare(Float.valueOf(fieldVal1), Float.valueOf(fieldVal2)) >= 0);
-            } else if (field.equals("intdv") || "field2_i_p".equals(field)) {
-              assertTrue(
-                  Integer.compare(Integer.valueOf(fieldVal1), Integer.valueOf(fieldVal2)) >= 0);
-            } else if (field.equals("longdv") || field.equals("field3_l_p")) {
-              assertTrue(Long.compare(Integer.valueOf(fieldVal1), Long.valueOf(fieldVal2)) >= 0);
-            }
-          }
-          break;
-        }
+    // check that both /select and /export return docs with the same values for the sorted fields
+    for (int i = 0; i < exportDocs.size(); i++) {
+      Map exportDoc = (Map) exportDocs.get(i);
+      Map selectDoc = (Map) selectDocs.get(i);
+      for (SortFields fieldSort : fieldSorts) {
+        String field = fieldSort.fieldName;
+        assertEquals(
+            "doc " + i + " differs for field " + field, exportDoc.get(field), selectDoc.get(field));
       }
     }
+  }
+
+  @SuppressWarnings("rawtypes")
+  private List<?> queryJsonReturnDocs(SolrQueryRequest exportReq) throws Exception {
+    String respStr = h.query(exportReq);
+    Map respMap = mapper.readValue(respStr, Map.class);
+    return (List) ((Map) respMap.get("response")).get("docs");
   }
 
   private static class SortFields {
@@ -1446,7 +1447,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         h.query(req("q", query, "qt", "/export", "fl", pointFieldsFl, "sort", sort));
     String resultTries =
         h.query(req("q", query, "qt", "/export", "fl", trieFieldsFl, "sort", sort));
-    assertJsonEquals(resultPoints.replaceAll("_p", ""), resultTries.replaceAll("_t", ""));
+    assertJsonEquals(resultPoints.replace("_p", ""), resultTries.replace("_t", ""));
   }
 
   private void addFloat(SolrInputDocument doc, float value, boolean mv) {

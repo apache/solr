@@ -22,18 +22,20 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -52,11 +54,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetBlobInfoAPI;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.admin.api.UploadBlobAPI;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
@@ -69,7 +72,6 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,8 +113,8 @@ public class BlobHandler extends RequestHandlerBase
 
       for (ContentStream stream : req.getContentStreams()) {
         ByteBuffer payload;
-        try (InputStream is = stream.getStream()) {
-          payload = SimplePostTool.inputStreamToByteArray(is, maxSize);
+        try (InputStream is = boundedInputStream(stream.getStream(), maxSize)) {
+          payload = Utils.toByteArray(is);
         }
         MessageDigest m = MessageDigest.getInstance("MD5");
         m.update(payload.array(), payload.arrayOffset() + payload.position(), payload.limit());
@@ -140,7 +142,7 @@ public class BlobHandler extends RequestHandlerBase
 
         long version = 0;
         if (docs.totalHits.value > 0) {
-          Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+          Document doc = req.getSearcher().getDocFetcher().doc(docs.scoreDocs[0].doc);
           Number n = doc.getField("version").numericValue();
           version = n.longValue();
         }
@@ -192,7 +194,7 @@ public class BlobHandler extends RequestHandlerBase
           return;
         }
       }
-      if (ReplicationHandler.FILE_STREAM.equals(req.getParams().get(CommonParams.WT))) {
+      if (ReplicationAPIBase.FILE_STREAM.equals(req.getParams().get(CommonParams.WT))) {
         if (blobName == null) {
           throw new SolrException(
               SolrException.ErrorCode.NOT_FOUND,
@@ -209,12 +211,12 @@ public class BlobHandler extends RequestHandlerBase
                       new Sort(new SortField("version", SortField.Type.LONG, true)));
           if (docs.totalHits.value > 0) {
             rsp.add(
-                ReplicationHandler.FILE_STREAM,
+                ReplicationAPIBase.FILE_STREAM,
                 new SolrCore.RawWriter() {
 
                   @Override
                   public void write(OutputStream os) throws IOException {
-                    Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+                    Document doc = req.getSearcher().getDocFetcher().doc(docs.scoreDocs[0].doc);
                     IndexableField sf = doc.getField("blob");
                     FieldType fieldType = req.getSchema().getField("blob").getType();
                     ByteBuffer buf = (ByteBuffer) fieldType.toObject(sf);
@@ -259,6 +261,16 @@ public class BlobHandler extends RequestHandlerBase
             rsp);
       }
     }
+  }
+
+  private static InputStream boundedInputStream(final InputStream is, final long maxLength)
+      throws IOException {
+    return new BoundedInputStream(is, maxLength) {
+      @Override
+      protected void onMaxLength(long maxLength, long count) {
+        throw new BufferOverflowException();
+      }
+    };
   }
 
   private void verifyWithRealtimeGet(
@@ -329,7 +341,7 @@ public class BlobHandler extends RequestHandlerBase
   // works OK for real-time get (which is all that BlobHandler uses it for).
   private static void forward(
       SolrQueryRequest req, String handler, SolrParams params, SolrQueryResponse rsp) {
-    LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), params);
+    SolrQueryRequest r = req.subRequest(params);
     SolrRequestInfo.getRequestInfo().addCloseHook(r); // Close as late as possible...
     req.getCore().getRequestHandler(handler).handleRequest(r, rsp);
   }
@@ -341,7 +353,7 @@ public class BlobHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> apis = Lists.newArrayList();
+    final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new GetBlobInfoAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new UploadBlobAPI(this)));
 

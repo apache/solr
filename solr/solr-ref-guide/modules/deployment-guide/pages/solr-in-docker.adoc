@@ -1,6 +1,5 @@
 = Solr in Docker
-:page-children: docker-faq, \
-    docker-networking
+:page-children: docker-faq
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -24,6 +23,18 @@ Instructions below apply to `solr:8.0.0` and above.
 
 See the https://hub.docker.com/_/solr?tab=tags[Docker Hub page] for a full list of tags and architectures available.
 
+=== Available images
+
+Two docker images are provided for each release, full and slim.
+These correspond to the two binary distributions that are produced for each Solr release.
+The docker images for these distributions can be found at:
+
+[horizontal]
+Full distribution:: `solr:<version>`
+Slim distribution:: `solr:<version>-slim`
+
+Please refer to the xref:installing-solr.adoc#available-solr-packages[Available Solr Packages] section for more information on each distribution.
+
 === Running Solr with host-mounted directories
 
 Typically users first want to run a single standalone Solr server in a container, with a single core for data, while storing data in a local directory.
@@ -42,7 +53,7 @@ Next load some of the example data that is included in the container:
 
 [source,bash]
 ----
-docker exec -it my_solr post -c gettingstarted example/exampledocs/manufacturers.xml
+docker exec -it my_solr solr post -c gettingstarted example/exampledocs/manufacturers.xml
 ----
 
 In the UI, find the "Core selector" popup menu and select the "gettingstarted" core, then select the "Query" menu item.
@@ -50,7 +61,7 @@ This gives you a default search for `*:*` which returns all docs.
 Hit the "Execute Query" button, and you should see a few docs with data.
 Congratulations!
 
-=== Docker-Compose
+=== Docker Compose
 
 You can use Docker Compose to run a single standalone server or a multi-node cluster.
 And you could use Docker Volumes instead of host-mounted directories.
@@ -58,7 +69,6 @@ For example, with a `docker-compose.yml` containing the following:
 
 [source,yaml]
 ----
-version: '3'
 services:
   solr:
     image: solr
@@ -77,10 +87,38 @@ you can simply run:
 
 [source,bash]
 ----
-docker-compose up -d
+docker compose up -d
 ----
 
-=== Single-Command Demo
+Below is an example compose file that starts a Solr Cloud cluster with Zookeeper. By
+creating a Docker network, Solr can reach the zookeeper container with the internal
+name `zoo`.:
+
+[source,yaml]
+----
+services:
+  solr:
+    image: solr:9-slim
+    ports:
+      - "8983:8983"
+    networks: [search]
+    environment:
+      ZK_HOST: "zoo:2181"
+    depends_on: [zoo]
+
+  zoo:
+    image: zookeeper:3.9
+    networks: [search]
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
+
+networks:
+  search:
+    driver: bridge
+----
+
+
+=== Single Command Demo
 
 For quick demos of Solr docker, there is a single command that starts Solr, creates a collection called "demo", and loads sample data into it:
 
@@ -100,6 +138,38 @@ See below for examples.
 
 The Solr docker distribution adds scripts in `/opt/solr/docker/scripts` to make it easier to use under Docker, for example to create cores on container startup.
 
+=== Creating Collections
+
+In a "SolrCloud" cluster you create "collections" to store data; and again you have several options for creating a core.
+
+These examples assume you're running a xref:docker-compose[docker compose cluster].
+
+The first way to create a collection is to go to the http://localhost:8983/[Solr Admin UI], select "Collections" from the left-hand side navigation menu, then press the "Add Collection" button, give it a name, select the `_default` config set, then press the "Add Collection" button.
+
+The second way is through the Solr control script on one of the containers:
+
+[source,bash]
+----
+docker exec solr1 solr create -c gettingstarted2
+----
+
+The third way is to use a separate container:
+
+[source,bash]
+----
+docker run -e SOLR_HOST=solr1 --network docs_solr solr solr create -c gettingstarted3 -p 8983
+----
+
+The fourth way is to use the remote API, from the host or from one of the containers, or some new container on the same network (adjust the hostname accordingly):
+
+[source,bash]
+----
+curl 'http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted3&numShards=1&collection.configName=_default'
+----
+
+If you want to use a custom configuration for your collection, you first need to upload it, and then refer to it by name when you create the collection.
+You can use the xref:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk` command] or the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configsets API].
+
 === Creating Cores
 
 When Solr runs in standalone mode, you create "cores" to store data.
@@ -113,7 +183,7 @@ The first is exactly the same: start Solr running in a container, then execute t
 [source,bash]
 ----
 docker run -d -p 8983:8983 --name my_solr solr
-docker exec -it my_solr solr create_core -c gettingstarted
+docker exec -it my_solr solr create -c gettingstarted
 ----
 
 This is not very convenient for users, and makes it harder to turn it into configuration for Docker Compose and orchestration tools like Kubernetes.
@@ -158,38 +228,6 @@ For example:
 docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr solr bash -c "precreate-core gettingstarted && source /mysetup.sh && solr-foreground"
 ----
 
-=== Creating Collections
-
-In a "SolrCloud" cluster you create "collections" to store data; and again you have several options for creating a core.
-
-These examples assume you're running a <<docker-compose,docker compose cluster>>.
-
-The first way to create a collection is to go to the http://localhost:8983/[Solr Admin UI], select "Collections" from the left-hand side navigation menu, then press the "Add Collection" button, give it a name, select the `_default` config set, then press the "Add Collection" button.
-
-The second way is through the Solr control script on one of the containers:
-
-[source,bash]
-----
-docker exec solr1 solr create -c gettingstarted2
-----
-
-The third way is to use a separate container:
-
-[source,bash]
-----
-docker run -e SOLR_HOST=solr1 --network docs_solr solr solr create_collection -c gettingstarted3 -p 8983
-----
-
-The fourth way is to use the remote API, from the host or from one of the containers, or some new container on the same network (adjust the hostname accordingly):
-
-[source,bash]
-----
-curl 'http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted3&numShards=1&collection.configName=_default'
-----
-
-If you want to use a custom configuration for your collection, you first need to upload it, and then refer to it by name when you create the collection.
-You can use the xref:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk` command] or the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configsets API].
-
 === Loading Your Own Data
 
 There are several ways to load data; let's look at the most common ones.
@@ -205,15 +243,15 @@ docker run --name my_solr -p 8983:8983 solr solr-precreate books
 # get data
 mkdir mydata
 wget -O mydata/books.csv https://raw.githubusercontent.com/apache/solr/main/solr/example/exampledocs/books.csv
-docker run --rm -v "$PWD/mydata:/mydata" --network=host solr post -c books /mydata/books.csv
+docker run --rm -v "$PWD/mydata:/mydata" --network=host solr solr post -c books /mydata/books.csv
 ----
 
-The same works if you use the <<docker-compose,example docker compose cluster>>, or you can just start your loading container in the same network:
+The same works if you use the xref:docker-compose[example docker compose cluster], or you can just start your loading container in the same network:
 
 [source,bash]
 ----
-docker run -e SOLR_HOST=solr1 --network=mycluster_solr solr solr create_collection -c books -p 8983
-docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr post  -c books /mydata/books.csv -host solr1
+docker run -e SOLR_HOST=solr1 --network=mycluster_solr solr solr create -c books -p 8983
+docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr solr post -c books /mydata/books.csv --host solr1
 ----
 
 Alternatively, you can make the data available on a volume at Solr start time, and then load it from `docker exec` or a custom start script.
@@ -302,6 +340,13 @@ Usage: jattach <pid> <cmd> [args ...]
     jcmd : execute jcmd command
 ....
 
+To find out the PID of Solr you can execute the following command:
+
+[source,bash]
+----
+ps -ef | grep java
+----
+
 Example commands to do a thread dump and get heap info for `PID 10`:
 
 
@@ -310,23 +355,6 @@ Example commands to do a thread dump and get heap info for `PID 10`:
 jattach 10 threaddump
 jattach 10 jcmd GC.heap_info
 ----
-
-== Updating from Solr 5-7 to 8+
-
-In Solr 8, the Solr Docker image switched from just extracting the Solr tar, to using the xref:taking-solr-to-production.adoc#service-installation-script[service installation script].
-This was done for various reasons: to bring it in line with the recommendations by the Solr Ref Guide and to make it easier to mount volumes.
-
-This is a backwards incompatible change, and means that if you're upgrading from an older version, you will most likely need to make some changes.
-If you don't want to upgrade at this time, specify `solr:7` as your container image.
-If you use `solr:8` you will use the new style.
-If you use just `solr` then you risk being tripped up by backwards incompatible changes; always specify at least a major version.
-
-Changes:
-
-* The Solr data is now stored in `/var/solr/data` rather than `/opt/solr/server/solr`.
-The `/opt/solr/server/solr/mycores` no longer exists.
-* The custom `SOLR_HOME` can no longer be used, because various scripts depend on the new locations.
-Consequently, `INIT_SOLR_HOME` is also no longer supported.
 
 == Running under tini
 
@@ -337,10 +365,8 @@ If you really do not want to run `tini`, and just run Solr as PID 1 instead, the
 
 == Out of Memory Handling
 
-You can use the `OOM` environment variable to control the behaviour of the Solr JVM when an out-of-memory error occurs.
-If you specify `OOM=exit`, Solr docker will add `-XX:+ExitOnOutOfMemoryError` to the JVM arguments, so that the JVM will exit.
-If you specify `OOM=crash`, Solr docker will add `-XX:+CrashOnOutOfMemoryError` to the JVM arguments, so the JVM will crash and produces text and binary crash files (if core files are enabled).
-If you specify `OOM=script`, Solr docker will add `-XX:OnOutOfMemoryError=/opt/docker-solr/scripts/oom_solr.sh`, so the JVM will run that script (and if you want to you can mount your own in its place).
+Please refer to the xref:taking-solr-to-production.adoc#out-of-memory-handling[Out of Memory Handling] Section for more information.
+The Docker image no-longer has custom logic for OOMs.
 
 == History
 

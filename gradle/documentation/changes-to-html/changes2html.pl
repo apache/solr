@@ -572,8 +572,8 @@ for my $rel (@releases) {
       $item =~ s{((LUCENE|SOLR|INFRA)\s+(\d{3,}))}
                 {<a href="${jira_url_prefix}\U$2\E-$3">$1</a>}gi;
       # Link "[ github | gh ] pull request [ # ] X+" to Github pull request
-      $item =~ s{((?:(?:(?:github|gh)\s+)?pull\s+request\s*(?:\#?\s*)?|gh-)(\d+))}
-                {<a href="${github_pull_request_prefix}$2">$1</a>}gi;
+      $item =~ s{((?:(?:(?:github|gh)\s+)?pull\s+request\s*(?:\#?\s*)?|gh-|(gh|github|pr)#)(\d+))}
+                {<a href="${github_pull_request_prefix}$3">$1</a>}gi;
       # Link "LUCENE_CHANGES.txt" to Lucene's same-release Changes.html
       # TODO: We can no longer rely on this since Solr may have a different Lucene version
       # But it will still work for pre-9.0 changes, and from 9.0 we can instead provide

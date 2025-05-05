@@ -28,8 +28,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
@@ -98,13 +100,16 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     params.set("action", CollectionAction.SYNCSHARD.toString());
     params.set("collection", "collection1");
     params.set("shard", "shard1");
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    final var request =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/collections", params);
 
     String baseUrl = shardToJetty.get(SHARD1).get(2).jetty.getBaseUrl().toString();
 
     // we only set the connect timeout, not so timeout
-    try (SolrClient baseClient = getHttpSolrClient(baseUrl, 30000)) {
+    try (SolrClient baseClient =
+        new HttpSolrClient.Builder(baseUrl)
+            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
       baseClient.request(request);
     }
 
@@ -278,11 +283,9 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ModifiableSolrParams params = new ModifiableSolrParams();
     for (CloudJettyRunner skip : skipServers) {
-      params.add("test.distrib.skip.servers", skip.url + "/");
+      ureq.getParams().add("test.distrib.skip.servers", skip.url + "/");
     }
-    ureq.setParams(params);
     ureq.process(cloudClient);
   }
 

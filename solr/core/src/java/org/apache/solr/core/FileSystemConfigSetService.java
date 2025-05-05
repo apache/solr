@@ -35,7 +35,10 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.FileTypeMagicUtil;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +51,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FileSystemConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** .metadata.json hidden file where metadata is stored */
   public static final String METADATA_FILE = ".metadata.json";
 
@@ -79,8 +83,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    Path solrConfigXmlFile = getConfigDir(configName).resolve("solrconfig.xml");
-    return Files.exists(solrConfigXmlFile);
+    return Files.exists(getConfigDir(configName));
   }
 
   @Override
@@ -94,7 +97,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     Path configDir = getConfigDir(configName);
     Objects.requireNonNull(filesToDelete);
     for (String fileName : filesToDelete) {
-      Path file = configDir.resolve(fileName);
+      Path file = configDir.resolve(normalizePathToOsSeparator(fileName));
       if (Files.exists(file)) {
         if (Files.isDirectory(file)) {
           deleteDir(file);
@@ -146,16 +149,43 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    Path filePath = getConfigDir(configName).resolve(fileName);
-    if (!Files.exists(filePath) || overwriteOnExists) {
-      Files.write(filePath, data);
+    if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
+      log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
+      return;
+    }
+    if (FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+      String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+      log.warn(
+          "Not including uploading file {}, as it matched the MAGIC signature of a forbidden mime type {}",
+          fileName,
+          mimeType);
+      return;
+    }
+    final var configsetBasePath = getConfigDir(configName);
+    final var configsetFilePath = configsetBasePath.resolve(normalizePathToOsSeparator(fileName));
+    if (!FileUtils.isPathAChildOfParent(
+        configsetBasePath, configsetFilePath)) { // See SOLR-17543 for context
+      log.warn(
+          "Not uploading file [{}], as it resolves to a location [{}] outside of the configset root directory [{}]",
+          fileName,
+          configsetFilePath,
+          configsetBasePath);
+      return;
+    }
+
+    if (overwriteOnExists || !Files.exists(configsetFilePath)) {
+      Files.write(configsetFilePath, data);
     }
   }
 
   @Override
   public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
     // store metadata in .metadata.json file
-    Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
+    Path configDir = getConfigDir(configName);
+    if (!Files.exists(configDir)) {
+      Files.createDirectory(configDir);
+    }
+    Path metadataPath = configDir.resolve(METADATA_FILE);
     Files.write(metadataPath, Utils.toJSON(data));
   }
 
@@ -195,8 +225,22 @@ public class FileSystemConfigSetService extends ConfigSetService {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {
-              Files.copy(
-                  file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+              if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(file.getFileName().toString())) {
+                log.warn(
+                    "Not including uploading file to config, as it is a forbidden type: {}",
+                    file.getFileName());
+              } else {
+                if (!FileTypeMagicUtil.isFileForbiddenInConfigset(file)) {
+                  Files.copy(
+                      file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+                } else {
+                  String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(file);
+                  log.warn(
+                      "Not copying file {}, as it matched the MAGIC signature of a forbidden mime type {}",
+                      file.getFileName(),
+                      mimeType);
+                }
+              }
               return FileVisitResult.CONTINUE;
             }
           });
@@ -218,7 +262,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
-    Path filePath = getConfigDir(configName).resolve(fileName);
+    Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
     byte[] data = null;
     try {
       data = Files.readAllBytes(filePath);
@@ -234,13 +278,13 @@ public class FileSystemConfigSetService extends ConfigSetService {
     List<String> filePaths = new ArrayList<>();
     Files.walkFileTree(
         configDir,
-        new SimpleFileVisitor<Path>() {
+        new SimpleFileVisitor<>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
             // don't include hidden (.) files
-            if (!Files.isHidden(file)) {
-              filePaths.add(configDir.relativize(file).toString());
+            if (!Files.isHidden(file) && !METADATA_FILE.equals(file.getFileName().toString())) {
+              filePaths.add(normalizePathToForwardSlash(configDir.relativize(file).toString()));
               return FileVisitResult.CONTINUE;
             }
             return FileVisitResult.CONTINUE;
@@ -250,13 +294,23 @@ public class FileSystemConfigSetService extends ConfigSetService {
           public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
             String relativePath = configDir.relativize(dir).toString();
             if (!relativePath.isEmpty()) {
-              filePaths.add(relativePath + "/");
+              // We always want to have a trailing forward slash on a directory to
+              // match the normalization to forward slashes everywhere.
+              filePaths.add(relativePath + '/');
             }
             return FileVisitResult.CONTINUE;
           }
         });
     Collections.sort(filePaths);
     return filePaths;
+  }
+
+  private String normalizePathToForwardSlash(String path) {
+    return path.replace(configSetBase.getFileSystem().getSeparator(), "/");
+  }
+
+  private String normalizePathToOsSeparator(String path) {
+    return path.replace("/", configSetBase.getFileSystem().getSeparator());
   }
 
   protected Path locateInstanceDir(CoreDescriptor cd) {

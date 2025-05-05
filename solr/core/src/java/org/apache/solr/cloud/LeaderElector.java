@@ -25,10 +25,9 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkController.ContextKey;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -61,8 +60,6 @@ public class LeaderElector {
 
   protected SolrZkClient zkClient;
 
-  private ZkCmdExecutor zkCmdExecutor;
-
   private volatile ElectionContext context;
 
   private ElectionWatcher watcher;
@@ -72,13 +69,11 @@ public class LeaderElector {
 
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
   }
 
   public LeaderElector(
       SolrZkClient zkClient, ContextKey key, Map<ContextKey, ElectionContext> electionContexts) {
     this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     this.electionContexts = electionContexts;
     this.contextKey = key;
   }
@@ -111,7 +106,7 @@ public class LeaderElector {
 
     // If any double-registrations exist for me, remove all but this latest one!
     // TODO: can we even get into this state?
-    String prefix = zkClient.getZooKeeper().getSessionId() + "-" + context.id + "-";
+    String prefix = zkClient.getZkSessionId() + "-" + context.id + "-";
     Iterator<String> it = seqs.iterator();
     while (it.hasNext()) {
       String elec = it.next();
@@ -231,7 +226,7 @@ public class LeaderElector {
 
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
 
-    long sessionId = zkClient.getZooKeeper().getSessionId();
+    long sessionId = zkClient.getZkSessionId();
     String id = sessionId + "-" + context.id;
     String leaderSeqPath = null;
     boolean cont = true;
@@ -352,7 +347,7 @@ public class LeaderElector {
       try {
         // am I the next leader?
         checkIfIamLeader(context, true);
-      } catch (AlreadyClosedException e) {
+      } catch (IllegalStateException e) {
 
       } catch (Exception e) {
         if (!zkClient.isClosed()) {
@@ -366,10 +361,11 @@ public class LeaderElector {
   public void setup(final ElectionContext context) throws InterruptedException, KeeperException {
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     if (context instanceof OverseerElectionContext) {
-      zkCmdExecutor.ensureExists(electZKPath, zkClient);
+      ZkMaintenanceUtils.ensureExists(electZKPath, zkClient);
     } else {
       // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
-      zkCmdExecutor.ensureExists(electZKPath, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+      ZkMaintenanceUtils.ensureExists(
+          electZKPath, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
     }
 
     this.context = context;
@@ -383,13 +379,17 @@ public class LeaderElector {
   void retryElection(ElectionContext context, boolean joinAtHead)
       throws KeeperException, InterruptedException {
     ElectionWatcher watcher = this.watcher;
+    if (watcher != null) watcher.cancel();
+    this.context.cancelElection();
+    this.context.close();
+
+    // Create a new context for the retried election
+    // This must be done *after* we canceled the previous context, so we drop stale version for
+    // leader registration node
     ElectionContext ctx = context.copy();
     if (electionContexts != null) {
       electionContexts.put(contextKey, ctx);
     }
-    if (watcher != null) watcher.cancel();
-    this.context.cancelElection();
-    this.context.close();
     this.context = ctx;
     joinElection(ctx, true, joinAtHead);
   }

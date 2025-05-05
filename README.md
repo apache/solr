@@ -18,8 +18,11 @@
 # Welcome to the Apache Solr project!
 -----------------------------------
 
-Solr is the popular, blazing fast open source search platform for all your
-enterprise, e-commerce, and analytics needs, built on [Apache Lucene](https://lucene.apache.org/).
+Solr is the blazing-fast, open source, multi-modal search platform built on [Apache Lucene](https://lucene.apache.org/).
+It powers full-text, vector, and geospatial search at many of the world's largest organizations.
+
+[![Build Status](https://ci-builds.apache.org/job/Solr/job/Solr-Artifacts-main/badge/icon?subject=Solr%20Artifacts)](https://ci-builds.apache.org/job/Solr/job/Solr-Artifacts-main/)
+[![Build Status](https://ci-builds.apache.org/job/Solr/job/Solr-Lint-main/badge/icon?subject=Solr%20Lint)](https://ci-builds.apache.org/job/Solr/job/Solr-Lint-main/)
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
@@ -73,10 +76,31 @@ Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.h
 - Slack: Solr Community Channel.  Sign up at https://s.apache.org/solr-slack
 - IRC: `#solr` on [libera.chat](https://web.libera.chat/?channels=#solr)
 
+## Developer Documentation
+
+Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree or building Solr from source in [./dev-docs/solr-source-code.adoc](./dev-docs/solr-source-code.adoc)
+
+### Quickstart
+
+Solr uses [Gradle](https://gradle.org/) for its build system. Here are some useful hints to build and run Solr locally:
+
+- To build a Solr dev distribution:
+
+```
+./gradlew dev
+```
+
+- To run the Solr dev distribution locally:
+
+```
+cd ./solr/packaging/build/dev
+bin/solr start
+```
+
+- Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the `bin/solr` script to create and manage Solr collections. For example use the `bin/solr post` tool to index some sample data.
 
 ## Get Involved
-Please review the [Contributing to Solr Guide](https://cwiki.apache.org/confluence/display/solr/HowToContribute)
-for information on contributing.
+Please review [CONTRIBUTING.md](CONTRIBUTING.md) for information on contributing to the project.
 
 To get involved in the developer community:
 
@@ -84,5 +108,3 @@ To get involved in the developer community:
 - Slack: `#solr-dev` in the `the-asf` organization.  Sign up at https://the-asf.slack.com/messages/CE70MDPMF
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
 - IRC: `#solr-dev` on [libera.chat](https://web.libera.chat/?channels=#solr-dev)
-
-Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree.

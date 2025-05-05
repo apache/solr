@@ -138,8 +138,8 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // first run the standard query
     final TopDocs hits = searcher.search(bqBuilder.build(), 10);
     assertEquals(2, hits.totalHits.value);
-    assertEquals("10", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("11", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("10", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("11", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
 
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -163,7 +163,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
             hits,
             searcher,
             hits.scoreDocs[0].doc,
-            new LTRScoringQuery(ltrScoringModel1, false)); // features not requested in response
+            new LTRScoringQuery(ltrScoringModel1)); // features not requested in response
     LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getFeaturesInfo();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
@@ -184,12 +184,11 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
             "test",
             allFeatures,
             TestLinearModel.makeFeatureWeights(features));
-    modelWeight =
-        performQuery(
-            hits,
-            searcher,
-            hits.scoreDocs[0].doc,
-            new LTRScoringQuery(ltrScoringModel2, true)); // features requested in response
+    LTRScoringQuery ltrQuery2 = new LTRScoringQuery(ltrScoringModel2);
+    // features requested in response
+    ltrQuery2.setFeatureLogger(
+        new CSVFeatureLogger("test", FeatureLogger.FeatureFormat.DENSE, true));
+    modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc, ltrQuery2);
     featuresInfo = modelWeight.getFeaturesInfo();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);

@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase.BadApple;
@@ -52,7 +51,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
       server.run();
 
       CloudConfig cloudConfig =
-          new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
+          new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984)
               .setLeaderConflictResolveWait(180000)
               .setLeaderVoteWait(180000)
               .build();
@@ -63,13 +62,13 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
             ExecutorUtil.newMDCAwareSingleThreadExecutor(
                 new SolrNamedThreadFactory(this.getTestName()));
         try (ZkController zkController =
-            new ZkController(
-                cc, server.getZkAddress(), 15000, cloudConfig, Collections::emptyList)) {
-          threadExecutor.submit(
+            new ZkController(cc, server.getZkAddress(), 15000, cloudConfig)) {
+          threadExecutor.execute(
               () -> {
                 TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
                 while (!timeout.hasTimedOut()) {
-                  server.expire(zkController.getZkClient().getZooKeeper().getSessionId());
+                  long sessionId = zkController.getZkClient().getZkSessionId();
+                  server.expire(sessionId);
                   try {
                     timeout.sleep(10);
                   } catch (InterruptedException e) {
@@ -79,7 +78,10 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
                 }
               });
           try (SolrZkClient zc =
-              new SolrZkClient(server.getZkAddress(), LeaderElectionTest.TIMEOUT)) {
+              new SolrZkClient.Builder()
+                  .withUrl(server.getZkAddress())
+                  .withTimeout(LeaderElectionTest.TIMEOUT, TimeUnit.MILLISECONDS)
+                  .build()) {
             boolean found = false;
             TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
             while (!timeout.hasTimedOut()) {

@@ -62,8 +62,7 @@ public class SliceMutator {
   }
 
   static SolrZkClient getZkClient(SolrCloudManager cloudManager) {
-    if (cloudManager instanceof SolrClientCloudManager) {
-      SolrClientCloudManager manager = (SolrClientCloudManager) cloudManager;
+    if (cloudManager instanceof SolrClientCloudManager manager) {
       return manager.getZkClient();
     } else {
       return null;
@@ -94,18 +93,30 @@ public class SliceMutator {
             cloudManager
                 .getClusterStateProvider()
                 .getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
-    Replica replica =
-        new Replica(
-            coreNodeName,
-            Utils.makeMap(
-                ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
-                ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
-                ZkStateReader.NODE_NAME_PROP, nodeName,
-                ZkStateReader.BASE_URL_PROP, baseUrl,
-                ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)),
-            coll,
-            slice);
 
+    Map<String, Object> replicaProps =
+        Utils.makeMap(
+            ZkStateReader.CORE_NAME_PROP,
+            message.getStr(ZkStateReader.CORE_NAME_PROP),
+            ZkStateReader.STATE_PROP,
+            message.getStr(ZkStateReader.STATE_PROP),
+            ZkStateReader.NODE_NAME_PROP,
+            nodeName,
+            ZkStateReader.BASE_URL_PROP,
+            baseUrl,
+            ZkStateReader.FORCE_SET_STATE_PROP,
+            "false",
+            ZkStateReader.REPLICA_TYPE,
+            message.get(ZkStateReader.REPLICA_TYPE));
+
+    // add user-defined properties
+    for (String prop : message.keySet()) {
+      if (prop.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
+        replicaProps.put(prop, message.get(prop));
+      }
+    }
+
+    Replica replica = new Replica(coreNodeName, replicaProps, coll, slice);
     return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
@@ -147,6 +158,10 @@ public class SliceMutator {
       log.error("Could not mark shard leader for non existing collection: {}", collectionName);
       return ZkStateWriter.NO_OP;
     }
+    if (coll.isPerReplicaState()) {
+      log.debug("Do not mark shard leader for PRS collection: {}", collectionName);
+      return ZkStateWriter.NO_OP;
+    }
 
     Map<String, Slice> slices = coll.getSlicesMap();
     Slice slice = slices.get(sliceName);
@@ -156,9 +171,7 @@ public class SliceMutator {
     final Map<String, Replica> newReplicas = new LinkedHashMap<>();
     for (Replica replica : slice.getReplicas()) {
       // TODO: this should only be calculated once and cached somewhere?
-      String coreURL =
-          ZkCoreNodeProps.getCoreUrl(
-              replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
+      String coreURL = replica.getCoreUrl();
 
       if (replica.equals(oldLeader) && !coreURL.equals(leaderUrl)) {
         replica = ReplicaMutator.unsetLeader(replica);

@@ -16,5 +16,24 @@
  */
 package org.apache.solr.client.solrj.request;
 
-/** Marker class so that we can determine which requests are updates. */
-public interface IsUpdateRequest {}
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+
+/**
+ * Marker class so that we can determine which requests are updates.
+ *
+ * @deprecated Use {@link UpdateRequest#isSendToLeaders} and {@link SolrRequest#getRequestType}.
+ */
+@Deprecated
+public interface IsUpdateRequest {
+
+  /**
+   * Indicates if clients should make attempts to route this request to a shard leader, overriding
+   * typical client routing preferences for requests. Defaults to true.
+   *
+   * @see CloudSolrClient#isUpdatesToLeaders
+   */
+  default boolean isSendToLeaders() {
+    return true;
+  }
+}

@@ -64,7 +64,6 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     String testCollectionName = "c8n_onreconnect_1x1";
     String shardId = "shard1";
     createCollectionRetry(testCollectionName, "conf1", 1, 1);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     Replica leader = getShardLeader(testCollectionName, shardId, 30 /* timeout secs */);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
@@ -86,8 +85,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     assertNotNull("ZkController returned null OnReconnect listeners", listeners);
     ZkIndexSchemaReader expectedListener = null;
     for (OnReconnect listener : listeners) {
-      if (listener instanceof ZkIndexSchemaReader) {
-        ZkIndexSchemaReader reader = (ZkIndexSchemaReader) listener;
+      if (listener instanceof ZkIndexSchemaReader reader) {
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
           break;
@@ -123,8 +121,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
 
     expectedListener = null; // reset
     for (OnReconnect listener : listeners) {
-      if (listener instanceof ZkIndexSchemaReader) {
-        ZkIndexSchemaReader reader = (ZkIndexSchemaReader) listener;
+      if (listener instanceof ZkIndexSchemaReader reader) {
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           fail(
               "Previous core "
@@ -154,8 +151,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
 
     listeners = zkController.getCurrentOnReconnectListeners();
     for (OnReconnect listener : listeners) {
-      if (listener instanceof ZkIndexSchemaReader) {
-        ZkIndexSchemaReader reader = (ZkIndexSchemaReader) listener;
+      if (listener instanceof ZkIndexSchemaReader reader) {
         if (reloadedLeaderCoreId.equals(reader.getUniqueCoreId())) {
           fail(
               "Previous core "

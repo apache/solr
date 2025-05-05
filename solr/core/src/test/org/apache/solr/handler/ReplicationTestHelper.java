@@ -17,23 +17,25 @@
 package org.apache.solr.handler;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -42,7 +44,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,22 +52,43 @@ public final class ReplicationTestHelper {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String CONF_DIR =
-      "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
+      "solr"
+          + FileSystems.getDefault().getSeparator()
+          + "collection1"
+          + FileSystems.getDefault().getSeparator()
+          + "conf"
+          + FileSystems.getDefault().getSeparator();
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        new File(instance.getHomeDir(), "solr.xml"));
+    Files.copy(
+        SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"),
+        Path.of(instance.getHomeDir(), "solr.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
   }
 
+  /**
+   * @param baseUrl the root URL for a Solr node
+   */
   public static SolrClient createNewSolrClient(String baseUrl) {
-    return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
+    return createNewSolrClient(baseUrl, null);
+  }
+
+  /**
+   * @param baseUrl the root URL for a Solr node
+   * @param collectionOrCore an optional default collection/core for the created client
+   */
+  public static Http2SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
+    return new Http2SolrClient.Builder(baseUrl)
+        .withDefaultCollection(collectionOrCore)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+        .withIdleTimeout(90000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   public static int index(SolrClient s, Object... fields) throws Exception {
@@ -81,18 +103,16 @@ public final class ReplicationTestHelper {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time
    * "TEST_PORT" is found.
    */
-  private static void copyFile(File src, File dst, Integer port, boolean internalCompression)
+  private static void copyFile(Path src, Path dst, Integer port, boolean internalCompression)
       throws IOException {
-    try (BufferedReader in =
-            new BufferedReader(
-                new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
-        Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8)) {
-
+    try (BufferedReader in = Files.newBufferedReader(src, StandardCharsets.UTF_8);
+        Writer out = Files.newBufferedWriter(dst, StandardCharsets.UTF_8)) {
       for (String line = in.readLine(); null != line; line = in.readLine()) {
         if (null != port) {
           line = line.replace("TEST_PORT", port.toString());
         }
-        line = line.replace("COMPRESSION", internalCompression ? "internal" : "false");
+        String externalCompression = LuceneTestCase.random().nextBoolean() ? "external" : "false";
+        line = line.replace("COMPRESSION", internalCompression ? "internal" : externalCompression);
         out.write(line);
       }
     }
@@ -144,7 +164,7 @@ public final class ReplicationTestHelper {
     // String leaderUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME +
     // ReplicationHandler.PATH+"?command=" + pCommand;
     String url = baseUrl + ReplicationHandler.PATH + "?command=" + pCommand;
-    URL u = new URL(url);
+    URL u = URI.create(url).toURL();
     InputStream stream = u.openStream();
     stream.close();
   }
@@ -215,7 +235,7 @@ public final class ReplicationTestHelper {
             + "?wait=true&command=fetchindex&leaderUrl="
             + srcUrl
             + ReplicationHandler.PATH;
-    url = new URL(leaderUrl);
+    url = URI.create(leaderUrl).toURL();
     stream = url.openStream();
     stream.close();
   }
@@ -224,9 +244,9 @@ public final class ReplicationTestHelper {
 
     private final String name;
     private Integer testPort;
-    private final File homeDir;
-    private File confDir;
-    private File dataDir;
+    private final Path homeDir;
+    private Path confDir;
+    private Path dataDir;
 
     /**
      * @param homeDir Base directory to build solr configuration and index in
@@ -234,7 +254,7 @@ public final class ReplicationTestHelper {
      *     new conf dir.
      * @param testPort if not null, used as a replacement for TEST_PORT in the cloned config files.
      */
-    public SolrInstance(File homeDir, String name, Integer testPort) {
+    public SolrInstance(Path homeDir, String name, Integer testPort) {
       this.homeDir = homeDir;
       this.name = name;
       this.testPort = testPort;
@@ -253,7 +273,7 @@ public final class ReplicationTestHelper {
     }
 
     public String getDataDir() {
-      return dataDir.getAbsolutePath();
+      return dataDir.toString();
     }
 
     public String getSolrConfigFile() {
@@ -273,14 +293,14 @@ public final class ReplicationTestHelper {
       props.setProperty("name", "collection1");
 
       SolrTestCaseJ4.writeCoreProperties(
-          homeDir.toPath().resolve("collection1"), props, "TestReplicationHandler");
+          homeDir.resolve("collection1"), props, "TestReplicationHandler");
 
-      dataDir = new File(homeDir + "/collection1", "data");
-      confDir = new File(homeDir + "/collection1", "conf");
+      dataDir = Path.of(homeDir + "/collection1", "data");
+      confDir = Path.of(homeDir + "/collection1", "conf");
 
-      homeDir.mkdirs();
-      dataDir.mkdirs();
-      confDir.mkdirs();
+      Files.createDirectories(homeDir);
+      Files.createDirectories(dataDir);
+      Files.createDirectories(confDir);
 
       copyConfigFile(getSolrConfigFile(), "solrconfig.xml");
       copyConfigFile(getSchemaFile(), "schema.xml");
@@ -292,7 +312,7 @@ public final class ReplicationTestHelper {
     public void copyConfigFile(String srcFile, String destFile) throws IOException {
       copyFile(
           SolrTestCaseJ4.getFile(srcFile),
-          new File(confDir, destFile),
+          confDir.resolve(destFile),
           testPort,
           LuceneTestCase.random().nextBoolean());
     }

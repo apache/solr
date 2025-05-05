@@ -38,7 +38,7 @@ import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
 import org.apache.solr.search.facet.SweepCountAware.SegCountPerSeg;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
-/** Grabs values from {@link DocValues}. */
+/** Grabs values from {@link SortedDocValues} or {@link SortedDocValues}. */
 class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   static boolean unwrap_singleValued_multiDv = true; // only set to false for test coverage
 
@@ -215,7 +215,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     int segMax = singleDv.getValueCount();
     final SegCountPerSeg segCounter = getSegCountPerSeg(disi, segMax);
 
-    /**
+    /*
      * alternate trial implementations // ord // FieldUtil.visitOrds(singleDv, disi,
      * (doc,ord)->{counts[ord+1]++;} );
      *
@@ -225,9 +225,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     // calculate segment-local counts
     int doc;
-    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
-      FieldCacheImpl.SortedDocValuesImpl.Iter fc =
-          (FieldCacheImpl.SortedDocValuesImpl.Iter) singleDv;
+    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter fc) {
       while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         final int segOrd = fc.getOrd(doc);
         if (segOrd >= 0) {
@@ -340,10 +338,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       throws IOException {
     final SegCountGlobal segCounter = getSegCountGlobal(disi, singleDv);
     int doc;
-    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
+    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter fc) {
 
-      FieldCacheImpl.SortedDocValuesImpl.Iter fc =
-          (FieldCacheImpl.SortedDocValuesImpl.Iter) singleDv;
       while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         int segOrd = fc.getOrd(doc);
         if (segOrd < 0) continue;

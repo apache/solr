@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -24,10 +25,12 @@ import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -42,10 +45,15 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CpuAllowedLimit;
+import org.apache.solr.search.QueryLimits;
+import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +65,7 @@ public abstract class RequestHandlerBase
         ApiSupport,
         PermissionNameProvider {
 
+  public static final String REQUEST_CPU_TIMER_CONTEXT = "publishCpuTime";
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
@@ -71,6 +80,8 @@ public abstract class RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
+
+  protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTimer.ENABLE_CPU_TIME);
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -210,6 +221,9 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    if (publishCpuTime) {
+      ThreadCpuTimer.beginContext(REQUEST_CPU_TIMER_CONTEXT);
+    }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
@@ -223,28 +237,55 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      NamedList<?> header = rsp.getResponseHeader();
-      if (header != null) {
-        if (Boolean.TRUE.equals(
-            header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          metrics.numTimeouts.mark();
-          rsp.setHttpCaching(false);
-        }
+
+      if (!haveCompleteResults(rsp.getResponseHeader())) {
+        metrics.numTimeouts.mark();
+        rsp.setHttpCaching(false);
       }
+    } catch (QueryLimitsExceededException e) {
+      rsp.setPartialResults(req);
     } catch (Exception e) {
-      e = normalizeReceivedException(req, e);
-      processErrorMetricsOnException(e, metrics);
-      rsp.setException(e);
+      Exception normalized = normalizeReceivedException(req, e);
+      processErrorMetricsOnException(normalized, metrics);
+      rsp.setException(normalized);
     } finally {
-      long elapsed = timer.stop();
-      metrics.totalTime.inc(elapsed);
+      try {
+        long elapsed = timer.stop();
+        metrics.totalTime.inc(elapsed);
+
+        if (publishCpuTime) {
+          Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);
+          if (QueryLimits.getCurrentLimits().isLimitsEnabled()) {
+            // prefer the value from the limit if available to avoid confusing users with trivial
+            // differences. Not fond of the spotless formatting here...
+            cpuTime =
+                Optional.ofNullable(
+                    (Long)
+                        QueryLimits.getCurrentLimits()
+                            .currentLimitValueFor(CpuAllowedLimit.class)
+                            .orElse(cpuTime.orElse(null)));
+          }
+          if (cpuTime.isPresent()) {
+            // add CPU_TIME if not already added by SearchHandler
+            NamedList<Object> header = rsp.getResponseHeader();
+            if (header != null) {
+              if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+                header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
+              }
+            }
+            rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
+          }
+        }
+      } finally {
+        // whatever happens be sure to clear things out at end of request.
+        ThreadCpuTimer.reset();
+      }
     }
   }
 
   public static void processErrorMetricsOnException(Exception e, HandlerMetrics metrics) {
     boolean isClientError = false;
-    if (e instanceof SolrException) {
-      final SolrException se = (SolrException) e;
+    if (e instanceof SolrException se) {
       if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
         return;
       } else if (se.code() >= 400 && se.code() < 500) {
@@ -252,11 +293,12 @@ public abstract class RequestHandlerBase
       }
     }
 
-    SolrException.log(log, e);
     metrics.numErrors.mark();
     if (isClientError) {
+      log.error("Client exception", e);
       metrics.numClientErrors.mark();
     } else {
+      log.error("Server exception", e);
       metrics.numServerErrors.mark();
     }
   }
@@ -341,5 +383,17 @@ public abstract class RequestHandlerBase
   public Collection<Api> getApis() {
     return Collections.singleton(
         new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+  }
+
+  /**
+   * Checks whether the given request is an internal request to a shard. We rely on the fact that an
+   * internal search request to a shard contains the param "isShard", and an internal update request
+   * to a shard contains the param "distrib.from".
+   *
+   * @return true if request is internal
+   */
+  public static boolean isInternalShardRequest(SolrQueryRequest req) {
+    return req.getParams().get(DistributedUpdateProcessor.DISTRIB_FROM) != null
+        || "true".equals(req.getParams().get(ShardParams.IS_SHARD));
   }
 }

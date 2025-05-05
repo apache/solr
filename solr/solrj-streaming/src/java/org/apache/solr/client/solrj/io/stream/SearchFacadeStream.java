@@ -49,7 +49,7 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
 
     // Handle comma delimited list of collections.
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);

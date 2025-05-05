@@ -16,12 +16,16 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.BasicDistributedZkTest;
@@ -157,20 +161,23 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     assertEquals("found [1002] in failed tasks", message);
 
-    params = new ModifiableSolrParams();
-    params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
-    params.set("name", "collection3");
-    params.set("numShards", 1);
-    params.set("replicationFactor", 1);
-    params.set("collection.configName", "conf1");
-    params.set(CommonAdminParams.ASYNC, "1002");
-    try {
-      r = sendRequest(params);
-    } catch (SolrServerException | IOException e) {
-      log.error("error sending request", e);
-    }
+    final var duplicateRequestIdParams = new ModifiableSolrParams();
+    duplicateRequestIdParams.set(
+        CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
+    duplicateRequestIdParams.set("name", "collection3");
+    duplicateRequestIdParams.set("numShards", 1);
+    duplicateRequestIdParams.set("replicationFactor", 1);
+    duplicateRequestIdParams.set("collection.configName", "conf1");
+    duplicateRequestIdParams.set(CommonAdminParams.ASYNC, "1002");
 
-    assertEquals("Task with the same requestid already exists. (1002)", r.get("error"));
+    final SolrClient.RemoteSolrException thrown =
+        expectThrows(
+            SolrClient.RemoteSolrException.class,
+            () -> {
+              sendRequest(duplicateRequestIdParams);
+            });
+    assertThat(
+        thrown.getMessage(), containsString("Task with the same requestid already exists. (1002)"));
   }
 
   @SuppressWarnings("unchecked")
@@ -210,6 +217,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
+        break;
       }
     }
     // Return last state?
@@ -223,7 +231,10 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 
-    try (SolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
+    try (SolrClient baseServer =
+        new HttpSolrClient.Builder(baseUrl)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .build()) {
       return baseServer.request(request);
     }
   }

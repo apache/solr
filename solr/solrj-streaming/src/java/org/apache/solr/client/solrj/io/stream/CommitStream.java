@@ -55,6 +55,7 @@ public class CommitStream extends TupleStream implements Expressible {
   private TupleStream tupleSource;
 
   private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
   private long docsSinceCommit;
 
   public CommitStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -150,7 +151,12 @@ public class CommitStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     tupleSource.open();
-    clientCache = new SolrClientCache();
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      doCloseCache = false;
+    }
     docsSinceCommit = 0;
   }
 
@@ -164,7 +170,7 @@ public class CommitStream extends TupleStream implements Expressible {
       }
     } else {
       // if the read document contains field 'batchIndexed' then it's a summary
-      // document and we can update our count based on it's value. If not then
+      // document, and we can update our count based on its value. If not then
       // just increment by 1
       if (tuple.getFields().containsKey(UpdateStream.BATCH_INDEXED_FIELD_NAME)
           && isInteger(tuple.getString(UpdateStream.BATCH_INDEXED_FIELD_NAME))) {
@@ -193,7 +199,9 @@ public class CommitStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    clientCache.close();
+    if (doCloseCache) {
+      clientCache.close();
+    }
     tupleSource.close();
   }
 

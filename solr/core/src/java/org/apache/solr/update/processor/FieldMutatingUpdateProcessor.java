@@ -91,7 +91,7 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
         dest = mutate(src);
       } catch (SolrException e) {
         String msg = "Unable to mutate field '" + fname + "': " + e.getMessage();
-        SolrException.log(log, msg, e);
+        log.error(msg, e);
         throw new SolrException(BAD_REQUEST, msg, e);
       }
       if (null == dest) {

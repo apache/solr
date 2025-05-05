@@ -58,10 +58,12 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       assertEquals(2, cloudReplicaSource.getSliceNames().size());
       assertEquals(1, cloudReplicaSource.getReplicasBySlice(0).size());
       assertEquals(
-          "http://baseUrl1:8983/slice1_replica1/", cloudReplicaSource.getReplicasBySlice(0).get(0));
+          "http://baseUrl1:8983/solr/slice1_replica1/",
+          cloudReplicaSource.getReplicasBySlice(0).get(0));
       assertEquals(1, cloudReplicaSource.getReplicasBySlice(1).size());
       assertEquals(
-          "http://baseUrl2:8984/slice2_replica2/", cloudReplicaSource.getReplicasBySlice(1).get(0));
+          "http://baseUrl2:8984/solr/slice2_replica2/",
+          cloudReplicaSource.getReplicasBySlice(1).get(0));
     }
   }
 
@@ -87,7 +89,8 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       assertEquals(2, cloudReplicaSource.getSliceNames().size());
       assertEquals(1, cloudReplicaSource.getReplicasBySlice(0).size());
       assertEquals(
-          "http://baseUrl1:8983/slice1_replica1/", cloudReplicaSource.getReplicasBySlice(0).get(0));
+          "http://baseUrl1:8983/solr/slice1_replica1/",
+          cloudReplicaSource.getReplicasBySlice(0).get(0));
       assertEquals(0, cloudReplicaSource.getReplicasBySlice(1).size());
     }
   }
@@ -115,11 +118,13 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       assertEquals(2, cloudReplicaSource.getSliceNames().size());
       assertEquals(1, cloudReplicaSource.getReplicasBySlice(0).size());
       assertEquals(
-          "http://baseUrl1:8983/slice1_replica1/", cloudReplicaSource.getReplicasBySlice(0).get(0));
+          "http://baseUrl1:8983/solr/slice1_replica1/",
+          cloudReplicaSource.getReplicasBySlice(0).get(0));
       assertEquals(1, cloudReplicaSource.getReplicasBySlice(1).size());
       assertEquals(1, cloudReplicaSource.getReplicasBySlice(1).size());
       assertEquals(
-          "http://baseUrl2:8984/slice2_replica2/", cloudReplicaSource.getReplicasBySlice(1).get(0));
+          "http://baseUrl2:8984/solr/slice2_replica2/",
+          cloudReplicaSource.getReplicasBySlice(1).get(0));
     }
   }
 
@@ -153,17 +158,17 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
         switch (sliceName) {
           case "collection1_slice1":
             assertEquals(
-                "http://baseUrl1:8983/slice1_replica1/",
+                "http://baseUrl1:8983/solr/slice1_replica1/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
           case "collection1_slice2":
             assertEquals(
-                "http://baseUrl2:8984/slice2_replica2/",
+                "http://baseUrl2:8984/solr/slice2_replica2/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
           case "collection2_slice1":
             assertEquals(
-                "http://baseUrl1:8983/slice1_replica3/",
+                "http://baseUrl1:8983/solr/slice1_replica3/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
         }
@@ -198,12 +203,12 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
         switch (sliceName) {
           case "slice1":
             assertEquals(
-                "http://baseUrl1:8983/slice1_replica1/",
+                "http://baseUrl1:8983/solr/slice1_replica1/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
           case "slice2":
             assertEquals(
-                "http://baseUrl2:8984/slice2_replica2/",
+                "http://baseUrl2:8984/solr/slice2_replica2/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
         }
@@ -239,13 +244,13 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
           case "slice1":
             assertEquals(2, cloudReplicaSource.getReplicasBySlice(i).size());
             assertEquals(
-                "http://baseUrl1:8983/slice1_replica1/",
+                "http://baseUrl1:8983/solr/slice1_replica1/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
           case "slice2":
             assertEquals(1, cloudReplicaSource.getReplicasBySlice(i).size());
             assertEquals(
-                "http://baseUrl2:8984/slice2_replica3/",
+                "http://baseUrl2:8984/solr/slice2_replica3/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
         }
@@ -284,19 +289,19 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
           case "collection1_slice1":
             assertEquals(2, cloudReplicaSource.getReplicasBySlice(i).size());
             assertEquals(
-                "http://baseUrl1:8983/slice1_replica1/",
+                "http://baseUrl1:8983/solr/slice1_replica1/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
           case "collection1_slice2":
             assertEquals(1, cloudReplicaSource.getReplicasBySlice(i).size());
             assertEquals(
-                "http://baseUrl2:8984/slice2_replica3/",
+                "http://baseUrl2:8984/solr/slice2_replica3/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
           case "collection2_slice1":
             assertEquals(1, cloudReplicaSource.getReplicasBySlice(i).size());
             assertEquals(
-                "http://baseUrl1:8983/slice1_replica5/",
+                "http://baseUrl1:8983/solr/slice1_replica5/",
                 cloudReplicaSource.getReplicasBySlice(i).get(0));
             break;
         }

@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +44,6 @@ import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
@@ -59,7 +57,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   public void testInstanceDir() throws Exception {
     final Path dir = createTempDir();
     try (SolrResourceLoader loader = new SolrResourceLoader(dir.toAbsolutePath())) {
-      MatcherAssert.assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
+      assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
     }
   }
 
@@ -257,7 +255,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   @SuppressWarnings("deprecation")
   public void testLoadDeprecatedFactory() throws Exception {
     SolrResourceLoader loader =
-        new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
+        new SolrResourceLoader(Path.of("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(
         DeprecatedTokenFilterFactory.class.getName(),

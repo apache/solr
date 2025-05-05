@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.io.IOException;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
@@ -59,8 +60,32 @@ public class SolrResponseBase extends SolrResponse implements MapWriter {
     return response.toString();
   }
 
+  /**
+   * Return a {@link NamedList} object representing the 'responseHeader' section of Solr's response
+   *
+   * <p>This method may return null, if no responseHeader can be found. If a value is returned, it
+   * should not be modified. Any modifications made are not guaranteed to be durable.
+   */
+  @SuppressWarnings("unchecked")
   public NamedList<?> getResponseHeader() {
-    return (NamedList<?>) response.get("responseHeader");
+    // ResponseParser implementations vary in what types they use when deserializing responses, so
+    // we need to be a bit flexible in inspecting types within the NamedList.  See SOLR-17316 for
+    // details.
+    final var responseHeader = response.get("responseHeader");
+    if (responseHeader == null) {
+      return null;
+    }
+
+    if (responseHeader instanceof NamedList) {
+      return (NamedList<?>) responseHeader;
+    } else if (responseHeader instanceof Map) {
+      final var responseHeaderAsMap = (Map<String, Object>) responseHeader;
+      return new NamedList<>(responseHeaderAsMap);
+    }
+    throw new IllegalStateException(
+        "'responseHeader' key was an unexpected type ["
+            + responseHeader.getClass().getSimpleName()
+            + "]");
   }
 
   // these two methods are based on the logic in SolrCore.setResponseHeaderValues(...)

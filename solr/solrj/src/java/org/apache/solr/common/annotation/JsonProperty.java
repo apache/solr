@@ -33,6 +33,7 @@ public @interface JsonProperty {
   String value() default "";
 
   boolean required() default false;
+
   // not implemented
   //  int index() default -1;
 

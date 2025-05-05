@@ -17,14 +17,17 @@
 
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.cli.SolrCLI.printGreen;
+import static org.apache.solr.cli.SolrCLI.printRed;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
-import com.google.common.base.Strings;
+import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,32 +38,37 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
-import org.apache.http.client.methods.HttpDelete;
+import org.apache.solr.cli.CLIUtils;
+import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.ToolRuntime;
+import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
-import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.filestore.DistribPackageStore;
+import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.pkg.SolrPackageLoader;
-import org.apache.solr.util.SolrCLI;
-import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,18 +76,24 @@ import org.slf4j.LoggerFactory;
 /** Handles most of the management of packages that are already installed in Solr. */
 public class PackageManager implements Closeable {
 
-  final String solrBaseUrl;
-  final HttpSolrClient solrClient;
+  final ToolRuntime runtime;
+  final String solrUrl;
+  final SolrClient solrClient;
   final SolrZkClient zkClient;
 
   private Map<String, List<SolrPackageInstance>> packages = null;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public PackageManager(HttpSolrClient solrClient, String solrBaseUrl, String zkHost) {
-    this.solrBaseUrl = solrBaseUrl;
+  public PackageManager(ToolRuntime runtime, SolrClient solrClient, String solrUrl, String zkHost) {
+    this.runtime = runtime;
+    this.solrUrl = solrUrl;
     this.solrClient = solrClient;
-    this.zkClient = new SolrZkClient(zkHost, 30000);
+    this.zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     log.info("Done initializing a zkClient instance...");
   }
 
@@ -90,29 +104,30 @@ public class PackageManager implements Closeable {
     }
   }
 
-  public void uninstall(String packageName, String version) {
+  public void uninstall(String packageName, String version)
+      throws IOException, SolrServerException {
     SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
     if (packageInstance == null) {
-      PackageUtils.printRed(
+      printRed(
           "Package "
               + packageName
               + ":"
               + version
               + " doesn't exist. Use the install command to install this package version first.");
-      System.exit(1);
+      runtime.exit(1);
     }
 
     // Make sure that this package instance is not deployed on any collection
     Map<String, String> collectionsDeployedOn = getDeployedCollections(packageName);
     for (String collection : collectionsDeployedOn.keySet()) {
       if (version.equals(collectionsDeployedOn.get(collection))) {
-        PackageUtils.printRed(
+        printRed(
             "Package "
                 + packageName
                 + " is currently deployed on collection: "
                 + collection
-                + ". Undeploy the package with undeploy <package-name> -collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
-        System.exit(1);
+                + ". Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
+        runtime.exit(1);
       }
     }
 
@@ -123,19 +138,19 @@ public class PackageManager implements Closeable {
       SolrPackageInstance clusterPackageInstance = clusterPackages.get(clusterPackageName);
       if (packageName.equals(clusterPackageName)
           && version.equals(clusterPackageInstance.version)) {
-        PackageUtils.printRed(
+        printRed(
             "Package "
                 + packageName
                 + "is currently deployed as a cluster-level plugin ("
                 + clusterPackageInstance.getCustomData()
-                + "). Undeploy the package with undeploy <package-name> -collections <collection1>[,<collection2>,...] before uninstalling the package.");
-        System.exit(1);
+                + "). Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before uninstalling the package.");
+        runtime.exit(1);
       }
     }
 
     // Delete the package by calling the Package API and remove the Jar
 
-    PackageUtils.printGreen("Executing Package API to remove this package...");
+    printGreen("Executing Package API to remove this package...");
     PackagePayload.DelVersion del = new PackagePayload.DelVersion();
     del.version = version;
     del.pkg = packageName;
@@ -149,26 +164,24 @@ public class PackageManager implements Closeable {
 
     try {
       V2Response resp = req.process(solrClient);
-      PackageUtils.printGreen("Response: " + resp.jsonStr());
+      printGreen("Response: " + resp.jsonStr());
     } catch (SolrServerException | IOException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
 
-    PackageUtils.printGreen(
-        "Executing Package Store API to remove the " + packageName + " package...");
+    printGreen("Executing Package Store API to remove the " + packageName + " package...");
 
     List<String> filesToDelete = new ArrayList<>(packageInstance.files);
     filesToDelete.add(
         String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"));
     for (String filePath : filesToDelete) {
-      DistribPackageStore.deleteZKFileEntry(zkClient, filePath);
-      String path = solrClient.getBaseURL() + "/api/cluster/files" + filePath;
-      PackageUtils.printGreen("Deleting " + path);
-      HttpDelete httpDel = new HttpDelete(path);
-      Utils.executeHttpMethod(solrClient.getHttpClient(), path, Utils.JSONCONSUMER, httpDel);
+      DistribFileStore.deleteZKFileEntry(zkClient, filePath);
+      String path = "/api/cluster/filestore/files" + filePath;
+      printGreen("Deleting " + path);
+      solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.DELETE, path));
     }
 
-    PackageUtils.printGreen("Package uninstalled: " + packageName + ":" + version + ":-)");
+    printGreen("Package uninstalled: " + packageName + ":" + version + ":-)");
   }
 
   public List<SolrPackageInstance> fetchInstalledPackageInstances() throws SolrException {
@@ -176,7 +189,7 @@ public class PackageManager implements Closeable {
     List<SolrPackageInstance> ret = new ArrayList<>();
     packages = new HashMap<>();
     try {
-      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true) == true) {
+      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true)) {
         @SuppressWarnings("unchecked")
         Map<String, List<Map<?, ?>>> packagesZnodeMap =
             (Map<String, List<Map<?, ?>>>)
@@ -184,7 +197,7 @@ public class PackageManager implements Closeable {
                     .readValue(
                         new String(
                             zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true),
-                            "UTF-8"),
+                            StandardCharsets.UTF_8),
                         Map.class)
                     .get("packages");
         for (String packageName : packagesZnodeMap.keySet()) {
@@ -193,7 +206,6 @@ public class PackageManager implements Closeable {
             Manifest manifest =
                 PackageUtils.fetchManifest(
                     solrClient,
-                    solrBaseUrl,
                     pkgVersion.get("manifest").toString(),
                     pkgVersion.get("manifestSHA512").toString());
             List<Plugin> solrPlugins = manifest.plugins;
@@ -228,25 +240,26 @@ public class PackageManager implements Closeable {
   public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
     Map<String, String> packages = null;
     try {
-      NavigableObject result =
-          (NavigableObject)
-              Utils.executeGET(
-                  solrClient.getHttpClient(),
-                  solrBaseUrl
-                      + PackageUtils.getCollectionParamsPath(collection)
-                      + "/PKG_VERSIONS?omitHeader=true&wt=javabin",
-                  Utils.JAVABINCONSUMER);
+      NamedList<Object> result =
+          solrClient.request(
+              new GenericV2SolrRequest(
+                      SolrRequest.METHOD.GET,
+                      PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS")
+                  .setRequiresCollection(
+                      false) /* Making a collection request, but already baked into path */);
       packages =
           (Map<String, String>)
               result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
     } catch (PathNotFoundException ex) {
       // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by
       // the package manager.
+    } catch (SolrServerException | IOException ex) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }
     if (packages == null) return Collections.emptyMap();
     Map<String, SolrPackageInstance> ret = new HashMap<>();
     for (String packageName : packages.keySet()) {
-      if (Strings.isNullOrEmpty(packageName) == false
+      if (!StrUtils.isNullOrEmpty(packageName)
           && // There can be an empty key, storing the version here
           packages.get(packageName)
               != null) { // null means the package was undeployed from this package before
@@ -265,34 +278,31 @@ public class PackageManager implements Closeable {
   public Map<String, SolrPackageInstance> getPackagesDeployedAsClusterLevelPlugins() {
     Map<String, String> packageVersions = new HashMap<>();
     // map of package name to multiple values of pluginMeta(Map<String, String>)
-    MultiValuedMap<String, PluginMeta> packagePlugins = new HashSetValuedHashMap<>();
+    Map<String, Set<PluginMeta>> packagePlugins = new HashMap<>();
     Map<String, Object> result;
     try {
-      result =
-          (Map<String, Object>)
-              Utils.executeGET(
-                  solrClient.getHttpClient(),
-                  solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH,
-                  Utils.JSONCONSUMER);
-    } catch (SolrException ex) {
-      if (ex.code() == ErrorCode.NOT_FOUND.code) {
+      NamedList<Object> response =
+          solrClient.request(
+              new GenericV2SolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
+      Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
+      if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
         result = Collections.emptyMap();
       } else {
-        throw ex;
+        result = response.asShallowMap();
       }
+    } catch (SolrServerException | IOException ex) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> clusterPlugins =
         (Map<String, Object>)
             result.getOrDefault(ContainerPluginsApi.PLUGIN, Collections.emptyMap());
-    for (String key : clusterPlugins.keySet()) {
-      // Map<String, String> pluginMeta = (Map<String, String>) clusterPlugins.get(key);
+    for (Map.Entry<String, Object> entry : clusterPlugins.entrySet()) {
       PluginMeta pluginMeta;
       try {
         pluginMeta =
-            PackageUtils.getMapper()
-                .readValue(Utils.toJSON(clusterPlugins.get(key)), PluginMeta.class);
+            PackageUtils.getMapper().readValue(Utils.toJSON(entry.getValue()), PluginMeta.class);
       } catch (IOException e) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
@@ -302,16 +312,17 @@ public class PackageManager implements Closeable {
       if (pluginMeta.klass.contains(":")) {
         String packageName = pluginMeta.klass.substring(0, pluginMeta.klass.indexOf(':'));
         packageVersions.put(packageName, pluginMeta.version);
-        packagePlugins.put(packageName, pluginMeta);
+        packagePlugins.computeIfAbsent(packageName, k -> new HashSet<>()).add(pluginMeta);
       }
     }
     Map<String, SolrPackageInstance> ret = new HashMap<>();
-    for (String packageName : packageVersions.keySet()) {
-      if (Strings.isNullOrEmpty(packageName) == false
-          && // There can be an empty key, storing the version here
-          packageVersions.get(packageName)
-              != null) { // null means the package was undeployed from this package before
-        ret.put(packageName, getPackageInstance(packageName, packageVersions.get(packageName)));
+    for (Map.Entry<String, String> entry : packageVersions.entrySet()) {
+      String packageName = entry.getKey();
+      String packageVersion = entry.getValue();
+      // There can be an empty key, storing the version here
+      // null means the package was undeployed from this package before
+      if (!StrUtils.isNullOrEmpty(packageName) && packageVersion != null) {
+        ret.put(packageName, getPackageInstance(packageName, packageVersion));
         ret.get(packageName).setCustomData(packagePlugins.get(packageName));
       }
     }
@@ -323,9 +334,9 @@ public class PackageManager implements Closeable {
       List<String> existingCollections = zkClient.getChildren("/collections", null, true);
       Set<String> nonExistent = new HashSet<>(collections);
       nonExistent.removeAll(existingCollections);
-      if (nonExistent.isEmpty() == false) {
+      if (!nonExistent.isEmpty()) {
         throw new SolrException(
-            ErrorCode.BAD_REQUEST, "Collection(s) doesn't exist: " + nonExistent.toString());
+            ErrorCode.BAD_REQUEST, "Collection(s) doesn't exist: " + nonExistent);
       }
     } catch (KeeperException | InterruptedException e) {
       throw new SolrException(
@@ -355,13 +366,11 @@ public class PackageManager implements Closeable {
     List<String> deployedCollections = deployResult.first();
     List<String> previouslyDeployedOnCollections = deployResult.second();
 
-    // Verify
-    boolean verifySuccess = true;
     // Verify that package was successfully deployed
-    verifySuccess =
+    boolean verifySuccess =
         verify(packageInstance, deployedCollections, shouldDeployClusterPlugins, overrides);
     if (verifySuccess) {
-      PackageUtils.printGreen(
+      printGreen(
           "Deployed on "
               + deployedCollections
               + " and verified package: "
@@ -390,14 +399,13 @@ public class PackageManager implements Closeable {
           getPackagesDeployed(collection).get(packageInstance.name);
       if (packageInstance.equals(deployedPackage)) {
         if (!pegToLatest) {
-          PackageUtils.printRed(
-              "Package " + packageInstance + " already deployed on " + collection);
+          printRed("Package " + packageInstance + " already deployed on " + collection);
           previouslyDeployed.add(collection);
           continue;
         }
       } else {
         if (deployedPackage != null && !isUpdate) {
-          PackageUtils.printRed(
+          printRed(
               "Package "
                   + deployedPackage
                   + " already deployed on "
@@ -415,16 +423,15 @@ public class PackageManager implements Closeable {
 
       // Get package params
       try {
-        @SuppressWarnings("unchecked")
         boolean packageParamsExist =
-            ((Map<Object, Object>)
-                    PackageUtils.getJson(
-                            solrClient.getHttpClient(),
-                            solrBaseUrl
-                                + PackageUtils.getCollectionParamsPath(collection)
-                                + "/packages",
-                            Map.class)
-                        .getOrDefault("response", Collections.emptyMap()))
+            solrClient
+                .request(
+                    new GenericV2SolrRequest(
+                            SolrRequest.METHOD.GET,
+                            PackageUtils.getCollectionParamsPath(collection) + "/packages")
+                        .setRequiresCollection(
+                            false) /* Making a collection-request, but already baked into path */)
+                .asShallowMap()
                 .containsKey("params");
         SolrCLI.postJsonToSolr(
             solrClient,
@@ -470,8 +477,7 @@ public class PackageManager implements Closeable {
       // If it is a fresh deploy on a collection, run setup commands all the plugins in the package
       if (!isUpdate) {
         for (Plugin plugin : packageInstance.plugins) {
-          if ("collection".equalsIgnoreCase(plugin.type) == false || collections.isEmpty())
-            continue;
+          if (!"collection".equalsIgnoreCase(plugin.type) || collections.isEmpty()) continue;
           Map<String, String> systemParams =
               Map.of(
                   "collection",
@@ -484,7 +490,7 @@ public class PackageManager implements Closeable {
                   plugin.name);
 
           Command cmd = plugin.setupCommand;
-          if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+          if (cmd != null && StrUtils.isNotNullOrEmpty(cmd.method)) {
             if ("POST".equalsIgnoreCase(cmd.method)) {
               try {
                 String payload =
@@ -499,7 +505,7 @@ public class PackageManager implements Closeable {
                         packageInstance.parameterDefaults,
                         collectionParameterOverrides,
                         systemParams);
-                PackageUtils.printGreen("Executing " + payload + " for path:" + path);
+                printGreen("Executing " + payload + " for path:" + path);
                 boolean shouldExecute = prompt(noprompt);
                 if (shouldExecute) {
                   SolrCLI.postJsonToSolr(solrClient, path, payload);
@@ -512,8 +518,7 @@ public class PackageManager implements Closeable {
                   ErrorCode.BAD_REQUEST, "Non-POST method not supported for setup commands");
             }
           } else {
-            PackageUtils.printRed(
-                "There is no setup command to execute for plugin: " + plugin.name);
+            printRed("There is no setup command to execute for plugin: " + plugin.name);
           }
         }
       }
@@ -533,8 +538,8 @@ public class PackageManager implements Closeable {
       }
     }
 
-    if (previouslyDeployed.isEmpty() == false) {
-      PackageUtils.printRed(
+    if (!previouslyDeployed.isEmpty()) {
+      printRed(
           "Already Deployed on "
               + previouslyDeployed
               + ", package: "
@@ -547,7 +552,7 @@ public class PackageManager implements Closeable {
         collections.stream()
             .filter(c -> !previouslyDeployed.contains(c))
             .collect(Collectors.toList());
-    return new Pair<List<String>, List<String>>(deployedCollections, previouslyDeployed);
+    return new Pair<>(deployedCollections, previouslyDeployed);
   }
 
   @SuppressWarnings("unchecked")
@@ -558,11 +563,11 @@ public class PackageManager implements Closeable {
 
     if (isUpdate) {
       for (Plugin plugin : packageInstance.plugins) {
-        if ("cluster".equalsIgnoreCase(plugin.type) == false) continue;
+        if (!"cluster".equalsIgnoreCase(plugin.type)) continue;
         SolrPackageInstance deployedPackage =
             getPackagesDeployedAsClusterLevelPlugins().get(packageInstance.name);
         if (deployedPackage == null) {
-          PackageUtils.printRed(
+          printRed(
               "Cluster level plugin "
                   + plugin.name
                   + " from package "
@@ -572,13 +577,12 @@ public class PackageManager implements Closeable {
           continue;
         }
         for (PluginMeta pluginMeta : (List<PluginMeta>) deployedPackage.getCustomData()) {
-          PackageUtils.printGreen("Updating this plugin: " + pluginMeta);
+          printGreen("Updating this plugin: " + pluginMeta);
           try {
             // just update the version, let the other metadata same
             pluginMeta.version = packageInstance.version;
             String postBody = "{\"update\": " + Utils.toJSONString(pluginMeta) + "}";
-            PackageUtils.printGreen(
-                "Posting " + postBody + " to " + PackageUtils.CLUSTER_PLUGINS_PATH);
+            printGreen("Posting " + postBody + " to " + PackageUtils.CLUSTER_PLUGINS_PATH);
             SolrCLI.postJsonToSolr(solrClient, PackageUtils.CLUSTER_PLUGINS_PATH, postBody);
           } catch (Exception e) {
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -587,23 +591,20 @@ public class PackageManager implements Closeable {
         numberOfClusterPluginsDeployed++;
       }
       if (numberOfClusterPluginsDeployed > 0) {
-        PackageUtils.printGreen(numberOfClusterPluginsDeployed + " cluster level plugins updated.");
+        printGreen(numberOfClusterPluginsDeployed + " cluster level plugins updated.");
       } else {
-        PackageUtils.printRed("No cluster level plugin updated.");
+        printRed("No cluster level plugin updated.");
         clusterPluginFailed = true;
       }
     } else {
       for (Plugin plugin : packageInstance.plugins) {
-        if ("cluster".equalsIgnoreCase(plugin.type) == false) continue;
+        if (!"cluster".equalsIgnoreCase(plugin.type)) continue;
         // Check if this cluster level plugin is already deployed
         {
           Map<String, Object> clusterprops = null;
           try {
             clusterprops =
-                PackageUtils.getJson(
-                    solrClient.getHttpClient(),
-                    solrBaseUrl + PackageUtils.CLUSTERPROPS_PATH,
-                    Map.class);
+                PackageUtils.getJson(solrClient, PackageUtils.CLUSTERPROPS_PATH, Map.class);
           } catch (SolrException ex) {
             if (ex.code() == ErrorCode.NOT_FOUND.code) {
               // Ignore this, as clusterprops may not have been created yet. This means package
@@ -615,7 +616,7 @@ public class PackageManager implements Closeable {
                 ((Map<String, Object>) clusterprops.getOrDefault("plugin", Collections.emptyMap()))
                     .get(packageInstance.name + ":" + plugin.name);
             if (pkg != null) {
-              PackageUtils.printRed(
+              printRed(
                   "Cluster level plugin "
                       + plugin.name
                       + " from package "
@@ -639,7 +640,7 @@ public class PackageManager implements Closeable {
                 "plugin-name",
                 plugin.name);
         Command cmd = plugin.setupCommand;
-        if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+        if (cmd != null && StrUtils.isNotNullOrEmpty(cmd.method)) {
           if ("POST".equalsIgnoreCase(cmd.method)) {
             try {
               Map<String, String> overridesMap = getParameterOverrides(overrides);
@@ -652,7 +653,7 @@ public class PackageManager implements Closeable {
               String path =
                   PackageUtils.resolve(
                       cmd.path, packageInstance.parameterDefaults, overridesMap, systemParams);
-              PackageUtils.printGreen("Executing " + payload + " for path:" + path);
+              printGreen("Executing " + payload + " for path:" + path);
               boolean shouldExecute = prompt(noprompt);
               if (shouldExecute) {
                 SolrCLI.postJsonToSolr(solrClient, path, payload);
@@ -666,13 +667,13 @@ public class PackageManager implements Closeable {
                 ErrorCode.BAD_REQUEST, "Non-POST method not supported for setup commands");
           }
         } else {
-          PackageUtils.printRed("There is no setup command to execute for plugin: " + plugin.name);
+          printRed("There is no setup command to execute for plugin: " + plugin.name);
         }
       }
       if (numberOfClusterPluginsDeployed > 0) {
-        PackageUtils.printGreen(numberOfClusterPluginsDeployed + " cluster level plugins setup.");
+        printGreen(numberOfClusterPluginsDeployed + " cluster level plugins setup.");
       } else {
-        PackageUtils.printRed("No cluster level plugin setup.");
+        printRed("No cluster level plugin setup.");
         clusterPluginFailed = true;
       }
     }
@@ -683,13 +684,13 @@ public class PackageManager implements Closeable {
     boolean shouldExecute = true;
     if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
       PackageUtils.print(
-          PackageUtils.YELLOW,
+          CLIUtils.YELLOW,
           "Execute this command. (If you choose no, you can manually deploy/undeploy this plugin later) (y/n): ");
-      try (Scanner scanner = new Scanner(System.in, "UTF-8")) {
+      try (Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8)) {
         String userInput = scanner.next();
         if ("no".trim().equalsIgnoreCase(userInput) || "n".trim().equalsIgnoreCase(userInput)) {
           shouldExecute = false;
-          PackageUtils.printRed(
+          printRed(
               "Skipping setup command for deploying (deployment verification may fail)."
                   + " Please run this step manually or refer to package documentation.");
         }
@@ -713,9 +714,7 @@ public class PackageManager implements Closeable {
       String[] overrides,
       String collection) {
     Map<String, String> collectionParameterOverrides =
-        isUpdate
-            ? getPackageParams(packageInstance.name, collection)
-            : new HashMap<String, String>();
+        isUpdate ? getPackageParams(packageInstance.name, collection) : new HashMap<>();
     if (overrides != null) {
       for (String override : overrides) {
         collectionParameterOverrides.put(override.split("=")[0], override.split("=")[1]);
@@ -724,25 +723,21 @@ public class PackageManager implements Closeable {
     return collectionParameterOverrides;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({"unchecked"})
   Map<String, String> getPackageParams(String packageName, String collection) {
     try {
+      NamedList<Object> response =
+          solrClient.request(
+              new GenericV2SolrRequest(
+                      SolrRequest.METHOD.GET,
+                      PackageUtils.getCollectionParamsPath(collection) + "/packages")
+                  .setRequiresCollection(
+                      false) /* Making a collection-request, but already baked into path */);
       return (Map<String, String>)
-          ((Map)
-                  ((Map)
-                          ((Map)
-                                  PackageUtils.getJson(
-                                          solrClient.getHttpClient(),
-                                          solrBaseUrl
-                                              + PackageUtils.getCollectionParamsPath(collection)
-                                              + "/packages",
-                                          Map.class)
-                                      .get("response"))
-                              .get("params"))
-                      .get("packages"))
-              .get(packageName);
+          response._get("/response/params/packages/" + packageName, Collections.emptyMap());
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
+      log.warn("There are no parameters to return for package: {}", packageName);
       return Collections.emptyMap();
     }
   }
@@ -758,11 +753,11 @@ public class PackageManager implements Closeable {
       SolrPackageInstance pkg,
       List<String> collections,
       boolean shouldDeployClusterPlugins,
-      String overrides[]) {
+      String[] overrides) {
     boolean success = true;
     for (Plugin plugin : pkg.plugins) {
       Command cmd = plugin.verifyCommand;
-      if (plugin.verifyCommand != null && !Strings.isNullOrEmpty(cmd.path)) {
+      if (plugin.verifyCommand != null && StrUtils.isNotNullOrEmpty(cmd.path)) {
         if ("cluster".equalsIgnoreCase(plugin.type)) {
           if (!shouldDeployClusterPlugins) continue; // Plugins of type "cluster"
           Map<String, String> overridesMap = getParameterOverrides(overrides);
@@ -774,33 +769,32 @@ public class PackageManager implements Closeable {
                   pkg.version,
                   "plugin-name",
                   plugin.name);
-          String url =
-              solrBaseUrl
-                  + PackageUtils.resolve(
-                      cmd.path, pkg.parameterDefaults, overridesMap, systemParams);
-          PackageUtils.printGreen("Executing " + url + " for cluster level plugin");
+          String path =
+              PackageUtils.resolve(cmd.path, pkg.parameterDefaults, overridesMap, systemParams);
+          printGreen("Executing " + solrUrl + path + " for cluster level plugin");
 
           if ("GET".equalsIgnoreCase(cmd.method)) {
-            String response = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), url);
-            PackageUtils.printGreen(response);
+            String response =
+                PackageUtils.getJsonStringFromNonCollectionApi(
+                    solrClient, path, new ModifiableSolrParams());
+            printGreen(response);
             String actualValue = null;
             try {
-              actualValue =
-                  JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
-                      .read(
-                          PackageUtils.resolve(
-                              cmd.condition, pkg.parameterDefaults, overridesMap, systemParams));
+              String jsonPath =
+                  PackageUtils.resolve(
+                      cmd.condition, pkg.parameterDefaults, overridesMap, systemParams);
+              actualValue = jsonPathRead(response, jsonPath);
             } catch (PathNotFoundException ex) {
-              PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
+              printRed("Failed to deploy plugin: " + plugin.name);
               success = false;
             }
             if (actualValue != null) {
               String expectedValue =
                   PackageUtils.resolve(
                       cmd.expected, pkg.parameterDefaults, overridesMap, systemParams);
-              PackageUtils.printGreen("Actual: " + actualValue + ", expected: " + expectedValue);
+              printGreen("Actual: " + actualValue + ", expected: " + expectedValue);
               if (!expectedValue.equals(actualValue)) {
-                PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
+                printRed("Failed to deploy plugin: " + plugin.name);
                 success = false;
               }
             }
@@ -824,30 +818,27 @@ public class PackageManager implements Closeable {
                     pkg.version,
                     "plugin-name",
                     plugin.name);
-            String url =
-                solrBaseUrl
-                    + PackageUtils.resolve(
-                        cmd.path,
+            String path =
+                PackageUtils.resolve(
+                    cmd.path, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
+            printGreen("Executing " + solrUrl + path + " for collection:" + collection);
+
+            if ("GET".equalsIgnoreCase(cmd.method)) {
+              String response =
+                  PackageUtils.getJsonStringFromCollectionApi(
+                      solrClient, path, new ModifiableSolrParams());
+              printGreen(response);
+              String actualValue = null;
+              try {
+                String jsonPath =
+                    PackageUtils.resolve(
+                        cmd.condition,
                         pkg.parameterDefaults,
                         collectionParameterOverrides,
                         systemParams);
-            PackageUtils.printGreen("Executing " + url + " for collection:" + collection);
-
-            if ("GET".equalsIgnoreCase(cmd.method)) {
-              String response = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), url);
-              PackageUtils.printGreen(response);
-              String actualValue = null;
-              try {
-                actualValue =
-                    JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
-                        .read(
-                            PackageUtils.resolve(
-                                cmd.condition,
-                                pkg.parameterDefaults,
-                                collectionParameterOverrides,
-                                systemParams));
+                actualValue = jsonPathRead(response, jsonPath);
               } catch (PathNotFoundException ex) {
-                PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
+                printRed("Failed to deploy plugin: " + plugin.name);
                 success = false;
               }
               if (actualValue != null) {
@@ -857,9 +848,9 @@ public class PackageManager implements Closeable {
                         pkg.parameterDefaults,
                         collectionParameterOverrides,
                         systemParams);
-                PackageUtils.printGreen("Actual: " + actualValue + ", expected: " + expectedValue);
+                printGreen("Actual: " + actualValue + ", expected: " + expectedValue);
                 if (!expectedValue.equals(actualValue)) {
-                  PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
+                  printRed("Failed to deploy plugin: " + plugin.name);
                   success = false;
                 }
               }
@@ -874,6 +865,17 @@ public class PackageManager implements Closeable {
     return success;
   }
 
+  /** just adds problem XPath into {@link InvalidPathException} if occurs */
+  private static String jsonPathRead(String response, String jsonPath) {
+    try {
+      return JsonPath.parse(response, PackageUtils.jsonPathConfiguration()).read(jsonPath);
+    } catch (PathNotFoundException pne) {
+      throw pne;
+    } catch (InvalidPathException ipe) {
+      throw new InvalidPathException("Error in JSON Path:" + jsonPath, ipe);
+    }
+  }
+
   /**
    * Get the installed instance of a specific version of a package. If version is null,
    * PackageUtils.LATEST or PackagePluginHolder.LATEST, then it returns the highest version
@@ -885,12 +887,11 @@ public class PackageManager implements Closeable {
     SolrPackageInstance latest = null;
     if (versions != null && !versions.isEmpty()) {
       latest = versions.get(0);
-      for (int i = 0; i < versions.size(); i++) {
-        SolrPackageInstance pkg = versions.get(i);
+      for (SolrPackageInstance pkg : versions) {
         if (pkg.version.equals(version)) {
           return pkg;
         }
-        if (PackageUtils.compareVersions(latest.version, pkg.version) <= 0) {
+        if (SolrVersion.compareVersions(latest.version, pkg.version) <= 0) {
           latest = pkg;
         }
       }
@@ -928,31 +929,23 @@ public class PackageManager implements Closeable {
     boolean pegToLatest = PackageUtils.LATEST.equals(version);
     SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
     if (packageInstance == null) {
-      PackageUtils.printRed(
+      printRed(
           "Package instance doesn't exist: "
               + packageName
               + ":"
               + version
               + ". Use install command to install this version first.");
-      System.exit(1);
+      runtime.exit(1);
     }
 
     Manifest manifest = packageInstance.manifest;
-    try {
-      if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
-        PackageUtils.printRed(
-            "Version incompatible! Solr version: "
-                + SolrVersion.LATEST
-                + ", package version constraint: "
-                + manifest.versionConstraint);
-        System.exit(1);
-      }
-    } catch (SolrVersion.InvalidSemVerExpressionException ex) {
-      PackageUtils.printRed(
-          "Error in version constraint given in package manifest: "
-              + manifest.versionConstraint
-              + ". It does not a valid SemVer expression.");
-      System.exit(1);
+    if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
+      printRed(
+          "Version incompatible! Solr version: "
+              + SolrVersion.LATEST
+              + ", package version constraint: "
+              + manifest.versionConstraint);
+      runtime.exit(1);
     }
 
     boolean res =
@@ -965,8 +958,7 @@ public class PackageManager implements Closeable {
             shouldInstallClusterPlugins,
             parameters);
     PackageUtils.print(
-        res ? PackageUtils.GREEN : PackageUtils.RED,
-        res ? "Deployment successful" : "Deployment failed");
+        res ? CLIUtils.GREEN : CLIUtils.RED, res ? "Deployment successful" : "Deployment failed");
   }
 
   /** Undeploys a package from given collections. */
@@ -980,12 +972,10 @@ public class PackageManager implements Closeable {
       SolrPackageInstance deployedPackage =
           getPackagesDeployedAsClusterLevelPlugins().get(packageName);
       if (deployedPackage == null) {
-        PackageUtils.printRed(
-            "Cluster level plugins from package " + packageName + " not deployed.");
+        printRed("Cluster level plugins from package " + packageName + " not deployed.");
       } else {
         for (Plugin plugin : deployedPackage.plugins) {
-          if (!shouldUndeployClusterPlugins || "cluster".equalsIgnoreCase(plugin.type) == false)
-            continue;
+          if (!shouldUndeployClusterPlugins || !"cluster".equalsIgnoreCase(plugin.type)) continue;
 
           Map<String, String> systemParams =
               Map.of(
@@ -996,7 +986,7 @@ public class PackageManager implements Closeable {
                   "plugin-name",
                   plugin.name);
           Command cmd = plugin.uninstallCommand;
-          if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+          if (cmd != null && StrUtils.isNotNullOrEmpty(cmd.method)) {
             if ("POST".equalsIgnoreCase(cmd.method)) {
               try {
                 String payload =
@@ -1011,7 +1001,7 @@ public class PackageManager implements Closeable {
                         deployedPackage.parameterDefaults,
                         Collections.emptyMap(),
                         systemParams);
-                PackageUtils.printGreen("Executing " + payload + " for path:" + path);
+                printGreen("Executing " + payload + " for path:" + path);
                 SolrCLI.postJsonToSolr(solrClient, path, payload);
               } catch (Exception ex) {
                 throw new SolrException(ErrorCode.SERVER_ERROR, ex);
@@ -1021,8 +1011,7 @@ public class PackageManager implements Closeable {
                   ErrorCode.BAD_REQUEST, "Non-POST method not supported for uninstall commands");
             }
           } else {
-            PackageUtils.printRed(
-                "There is no uninstall command to execute for plugin: " + plugin.name);
+            printRed("There is no uninstall command to execute for plugin: " + plugin.name);
           }
         }
       }
@@ -1031,15 +1020,16 @@ public class PackageManager implements Closeable {
     for (String collection : collections) {
       SolrPackageInstance deployedPackage = getPackagesDeployed(collection).get(packageName);
       if (deployedPackage == null) {
-        PackageUtils.printRed(
-            "Package " + packageName + " not deployed on collection " + collection);
+        printRed("Package " + packageName + " not deployed on collection " + collection);
         continue;
       }
       Map<String, String> collectionParameterOverrides = getPackageParams(packageName, collection);
 
       // Run the uninstall command for all plugins
       for (Plugin plugin : deployedPackage.plugins) {
-        if ("collection".equalsIgnoreCase(plugin.type) == false) continue;
+        if (!"collection".equalsIgnoreCase(plugin.type)) {
+          continue;
+        }
 
         Map<String, String> systemParams =
             Map.of(
@@ -1052,7 +1042,7 @@ public class PackageManager implements Closeable {
                 "plugin-name",
                 plugin.name);
         Command cmd = plugin.uninstallCommand;
-        if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+        if (cmd != null && StrUtils.isNotNullOrEmpty(cmd.method)) {
           if ("POST".equalsIgnoreCase(cmd.method)) {
             try {
               String payload =
@@ -1067,7 +1057,7 @@ public class PackageManager implements Closeable {
                       deployedPackage.parameterDefaults,
                       collectionParameterOverrides,
                       systemParams);
-              PackageUtils.printGreen("Executing " + payload + " for path:" + path);
+              printGreen("Executing " + payload + " for path:" + path);
               SolrCLI.postJsonToSolr(solrClient, path, payload);
             } catch (Exception ex) {
               throw new SolrException(ErrorCode.SERVER_ERROR, ex);
@@ -1077,8 +1067,7 @@ public class PackageManager implements Closeable {
                 ErrorCode.BAD_REQUEST, "Non-POST method not supported for uninstall commands");
           }
         } else {
-          PackageUtils.printRed(
-              "There is no uninstall command to execute for plugin: " + plugin.name);
+          printRed("There is no uninstall command to execute for plugin: " + plugin.name);
         }
       }
 
@@ -1110,20 +1099,19 @@ public class PackageManager implements Closeable {
     } catch (KeeperException | InterruptedException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     }
-    Map<String, String> deployed = new HashMap<String, String>();
+    Map<String, String> deployed = new HashMap<>();
     for (String collection : allCollections) {
       // Check package version installed
       String paramsJson =
-          PackageUtils.getJsonStringFromUrl(
-              solrClient.getHttpClient(),
-              solrBaseUrl
-                  + PackageUtils.getCollectionParamsPath(collection)
-                  + "/PKG_VERSIONS?omitHeader=true");
+          PackageUtils.getJsonStringFromCollectionApi(
+              solrClient,
+              PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS",
+              new ModifiableSolrParams().add("omitHeader", "true"));
       String version = null;
       try {
         version =
-            JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
-                .read("$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "'])");
+            jsonPathRead(
+                paramsJson, "$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "']");
       } catch (PathNotFoundException ex) {
         // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched
         // by the package manager.

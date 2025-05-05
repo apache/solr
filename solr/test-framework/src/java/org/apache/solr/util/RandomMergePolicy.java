@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.FilterMergePolicy;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.tests.index.MockRandomMergePolicy;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,16 @@ public class RandomMergePolicy extends FilterMergePolicy {
 
   public RandomMergePolicy() {
     this(LuceneTestCase.newMergePolicy());
+  }
+
+  /**
+   * Creates an instance.
+   *
+   * @param allowMockMP whether to give a chance to return {@linkplain MockRandomMergePolicy}, which
+   *     may reverse docs in the segment
+   */
+  public RandomMergePolicy(boolean allowMockMP) {
+    this(LuceneTestCase.newMergePolicy(LuceneTestCase.random(), allowMockMP));
   }
 
   protected RandomMergePolicy(MergePolicy inner) {

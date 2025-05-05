@@ -111,7 +111,7 @@ of the other tools in this folder.
     
     optional arguments:
       -h, --help         show this help message and exit
-      -l LUCENE_VERSION  Optional lucene version. By default will read versions.props
+      -l LUCENE_VERSION  Optional lucene version. By default will read gradle/libs.versions.toml
 
 ### releasedJirasRegex.py
 

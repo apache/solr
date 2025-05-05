@@ -22,29 +22,28 @@ import static org.mockito.Mockito.when;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.servlet.SolrRequestParsers.FormDataRequestParser;
@@ -64,6 +63,8 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     assumeWorkingMockito();
+    System.setProperty("solr.enableRemoteStreaming", "true");
+    System.setProperty("solr.enableStreamBody", "true");
     initCore("solrconfig.xml", "schema.xml");
     parser = new SolrRequestParsers(h.getCore().getSolrConfig());
   }
@@ -88,39 +89,45 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
     // Make sure it got a single stream in and out ok
     List<ContentStream> streams = new ArrayList<>();
-    SolrQueryRequest req = parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams);
-    assertEquals(1, streams.size());
-    assertEquals(body1, IOUtils.toString(streams.get(0).getReader()));
-    req.close();
+    try (SolrQueryRequest req =
+        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
+      assertNotNull(req);
+      assertEquals(1, streams.size());
+      assertEquals(body1, StrUtils.stringFromReader(streams.get(0).getReader()));
+    }
 
     // Now add three and make sure they come out ok
     streams = new ArrayList<>();
     args.put(CommonParams.STREAM_BODY, new String[] {body1, body2, body3});
-    req = parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams);
-    assertEquals(3, streams.size());
-    ArrayList<String> input = new ArrayList<>();
-    ArrayList<String> output = new ArrayList<>();
-    input.add(body1);
-    input.add(body2);
-    input.add(body3);
-    output.add(IOUtils.toString(streams.get(0).getReader()));
-    output.add(IOUtils.toString(streams.get(1).getReader()));
-    output.add(IOUtils.toString(streams.get(2).getReader()));
-    // sort them so the output is consistent
-    Collections.sort(input);
-    Collections.sort(output);
-    assertEquals(input.toString(), output.toString());
-    req.close();
+    try (SolrQueryRequest req =
+        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
+      assertNotNull(req);
+      assertEquals(3, streams.size());
+      ArrayList<String> input = new ArrayList<>();
+      ArrayList<String> output = new ArrayList<>();
+      input.add(body1);
+      input.add(body2);
+      input.add(body3);
+      for (ContentStream cs : streams) {
+        output.add(StrUtils.stringFromReader(cs.getReader()));
+      }
+      // sort them so the output is consistent
+      Collections.sort(input);
+      Collections.sort(output);
+      assertEquals(input.toString(), output.toString());
+    }
 
     // set the contentType and make sure that it gets set
     String ctype = "text/xxx";
     streams = new ArrayList<>();
     args.put(CommonParams.STREAM_CONTENTTYPE, new String[] {ctype});
-    req = parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams);
-    for (ContentStream s : streams) {
-      assertEquals(ctype, s.getContentType());
+    try (SolrQueryRequest req =
+        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
+      assertNotNull(req);
+      for (ContentStream s : streams) {
+        assertEquals(ctype, s.getContentType());
+      }
     }
-    req.close();
   }
 
   @Test
@@ -129,7 +136,10 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     URL url = getClass().getResource("/README");
     assertNotNull("Missing file 'README' in test-resources root folder.", url);
 
-    byte[] bytes = IOUtils.toByteArray(url);
+    final byte[] bytes;
+    try (InputStream inputStream = url.openStream()) {
+      bytes = inputStream.readAllBytes();
+    }
 
     SolrCore core = h.getCore();
 
@@ -140,9 +150,10 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     List<ContentStream> streams = new ArrayList<>();
     try (SolrQueryRequest req =
         parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
+      assertNotNull(req);
       assertEquals(1, streams.size());
       try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, IOUtils.toByteArray(in));
+        assertArrayEquals(bytes, in.readAllBytes());
       }
     }
   }
@@ -150,22 +161,23 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings({"try"})
   public void testStreamFile() throws Exception {
-    File file = getFile("README");
+    Path file = getFile("README");
 
-    byte[] bytes = FileUtils.readFileToByteArray(file);
+    byte[] bytes = Files.readAllBytes(file);
 
     SolrCore core = h.getCore();
 
     Map<String, String[]> args = new HashMap<>();
-    args.put(CommonParams.STREAM_FILE, new String[] {file.getAbsolutePath()});
+    args.put(CommonParams.STREAM_FILE, new String[] {file.toAbsolutePath().toString()});
 
     // Make sure it got a single stream in and out ok
     List<ContentStream> streams = new ArrayList<>();
     try (SolrQueryRequest req =
         parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
+      assertNotNull(req);
       assertEquals(1, streams.size());
       try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, IOUtils.toByteArray(in));
+        assertArrayEquals(bytes, in.readAllBytes());
       }
     }
   }
@@ -396,36 +408,6 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     verify(request).getInputStream();
   }
 
-  @Test
-  @SuppressWarnings("JdkObsolete")
-  public void testAddHttpRequestToContext() throws Exception {
-    HttpServletRequest request = getMock("/solr/select", null, -1);
-    when(request.getMethod()).thenReturn("GET");
-    when(request.getQueryString()).thenReturn("q=title:solr");
-    Map<String, String> headers = new HashMap<>();
-    headers.put("X-Forwarded-For", "10.0.0.1");
-    when(request.getHeaderNames()).thenReturn(new Vector<>(headers.keySet()).elements());
-    for (Map.Entry<String, String> entry : headers.entrySet()) {
-      Vector<String> v = new Vector<>();
-      v.add(entry.getValue());
-      when(request.getHeaders(entry.getKey())).thenReturn(v.elements());
-    }
-
-    SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
-    assertFalse(parsers.isAddRequestHeadersToContext());
-    SolrQueryRequest solrReq = parsers.parse(h.getCore(), "/select", request);
-    assertFalse(solrReq.getContext().containsKey("httpRequest"));
-
-    parsers.setAddRequestHeadersToContext(true);
-    solrReq = parsers.parse(h.getCore(), "/select", request);
-    assertEquals(request, solrReq.getContext().get("httpRequest"));
-    assertEquals(
-        "10.0.0.1",
-        ((HttpServletRequest) solrReq.getContext().get("httpRequest"))
-            .getHeaders("X-Forwarded-For")
-            .nextElement());
-  }
-
   public void testPostMissingContentType() throws Exception {
     HttpServletRequest request = getMock();
     when(request.getMethod()).thenReturn("POST");
@@ -525,8 +507,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       for (ContentStream cs : req.getContentStreams()) {
         num++;
         assertTrue(cs.getContentType().startsWith(expectedContentType));
-        String returnedBody = IOUtils.toString(cs.getReader());
-        assertEquals(body, returnedBody);
+        assertEquals(body, StrUtils.stringFromReader(cs.getReader()));
       }
       assertEquals(1, num);
     }

@@ -18,7 +18,6 @@ package org.apache.solr.search.facet;
 
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
 
-import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,8 +61,7 @@ public abstract class FacetRequest {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof FacetSort) {
-        final FacetSort that = (FacetSort) other;
+      if (other instanceof FacetSort that) {
         return this.sortVariable.equals(that.sortVariable)
             && this.sortDirection.equals(that.sortDirection);
       }
@@ -82,6 +80,7 @@ public abstract class FacetRequest {
 
     /** Commonly Re-used "count desc" (default) */
     public static final FacetSort COUNT_DESC = new FacetSort("count", SortDirection.desc);
+
     /** Commonly Re-used "index asc" (index order / streaming) */
     public static final FacetSort INDEX_ASC = new FacetSort("index", SortDirection.asc);
   }
@@ -122,6 +121,7 @@ public abstract class FacetRequest {
   public static enum RefineMethod {
     NONE,
     SIMPLE;
+
     // NONE is distinct from null since we may want to know if refinement was explicitly turned off.
     public static FacetRequest.RefineMethod fromObj(Object method) {
       if (method == null) return null;
@@ -151,6 +151,7 @@ public abstract class FacetRequest {
      * format. Mutually exclusive to {@link #excludeTags}
      */
     public List<Object> explicitQueries; // list of symbolic filters (JSON query format)
+
     /**
      * Specifies query/filter tags that should be excluded to re-compute the domain from the parent
      * context. Mutually exclusive to {@link #explicitQueries}
@@ -187,7 +188,7 @@ public abstract class FacetRequest {
       private static final String TO_PARAM = "to";
       private static final String METHOD_PARAM = "method";
       private static final Set<String> SUPPORTED_JOIN_PROPERTIES =
-          Sets.newHashSet(FROM_PARAM, TO_PARAM, METHOD_PARAM);
+          Set.of(FROM_PARAM, TO_PARAM, METHOD_PARAM);
 
       public final String from;
       public final String to;
@@ -328,7 +329,8 @@ public abstract class FacetRequest {
         // does...
         wrappedFromQuery.setCache(false);
 
-        GraphQueryParser graphParser = new GraphQueryParser(null, localParams, null, fcontext.req);
+        GraphQueryParser graphParser =
+            new GraphQueryParser(null, localParams, fcontext.req.getParams(), fcontext.req);
         try {
           GraphQuery graphQuery = (GraphQuery) graphParser.parse();
           graphQuery.setQ(wrappedFromQuery);

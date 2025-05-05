@@ -23,8 +23,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkCredentialsInjector.ZkCredential;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
@@ -68,8 +68,8 @@ public class DigestZkACLProvider extends SecurityAwareZkACLProvider {
     List<ZkCredential> zkCredentials = zkCredentialsInjector.getZkCredentials();
     log.debug("createACLsToAdd using ZkCredentials: {}", zkCredentials);
     for (ZkCredential zkCredential : zkCredentials) {
-      if (StringUtils.isEmpty(zkCredential.getUsername())
-          || StringUtils.isEmpty(zkCredential.getPassword())) {
+      if (StrUtils.isNullOrEmpty(zkCredential.getUsername())
+          || StrUtils.isNullOrEmpty(zkCredential.getPassword())) {
         continue;
       }
       Id id = createACLId(zkCredential.getUsername(), zkCredential.getPassword());

@@ -16,18 +16,20 @@
  */
 package org.apache.solr.cloud;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.cli.ConfigSetUploadTool;
+import org.apache.solr.cli.DefaultToolRuntime;
+import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -39,8 +41,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.SolrCLI;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -68,7 +68,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   public void distribSetUp() throws Exception {
     super.distribSetUp();
 
-    Path zkDir = testDir.toPath().resolve("zookeeper/server1/data");
+    Path zkDir = testDir.resolve("zookeeper/server1/data");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
@@ -99,9 +99,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   @Override
   protected void createServers(int numShards) throws Exception {
     // give everyone there own solrhome
-    File controlHome =
-        new File(new File(getSolrHome()).getParentFile(), "control" + homeCount.incrementAndGet());
-    FileUtils.copyDirectory(new File(getSolrHome()), controlHome);
+    Path controlHome = getSolrHome().getParent().resolve("control" + homeCount.incrementAndGet());
+    PathUtils.copyDirectory(getSolrHome(), controlHome);
     setupJettySolrHome(controlHome);
 
     controlJetty = createJetty(controlHome, null); // let the shardId default to shard1
@@ -123,8 +122,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     for (int i = 1; i <= numShards; i++) {
       if (sb.length() > 0) sb.append(',');
       // give everyone there own solrhome
-      File jettyHome =
-          new File(new File(getSolrHome()).getParentFile(), "jetty" + homeCount.incrementAndGet());
+      Path jettyHome = getSolrHome().getParent().resolve("jetty" + homeCount.incrementAndGet());
       setupJettySolrHome(jettyHome);
       JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
       j.start();
@@ -241,65 +239,42 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     log.info("Collection has disappeared - collection:{}", collection);
   }
 
-  static void waitForNewLeader(
-      CloudSolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
+  static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader)
       throws Exception {
-    log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS));
+    log.info("Will wait for a node to become leader for 15 secs");
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
 
-    for (; ; ) {
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection coll = clusterState.getCollection("collection1");
-      Slice slice = coll.getSlice(shardName);
-      if (slice.getLeader() != null
-          && !slice.getLeader().equals(oldLeader)
-          && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        if (log.isInfoEnabled()) {
-          log.info(
-              "Old leader {}, new leader {}. New leader got elected in {} ms",
-              oldLeader,
-              slice.getLeader(),
-              timeOut.timeElapsed(MILLISECONDS));
-        }
-        break;
-      }
+    long startNs = System.nanoTime();
+    try {
+      zkStateReader.waitForState(
+          "collection1",
+          15,
+          TimeUnit.SECONDS,
+          (docCollection) -> {
+            if (docCollection == null) return false;
 
-      if (timeOut.hasTimedOut()) {
-        Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
-        zkStateReader.getZkClient().printLayoutToStream(System.out);
-        fail(
-            "Could not find new leader even after waiting for "
-                + timeOut.timeElapsed(MILLISECONDS)
-                + "ms");
-      }
-
-      Thread.sleep(100);
-    }
-
-    zkStateReader.waitForState(
-        "collection1",
-        timeOut.timeLeft(SECONDS),
-        TimeUnit.SECONDS,
-        (docCollection) -> {
-          if (docCollection == null) return false;
-
-          Slice slice = docCollection.getSlice(shardName);
-          if (slice != null
-              && slice.getLeader() != null
-              && !slice.getLeader().equals(oldLeader)
-              && slice.getLeader().getState() == Replica.State.ACTIVE) {
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "Old leader {}, new leader {}. New leader got elected in {} ms",
-                  oldLeader,
-                  slice.getLeader(),
-                  timeOut.timeElapsed(MILLISECONDS));
+            Slice slice = docCollection.getSlice(shardName);
+            if (slice != null
+                && slice.getLeader() != null
+                && !slice.getLeader().equals(oldLeader)
+                && slice.getLeader().getState() == Replica.State.ACTIVE) {
+              if (log.isInfoEnabled()) {
+                log.info(
+                    "Old leader {}, new leader {}. New leader got elected in {} ms",
+                    oldLeader,
+                    slice.getLeader(),
+                    TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs));
+              }
+              return true;
             }
-            return true;
-          }
-          return false;
-        });
+            return false;
+          });
+    } catch (TimeoutException e) {
+      // If we failed to get a new leader, print some diagnotics before the test fails
+      Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
+      zkStateReader.getZkClient().printLayoutToStream(System.out);
+      fail("Could not find new leader even after waiting for 15s");
+    }
   }
 
   public static void verifyReplicaStatus(
@@ -383,7 +358,11 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   }
 
   protected void printLayout() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkClient.printLayoutToStream(System.out);
     zkClient.close();
   }
@@ -402,23 +381,22 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   //
   // copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", "configset-name", zk_address);
 
-  protected static void copyConfigUp(
+  public static void copyConfigUp(
       Path configSetDir, String srcConfigSet, String dstConfigName, String zkAddr)
       throws Exception {
+
+    Path fullConfDir = configSetDir.resolve(srcConfigSet);
     String[] args =
         new String[] {
-          "-confname", dstConfigName,
-          "-confdir", srcConfigSet,
-          "-zkHost", zkAddr,
-          "-configsetsDir", configSetDir.toString(),
+          "--conf-name", dstConfigName,
+          "--conf-dir", fullConfDir.toAbsolutePath().toString(),
+          "-z", zkAddr
         };
 
-    SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();
+    ToolRuntime runtime = new DefaultToolRuntime();
+    ConfigSetUploadTool tool = new ConfigSetUploadTool(runtime);
 
-    int res =
-        tool.runTool(
-            SolrCLI.processCommandLineArgs(
-                tool.getName(), SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);
   }
 }

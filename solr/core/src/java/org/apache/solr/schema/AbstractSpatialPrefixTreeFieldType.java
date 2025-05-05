@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
@@ -29,6 +28,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTreeFactory;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.MapListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,7 +181,7 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
         return new TokenStreamComponents(
             r -> {
               try {
-                ts.setShape(parseShape(IOUtils.toString(r)));
+                ts.setShape(parseShape(StrUtils.stringFromReader(r)));
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }

@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -24,20 +25,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -53,11 +52,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * @since 6.2.0
@@ -76,12 +72,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   protected int positiveLabel;
   protected int numTerms;
 
-  protected transient SolrClientCache cache;
-  protected transient boolean isCloseCache;
-  protected transient CloudSolrClient cloudSolrClient;
-
-  protected transient StreamContext streamContext;
-  protected ExecutorService executorService;
+  protected transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
 
   public FeaturesSelectionStream(
       String zkHost,
@@ -105,7 +97,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
     // need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
@@ -121,7 +113,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
               expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(
@@ -254,24 +246,18 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.cache = context.getSolrClientCache();
-    this.streamContext = context;
+    this.clientCache = context.getSolrClientCache();
   }
 
   /** Opens the CloudSolrStream */
   @Override
   public void open() throws IOException {
-    if (cache == null) {
-      isCloseCache = true;
-      cache = new SolrClientCache();
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
-
-    this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService =
-        ExecutorUtil.newMDCAwareCachedThreadPool(
-            new SolrNamedThreadFactory("FeaturesSelectionStream"));
   }
 
   @Override
@@ -281,6 +267,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private List<String> getShardUrls() throws IOException {
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
@@ -297,8 +284,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
         Collections.shuffle(shuffler, new Random());
         Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
+        String url = rep.getCoreUrl();
         baseUrls.add(url);
       }
 
@@ -309,28 +295,27 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     }
   }
 
-  private List<Future<NamedList<?>>> callShards(List<String> baseUrls) throws IOException {
-
-    List<Future<NamedList<?>>> futures = new ArrayList<>();
+  private Collection<NamedList<?>> callShards(List<String> baseUrls) throws IOException {
+    List<FeaturesSelectionCall> tasks = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       FeaturesSelectionCall lc =
-          new FeaturesSelectionCall(baseUrl, this.params, this.field, this.outcome);
-
-      Future<NamedList<?>> future = executorService.submit(lc);
-      futures.add(future);
+          new FeaturesSelectionCall(
+              baseUrl,
+              this.params,
+              this.field,
+              this.outcome,
+              this.positiveLabel,
+              this.numTerms,
+              this.clientCache);
+      tasks.add(lc);
     }
-
-    return futures;
+    return submitAllAndAwaitAggregatingExceptions(tasks, "FeaturesSelectionStream");
   }
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache && cache != null) {
-      cache.close();
-    }
-
-    if (executorService != null) {
-      executorService.shutdown();
+    if (doCloseCache) {
+      clientCache.close();
     }
   }
 
@@ -349,16 +334,16 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
         .withExpression(toExpression(factory).toString());
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Tuple read() throws IOException {
     try {
       if (tupleIterator == null) {
-        Map<String, Double> termScores = new HashMap<>();
-        Map<String, Long> docFreqs = new HashMap<>();
+        final Map<String, Double> termScores = new HashMap<>();
+        final Map<String, Long> docFreqs = new HashMap<>();
 
         long numDocs = 0;
-        for (Future<NamedList<?>> getTopTermsCall : callShards(getShardUrls())) {
-          NamedList<?> resp = getTopTermsCall.get();
+        for (NamedList<?> resp : callShards(getShardUrls())) {
 
           @SuppressWarnings({"unchecked"})
           NamedList<Double> shardTopTerms = (NamedList<Double>) resp.get("featuredTerms");
@@ -367,76 +352,80 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
           numDocs += (Integer) resp.get("numDocs");
 
-          for (int i = 0; i < shardTopTerms.size(); i++) {
-            String term = shardTopTerms.getName(i);
-            double score = shardTopTerms.getVal(i);
-            int docFreq = shardDocFreqs.get(term);
-            double prevScore = termScores.containsKey(term) ? termScores.get(term) : 0;
-            long prevDocFreq = docFreqs.containsKey(term) ? docFreqs.get(term) : 0;
-            termScores.put(term, prevScore + score);
-            docFreqs.put(term, prevDocFreq + docFreq);
-          }
+          shardTopTerms.forEach(
+              (term, score) -> {
+                int docFreq = shardDocFreqs.get(term);
+                termScores.merge(term, score, Double::sum);
+                docFreqs.merge(term, (long) docFreq, Long::sum);
+              });
         }
+        final long numDocsF = numDocs; // make final
 
-        List<Tuple> tuples = new ArrayList<>(numTerms);
-        termScores = sortByValue(termScores);
-        int index = 0;
-        for (Map.Entry<String, Double> termScore : termScores.entrySet()) {
-          if (tuples.size() == numTerms) break;
-          index++;
-          Tuple tuple = new Tuple();
-          tuple.put(ID, featureSet + "_" + index);
-          tuple.put("index_i", index);
-          tuple.put("term_s", termScore.getKey());
-          tuple.put("score_f", termScore.getValue());
-          tuple.put("featureSet_s", featureSet);
-          long docFreq = docFreqs.get(termScore.getKey());
-          double d = Math.log(((double) numDocs / (double) (docFreq + 1)));
-          tuple.put("idf_d", d);
-          tuples.add(tuple);
-        }
+        final AtomicInteger idGen = new AtomicInteger(1);
 
-        tuples.add(Tuple.EOF());
-
-        tupleIterator = tuples.iterator();
+        tupleIterator =
+            termScores.entrySet().stream()
+                .sorted( // sort by score descending
+                    Comparator.<Map.Entry<String, Double>>comparingDouble(Entry::getValue)
+                        .reversed())
+                .limit(numTerms)
+                .map(
+                    (termScore) -> {
+                      int index = idGen.getAndIncrement();
+                      Tuple tuple = new Tuple();
+                      tuple.put(ID, featureSet + "_" + index);
+                      tuple.put("index_i", index);
+                      tuple.put("term_s", termScore.getKey());
+                      tuple.put("score_f", termScore.getValue());
+                      tuple.put("featureSet_s", featureSet);
+                      long docFreq = docFreqs.get(termScore.getKey());
+                      double d = Math.log(((double) numDocsF / (double) (docFreq + 1)));
+                      tuple.put("idf_d", d);
+                      return tuple;
+                    })
+                .iterator();
       }
-
-      return tupleIterator.next();
+      if (tupleIterator.hasNext()) {
+        return tupleIterator.next();
+      } else {
+        return Tuple.EOF();
+      }
     } catch (Exception e) {
       throw new IOException(e);
     }
   }
 
-  private <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
-    Map<K, V> result = new LinkedHashMap<>();
-    Stream<Map.Entry<K, V>> st = map.entrySet().stream();
+  protected static class FeaturesSelectionCall implements Callable<NamedList<?>> {
 
-    st.sorted(Map.Entry.comparingByValue((c1, c2) -> c2.compareTo(c1)))
-        .forEachOrdered(e -> result.put(e.getKey(), e.getValue()));
-
-    return result;
-  }
-
-  protected class FeaturesSelectionCall implements Callable<NamedList<?>> {
-
-    private String baseUrl;
-    private String outcome;
-    private String field;
-    private Map<String, String> paramsMap;
+    private final String baseUrl;
+    private final String outcome;
+    private final String field;
+    private final Map<String, String> paramsMap;
+    private final int positiveLabel;
+    private final int numTerms;
+    private final SolrClientCache clientCache;
 
     public FeaturesSelectionCall(
-        String baseUrl, Map<String, String> paramsMap, String field, String outcome) {
-
+        String baseUrl,
+        Map<String, String> paramsMap,
+        String field,
+        String outcome,
+        int positiveLabel,
+        int numTerms,
+        SolrClientCache clientCache) {
       this.baseUrl = baseUrl;
       this.outcome = outcome;
       this.field = field;
       this.paramsMap = paramsMap;
+      this.positiveLabel = positiveLabel;
+      this.numTerms = numTerms;
+      this.clientCache = clientCache;
     }
 
     @Override
     public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq", "{!igain}");

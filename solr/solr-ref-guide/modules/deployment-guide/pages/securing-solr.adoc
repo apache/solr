@@ -54,10 +54,8 @@ The authentication plugins that ship with Solr are:
 [width=100%,cols="1,1",frame=none,grid=none,stripes=none]
 |===
 | xref:basic-authentication-plugin.adoc[]
-| xref:kerberos-authentication-plugin.adoc[]
 | xref:jwt-authentication-plugin.adoc[]
 | xref:cert-authentication-plugin.adoc[]
-| xref:hadoop-authentication-plugin.adoc[]
 |
 |===
 // end::list-of-authentication-plugins[]
@@ -77,7 +75,7 @@ The authorization plugins that ship with Solr are:
 
 == Audit Logging
 
-Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs.
+Audit logging will record an audit trail of incoming requests to your cluster, such as users being denied access to admin APIs.
 Learn more about audit logging and how to implement an audit logger plugin in the section xref:audit-logging.adoc[].
 
 == IP Access Control
@@ -115,4 +113,17 @@ This can be done by setting a `SOLR_JETTY_HOST` value in your environment's "inc
  ----
  SOLR_JETTY_HOST="0.0.0.0"
  ----
+
+The same setting is also available as the `-Dsolr.jetty.host` System Property.
+
+The same is true for the embedded Zookeeper, if it is run with Solr.
+By default, the embedded Zookeeper only listens on the loopback interface ("127.0.0.1")
+The bind host is controlled via the `SOLR_ZK_EMBEDDED_HOST` value in your environment's "include script" (`solr.in.sh` or `solr.in.cmd`):
+
+[source,bash]
+ ----
+ SOLR_ZK_EMBEDDED_HOST="0.0.0.0"
+ ----
+
+The same setting is also available as the `-Dsolr.zk.embedded.host` System Property.
 // end::security-network-binding-1[]

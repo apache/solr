@@ -25,6 +25,7 @@ public class TestSurroundQueryParser extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schemasurround.xml");
   }
+
   // public String getCoreName() { return "collection1"; }
 
   @Override

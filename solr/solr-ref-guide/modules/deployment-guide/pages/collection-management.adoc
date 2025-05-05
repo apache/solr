@@ -1,4 +1,5 @@
 = Collection Management Commands
+:tabs-sync-option:
 :toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -23,7 +24,7 @@ All of the examples in this section assume you are running the "techproducts" So
 
 [source,bash]
 ----
-bin/solr -c -e techproducts
+bin/solr start -e techproducts
 ----
 
 [[create]]
@@ -31,12 +32,11 @@ bin/solr -c -e techproducts
 
 The CREATE action is used to create new collection of data.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1createcollection]
+[tabs#createcollection]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&collection.configName=techproducts&numShards=1
@@ -44,26 +44,23 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&
 ----
 ====
 
-[example.tab-pane#v2createcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `create` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
   {
-    "create": {
-      "name": "techproducts_v2",
-      "config": "techproducts",
-      "numShards": 1
-    }
+    "name": "techproducts_v2",
+    "config": "techproducts",
+    "numShards": 1
   }
 '
 ----
 ====
---
+======
 
 === CREATE Parameters
 
@@ -109,15 +106,17 @@ For more information, see also the section xref:solrcloud-shards-indexing.adoc#d
 The number of shards to be created as part of the collection.
 This is a required parameter when the `router.name` is `compositeId`.
 
-`shards`::
+`shards` (v1), `shardNames` (v2)::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-A comma separated list of shard names, e.g., `shard-x,shard-y,shard-z`.
-This is a required parameter when the `router.name` is `implicit`.
+The shard names use when creating this collection.
+This is a required parameter when `router.name` is `implicit`.
+For v1 requests, these are provided as a single comma-delimited query parameter, e.g., `shard-x,shard-y,shard-z`.
+For v2 requests shard names are provided as a list of values in the request body, e.g., `["shard-x", "shard-y", "shard-z"]`
 
 `replicationFactor`::
 +
@@ -174,11 +173,26 @@ See the section xref:solrcloud-shards-indexing.adoc#types-of-replicas[Types of R
 |===
 +
 Allows defining the nodes to spread the new collection across.
-The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+For v1 requests, node names are provided as a single comma-separated list, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+For v2 requests, node names are provided as a list of individual values, such as `["localhost:8983_solr", "localhost:7574_solr"]`.
 +
-If not provided, the CREATE operation will create shard-replicas spread across all live Solr nodes.
+If not provided, the CREATE operation will use all live nodes in the cluster as its node set.
 +
-Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the xref:replica-management.adoc#addreplica[ADDREPLICA] operation to add shard-replicas when and where required.
+Alternatively, v1 requests allow the special value `EMPTY` to initially create no shard-replica within the new collection and then later use the xref:replica-management.adoc#addreplica[ADDREPLICA] operation to add shard-replicas when and where required.
+v2 requests may use this same functionality via the `createReplicas` boolean parameter.
+
+`createReplicas` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: true
+|===
++
+Controls whether Solr creates replicas for each shard as a part of the collection-creation operation.
+(Replicas can always be created later using the xref:replica-management.adoc#addreplica[ADDREPLICA] operation.)
++
+Only available on v2 requests.
+v1 requests wishing to defer replica-creation may do so my providing the `EMPTY` flag value to the `createNodeSet` parameter.
 
 `createNodeSet.shuffle` (v1), `shuffleNodes` (v2)::
 +
@@ -214,6 +228,7 @@ When such a collection is deleted, its autocreated configset will be deleted by 
 +
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field.
 If the field specified is null in the document, the document will be rejected.
+For nested documents, the route field must match among all the documents in the hierarchy.
 +
 Please note that xref:configuration-guide:realtime-get.adoc[] or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
@@ -235,6 +250,7 @@ If `true` the states of individual replicas will be maintained as individual chi
 +
 Set core property _name_ to _value_.
 See the section xref:configuration-guide:core-discovery.adoc[] for details on supported properties and values.
+Those properties are also applied to every new core that will be created when adding replicas to the collection later on.
 +
 [WARNING]
 ====
@@ -289,12 +305,11 @@ Solr automatically reloads collections when certain files, monitored via a watch
 such as `security.json`.
 However, for changes to files in configsets, like uploading a new schema, you will need to manually trigger the RELOAD.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1reloadcollection]
+[tabs#reloadcollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
@@ -302,35 +317,21 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
 ----
 ====
 
-[example.tab-pane#v2reloadcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-With the v2 API, the `reload` command is provided as part of the JSON data that contains the required parameters:
+With the v2 API, the `reload` command is provided as a part of URL path. The request body is optional if the optional `async` parameter is omitted:
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
   {
-    "reload": {}
-  }
-'
-----
-
-Additional parameters can be passed in via the `reload` key:
-
-[source,bash]
-----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
-  {
-    "reload": {
-      "async": "reload1"
-    }
+    "async": "someAsyncId"
   }
 '
 ----
 ====
---
+======
 
 === RELOAD Parameters
 
@@ -342,7 +343,8 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 |===
 +
 The name of the collection to reload.
-This parameter is required by the V1 API.
+This parameter is required.
+It appears as a query-parameter on v1 requests, and in the URL path of v2 requests.
 
 `async`::
 +
@@ -368,12 +370,11 @@ For instance, increasing `replicationFactor` will _not_ automatically add more r
 An attribute can be deleted by passing an empty value.
 For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1modifycollection]
+[tabs#modifycollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=techproducts_v2&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>&<yet_another_attribute_name>=
@@ -382,11 +383,9 @@ http://localhost:8983/solr/admin/collections?action=modifycollection&collection=
 
 ----
 ====
-
-[example.tab-pane#v2modifycollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `modify` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
@@ -400,9 +399,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 '
 ----
 ====
---
-
-
+======
 
 === MODIFYCOLLECTION Parameters
 
@@ -466,22 +463,20 @@ Removing the `readOnly` property or setting it to false enables the processing o
 
 Fetch the names of the collections in the cluster.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listcollection]
+[tabs#listcollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=LIST
 ----
 ====
 
-[example.tab-pane#v2listcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `list` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
@@ -489,7 +484,7 @@ With the v2 API, the `list` command is provided as part of the JSON data that co
 curl -X GET http://localhost:8983/api/collections
 ----
 ====
---
+======
 
 *Output*
 
@@ -519,33 +514,30 @@ Aliases that refer to more than 1 collection are not supported.
 * the existing name must not be a Routed Alias.
 * the target name must not be an existing alias.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1renamecollection]
+[tabs#renamecollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=renamedCollection
+http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=newName
 ----
 ====
 
-[example.tab-pane#v2renamecollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
   {
-    "to": "new_name"
+    "to": "newName"
   }
 '
 ----
 ====
---
-
+======
 
 === RENAME Command Parameters
 
@@ -600,23 +592,19 @@ an actual collection name) the following aliases will exist now:
 
 The DELETE action is used to delete a collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletecollection]
+[tabs#deletecollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETE&name=techproducts_v2
 ----
 ====
-
-[example.tab-pane#v2deletecollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-
 [source,bash]
 ----
 curl -X DELETE http://localhost:8983/api/collections/techproducts_v2
@@ -629,7 +617,7 @@ To run a DELETE asynchronously then append the `async` parameter:
 curl -X DELETE http://localhost:8983/api/collections/techproducts_v2?async=aaaa
 ----
 ====
---
+======
 
 === DELETE Parameters
 
@@ -687,39 +675,42 @@ If the status is anything other than "success", an error message will explain wh
 
 Add, edit or delete a collection property.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1collectionproperty]
+[tabs#collectionproperty-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techproducts_v2&propertyName=propertyName&propertyValue=propertyValue
 ----
 ====
 
-[example.tab-pane#v2collectionproperty]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
+To create or update a collection property:
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl -X PUT http://localhost:8983/api/collections/techproducts_v2/properties/foo -H 'Content-Type: application/json' -d '
   {
-    "set-collection-property": {
-      "name": "foo",
-      "value": "bar"
-    }
+    "value": "bar"
   }
 '
 ----
+
+To delete an existing collection property:
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts_v2/properties/foo 
+----
 ====
---
+======
 
 === COLLECTIONPROP Parameters
 
-`name`::
+`name` (v1)::
 +
 [%autowidth,frame=none]
 |===
@@ -727,8 +718,9 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 |===
 +
 The name of the collection for which the property would be set.
+Appears in the path of v2 requests.
 
-`propertyName` (v1), `name` (v2)::
+`propertyName` (v1)::
 +
 [%autowidth,frame=none]
 |===
@@ -736,6 +728,7 @@ The name of the collection for which the property would be set.
 |===
 +
 The name of the property.
+Appears in the path of v2 requests.
 
 `propertyValue` (v1), `value` (v2)::
 +
@@ -745,7 +738,7 @@ The name of the property.
 |===
 +
 The value of the property.
-When not provided, the property is deleted.
+When not provided in v1 requests, the property is deleted.
 
 === COLLECTIONPROP Response
 
@@ -759,23 +752,20 @@ The MIGRATE command is used to migrate all documents having a given routing key 
 The source collection will continue to have the same data as-is but it will start re-routing write requests to the target collection for the number of seconds specified by the `forward.timeout` parameter.
 It is the responsibility of the user to switch to the target collection for reads and writes after the MIGRATE action completes.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1migratecollection]
+[tabs#migratecollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=techproducts_v2&split.key=key1!&target.collection=postMigrationCollection&forward.timeout=60
 ----
 ====
 
-[example.tab-pane#v2migratecollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
@@ -788,7 +778,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 '
 ----
 ====
---
+======
 
 The routing key specified by the `split.key` parameter may span multiple shards on both the source and the target collections.
 The migration is performed shard-by-shard in a single thread.
@@ -872,26 +862,24 @@ The response will include the status of the request.
 The REINDEXCOLLECTION command reindexes a collection using existing data from the
 source collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1reindexcollection]
+[tabs#reindexcollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=techproducts_v2
 ----
 ====
 
-[example.tab-pane#v2reindexcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 We do not currently have a V2 equivalent.
 
 ====
---
+======
 
 NOTE: Reindexing is potentially a lossy operation.
 Some of the existing indexed data that is not available as stored fields may be lost, so users should use this command with caution, evaluating the potential impact by using different source and target collection names first, and preserving the source collection until the evaluation is complete.
@@ -1003,7 +991,7 @@ There are additionally a number of optional parameters that determine the target
 If they are not specified in the request then their values are copied from the source collection.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
-`shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
+`shards`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
 When the reindexing process has completed the target collection is marked using
 `property.rx: "finished"`, and the source collection state is updated to become read-write.
@@ -1049,30 +1037,26 @@ The status also shows that the source collection was already an alias to `.rx_te
 The COLSTATUS command provides a detailed description of the collection status, including low-level index information about segments and field data.
 There isn't a good equivalent V2 API that supports all the parameters below.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1collectionstatus]
+[tabs#collectionstatus-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=techproducts_v2&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true
 ----
 ====
 
-[example.tab-pane#v2collectionstatus]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-The closest V2 API is this one, but doesn't support all the features of the V1 equivalent.
-
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts_v2
+curl -X GET "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
 ----
 ====
---
+======
 
 This command also checks the compliance of Lucene index field types with the current Solr collection schema and indicates the names of non-compliant fields, i.e., Lucene fields with field types incompatible (or different) from the corresponding Solr field types declared in the current schema.
 Such incompatibilities may result from incompatible schema changes or after migration of data to a different major Solr release.
@@ -1087,7 +1071,8 @@ Such incompatibilities may result from incompatible schema changes or after migr
 |===
 +
 Collection name.
-If missing then it means all collections.
+Provided as a query-parameter in v1 requests, and as a path-parameter in v2.
+If missing then information is returned about all collections (supported by v1 requests only).
 
 `coreInfo`::
 +
@@ -1243,6 +1228,7 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
     },
     "gettingstarted": {
         "znodeVersion": 16,
+        "creationTimeMillis": 1706228861003,
         "properties": {
             "nrtReplicas": "2",
             "pullReplicas": "0",
@@ -1535,14 +1521,13 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
 [[backup]]
 == BACKUP: Backup Collection
 
-Backs up Solr collections and associated configurations to a shared filesystem - for example a Network File System.
+Backs up Solr collections and associated configurations to a "backup repository".
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1backupcollection]
+[tabs#backupcollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=BACKUP&name=techproducts_backup&collection=techproducts&location=file:///path/to/my/shared/drive
@@ -1550,28 +1535,21 @@ http://localhost:8983/solr/admin/collections?action=BACKUP&name=techproducts_bac
 ----
 ====
 
-[example.tab-pane#v2backupcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-With the v2 API, the `backup-collection` command is provided as part of the JSON data that contains the required parameters:
-
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
   {
-    "backup-collection": {
-      "name": "techproducts_backup",
-      "collection": "techproducts",
-      "location": "file:///path/to/my/shared/drive"
-    }
+    "location": "file:///path/to/my/shared/drive"
   }
 '
 ----
 ====
---
+======
 
-The BACKUP command will backup Solr indexes and configurations for a specified collection.
+The BACKUP API will backup Solr indexes and configurations for a specified collection.
 The BACKUP command xref:backup-restore.adoc[takes one copy from each shard for the indexes].
 For configurations, it backs up the configset that was associated with the collection and metadata.
 
@@ -1585,8 +1563,8 @@ Multiple collections cannot be backed up to the same location.
 
 [NOTE]
 ====
-Previous versions of Solr supported a different snapshot-based backup method without the incremental support described above.
-Solr can still restore from backups that use this old format, but creating new backups of this format is not recommended and snapshot-based backups are officially deprecated.
+Previous versions of Solr supported a different backup file format that lacked the incremental support described above.
+Solr can still restore from backups that use this old format, but creating new backups of this format is not recommended and is officially deprecated.
 See the `incremental` parameter below for more information.
 ====
 
@@ -1600,6 +1578,7 @@ s|Required |Default: none
 |===
 +
 The name of the collection to be backed up.
+Provided as a query parameter for v1 requests, and as a path segment for v2 requests.
 
 `name`::
 +
@@ -1609,7 +1588,9 @@ s|Required |Default: none
 |===
 +
 What to name the backup that is created.
-This is checked to make sure it doesn't already exist, and otherwise an error message is raised.
+Provided as a query parameter for v1 requests, or as a path segment for v2 requests.
++
+For incremental backups, the backup name should be reused to add new backup points to the existing backup. For non-incremental backups (deprecated), this name is checked to ensure it doesn't already exist, and an error message is raised if it does. 
 
 `location`::
 +
@@ -1659,6 +1640,24 @@ The upper-bound on how many backups should be retained at the backup location.
 If the current number exceeds this bound, older backups will be deleted until only `maxNumBackupPoints` backups remain.
 This parameter has no effect if `incremental=false` is specified.
 
+`backupConfigset`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Indicates if configset files should be included with the index backup or not. Note that in order to restore a collection, the configset must either exist in ZooKeeper or be part of the backup. Only set this to `false` if you can restore configsets by other means external to Solr (i.e. you have it stored with your application source code, is part of your ZooKeeper backups, etc).
+
+`property.<propertyName>` (V1), `extraProperties` (V2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Allows storing additional key/value pairs for custom information related to the backup. In v2, the value is a map of key-value pairs.
+
 `incremental`::
 +
 [%autowidth,frame=none]
@@ -1666,15 +1665,35 @@ This parameter has no effect if `incremental=false` is specified.
 |Optional |Default: `true`
 |===
 +
-A boolean parameter allowing users to choose whether to create an incremental (`incremental=true`) or a "snapshot" (`incremental=false`) backup.
+A boolean parameter allowing users to choose whether to create an incremental (`incremental=true`) or a "full" (`incremental=false`) backup.
 If unspecified, backups are done incrementally by default.
-Incremental backups are preferred in all known circumstances and snapshot backups are deprecated, so this parameter should only be used after much consideration.
+Incremental backups are preferred in all known circumstances and "full" (i.e. non-incremental) backups are deprecated, so this parameter should only be used after much consideration.
 
+`indexBackup` (v1), `backupStrategy` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: "copy-files"
+|===
++
+A string parameter allowing users to specify one of several different backup "strategies".
+Valid options are `copy-files` (which backs up both the collection configset and index data), and `none` (which will only backup the collection configset).
 
-[example.tab-pane#backup-response-incremental]
+`commitName` (v1), `snapshotName` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the collection "snapshot" to create a backup from.
+If not provided, Solr will create the backup from the current collection state (instead of a previous snapshotted state).
+
+[tabs#backup-response-incremental]
+======
+Incremental Backup Response::
++
 ====
-[.tab-label]*Incremental Backup Response*
-
 [source,json]
 ----
 {
@@ -1697,6 +1716,7 @@ Incremental backups are preferred in all known circumstances and snapshot backup
 }
 ----
 ====
+======
 
 [[listbackup]]
 == LISTBACKUP: List Backups
@@ -1706,7 +1726,7 @@ Basic metadata is returned about each backup including: the timestamp the backup
 
 [NOTE]
 ====
-Previous versions of Solr supported a different snapshot-based backup file structure that did not support the storage of multiple backups at the same location.
+Previous versions of Solr supported a different backup file structure that did not support the storage of multiple backups at the same location.
 Solr can still restore backups stored in this old format, but it is deprecated and will be removed in subsequent versions of Solr.
 The LISTBACKUP API does not support the deprecated format and attempts to use this API on a location holding an older backup will result in an error message.
 ====
@@ -1765,35 +1785,25 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 
 *Input*
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listbackup]
+[tabs#listbackup-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=myBackupName&location=/path/to/my/shared/drive
 ----
 ====
-
-[example.tab-pane#v2listbackup]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d '
-  {
-    "list-backups" : {
-      "name": "myBackupName",
-      "location": "/path/to/my/shared/drive"
-    }
-  }
-'
+curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
 ----
 ====
---
+======
 
 *Output*
 
@@ -1833,46 +1843,46 @@ curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: appl
 
 Restores Solr indexes and associated configurations to a specified collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1restorecollection]
+[tabs#restorecollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3
+curl -X GET http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
 
 ----
 ====
 
-[example.tab-pane#v2restorecollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-With the v2 API, the `restore-collection` command is provided as part of the JSON data that contains the required parameters:
-
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
   {
-    "restore-collection": {
-      "name": "techproducts_backup",
       "collection": "techproducts_v3",
-      "location": "file:///path/to/my/shared/drive"
-    }
+      "location": "file:///path/to/my/shared/drive",
+      "create-collection": {
+        "nrtReplicas": 2,
+        "nodeSet": ["node1", "node2"],
+        "properties": {
+          "foo": "bar"
+        }
+      }
   }
 '
 ----
 ====
---
+======
 
 The RESTORE operation will replace the content of a collection with files from the specified backup.
 
 If the provided `collection` value matches an existing collection, Solr will use it for restoration, assuming it is compatible (same number of shards, etc.) with the stored backup files.
 If the provided `collection` value doesn't exist, a new collection with that name is created in a way compatible with the stored backup files.
-The collection created will be have the same number of shards and replicas as the original collection, preserving routing information, etc.
-Optionally, you can override some parameters documented below.
+The collection created will have the same number of shards and replicas as the original collection, preserving routing information, etc.
+Optionally, you can override some parameters (see below).
 
 While restoring, if a configset with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configset in ZooKeeper and use that.
 
@@ -1898,6 +1908,8 @@ s|Required |Default: none
 |===
 +
 The name of the existing backup that you want to restore.
+This parameter is required.
+Provided as a query-parameter for v1 requests, and in the URL path for v2 requests.
 
 `location`::
 +
@@ -1906,7 +1918,7 @@ The name of the existing backup that you want to restore.
 |Optional |Default: none
 |===
 +
-The location on a shared drive for the RESTORE command to read from.
+The location within a backup repository for the RESTORE command to read from.
 Alternately it can be set as a xref:cluster-node-management.adoc#clusterprop[cluster property].+
 +
 This must be the same value as was given as the `location` option when <<#backup,creating the backup>>.
@@ -1943,16 +1955,13 @@ Backup locations can hold multiple backups of the same collection.
 This parameter allows users to choose which of those backups should be used to restore from.
 If not specified the most recent backup point is used.
 
-There are also optional parameters that determine the target collection layout.
-The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
-`createNodeSet`, `createNodeSet.shuffle`.
-
-Note: for `createNodeSet` the special value of `EMPTY` is not allowed with this command.
 
 *Overridable Parameters*
 
-Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup (described in detail in the <<create,CREATE collection>> section):
-`collection.configName`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `property._name_=_value_`.
+Additionally, users may provide a number of collection creation parameters to be used when the collection being restored to doesn't already exist.
+These include: `collection.configName`, `createNodeSet` (`EMPTY` not supported), `createNodeSet.shuffle`, `nrtReplicas`, `property._name_=_value_` (i.e. arbitrary collection properties), `pullReplicas`, `replicationFactor`, and `tlogReplicas`.
+
+See the <<create,collection creation>> documentation for more information on each of these parameters and details on their v1 or v2 specific syntaxes.
 
 [[deletebackup]]
 == DELETEBACKUP: Delete backup files from the remote repository
@@ -1961,54 +1970,46 @@ Deletes backup files stored at the specified repository location.
 
 [NOTE]
 ====
-Previous versions of Solr supported a different snapshot-based backup file structure that did not support the storage of multiple backups at the same location.
+Previous versions of Solr supported a different backup file structure that did not support the storage of multiple backups at the same location.
 Solr can still restore backups stored in this old format, but it is deprecated and will be removed in subsequent versions of Solr.
 The DELETEBACKUP API does not support the deprecated format and attempts to use this API on a location holding an older backup will result in an error message.
 ====
 
 Solr allows storing multiple backups for the same collection at any given logical "location".
-These backup points are each given an identifier (`backupId`) which can be used to delete them specifically with this API.
+These backup points are each given an identifier (`backupId`) which can be used to delete them individually with this API.
 Alternatively Solr can be told to keep the last `maxNumBackupPoints` backups, deleting everything else at the given location.
 Deleting backup points in these ways can orphan index files that are no longer referenced by any backup points.
 These orphaned files can be detected and deleted using the `purgeUnused` option.
-See the parameter descriptions below for more information.
 
-=== DELETEBACKUP Example
+Alternately, Solr's v2 API offers separate API endpoints for each of these backup-deletion mechanisms.
+See the examples and parameter descriptions below for more information.
+
+=== DELETEBACKUP Examples
+
+==== Deleting by Backup ID
 
 *Input*
 
-The following API command deletes the first backup (`backupId=0`) at the specified repository location.
-
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletebackup]
+[tabs#deletebackupsingle-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&backupId=0
 ----
 ====
 
-[example.tab-pane#v2deletebackup]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d '
-  {
-    "delete-backups" : {
-      "name": "myBackupName",
-      "location": "/path/to/my/shared/drive",
-      "backupId": 0
-    }
-  }
-'
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions/0?location=/path/to/my/shared/drive"
 ----
 ====
---
+======
 
 *Output*
 
@@ -2026,6 +2027,58 @@ curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: appl
   "collection":"books"}
 ----
 
+==== Deleting all but N recent backups
+
+[tabs#deletebackupmulti-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&maxNumBackupsPoints=2
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions?retainLatest=2&location=/path/to/my/shared/drive"
+----
+====
+======
+
+==== "Garbage collecting" unused files
+
+[tabs#deletebackupgc-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&purgeUnused=true
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+
+curl -X PUT -H "Content-type: application/json" "http://localhost:8983/api/backups/myBackupName/purgeUnused" '
+  {
+    "location": "/path/to/my/shared/drive"
+  }
+'
+----
+====
+======
+
 === DELETEBACKUP Parameters
 
 `name`::
@@ -2036,6 +2089,7 @@ s|Required |Default: none
 |===
 +
 The backup name to delete backup files from.
+Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
 `location`::
 +
@@ -2070,15 +2124,17 @@ If no repository is specified then the local filesystem repository will be used 
 |===
 +
 Explicitly specify a single backup-ID to delete.
-Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
+Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
-`maxNumBackupPoints`::
+`maxNumBackupPoints` (v1), `retainLatest` (v2)::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
+TODO
 Specify how many backups should be retained, deleting all others.
 Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
 
@@ -2092,7 +2148,7 @@ Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified
 Solr's incremental backup support can orphan files if the backups referencing them are deleted.
 The `purgeUnused` flag parameter triggers a scan to detect these orphaned files and delete them.
 Administrators doing repeated backups at the same location should plan on using this parameter sporadically to reclaim disk space.
-Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
 
 `async`::
 +
@@ -2108,12 +2164,11 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 
 Reassigns leaders in a collection according to the preferredLeader property across active nodes.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1rebalanceleaders]
+[tabs#rebalanceleaders-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=techproducts
@@ -2121,10 +2176,9 @@ http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=
 ----
 ====
 
-[example.tab-pane#v2rebalanceleaders]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `rebalance-leaders` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
@@ -2138,7 +2192,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
 '
 ----
 ====
---
+======
 
 Leaders are assigned in a collection according to the `preferredLeader` property on active nodes.
 This command should be run after the preferredLeader property has been assigned via the BALANCESHARDUNIQUE or ADDREPLICAPROP commands.
@@ -2203,7 +2257,7 @@ In this example:
 This is considered successful.
 * In the "successes" section, core_node23 was _not_ the leader for shard3, so leadership was assigned to that replica.
 
-The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as requried.
+The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as required.
 If a replica cannot be made leader due to not being healthy (for example, it is on a Solr instance that is not running), it's also considered success.
 
 [source,json]
@@ -2235,3 +2289,315 @@ The primary use-case is to redistribute the leader role if there are a large num
 Rebalancing will likely not improve performance unless the imbalance of leadership roles is measured in multiples of 10.
 
 NOTE: The BALANCESHARDUNIQUE command that distributes the preferredLeader property does not guarantee perfect distribution and in some collection topologies it is impossible to make that guarantee.
+
+[[createsnapshot]]
+== CREATESNAPSHOT: Create a snapshot of a collection
+
+Solr has support for creating collection "snapshots", which "checkpoint" the collection state in a way that allows users to revert to that point if needed later on.
+This is particularly useful prior to reindexing or making config changes to a collection.
+
+Unlike backups, which copy collection data off-disk, snapshots themselves don't provide disaster recovery in case of disk or hardware failure.
+They provide less protection than backups, at a much cheaper cost.
+
+=== CREATESNAPSHOT Example
+
+*Input*
+
+The following API command creates a snapshot of a specified collection.
+
+[tabs#createsnapshot-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=CREATESNAPSHOT&collection=techproducts&commitName=snapshot0&followAliases=true&async=someAsyncId
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
+  {
+    "followAliases": true,
+    "async": "someAsyncId"
+  }
+'
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 214
+  },
+  "requestid": "someAsyncId",
+  "collection": "techproducts",
+  "snapshot": "snapshot0",
+  "followAliases": true
+}
+----
+
+=== CREATESNAPSHOT Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection to create a snapshot for.
+
+`snapshot`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the snapshot to create for the collection.
+
+`followAliases`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+A flag that treats the collection parameter as an alias for the actual collection name to be resolved.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+[[listsnapshots]]
+== LISTSNAPSHOTS: List all snapshots for a collection
+
+Lists all the snapshots taken of a collection.
+
+=== LISTSNAPSHOTS Example
+
+*Input*
+
+The following API command lists all the snapshots taken of a collection.
+
+[tabs#listsnapshots-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=LISTSNAPSHOTS&collection=techproducts
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/collections/techproducts/snapshots
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 2
+  },
+  "snapshots": {
+    "snapshot0": {
+      "name": "snapshot0",
+      "status": "Successful",
+      "creationDate": 1677985318116,
+      "replicaSnapshots": [
+        {
+          "coreName": "techproducts_shard1_replica_n6",
+          "indexDirPath": "/path/to/solr/dir/node1/solr/techproducts_shard1_replica_n6/data/index/",
+          "generationNumber": 2,
+          "leader": true,
+          "shardId": "shard1",
+          "files": [
+            "_0.si",
+            "_0.fdm",
+            "_0_Lucene90_0.dvd",
+            "segments_2",
+            "_0_Lucene90_0.doc",
+            "_0_Lucene90_0.tim",
+            "_0.fdx",
+            "_0.fdt",
+            "_0_Lucene90_0.dvm",
+            "_0_Lucene90_0.tip",
+            "_0_Lucene90_0.tmd",
+            "_0.fnm"
+          ]
+        },
+        {
+          "coreName": "techproducts_shard1_replica_n2",
+          "indexDirPath": "/path/to/solr/dir/node2/solr/techproducts_shard1_replica_n2/data/index/",
+          "generationNumber": 2,
+          "leader": false,
+          "shardId": "shard1",
+          "files": [
+            "_0.si",
+            "_0.fdm",
+            "_0_Lucene90_0.dvd",
+            "segments_2",
+            "_0_Lucene90_0.doc",
+            "_0_Lucene90_0.tim",
+            "_0.fdx",
+            "_0.fdt",
+            "_0_Lucene90_0.dvm",
+            "_0_Lucene90_0.tip",
+            "_0_Lucene90_0.tmd",
+            "_0.fnm"
+          ]
+        },
+        {
+          "coreName": "techproducts_shard2_replica_n4",
+          "indexDirPath": "/path/to/solr/dir/node1/solr/techproducts_shard2_replica_n4/data/index/",
+          "generationNumber": 6,
+          "leader": true,
+          "shardId": "shard2",
+          "files": [
+            "segments_6"
+          ]
+        },
+        {
+          "coreName": "techproducts_shard2_replica_n1",
+          "indexDirPath": "/path/to/solr/dir/node2/solr/techproducts_shard2_replica_n1/data/index/",
+          "generationNumber": 6,
+          "leader": false,
+          "shardId": "shard2",
+          "files": [
+            "segments_6"
+          ]
+        }
+      ],
+      "shards": [
+        "shard2",
+        "shard1"
+      ]
+    }
+  }
+}
+
+----
+
+=== LISTSNAPSHOTS Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection to create a snapshot for.
+
+[[deletesnapshot]]
+== DELETESNAPSHOT: Delete a snapshot taken of a collection
+
+Deletes a snapshot taken of a specified collection.
+
+=== DELETESNAPSHOT Example
+
+*Input*
+
+The following API command deletes a snapshot taken of a collection.
+
+[tabs#deletesnapshot-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETESNAPSHOT&collection=techproducts&commitName=snapshot0&followAliases=true&async=someAsyncId
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts/snapshots/snapshot0?followAliases=true&async=someAsyncId
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 20
+  },
+  "requestid": "someAsyncId",
+  "collection": "techproducts",
+  "snapshot": "snapshot0",
+  "followAliases": true
+}
+----
+
+=== DELETESNAPSHOT Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection to delete a snapshot from.
+
+`snapshot`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the snapshot to delete.
+
+`followAliases`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+A flag that treats the collectionName parameter as an alias for the actual collection name to be resolved.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].

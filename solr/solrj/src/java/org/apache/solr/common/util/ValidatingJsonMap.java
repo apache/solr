@@ -53,8 +53,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   @SuppressWarnings({"rawtypes"})
   public static final PredicateWithErrMsg<Pair> ENUM_OF =
       pair -> {
-        if (pair.second() instanceof Set) {
-          Set<?> set = (Set<?>) pair.second();
+        if (pair.second() instanceof Set<?> set) {
           if (pair.first() instanceof Collection) {
             for (Object o : (Collection<?>) pair.first()) {
               if (!set.contains(o)) {
@@ -78,7 +77,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   }
 
   public ValidatingJsonMap(int i) {
-    delegate = new LinkedHashMap<>(i);
+    delegate = CollectionUtil.newLinkedHashMap(i);
   }
 
   public ValidatingJsonMap() {

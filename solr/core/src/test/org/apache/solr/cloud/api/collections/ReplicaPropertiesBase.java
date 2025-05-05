@@ -20,11 +20,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -32,6 +34,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 
 // Collect useful operations for testing assigning properties to individual replicas
 // Could probably expand this to do something creative with getting random slices
@@ -46,8 +49,8 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     for (int idx = 0; idx < paramsIn.length; idx += 2) {
       params.set(paramsIn[idx], paramsIn[idx + 1]);
     }
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
     return client.request(request);
   }
 
@@ -63,7 +66,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
       if (replica == null) {
         fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
       }
-      if (StringUtils.isBlank(replica.getProperty(property))) return;
+      if (StrUtils.isBlank(replica.getProperty(property))) return;
       Thread.sleep(100);
     }
     fail(
@@ -101,7 +104,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
       if (replica == null) {
         fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
       }
-      if (StringUtils.equals(val, replica.getProperty(property))) return;
+      if (Objects.equals(val, replica.getProperty(property))) return;
       Thread.sleep(100);
     }
 
@@ -154,7 +157,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
         for (Replica replica : slice.getReplicas()) {
           uniqueNodes.add(replica.getNodeName());
           String propVal = replica.getProperty(property);
-          if (StringUtils.isNotBlank(propVal)) {
+          if (StrUtils.isNotBlank(propVal)) {
             ++propCount;
             if (counts.containsKey(replica.getNodeName()) == false) {
               counts.put(replica.getNodeName(), 0);

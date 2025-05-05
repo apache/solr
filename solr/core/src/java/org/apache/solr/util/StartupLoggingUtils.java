@@ -27,6 +27,7 @@ import org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -42,9 +43,11 @@ public final class StartupLoggingUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
 
+  private static final String INITIAL_ROOT_LOG_LEVEL = getLogLevelString();
+
   /** Checks whether mandatory log dir is given */
   public static void checkLogDir() {
-    if (System.getProperty("solr.log.dir") == null) {
+    if (EnvUtils.getProperty("solr.log.dir") == null) {
       log.error("Missing Java Option solr.log.dir. Logging may be missing or incomplete.");
     }
   }
@@ -150,6 +153,11 @@ public final class StartupLoggingUtils {
     }
     flushAllLoggers();
     LogManager.shutdown(true);
+
+    // re-instate original log level.
+    if (!INITIAL_ROOT_LOG_LEVEL.equals(getLogLevelString())) {
+      changeLogLevel(INITIAL_ROOT_LOG_LEVEL);
+    }
   }
 
   /**

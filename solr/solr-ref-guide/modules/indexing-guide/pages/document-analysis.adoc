@@ -50,7 +50,7 @@ It also serves as a guide so that you can configure your own analysis classes if
 | xref:analyzers.adoc[]: Overview of Solr analyzers.
 | xref:tokenizers.adoc[]: Tokenizers and tokenizer factory classes.
 | xref:filters.adoc[]: Filters and filter factory classes.
-| xref:charfilterfactories.adoc[]: Filters for pre-processing input characters.
+| xref:charfilters.adoc[]: Filters for pre-processing input characters.
 | xref:language-analysis.adoc[]: Tokenizers and filters for character set conversion and specific languages.
 | xref:analysis-screen.adoc[]: Admin UI for testing field analysis.
 |===

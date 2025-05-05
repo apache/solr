@@ -342,25 +342,23 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     return result;
   }
 
+  @SuppressWarnings("unchecked")
   private Collection<SnapshotMetaData> listCoreSnapshots(SolrClient adminClient, String coreName)
       throws Exception {
     ListSnapshots req = new ListSnapshots();
     req.setCoreName(coreName);
     NamedList<?> resp = adminClient.request(req);
-    assertTrue(resp.get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof NamedList);
-    NamedList<?> apiResult = (NamedList<?>) resp.get(SolrSnapshotManager.SNAPSHOTS_INFO);
+    assertTrue(resp.get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof Map);
+    Map<String, Object> apiResult =
+        (Map<String, Object>) resp.get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     List<SnapshotMetaData> result = new ArrayList<>(apiResult.size());
-    for (int i = 0; i < apiResult.size(); i++) {
-      String commitName = apiResult.getName(i);
-      String indexDirPath =
-          (String)
-              ((NamedList<?>) apiResult.get(commitName)).get(SolrSnapshotManager.INDEX_DIR_PATH);
-      long genNumber =
-          Long.parseLong(
-              (String)
-                  ((NamedList<?>) apiResult.get(commitName))
-                      .get(SolrSnapshotManager.GENERATION_NUM));
+    for (Map.Entry<String, Object> entry : apiResult.entrySet()) {
+      final String commitName = entry.getKey();
+      final String indexDirPath =
+          (String) ((Map<String, Object>) entry.getValue()).get(SolrSnapshotManager.INDEX_DIR_PATH);
+      final long genNumber =
+          (Long) ((Map<String, Object>) entry.getValue()).get(SolrSnapshotManager.GENERATION_NUM);
       result.add(new SnapshotMetaData(commitName, indexDirPath, genNumber));
     }
     return result;

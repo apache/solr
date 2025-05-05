@@ -16,10 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
-import com.google.common.collect.Maps;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,14 +35,11 @@ public class TestPartialUpdateDeduplication extends SolrTestCaseJ4 {
     // partial update
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "2a");
-    Map<String, Object> map = Maps.newHashMap();
-    map.put("set", "Hello Dude man!");
+    Map<String, Object> map = Map.of("set", "Hello Dude man!");
     doc.addField("v_t", map);
-    UpdateRequest req = new UpdateRequest();
-    req.add(doc);
     boolean exception_ok = false;
     try {
-      addDoc(req.getXML(), chain);
+      addDoc(adoc(doc), chain);
     } catch (Exception e) {
       exception_ok = true;
     }
@@ -56,12 +51,9 @@ public class TestPartialUpdateDeduplication extends SolrTestCaseJ4 {
     addDoc(adoc("id", "2a", "v_t", "Hello Dude man!", "name", "ali babi'"), chain);
     doc = new SolrInputDocument();
     doc.addField("id", "2a");
-    map = Maps.newHashMap();
-    map.put("set", "name changed");
+    map = Map.of("set", "name changed");
     doc.addField("name", map);
-    req = new UpdateRequest();
-    req.add(doc);
-    addDoc(req.getXML(), chain);
+    addDoc(adoc(doc), chain);
     addDoc(commit(), chain);
     SignatureUpdateProcessorFactoryTest.checkNumDocs(1);
   }

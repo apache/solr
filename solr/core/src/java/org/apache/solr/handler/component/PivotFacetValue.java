@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.PivotListEntry;
@@ -128,36 +129,24 @@ public class PivotFacetValue {
     NamedList<Number> queryCounts = null;
     SimpleOrderedMap<SimpleOrderedMap<Object>> ranges = null;
 
-    for (int i = 0; i < pivotData.size(); i++) {
-      String key = pivotData.getName(i);
-      Object value = pivotData.getVal(i);
-      PivotListEntry entry = PivotListEntry.get(key);
+    for (Map.Entry<String, Object> pdEntry : pivotData) {
+      String key = pdEntry.getKey();
+      Object value = pdEntry.getValue();
+      PivotListEntry pivotEntry = PivotListEntry.get(key);
 
-      switch (entry) {
-        case VALUE:
-          pivotVal = (Comparable) value;
-          break;
-        case FIELD:
+      switch (pivotEntry) {
+        case VALUE -> pivotVal = (Comparable) value;
+        case FIELD -> {
           assert parentField.field.equals(value)
               : "Parent Field mismatch: " + parentField.field + "!=" + value;
-          break;
-        case COUNT:
-          pivotCount = (Integer) value;
-          break;
-        case PIVOT:
-          childPivotData = (List<NamedList<Object>>) value;
-          break;
-        case STATS:
-          statsValues = (NamedList<NamedList<NamedList<?>>>) value;
-          break;
-        case QUERIES:
-          queryCounts = (NamedList<Number>) value;
-          break;
-        case RANGES:
-          ranges = (SimpleOrderedMap<SimpleOrderedMap<Object>>) value;
-          break;
-        default:
-          throw new RuntimeException("PivotListEntry contains unaccounted for item: " + entry);
+        }
+        case COUNT -> pivotCount = (Integer) value;
+        case PIVOT -> childPivotData = (List<NamedList<Object>>) value;
+        case STATS -> statsValues = (NamedList<NamedList<NamedList<?>>>) value;
+        case QUERIES -> queryCounts = (NamedList<Number>) value;
+        case RANGES -> ranges = (SimpleOrderedMap<SimpleOrderedMap<Object>>) value;
+        default -> throw new RuntimeException(
+            "PivotListEntry contains unaccounted for item: " + pivotEntry);
       }
     }
 
@@ -247,7 +236,7 @@ public class PivotFacetValue {
       SimpleOrderedMap<SimpleOrderedMap<Object>> shardRanges = PivotFacetHelper.getRanges(value);
       if (shardRanges != null) {
         if (rangeCounts == null) {
-          rangeCounts = new LinkedHashMap<>(shardRanges.size() / 2);
+          rangeCounts = CollectionUtil.newLinkedHashMap(shardRanges.size() / 2);
         }
         RangeFacetRequest.DistribRangeFacet.mergeFacetRangesFromShardResponse(
             rangeCounts, shardRanges);

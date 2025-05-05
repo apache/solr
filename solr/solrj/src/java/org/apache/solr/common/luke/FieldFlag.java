@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.common.luke;
+
 /**
  * @since solr 1.3
  */

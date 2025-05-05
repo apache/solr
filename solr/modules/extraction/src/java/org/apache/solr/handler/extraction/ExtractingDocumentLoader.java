@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -66,8 +65,10 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   /** Extract Only supported format */
   public static final String TEXT_FORMAT = "text";
+
   /** Extract Only supported format. Default */
   public static final String XML_FORMAT = "xml";
+
   /** XHTML XPath parser. */
   private static final XPathParser PARSER = new XPathParser("xhtml", XHTMLContentHandler.XHTML);
 
@@ -147,9 +148,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         metadata.add(HttpHeaders.CONTENT_TYPE, stream.getContentType());
       }
 
-      InputStream inputStream = null;
-      try {
-        inputStream = stream.getStream();
+      try (InputStream inputStream = stream.getStream()) {
         metadata.add(ExtractingMetadataConstants.STREAM_NAME, stream.getName());
         metadata.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, stream.getSourceInfo());
         metadata.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(stream.getSize()));
@@ -218,14 +217,17 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           }
           parser.parse(inputStream, parsingHandler, metadata, context);
         } catch (TikaException e) {
-          if (ignoreTikaException)
-            log.warn(
-                new StringBuilder("skip extracting text due to ")
-                    .append(e.getLocalizedMessage())
-                    .append(". metadata=")
-                    .append(metadata.toString())
-                    .toString()); // nowarn
-          else throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          if (ignoreTikaException) {
+            if (log.isWarnEnabled()) {
+              log.warn(
+                  "skip extracting text due to {}. metadata={}",
+                  e.getLocalizedMessage(),
+                  metadata,
+                  e);
+            }
+          } else {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
         }
         if (extractOnly == false) {
           addDoc(handler);
@@ -246,8 +248,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         }
       } catch (SAXException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } finally {
-        IOUtils.closeQuietly(inputStream);
       }
     } else {
       throw new SolrException(

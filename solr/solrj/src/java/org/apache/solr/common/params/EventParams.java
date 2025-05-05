@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.common.params;
+
 /** */
 public interface EventParams {
   /** Event param for things like newSearcher, firstSearcher* */

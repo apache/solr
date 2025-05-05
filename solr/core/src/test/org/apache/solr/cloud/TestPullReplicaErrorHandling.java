@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -52,6 +51,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+// PRS Defaulting is currently not working, so disable for now
+@SolrCloudTestCase.NoPrs
 public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   private static final int REPLICATION_TIMEOUT_SECS = 10;
@@ -110,7 +111,6 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     super.setUp();
     collectionName = suggestedCollectionName();
     expectThrows(SolrException.class, () -> getCollectionState(collectionName));
-    cluster.getSolrClient().setDefaultCollection(collectionName);
     cluster.waitForAllNodes(30);
   }
 
@@ -120,7 +120,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       log.info("Collection deleted");
-      waitForDeletion(collectionName);
+      TestPullReplica.waitForDeletion(collectionName);
     }
     collectionName = null;
     super.tearDown();
@@ -139,7 +139,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       proxy.close();
       for (int i = 1; i <= 10; i++) {
         addDocs(10 + i);
-        try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+        try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
           assertNumDocs(10 + i, leaderClient);
         }
       }
@@ -149,8 +149,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
               SolrServerException.class,
               () -> {
                 try (SolrClient pullReplicaClient =
-                    getHttpSolrClient(
-                        s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+                    getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
                   pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
                 }
               });
@@ -175,7 +174,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     }
 
     try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
       assertNumDocs(20, pullReplicaClient);
     }
   }
@@ -192,16 +191,16 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     try {
       // wait for replication
       try (SolrClient pullReplicaClient =
-          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
         assertNumDocs(10, pullReplicaClient);
       }
       proxy.close();
       expectThrows(SolrException.class, () -> addDocs(1));
       try (SolrClient pullReplicaClient =
-          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
         assertNumDocs(10, pullReplicaClient);
       }
-      assertNumDocs(10, cluster.getSolrClient());
+      assertNumDocs(10, cluster.getSolrClient(collectionName));
     } finally {
       log.info("Opening leader node");
       proxy.reopen();
@@ -228,7 +227,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
     try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
       assertNumDocs(10, pullReplicaClient);
     }
     addDocs(20);
@@ -239,7 +238,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     addDocs(40);
     waitForState("Expecting node to be reconnected", collectionName, activeReplicaCount(1, 0, 1));
     try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
       assertNumDocs(40, pullReplicaClient);
     }
   }
@@ -271,6 +270,8 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     long numFound = -1;
     while (!t.hasTimedOut()) {
       Thread.sleep(200);
+      // if client is an HttpSolrClient, then the collection is in the path
+      // otherwise with a CloudSolrClient then it's the defaultCollection
       numFound = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       if (numFound == numDocs) {
         return;
@@ -325,41 +326,25 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   protected JettySolrRunner getJettyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URL baseUrl = new URL(replicaBaseUrl);
+    URI baseUri = URI.create(replicaBaseUrl);
 
-    JettySolrRunner proxy = jettys.get(baseUrl.toURI());
-    assertNotNull("No proxy found for " + baseUrl + "!", proxy);
+    JettySolrRunner proxy = jettys.get(baseUri);
+    assertNotNull("No proxy found for " + baseUri + "!", proxy);
     return proxy;
   }
 
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URL baseUrl = new URL(replicaBaseUrl);
+    URI baseUri = URI.create(replicaBaseUrl);
 
-    SocketProxy proxy = proxies.get(baseUrl.toURI());
-    if (proxy == null && !baseUrl.toExternalForm().endsWith("/")) {
-      baseUrl = new URL(baseUrl.toExternalForm() + "/");
-      proxy = proxies.get(baseUrl.toURI());
+    SocketProxy proxy = proxies.get(baseUri);
+    if (proxy == null && !baseUri.toString().endsWith("/")) {
+      baseUri = URI.create(baseUri.toString() + "/");
+      proxy = proxies.get(baseUri);
     }
-    assertNotNull("No proxy found for " + baseUrl + "!", proxy);
+    assertNotNull("No proxy found for " + baseUri + "!", proxy);
     return proxy;
-  }
-
-  private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
-      log.info("Collection not yet deleted");
-      try {
-        Thread.sleep(100);
-        if (t.hasTimedOut()) {
-          fail("Timed out waiting for collection " + collection + " to be deleted.");
-        }
-        cluster.getZkStateReader().forceUpdateCollection(collection);
-      } catch (SolrException e) {
-        return;
-      }
-    }
   }
 
   private CollectionStatePredicate activeReplicaCount(

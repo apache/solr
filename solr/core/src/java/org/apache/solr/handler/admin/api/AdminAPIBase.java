@@ -17,9 +17,18 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+
+import java.util.Map;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -46,6 +55,28 @@ public abstract class AdminAPIBase extends JerseyResource {
     return coreContainer;
   }
 
+  protected String resolveAndValidateAliasIfEnabled(
+      String unresolvedCollectionName, boolean aliasResolutionEnabled) {
+    final String resolvedCollectionName =
+        aliasResolutionEnabled ? resolveAlias(unresolvedCollectionName) : unresolvedCollectionName;
+    final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+    if (!clusterState.hasCollection(resolvedCollectionName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection '" + resolvedCollectionName + "' does not exist, no action taken.");
+    }
+
+    return resolvedCollectionName;
+  }
+
+  private String resolveAlias(String aliasName) {
+    return coreContainer
+        .getZkController()
+        .getZkStateReader()
+        .getAliases()
+        .resolveSimpleAlias(aliasName);
+  }
+
   public static void validateZooKeeperAwareCoreContainer(CoreContainer coreContainer) {
     if (coreContainer == null) {
       throw new SolrException(
@@ -57,6 +88,26 @@ public abstract class AdminAPIBase extends JerseyResource {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Solr instance is not running in SolrCloud mode.");
     }
+  }
+
+  protected String resolveCollectionName(String collName, boolean followAliases) {
+    final String collectionName =
+        followAliases
+            ? coreContainer
+                .getZkController()
+                .getZkStateReader()
+                .getAliases()
+                .resolveSimpleAlias(collName)
+            : collName;
+
+    final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+    if (!clusterState.hasCollection(collectionName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection '" + collectionName + "' does not exist, no action taken.");
+    }
+
+    return collectionName;
   }
 
   /**
@@ -71,5 +122,39 @@ public abstract class AdminAPIBase extends JerseyResource {
 
   public void disableResponseCaching() {
     solrQueryResponse.setHttpCaching(false);
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleResponse(
+      SubResponseAccumulatingJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage,
+      String asyncId)
+      throws Exception {
+    final SolrResponse remoteResponse =
+        CollectionsHandler.submitCollectionApiCommand(
+            coreContainer,
+            coreContainer.getDistributedCollectionCommandRunner(),
+            remoteMessage,
+            action,
+            DEFAULT_COLLECTION_OP_TIMEOUT);
+    if (remoteResponse.getException() != null) {
+      throw remoteResponse.getException();
+    }
+
+    if (asyncId != null) {
+      response.requestId = asyncId;
+    }
+
+    // Values fetched from remoteResponse may be null
+    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
+    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+
+    return remoteResponse;
+  }
+
+  protected static void insertIfNotNull(Map<String, Object> destination, String key, Object value) {
+    if (value != null) {
+      destination.put(key, value);
+    }
   }
 }

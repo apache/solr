@@ -215,7 +215,8 @@ public class TestInterleavingTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,interleavingPick:[interleaving],features:[fv format=sparse]");
+    query.add(
+        "fl", "*, score,interleavingPick:[interleaving],features:[fv format=sparse logAll=true]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
@@ -268,7 +269,8 @@ public class TestInterleavingTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,interleavingPick:[interleaving],features:[fv format=sparse]");
+    query.add(
+        "fl", "*, score,interleavingPick:[interleaving],features:[fv format=sparse logAll=true]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8

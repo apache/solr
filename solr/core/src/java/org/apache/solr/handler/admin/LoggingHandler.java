@@ -19,21 +19,20 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.LogLevelChange;
+import org.apache.solr.client.api.model.LoggingResponse;
+import org.apache.solr.client.api.model.SetThresholdRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.NodeLoggingAPI;
+import org.apache.solr.handler.admin.api.NodeLogging;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.LoggerInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -58,42 +57,24 @@ public class LoggingHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    // Don't do anything if the framework is unknown
-    if (watcher == null) {
-      rsp.add("error", "Logging Not Initialized");
-      return;
-    }
-    rsp.add("watcher", watcher.getName());
+    final NodeLogging loggingApi = new NodeLogging(cc);
 
     SolrParams params = req.getParams();
     if (params.get("threshold") != null) {
-      watcher.setThreshold(params.get("threshold"));
+      squashV2Response(
+          rsp,
+          loggingApi.setMessageThreshold(new SetThresholdRequestBody(params.get("threshold"))));
     }
 
     // Write something at each level
     if (params.get("test") != null) {
-      log.trace("trace message");
-      log.debug("debug message");
-      RuntimeException exc = new RuntimeException("test");
-      log.info("info (with exception) INFO", exc);
-      log.warn("warn (with exception) WARN", exc);
-      log.error("error (with exception) ERROR", exc);
+      NodeLogging.writeLogsForTesting();
     }
 
     String[] set = params.getParams("set");
     if (set != null) {
-      for (String pair : set) {
-        String[] split = pair.split(":");
-        if (split.length != 2) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Invalid format, expected level:value, got " + pair);
-        }
-        String category = split[0];
-        String level = split[1];
-
-        watcher.setLogLevel(category, level);
-      }
+      final List<LogLevelChange> changes = NodeLogging.parseLogLevelChanges(set);
+      squashV2Response(rsp, loggingApi.modifyLocalLogLevel(changes));
     }
 
     String since = req.getParams().get("since");
@@ -104,42 +85,19 @@ public class LoggingHandler extends RequestHandlerBase {
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "invalid timestamp: " + since);
       }
-      AtomicBoolean found = new AtomicBoolean(false);
-      SolrDocumentList docs = watcher.getHistory(time, found);
-      if (docs == null) {
-        rsp.add("error", "History not enabled");
-        return;
-      } else {
-        SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-        if (time > 0) {
-          info.add("since", time);
-          info.add("found", found.get());
-        } else {
-          info.add("levels", watcher.getAllLevels()); // show for the first request
-        }
-        info.add("last", watcher.getLastEvent());
-        info.add("buffer", watcher.getHistorySize());
-        info.add("threshold", watcher.getThreshold());
-
-        rsp.add("info", info);
-        rsp.add("history", docs);
-      }
+      squashV2Response(rsp, loggingApi.fetchLocalLogMessages(time));
     } else {
-      rsp.add("levels", watcher.getAllLevels());
-
-      List<LoggerInfo> loggers = new ArrayList<>(watcher.getAllLoggers());
-      Collections.sort(loggers);
-
-      List<SimpleOrderedMap<?>> info = new ArrayList<>();
-      for (LoggerInfo wrap : loggers) {
-        info.add(wrap.getInfo());
-      }
-      rsp.add("loggers", info);
+      squashV2Response(rsp, loggingApi.listAllLoggersAndLevels());
     }
+
     rsp.setHttpCaching(false);
     if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
       return; // Request was proxied to other node
     }
+  }
+
+  private void squashV2Response(SolrQueryResponse rsp, LoggingResponse response) {
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////
@@ -156,7 +114,12 @@ public class LoggingHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new NodeLoggingAPI(this));
+    return new ArrayList<>();
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(NodeLogging.class);
   }
 
   @Override

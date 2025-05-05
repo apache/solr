@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
@@ -31,6 +30,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -83,7 +83,7 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
               Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
       roles = tmp;
     } else {
-      roles = new LinkedHashMap<>(1);
+      roles = CollectionUtil.newLinkedHashMap(1);
     }
 
     List<String> nodeList = roles.computeIfAbsent(roleName, k -> new ArrayList<>());

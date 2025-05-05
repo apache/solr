@@ -27,17 +27,17 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 
 ## Build
 
-### `versions.props` update
+### `gradle/libs.versions.toml` update
 
 ```
 - org.apache.lucene:*=9.3.0
 + org.apache.lucene:*=9.4.0
 ```
 
-### `versions.lock` update
+### lockfiles update
 
 ```
-gradlew --write-locks
+gradlew :resolveAndLockAll
 ```
 
 ### `solr/licenses` update
@@ -79,4 +79,8 @@ gradlew test
 ## Finish
 
 Push the local branch to github (fork) and open a pull request.
+
+## Looking for something else?
+
+Thanks for reading these upgrade steps! But perhaps you were looking for information on trying out prerelease Lucene changes or joint local Solr and Lucene development? If so then please see the 'Update Lucene prerelease' and 'Lucene local dependency substitution' sections in the [help/dependencies.txt](../help/dependencies.txt) documentation.
 

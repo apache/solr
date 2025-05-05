@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -34,11 +33,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.highlight.Formatter;
@@ -66,6 +65,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
@@ -77,6 +77,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -445,8 +446,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   public NamedList<Object> doHighlighting(
       DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
     SolrParams params = req.getParams();
-    if (!isHighlightingEnabled(params)) // also returns early if no unique key field
-    return null;
+    if (!isHighlightingEnabled(params)) { // also returns early if no unique key field
+      return null;
+    }
 
     boolean rewrite =
         query != null
@@ -480,15 +482,16 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     // Lazy container for fvh and fieldQuery
     FvhContainer fvhContainer = new FvhContainer(null, null);
 
-    IndexReader reader =
-        new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
+    IndexReader reader = req.getSearcher().getSlowAtomicReader();
+    TermVectors termVectors = new ReusingTermVectors(reader); // SOLR-5855
 
     // Highlight each document
     NamedList<Object> fragments = new SimpleOrderedMap<>();
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int docId = iterator.nextDoc();
-      SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, returnFields);
+      SolrDocument doc = docFetcher.solrDoc(docId, returnFields);
 
       NamedList<Object> docHighlights = new SimpleOrderedMap<>();
       // Highlight per-field
@@ -498,10 +501,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         Object fieldHighlights; // object type allows flexibility for subclassers
         fieldHighlights =
             doHighlightingOfField(
-                doc, docId, schemaField, fvhContainer, query, reader, req, params);
+                doc, docId, schemaField, fvhContainer, query, reader, termVectors, req, params);
 
         if (fieldHighlights == null) {
-          fieldHighlights = alternateField(doc, docId, fieldName, fvhContainer, query, reader, req);
+          fieldHighlights =
+              alternateField(doc, docId, fieldName, fvhContainer, query, reader, termVectors, req);
         }
 
         if (fieldHighlights != null) {
@@ -520,6 +524,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       FvhContainer fvhContainer,
       Query query,
       IndexReader reader,
+      TermVectors termVectors,
       SolrQueryRequest req,
       SolrParams params)
       throws IOException {
@@ -544,17 +549,17 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
                   @Override
                   protected void flatten(
                       Query sourceQuery,
-                      IndexReader reader,
+                      IndexSearcher searcher,
                       Collection<Query> flatQueries,
                       float boost)
                       throws IOException {
                     if (sourceQuery instanceof ToParentBlockJoinQuery) {
                       Query childQuery = ((ToParentBlockJoinQuery) sourceQuery).getChildQuery();
                       if (childQuery != null) {
-                        flatten(childQuery, reader, flatQueries, boost);
+                        flatten(childQuery, searcher, flatQueries, boost);
                       }
                     } else {
-                      super.flatten(sourceQuery, reader, flatQueries, boost);
+                      super.flatten(sourceQuery, searcher, flatQueries, boost);
                     }
                   }
                 };
@@ -568,7 +573,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       fieldHighlights =
           doHighlightingByFastVectorHighlighter(doc, docId, schemaField, fvhContainer, reader, req);
     } else { // standard/default highlighter
-      fieldHighlights = doHighlightingByHighlighter(doc, docId, schemaField, query, reader, req);
+      fieldHighlights =
+          doHighlightingByHighlighter(doc, docId, schemaField, query, termVectors, req);
     }
     return fieldHighlights;
   }
@@ -581,8 +587,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * isn't null.
    */
   protected Set<String> getDocPrefetchFieldNames(String[] hlFieldNames, SolrQueryRequest req) {
-    Set<String> preFetchFieldNames =
-        new HashSet<>(hlFieldNames.length + 1); // +1 for uniqueyKey added after
+    // +1 for uniqueKey added after
+    Set<String> preFetchFieldNames = CollectionUtil.newHashSet(hlFieldNames.length + 1);
     Collections.addAll(preFetchFieldNames, hlFieldNames);
     for (String hlFieldName : hlFieldNames) {
       String alternateField =
@@ -654,7 +660,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       int docId,
       SchemaField schemaField,
       Query query,
-      IndexReader reader,
+      TermVectors termVectors,
       SolrQueryRequest req)
       throws IOException {
     final SolrParams params = req.getParams();
@@ -694,7 +700,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Try term vectors, which is faster
     //  note: offsets are minimally sufficient for this HL.
-    final Fields tvFields = schemaField.storeTermOffsets() ? reader.getTermVectors(docId) : null;
+    final Fields tvFields = schemaField.storeTermOffsets() ? termVectors.get(docId) : null;
     final TokenStream tvStream =
         TokenSources.getTermVectorTokenStreamOrNull(fieldName, tvFields, maxCharsToAnalyze - 1);
     //  We need to wrap in OffsetWindowTokenFilter if multi-valued
@@ -761,8 +767,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
               highlighter.getBestTextFragments(
                   tstream, thisText, mergeContiguousFragments, numFragments);
           for (TextFragment bestTextFragment : bestTextFragments) {
-            if (bestTextFragment == null) // can happen via mergeContiguousFragments
-            continue;
+            if (bestTextFragment == null) { // can happen via mergeContiguousFragments
+              continue;
+            }
             // normally we want a score (must be highlighted), but if preserveMulti then we return a
             // snippet regardless.
             if (bestTextFragment.getScore() > 0 || preserveMulti) {
@@ -842,7 +849,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     for (TextFragment fragment : frags) {
       fragTexts.add(fragment.toString());
     }
-    return fragTexts.toArray(new String[fragTexts.size()]);
+    return fragTexts.toArray(new String[0]);
   }
 
   /**
@@ -855,6 +862,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       FvhContainer fvhContainer,
       Query query,
       IndexReader reader,
+      TermVectors termVectors,
       SolrQueryRequest req)
       throws IOException {
     IndexSchema schema = req.getSearcher().getSchema();
@@ -884,7 +892,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         req.setParams(SolrParams.wrapDefaults(new MapSolrParams(invariants), origParams));
         fieldHighlights =
             doHighlightingOfField(
-                doc, docId, schemaField, fvhContainer, query, reader, req, params);
+                doc, docId, schemaField, fvhContainer, query, reader, termVectors, req, params);
         req.setParams(origParams);
         if (fieldHighlights != null) {
           return fieldHighlights;
@@ -903,7 +911,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
     }
 
-    String[] altTexts = listFields.toArray(new String[listFields.size()]);
+    String[] altTexts = listFields.toArray(new String[0]);
 
     Encoder encoder = getEncoder(fieldName, params);
     List<String> altList = new ArrayList<>();
@@ -1084,35 +1092,30 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   /**
-   * Wraps a DirectoryReader that caches the {@link LeafReader#getTermVectors(int)} so that if the
-   * next call has the same ID, then it is reused.
+   * Wraps a TermVectors and caches the {@link TermVectors#get(int)} so that if the next call has
+   * the same ID, then it is reused.
    */
-  static class TermVectorReusingLeafReader extends FilterLeafReader {
+  static class ReusingTermVectors extends TermVectors {
 
+    private final IndexReader reader;
+    private TermVectors in;
     private int lastDocId = -1;
     private Fields tvFields;
 
-    public TermVectorReusingLeafReader(LeafReader in) {
-      super(in);
+    public ReusingTermVectors(IndexReader reader) {
+      this.reader = reader;
     }
 
     @Override
-    public Fields getTermVectors(int docID) throws IOException {
+    public Fields get(int docID) throws IOException {
       if (docID != lastDocId) {
+        if (in == null) {
+          in = reader.termVectors();
+        }
         lastDocId = docID;
-        tvFields = in.getTermVectors(docID);
+        tvFields = in.get(docID);
       }
       return tvFields;
-    }
-
-    @Override
-    public CacheHelper getCoreCacheHelper() {
-      return null;
-    }
-
-    @Override
-    public CacheHelper getReaderCacheHelper() {
-      return null;
     }
   }
 }

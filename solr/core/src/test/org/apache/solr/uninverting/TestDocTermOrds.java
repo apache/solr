@@ -152,7 +152,7 @@ public class TestDocTermOrds extends SolrTestCase {
         terms.add(new BytesRef(s));
       }
     }
-    final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
+    final BytesRef[] termsArray = terms.toArray(new BytesRef[0]);
     Arrays.sort(termsArray);
 
     final int NUM_DOCS = atLeast(100);
@@ -240,7 +240,7 @@ public class TestDocTermOrds extends SolrTestCase {
       prefixes.add(TestUtil.randomRealisticUnicodeString(random()));
       // prefixes.add(_TestUtil.randomSimpleString(random));
     }
-    final String[] prefixesArray = prefixes.toArray(new String[prefixes.size()]);
+    final String[] prefixesArray = prefixes.toArray(new String[0]);
 
     final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<>();
@@ -254,7 +254,7 @@ public class TestDocTermOrds extends SolrTestCase {
         terms.add(new BytesRef(s));
       }
     }
-    final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
+    final BytesRef[] termsArray = terms.toArray(new BytesRef[0]);
     Arrays.sort(termsArray);
 
     final int NUM_DOCS = atLeast(100);
@@ -494,7 +494,9 @@ public class TestDocTermOrds extends SolrTestCase {
 
   public void testNumericEncoded32() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriterConfig iwconfig = newIndexWriterConfig(null);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwconfig);
 
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
@@ -536,7 +538,9 @@ public class TestDocTermOrds extends SolrTestCase {
 
   public void testNumericEncoded64() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriterConfig iwconfig = newIndexWriterConfig(null);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwconfig);
 
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", 5, Field.Store.NO));

@@ -16,14 +16,14 @@
   limitations under the License.
   -->
 
-<!-- Default production configuration is asnychronous logging -->
+<!-- Default production configuration is asynchronous logging -->
 <Configuration>
   <Appenders>
 
     <Console name="STDOUT" target="SYSTEM_OUT">
       <PatternLayout>
         <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}%notEmpty{ t:%X{trace_id}}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
     </Console>
@@ -34,7 +34,7 @@
         filePattern="${sys:solr.log.dir}/solr.log.%i" >
       <PatternLayout>
         <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}%notEmpty{ t:%X{trace_id}}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
       <Policies>
@@ -50,7 +50,7 @@
         filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
       <PatternLayout>
         <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}%notEmpty{ t:%X{trace_id}}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
       <Policies>
@@ -62,8 +62,7 @@
 
   </Appenders>
   <Loggers>
-    <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
-    <AsyncLogger name="org.apache.hadoop" level="warn"/>
+    <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchronous logging respectively -->
     <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
     <AsyncLogger name="org.apache.zookeeper" level="warn"/>
     <!-- HttpSolrCall adds markers denoting the handler class to allow fine grained control, metrics are
@@ -84,4 +83,3 @@
     </AsyncRoot>
   </Loggers>
 </Configuration>
-

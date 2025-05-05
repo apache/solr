@@ -16,7 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
-import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -41,7 +41,7 @@ public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
         coreContainer.create(
             "fromCore", // FileSystems.getDefault().getPath( TEST_HOME()),
             // ImmutableMap.of("config","solrconfig-basic.xml","schema","schema-docValuesJoin.xml"
-            ImmutableMap.of("configSet", "minimal"));
+            Map.of("configSet", "minimal"));
     assertU(
         add(
             doc(

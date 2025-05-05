@@ -57,6 +57,11 @@ java.util.Collections#shuffle(java.util.List) @ Use shuffle(List, Random) instea
 java.util.Locale#forLanguageTag(java.lang.String) @ use new Locale.Builder().setLanguageTag(...).build() which has error handling
 java.util.Locale#toString() @ use Locale#toLanguageTag() for a standardized BCP47 locale name
 
+
+@defaultMessage Direct calls to force the JVM to quit are forbidden in server code.
+java.lang.System#exit(int)
+java.lang.Runtime#exit(int)
+
 @defaultMessage Constructors for wrapper classes of Java primitives should be avoided in favor of the public static methods available or autoboxing
 java.lang.Integer#<init>(**)
 java.lang.Byte#<init>(**)
@@ -83,3 +88,15 @@ java.util.logging.**
 
 @defaultMessage Use List.sort(Comparator) instead of Collections.sort(List, Comparator) please.
 java.util.Collections#sort(java.util.List, java.util.Comparator)
+
+@defaultMessage Use URI.toURL() to construct an instance of URL.
+java.net.URL#<init>(**)
+
+@defaultMessage Use Locale.Builder instead.
+java.util.Locale#<init>(**)
+
+@defaultMessage Use Path.of(...) methods instead.
+java.nio.file.Paths#get(**)
+
+@defaultMessage You probably meant to call String.startsWith
+java.nio.file.Path#startsWith(java.lang.String)

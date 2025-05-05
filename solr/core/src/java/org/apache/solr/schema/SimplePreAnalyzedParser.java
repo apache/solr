@@ -496,7 +496,6 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
       String s = f.stringValue();
       if (s != null) {
         // encode the equals sign
-        s = s.replaceAll("=", "\\=");
         sb.append('=');
         sb.append(s);
         sb.append('=');

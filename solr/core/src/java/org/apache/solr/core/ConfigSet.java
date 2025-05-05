@@ -35,20 +35,16 @@ public class ConfigSet {
 
   private final NamedList<?> properties;
 
-  private final boolean trusted;
-
   public ConfigSet(
       String name,
       SolrConfig solrConfig,
       SchemaSupplier indexSchemaSupplier,
-      NamedList<?> properties,
-      boolean trusted) {
+      NamedList<?> properties) {
     this.name = name;
     this.solrConfig = solrConfig;
     this.schemaSupplier = indexSchemaSupplier;
     schema = schemaSupplier.get(true);
     this.properties = properties;
-    this.trusted = trusted;
   }
 
   public String getName() {
@@ -75,14 +71,10 @@ public class ConfigSet {
     return properties;
   }
 
-  public boolean isTrusted() {
-    return trusted;
-  }
-
   /**
    * Provide a Schema object on demand We want IndexSchema Objects to be lazily instantiated because
    * when a configset is created the {@link SolrResourceLoader} associated with it is not associated
-   * with a core So, we may not be able to update the core if we the schema classes are updated
+   * with a core So, we may not be able to update the core if the schema classes are updated
    */
   interface SchemaSupplier {
     IndexSchema get(boolean forceFetch);

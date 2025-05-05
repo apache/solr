@@ -34,48 +34,41 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.AfterClass;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
 public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
 
-  protected static JettySolrRunner yetty;
-  private static String fooUrl;
-  private static String barUrl;
+  @ClassRule public static SolrJettyTestRule secondJetty = new SolrJettyTestRule();
+  private static String fooUrl; // first Jetty URL
+  private static String barUrl; // second Jetty URL
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     createAndStartJetty(legacyExampleCollection1SolrHome());
-    // stealing the first made jetty
-    yetty = jetty;
-    barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
+    fooUrl = getBaseUrl();
 
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-
-    fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
-  }
-
-  @AfterClass
-  public static void stopYetty() throws Exception {
-    if (null != yetty) {
-      yetty.stop();
-      yetty = null;
-    }
+    secondJetty.startSolr(legacyExampleCollection1SolrHome());
+    barUrl = secondJetty.getBaseUrl();
   }
 
   public void testPoolSize() throws SolrServerException, IOException {
     PoolingHttpClientConnectionManager pool = HttpClientUtil.createPoolingConnectionManager();
 
-    final String fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
-    final String barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
     CloseableHttpClient httpClient =
         HttpClientUtil.createClient(
             new ModifiableSolrParams(), pool, false /* let client shutdown it*/);
     final HttpSolrClient clientFoo =
-        new HttpSolrClient.Builder(fooUrl).withHttpClient(httpClient).build();
+        new HttpSolrClient.Builder(fooUrl)
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+            .withHttpClient(httpClient)
+            .build();
     final HttpSolrClient clientBar =
-        new HttpSolrClient.Builder(barUrl).withHttpClient(httpClient).build();
+        new HttpSolrClient.Builder(barUrl)
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+            .withHttpClient(httpClient)
+            .build();
 
     clientFoo.deleteByQuery("*:*");
     clientBar.deleteByQuery("*:*");
@@ -125,28 +118,30 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
         ExecutorUtil.newMDCAwareFixedThreadPool(
             threadCount, new SolrNamedThreadFactory(getClass().getSimpleName() + "TestScheduler"));
     CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams(), pool);
-    try {
-      final LBHttpSolrClient roundRobin =
-          new LBHttpSolrClient.Builder()
-              .withBaseSolrUrl(fooUrl)
-              .withBaseSolrUrl(barUrl)
-              .withHttpClient(httpClient)
-              .build();
-
-      List<ConcurrentUpdateSolrClient> concurrentClients =
-          Arrays.asList(
-              new ConcurrentUpdateSolrClient.Builder(fooUrl)
-                  .withHttpClient(httpClient)
-                  .withThreadCount(threadCount)
-                  .withQueueSize(10)
-                  .withExecutorService(threads)
-                  .build(),
-              new ConcurrentUpdateSolrClient.Builder(barUrl)
-                  .withHttpClient(httpClient)
-                  .withThreadCount(threadCount)
-                  .withQueueSize(10)
-                  .withExecutorService(threads)
-                  .build());
+    try (var roundRobin =
+            new LBHttpSolrClient.Builder()
+                .withBaseEndpoint(fooUrl)
+                .withBaseEndpoint(barUrl)
+                .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+                .withHttpClient(httpClient)
+                .build();
+        final var fooClient =
+            new ConcurrentUpdateSolrClient.Builder(fooUrl)
+                .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+                .withHttpClient(httpClient)
+                .withThreadCount(threadCount)
+                .withQueueSize(10)
+                .withExecutorService(threads)
+                .build();
+        final var barClient =
+            new ConcurrentUpdateSolrClient.Builder(barUrl)
+                .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+                .withHttpClient(httpClient)
+                .withThreadCount(threadCount)
+                .withQueueSize(10)
+                .withExecutorService(threads)
+                .build()) {
+      List<ConcurrentUpdateSolrClient> concurrentClients = Arrays.asList(fooClient, barClient);
 
       for (int i = 0; i < 2; i++) {
         roundRobin.deleteByQuery("*:*");
@@ -165,7 +160,8 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
           } else {
             final UpdateRequest updateRequest = new UpdateRequest();
             updateRequest.add(doc); // here we mimic CloudSolrClient impl
-            final List<String> urls = Arrays.asList(fooUrl, barUrl);
+            final List<LBSolrClient.Endpoint> urls =
+                Arrays.asList(new LBSolrClient.Endpoint(fooUrl), new LBSolrClient.Endpoint(barUrl));
             Collections.shuffle(urls, random());
             LBSolrClient.Req req = new LBSolrClient.Req(updateRequest, urls);
             roundRobin.request(req);

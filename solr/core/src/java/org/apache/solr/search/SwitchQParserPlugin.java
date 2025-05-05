@@ -16,10 +16,10 @@
  */
 package org.apache.solr.search;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -145,7 +145,7 @@ public class SwitchQParserPlugin extends QParserPlugin {
         // clients could add their own switch options
         String subQ = localParams.get(SWITCH_DEFAULT);
         subQ =
-            StringUtils.isBlank(val)
+            StrUtils.isBlank(val)
                 ? localParams.get(SWITCH_CASE, subQ)
                 : localParams.get(SWITCH_CASE + "." + val.trim(), subQ);
 

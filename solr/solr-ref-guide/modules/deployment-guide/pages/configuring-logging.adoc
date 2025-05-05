@@ -1,4 +1,5 @@
 = Configuring Logging
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -76,11 +77,30 @@ There is also a way of sending REST commands to the `admin/info/logging` endpoin
 
 Example:
 
+[tabs#createcollection]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-# Set the root logger to level WARN
-curl -s http://localhost:8983/solr/admin/info/logging --data-binary "set=root:WARN"
+curl -X GET "http://localhost:8983/solr/admin/info/logging?set=root:WARN"
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT http://localhost:8983/api/node/logging/levels -H 'Content-Type: application/json' -d '
+  [
+    {"logger": "root", "level": "WARN"}
+  ]
+'
+----
+====
+======
 
 === Choosing Log Level at Startup
 
@@ -95,10 +115,10 @@ Examples:
 
 [source,bash]
 ----
-# Start with verbose (DEBUG) looging
-bin/solr start -f -v
+# Start with detailed (DEBUG) logging
+bin/solr start -f --verbose
 # Start with quiet (WARN) logging
-bin/solr start -f -q
+bin/solr start -f --quiet
 ----
 
 == Permanent Logging Settings
@@ -150,6 +170,22 @@ The log file under which you can find all these queries is called `solr_slow_req
 
 In addition to the logging options described above, it's possible to log only a selected list of request parameters (such as those sent with queries) with an additional request parameter called `logParamsList`.
 See the section on xref:query-guide:common-query-parameters.adoc#logparamslist-parameter[logParamsList Parameter] for more information.
+
+== Selective Logging on SolrCore
+
+Solr logs all core requests at INFO level using the o.a.s.c.SolrCore.Request. This can be disabled entirely by changing the level of these loggers to WARN or ERROR, or more selectively by using the `MarkerFilter` on request paths in `log4j2.xml`.
+
+For example:
+
+[source,xml]
+----
+<Logger name="org.apache.solr.core.SolrCore.Request" level="info">
+  <Filters>
+    <MarkerFilter marker="/get" onMatch="DENY" onMismatch="NEUTRAL"/>
+    <MarkerFilter marker="/replication" onMatch="DENY" onMismatch="NEUTRAL"/>
+  </Filters>
+</Logger>
+----
 
 == Request Logging
 

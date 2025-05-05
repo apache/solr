@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.util.StrUtils;
-
 /**
  * Parameters used for distributed search.
  *
@@ -42,8 +40,13 @@ public interface ShardParams {
   /** whether the request goes to a shard */
   String IS_SHARD = "isShard";
 
-  /** The requested URL for this shard */
-  String SHARD_URL = "shard.url";
+  /**
+   * The requested URL for this shard
+   *
+   * @deprecated This was an internally used param, never meant for clients to specify; it is no
+   *     longer used by Solr.
+   */
+  @Deprecated String SHARD_URL = "shard.url";
 
   /** The requested shard name */
   String SHARD_NAME = "shard.name";
@@ -54,7 +57,7 @@ public interface ShardParams {
   /** Request detailed match info for each shard (true/false) */
   String SHARDS_INFO = "shards.info";
 
-  /** Should things fail if there is an error? (true/false/{@value #REQUIRE_ZK_CONNECTED}) */
+  /** Should things fail if there is an error? (true/false/requireZkConnected) */
   String SHARDS_TOLERANT = "shards.tolerant";
 
   /** query purpose for shard requests */
@@ -99,26 +102,10 @@ public interface ShardParams {
   String DISTRIB_SINGLE_PASS = "distrib.singlePass";
 
   /**
-   * Throw an error from search requests when the {@value #SHARDS_TOLERANT} param has this value and
-   * ZooKeeper is not connected.
+   * Throw an error from search requests when the {@value ShardParams#SHARDS_TOLERANT} param has
+   * this value and ZooKeeper is not connected.
    *
-   * @see #getShardsTolerantAsBool(SolrParams)
+   * <p>See also HttpShardHandler's getShardsTolerantAsBool(SolrQueryRequest)
    */
   String REQUIRE_ZK_CONNECTED = "requireZkConnected";
-
-  /**
-   * Parse the {@value #SHARDS_TOLERANT} param from <code>params</code> as a boolean; accepts
-   * {@value #REQUIRE_ZK_CONNECTED} as a valid value indicating <code>false</code>.
-   *
-   * <p>By default, returns <code>false</code> when {@value #SHARDS_TOLERANT} is not set in <code>
-   * params</code>.
-   */
-  static boolean getShardsTolerantAsBool(SolrParams params) {
-    String shardsTolerantValue = params.get(SHARDS_TOLERANT);
-    if (null == shardsTolerantValue || shardsTolerantValue.equals(REQUIRE_ZK_CONNECTED)) {
-      return false;
-    } else {
-      return StrUtils.parseBool(shardsTolerantValue); // throw an exception if non-boolean
-    }
-  }
 }

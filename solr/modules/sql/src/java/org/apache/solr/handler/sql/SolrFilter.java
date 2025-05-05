@@ -46,7 +46,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.sql.functions.ArrayContainsAll;
 import org.apache.solr.handler.sql.functions.ArrayContainsAny;
 import org.slf4j.Logger;
@@ -171,7 +171,7 @@ class SolrFilter extends Filter implements SolrRel {
       RexNode valuesNode = operands.get(1);
       if (valuesNode instanceof RexLiteral) {
         String literal = toSolrLiteral(fieldName, (RexLiteral) valuesNode);
-        if (!StringUtils.isEmpty(literal)) {
+        if (StrUtils.isNotNullOrEmpty(literal)) {
           return fieldName + ":\"" + ClientUtils.escapeQueryChars(literal.trim()) + "\"";
         } else {
           return null;
@@ -181,7 +181,7 @@ class SolrFilter extends Filter implements SolrRel {
         String valuesString =
             valuesRexCall.getOperands().stream()
                 .map(op -> toSolrLiteral(fieldName, (RexLiteral) op))
-                .filter(value -> !StringUtils.isEmpty(value))
+                .filter(StrUtils::isNotNullOrEmpty)
                 .map(value -> "\"" + ClientUtils.escapeQueryChars(value.trim()) + "\"")
                 .collect(Collectors.joining(" " + booleanOperator + " "));
         return fieldName + ":(" + valuesString + ")";
@@ -263,10 +263,9 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected String translateIsNullOrIsNotNull(RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
-      RexCall call = (RexCall) node;
       List<RexNode> operands = call.getOperands();
       if (operands.size() != 1) {
         throw new AssertionError("expected 1 operand for " + node);
@@ -444,7 +443,7 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     private String toEqualsClause(String key, RexLiteral value) {
-      if ("".equals(key)) {
+      if (key != null && key.isEmpty()) {
         // special handling for 1 = 0 kind of clause
         return "-*:*";
       }
@@ -531,10 +530,9 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected Pair<Pair<String, RexLiteral>, Character> getFieldValuePairWithEscapeCharacter(
         RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
-      RexCall call = (RexCall) node;
       if (call.getOperands().size() == 3) {
         RexNode escapeNode = call.getOperands().get(2);
         Character escapeChar = null;
@@ -552,11 +550,10 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
 
-      RexCall call = (RexCall) node;
       Pair<String, RexLiteral> binaryTranslated =
           call.getOperands().size() == 2 ? translateBinary(call) : null;
       if (binaryTranslated == null) {
@@ -589,14 +586,15 @@ class SolrFilter extends Filter implements SolrRel {
 
       if (left.getKind() == SqlKind.CAST && right.getKind() == SqlKind.CAST) {
         return translateBinary2(
-            ((RexCall) left).operands.get(0), ((RexCall) right).operands.get(0));
+            ((RexCall) left).getOperands().get(0), ((RexCall) right).getOperands().get(0));
       }
 
       // for WHERE clause like: pdatex >= '2021-07-13T15:12:10.037Z'
       if (left.getKind() == SqlKind.INPUT_REF && right.getKind() == SqlKind.CAST) {
         final RexCall cast = ((RexCall) right);
-        if (cast.operands.size() == 1 && cast.operands.get(0).getKind() == SqlKind.LITERAL) {
-          return translateBinary2(left, cast.operands.get(0));
+        if (cast.getOperands().size() == 1
+            && cast.getOperands().get(0).getKind() == SqlKind.LITERAL) {
+          return translateBinary2(left, cast.getOperands().get(0));
         }
       }
 
@@ -633,7 +631,7 @@ class SolrFilter extends Filter implements SolrRel {
           String name = fieldNames.get(left1.getIndex());
           return new Pair<>(name, rightLiteral);
         case CAST:
-          return translateBinary2(((RexCall) left).operands.get(0), right);
+          return translateBinary2(((RexCall) left).getOperands().get(0), right);
           //        case OTHER_FUNCTION:
           //          String itemName = SolrRules.isItem((RexCall) left);
           //          if (itemName != null) {
@@ -649,18 +647,17 @@ class SolrFilter extends Filter implements SolrRel {
       final String fieldName = getSolrFieldName(condition);
 
       RexCall expanded = (RexCall) RexUtil.expandSearch(builder, null, condition);
-      final RexNode peekAt0 = !expanded.operands.isEmpty() ? expanded.operands.get(0) : null;
+      final RexNode peekAt0 =
+          !expanded.getOperands().isEmpty() ? expanded.getOperands().get(0) : null;
       if (expanded.op.kind == SqlKind.AND) {
         // See if NOT IN was translated into a big AND not
-        if (peekAt0 instanceof RexCall) {
-          RexCall op0 = (RexCall) peekAt0;
+        if (peekAt0 instanceof RexCall op0) {
           if (op0.op.kind == SqlKind.NOT_EQUALS) {
             return "*:* -" + fieldName + ":" + toOrSetOnSameField(fieldName, expanded);
           }
         }
       } else if (expanded.op.kind == SqlKind.OR) {
-        if (peekAt0 instanceof RexCall) {
-          RexCall op0 = (RexCall) peekAt0;
+        if (peekAt0 instanceof RexCall op0) {
           if (op0.op.kind == SqlKind.EQUALS) {
             return fieldName + ":" + toOrSetOnSameField(fieldName, expanded);
           }
@@ -679,7 +676,7 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected String toOrSetOnSameField(String solrField, RexCall search) {
       String orClause =
-          search.operands.stream()
+          search.getOperands().stream()
               .map(
                   n -> {
                     RexCall next = (RexCall) n;

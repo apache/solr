@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.commons.lang3.ArrayUtils;
+import java.util.Arrays;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 
@@ -38,7 +38,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
     assertEquals(info.getPosition(), token.get("position"));
     assertArrayEquals(
         info.getPositionHistory(),
-        ArrayUtils.toPrimitive((Integer[]) token.get("positionHistory")));
+        Arrays.stream((Integer[]) token.get("positionHistory")).mapToInt(v -> v).toArray());
     if (info.isMatch()) {
       assertEquals(Boolean.TRUE, token.get("match"));
     }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -25,11 +24,11 @@ import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -45,8 +44,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.Filter;
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.tests.util.TestUtil;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -59,6 +57,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -121,60 +120,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     r = new Random(random().nextLong());
   }
 
-  /**
-   * Set's the value of the "hostContext" system property to a random path like string (which may or
-   * may not contain sub-paths). This is used in the default constructor for this test to help
-   * ensure no code paths have hardcoded assumptions about the servlet context used to run solr.
-   *
-   * <p>Test configs may use the <code>${hostContext}</code> variable to access this system
-   * property.
-   *
-   * @see #BaseDistributedSearchTestCase()
-   * @see #clearHostContext
-   */
-  @BeforeClass
-  public static void initHostContext() {
-    // Can't use randomRealisticUnicodeString because unescaped unicode is
-    // not allowed in URL paths
-    // Can't use URLEncoder.encode(randomRealisticUnicodeString) because
-    // Jetty freaks out and returns 404's when the context uses escapes
-
-    StringBuilder hostContext = new StringBuilder("/");
-    if (random().nextBoolean()) {
-      // half the time we use the root context, the other half...
-
-      // Remember: randomSimpleString might be the empty string
-      hostContext.append(TestUtil.randomSimpleString(random(), 2));
-      if (random().nextBoolean()) {
-        hostContext.append("_");
-      }
-      hostContext.append(TestUtil.randomSimpleString(random(), 3));
-      if (!"/".equals(hostContext.toString())) {
-        // if our random string is empty, this might add a trailing slash,
-        // but our code should be ok with that
-        hostContext.append("/").append(TestUtil.randomSimpleString(random(), 2));
-      } else {
-        // we got 'lucky' and still just have the root context,
-        // NOOP: don't try to add a subdir to nothing (ie "//" is bad)
-      }
-    }
-    // paranoia, we *really* don't want to ever get "//" in a path...
-    final String hc = hostContext.toString().replaceAll("\\/+", "/");
-
-    log.info("Setting hostContext system property: {}", hc);
-    System.setProperty("hostContext", hc);
-  }
-
-  /**
-   * Clears the "hostContext" system property
-   *
-   * @see #initHostContext
-   */
-  @AfterClass
-  public static void clearHostContext() throws Exception {
-    System.clearProperty("hostContext");
-  }
-
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void setSolrDisableShardsWhitelist() throws Exception {
@@ -188,41 +133,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   private static String getHostContextSuitableForServletContext() {
-    String ctx = System.getProperty("hostContext", "/solr");
-    if ("".equals(ctx)) ctx = "/solr";
-    if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
-    ;
-    if (!ctx.startsWith("/")) ctx = "/" + ctx;
-    return ctx;
+    return "/solr";
   }
 
-  /**
-   * Constructs a test in which the jetty+solr instances as well as the solr clients all use the
-   * value of the "hostContext" system property.
-   *
-   * <p>If the system property is not set, or is set to the empty string (neither of which should
-   * normally happen unless a subclass explicitly modifies the property set by {@link
-   * #initHostContext} prior to calling this constructor) a servlet context of "/solr" is used.
-   * (this is for consistency with the default behavior of solr.xml parsing when using <code>
-   * hostContext="${hostContext:}"</code>
-   *
-   * <p>If the system property is set to a value which does not begin with a "/" (which should
-   * normally happen unless a subclass explicitly modifies the property set by {@link
-   * #initHostContext} prior to calling this constructor) a leading "/" will be prepended.
-   *
-   * @see #initHostContext
-   */
   protected BaseDistributedSearchTestCase() {
-    this(getHostContextSuitableForServletContext());
-  }
-
-  /**
-   * @param context explicit servlet context path to use (eg: "/solr")
-   */
-  protected BaseDistributedSearchTestCase(final String context) {
-    this.context = context;
+    String solrHostContext = "/solr";
     this.deadServers =
-        new String[] {DEAD_HOST_1 + context, DEAD_HOST_2 + context, DEAD_HOST_3 + context};
+        new String[] {
+          DEAD_HOST_1 + solrHostContext,
+          DEAD_HOST_2 + solrHostContext,
+          DEAD_HOST_3 + solrHostContext
+        };
 
     // Speed up the test cycle by only running a single configuration instead of the repeat rule
     if (TEST_NIGHTLY == false) {
@@ -250,11 +171,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected final List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
   protected final List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
 
-  protected volatile String context;
   protected volatile String[] deadServers;
   protected volatile String shards;
   protected volatile String[] shardsArr;
-  protected volatile File testDir;
+  protected volatile Path testDir;
   protected volatile SolrClient controlClient;
 
   // to stress with higher thread counts and requests, make sure the junit
@@ -331,7 +251,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   /** Subclasses can override this to change a test's solr home (default is in test-files) */
-  public String getSolrHome() {
+  public Path getSolrHome() {
     return SolrTestCaseJ4.TEST_HOME();
   }
 
@@ -342,7 +262,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     SolrTestCaseJ4.resetExceptionIgnores(); // ignore anything with ignore_exception in it
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    testDir = createTempDir().toFile();
+    testDir = createTempDir();
   }
 
   private volatile boolean distribTearDownCalled = false;
@@ -353,19 +273,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected JettySolrRunner createControlJetty() throws Exception {
-    Path jettyHome = testDir.toPath().resolve("control");
-    File jettyHomeFile = jettyHome.toFile();
-    seedSolrHome(jettyHomeFile);
+    Path jettyHome = testDir.resolve("control");
+    seedSolrHome(jettyHome);
     seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
     JettySolrRunner jetty =
-        createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
+        createJetty(jettyHome, null, null, getSolrConfigFile(), getSchemaFile());
     jetty.start();
     return jetty;
   }
 
   protected void createServers(int numShards) throws Exception {
 
-    System.setProperty("configSetBaseDir", getSolrHome());
+    System.setProperty("configSetBaseDir", getSolrHome().toString());
 
     controlJetty = createControlJetty();
     controlClient = createNewSolrClient(controlJetty.getLocalPort());
@@ -375,12 +294,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
       final String shardname = "shard" + i;
-      Path jettyHome = testDir.toPath().resolve(shardname);
-      File jettyHomeFile = jettyHome.toFile();
-      seedSolrHome(jettyHomeFile);
+      Path jettyHome = testDir.resolve(shardname);
+      seedSolrHome(jettyHome);
       seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
-      JettySolrRunner j =
-          createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
+      JettySolrRunner j = createJetty(jettyHome, null, null, getSolrConfigFile(), getSchemaFile());
       j.start();
       jettys.add(j);
       clients.add(createNewSolrClient(j.getLocalPort()));
@@ -427,9 +344,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClient));
 
-    customThreadPool.submit(
+    customThreadPool.execute(
         () -> {
           try {
             controlJetty.stop();
@@ -441,11 +358,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         });
 
     for (SolrClient client : clients) {
-      customThreadPool.submit(() -> IOUtils.closeQuietly(client));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
     }
 
     for (JettySolrRunner jetty : jettys) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             try {
               jetty.stop();
@@ -461,17 +378,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     jettys.clear();
   }
 
-  public JettySolrRunner createJetty(File solrHome, String dataDir) throws Exception {
+  public JettySolrRunner createJetty(Path solrHome, String dataDir) throws Exception {
     return createJetty(solrHome, dataDir, null, null, null);
   }
 
-  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardId)
+  public JettySolrRunner createJetty(Path solrHome, String dataDir, String shardId)
       throws Exception {
     return createJetty(solrHome, dataDir, shardId, null, null);
   }
 
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -482,7 +399,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -500,18 +417,16 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (explicitCoreNodeName) {
       props.setProperty("coreNodeName", Integer.toString(nodeCnt.incrementAndGet()));
     }
-    props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toString());
+    props.setProperty("coreRootDirectory", solrHome.resolve("cores").toString());
 
     JettySolrRunner jetty =
         new JettySolrRunner(
-            solrHome.getAbsolutePath(),
+            solrHome.toAbsolutePath().toString(),
             props,
             JettyConfig.builder()
                 .stopAtShutdown(true)
-                .setContext(context)
                 .withFilters(getExtraRequestFilters())
                 .withServlets(getExtraServlets())
-                .withSSLConfig(sslConfig.buildServerSSLConfig())
                 .build());
 
     return jetty;
@@ -534,20 +449,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected SolrClient createNewSolrClient(int port) {
-    return getHttpSolrClient(getServerUrl(port));
-  }
-
-  protected String getServerUrl(int port) {
-    String baseUrl = buildUrl(port);
-    if (baseUrl.endsWith("/")) {
-      return baseUrl + DEFAULT_TEST_CORENAME;
-    } else {
-      return baseUrl + "/" + DEFAULT_TEST_CORENAME;
-    }
-  }
-
-  protected String buildUrl(int port) {
-    return buildUrl(port, context);
+    return getHttpSolrClient(buildUrl(port), DEFAULT_TEST_CORENAME);
   }
 
   protected static void addFields(SolrInputDocument doc, Object... fields) {
@@ -808,14 +710,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     boolean ordered = (flags & UNORDERED) == 0;
 
     if (!ordered) {
-      @SuppressWarnings({"rawtypes"})
-      Map mapA = new HashMap(a.size());
+      Map<String, Object> mapA = CollectionUtil.newHashMap(a.size());
       for (int i = 0; i < a.size(); i++) {
         Object prev = mapA.put(a.getName(i), a.getVal(i));
       }
 
-      @SuppressWarnings({"rawtypes"})
-      Map mapB = new HashMap(b.size());
+      Map<String, Object> mapB = CollectionUtil.newHashMap(b.size());
       for (int i = 0; i < b.size(); i++) {
         Object prev = mapB.put(b.getName(i), b.getVal(i));
       }
@@ -1034,10 +934,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
     if ((flags & FUZZY) != 0) {
-      if ((a instanceof Double && b instanceof Double)) {
-        double aaa = (Double) a;
-        double bbb = (Double) b;
-        if (aaa == bbb || (((Double) a).isNaN() && ((Double) b).isNaN())) {
+
+      if ((a instanceof Double aa && b instanceof Double bb)) {
+        double aaa = aa;
+        double bbb = bb;
+        if (aaa == bbb || (aa.isNaN() && bb.isNaN())) {
           return null;
         }
         if ((aaa == 0.0) || (bbb == 0.0)) {
@@ -1270,11 +1171,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * with the contents of {@link #getSolrHome} and ensures that the proper {@link #getSolrXml} file
    * is in place.
    */
-  protected void seedSolrHome(File jettyHome) throws IOException {
-    FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
+  protected void seedSolrHome(Path jettyHome) throws IOException {
+    PathUtils.copyDirectory(getSolrHome(), jettyHome, StandardCopyOption.REPLACE_EXISTING);
     String solrxml = getSolrXml();
     if (solrxml != null) {
-      FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
+      Files.copy(
+          getSolrHome().resolve(solrxml),
+          jettyHome.resolve("solr.xml"),
+          StandardCopyOption.REPLACE_EXISTING);
     }
   }
 
@@ -1295,10 +1199,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     } // else nothing to do, DEFAULT_TEST_CORENAME already exists
   }
 
-  protected void setupJettySolrHome(File jettyHome) throws IOException {
+  protected void setupJettySolrHome(Path jettyHome) throws IOException {
     seedSolrHome(jettyHome);
 
-    Files.createDirectories(jettyHome.toPath().resolve("cores").resolve("collection1"));
+    Files.createDirectories(jettyHome.resolve("cores").resolve("collection1"));
   }
 
   protected ModifiableSolrParams createParams(Object... q) {

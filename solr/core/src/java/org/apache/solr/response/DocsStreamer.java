@@ -31,6 +31,7 @@ import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.BinaryField;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.DatePointField;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.DoublePointField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.FloatPointField;
@@ -59,6 +60,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   private final org.apache.solr.response.ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
   private final DocList docs;
+  private boolean doScore;
+  private boolean doMatchScore;
 
   private final DocTransformer transformer;
   private final DocIterator docIterator;
@@ -72,10 +75,12 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     this.docs = rctx.getDocList();
     transformer = rctx.getReturnFields().getTransformer();
     docIterator = this.docs.iterator();
-    docFetcher = rctx.getSearcher().getDocFetcher();
+    docFetcher = rctx.getDocFetcher();
     solrReturnFields = (SolrReturnFields) rctx.getReturnFields();
 
-    if (transformer != null) transformer.setContext(rctx);
+    if (transformer != null) {
+      transformer.setContext(rctx);
+    }
   }
 
   public int currentIndex() {
@@ -94,13 +99,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);
 
     if (transformer != null) {
-      boolean doScore = rctx.wantsScores();
       try {
-        if (doScore) {
-          transformer.transform(sdoc, id, docIterator.score());
-        } else {
-          transformer.transform(sdoc, id);
-        }
+        transformer.transform(sdoc, id, docIterator);
       } catch (IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Error applying transformer", e);
@@ -113,8 +113,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
    * This method is less efficient then the 3 arg version because it may convert some fields that
    * are not needed
    *
+   * @see #convertLuceneDocToSolrDoc(Document, IndexSchema, ReturnFields)
    * @deprecated use the 3 arg version for better performance
-   * @see #convertLuceneDocToSolrDoc(Document,IndexSchema,ReturnFields)
    */
   @Deprecated
   public static SolrDocument convertLuceneDocToSolrDoc(Document doc, final IndexSchema schema) {
@@ -146,11 +146,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     // because that doesn't include extra fields needed by transformers
     final Set<String> fieldNamesNeeded = fields.getLuceneFieldNames();
 
-    BinaryResponseWriter.MaskCharSeqSolrDocument masked = null;
+    JavaBinResponseWriter.MaskCharSeqSolrDocument masked = null;
     final SolrDocument out =
         ResultContext.READASBYTES.get() == null
             ? new SolrDocument()
-            : (masked = new BinaryResponseWriter.MaskCharSeqSolrDocument());
+            : (masked = new JavaBinResponseWriter.MaskCharSeqSolrDocument());
 
     // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded when it's
     // smaller then the IndexableField[] in the Document -- but that's actually *less* effecient
@@ -184,7 +184,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   public static Object getValue(SchemaField sf, IndexableField f) {
     FieldType ft = null;
-    if (sf != null) ft = sf.getType();
+    if (sf != null) {
+      ft = sf.getType();
+    }
 
     if (ft == null) { // handle fields not in the schema
       BytesRef bytesRef = f.binaryValue();
@@ -196,7 +198,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
           System.arraycopy(bytesRef.bytes, bytesRef.offset, bytes, 0, bytesRef.length);
           return bytes;
         }
-      } else return f.stringValue();
+      } else {
+        return f.stringValue();
+      }
     } else {
       if (KNOWN_TYPES.contains(ft.getClass())) {
         return ft.toObject(f);
@@ -221,6 +225,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     KNOWN_TYPES.add(LongPointField.class);
     KNOWN_TYPES.add(DoublePointField.class);
     KNOWN_TYPES.add(FloatPointField.class);
+    // DenseVectorField extends FloatPointField but here we list DenseVectorField
+    // explicitly due to KNOWN_TYPES.contains use of the KNOWN_TYPES set
+    KNOWN_TYPES.add(DenseVectorField.class);
     KNOWN_TYPES.add(DatePointField.class);
     // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
     // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side

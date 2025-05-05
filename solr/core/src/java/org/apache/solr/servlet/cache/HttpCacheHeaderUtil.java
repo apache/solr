@@ -180,8 +180,6 @@ public final class HttpCacheHeaderUtil {
     if (null != maxAge) {
       resp.setDateHeader("Expires", timeNowForHeader() + (maxAge * 1000L));
     }
-
-    return;
   }
 
   /**

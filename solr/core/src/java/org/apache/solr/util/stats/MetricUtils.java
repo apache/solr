@@ -35,11 +35,14 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -64,51 +67,36 @@ public class MetricUtils {
   public static final String VALUE = "value";
   public static final String VALUES = "values";
 
-  static final String MS = "_ms";
+  private static final String MS = "_ms";
 
-  static final String MIN = "min";
-  static final String MIN_MS = MIN + MS;
-  static final String MAX = "max";
-  static final String MAX_MS = MAX + MS;
-  static final String MEAN = "mean";
-  static final String MEAN_MS = MEAN + MS;
-  static final String MEDIAN = "median";
-  static final String MEDIAN_MS = MEDIAN + MS;
-  static final String STDDEV = "stddev";
-  static final String STDDEV_MS = STDDEV + MS;
-  static final String SUM = "sum";
-  static final String P75 = "p75";
-  static final String P75_MS = P75 + MS;
-  static final String P95 = "p95";
-  static final String P95_MS = P95 + MS;
-  static final String P99 = "p99";
-  static final String P99_MS = P99 + MS;
-  static final String P999 = "p999";
-  static final String P999_MS = P999 + MS;
-
-  /**
-   * This filter can limit what properties of a metric are returned.
-   *
-   * @deprecated use {@link Predicate} instead.
-   */
-  @Deprecated(since = "8.7")
-  public interface PropertyFilter {
-    PropertyFilter ALL = (name) -> true;
-
-    /**
-     * Return only properties that match.
-     *
-     * @param name property name
-     * @return true if this property should be returned, false otherwise.
-     */
-    boolean accept(String name);
-
-    static Predicate<CharSequence> toPredicate(PropertyFilter filter) {
-      return (name) -> filter.accept(name.toString());
-    }
-  }
+  private static final String MIN = "min";
+  private static final String MIN_MS = MIN + MS;
+  private static final String MAX = "max";
+  private static final String MAX_MS = MAX + MS;
+  private static final String MEAN = "mean";
+  private static final String MEAN_MS = MEAN + MS;
+  private static final String MEDIAN = "median";
+  private static final String MEDIAN_MS = MEDIAN + MS;
+  private static final String STDDEV = "stddev";
+  private static final String STDDEV_MS = STDDEV + MS;
+  private static final String SUM = "sum";
+  private static final String P75 = "p75";
+  private static final String P75_MS = P75 + MS;
+  private static final String P95 = "p95";
+  private static final String P95_MS = P95 + MS;
+  private static final String P99 = "p99";
+  private static final String P99_MS = P99 + MS;
+  private static final String P999 = "p999";
+  private static final String P999_MS = P999 + MS;
 
   public static final Predicate<CharSequence> ALL_PROPERTIES = (name) -> true;
+
+  /**
+   * Local cache for BeanInfo instances that are created to scan for system metrics. List of
+   * properties is not supposed to change for the JVM lifespan, so we can keep already create
+   * BeanInfo instance for future calls.
+   */
+  private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
 
   /**
    * Adds metrics from a Timer to a NamedList, using well-known back-compat names.
@@ -139,47 +127,6 @@ public class MetricUtils {
     return ns / TimeUnit.MILLISECONDS.toNanos(1);
   }
 
-  /**
-   * Provides a representation of the given metric registry as {@link SolrInputDocument}-s. Only
-   * those metrics are converted which match at least one of the given MetricFilter instances.
-   *
-   * @param registry the {@link MetricRegistry} to be converted
-   * @param shouldMatchFilters a list of {@link MetricFilter} instances. A metric must match <em>any
-   *     one</em> of the filters from this list to be included in the output
-   * @param mustMatchFilter a {@link MetricFilter}. A metric <em>must</em> match this filter to be
-   *     included in the output.
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param metadata optional metadata. If not null and not empty then this map will be added under
-   *     a {@code _metadata_} key.
-   * @param consumer consumer that accepts produced {@link SolrInputDocument}-s
-   * @deprecated use {@link #toSolrInputDocuments(MetricRegistry, List, MetricFilter, Predicate,
-   *     boolean, boolean, boolean, Map, Consumer)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public static void toSolrInputDocuments(
-      MetricRegistry registry,
-      List<MetricFilter> shouldMatchFilters,
-      MetricFilter mustMatchFilter,
-      PropertyFilter propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      Map<String, Object> metadata,
-      Consumer<SolrInputDocument> consumer) {
-    toSolrInputDocuments(
-        registry,
-        shouldMatchFilters,
-        mustMatchFilter,
-        PropertyFilter.toPredicate(propertyFilter),
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        metadata,
-        consumer);
-  }
   /**
    * Provides a representation of the given metric registry as {@link SolrInputDocument}-s. Only
    * those metrics are converted which match at least one of the given MetricFilter instances.
@@ -245,8 +192,7 @@ public class MetricUtils {
             doc.addField(key, v);
           }
         };
-    if (o instanceof MapWriter) {
-      MapWriter writer = (MapWriter) o;
+    if (o instanceof MapWriter writer) {
       writer._forEachEntry(consumer);
     } else if (o instanceof Map) {
       @SuppressWarnings({"unchecked"})
@@ -254,14 +200,13 @@ public class MetricUtils {
       for (Map.Entry<String, Object> entry : map.entrySet()) {
         consumer.accept(entry.getKey(), entry.getValue());
       }
-    } else if (o instanceof IteratorWriter) {
-      IteratorWriter writer = (IteratorWriter) o;
+    } else if (o instanceof IteratorWriter writer) {
       final String name = prefix != null ? prefix : "value";
       try {
         writer.writeIter(
             new IteratorWriter.ItemWriter() {
               @Override
-              public IteratorWriter.ItemWriter add(Object o) throws IOException {
+              public IteratorWriter.ItemWriter add(Object o) {
                 consumer.accept(name, o);
                 return this;
               }
@@ -275,44 +220,6 @@ public class MetricUtils {
     }
   }
 
-  /**
-   * Convert selected metrics to maps or to flattened objects.
-   *
-   * @param registry source of metrics
-   * @param shouldMatchFilters metrics must match any of these filters
-   * @param mustMatchFilter metrics must match this filter
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param simple use simplified representation for complex metrics - instead of a (name, map) only
-   *     the selected (name "." key, value) pairs will be produced.
-   * @param consumer consumer that accepts produced objects
-   * @deprecated use {@link #toMaps(MetricRegistry, List, MetricFilter, Predicate, boolean, boolean,
-   *     boolean, boolean, BiConsumer)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public static void toMaps(
-      MetricRegistry registry,
-      List<MetricFilter> shouldMatchFilters,
-      MetricFilter mustMatchFilter,
-      PropertyFilter propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      boolean simple,
-      BiConsumer<String, Object> consumer) {
-    toMaps(
-        registry,
-        shouldMatchFilters,
-        mustMatchFilter,
-        PropertyFilter.toPredicate(propertyFilter),
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        simple,
-        consumer);
-  }
   /**
    * Convert selected metrics to maps or to flattened objects.
    *
@@ -406,7 +313,7 @@ public class MetricUtils {
               convertMetric(
                   n,
                   metric,
-                  PropertyFilter.ALL,
+                  (s) -> true,
                   skipHistograms,
                   skipAggregateValues,
                   compact,
@@ -416,43 +323,6 @@ public class MetricUtils {
             });
   }
 
-  /**
-   * Convert a single instance of metric into a map or flattened object.
-   *
-   * @param n metric name
-   * @param metric metric instance
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param simple use simplified representation for complex metrics - instead of a (name, map) only
-   *     the selected (name "." key, value) pairs will be produced.
-   * @param consumer consumer that accepts produced objects
-   * @deprecated use {@link #convertMetric(String, Metric, Predicate, boolean, boolean, boolean,
-   *     boolean, String, BiConsumer)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public static void convertMetric(
-      String n,
-      Metric metric,
-      PropertyFilter propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      boolean simple,
-      String separator,
-      BiConsumer<String, Object> consumer) {
-    convertMetric(
-        n,
-        metric,
-        PropertyFilter.toPredicate(propertyFilter),
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        simple,
-        separator,
-        consumer);
-  }
   /**
    * Convert a single instance of metric into a map or flattened object.
    *
@@ -476,11 +346,9 @@ public class MetricUtils {
       boolean simple,
       String separator,
       BiConsumer<String, Object> consumer) {
-    if (metric instanceof Counter) {
-      Counter counter = (Counter) metric;
+    if (metric instanceof Counter counter) {
       convertCounter(n, counter, propertyFilter, compact, consumer);
-    } else if (metric instanceof Gauge) {
-      Gauge<?> gauge = (Gauge<?>) metric;
+    } else if (metric instanceof Gauge<?> gauge) {
       // unwrap if needed
       if (gauge instanceof SolrMetricManager.GaugeWrapper) {
         gauge = ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge();
@@ -500,11 +368,9 @@ public class MetricUtils {
           throw ie;
         }
       }
-    } else if (metric instanceof Meter) {
-      Meter meter = (Meter) metric;
+    } else if (metric instanceof Meter meter) {
       convertMeter(n, meter, propertyFilter, simple, separator, consumer);
-    } else if (metric instanceof Timer) {
-      Timer timer = (Timer) metric;
+    } else if (metric instanceof Timer timer) {
       convertTimer(n, timer, propertyFilter, skipHistograms, simple, separator, consumer);
     } else if (metric instanceof Histogram) {
       if (!skipHistograms) {
@@ -666,37 +532,6 @@ public class MetricUtils {
    * @param simple use simplified representation for complex metrics - instead of a (name, map) only
    *     the selected (name "." key, value) pairs will be produced.
    * @param consumer consumer that accepts produced objects
-   * @deprecated use {@link #convertTimer(String, Timer, Predicate, boolean, boolean, String,
-   *     BiConsumer)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public static void convertTimer(
-      String name,
-      Timer timer,
-      PropertyFilter propertyFilter,
-      boolean skipHistograms,
-      boolean simple,
-      String separator,
-      BiConsumer<String, Object> consumer) {
-    convertTimer(
-        name,
-        timer,
-        PropertyFilter.toPredicate(propertyFilter),
-        skipHistograms,
-        simple,
-        separator,
-        consumer);
-  }
-  /**
-   * Convert a {@link Timer} to a map.
-   *
-   * @param name metric name
-   * @param timer timer instance
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms if true then discard the histogram part of the timer.
-   * @param simple use simplified representation for complex metrics - instead of a (name, map) only
-   *     the selected (name "." key, value) pairs will be produced.
-   * @param consumer consumer that accepts produced objects
    */
   public static void convertTimer(
       String name,
@@ -801,6 +636,7 @@ public class MetricUtils {
       }
     }
   }
+
   /**
    * Convert a {@link Gauge}.
    *
@@ -932,24 +768,39 @@ public class MetricUtils {
   public static <T extends PlatformManagedObject> void addMXBeanMetrics(
       T obj, Class<? extends T> intf, String prefix, BiConsumer<String, Metric> consumer) {
     if (intf.isInstance(obj)) {
-      BeanInfo beanInfo;
-      try {
-        beanInfo =
-            Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
-      } catch (IntrospectionException e) {
-        log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
+      BeanInfo beanInfo =
+          beanInfos.computeIfAbsent(
+              intf,
+              clazz -> {
+                try {
+                  return Introspector.getBeanInfo(
+                      clazz, clazz.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+
+                } catch (IntrospectionException e) {
+                  log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
+                  return null;
+                }
+              });
+
+      // if BeanInfo retrieval failed, return early
+      if (beanInfo == null) {
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
-        final String name = desc.getName();
-        // test if it works at all
         try {
-          desc.getReadMethod().invoke(obj);
+          Method readMethod = desc.getReadMethod();
+          if (readMethod == null) {
+            continue; // skip properties without a read method
+          }
+
+          final String name = desc.getName();
+          // test if it works at all
+          readMethod.invoke(obj);
           // worked - consume it
           final Gauge<?> gauge =
               () -> {
                 try {
-                  return desc.getReadMethod().invoke(obj);
+                  return readMethod.invoke(obj);
                 } catch (InvocationTargetException ite) {
                   // ignore (some properties throw UOE)
                   return null;
@@ -995,7 +846,7 @@ public class MetricUtils {
       try {
         final Class<? extends PlatformManagedObject> intf =
             Class.forName(clazz).asSubclass(PlatformManagedObject.class);
-        MetricUtils.addMXBeanMetrics(obj, intf, null, consumer);
+        MetricUtils.addMXBeanMetrics(obj, intf, prefix, consumer);
       } catch (ClassNotFoundException e) {
         // ignore
       }

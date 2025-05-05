@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
@@ -41,7 +40,6 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -88,7 +86,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
         new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = httpBasedCloudSolrClient.getClusterStateProvider();
       assertTrue(csp instanceof Http2ClusterStateProvider);
-      verifyUrlSchemeInClusterState(csp.getClusterState(), collectionId, expectedReplicas);
+      verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
     }
 
     // http2
@@ -97,20 +95,19 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
             .build()) {
       ClusterStateProvider csp = http2BasedClient.getClusterStateProvider();
       assertTrue(csp instanceof Http2ClusterStateProvider);
-      verifyUrlSchemeInClusterState(csp.getClusterState(), collectionId, expectedReplicas);
+      verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
     }
 
     // Zk cluster state now
     ClusterStateProvider csp = cluster.getSolrClient().getClusterStateProvider();
     assertTrue(csp instanceof ZkClientClusterStateProvider);
-    verifyUrlSchemeInClusterState(csp.getClusterState(), collectionId, expectedReplicas);
+    verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
   }
 
   private void verifyUrlSchemeInClusterState(
-      final ClusterState cs, final String collectionId, final int expectedReplicas) {
-    DocCollection dc = cs.getCollection(collectionId);
-    assertNotNull(dc);
-    List<Replica> replicas = dc.getReplicas();
+      final DocCollection collection, final int expectedReplicas) {
+    assertNotNull(collection);
+    List<Replica> replicas = collection.getReplicas();
     assertNotNull(replicas);
     assertEquals(expectedReplicas, replicas.size());
     for (Replica r : replicas) {

@@ -20,26 +20,28 @@ public interface CommonAdminParams {
 
   /** Async or not? * */
   String ASYNC = "async";
+
   /** Wait for final state of the operation. */
   String WAIT_FOR_FINAL_STATE = "waitForFinalState";
+
   /** Allow in-place move of replicas that use shared filesystems. */
   String IN_PLACE_MOVE = "inPlaceMove";
+
   /** Method to use for shard splitting. */
   String SPLIT_METHOD = "splitMethod";
+
   /** Key to use during shard splitting */
   String SPLIT_KEY = "split.key";
+
   /** Check distribution of documents to prefixes in shard to determine how to split */
   String SPLIT_BY_PREFIX = "splitByPrefix";
+
   /** Number of sub-shards to create. * */
   String NUM_SUB_SHARDS = "numSubShards";
+
   /** Timeout for replicas to become active. */
   String TIMEOUT = "timeout";
+
   /** Inexact shard splitting factor. */
   String SPLIT_FUZZ = "splitFuzz";
-  /**
-   * Boolean param to set the preferred leader property on one replica of each sub-shard,
-   * automatically when splitting a shard. The preferred leaders are distributed evenly among the
-   * nodes.
-   */
-  String SPLIT_SET_PREFERRED_LEADERS = "split.setPreferredLeaders";
 }

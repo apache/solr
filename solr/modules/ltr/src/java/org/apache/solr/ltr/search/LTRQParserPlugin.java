@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
@@ -155,8 +156,8 @@ public class LTRQParserPlugin extends QParserPlugin
             SolrException.ErrorCode.BAD_REQUEST, "Must provide one or two models in the request");
       }
       final boolean isInterleaving = (modelNames.length > 1);
-      final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
-      final String tranformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
+      final boolean isLoggingFeatures = SolrQueryRequestContextUtils.isLoggingFeatures(req);
+
       final Map<String, String[]> externalFeatureInfo = extractEFIParams(localParams);
 
       LTRScoringQuery rerankingQuery = null;
@@ -175,37 +176,44 @@ public class LTRQParserPlugin extends QParserPlugin
                 SolrException.ErrorCode.BAD_REQUEST,
                 "cannot find " + LTRQParserPlugin.MODEL + " " + modelNames[i]);
           }
-          final String modelFeatureStoreName = ltrScoringModel.getFeatureStoreName();
-          // Check if features are requested and if the model feature store and feature-transform
-          // feature store are the same
-          final boolean featuresRequestedFromSameStore =
-              (modelFeatureStoreName.equals(tranformerFeatureStoreName)
-                      || tranformerFeatureStoreName == null)
-                  ? extractFeatures
-                  : false;
 
           if (isInterleaving) {
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
-                        ltrScoringModel,
-                        externalFeatureInfo,
-                        featuresRequestedFromSameStore,
-                        threadManager);
+                        ltrScoringModel, externalFeatureInfo, threadManager);
           } else {
             rerankingQuery =
-                new LTRScoringQuery(
-                    ltrScoringModel,
-                    externalFeatureInfo,
-                    featuresRequestedFromSameStore,
-                    threadManager);
+                new LTRScoringQuery(ltrScoringModel, externalFeatureInfo, threadManager);
             rerankingQueries[i] = null;
           }
 
-          // Enable the feature vector caching if we are extracting features, and the features
-          // we requested are the same ones we are reranking with
-          if (featuresRequestedFromSameStore) {
-            rerankingQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
+          if (isLoggingFeatures) {
+            FeatureLogger featureLogger = SolrQueryRequestContextUtils.getFeatureLogger(req);
+            final String modelFeatureStore = ltrScoringModel.getFeatureStoreName();
+            final String loggerFeatureStore = SolrQueryRequestContextUtils.getFvStoreName(req);
+            final boolean isSameFeatureStore =
+                (modelFeatureStore.equals(loggerFeatureStore) || loggerFeatureStore == null);
+
+            if (isSameFeatureStore) {
+              if (featureLogger.isLoggingAll() == null) {
+                featureLogger.setLogAll(false); // default to log only model features
+              }
+              rerankingQuery.setFeatureLogger(featureLogger);
+            } else {
+              if (featureLogger.isLoggingAll() == null) {
+                featureLogger.setLogAll(true); // default to log all features from the store
+              }
+              if (!featureLogger.isLoggingAll()) {
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "the feature store '"
+                        + loggerFeatureStore
+                        + "' in the logger is different from the model feature store '"
+                        + modelFeatureStore
+                        + "', you can only log all the features from the store");
+              }
+            }
           }
         } else {
           rerankingQuery =

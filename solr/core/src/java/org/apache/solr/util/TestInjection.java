@@ -16,11 +16,18 @@
  */
 package org.apache.solr.util;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -38,6 +45,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.QueryLimit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,7 +161,25 @@ public class TestInjection {
 
   public static volatile AtomicInteger countDocSetDelays = new AtomicInteger(0);
 
+  public static volatile QueryLimit queryTimeout = null;
+
   public static volatile boolean failInExecutePlanAction = false;
+
+  public static volatile AtomicInteger cpuTimerDelayInjectedNS = null;
+
+  private static final KeyPairGenerator kpg;
+
+  static {
+    KeyPairGenerator generator;
+    try {
+      generator = KeyPairGenerator.getInstance("RSA");
+    } catch (NoSuchAlgorithmException e) {
+      generator = null;
+    }
+    kpg = generator;
+  }
+
+  private static volatile AtomicDouble cpuLoadPerKey = null;
 
   /**
    * Defaults to <code>false</code>, If set to <code>true</code>, then {@link
@@ -199,6 +225,7 @@ public class TestInjection {
     failInExecutePlanAction = false;
     skipIndexWriterCommitOnClose = false;
     uifOutOfMemoryError = false;
+    queryTimeout = null;
     notifyPauseForeverDone();
     newSearcherHooks.clear();
     for (Timer timer : timers) {
@@ -525,6 +552,55 @@ public class TestInjection {
       }
     }
     return true;
+  }
+
+  public static void measureCpu() {
+    if (kpg == null || cpuLoadPerKey != null) {
+      return;
+    }
+    long start = System.nanoTime();
+    for (int i = 0; i < 100; i++) {
+      genKeyPairAndDiscard();
+    }
+    // note that this is potentially imprecise because our thread could get paused in the middle of
+    // this, but
+    // it should give us some notion
+    long end = System.nanoTime();
+    cpuLoadPerKey = new AtomicDouble((end - start) / 100.0);
+    log.info("CPU per key = {}", cpuLoadPerKey);
+  }
+
+  private static void genKeyPairAndDiscard() {
+    kpg.initialize(1024);
+    KeyPair kp = kpg.generateKeyPair();
+    // avoid this getting optimized away by logging it
+    if (log.isTraceEnabled()) {
+      log.trace("{}", kp.getPublic());
+    }
+  }
+
+  private static void wasteCpu(int nanos) {
+    double wasteMe = nanos;
+    double loadPerKey = cpuLoadPerKey.get();
+    if (loadPerKey > nanos) {
+      java.text.DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+
+      DecimalFormat formatter = new DecimalFormat("#,###.00", symbols);
+      // yes this is still wasting formatting when not warn, but not important here.
+      log.warn(
+          "Test requests smaller simulated cpu lag than a single keypair generation actual lag is {} ns",
+          formatter.format(loadPerKey));
+    }
+    do {
+      genKeyPairAndDiscard();
+    } while ((wasteMe = wasteMe - loadPerKey) > 0.0);
+  }
+
+  public static void injectCpuUseInSearcherCpuLimitCheck() {
+    if (LUCENE_TEST_CASE == null) return;
+    if (cpuTimerDelayInjectedNS != null) {
+      wasteCpu(cpuTimerDelayInjectedNS.get());
+    }
   }
 
   public static boolean injectReindexFailure() {

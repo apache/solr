@@ -16,10 +16,11 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -33,17 +34,18 @@ import org.junit.Test;
 
 public class ResponseHeaderTest extends SolrJettyTestBase {
 
-  private static File solrHomeDirectory;
+  private static Path solrHomeDirectory;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrHomeDirectory = createTempDir().toFile();
+    solrHomeDirectory = createTempDir();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(
-        new File(top, "solrconfig-headers.xml"),
-        new File(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"));
-    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
+    Files.copy(
+        Path.of(top, "solrconfig-headers.xml"),
+        Path.of(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+    createAndStartJetty(solrHomeDirectory);
   }
 
   @AfterClass
@@ -55,7 +57,7 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
 
   @Test
   public void testHttpResponse() throws IOException {
-    URI uri = URI.create(jetty.getBaseUrl() + "/collection1/withHeaders?q=*:*");
+    URI uri = URI.create(getBaseUrl() + "/collection1/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
     HttpResponse response = getHttpClient().execute(httpGet);
     Header[] headers = response.getAllHeaders();

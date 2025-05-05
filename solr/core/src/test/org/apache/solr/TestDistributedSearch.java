@@ -31,12 +31,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -1141,8 +1139,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
               "stat should be a Number: " + s + " -> " + svals.get(s).getClass(),
               svals.get(s) instanceof Number);
           // some loose assertions since we're iterating over various stats
-          if (svals.get(s) instanceof Double) {
-            Double val = (Double) svals.get(s);
+          if (svals.get(s) instanceof Double val) {
             assertFalse("stat shouldn't be NaN: " + s, val.isNaN());
             assertFalse("stat shouldn't be Inf: " + s, val.isInfinite());
             assertNotEquals("stat shouldn't be 0: " + s, 0.0D, val, 0.0);
@@ -1558,7 +1555,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     rsp = queryServer(q);
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
     String shards = getShardsString();
-    int cnt = StringUtils.countMatches(shards, ",") + 1;
+    int cnt = shards.length() - shards.replace(",", "").length() + 1;
 
     assertNotNull("missing shard info", sinfo);
     assertEquals(
@@ -1711,7 +1708,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           tdate_b,
           "stats.calcdistinct",
           "true");
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+    } catch (SolrClient.RemoteSolrException e) {
       if (e.getMessage().startsWith("java.lang.NullPointerException")) {
         fail("NullPointerException with stats request on empty index");
       } else {

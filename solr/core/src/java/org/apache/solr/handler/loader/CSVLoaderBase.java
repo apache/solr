@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -366,19 +365,7 @@ public abstract class CSVLoaderBase extends ContentStreamLoader {
       UpdateRequestProcessor processor)
       throws IOException {
     errHeader = "CSVLoader: input=" + stream.getSourceInfo();
-    Reader reader = null;
-    try {
-      reader = stream.getReader();
-      if (skipLines > 0) {
-        if (!(reader instanceof BufferedReader)) {
-          reader = new BufferedReader(reader);
-        }
-        BufferedReader r = (BufferedReader) reader;
-        for (int i = 0; i < skipLines; i++) {
-          r.readLine();
-        }
-      }
-
+    try (Reader reader = getReader(stream)) {
       CSVParser parser = new CSVParser(reader, strategy);
 
       // parse the fieldnames from the header of the file
@@ -409,11 +396,21 @@ public abstract class CSVLoaderBase extends ContentStreamLoader {
 
         addDoc(line, vals);
       }
-    } finally {
-      if (reader != null) {
-        IOUtils.closeQuietly(reader);
+    }
+  }
+
+  private Reader getReader(ContentStream cs) throws IOException {
+    Reader reader = cs.getReader();
+    if (skipLines > 0) {
+      if (!(reader instanceof BufferedReader)) {
+        reader = new BufferedReader(reader);
+      }
+      BufferedReader r = (BufferedReader) reader;
+      for (int i = 0; i < skipLines; i++) {
+        r.readLine();
       }
     }
+    return reader;
   }
 
   /** called for each line of values (document) */

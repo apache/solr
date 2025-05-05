@@ -18,17 +18,19 @@
 package org.apache.solr.packagemanager;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -79,10 +81,7 @@ public class DefaultPackageRepository extends PackageRepository {
   public Path download(String artifactName) throws SolrException, IOException {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
     tmpDirectory.toFile().deleteOnExit();
-    URL url =
-        new URL(
-            new URL(repositoryURL.endsWith("/") ? repositoryURL : repositoryURL + "/"),
-            artifactName);
+    URL url = getRepoUri().resolve(artifactName).toURL();
     String fileName = FilenameUtils.getName(url.getPath());
     Path destination = tmpDirectory.resolve(fileName);
 
@@ -100,21 +99,24 @@ public class DefaultPackageRepository extends PackageRepository {
     return destination;
   }
 
-  private void initPackages() {
-    try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-      SolrPackage[] items =
-          PackageUtils.getJson(client, repositoryURL + "/repository.json", SolrPackage[].class);
+  private URI getRepoUri() {
+    return URI.create(repositoryURL.endsWith("/") ? repositoryURL : repositoryURL + "/");
+  }
 
-      packages = new HashMap<>(items.length);
-      for (SolrPackage pkg : items) {
-        pkg.setRepository(name);
-        packages.put(pkg.name, pkg);
-      }
+  private void initPackages() {
+    try {
+      final var url = getRepoUri().resolve("repository.json").toURL();
+      packages =
+          PackageUtils.getMapper()
+              .readValue(url, new TypeReference<List<SolrPackage>>() {})
+              .stream()
+              .peek(pkg -> pkg.setRepository(name))
+              .collect(Collectors.toMap(pkg -> pkg.name, Function.identity()));
     } catch (IOException ex) {
       throw new SolrException(ErrorCode.INVALID_STATE, ex);
     }
     if (log.isDebugEnabled()) {
-      log.debug("Found {} packages in repository '{}'", packages.size(), name);
+      log.debug("Found {} packages in repository '{}'", this.packages.size(), name);
     }
   }
 }

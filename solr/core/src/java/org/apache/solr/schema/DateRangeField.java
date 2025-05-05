@@ -65,8 +65,9 @@ public class DateRangeField
 
   @Override
   public List<IndexableField> createFields(SchemaField field, Object val) {
-    if (val instanceof Date || val instanceof Calendar) // From URP?
-    val = tree.toUnitShape(val);
+    if (val instanceof Date || val instanceof Calendar) { // From URP?
+      val = tree.toUnitShape(val);
+    }
     return super.createFields(field, val);
   }
 
@@ -74,8 +75,7 @@ public class DateRangeField
   protected String getStoredValue(Shape shape, String shapeStr) {
     // even if shapeStr is set, it might have included some dateMath, so see if we can resolve it
     // first:
-    if (shape instanceof UnitNRShape) {
-      UnitNRShape unitShape = (UnitNRShape) shape;
+    if (shape instanceof UnitNRShape unitShape) {
       if (unitShape.getLevel() == tree.getMaxLevels()) {
         // fully precise date. We can be fully compatible with DatePointField (incl. 'Z')
         return shape.toString() + 'Z';

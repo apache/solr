@@ -17,12 +17,12 @@
 package org.apache.solr.update.processor;
 
 import java.util.Locale;
-import org.apache.commons.lang3.LocaleUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
+import org.apache.solr.util.LocaleUtils;
 
 /**
  * Abstract base class for numeric parsing update processor factories. Subclasses can optionally

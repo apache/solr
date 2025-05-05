@@ -16,15 +16,14 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -42,39 +41,35 @@ public class TestBinaryField extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File homeDir = createTempDir().toFile();
+    Path homeDir = createTempDir();
 
-    File collDir = new File(homeDir, "collection1");
-    File dataDir = new File(collDir, "data");
-    File confDir = new File(collDir, "conf");
+    Path collDir = homeDir.resolve("collection1");
+    Path dataDir = collDir.resolve("data");
+    Path confDir = collDir.resolve("conf");
 
-    homeDir.mkdirs();
-    collDir.mkdirs();
-    dataDir.mkdirs();
-    confDir.mkdirs();
+    Files.createDirectories(homeDir);
+    Files.createDirectories(collDir);
+    Files.createDirectories(dataDir);
+    Files.createDirectories(confDir);
 
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
+    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
 
     String src_dir = TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(
-        new File(src_dir, "schema-binaryfield.xml"), new File(confDir, "schema.xml"));
-    FileUtils.copyFile(
-        new File(src_dir, "solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(
-        new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
-        new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(Path.of(src_dir, "schema-binaryfield.xml"), confDir.resolve("schema.xml"));
+    Files.copy(Path.of(src_dir, "solrconfig-basic.xml"), confDir.resolve("solrconfig.xml"));
+    Files.copy(
+        Path.of(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
+        confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
     try (Writer w =
         new OutputStreamWriter(
-            Files.newOutputStream(collDir.toPath().resolve("core.properties")),
-            StandardCharsets.UTF_8)) {
+            Files.newOutputStream(collDir.resolve("core.properties")), StandardCharsets.UTF_8)) {
       Properties coreProps = new Properties();
       coreProps.put("name", "collection1");
       coreProps.store(w, "");
     }
 
-    createAndStartJetty(homeDir.getAbsolutePath());
+    createAndStartJetty(homeDir);
   }
 
   public void testSimple() throws Exception {
@@ -87,73 +82,78 @@ public class TestBinaryField extends SolrJettyTestBase {
       doc = new SolrInputDocument();
       doc.addField("id", 1);
       doc.addField("data", ByteBuffer.wrap(buf, 2, 5));
+      doc.addField("data_dv", ByteBuffer.wrap(buf, 2, 5));
       client.add(doc);
 
       doc = new SolrInputDocument();
       doc.addField("id", 2);
       doc.addField("data", ByteBuffer.wrap(buf, 4, 3));
+      doc.addField("data_dv", ByteBuffer.wrap(buf, 4, 3));
       client.add(doc);
 
       doc = new SolrInputDocument();
       doc.addField("id", 3);
       doc.addField("data", buf);
+      doc.addField("data_dv", buf);
       client.add(doc);
 
       client.commit();
 
-      QueryResponse resp = client.query(new SolrQuery("*:*"));
+      QueryResponse resp = client.query(new SolrQuery("*:*").setFields("id", "data", "data_dv"));
       SolrDocumentList res = resp.getResults();
       List<Bean> beans = resp.getBeans(Bean.class);
       assertEquals(3, res.size());
       assertEquals(3, beans.size());
       for (SolrDocument d : res) {
-
         Integer id = Integer.parseInt(d.getFieldValue("id").toString());
-        byte[] data = (byte[]) d.getFieldValue("data");
-        if (id == 1) {
-          assertEquals(5, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 2), b);
-          }
+        for (String field : new String[] {"data", "data_dv"}) {
+          byte[] data = (byte[]) d.getFieldValue(field);
+          if (id == 1) {
+            assertEquals(5, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) (i + 2), b);
+            }
 
-        } else if (id == 2) {
-          assertEquals(3, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 4), b);
-          }
+          } else if (id == 2) {
+            assertEquals(3, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) (i + 4), b);
+            }
 
-        } else if (id == 3) {
-          assertEquals(10, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) i, b);
+          } else if (id == 3) {
+            assertEquals(10, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) i, b);
+            }
           }
         }
       }
       for (Bean d : beans) {
         Integer id = Integer.parseInt(d.id);
-        byte[] data = d.data;
-        if (id == 1) {
-          assertEquals(5, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 2), b);
-          }
+        for (byte[] data : new byte[][] {d.data, d.data_dv}) {
+          if (id == 1) {
+            assertEquals(5, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) (i + 2), b);
+            }
 
-        } else if (id == 2) {
-          assertEquals(3, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 4), b);
-          }
+          } else if (id == 2) {
+            assertEquals(3, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) (i + 4), b);
+            }
 
-        } else if (id == 3) {
-          assertEquals(10, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) i, b);
+          } else if (id == 3) {
+            assertEquals(10, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) i, b);
+            }
           }
         }
       }
@@ -163,5 +163,6 @@ public class TestBinaryField extends SolrJettyTestBase {
   public static class Bean {
     @Field String id;
     @Field byte[] data;
+    @Field byte[] data_dv;
   }
 }

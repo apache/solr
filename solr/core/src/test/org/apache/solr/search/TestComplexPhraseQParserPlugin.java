@@ -211,6 +211,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='2']",
         "//lst[@name='2']/arr[@name='name']/str[.='<em>johathon</em> <em>smith</em> smith johathon']");
 
+    /* no longer supported since Lucene 9.5 but that's okay!
     args.put(HighlightParams.USE_PHRASE_HIGHLIGHTER, Boolean.FALSE.toString());
     sumLRF = h.getRequestFactory("", 0, 200, args);
     assertQ(
@@ -220,18 +221,17 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
         "//lst[@name='1']/arr[@name='name']/str[.='<em>john</em> <em>smith</em> <em>smith</em> <em>john</em>']",
         "//lst[@name='highlighting']/lst[@name='2']",
         "//lst[@name='2']/arr[@name='name']/str[.='<em>johathon</em> <em>smith</em> <em>smith</em> <em>johathon</em>']");
-
-    /*
-     assertQ("Highlight Plain Prefix Query Test",
-             sumLRF.makeRequest("name:jo*"),
-             "//lst[@name='highlighting']/lst[@name='1']",
-             "//lst[@name='1']/arr[@name='name']/str[.='<em>john</em> smith smith <em>john</em>']",
-             "//lst[@name='highlighting']/lst[@name='2']",
-             "//lst[@name='2']/arr[@name='name']/str[.='<em>johathon</em> smith smith <em>johathon</em>']",
-             "//lst[@name='highlighting']/lst[@name='3']",
-             "//lst[@name='3']/arr[@name='name']/str[.='<em>john</em> percival smith']"
-     );
     */
+
+    assertQ(
+        "Highlight Plain Prefix Query Test",
+        sumLRF.makeRequest("name:jo*"),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        "//lst[@name='1']/arr[@name='name']/str[.='<em>john</em> smith smith <em>john</em>']",
+        "//lst[@name='highlighting']/lst[@name='2']",
+        "//lst[@name='2']/arr[@name='name']/str[.='<em>johathon</em> smith smith <em>johathon</em>']",
+        "//lst[@name='highlighting']/lst[@name='3']",
+        "//lst[@name='3']/arr[@name='name']/str[.='<em>john</em> percival smith']");
   }
 
   @Test
@@ -351,6 +351,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
         "//doc[./str[@name='id']='3']",
         "//doc[./str[@name='id']='4']");
   }
+
   /** the query "sulfur-reducing bacteria" was crashing due to the dash inside the phrase. */
   @Test
   public void testHyphenInPhrase() {

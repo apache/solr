@@ -24,7 +24,6 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -49,7 +48,6 @@ public class SqlStream extends TupleStream implements Expressible {
   protected String zkHost;
   protected String collection;
   protected SolrParams params;
-  protected transient CloudSolrClient cloudSolrClient;
   protected transient TupleStream tupleStream;
   protected transient StreamContext streamContext;
 
@@ -78,7 +76,7 @@ public class SqlStream extends TupleStream implements Expressible {
       collectionName = factory.getDefaultCollection();
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(

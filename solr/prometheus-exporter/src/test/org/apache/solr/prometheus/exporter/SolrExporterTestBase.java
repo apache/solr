@@ -20,26 +20,32 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
+import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.junit.After;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Test base class. */
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class SolrExporterTestBase extends PrometheusExporterTestBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private SolrExporter solrExporter;
   private CloseableHttpClient httpClient;
@@ -57,20 +63,34 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
 
   protected void startMetricsExporterWithConfiguration(String scrapeConfiguration)
       throws Exception {
-    try (ServerSocket socket = new ServerSocket(0)) {
-      promtheusExporterPort = socket.getLocalPort();
+
+    final int maxAttempts = 3;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try (ServerSocket socket = new ServerSocket(0)) {
+        promtheusExporterPort = socket.getLocalPort();
+      }
+
+      try {
+        solrExporter =
+            new SolrExporter(
+                promtheusExporterPort,
+                25,
+                10,
+                SolrScrapeConfiguration.solrCloud(cluster.getZkServer().getZkAddress()),
+                Helpers.loadConfiguration(scrapeConfiguration),
+                "test");
+
+        solrExporter.start();
+        break;
+      } catch (BindException e) {
+        solrExporter.stop();
+        if (attempt == maxAttempts) {
+          throw e;
+        }
+        log.warn("Failed to start exporter with port bind exception, retrying on a new port");
+      }
     }
 
-    solrExporter =
-        new SolrExporter(
-            promtheusExporterPort,
-            25,
-            10,
-            SolrScrapeConfiguration.solrCloud(cluster.getZkServer().getZkAddress()),
-            Helpers.loadConfiguration(scrapeConfiguration),
-            "test");
-
-    solrExporter.start();
     httpClient = HttpClients.createDefault();
 
     for (int i = 0; i < 50; ++i) {

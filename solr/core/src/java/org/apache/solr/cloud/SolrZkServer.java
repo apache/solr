@@ -16,13 +16,10 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -30,6 +27,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.AddressUtils;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
@@ -52,10 +50,10 @@ public class SolrZkServer {
 
   private Thread zkThread; // the thread running a zookeeper server, only if zkRun is set
 
-  private File dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
+  private Path dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
   private String confHome;
 
-  public SolrZkServer(String zkRun, String zkHost, File dataHome, String confHome, int solrPort) {
+  public SolrZkServer(String zkRun, String zkHost, Path dataHome, String confHome, int solrPort) {
     this.zkRun = zkRun;
     this.zkHost = zkHost;
     this.dataHome = dataHome;
@@ -72,7 +70,15 @@ public class SolrZkServer {
     if (zkRun == null) return null;
 
     InetSocketAddress addr = zkProps.getClientPortAddress();
-    return addr.getHostString() + ":" + addr.getPort();
+    String hostName;
+    // We cannot advertise 0.0.0.0, so choose the best host to advertise
+    // (the same that the Solr Node defaults to)
+    if (addr.getAddress().isAnyLocalAddress()) {
+      hostName = AddressUtils.getHostToAdvertise();
+    } else {
+      hostName = addr.getAddress().getHostAddress();
+    }
+    return hostName + ":" + addr.getPort();
   }
 
   public void parseConfig() {
@@ -101,6 +107,10 @@ public class SolrZkServer {
     try {
       props = SolrZkServerProps.getProperties(zooCfgPath);
       SolrZkServerProps.injectServers(props, zkRun, zkHost);
+      // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
+      // "127.0.0.1".
+      props.setProperty(
+          "clientPortAddress", System.getProperty("solr.zk.embedded.host", "127.0.0.1"));
       if (props.getProperty("clientPort") == null) {
         props.setProperty("clientPort", Integer.toString(solrPort + 1000));
       }
@@ -145,19 +155,18 @@ public class SolrZkServer {
     if (zkProps.getServers().size() > 1) {
       if (log.isInfoEnabled()) {
         log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}",
-            zkProps.getClientPortAddress().getPort());
+            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
+            zkProps.getClientPortAddress().getPort(),
+            zkProps.getClientPortAddress().getAddress().getHostAddress());
       }
     } else {
       if (log.isInfoEnabled()) {
         log.info(
-            "STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER at port {}",
-            zkProps.getClientPortAddress().getPort());
+            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
+            zkProps.getClientPortAddress().getPort(),
+            zkProps.getClientPortAddress().getAddress().getHostAddress());
       }
     }
-
-    log.warn(
-        "Embedded Zookeeper is not recommended in production environments. See Reference Guide for details.");
 
     zkThread.setDaemon(true);
     zkThread.start();
@@ -264,22 +273,8 @@ class SolrZkServerProps extends QuorumPeerConfig {
     return false;
   }
 
-  public void setDataDir(File dataDir) {
-    this.dataDir = dataDir;
-  }
-
-  public void setClientPort(int clientPort) {
-    if (clientPortAddress != null) {
-      try {
-        this.clientPortAddress =
-            new InetSocketAddress(
-                InetAddress.getByName(clientPortAddress.getHostName()), clientPort);
-      } catch (UnknownHostException e) {
-        throw new RuntimeException(e);
-      }
-    } else {
-      this.clientPortAddress = new InetSocketAddress(clientPort);
-    }
+  public void setDataDir(Path dataDir) {
+    this.dataDir = dataDir.toFile();
   }
 
   /**

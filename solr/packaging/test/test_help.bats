@@ -21,74 +21,88 @@ setup() {
   common_clean_setup
 }
 
+@test "solr help flag prints help" {
+  run -1 solr --help
+  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  refute_output --partial 'ERROR'
+}
+@test "solr with no flags prints help" {
+  run -1 solr
+  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  refute_output --partial 'ERROR'
+}
+
 @test "start help flag prints help" {
-  run solr start -help
+  run solr start --help
   assert_output --partial 'Usage: solr start'
   refute_output --partial 'ERROR'
 }
 
+@test "start h flag prints help" {
+  run solr start -h
+  assert_output --partial 'Usage: solr start'
+  refute_output --partial 'ERROR: Hostname is required when using the -h option!'
+}
+
+
+
 @test "stop help flag prints help" {
-  run solr stop -help
+  run solr stop --help
   assert_output --partial 'Usage: solr stop'
   refute_output --partial 'ERROR'
 }
 
 @test "restart help flag prints help" {
-  run solr restart -help
+  run solr restart --help
   assert_output --partial 'Usage: solr restart'
   refute_output --partial 'ERROR'
 }
 
 @test "status help flag prints help" {
-  skip "Currently the status -help flag doesn't return nice help text!"
+  run solr status --help
+  assert_output --partial 'usage: bin/solr status'
+  refute_output --partial 'ERROR'
 }
 
 @test "healthcheck help flag prints help" {
-  run solr healthcheck -help
-  assert_output --partial 'Usage: solr healthcheck'
+  run solr healthcheck --help
+  assert_output --partial 'usage: bin/solr healthcheck'
   refute_output --partial 'ERROR'
 }
 
 @test "create help flag prints help" {
-  run solr create -help
-  assert_output --partial 'Usage: solr create'
-  refute_output --partial 'ERROR'
-}
-
-@test "createcore help flag prints help" {
-  run solr create_core -help
-  assert_output --partial 'Usage: solr create_core'
-  refute_output --partial 'ERROR'
-}
-
-@test "createcollection help flag prints help" {
-  run solr create_collection -help
-  assert_output --partial 'Usage: solr create_collection'
+  run solr create --help
+  assert_output --partial 'usage: bin/solr create'
   refute_output --partial 'ERROR'
 }
 
 @test "delete help flag prints help" {
-  run solr delete -help
-  assert_output --partial 'Usage: solr delete'
+  run solr delete -h
+  assert_output --partial 'usage: bin/solr delete'
   refute_output --partial 'ERROR'
 }
 
-@test "version help flag prints help" {
-  skip "Currently the version -help flag doesn't return nice help text!"
-}
-
 @test "zk help flag prints help" {
-  run solr zk -help
-  assert_output --partial 'Usage: solr zk'
+  run solr zk --help
+  assert_output --partial 'usage:'
+  assert_output --partial 'bin/solr zk ls'
   refute_output --partial 'ERROR'
 }
 
 @test "auth help flag prints help" {
-  run solr auth -help
-  assert_output --partial 'Usage: solr auth'
+  run solr auth --help
+  assert_output --partial 'bin/solr auth enable'
   refute_output --partial 'ERROR'
 }
 
 @test "assert help flag prints help" {
-  skip "Currently the assert -help flag doesn't return nice help text!"
+  run solr assert --help
+  assert_output --partial 'usage: bin/solr assert'
+  refute_output --partial 'ERROR'
+}
+
+@test "post help flag prints help" {
+  run solr post --help
+  assert_output --partial 'usage: bin/solr post'
+  refute_output --partial 'ERROR'
 }

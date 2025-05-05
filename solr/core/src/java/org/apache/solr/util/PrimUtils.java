@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
+
 /** Utilities for primitive Java data types. */
 public class PrimUtils {
 

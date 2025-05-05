@@ -26,13 +26,9 @@ public class RejoinLeaderElectionPayload implements ReflectMapWriter {
   // ones are meant to be required without that being specified on the v1 API or elsewhere
   @JsonProperty public String collection;
 
-  @JsonProperty public String shard;
-
   @JsonProperty public String coreNodeName;
 
   @JsonProperty public String core;
-
-  @JsonProperty public String electionNode;
 
   @JsonProperty public Boolean rejoinAtHead;
 }

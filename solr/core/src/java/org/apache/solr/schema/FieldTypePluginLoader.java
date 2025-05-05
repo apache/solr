@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,7 +35,6 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.slf4j.Logger;
@@ -74,19 +74,19 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
     FieldType ft = loader.newInstance(className, FieldType.class);
     ft.setTypeName(name);
 
-    ConfigNode anode = node.child(it -> "query".equals(it.attributes().get("type")), "analyzer");
+    ConfigNode anode = node.child("analyzer", it -> "query".equals(it.attributes().get("type")));
     Analyzer queryAnalyzer = readAnalyzer(anode);
 
-    anode = node.child(it -> "multiterm".equals(it.attributes().get("type")), "analyzer");
+    anode = node.child("analyzer", it -> "multiterm".equals(it.attributes().get("type")));
     Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
     anode =
         node.child(
+            "analyzer",
             it ->
                 (it.attributes().get("type") == null
-                    || "index".equals(it.attributes().get("type"))),
-            "analyzer");
+                    || "index".equals(it.attributes().get("type"))));
     Analyzer analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
@@ -144,9 +144,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
 
   @Override
   protected void init(FieldType plugin, ConfigNode node) throws Exception {
-
-    Map<String, String> params = DOMUtil.toMapExcept(node, NAME);
-    plugin.setArgs(schema, params);
+    plugin.setArgs(schema, node.attributesExcept(NAME));
   }
 
   @Override
@@ -185,7 +183,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
     // parent node used to be passed in as "fieldtype"
 
     if (node == null) return null;
-    String analyzerName = DOMUtil.getAttr(node, "class", null);
+    String analyzerName = node.attr("class");
 
     // check for all of these up front, so we can error if used in
     // conjunction with an explicit analyzer class.
@@ -213,7 +211,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
         final Class<? extends Analyzer> clazz = loader.findClass(analyzerName, Analyzer.class);
         Analyzer analyzer = clazz.getConstructor().newInstance();
 
-        final String matchVersionStr = DOMUtil.getAttr(node, LUCENE_MATCH_VERSION_PARAM, null);
+        final String matchVersionStr = node.attr(LUCENE_MATCH_VERSION_PARAM);
         final Version luceneMatchVersion =
             (matchVersionStr == null)
                 ? schema.getDefaultLuceneMatchVersion()
@@ -246,7 +244,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
           protected CharFilterFactory create(
               SolrClassLoader loader, String name, String className, ConfigNode node)
               throws Exception {
-            final Map<String, String> params = DOMUtil.toMapExcept(node);
+            final Map<String, String> params = new HashMap<>(node.attributes());
             String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
             params.put(
                 LUCENE_MATCH_VERSION_PARAM,
@@ -310,7 +308,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
           protected TokenizerFactory create(
               SolrClassLoader loader, String name, String className, ConfigNode node)
               throws Exception {
-            final Map<String, String> params = DOMUtil.toMap(node);
+            final Map<String, String> params = new HashMap<>(node.attributes());
             String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
             params.put(
                 LUCENE_MATCH_VERSION_PARAM,
@@ -381,7 +379,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
           protected TokenFilterFactory create(
               SolrClassLoader loader, String name, String className, ConfigNode node)
               throws Exception {
-            final Map<String, String> params = DOMUtil.toMap(node);
+            final Map<String, String> params = new HashMap<>(node.attributes());
             String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
             params.put(
                 LUCENE_MATCH_VERSION_PARAM,
@@ -433,9 +431,9 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
     filterLoader.load(loader, tokenFilterNodes);
 
     return new TokenizerChain(
-        charFilters.toArray(new CharFilterFactory[charFilters.size()]),
+        charFilters.toArray(new CharFilterFactory[0]),
         tokenizers.get(0),
-        filters.toArray(new TokenFilterFactory[filters.size()]));
+        filters.toArray(new TokenFilterFactory[0]));
   }
 
   private Version parseConfiguredVersion(String configuredVersion, String pluginClassName) {

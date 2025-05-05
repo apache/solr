@@ -16,12 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -65,8 +64,8 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     // create and configure cluster
     configureCluster(1)
-        .addConfig(COLL_A, configset("different-stopwords" + File.separator + COLL_A))
-        .addConfig(COLL_B, configset("different-stopwords" + File.separator + COLL_B))
+        .addConfig(COLL_A, configset("different-stopwords/" + COLL_A))
+        .addConfig(COLL_B, configset("different-stopwords/" + COLL_B))
         .configure();
 
     try {
@@ -402,10 +401,10 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
     while (words-- > 0) {
       String word = "";
       if (addNonAlphaChars && (words % 3 == 0)) {
-        word = RandomStringUtils.random(random.nextInt(3), "\\p{Digit}\\p{Punct}");
+        word = RandomStrings.randomAsciiAlphanumOfLength(random, random.nextInt(3));
         System.out.println("generated non-alpha string:" + word);
       } else {
-        word = RandomStringUtils.randomAlphabetic(1, 10);
+        word = RandomStrings.randomAsciiLettersOfLengthBetween(random, 1, 10);
       }
       builder.append(word).append(" ");
     }

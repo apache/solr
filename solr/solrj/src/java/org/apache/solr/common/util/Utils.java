@@ -19,8 +19,12 @@ package org.apache.solr.common.util;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,11 +40,13 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigInteger;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,8 +57,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -70,11 +78,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -89,6 +95,31 @@ import org.slf4j.LoggerFactory;
 public class Utils {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final Random RANDOM;
+
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random
+    // instance based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
+  }
+
+  public static String sha512Digest(ByteBuffer byteBuffer) {
+    MessageDigest digest;
+    try {
+      digest = MessageDigest.getInstance("SHA-512");
+    } catch (NoSuchAlgorithmException e) {
+      // unlikely
+      throw new SolrException(SERVER_ERROR, e);
+    }
+    digest.update(byteBuffer);
+    return String.format(Locale.ROOT, "%0128x", new BigInteger(1, digest.digest()));
+  }
 
   @SuppressWarnings({"rawtypes"})
   public static Map getDeepCopy(Map<?, ?> map, int maxDepth) {
@@ -110,8 +141,8 @@ public class Utils {
     } else {
       copy =
           map instanceof LinkedHashMap
-              ? new LinkedHashMap<>(map.size())
-              : new HashMap<>(map.size());
+              ? CollectionUtil.newLinkedHashMap(map.size())
+              : CollectionUtil.newHashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
@@ -134,8 +165,7 @@ public class Utils {
 
   @SuppressWarnings({"unchecked"})
   public static void forEachMapEntry(Object o, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
-    if (o instanceof MapWriter) {
-      MapWriter m = (MapWriter) o;
+    if (o instanceof MapWriter m) {
       try {
         m.writeMap(
             new MapWriter.EntryWriter() {
@@ -174,7 +204,7 @@ public class Utils {
 
   public static InputStream toJavabin(Object o) throws IOException {
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
-      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+      BAOS baos = new BAOS();
       jbc.marshal(o, baos);
       return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
     }
@@ -214,77 +244,30 @@ public class Utils {
     return writer;
   }
 
-  private static class MapWriterJSONWriter extends JSONWriter {
-
-    public MapWriterJSONWriter(CharArr out, int indentSize) {
-      super(out, indentSize);
-    }
-
-    @Override
-    public void handleUnknownClass(Object o) {
-      // avoid materializing MapWriter / IteratorWriter to Map / List
-      // instead serialize them directly
-      if (o instanceof MapWriter) {
-        MapWriter mapWriter = (MapWriter) o;
-        startObject();
-        final boolean[] first = new boolean[1];
-        first[0] = true;
-        int sz = mapWriter._size();
-        mapWriter._forEachEntry(
-            (k, v) -> {
-              if (first[0]) {
-                first[0] = false;
-              } else {
-                writeValueSeparator();
-              }
-              if (sz > 1) indent();
-              writeString(k.toString());
-              writeNameSeparator();
-              write(v);
-            });
-        endObject();
-      } else if (o instanceof IteratorWriter) {
-        IteratorWriter iteratorWriter = (IteratorWriter) o;
-        startArray();
-        final boolean[] first = new boolean[1];
-        first[0] = true;
-        try {
-          iteratorWriter.writeIter(
-              new IteratorWriter.ItemWriter() {
-                @Override
-                public IteratorWriter.ItemWriter add(Object o) throws IOException {
-                  if (first[0]) {
-                    first[0] = false;
-                  } else {
-                    writeValueSeparator();
-                  }
-                  indent();
-                  write(o);
-                  return this;
-                }
-              });
-        } catch (IOException e) {
-          throw new RuntimeException("this should never happen", e);
-        }
-        endArray();
-      } else {
-        super.handleUnknownClass(o);
-      }
-    }
-  }
-
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    //    if (!(o instanceof List) && !(o instanceof Map)) {
-    //      if (o instanceof MapWriter) {
-    //        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-    //      } else if (o instanceof IteratorWriter) {
-    //        o = ((IteratorWriter) o).toList(new ArrayList<>());
-    //      }
-    //    }
-    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
+    new JSONWriter(out, JSONWriter.DEFAULT_INDENT).write(o); // indentation by default
     return toUTF8(out);
+  }
+
+  /**
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
+   */
+  public static byte[] toJSON(Object o, int indentSize) {
+    if (o == null) return new byte[0];
+    CharArr out = new CharArr();
+    new JSONWriter(out, indentSize).write(o);
+    return toUTF8(out);
+  }
+
+  /**
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
+   */
+  public static String toJSONString(Object o, int indentSize) {
+    return new String(toJSON(o, indentSize), StandardCharsets.UTF_8);
   }
 
   public static String toJSONString(Object o) {
@@ -546,15 +529,14 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return null;
         if (idx > -1) {
-          if (o instanceof MapWriter) {
-            o = getVal(o, null, idx);
-          } else if (o instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = (Map<String, Object>) o;
-            o = getVal(new MapWriterMap(map), null, idx);
-          } else {
-            List<?> l = (List<?>) o;
+          if (o instanceof List<?> l) {
             o = idx < l.size() ? l.get(idx) : null;
+          } else if (o instanceof IteratorWriter) {
+            o = getValueAt((IteratorWriter) o, idx);
+          } else if (o instanceof MapWriter || o instanceof Map<?, ?>) {
+            o = getVal(o, null, idx);
+          } else {
+            return null;
           }
         }
         if (!isMapLike(o)) return null;
@@ -618,32 +600,41 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
-  private static Object getVal(Object obj, String key, int idx) {
-    if (obj instanceof MapWriter) {
+  /** Extract either the key or index from mapLike. */
+  private static Object getVal(Object mapLike, String key, int idx) {
+    assert (key == null && idx >= 0) || (key != null && idx == -1);
+    if (mapLike instanceof Map<?, ?> m) {
+      if (key != null) {
+        return m.get(key);
+      } else {
+        var optEntry = m.entrySet().stream().skip(idx).findFirst();
+        return optEntry
+            .map(entry -> new MapWriterEntry<>(entry.getKey().toString(), entry.getValue()))
+            .orElse(null);
+      }
+    } else if (mapLike instanceof MapWriter mapWriter) {
       Object[] result = new Object[1];
       try {
-        ((MapWriter) obj)
-            .writeMap(
-                new MapWriter.EntryWriter() {
-                  int count = -1;
+        mapWriter.writeMap(
+            new MapWriter.EntryWriter() {
+              int count = -1;
 
-                  @Override
-                  public MapWriter.EntryWriter put(CharSequence k, Object v) {
-                    if (result[0] != null) return this;
-                    if (idx < 0) {
-                      if (key.contentEquals(k)) result[0] = v;
-                    } else {
-                      if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
-                    }
-                    return this;
-                  }
-                });
+              @Override
+              public MapWriter.EntryWriter put(CharSequence k, Object v) {
+                if (result[0] != null) return this;
+                if (idx < 0) {
+                  if (key.contentEquals(k)) result[0] = v;
+                } else {
+                  if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
+                }
+                return this;
+              }
+            });
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
       return result[0];
-    } else if (obj instanceof Map) return ((Map<?, ?>) obj).get(key);
-    else throw new RuntimeException("must be a NamedList or Map");
+    } else throw new RuntimeException("must be a NamedList or Map");
   }
 
   /**
@@ -674,8 +665,13 @@ public class Utils {
    * @throws IOException on problem with IO
    */
   public static void readFully(InputStream is) throws IOException {
-    is.skip(is.available());
-    while (is.read() != -1) {}
+    if (is.read() != -1) { // not needed but avoids skipNBytes's internal buffer allocation
+      try {
+        is.skipNBytes(Long.MAX_VALUE); // throws EOF
+      } catch (EOFException e) {
+        // ignore / expected for skipNBytes
+      }
+    }
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern.compile("(\\S*?)\\[([-]?\\d+)\\]");
@@ -707,8 +703,8 @@ public class Utils {
   }
 
   /**
-   * Applies one json over other. The 'input' is applied over the sink The values in input isapplied
-   * over the values in 'sink' . If a value is 'null' that value is removed from sink
+   * Applies one json over another. The 'input' is applied over the sink The values in input is
+   * applied over the values in 'sink' . If a value is 'null' that value is removed from sink
    *
    * @param sink the original json object to start with. Ensure that this Map is mutable
    * @param input the json with new values
@@ -759,26 +755,37 @@ public class Utils {
     return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);
   }
 
+  /**
+   * Construct a V1 base url for the Solr node, given its name (e.g., 'app-node-1:8983_solr') and a
+   * URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @return url that looks like {@code https://app-node-1:8983/solr}
+   * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String)}
+   */
+  @Deprecated
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
-    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
+  /**
+   * Construct a V1 or a V2 base url for the Solr node, given its name (e.g.,
+   * 'app-node-1:8983_solr') and a URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @param isV2 whether a V2 url should be constructed
+   * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
+   *     https://app-node-1:8983/solr} (V1)
+   * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String, boolean)}
+   */
+  @Deprecated
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
-    final int colonAt = nodeName.indexOf(':');
-    if (colonAt == -1) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected ':' separator: " + nodeName);
-    }
-
-    final int _offset = nodeName.indexOf("_", colonAt);
-    if (_offset < 0) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected '_' separator: " + nodeName);
-    }
-    final String hostAndPort = nodeName.substring(0, _offset);
-    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, isV2);
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -809,7 +816,7 @@ public class Utils {
 
   public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
     return is -> {
-      try (BinaryRequestWriter.BAOS bos = new BinaryRequestWriter.BAOS()) {
+      try (BAOS bos = new BAOS()) {
         long sz = 0;
         int next = is.read();
         while (next > -1) {
@@ -892,6 +899,45 @@ public class Utils {
   public static final String CATCH_ALL_PROPERTIES_METHOD_NAME = "unknownProperties";
 
   /**
+   * Return a writable object that will be serialized using the reflection-friendly properties of
+   * the class, notably the fields that have the {@link JsonProperty} annotation.
+   *
+   * <p>If the class has no reflection-friendly fields, then it will be serialized as a string,
+   * using the class's name and {@code toString()} method.
+   *
+   * @param o the object to get a serializable version of
+   * @return a serializable version of the object
+   */
+  public static Object getReflectWriter(Object o) {
+    List<FieldWriter> fieldWriters = null;
+    try {
+      fieldWriters =
+          Utils.getReflectData(
+              o.getClass(),
+              // TODO Should we be lenient here and accept both the Jackson and our homegrown
+              // annotation?
+              field ->
+                  field.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class) != null,
+              JsonAnyGetter.class,
+              field -> {
+                final com.fasterxml.jackson.annotation.JsonProperty prop =
+                    field.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class);
+                return prop.value().isEmpty() ? field.getName() : prop.value();
+              });
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+    if (!fieldWriters.isEmpty()) {
+      return new DelegateReflectWriter(o, fieldWriters);
+    } else {
+      // Do not serialize an empty class, use a string representation instead.
+      // This is because the class is likely not using the serialization annotations
+      // and still expects to provide some information.
+      return o.getClass().getName() + ':' + o;
+    }
+  }
+
+  /**
    * Convert an input object to a map, writing only those fields that match a provided {@link
    * Predicate}
    *
@@ -915,14 +961,7 @@ public class Utils {
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
-    for (FieldWriter fieldWriter : fieldWriters) {
-      try {
-        fieldWriter.write(ew, o);
-      } catch (Throwable e) {
-        throw new RuntimeException(e);
-        // should not happen
-      }
-    }
+    reflectWrite(ew, o, fieldWriters);
   }
 
   private static List<FieldWriter> getReflectData(
@@ -949,6 +988,26 @@ public class Utils {
     final List<FieldWriter> mutableFieldWriters = new ArrayList<>(cachedReflectData);
     addCatchAllFieldWriter(mutableFieldWriters, catchAllAnnotation, lookup, c);
     return Collections.unmodifiableList(mutableFieldWriters);
+  }
+
+  /**
+   * Convert an input object to a map, using the provided {@link FieldWriter}s.
+   *
+   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map
+   *     insertion/writing
+   * @param o the object to be converted
+   * @param fieldWriters a list of fields to write and how to write them
+   */
+  private static void reflectWrite(
+      MapWriter.EntryWriter ew, Object o, List<FieldWriter> fieldWriters) {
+    for (FieldWriter fieldWriter : fieldWriters) {
+      try {
+        fieldWriter.write(ew, o);
+      } catch (Throwable e) {
+        throw new RuntimeException(e);
+        // should not happen
+      }
+    }
   }
 
   private static List<FieldWriter> addTraditionalFieldWriters(
@@ -1025,6 +1084,16 @@ public class Utils {
     }
   }
 
+  /**
+   * Produce a Map representation of the provided object using reflection to identify annotated
+   * fields.
+   *
+   * <p>The provided object is not required to be a {@link MapWriter}.
+   */
+  public static Map<String, Object> reflectToMap(Object toReflect) {
+    return ((Utils.DelegateReflectWriter) Utils.getReflectWriter(toReflect)).toMap(new HashMap<>());
+  }
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   public static Map<String, Object> convertToMap(MapWriter m, Map<String, Object> map) {
     try {
@@ -1074,7 +1143,43 @@ public class Utils {
   private static final Map<Class<?>, List<FieldWriter>> storedReflectData =
       new ConcurrentHashMap<>();
 
+  public static class DelegateReflectWriter implements MapWriter {
+    private final Object object;
+    private final List<Utils.FieldWriter> fieldWriters;
+
+    DelegateReflectWriter(Object object, List<Utils.FieldWriter> fieldWriters) {
+      this.object = object;
+      this.fieldWriters = fieldWriters;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      Utils.reflectWrite(ew, object, fieldWriters);
+    }
+  }
+
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
+  }
+
+  public static class BAOS extends ByteArrayOutputStream {
+    public ByteBuffer getByteBuffer() {
+      return ByteBuffer.wrap(super.buf, 0, super.count);
+    }
+
+    /*
+     * A hack to get access to the protected internal buffer and avoid an additional copy
+     */
+    public byte[] getbuf() {
+      return super.buf;
+    }
+  }
+
+  /** Reads an input stream into a byte array. Does not close the input. */
+  public static ByteBuffer toByteArray(InputStream is) throws IOException {
+    try (BAOS bos = new BAOS()) {
+      is.transferTo(bos);
+      return bos.getByteBuffer();
+    }
   }
 }

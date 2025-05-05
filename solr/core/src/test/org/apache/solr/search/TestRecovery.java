@@ -18,16 +18,17 @@ package org.apache.solr.search;
 
 import static org.apache.solr.search.TestRecovery.VersionProvider.getNextVersion;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.apache.solr.util.SolrMatchers.subListMatches;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
-import java.io.File;
 import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +53,9 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.hamcrest.FeatureMatcher;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -686,10 +690,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       String versionListFirstCheck =
           String.join(",", v2010_del, v1030, v1020, v1017_del, v1015, v1010);
-      String versionListSecondCheck =
-          String.join(
-              ",", v3000_del, v1080, v1050, v1060, v940_del, v1040, v3, v2010_del, v1030, v1020,
-              v1017_del, v1015, v1010);
 
       // simulate updates from a leader
       updateJ(
@@ -736,8 +736,25 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(6L, applyingBuffered.getCount() - initialApplyingOps);
 
-      assertJQ(
-          req("qt", "/get", "getVersions", "6"), "=={'versions':[" + versionListFirstCheck + "]}");
+      assertThatJQ(
+          req("qt", "/get", "getVersions", "6"),
+          "Incorrect ordering of versions during applyBufferedUpdates",
+          versionsMatch(
+              6,
+              // These do not have the same id, so they may be in any order
+              subListMatches(
+                  0,
+                  3,
+                  Matchers.containsInAnyOrder(
+                      Long.parseLong(v1020), Long.parseLong(v1030), Long.parseLong(v2010_del))),
+              // The deleteByQuery will not be applied in parallel, it will be in the exact right
+              // place in the list
+              subListMatches(3, 4, Matchers.contains(Long.parseLong(v1017_del))),
+              // These do not have the same id, so they may be in any order
+              subListMatches(
+                  4,
+                  6,
+                  Matchers.containsInAnyOrder(Long.parseLong(v1015), Long.parseLong(v1010)))));
 
       assertJQ(req("q", "*:*"), "/response/numFound==2");
 
@@ -776,12 +793,38 @@ public class TestRecovery extends SolrTestCaseJ4 {
           "{\"delete\": { \"query\":\"id:B2 OR id:B8\" }}",
           params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", v3000_del));
 
-      assertJQ(
+      assertThatJQ(
           req("qt", "/get", "getVersions", "13"),
-          "=={'versions':["
-              + versionListSecondCheck
-              + "]}" // the "3" appears because versions aren't checked while buffering
-          );
+          "Incorrect versions during buffering",
+          versionsMatch(
+              13,
+              // These buffered updates have not been applied, they should be in the exact order
+              // the "3" appears because versions aren't checked while buffering
+              subListMatches(
+                  0,
+                  7,
+                  Matchers.contains(
+                      Long.parseLong(v3000_del),
+                      Long.parseLong(v1080),
+                      Long.parseLong(v1050),
+                      Long.parseLong(v1060),
+                      Long.parseLong(v940_del),
+                      Long.parseLong(v1040),
+                      Long.parseLong(v3))),
+              // These do not have the same id, so they may be in any order
+              subListMatches(
+                  7,
+                  10,
+                  Matchers.containsInAnyOrder(
+                      Long.parseLong(v1020), Long.parseLong(v1030), Long.parseLong(v2010_del))),
+              // The deleteByQuery will not be applied in parallel, it will be in the exact right
+              // place in the list
+              subListMatches(10, 11, Matchers.contains(Long.parseLong(v1017_del))),
+              // These do not have the same id, so they may be in any order
+              subListMatches(
+                  11,
+                  13,
+                  Matchers.containsInAnyOrder(Long.parseLong(v1015), Long.parseLong(v1010)))));
 
       logReplay.drainPermits();
       rinfoFuture = ulog.applyBufferedUpdates();
@@ -906,7 +949,13 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
       assertEquals(2, rinfo.adds);
 
-      assertJQ(req("qt", "/get", "getVersions", "2"), "=={'versions':[" + v105 + "," + v104 + "]}");
+      assertThatJQ(
+          req("qt", "/get", "getVersions", "2"),
+          "Wrong updates after applyBufferedUpdates",
+          versionsMatch(
+              2,
+              // Buffered Updates might not be in the original order
+              Matchers.containsInAnyOrder(Long.parseLong(v105), Long.parseLong(v104))));
 
       // this time add some docs first before buffering starts (so tlog won't be at pos 0)
       updateJ(
@@ -961,9 +1010,22 @@ public class TestRecovery extends SolrTestCaseJ4 {
               + "]");
 
       // Note that the v101->v103 are dropped, therefore it does not present in RTG
-      assertJQ(
+      assertThatJQ(
           req("qt", "/get", "getVersions", "6"),
-          "=={'versions':[" + String.join(",", v206, v205, v201, v200, v105, v104) + "]}");
+          "Incorrect versions after applyBufferedUpdates",
+          versionsMatch(
+              6,
+              // Buffered Updates might not be in the original order
+              subListMatches(
+                  0, 2, Matchers.containsInAnyOrder(Long.parseLong(v206), Long.parseLong(v205))),
+              // These updates were not buffered
+              subListMatches(
+                  2,
+                  4,
+                  Matchers.containsInRelativeOrder(Long.parseLong(v201), Long.parseLong(v200))),
+              // Buffered Updates might not be in the original order
+              subListMatches(
+                  4, 6, Matchers.containsInAnyOrder(Long.parseLong(v105), Long.parseLong(v104)))));
 
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
@@ -1078,7 +1140,13 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
       assertEquals(2, rinfo.adds);
 
-      assertJQ(req("qt", "/get", "getVersions", "2"), "=={'versions':[" + v105 + "," + v104 + "]}");
+      assertThatJQ(
+          req("qt", "/get", "getVersions", "2"),
+          "Wrong updates after applyBufferedUpdates",
+          versionsMatch(
+              2,
+              // Buffered Updates might not be in the original order
+              Matchers.containsInAnyOrder(Long.parseLong(v105), Long.parseLong(v104))));
 
       updateJ(
           jsonAdd(sdoc("id", "c100", "_version_", v200)),
@@ -1130,12 +1198,24 @@ public class TestRecovery extends SolrTestCaseJ4 {
               + ",{'id':'c106','_version_':"
               + v206
               + "}"
-              + ""
               + "]");
 
-      assertJQ(
+      assertThatJQ(
           req("qt", "/get", "getVersions", "6"),
-          "=={'versions':[" + String.join(",", v206, v205, v201, v200, v105, v104) + "]}");
+          "Incorrect versions after applyBufferedUpdates",
+          versionsMatch(
+              6,
+              // Buffered Updates might not be in the original order
+              subListMatches(
+                  0, 2, Matchers.containsInAnyOrder(Long.parseLong(v206), Long.parseLong(v205))),
+              // These updates were not buffered
+              subListMatches(
+                  2,
+                  4,
+                  Matchers.containsInRelativeOrder(Long.parseLong(v201), Long.parseLong(v200))),
+              // Buffered Updates might not be in the original order
+              subListMatches(
+                  4, 6, Matchers.containsInAnyOrder(Long.parseLong(v105), Long.parseLong(v104)))));
 
       assertEquals(
           UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
@@ -1382,13 +1462,13 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertU(commit());
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-      File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+      Path logDir = Path.of(h.getCore().getUpdateHandler().getUpdateLog().getTlogDir());
 
       h.close();
 
       String[] files = ulog.getLogList(logDir);
       for (String file : files) {
-        Files.delete(new File(logDir, file).toPath());
+        Files.delete(logDir.resolve(file));
       }
 
       assertEquals(0, ulog.getLogList(logDir).length);
@@ -1495,7 +1575,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       files = ulog.getLogList(logDir);
       Arrays.sort(files);
       try (RandomAccessFile raf =
-          new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+          new RandomAccessFile(logDir.resolve(files[files.length - 1]).toFile(), "rw")) {
         raf.writeChars(
             "This is a trashed log file that really shouldn't work at all, but we'll see...");
       }
@@ -1538,7 +1618,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-      File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+      Path logDir = Path.of(h.getCore().getUpdateHandler().getUpdateLog().getTlogDir());
 
       clearIndex();
       assertU(commit());
@@ -1551,7 +1631,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       String[] files = ulog.getLogList(logDir);
       Arrays.sort(files);
       try (RandomAccessFile raf =
-          new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+          new RandomAccessFile(logDir.resolve(files[files.length - 1]).toFile(), "rw")) {
         raf.seek(raf.length()); // seek to end
         raf.writeLong(0xffffffffffffffffL);
         raf.writeChars(
@@ -1604,7 +1684,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       TestInjection.skipIndexWriterCommitOnClose = true;
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-      File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+      Path logDir = Path.of(h.getCore().getUpdateHandler().getUpdateLog().getTlogDir());
 
       clearIndex();
       assertU(commit());
@@ -1618,7 +1698,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       String[] files = ulog.getLogList(logDir);
       Arrays.sort(files);
       try (RandomAccessFile raf =
-          new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+          new RandomAccessFile(logDir.resolve(files[files.length - 1]).toFile(), "rw")) {
         long len = raf.length();
         raf.seek(0); // seek to start
         raf.write(new byte[(int) len]); // zero out file
@@ -1688,7 +1768,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-      File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+      Path logDir = Path.of(h.getCore().getUpdateHandler().getUpdateLog().getTlogDir());
 
       clearIndex();
       assertU(commit());
@@ -1702,7 +1782,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       Arrays.sort(files);
       String fname = files[files.length - 1];
       byte[] content;
-      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname), "rw")) {
+      try (RandomAccessFile raf = new RandomAccessFile(logDir.resolve(fname).toFile(), "rw")) {
         raf.seek(raf.length()); // seek to end
         raf.writeLong(0xffffffffffffffffL);
         raf.writeChars(
@@ -1729,11 +1809,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
           content);
 
       // WARNING... assumes format of .00000n where n is less than 9
-      long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));
+      long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf('.') + 1));
       String fname2 =
           String.format(
               Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, logNumber + 1);
-      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname2), "rw")) {
+      try (RandomAccessFile raf = new RandomAccessFile(logDir.resolve(fname2).toFile(), "rw")) {
         raf.write(content);
       }
 
@@ -1920,14 +2000,14 @@ public class TestRecovery extends SolrTestCaseJ4 {
   // stops the core, removes the transaction logs, restarts the core.
   void deleteLogs() throws Exception {
     UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-    File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+    Path logDir = Path.of(h.getCore().getUpdateHandler().getUpdateLog().getTlogDir());
 
     h.close();
 
     try {
       String[] files = ulog.getLogList(logDir);
       for (String file : files) {
-        Files.delete(new File(logDir, file).toPath());
+        Files.delete(logDir.resolve(file));
       }
 
       assertEquals(0, ulog.getLogList(logDir).length);
@@ -1969,10 +2049,43 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   static class VersionProvider {
-    private static long version = 0;
+    private static long version = 1;
 
     static String getNextVersion() {
       return Long.toString(version++);
+    }
+  }
+
+  @SafeVarargs
+  public static Matcher<Map<String, List<Long>>> versionsMatch(
+      int numVersions, Matcher<? super List<Long>>... versionsMatchers) {
+    return new VersionsMatcher(numVersions, versionsMatchers);
+  }
+
+  public static class VersionsMatcher extends FeatureMatcher<Map<String, List<Long>>, List<Long>> {
+
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public VersionsMatcher(int numVersions, Matcher<? super List<Long>>... subMatchers) {
+      super(
+          allOf(Matchers.hasSize(numVersions), subMatchers),
+          "a response with versions list",
+          "versions list");
+    }
+
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public static Matcher<? super List<Long>> allOf(
+        Matcher<? super List<Long>> firstMatcher, Matcher<? super List<Long>>... subMatchers) {
+      List<Matcher<? super List<Long>>> matchers = new ArrayList<>(subMatchers.length + 1);
+      matchers.add(firstMatcher);
+      matchers.addAll(Arrays.asList(subMatchers));
+      return Matchers.allOf(matchers);
+    }
+
+    @Override
+    protected List<Long> featureValueOf(Map<String, List<Long>> actual) {
+      return actual.get("versions");
     }
   }
 }

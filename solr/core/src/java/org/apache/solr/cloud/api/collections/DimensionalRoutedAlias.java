@@ -110,7 +110,7 @@ public class DimensionalRoutedAlias extends RoutedAlias {
       // something expensive, but if you have malicious users able to run admin commands and create
       // aliases, it is very likely that you have much bigger problems than an expensive regex.
       String routeString =
-          dimension.computeInitialCollectionName().replaceAll(dimension.getAliasName(), "");
+          dimension.computeInitialCollectionName().replace(dimension.getAliasName(), "");
       sb.append(routeString);
     }
     return sb.toString();

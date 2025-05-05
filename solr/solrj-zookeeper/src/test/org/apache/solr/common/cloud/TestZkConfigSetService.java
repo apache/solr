@@ -16,18 +16,17 @@
  */
 package org.apache.solr.common.cloud;
 
-import com.google.common.base.Throwables;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import org.apache.solr.SolrJettyTestBase;
+import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.AuthInfo;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -74,7 +73,11 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
     zkServer.ensurePathExists("/solr");
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress("/solr"))
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       ConfigSetService configSetService = new ZkConfigSetService(zkClient);
 
       assertEquals(0, configSetService.listConfigs().size());
@@ -97,6 +100,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       List<String> configs = configSetService.listConfigs();
       assertEquals(1, configs.size());
       assertEquals("testconfig", configs.get(0));
+      assertTrue(configSetService.checkConfigExists("testconfig"));
 
       // check downloading
       Path downloadPath = createTempDir("download");
@@ -136,7 +140,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadWithACL() throws IOException {
+  public void testUploadWithACL() throws IOException, NoSuchAlgorithmException {
 
     zkServer.ensurePathExists("/acl");
 
@@ -145,59 +149,36 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     final String writeableUsername = "writeable";
     final String writeablePassword = "writeable";
 
-    ZkACLProvider aclProvider =
-        new DefaultZkACLProvider() {
-          @Override
-          protected List<ACL> createGlobalACLsToAdd() {
-            try {
-              List<ACL> result = new ArrayList<>();
-              result.add(
-                  new ACL(
-                      ZooDefs.Perms.ALL,
-                      new Id(
-                          "digest",
-                          DigestAuthenticationProvider.generateDigest(
-                              writeableUsername + ":" + writeablePassword))));
-              result.add(
-                  new ACL(
-                      ZooDefs.Perms.READ,
-                      new Id(
-                          "digest",
-                          DigestAuthenticationProvider.generateDigest(
-                              readOnlyUsername + ":" + readOnlyPassword))));
-              return result;
-            } catch (NoSuchAlgorithmException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        };
-
-    ZkCredentialsProvider readonly =
-        new DefaultZkCredentialsProvider() {
-          @Override
-          protected Collection<ZkCredentials> createCredentials() {
-            List<ZkCredentials> credentials = new ArrayList<>();
-            credentials.add(
-                new ZkCredentials(
+    // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
+    List<ACL> acls =
+        Arrays.asList(
+            new ACL(
+                ZooDefs.Perms.ALL,
+                new Id(
                     "digest",
-                    (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
-            return credentials;
-          }
-        };
-
-    ZkCredentialsProvider writeable =
-        new DefaultZkCredentialsProvider() {
-          @Override
-          protected Collection<ZkCredentials> createCredentials() {
-            List<ZkCredentials> credentials = new ArrayList<>();
-            credentials.add(
-                new ZkCredentials(
+                    DigestAuthenticationProvider.generateDigest(
+                        writeableUsername + ":" + writeablePassword))),
+            new ACL(
+                ZooDefs.Perms.READ,
+                new Id(
                     "digest",
-                    (writeableUsername + ":" + writeablePassword)
-                        .getBytes(StandardCharsets.UTF_8)));
-            return credentials;
-          }
-        };
+                    DigestAuthenticationProvider.generateDigest(
+                        readOnlyUsername + ":" + readOnlyPassword))));
+    ACLProvider aclProvider = new DefaultZkACLProvider(acls);
+
+    List<AuthInfo> credentials =
+        List.of(
+            new AuthInfo(
+                "digest",
+                (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
+    ZkCredentialsProvider readonly = new DefaultZkCredentialsProvider(credentials);
+
+    List<AuthInfo> writeableCredentials =
+        List.of(
+            new AuthInfo(
+                "digest",
+                (writeableUsername + ":" + writeablePassword).getBytes(StandardCharsets.UTF_8)));
+    ZkCredentialsProvider writeable = new DefaultZkCredentialsProvider(writeableCredentials);
 
     Path configPath = createTempDir("acl-config");
     Files.createFile(configPath.resolve("file1"));
@@ -215,31 +196,37 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
         buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
       assertEquals(1, configSetService.listConfigs().size());
-      configSetService.uploadConfig("acltest2", configPath);
-      fail("Should have thrown an ACL exception");
-    } catch (IOException e) {
-      assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
+      IOException ioException =
+          assertThrows(
+              IOException.class, () -> configSetService.uploadConfig("acltest2", configPath));
+      assertEquals(KeeperException.NoAuthException.class, ioException.getCause().getClass());
     }
 
     // Client with no auth whatsoever can't even get the list of configs
-    try (SolrZkClient client = new SolrZkClient(zkServer.getZkAddress("/acl"), 10000)) {
-      ConfigSetService configSetService = new ZkConfigSetService(client);
-      configSetService.listConfigs();
-      fail("Should have thrown an ACL exception");
-    } catch (IOException e) {
-      assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
+    try (SolrZkClient client =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress("/acl"))
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
+      IOException ioException =
+          assertThrows(IOException.class, () -> new ZkConfigSetService(client).listConfigs());
+      assertEquals(KeeperException.NoAuthException.class, ioException.getCause().getClass());
     }
   }
 
   @Test
   public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
 
-    String solrHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+    Path solrHome = legacyExampleCollection1SolrHome();
 
-    CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+    CoreContainer cc = new CoreContainer(solrHome, new Properties());
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkClient.makePath("/solr", false, true);
     cc.setCoreConfigService(new ZkConfigSetService(zkClient));
     assertFalse(cc.getConfigSetService().checkConfigExists("collection1"));
@@ -251,16 +238,17 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
   static SolrZkClient buildZkClient(
       String zkAddress,
-      final ZkACLProvider aclProvider,
+      final ACLProvider aclProvider,
       final ZkCredentialsProvider credentialsProvider) {
-    return new SolrZkClient(zkAddress, 10000) {
+    return new SolrZkClient(
+        new SolrZkClient.Builder().withUrl(zkAddress).withTimeout(10000, TimeUnit.MILLISECONDS)) {
       @Override
       protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
         return credentialsProvider;
       }
 
       @Override
-      protected ZkACLProvider createZkACLProvider() {
+      protected ACLProvider createACLProvider() {
         return aclProvider;
       }
     };

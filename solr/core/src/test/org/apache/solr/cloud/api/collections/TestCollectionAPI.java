@@ -16,24 +16,24 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import com.google.common.collect.Lists;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -84,7 +85,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       client.request(req);
       createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
     }
-
     waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
     waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME1, 1);
     waitForRecoveriesToFinish(COLLECTION_NAME, false);
@@ -94,6 +94,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusNoCollection();
     clusterStatusWithCollection();
     clusterStatusWithCollectionAndShard();
+    clusterStatusWithCollectionAndShardJSON();
     clusterStatusWithCollectionAndMultipleShards();
     clusterStatusWithCollectionHealthState();
     clusterStatusWithRouteKey();
@@ -121,8 +122,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("replicationFactor", 25);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       client.request(request);
       NamedList<Object> rsp =
@@ -132,18 +133,18 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
               .getResponse();
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
-      assertEquals("25", collections._getStr(List.of(COLLECTION_NAME, "replicationFactor"), null));
+      Map<?, ?> collectionProperties = (Map<?, ?>) collections.get(COLLECTION_NAME);
+      assertEquals("25", collectionProperties.get("replicationFactor"));
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("replicationFactor", "");
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       rsp =
@@ -154,22 +155,23 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       System.out.println(rsp);
       cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      collections = (NamedList<?>) cluster.get("collections");
+      collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
-      assertNull(collections._getStr(List.of(COLLECTION_NAME, "replicationFactor"), null));
+      collectionProperties = (Map<?, ?>) collections.get(COLLECTION_NAME);
+      assertNull(collectionProperties.get("replicationFactor"));
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("non_existent_property", "");
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
         fail("Trying to unset an unknown property should have failed");
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         // expected
         assertTrue(e.getMessage().contains("no supported values provided"));
       }
@@ -185,13 +187,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("numShards", "1");
       params.set("replicationFactor", "1");
       params.set("nrtReplicas", "2");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(
             errorMessage.contains(
@@ -213,8 +215,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", "test_repFactorColl");
       params.set("replicationFactor", "4");
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
@@ -239,9 +241,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("numShards", "1");
       params.set("replicationFactor", "1");
       params.set("collection.configName", configSet);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       waitForCollection(ZkStateReader.from(client), collection, 1);
@@ -256,7 +257,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<?> rsp = client.request(req);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(
           "Testing to insure collections are returned", collections.get(COLLECTION_NAME1));
@@ -277,13 +278,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
     params.set("collection", collectionName);
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     NamedList<Object> rsp = client.request(request);
     NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
     assertNotNull("Cluster state should not be null", cluster);
-    NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+    Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
     assertNotNull("Collections should not be null in cluster state", collections);
     assertEquals(1, collections.size());
     @SuppressWarnings({"unchecked"})
@@ -299,13 +300,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("shard", SHARD1);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
@@ -331,7 +332,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> rsp = request.process(client).getResponse();
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
@@ -378,7 +379,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           COLLECTION_NAME,
           30,
           TimeUnit.SECONDS,
-          (liveNodes, docCollection) ->
+          docCollection ->
               docCollection != null
                   && docCollection.getReplicas().stream()
                       .anyMatch(r -> r.getState().equals(Replica.State.DOWN) && !r.isLeader()));
@@ -440,8 +441,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       List<?> collections = (List<?>) rsp.get("collections");
@@ -460,13 +461,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME1));
       assertEquals(4, collections.size());
@@ -482,20 +483,23 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
       @SuppressWarnings({"unchecked"})
       Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
       assertNotNull(collection);
       assertEquals("conf1", collection.get("configName"));
-      //      assertEquals("1", collection.get("nrtReplicas"));
+
+      Instant creationTime = Instant.ofEpochMilli((long) collection.get("creationTimeMillis"));
+      assertEquals(
+          creationTime, client.getClusterState().getCollection(COLLECTION_NAME).getCreationTime());
     }
   }
 
@@ -509,13 +513,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", cname);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
       Map<String, Object> collection = (Map<String, Object>) collections.get(cname);
@@ -531,29 +535,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       rsp = client.request(request);
       cluster = (NamedList<Object>) rsp.get("cluster");
-      collections = (NamedList<Object>) cluster.get("collections");
+      collections = (Map<?, ?>) cluster.get("collections");
       collection = (Map<String, Object>) collections.get(cname);
       Integer newVersion = (Integer) collection.get("znodeVersion");
       assertNotNull(newVersion);
       assertTrue(newVersion > znodeVersion);
     }
-  }
-
-  private static long totalexpectedV2Calls;
-
-  public static <T extends SolrResponse> SolrRequest<T> setV2(SolrRequest<T> req) {
-    if (V2Request.v2Calls.get() == null) V2Request.v2Calls.set(new AtomicLong());
-    totalexpectedV2Calls = V2Request.v2Calls.get().get();
-    if (random().nextBoolean()) {
-      req.setUseV2(true);
-      req.setUseBinaryV2(random().nextBoolean());
-      totalexpectedV2Calls++;
-    }
-    return req;
-  }
-
-  public static void assertV2CallsCount() {
-    assertEquals(totalexpectedV2Calls, V2Request.v2Calls.get().get());
   }
 
   private void clusterStatusWithRouteKey() throws IOException, SolrServerException {
@@ -567,15 +554,15 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
       params.set(ShardParams._ROUTE_, "a!");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       @SuppressWarnings({"unchecked"})
       NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
       @SuppressWarnings({"unchecked"})
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(DEFAULT_COLLECTION));
       assertEquals(1, collections.size());
@@ -599,8 +586,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "myalias");
       params.set("collections", DEFAULT_COLLECTION + "," + COLLECTION_NAME);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       client.request(request);
 
@@ -608,8 +595,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
 
@@ -622,27 +609,27 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           DEFAULT_COLLECTION + "," + COLLECTION_NAME,
           aliases.get("myalias"));
 
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      Map<?, ?> collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(DEFAULT_COLLECTION));
       Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_COLLECTION);
       assertEquals("conf1", collection.get("configName"));
       List<String> collAlias = (List<String>) collection.get("aliases");
-      assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
+      assertEquals("Aliases not found", List.of("myalias"), collAlias);
 
       // status request on the alias itself
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "myalias");
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       // SOLR-12938 - this should NOT cause an exception
       rsp = client.request(request);
 
       cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      collections = (NamedList<Object>) cluster.get("collections");
+      collections = (Map<?, ?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(DEFAULT_COLLECTION));
       assertNotNull(collections.get(COLLECTION_NAME));
@@ -651,7 +638,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "notAnAliasOrCollection");
-      request = new QueryRequest(params);
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       request.setPath("/admin/collections");
 
       // SOLR-12938 - this should still cause an exception
@@ -665,6 +653,39 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
   }
 
+  @SuppressWarnings("unchecked")
+  private void clusterStatusWithCollectionAndShardJSON() throws IOException, SolrServerException {
+
+    try (CloudSolrClient client = createCloudClient(null)) {
+      ObjectMapper mapper = new ObjectMapper();
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+      params.set("collection", COLLECTION_NAME);
+      params.set("shard", SHARD1);
+      params.set("wt", "json");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
+      request.setResponseParser(new NoOpResponseParser("json"));
+      NamedList<Object> rsp = client.request(request);
+      String actualResponse = (String) rsp.get("response");
+
+      Map<String, Object> result = mapper.readValue(actualResponse, Map.class);
+
+      var cluster = (Map<String, Object>) result.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      var collections = (Map<String, Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertNotNull(collections.get(COLLECTION_NAME));
+      assertEquals(1, collections.size());
+      var collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+      var shardStatus = (Map<String, Object>) collection.get("shards");
+      assertEquals(1, shardStatus.size());
+      Map<String, Object> selectedShardStatus = (Map<String, Object>) shardStatus.get(SHARD1);
+      assertNotNull(selectedShardStatus);
+    }
+  }
+
   private void clusterStatusRolesTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
@@ -674,15 +695,15 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());
       params.set("node", replica.getNodeName());
       params.set("role", "overseer");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
@@ -702,8 +723,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "bad_collection_name");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
@@ -752,8 +773,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       missingParamsError(client, params);
       params.set("property.value", "true");
 
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       // The above should have set exactly one preferredleader...
@@ -1123,13 +1144,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
       params.set("name", "invalid@name#with$weird%characters");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid collection"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1146,13 +1167,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("router.name", "implicit");
       params.set("numShards", "1");
       params.set("shards", "invalid@name#with$weird%characters");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1167,13 +1188,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "invalid@name#with$weird%characters");
       params.set("collections", COLLECTION_NAME);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid alias"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1191,8 +1212,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("name", "valid_collection_name");
       params.set("shards", "a");
       params.set("router.name", "implicit");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       params = new ModifiableSolrParams();
@@ -1200,13 +1221,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("collection", "valid_collection_name");
       params.set("shard", "invalid@name#with$weird%characters");
 
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1237,10 +1258,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void missingParamsError(CloudSolrClient client, ModifiableSolrParams origParams)
       throws IOException, SolrServerException {
 
-    QueryRequest request;
+    GenericSolrRequest request;
     try {
-      request = new QueryRequest(origParams);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(
+              METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, origParams);
       client.request(request);
       fail("Should have thrown a SolrException due to lack of a required parameter.");
     } catch (SolrException se) {
@@ -1260,7 +1282,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   public void testRecreateCollectionAfterFailure() throws Exception {
     // Upload a bad configset
     SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkHost(), ZkTestServer.TIMEOUT, ZkTestServer.TIMEOUT, null);
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     ZkTestServer.putConfig(
         "badconf",
         zkClient,
@@ -1274,9 +1300,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
-      BaseHttpSolrClient.RemoteSolrException rse =
+      SolrClient.RemoteSolrException rse =
           expectThrows(
-              BaseHttpSolrClient.RemoteSolrException.class,
+              SolrClient.RemoteSolrException.class,
               () -> {
                 CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2)
                     .process(client);
@@ -1312,6 +1338,33 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertEquals(2, configMisses.longValue());
     } finally {
       cl.shutdown();
+    }
+  }
+
+  @Test
+  public void testCreateCollectionBooleanValues() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      String collectionName = "testCreateCollectionBooleanValues";
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", collectionName);
+      params.set("collection.configName", "conf1");
+      params.set("numShards", "1");
+      params.set(CollectionAdminParams.PER_REPLICA_STATE, "False");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
+
+      try {
+        client.request(request);
+        waitForCollection(ZkStateReader.from(cloudClient), collectionName, 1);
+      } finally {
+        try {
+          CollectionAdminRequest.deleteCollection(collectionName).process(client);
+        } catch (Exception e) {
+          // Delete if possible, ignore otherwise. If the test failed, let the original exception
+          // bubble up
+        }
+      }
     }
   }
 }

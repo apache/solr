@@ -140,10 +140,10 @@ public class JsonFaceting {
           "json.facet",
           "{f1:{method:'"
               + fm
-              + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'min(int3_i)'}  }"
+              + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'min(int3_i_dv)'}  }"
               + " , f2:{method:'"
               + fm
-              + "',, type:terms, field:'facet_s', sort:'x desc', facet:{x:'max(int3_i)'}  } "
+              + "',, type:terms, field:'facet_s', sort:'x desc', facet:{x:'max(int3_i_dv)'}  } "
               + " , f3:{method:'"
               + fm
               + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'unique(facet2_s)'}  } "
@@ -152,10 +152,10 @@ public class JsonFaceting {
               + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'hll(facet2_s)'}  } "
               + " , f5:{method:'"
               + fm
-              + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'variance(int3_i)'}  } "
-              + " , f6:{type:terms, field:'int3_i', limit:1, sort:'x desc', facet:{x:'hll(int2_i)'}  } "
-              + " , f7:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'missing(int4_i)'}  } "
-              + " , f8:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'countvals(int4_i)'}  } "
+              + "', type:terms, field:'facet_s', sort:'x desc', facet:{x:'variance(int3_i_dv)'}  } "
+              + " , f6:{type:terms, field:'int3_i_dv', limit:1, sort:'x desc', facet:{x:'hll(int2_i_dv)'}  } "
+              + " , f7:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'missing(int4_i_dv)'}  } "
+              + " , f8:{type:terms, field:'facet_s', limit:2, sort:'x desc', facet:{x:'countvals(int4_i_dv)'}  } "
               + '}');
 
       // MiniClusterState.log("params: " + params + "\n");
@@ -180,11 +180,13 @@ public class JsonFaceting {
       BenchState state,
       BenchState.ThreadState threadState)
       throws Exception {
+    final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
-    queryRequest.setBasePath(
-        miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount)));
-
-    NamedList<Object> result = miniClusterState.client.request(queryRequest, state.collection);
+    NamedList<Object> result =
+        miniClusterState
+            .client
+            .requestWithBaseUrl(url, state.collection, queryRequest)
+            .getResponse();
 
     // MiniClusterState.log("result: " + result);
 

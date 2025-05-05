@@ -59,7 +59,12 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     ConcurrentUpdateSolrClient concurrentClient = null;
 
     // server = concurrentClient = new ConcurrentUpdateSolrServer(addr,32,8);
-    client = concurrentClient = getConcurrentUpdateSolrClient(addr, 64, nConnections);
+    client =
+        concurrentClient =
+            new ConcurrentUpdateSolrClient.Builder(addr)
+                .withQueueSize(64)
+                .withThreadCount(nConnections)
+                .build();
 
     client.deleteByQuery("*:*");
     client.commit();

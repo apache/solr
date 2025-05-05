@@ -45,12 +45,17 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.util.Version;
+import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrDocument;
@@ -63,7 +68,6 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Cache;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -161,6 +165,7 @@ public class IndexSchema {
 
   private Map<FieldType, PayloadDecoder> decoders =
       new HashMap<>(); // cache to avoid scanning token filters repeatedly, unnecessarily
+
   /** keys are all fields copied to, count is num of copyField directives that target them. */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
@@ -520,15 +525,15 @@ public class IndexSchema {
         log.info("{}", sb);
       }
 
-      version = Float.parseFloat(rootNode.attributes().get("version", "1.0f"));
+      version = Float.parseFloat(rootNode.attributes().getOrDefault("version", "1.0f"));
 
       // load the Field Types
       final FieldTypePluginLoader typeLoader =
           new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      List<ConfigNode> fTypes = rootNode.getAll(null, FIELDTYPE_KEYS);
+      List<ConfigNode> fTypes = rootNode.getAll(FIELDTYPE_KEYS, null);
       ConfigNode types = rootNode.child(TYPES);
-      if (types != null) fTypes.addAll(types.getAll(null, FIELDTYPE_KEYS));
+      if (types != null) fTypes.addAll(types.getAll(FIELDTYPE_KEYS, null));
       typeLoader.load(solrClassLoader, fTypes);
 
       // load the fields
@@ -568,7 +573,7 @@ public class IndexSchema {
       }
 
       node =
-          rootNode.child(it -> it.attributes().get("defaultOperator") != null, "solrQueryParser");
+          rootNode.child("solrQueryParser", it -> it.attributes().get("defaultOperator") != null);
       if (node != null) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
@@ -651,7 +656,6 @@ public class IndexSchema {
       loadCopyFields(rootNode);
 
       postReadInform();
-
     } catch (SolrException e) {
       throw new SolrException(
           ErrorCode.getErrorCode(e.code()),
@@ -676,6 +680,8 @@ public class IndexSchema {
     for (SchemaAware aware : schemaAware) {
       aware.inform(this);
     }
+    // Make sure all analyzers have resource loaders, even SPI loaded ones
+    fieldTypes.values().forEach(this::informResourceLoaderAwareObjectsForFieldType);
   }
 
   /**
@@ -690,17 +696,17 @@ public class IndexSchema {
 
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    List<ConfigNode> nodes = n.getAll(null, FIELD_KEYS);
+    List<ConfigNode> nodes = n.getAll(FIELD_KEYS, null);
     ConfigNode child = n.child(FIELDS);
     if (child != null) {
       nodes = new ArrayList<>(nodes);
-      nodes.addAll(child.getAll(null, FIELD_KEYS));
+      nodes.addAll(child.getAll(FIELD_KEYS, null));
     }
 
     for (ConfigNode node : nodes) {
-      String name = DOMUtil.getAttr(node, NAME, "field definition");
+      String name = node.attrRequired(NAME, "field definition");
       log.trace("reading field def {}", name);
-      String type = DOMUtil.getAttr(node, TYPE, "field " + name);
+      String type = node.attrRequired(TYPE, "field " + name);
 
       FieldType ft = fieldTypes.get(type);
       if (ft == null) {
@@ -709,7 +715,7 @@ public class IndexSchema {
             "Unknown " + FIELD_TYPE + " '" + type + "' specified on field " + name);
       }
 
-      Map<String, String> args = DOMUtil.toMapExcept(node, NAME, TYPE);
+      Map<String, String> args = node.attributesExcept(NAME, TYPE);
       if (null != args.get(REQUIRED)) {
         explicitRequiredProp.put(name, Boolean.valueOf(args.get(REQUIRED)));
       }
@@ -766,7 +772,7 @@ public class IndexSchema {
     // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
     // rather than Collections.sort() then converting to an array, since Collections.sort()
     // copies to an array first, then sets each collection member from the array.
-    DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[dynamicFieldList.size()]);
+    DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[0]);
     Arrays.sort(dFields);
 
     if (log.isTraceEnabled()) {
@@ -786,9 +792,9 @@ public class IndexSchema {
     }
     for (ConfigNode node : nodes) {
 
-      String source = DOMUtil.getAttr(node, SOURCE, COPY_FIELD + " definition");
-      String dest = DOMUtil.getAttr(node, DESTINATION, COPY_FIELD + " definition");
-      String maxChars = DOMUtil.getAttr(node, MAX_CHARS, null);
+      String source = node.attrRequired(SOURCE, COPY_FIELD + " definition");
+      String dest = node.attrRequired(DESTINATION, COPY_FIELD + " definition");
+      String maxChars = node.attr(MAX_CHARS);
 
       int maxCharsInt = CopyField.UNLIMITED;
       if (maxChars != null) {
@@ -1082,7 +1088,7 @@ public class IndexSchema {
       final Object obj = loader.newInstance(classArg, Object.class, "search.similarities.");
       if (obj instanceof SimilarityFactory) {
         // configure a factory, get a similarity back
-        final NamedList<Object> namedList = DOMUtil.childNodesToNamedList(node);
+        final NamedList<Object> namedList = node.childNodesToNamedList();
         namedList.add(SimilarityFactory.CLASS_NAME, classArg);
         SolrParams params = namedList.toSolrParams();
         similarityFactory = (SimilarityFactory) obj;
@@ -1990,6 +1996,36 @@ public class IndexSchema {
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
 
+  /** Informs analyzers used by a fieldType. */
+  private void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
+    // must inform any sub-components used in the
+    // tokenizer chain if they are ResourceLoaderAware
+    if (!fieldType.supportsAnalyzers()) return;
+
+    Analyzer indexAnalyzer = fieldType.getIndexAnalyzer();
+    if (indexAnalyzer != null && indexAnalyzer instanceof TokenizerChain)
+      informResourceLoaderAwareObjectsInChain((TokenizerChain) indexAnalyzer);
+
+    Analyzer queryAnalyzer = fieldType.getQueryAnalyzer();
+    // ref comparison is correct here (vs. equals) as they may be the same
+    // object in which case, we don't need to inform twice ... however, it's
+    // actually safe to call inform multiple times on an object anyway
+    if (queryAnalyzer != null
+        && queryAnalyzer != indexAnalyzer
+        && queryAnalyzer instanceof TokenizerChain)
+      informResourceLoaderAwareObjectsInChain((TokenizerChain) queryAnalyzer);
+
+    // if fieldType is a TextField, it might have a multi-term analyzer
+    if (fieldType instanceof TextField textFieldType) {
+      Analyzer multiTermAnalyzer = textFieldType.getMultiTermAnalyzer();
+      if (multiTermAnalyzer != null
+          && multiTermAnalyzer != indexAnalyzer
+          && multiTermAnalyzer != queryAnalyzer
+          && multiTermAnalyzer instanceof TokenizerChain)
+        informResourceLoaderAwareObjectsInChain((TokenizerChain) multiTermAnalyzer);
+    }
+  }
+
   /**
    * Returns a SchemaField if the given fieldName does not already exist in this schema, and does
    * not match any dynamic fields in this schema. The resulting SchemaField can be used in a call to
@@ -2023,6 +2059,44 @@ public class IndexSchema {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * After creating a new FieldType, it may contain components that implement the
+   * ResourceLoaderAware interface, which need to be informed after they are loaded (as they depend
+   * on this callback to complete initialization work)
+   */
+  private void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
+    CharFilterFactory[] charFilters = chain.getCharFilterFactories();
+    for (CharFilterFactory next : charFilters) {
+      if (next instanceof ResourceLoaderAware) {
+        try {
+          SolrResourceLoader.informAware(loader, (ResourceLoaderAware) next);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      }
+    }
+
+    TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
+    if (tokenizerFactory instanceof ResourceLoaderAware) {
+      try {
+        SolrResourceLoader.informAware(loader, (ResourceLoaderAware) tokenizerFactory);
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
+
+    TokenFilterFactory[] filters = chain.getTokenFilterFactories();
+    for (TokenFilterFactory next : filters) {
+      if (next instanceof ResourceLoaderAware) {
+        try {
+          SolrResourceLoader.informAware(loader, (ResourceLoaderAware) next);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      }
+    }
   }
 
   /**

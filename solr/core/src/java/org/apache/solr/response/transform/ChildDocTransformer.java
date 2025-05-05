@@ -21,12 +21,9 @@ import static org.apache.solr.response.transform.ChildDocTransformerFactory.NUM_
 import static org.apache.solr.response.transform.ChildDocTransformerFactory.PATH_SEP_CHAR;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +44,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
@@ -64,7 +63,7 @@ class ChildDocTransformer extends DocTransformer {
   private final int limit;
   private final boolean isNestedSchema;
   private final SolrReturnFields childReturnFields;
-  private String[] extraRequestedFields;
+  private final String[] extraRequestedFields;
 
   ChildDocTransformer(
       String name,
@@ -127,11 +126,10 @@ class ChildDocTransformer extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument rootDoc, int rootDocId) {
+  public void transform(SolrDocument rootDoc, int rootDocId, DocIterationInfo docInfo) {
     // note: this algorithm works if both if we have have _nest_path_  and also if we don't!
 
     try {
-
       // lookup what the *previous* rootDocId is, and figure which segment this is
       final SolrIndexSearcher searcher = context.getSearcher();
       final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
@@ -172,10 +170,11 @@ class ChildDocTransformer extends DocTransformer {
               segRootId, DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME));
 
       // the key in the Map is the document's ancestors key (one above the parent), while the key in
-      // the intermediate MultiMap is the direct child document's key(of the parent document)
-      final Map<String, Multimap<String, SolrDocument>> pendingParentPathsToChildren =
+      // the intermediate Map is the direct child document's key(of the parent document)
+      final Map<String, Map<String, List<SolrDocument>>> pendingParentPathsToChildren =
           new HashMap<>();
 
+      SolrDocumentFetcher docFetcher = context.getDocFetcher();
       final int firstChildId = segBaseId + segPrevRootId + 1;
       int matches = 0;
       // Loop each child ID up to the parent (exclusive).
@@ -210,12 +209,12 @@ class ChildDocTransformer extends DocTransformer {
           ++matches; // note: includes ancestors that are not necessarily in childDocSet
 
           // load the doc
-          SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, childReturnFields);
+          SolrDocument doc = docFetcher.solrDoc(docId, childReturnFields);
           if (childReturnFields.getTransformer() != null) {
             if (childReturnFields.getTransformer().context == null) {
               childReturnFields.getTransformer().setContext(context);
             }
-            childReturnFields.getTransformer().transform(doc, docId);
+            childReturnFields.getTransformer().transform(doc, docId, docInfo);
           }
 
           if (isAncestor) {
@@ -230,12 +229,13 @@ class ChildDocTransformer extends DocTransformer {
           // put into pending:
           // trim path if the doc was inside array, see trimPathIfArrayDoc()
           // e.g. toppings#1/ingredients#1 -> outer map key toppings#1
-          // -> inner MultiMap key ingredients
+          // -> inner Map key ingredients
           // or lonely#/lonelyGrandChild# -> outer map key lonely#
-          // -> inner MultiMap key lonelyGrandChild#
+          // -> inner Map key lonelyGrandChild#
           pendingParentPathsToChildren
-              .computeIfAbsent(parentDocPath, x -> ArrayListMultimap.create())
-              .put(trimLastPoundIfArray(lastPath), doc); // multimap add (won't replace)
+              .computeIfAbsent(parentDocPath, x -> new HashMap<>())
+              .computeIfAbsent(trimLastPoundIfArray(lastPath), k -> new ArrayList<>())
+              .add(doc);
         }
       }
 
@@ -258,14 +258,14 @@ class ChildDocTransformer extends DocTransformer {
   }
 
   private static void addChildrenToParent(
-      SolrDocument parent, Multimap<String, SolrDocument> children) {
-    for (String childLabel : children.keySet()) {
-      addChildrenToParent(parent, children.get(childLabel), childLabel);
+      SolrDocument parent, Map<String, List<SolrDocument>> children) {
+    for (Map.Entry<String, List<SolrDocument>> entry : children.entrySet()) {
+      addChildrenToParent(parent, entry.getValue(), entry.getKey());
     }
   }
 
   private static void addChildrenToParent(
-      SolrDocument parent, Collection<SolrDocument> children, String cDocsPath) {
+      SolrDocument parent, List<SolrDocument> children, String cDocsPath) {
     // if no paths; we do not need to add the child document's relation to its parent document.
     if (cDocsPath.equals(ANON_CHILD_KEY)) {
       parent.addChildDocuments(children);
@@ -282,7 +282,7 @@ class ChildDocTransformer extends DocTransformer {
       return;
     }
     // is single value
-    parent.setField(trimmedPath, ((List) children).get(0));
+    parent.setField(trimmedPath, children.get(0));
   }
 
   private static String getLastPath(String path) {

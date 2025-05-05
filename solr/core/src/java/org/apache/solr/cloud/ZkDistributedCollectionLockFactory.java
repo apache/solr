@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import com.google.common.base.Preconditions;
+import java.util.Objects;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -45,13 +45,15 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
       String collName,
       String shardId,
       String replicaName) {
-    Preconditions.checkArgument(collName != null, "collName can't be null");
-    Preconditions.checkArgument(
-        level == CollectionParams.LockLevel.COLLECTION || shardId != null,
-        "shardId can't be null when getting lock for shard or replica");
-    Preconditions.checkArgument(
-        level != CollectionParams.LockLevel.REPLICA || replicaName != null,
-        "replicaName can't be null when getting lock for replica");
+    Objects.requireNonNull(collName, "collName can't be null");
+    if (level != CollectionParams.LockLevel.COLLECTION) {
+      Objects.requireNonNull(
+          shardId, "shardId can't be null when getting lock for shard or replica");
+    }
+    if (level == CollectionParams.LockLevel.REPLICA) {
+      Objects.requireNonNull(
+          replicaName, "replicaName can't be null when getting lock for replica");
+    }
 
     String lockPath = getLockPath(level, collName, shardId, replicaName);
     return doCreateLock(isWriteLock, lockPath);

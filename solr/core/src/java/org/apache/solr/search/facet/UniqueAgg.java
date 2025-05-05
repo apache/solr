@@ -16,19 +16,20 @@
  */
 package org.apache.solr.search.facet;
 
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongSet;
+import com.carrotsearch.hppc.cursors.LongCursor;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.LongIterator;
-import org.apache.solr.util.LongSet;
 
 public class UniqueAgg extends StrAggValueSource {
   public static final String UNIQUE = "unique";
@@ -81,11 +82,10 @@ public class UniqueAgg extends StrAggValueSource {
       sumUnique += unique;
 
       int valsListed = 0;
-      @SuppressWarnings("unchecked")
       List<?> vals = (List<?>) map.get(VALS);
       if (vals != null) {
         if (values == null) {
-          values = new HashSet<>(vals.size() * 4);
+          values = CollectionUtil.newHashSet(vals.size() * 4);
         }
         values.addAll(vals);
         valsListed = vals.size();
@@ -147,7 +147,7 @@ public class UniqueAgg extends StrAggValueSource {
     protected void collectValues(int doc, int slot) throws IOException {
       LongSet set = sets[slot];
       if (set == null) {
-        set = sets[slot] = new LongSet(16);
+        set = sets[slot] = new LongHashSet(16);
       }
       collectValues(doc, set);
     }
@@ -173,7 +173,7 @@ public class UniqueAgg extends StrAggValueSource {
      */
     private int getCardinality(int slot) {
       LongSet set = sets[slot];
-      return set == null ? 0 : set.cardinality();
+      return set == null ? 0 : set.size();
     }
 
     public Object getShardValue(int slot) throws IOException {
@@ -189,9 +189,8 @@ public class UniqueAgg extends StrAggValueSource {
       if (unique <= maxExplicit) {
         List<Long> lst = new ArrayList<>(Math.min(unique, maxExplicit));
         if (set != null) {
-          LongIterator iter = set.iterator();
-          while (iter.hasNext()) {
-            lst.add(iter.next());
+          for (LongCursor v : set) {
+            lst.add(v.value);
           }
         }
         map.add(VALS, lst);

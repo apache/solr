@@ -16,11 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
-import com.google.common.base.MoreObjects;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,6 +38,7 @@ import org.apache.solr.highlight.UnifiedSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
@@ -98,7 +99,7 @@ public class HighlightComponent extends SearchComponent
       rb.setNeedDocList(true);
       String hlq = params.get(HighlightParams.Q);
       String hlparser =
-          MoreObjects.firstNonNull(
+          Objects.requireNonNullElse(
               params.get(HighlightParams.QPARSER),
               params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
       if (hlq != null) {
@@ -164,6 +165,8 @@ public class HighlightComponent extends SearchComponent
           // TODO ???? add this directly to the response?
           rb.rsp.add(highlightingResponseField(), convertHighlights(sumData));
         }
+        QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+        queryLimits.maybeExitWithPartialResults("Highlighting process");
       }
     }
   }

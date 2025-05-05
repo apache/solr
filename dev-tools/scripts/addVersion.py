@@ -23,7 +23,7 @@ from scriptutil import *
 import argparse
 import re
 from configparser import ConfigParser, ExtendedInterpolation
-from textwrap import dedent
+
 
 def update_changes(filename, new_version, init_changes, headers):
   print('  adding new section to %s...' % filename, end='', flush=True)
@@ -44,9 +44,9 @@ def update_changes(filename, new_version, init_changes, headers):
   print('done' if changed else 'uptodate')
 
 def update_solrversion_class(new_version):
-  filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
+  filename = 'solr/api/src/java/org/apache/solr/client/api/util/SolrVersion.java'
   print('  changing version to %s...' % new_version.dot, end='', flush=True)
-  constant_prefix = 'private static final String LATEST_STRING = "(.*?)"'
+  constant_prefix = 'public static final String LATEST_STRING = "(.*?)"'
   matcher = re.compile(constant_prefix)
 
   def edit(buffer, match, line):
@@ -104,7 +104,7 @@ def update_solrconfig(filename, matcher, new_version):
 
 def check_solr_version_class_tests():
   print('  checking solr version tests...', end='', flush=True)
-  run('./gradlew -p solr/core test --tests TestSolrVersion')
+  run('./gradlew -p solr/api test --tests TestSolrVersion')
   print('ok')
 
 def check_lucene_match_version_tests():
@@ -115,7 +115,7 @@ def check_lucene_match_version_tests():
 def read_config(current_version, current_lucene_version):
   parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files')
   parser.add_argument('version', type=Version.parse, help='New Solr version')
-  parser.add_argument('-l', dest='lucene_version', type=Version.parse, help='Optional lucene version. By default will read versions.props')
+  parser.add_argument('-l', dest='lucene_version', type=Version.parse, help='Optional lucene version. By default will read gradle/libs.versions.toml')
   newconf = parser.parse_args()
   if not newconf.lucene_version:
     newconf.lucene_version = current_lucene_version
@@ -148,7 +148,7 @@ def main():
 
   print('\nAdding new version %s' % newconf.version)
   update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
-                 ['Bug Fixes'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
+                 ['Bug Fixes', 'Dependency Upgrades'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Dependency Upgrades', 'Other Changes'])
 
   if newconf.is_latest_version:
     print('\nAdded version is latest version, updating...')

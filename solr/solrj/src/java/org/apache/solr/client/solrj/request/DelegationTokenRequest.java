@@ -19,12 +19,13 @@ package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
 import java.util.TreeSet;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Class for making Solr delegation token requests.
@@ -42,13 +43,13 @@ public abstract class DelegationTokenRequest<
     // path doesn't really matter -- the filter will respond to any path.
     // setting the path to admin/collections lets us pass through CloudSolrServer
     // without having to specify a collection (that may not even exist yet).
-    super(m, "/admin/collections");
+    super(m, "/admin/collections", SolrRequestType.ADMIN);
   }
 
   protected abstract Q getThis();
 
   @Override
-  protected abstract R createResponse(SolrClient client);
+  protected abstract R createResponse(NamedList<Object> namedList);
 
   public static class Get extends DelegationTokenRequest<Get, DelegationTokenResponse.Get> {
     protected String renewer;
@@ -60,7 +61,7 @@ public abstract class DelegationTokenRequest<
     public Get(String renewer) {
       super(METHOD.GET);
       this.renewer = renewer;
-      setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      setResponseParser(new JsonMapResponseParser());
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY)));
     }
 
@@ -78,13 +79,8 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public DelegationTokenResponse.Get createResponse(SolrClient client) {
+    public DelegationTokenResponse.Get createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Get();
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequestType.ADMIN.toString();
     }
   }
 
@@ -99,7 +95,7 @@ public abstract class DelegationTokenRequest<
     public Renew(String token) {
       super(METHOD.PUT);
       this.token = token;
-      setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      setResponseParser(new JsonMapResponseParser());
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 
@@ -112,13 +108,8 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public DelegationTokenResponse.Renew createResponse(SolrClient client) {
+    public DelegationTokenResponse.Renew createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Renew();
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequestType.ADMIN.toString();
     }
   }
 
@@ -129,7 +120,7 @@ public abstract class DelegationTokenRequest<
     public Cancel(String token) {
       super(METHOD.PUT);
       this.token = token;
-      setResponseParser(new NoOpResponseParser());
+      setResponseParser(new NoOpResponseParser("xml"));
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 
@@ -147,13 +138,8 @@ public abstract class DelegationTokenRequest<
     }
 
     @Override
-    public DelegationTokenResponse.Cancel createResponse(SolrClient client) {
+    public DelegationTokenResponse.Cancel createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Cancel();
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequestType.ADMIN.toString();
     }
   }
 }

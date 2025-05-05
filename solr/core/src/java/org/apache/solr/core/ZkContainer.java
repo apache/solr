@@ -19,20 +19,15 @@ package org.apache.solr.core;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
-import java.util.List;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
@@ -40,6 +35,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -90,16 +86,16 @@ public class ZkContainer {
     // TODO: remove after updating to an slf4j based zookeeper
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
-    String solrHome = cc.getSolrHome();
+    Path solrHome = cc.getSolrHome();
     if (zkRun != null) {
       String zkDataHome =
-          System.getProperty("zkServerDataDir", Paths.get(solrHome).resolve("zoo_data").toString());
-      String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
+          System.getProperty("zkServerDataDir", solrHome.resolve("zoo_data").toString());
+      String zkConfHome = System.getProperty("zkServerConfDir", solrHome.toString());
       zkServer =
           new SolrZkServer(
               stripChroot(zkRun),
               stripChroot(config.getZkHost()),
-              new File(zkDataHome),
+              Path.of(zkDataHome),
               zkConfHome,
               config.getSolrHostPort());
       zkServer.parseConfig();
@@ -111,7 +107,7 @@ public class ZkContainer {
       }
     }
 
-    int zkClientConnectTimeout = 30000;
+    int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
 
     if (zookeeperHost != null) {
 
@@ -126,30 +122,17 @@ public class ZkContainer {
         }
         boolean createRoot = Boolean.getBoolean("createZkChroot");
 
-        // We may have already loaded NodeConfig from zookeeper with same connect string, so no need
-        // to recheck chroot
-        boolean alreadyUsedChroot =
-            (cc.getConfig().isFromZookeeper()
-                && zookeeperHost.equals(cc.getConfig().getDefaultZkHost()));
-        if (!alreadyUsedChroot
-            && !ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
+        if (!ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
           throw new ZooKeeperException(
               SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
 
-        Supplier<List<CoreDescriptor>> descriptorsSupplier =
-            () ->
-                cc.getCores().stream()
-                    .map(SolrCore::getCoreDescriptor)
-                    .collect(Collectors.toList());
-
         ZkController zkController =
-            new ZkController(
-                cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
+            new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
         if (zkRun != null) {
-          if (StringUtils.isNotEmpty(System.getProperty(HTTPS_PORT_PROP))) {
+          if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
                 .setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);
@@ -190,7 +173,7 @@ public class ZkContainer {
   }
 
   private String stripChroot(String zkRun) {
-    if (zkRun == null || zkRun.trim().length() == 0 || zkRun.lastIndexOf('/') < 0) return zkRun;
+    if (zkRun == null || zkRun.trim().isEmpty() || zkRun.lastIndexOf('/') < 0) return zkRun;
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
@@ -219,21 +202,21 @@ public class ZkContainer {
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              SolrException.log(log, "", e);
+              log.error("Interrupted", e);
             } catch (KeeperException e) {
-              SolrException.log(log, "", e);
-            } catch (AlreadyClosedException e) {
+              log.error("KeeperException registering core {}", core.getName(), e);
+            } catch (IllegalStateException ignore) {
 
             } catch (Exception e) {
+              log.error("Exception registering core {}", core.getName(), e);
               try {
                 zkController.publish(cd, Replica.State.DOWN);
               } catch (InterruptedException e1) {
                 Thread.currentThread().interrupt();
-                log.error("", e1);
+                log.error("Interrupted", e1);
               } catch (Exception e1) {
-                log.error("", e1);
+                log.error("Exception publishing down state for core {}", core.getName(), e1);
               }
-              SolrException.log(log, "", e);
             }
           } finally {
             MDCLoggingContext.clear();
@@ -254,16 +237,16 @@ public class ZkContainer {
   public void close() {
 
     try {
-      if (zkController != null) {
-        zkController.close();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
     } finally {
       try {
+        if (zkController != null) {
+          zkController.close();
+        }
+      } finally {
         if (zkServer != null) {
           zkServer.stop();
         }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
       }
     }
   }

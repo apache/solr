@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +33,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.client.api.model.CollectionStatusResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -39,10 +41,11 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
@@ -149,7 +152,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          storedFieldsReader.visitDocument(docId, visitor);
+          storedFieldsReader.document(docId, visitor);
         }
       }
     } finally {
@@ -177,58 +180,42 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     assertEquals(0, sampledRsp.getStatus());
     for (int i : Arrays.asList(1, 2)) {
       @SuppressWarnings({"unchecked"})
-      NamedList<Object> segInfos =
-          (NamedList<Object>)
-              rsp.getResponse()
-                  .findRecursive(collection, "shards", "shard" + i, "leader", "segInfos");
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> rawSize = (NamedList<Object>) segInfos.get("rawSize");
+      final var segInfosRaw =
+          Utils.getObjectByPath(
+              rsp.getResponse(),
+              false,
+              List.of(collection, "shards", "shard" + i, "leader", "segInfos"));
+      final var segInfos =
+          SolrJacksonMapper.getObjectMapper()
+              .convertValue(segInfosRaw, CollectionStatusResponse.SegmentInfo.class);
+
+      final var rawSize = segInfos.rawSize;
       assertNotNull("rawSize missing", rawSize);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> rawSizeMap = rawSize.asMap(10);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> fieldsBySize =
-          (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
+      Map<String, String> fieldsBySize = rawSize.fieldsBySize;
       assertNotNull("fieldsBySize missing", fieldsBySize);
       assertEquals(fieldsBySize.toString(), fields.size(), fieldsBySize.size());
       fields.forEach(field -> assertNotNull("missing field " + field, fieldsBySize.get(field)));
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> typesBySize =
-          (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.TYPES_BY_SIZE);
+      Map<String, String> typesBySize = rawSize.typesBySize;
       assertNotNull("typesBySize missing", typesBySize);
       assertTrue("expected at least 8 types: " + typesBySize, typesBySize.size() >= 8);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> summary =
-          (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.SUMMARY);
+      Map<String, Object> summary = rawSize.summary;
       assertNotNull("summary missing", summary);
       assertEquals(summary.toString(), fields.size(), summary.size());
       fields.forEach(field -> assertNotNull("missing field " + field, summary.get(field)));
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> details =
-          (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.DETAILS);
+      Map<String, Object> details = (Map<String, Object>) rawSize.details;
       assertNotNull("details missing", summary);
       assertEquals(details.keySet().toString(), 6, details.size());
 
       // compare with sampled
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> sampledRawSize =
-          (NamedList<Object>)
-              rsp.getResponse()
-                  .findRecursive(
-                      collection, "shards", "shard" + i, "leader", "segInfos", "rawSize");
+      final var sampledRawSize = rawSize;
       assertNotNull("sampled rawSize missing", sampledRawSize);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> sampledRawSizeMap = rawSize.asMap(10);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> sampledFieldsBySize =
-          (Map<String, Object>) sampledRawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
+      Map<String, String> sampledFieldsBySize = sampledRawSize.fieldsBySize;
       assertNotNull("sampled fieldsBySize missing", sampledFieldsBySize);
       fieldsBySize.forEach(
           (k, v) -> {
-            double size = fromHumanReadableUnits((String) v);
-            double sampledSize = fromHumanReadableUnits((String) sampledFieldsBySize.get(k));
-            assertNotNull(
-                "sampled size missing for field " + k + " in " + sampledFieldsBySize, sampledSize);
+            double size = fromHumanReadableUnits(v);
+            double sampledSize = fromHumanReadableUnits(sampledFieldsBySize.get(k));
             double delta = size * 0.5;
             assertEquals("sampled size of " + k + " is wildly off", size, sampledSize, delta);
           });

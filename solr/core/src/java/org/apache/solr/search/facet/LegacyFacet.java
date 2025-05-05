@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrReturnFields;
@@ -122,8 +123,8 @@ public class LegacyFacet {
 
   protected void addQueryFacet(String q) {
     parseParams(FacetParams.FACET_QUERY, q);
-    Map<String, Object> cmd = new HashMap<>(2);
-    Map<String, Object> type = new HashMap<>(1);
+    Map<String, Object> cmd = CollectionUtil.newHashMap(2);
+    Map<String, Object> type = CollectionUtil.newHashMap(1);
     type.put("query", cmd);
     cmd.put("q", q);
     addSub(key, type);
@@ -132,8 +133,8 @@ public class LegacyFacet {
 
   protected void addRangeFacet(String field) {
     parseParams(FacetParams.FACET_RANGE, field);
-    Map<String, Object> cmd = new HashMap<>(5);
-    Map<String, Object> type = new HashMap<>(1);
+    Map<String, Object> cmd = CollectionUtil.newHashMap(5);
+    Map<String, Object> type = CollectionUtil.newHashMap(1);
     type.put("range", cmd);
 
     String f = key;
@@ -191,7 +192,7 @@ public class LegacyFacet {
       cmd.put(SORT, sort); // can be sort by one of our stats
     }
 
-    Map<String, Object> type = new HashMap<>(1);
+    Map<String, Object> type = CollectionUtil.newHashMap(1);
     type.put("terms", cmd);
 
     addSub(key, type);

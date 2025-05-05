@@ -16,8 +16,7 @@
  */
 package org.apache.solr.request;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
+import io.opentelemetry.api.trace.Span;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -148,11 +147,6 @@ public class DelegatingSolrQueryRequest implements SolrQueryRequest {
   @Override
   public HttpSolrCall getHttpSolrCall() {
     return delegate.getHttpSolrCall();
-  }
-
-  @Override
-  public Tracer getTracer() {
-    return delegate.getTracer();
   }
 
   @Override

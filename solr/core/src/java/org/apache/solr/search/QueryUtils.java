@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.BooleanClause;
@@ -31,9 +32,11 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** */
@@ -41,8 +44,7 @@ public class QueryUtils {
 
   /** return true if this query has no positive components */
   public static boolean isNegative(Query q) {
-    if (!(q instanceof BooleanQuery)) return false;
-    BooleanQuery bq = (BooleanQuery) q;
+    if (!(q instanceof BooleanQuery bq)) return false;
     Collection<BooleanClause> clauses = bq.clauses();
     if (clauses.size() == 0) return false;
     for (BooleanClause clause : clauses) {
@@ -83,6 +85,47 @@ public class QueryUtils {
     }
   }
 
+  public static final int NO_PREFIX_QUERY_LENGTH_LIMIT = -1;
+
+  /**
+   * Validates that a provided prefix query obeys any limits (if configured) on the minimum
+   * allowable prefix size
+   *
+   * <p>The limit is retrieved from the provided QParser (see {@link
+   * QParser#getPrefixQueryMinPrefixLength()} for the default implementation).
+   *
+   * @param parser the QParser used to parse the query being validated. No limit will be enforced if
+   *     'null'
+   * @param query the query to validate. Limits will only be enforced if this is a {@link
+   *     PrefixQuery}
+   * @param prefix a String term included in the provided query. Its size is compared against the
+   *     configured limit
+   */
+  public static void ensurePrefixQueryObeysMinimumPrefixLength(
+      QParser parser, Query query, String prefix) {
+    if (!(query instanceof PrefixQuery)) {
+      return;
+    }
+
+    final var minPrefixLength =
+        parser != null ? parser.getPrefixQueryMinPrefixLength() : NO_PREFIX_QUERY_LENGTH_LIMIT;
+    if (minPrefixLength == NO_PREFIX_QUERY_LENGTH_LIMIT) {
+      return;
+    }
+
+    if (prefix.length() < minPrefixLength) {
+      final var message =
+          String.format(
+              Locale.ROOT,
+              "Query [%s] does not meet the minimum prefix length [%d] (actual=[%d]).  Please try with a larger prefix, or adjust %s in your solrconfig.xml",
+              query,
+              minPrefixLength,
+              prefix.length(),
+              SolrConfig.MIN_PREFIX_QUERY_TERM_LENGTH);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+    }
+  }
+
   /**
    * Returns the original query if it was already a positive query, otherwise return the negative of
    * the query (i.e., a positive query).
@@ -96,8 +139,7 @@ public class QueryUtils {
    * @return Absolute version of the Query
    */
   public static Query getAbs(Query q) {
-    if (q instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) q;
+    if (q instanceof BoostQuery bq) {
       Query subQ = bq.getQuery();
       Query absSubQ = getAbs(subQ);
       if (absSubQ.equals(subQ)) return q;
@@ -111,8 +153,7 @@ public class QueryUtils {
       return new WrappedQuery(absSubQ);
     }
 
-    if (!(q instanceof BooleanQuery)) return q;
-    BooleanQuery bq = (BooleanQuery) q;
+    if (!(q instanceof BooleanQuery bq)) return q;
 
     Collection<BooleanClause> clauses = bq.clauses();
     if (clauses.size() == 0) return q;
@@ -154,8 +195,7 @@ public class QueryUtils {
    */
   public static Query fixNegativeQuery(Query q) {
     float boost = 1f;
-    if (q instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) q;
+    if (q instanceof BoostQuery bq) {
       boost = bq.getBoost();
       q = bq.getQuery();
     }
@@ -229,14 +269,11 @@ public class QueryUtils {
    * Parse the filter queries in Solr request
    *
    * @param req Solr request
-   * @param fixNegativeQueries if true, negative queries are rewritten by adding a MatchAllDocs
-   *     query clause
    * @return and array of Query. If the request does not contain filter queries, returns an empty
    *     list.
    * @throws SyntaxError if an error occurs during parsing
    */
-  public static List<Query> parseFilterQueries(SolrQueryRequest req, boolean fixNegativeQueries)
-      throws SyntaxError {
+  public static List<Query> parseFilterQueries(SolrQueryRequest req) throws SyntaxError {
 
     String[] filterQueriesStr = req.getParams().getParams(CommonParams.FQ);
 
@@ -247,9 +284,6 @@ public class QueryUtils {
           QParser fqp = QParser.getParser(fq, req);
           fqp.setIsFilter(true);
           Query query = fqp.getQuery();
-          if (fixNegativeQueries) {
-            query = makeQueryable(query);
-          }
           filters.add(query);
         }
       }
@@ -288,8 +322,7 @@ public class QueryUtils {
       Object tagVal = tagMap.get(tagName);
       if (!(tagVal instanceof Collection)) continue;
       for (Object obj : (Collection<?>) tagVal) {
-        if (!(obj instanceof QParser)) continue;
-        QParser qParser = (QParser) obj;
+        if (!(obj instanceof QParser qParser)) continue;
         Query query;
         try {
           query = qParser.getQuery();

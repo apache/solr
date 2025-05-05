@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,7 +46,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -54,6 +54,7 @@ import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -66,13 +67,15 @@ import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.apache.solr.util.RefCounted;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -95,6 +98,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -202,8 +208,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     final TopDocs docs = searcher.search(join(one("cd")), 10);
     assertEquals(2, docs.totalHits.value);
     final String pAct =
-        searcher.doc(docs.scoreDocs[0].doc).get(parent)
-            + searcher.doc(docs.scoreDocs[1].doc).get(parent);
+        searcher.getDocFetcher().doc(docs.scoreDocs[0].doc).get(parent)
+            + searcher.getDocFetcher().doc(docs.scoreDocs[1].doc).get(parent);
     assertTrue(pAct.contains(dubbed) && pAct.contains(overwritten) && pAct.length() == 2);
 
     assertQ(req("id:66", "//*[@numFound='6']"));
@@ -322,7 +328,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> indexSolrInputDocumentsDirectly(document1));
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         containsString("Anonymous child docs can only hang from others or the root"));
   }
@@ -446,7 +452,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Collections.shuffle(docs, random());
     req.add(docs);
 
-    RequestWriter requestWriter = new RequestWriter();
+    RequestWriter requestWriter = new XMLRequestWriter();
     OutputStream os = new ByteArrayOutputStream();
     requestWriter.write(req, os);
     assertBlockU(os.toString());
@@ -458,6 +464,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("yz"), "X");
     assertSingleParentOf(searcher, one("bc"), "A");
   }
+
   // This is the same as testSolrJXML above but uses the XMLLoader
   // to illustrate the structure of the XML documents
   @Test
@@ -512,7 +519,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Collections.shuffle(docs, random());
     req.add(docs);
 
-    RequestWriter requestWriter = new RequestWriter();
+    RequestWriter requestWriter = new XMLRequestWriter();
     OutputStream os = new ByteArrayOutputStream();
     requestWriter.write(req, os);
     assertBlockU(os.toString());
@@ -698,7 +705,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Collections.shuffle(docs, random());
     req.add(docs);
 
-    RequestWriter requestWriter = new RequestWriter();
+    RequestWriter requestWriter = new XMLRequestWriter();
     OutputStream os = new ByteArrayOutputStream();
     requestWriter.write(req, os);
     assertBlockU(os.toString());
@@ -707,6 +714,110 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     final SolrIndexSearcher searcher = getSearcher();
     assertSingleParentOf(searcher, one("yz"), "X");
     assertSingleParentOf(searcher, one("bc"), "A");
+  }
+
+  @Test
+  public void testXMLSingleLabeledNestedChild() throws IOException, XMLStreamException {
+    UpdateRequest req = new UpdateRequest();
+
+    List<SolrInputDocument> docs = new ArrayList<>();
+
+    String xml_doc1 =
+        "<doc >"
+            + "  <field name=\"id\">1</field>"
+            + "  <field name=\"parent_s\">A</field>"
+            + "  <doc name=\"single_child\">"
+            + "    <field name=\"id\">2</field>"
+            + "    <field name=\"child_s\">b</field>"
+            + "  </doc>"
+            + "  <field name=\"children\">"
+            + "    <doc>"
+            + "      <field name=\"id\">3</field>"
+            + "      <field name=\"child_s\">c</field>"
+            + "    </doc>"
+            + "    <doc>"
+            + "      <field name=\"id\">4</field>"
+            + "      <field name=\"child_s\">d</field>"
+            + "    </doc>"
+            + "  </field>"
+            + "</doc>";
+
+    String xml_doc2 =
+        "<doc >"
+            + "  <field name=\"id\">5</field>"
+            + "  <field name=\"parent_s\">E</field>"
+            + "  <doc name=\"single_child_1\">"
+            + "    <field name=\"id\">6</field>"
+            + "    <field name=\"child_s\">f</field>"
+            + "  </doc>"
+            + "  <doc name=\"single_child_2\">"
+            + "    <field name=\"id\">7</field>"
+            + "    <field name=\"child_s\">g</field>"
+            + "  </doc>"
+            + "  <doc name=\"single_child_3\">"
+            + "    <field name=\"id\">8</field>"
+            + "    <field name=\"child_s\">h</field>"
+            + "  </doc>"
+            + "</doc>";
+
+    XMLStreamReader parser = inputFactory.createXMLStreamReader(new StringReader(xml_doc1));
+    parser.next(); // read the START document...
+    // null for the processor is all right here
+    XMLLoader loader = new XMLLoader();
+    SolrInputDocument document1 = loader.readDoc(parser);
+
+    XMLStreamReader parser2 = inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
+    parser2.next(); // read the START document...
+    // null for the processor is all right here
+    // XMLLoader loader = new XMLLoader();
+    SolrInputDocument document2 = loader.readDoc(parser2);
+
+    assertFalse(document1.hasChildDocuments());
+    assertEquals(
+        document1.toString(),
+        sdoc(
+                "id",
+                "1",
+                "parent_s",
+                "A",
+                "single_child",
+                sdoc("id", "2", "child_s", "b"),
+                "children",
+                sdocs(sdoc("id", "3", "child_s", "c"), sdoc("id", "4", "child_s", "d")))
+            .toString());
+
+    assertFalse(document2.hasChildDocuments());
+    assertEquals(
+        document2.toString(),
+        sdoc(
+                "id",
+                "5",
+                "parent_s",
+                "E",
+                "single_child_1",
+                sdoc("id", "6", "child_s", "f"),
+                "single_child_2",
+                sdoc("id", "7", "child_s", "g"),
+                "single_child_3",
+                sdoc("id", "8", "child_s", "h"))
+            .toString());
+
+    docs.add(document1);
+    docs.add(document2);
+
+    Collections.shuffle(docs, random());
+    req.add(docs);
+
+    RequestWriter requestWriter = new XMLRequestWriter();
+    OutputStream os = new ByteArrayOutputStream();
+    requestWriter.write(req, os);
+    assertBlockU(os.toString());
+    assertU(commit());
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertSingleParentOf(searcher, "b", "A");
+    assertSingleParentOf(searcher, one("bcd"), "A");
+    assertSingleParentOf(searcher, one("fgh"), "E");
   }
 
   @Test
@@ -918,7 +1029,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       throws IOException {
     final TopDocs docs = searcher.search(join(childTerm), 10);
     assertEquals(1, docs.totalHits.value);
-    final String pAct = searcher.doc(docs.scoreDocs[0].doc).get(parent);
+    final String pAct = searcher.getDocFetcher().doc(docs.scoreDocs[0].doc).get(parent);
     assertEquals(parentExp, pAct);
   }
 

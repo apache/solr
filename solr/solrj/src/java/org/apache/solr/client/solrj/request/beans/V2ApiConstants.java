@@ -23,6 +23,7 @@ public class V2ApiConstants {
 
   /** Parent key for collection or alias properties to set. */
   public static final String PROPERTIES_KEY = "properties";
+
   /** Parent key for v2 params used to create a collection. */
   public static final String CREATE_COLLECTION_KEY = "create-collection";
 
@@ -31,6 +32,9 @@ public class V2ApiConstants {
 
   /** Parameter name for the configset used by a collection */
   public static final String CONFIG = "config";
+
+  /** Parameter for explicitly providing a name for each shard during collection creation. */
+  public static final String SHARD_NAMES = "shardNames";
 
   /** Property controlling whether 'nodeSet' should be shuffled before use. */
   public static final String SHUFFLE_NODES = "shuffleNodes";

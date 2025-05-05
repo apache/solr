@@ -55,7 +55,8 @@ In Solr, one or more <<document,Documents>> grouped together in a single logical
 In <<solrclouddef,SolrCloud>> a collection may be divided up into multiple logical shards, which may in turn be distributed across many nodes.
 +
 Single-node installations and user-managed clusters use instead the concept of a <<core,Core>>.
-
+"Collection" is most frequently used in the SolrCloud context, but as it represents a "logical index", the term may be used to refer to individual cores in a user-managed cluster as well.
++
 [[defcommit]]Commit::
 To make document changes permanent in the index.
 In the case of added documents, they would be searchable after a _commit_.

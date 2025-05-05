@@ -16,16 +16,16 @@
  */
 package org.apache.solr.cloud;
 
-import com.google.common.util.concurrent.AtomicLongMap;
+import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.management.JMException;
 import org.apache.solr.SolrTestCaseJ4;
@@ -46,7 +48,6 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
@@ -59,6 +60,7 @@ import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.command.FourLetterCommands;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.apache.zookeeper.test.ClientBase;
@@ -138,8 +140,8 @@ public class ZkTestServer {
       private final String desc;
 
       private volatile LimitViolationAction action;
-      private AtomicLongMap<String> counters = AtomicLongMap.create();
-      private ConcurrentHashMap<String, Long> maxCounters = new ConcurrentHashMap<>();
+      private final Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
+      private final ConcurrentHashMap<String, Long> maxCounters = new ConcurrentHashMap<>();
 
       WatchLimit(long limit, String desc, LimitViolationAction action) {
         this.limit = limit;
@@ -158,7 +160,7 @@ public class ZkTestServer {
       public void updateForWatch(String key, Watcher watcher) {
         if (watcher != null) {
           log.debug("Watch added: {}: {}", desc, key);
-          long count = counters.incrementAndGet(key);
+          long count = counters.computeIfAbsent(key, k -> new AtomicLong()).incrementAndGet();
           Long lastCount = maxCounters.get(key);
           if (lastCount == null || count > lastCount) {
             maxCounters.put(key, count);
@@ -184,11 +186,11 @@ public class ZkTestServer {
         if (log.isDebugEnabled()) {
           log.debug("Watch fired: {}: {}", desc, event.getPath());
         }
-        counters.decrementAndGet(event.getPath());
+        counters.get(event.getPath()).decrementAndGet();
       }
 
       private String reportLimitViolations() {
-        String[] maxKeys = maxCounters.keySet().toArray(new String[maxCounters.size()]);
+        String[] maxKeys = maxCounters.keySet().toArray(new String[0]);
         Arrays.sort(
             maxKeys,
             new Comparator<>() {
@@ -268,7 +270,7 @@ public class ZkTestServer {
       }
     }
 
-    private class TestZKDatabase extends ZKDatabase {
+    private static class TestZKDatabase extends ZKDatabase {
 
       private final WatchLimiter limiter;
 
@@ -382,7 +384,9 @@ public class ZkTestServer {
           try {
             int port = cnxnFactory.getLocalPort();
             if (port > 0) {
-              ClientBase.waitForServerDown(getZkHost(), 30000);
+              assertTrue(
+                  "ZK Server did not go down when expected",
+                  ClientBase.waitForServerDown(getZkHost(), 30000));
             }
           } catch (NullPointerException ignored) {
             // server never successfully started
@@ -441,10 +445,20 @@ public class ZkTestServer {
 
   private void init(boolean solrFormat) throws Exception {
     try {
-      rootClient = new SolrZkClient(getZkHost(), TIMEOUT, 30000);
+      rootClient =
+          new SolrZkClient.Builder()
+              .withUrl(getZkHost())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+              .build();
     } catch (Exception e) {
       log.error("error making rootClient, trying one more time", e);
-      rootClient = new SolrZkClient(getZkHost(), TIMEOUT, 30000);
+      rootClient =
+          new SolrZkClient.Builder()
+              .withUrl(getZkHost())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+              .build();
     }
 
     if (solrFormat) {
@@ -452,7 +466,12 @@ public class ZkTestServer {
       makeSolrZkNode();
     }
 
-    chRootClient = new SolrZkClient(getZkAddress(), AbstractZkTestCase.TIMEOUT, 30000);
+    chRootClient =
+        new SolrZkClient.Builder()
+            .withUrl(getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+            .build();
   }
 
   public String getZkHost() {
@@ -484,7 +503,11 @@ public class ZkTestServer {
    * @throws IOException if an IO exception occurs
    */
   public void ensurePathExists(String path) throws IOException {
-    try (SolrZkClient client = new SolrZkClient(getZkHost(), 10000)) {
+    try (SolrZkClient client =
+        new SolrZkClient.Builder()
+            .withUrl(getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
     } catch (InterruptedException | KeeperException e) {
       log.error("Error checking path {}", path, e);
@@ -517,6 +540,8 @@ public class ZkTestServer {
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER");
+    ensureStatCommandWhitelisted();
+
     AtomicReference<Throwable> zooError = new AtomicReference<>();
     try {
       if (zooThread != null) {
@@ -542,18 +567,7 @@ public class ZkTestServer {
                     }
 
                     public void setClientPort(int clientPort) {
-                      if (clientPortAddress != null) {
-                        try {
-                          this.clientPortAddress =
-                              new InetSocketAddress(
-                                  InetAddress.getByName(clientPortAddress.getHostName()),
-                                  clientPort);
-                        } catch (UnknownHostException e) {
-                          throw new RuntimeException(e);
-                        }
-                      } else {
-                        this.clientPortAddress = new InetSocketAddress(clientPort);
-                      }
+                      this.clientPortAddress = new InetSocketAddress("127.0.0.1", clientPort);
                       log.info("client port: {}", this.clientPortAddress);
                     }
                   };
@@ -590,7 +604,8 @@ public class ZkTestServer {
       }
       log.info("start zk server on port: {}", port);
 
-      ClientBase.waitForServerUp(getZkHost(), 30000);
+      assertTrue(
+          "ZK Server did not go up when expected", ClientBase.waitForServerUp(getZkHost(), 30000));
 
       init(solrFormat);
     } catch (Exception e) {
@@ -779,7 +794,7 @@ public class ZkTestServer {
     if (log.isInfoEnabled()) {
       log.info("put {} to {}", file.toAbsolutePath(), destPath);
     }
-    zkClient.makePath(destPath, file, false, true);
+    zkClient.makePath(destPath, Files.readAllBytes(file), false, true);
   }
 
   // static to share with distrib test
@@ -789,42 +804,26 @@ public class ZkTestServer {
     props.put("configName", "conf1");
     final ZkNodeProps zkProps = new ZkNodeProps(props);
 
-    List<Op> ops = new ArrayList<>(2);
-    String path = "/collections";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/collections/collection1";
-    ops.add(
-        Op.create(
-            path,
-            Utils.toJSON(zkProps),
-            chRootClient.getZkACLProvider().getACLsToAdd(path),
-            CreateMode.PERSISTENT));
-    path = "/collections/collection1/shards";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/collections/control_collection";
-    ops.add(
-        Op.create(
-            path,
-            Utils.toJSON(zkProps),
-            chRootClient.getZkACLProvider().getACLsToAdd(path),
-            CreateMode.PERSISTENT));
-    path = "/collections/control_collection/shards";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/configs";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/configs/conf1";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    chRootClient.multi(ops, true);
+    chRootClient.multi(
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections", null),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/collection1", Utils.toJSON(zkProps)),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/collection1/shards", null),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/control_collection", Utils.toJSON(zkProps)),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/control_collection/shards", null),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs", null),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs/conf1", null));
 
     // for now, always upload the config and schema to the canonical names
     putConfig("conf1", chRootClient, solrhome, config, "solrconfig.xml");
@@ -861,5 +860,34 @@ public class ZkTestServer {
 
   public SolrZkClient getZkClient() {
     return chRootClient;
+  }
+
+  /** Ensure the {@link ClientBase} helper methods we want to use will work. */
+  private static void ensureStatCommandWhitelisted() {
+    // Use this instead of hardcoding "stat" so we get compile error if ZK removes the command
+    final String stat = FourLetterCommands.getCommandString(FourLetterCommands.statCmd);
+    if (!FourLetterCommands.isEnabled(stat)) {
+      final String original = System.getProperty(ZK_WHITELIST_PROPERTY);
+      try {
+        log.error(
+            "ZkTestServer requires the 'stat' command, temporarily manipulating your whitelist");
+        System.setProperty(ZK_WHITELIST_PROPERTY, "*");
+        FourLetterCommands.resetWhiteList();
+        // This call to isEnabled should force ZK to "re-read" the system property in it's static
+        // vrs
+        assertTrue(
+            "Temporary manipulation of ZK Whitelist didn't work?",
+            FourLetterCommands.isEnabled(stat));
+      } finally {
+        if (null == original) {
+          System.clearProperty(ZK_WHITELIST_PROPERTY);
+        } else {
+          System.setProperty(ZK_WHITELIST_PROPERTY, original);
+        }
+      }
+      assertTrue(
+          "Temporary manipulation of ZK Whitelist didn't survive re-setting original value, ZK 4LW init logic has broken this class",
+          FourLetterCommands.isEnabled(stat));
+    }
   }
 }

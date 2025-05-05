@@ -177,6 +177,7 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
    * @see #pattern
    */
   private String dest = null;
+
   /**
    * @see #dest
    */
@@ -215,7 +216,7 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
     }
 
     if (0 < args.size()) {
-      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
+      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): " + args);
     }
 
     super.init(args);
@@ -235,7 +236,7 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
 
     // if we got here we know we had pattern and replacement, now check for the other two  so that
     // we can give a better message than "unexpected"
-    if (0 <= args.indexOf(SOURCE_PARAM, 0) || 0 <= args.indexOf(DEST_PARAM, 0)) {
+    if (0 <= args.indexOf(SOURCE_PARAM) || 0 <= args.indexOf(DEST_PARAM)) {
       throw new SolrException(
           SERVER_ERROR,
           "Short hand syntax must not be mixed with full syntax. Found "
@@ -348,20 +349,18 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
             throw new SolrException(
                 SERVER_ERROR, "Init param '" + SOURCE_PARAM + "' child 'exclude' can not be null");
           }
-          if (!(excObj instanceof NamedList)) {
+          if (!(excObj instanceof NamedList<?> exc)) {
             throw new SolrException(
                 SERVER_ERROR, "Init param '" + SOURCE_PARAM + "' child 'exclude' must be <lst/>");
           }
-          NamedList<?> exc = (NamedList<?>) excObj;
           srcExclusions.add(parseSelectorParams(exc));
           if (0 < exc.size()) {
             throw new SolrException(
                 SERVER_ERROR,
                 "Init param '"
                     + SOURCE_PARAM
-                    + "' has unexpected 'exclude' sub-param(s): '"
-                    + selectorConfig.getName(0)
-                    + "'");
+                    + "' has unexpected 'exclude' sub-param(s): "
+                    + selectorConfig);
           }
           // call once per instance
           selectorConfig.remove("exclude");
@@ -372,9 +371,8 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
               SERVER_ERROR,
               "Init param '"
                   + SOURCE_PARAM
-                  + "' contains unexpected child param(s): '"
-                  + selectorConfig.getName(0)
-                  + "'");
+                  + "' contains unexpected child param(s): "
+                  + selectorConfig);
         }
         // consume from the named list so it doesn't interfere with subsequent processing
         sources.remove(0);
@@ -399,8 +397,7 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
               + "for CloneFieldUpdateProcessorFactory for further details.");
     }
 
-    if (d instanceof NamedList) {
-      NamedList<?> destList = (NamedList<?>) d;
+    if (d instanceof NamedList<?> destList) {
 
       Object patt = destList.remove(PATTERN_PARAM);
       Object replacement = destList.remove(REPLACEMENT_PARAM);
@@ -429,12 +426,7 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
       }
       if (0 != destList.size()) {
         throw new SolrException(
-            SERVER_ERROR,
-            "Init param '"
-                + DEST_PARAM
-                + "' has unexpected children: '"
-                + destList.getName(0)
-                + "'");
+            SERVER_ERROR, "Init param '" + DEST_PARAM + "' has unexpected children: " + destList);
       }
 
       try {

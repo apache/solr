@@ -19,12 +19,24 @@ package org.apache.solr.core;
 
 import static org.mockito.Mockito.mock;
 
+import java.util.Collection;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.ApiSupport;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.configsets.ListConfigSetsAPI;
+import org.apache.solr.handler.configsets.ListConfigSets;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProvider.APIConfig;
+import org.apache.solr.jersey.APIConfigProviderBinder;
 import org.apache.solr.jersey.JerseyApplications;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -83,11 +95,73 @@ public class PluginBagTest extends SolrTestCaseJ4 {
   public void testRegistersJerseyResourcesAssociatedWithRequestHandlers() {
     final PluginBag<SolrRequestHandler> handlerPluginBag =
         new PluginBag<>(SolrRequestHandler.class, null);
-    assertFalse(handlerPluginBag.getJerseyEndpoints().isRegistered(ListConfigSetsAPI.class));
+    assertFalse(handlerPluginBag.getJerseyEndpoints().isRegistered(ListConfigSets.class));
 
     handlerPluginBag.put("/foo", new ConfigSetsHandler(coreContainer));
     final ResourceConfig config = handlerPluginBag.getJerseyEndpoints();
 
-    assertTrue(handlerPluginBag.getJerseyEndpoints().isRegistered(ListConfigSetsAPI.class));
+    assertTrue(handlerPluginBag.getJerseyEndpoints().isRegistered(ListConfigSets.class));
   }
+
+  @Test
+  public void testApiConfig() {
+    PluginBag<SolrRequestHandler> handlerPluginBag =
+        new PluginBag<>(SolrRequestHandler.class, null);
+    ResourceConfig config = handlerPluginBag.getJerseyEndpoints();
+
+    assertFalse(config.isRegistered(APIConfigProviderBinder.class));
+
+    EmptyRequestHandler handler1 = new EmptyRequestHandler();
+    handlerPluginBag.put("/foo", handler1);
+
+    // check v2 api was registered
+    handler1.getJerseyResources().forEach(c -> assertTrue(config.isRegistered(c)));
+    // check binder for config is present
+    assertTrue(config.isRegistered(APIConfigProviderBinder.class));
+  }
+
+  /** An empty handler for testing */
+  private static class EmptyRequestHandler extends RequestHandlerBase
+      implements ApiSupport, APIConfigProvider<EmptyAPIConfig> {
+
+    private final EmptyAPIConfig config = new EmptyAPIConfig();
+
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
+      // nothing!
+    }
+
+    @Override
+    public String getDescription() {
+      return null;
+    }
+
+    @Override
+    public Name getPermissionName(AuthorizationContext request) {
+      return Name.ALL;
+    }
+
+    @Override
+    public Boolean registerV2() {
+      return Boolean.TRUE;
+    }
+
+    @Override
+    public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+      // random pick of v2 api
+      return List.of(CollectionProperty.class);
+    }
+
+    @Override
+    public EmptyAPIConfig provide() {
+      return config;
+    }
+
+    @Override
+    public Class<EmptyAPIConfig> getConfigClass() {
+      return EmptyAPIConfig.class;
+    }
+  }
+
+  private static class EmptyAPIConfig implements APIConfig {}
 }

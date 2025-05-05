@@ -16,13 +16,12 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.xml.sax.InputSource;
 
@@ -46,11 +45,11 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   }
 
   public void testResolving() throws Exception {
-    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
+    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     final ResourceLoader loader =
         new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
-    final String fileUri = new File(testHome + "/crazy-path-to-config.xml").toURI().toASCIIString();
+    final String fileUri = Path.of(testHome + "/crazy-path-to-config.xml").toUri().toASCIIString();
 
     assertEquals("solrres:/test.xml", SystemIdResolver.createSystemIdFromResourceName("test.xml"));
     assertEquals(
@@ -58,7 +57,8 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
         SystemIdResolver.createSystemIdFromResourceName("/usr/local/etc/test.xml"));
     assertEquals(
         "solrres://@/test.xml",
-        SystemIdResolver.createSystemIdFromResourceName(File.separatorChar + "test.xml"));
+        SystemIdResolver.createSystemIdFromResourceName(
+            testHome.getFileSystem().getSeparator() + "test.xml"));
 
     // check relative URI resolving
     assertEquals(
@@ -131,7 +131,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   public void testUnsafeResolving() throws Exception {
     System.setProperty(SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM, "true");
 
-    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
+    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     final ResourceLoader loader =
         new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);

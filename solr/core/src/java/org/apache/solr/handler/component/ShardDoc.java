@@ -16,10 +16,14 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.SolrReturnFields;
 
 public class ShardDoc extends FieldDoc {
   public String shard;
@@ -45,6 +49,9 @@ public class ShardDoc extends FieldDoc {
   // retrieval stage.
 
   public int positionInResponse;
+
+  public Map<String, Object> scoreDependentFields = Collections.emptyMap();
+
   // the ordinal position in the merged response arraylist
 
   public ShardDoc(float score, Object[] fields, Object uniqueId, String shard) {
@@ -57,12 +64,21 @@ public class ShardDoc extends FieldDoc {
     super(-1, Float.NaN);
   }
 
+  public void consumeScoreDependentFields(
+      boolean returnRawScore, BiConsumer<String, Object> consumer) {
+    if (returnRawScore) {
+      consumer.accept(SolrReturnFields.SCORE, score);
+    }
+    if (!scoreDependentFields.isEmpty()) {
+      scoreDependentFields.forEach(consumer);
+    }
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof ShardDoc)) return false;
+    if (!(o instanceof ShardDoc shardDoc)) return false;
 
-    ShardDoc shardDoc = (ShardDoc) o;
     return Objects.equals(id, shardDoc.id);
   }
 

@@ -26,6 +26,9 @@ Each module produces a separate `.jar` file in the build, packaged in the module
 All additional dependencies required by the module, and not provided by Solr core, are also packaged there.
 This helps keep the main core of Solr small and lean.
 
+Solr modules are not included in the `slim` variant of the Solr binary release.
+Please download/install the full Solr binary release in order to use Solr modules.
+
 == Installing a module
 
 The easiest way to enable a module is to list the modules you intend to use either in the
@@ -41,11 +44,6 @@ You can also specify the modules to include when using the Solr CLI to start Sol
 ----
 bin/solr start -e techproducts -Dsolr.modules=scripting
 ----
-
-NOTE: If you only wish to enable a module for certain collections, you may add `<lib>` tags to `solrconfig.xml` in applicable configset(s).
-as explained in xref:configuration-guide:libs.adoc[Lib Directories].
-Collection-level plugins will work if the module is enabled either per collection (`<lib>`) or for the whole Solr node.
-Node-level plugins such as those specified in `solr.xml` will not work when using the `<lib>` option in `solrconfig.xml` because configsets configure collections, not the node.  They must be enabled for the entire Solr node, as described above.
 
 Some modules may have been made available as packages for the xref:configuration-guide:package-manager.adoc[Package Manager],
 check by listing available packages.

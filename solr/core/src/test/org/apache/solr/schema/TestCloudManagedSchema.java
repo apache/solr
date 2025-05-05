@@ -16,8 +16,13 @@
  */
 package org.apache.solr.schema;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -59,17 +64,24 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     try (SolrClient rootClient =
         new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
       NamedList<?> namedListResponse = rootClient.request(request);
-      NamedList<?> status = (NamedList<?>) namedListResponse.get("status");
-      NamedList<?> collectionStatus = (NamedList<?>) status.getVal(0);
-      String collectionSchema = (String) collectionStatus.get(CoreAdminParams.SCHEMA);
+      final var statusByCore =
+          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+              namedListResponse.get("status"),
+              new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
+      final String coreName = statusByCore.keySet().stream().findFirst().get();
+      final var collectionStatus = statusByCore.get(coreName);
       // Make sure the upgrade to managed schema happened
       assertEquals(
           "Schema resource name differs from expected name",
           "managed-schema.xml",
-          collectionSchema);
+          collectionStatus.schema);
     }
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
       // Make sure "DO NOT EDIT" is in the content of the managed schema
       String fileContent =
           getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema.xml");

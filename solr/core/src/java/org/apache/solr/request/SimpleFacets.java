@@ -20,11 +20,11 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -40,7 +40,6 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -56,6 +55,7 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
+import org.apache.lucene.search.grouping.GroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.util.Bits;
@@ -69,6 +69,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -108,8 +109,10 @@ public class SimpleFacets {
 
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
+
   /** Configuration params behavior should be driven by */
   protected final SolrParams global;
+
   /** Searcher to use for all calculations */
   protected final SolrIndexSearcher searcher;
 
@@ -231,8 +234,7 @@ public class SimpleFacets {
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
       for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
+        if (!(o instanceof QParser qp)) continue;
         excludeSet.put(qp.getQuery(), Boolean.TRUE);
       }
     }
@@ -595,7 +597,7 @@ public class SimpleFacets {
           break;
         case UIF:
           // Emulate the JSON Faceting structure so we can use the same parsing classes
-          Map<String, Object> jsonFacet = new HashMap<>(13);
+          Map<String, Object> jsonFacet = CollectionUtil.newHashMap(13);
           jsonFacet.put("type", "terms");
           jsonFacet.put("field", field);
           jsonFacet.put("offset", offset);
@@ -785,7 +787,8 @@ public class SimpleFacets {
       throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     String[] groupFields = groupingSpecification != null ? groupingSpecification.getFields() : null;
-    final String groupField = ArrayUtils.isNotEmpty(groupFields) ? groupFields[0] : null;
+    final String groupField =
+        groupFields != null && Array.getLength(groupFields) != 0 ? groupFields[0] : null;
     if (groupField == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -805,16 +808,16 @@ public class SimpleFacets {
     boolean orderByCount =
         sort.equals(FacetParams.FACET_SORT_COUNT)
             || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
-    TermGroupFacetCollector.GroupedFacetResult result =
+    GroupFacetCollector.GroupedFacetResult result =
         collector.mergeSegmentResults(
             limit < 0 ? Integer.MAX_VALUE : (offset + limit), mincount, orderByCount);
 
     CharsRefBuilder charsRef = new CharsRefBuilder();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<>();
-    List<TermGroupFacetCollector.FacetEntry> scopedEntries =
+    List<GroupFacetCollector.FacetEntry> scopedEntries =
         result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
-    for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
+    for (GroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       // :TODO:can we filter earlier than this to make it more efficient?
       if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
         continue;
@@ -868,12 +871,12 @@ public class SimpleFacets {
    * @see #getFieldMissingCount
    * @see #getFacetTermEnumCounts
    */
-  public NamedList<Object> getFacetFieldCounts() throws IOException, SyntaxError {
+  public SimpleOrderedMap<Object> getFacetFieldCounts() throws IOException, SyntaxError {
 
-    NamedList<Object> res = new SimpleOrderedMap<>();
     String[] facetFs = global.getParams(FacetParams.FACET_FIELD);
+
     if (null == facetFs) {
-      return res;
+      return SimpleOrderedMap.of();
     }
 
     // Passing a negative number for FACET_THREADS implies an unlimited number of threads is
@@ -888,6 +891,7 @@ public class SimpleFacets {
       fdebugParent.putInfoItem("maxThreads", maxThreads);
     }
 
+    SimpleOrderedMap<Object> res;
     try {
       // Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
@@ -911,10 +915,8 @@ public class SimpleFacets {
                   result.add(key, getTermCounts(facetValue, parsed));
                 }
                 return result;
-              } catch (SolrException se) {
+              } catch (SolrException | ExitableDirectoryReader.ExitingReaderException se) {
                 throw se;
-              } catch (ExitableDirectoryReader.ExitingReaderException timeout) {
-                throw timeout;
               } catch (Exception e) {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, "Exception during facet.field: " + facetValue, e);
@@ -929,6 +931,7 @@ public class SimpleFacets {
         futures.add(runnableFuture);
       } // facetFs loop
 
+      res = new SimpleOrderedMap<>();
       // Loop over futures to get the values. The order is the same as facetFs but shouldn't matter.
       for (Future<NamedList<?>> future : futures) {
         res.addAll(future.get());
@@ -1288,8 +1291,7 @@ public class SimpleFacets {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof CountPair)) return false;
-      CountPair<?, ?> that = (CountPair<?, ?>) o;
+      if (!(o instanceof CountPair<?, ?> that)) return false;
       return (this.key.equals(that.key) && this.val.equals(that.val));
     }
 

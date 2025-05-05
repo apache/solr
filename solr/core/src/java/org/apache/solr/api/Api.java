@@ -17,7 +17,6 @@
 
 package org.apache.solr.api;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.JsonSchemaValidator;
@@ -42,11 +41,9 @@ public abstract class Api implements SpecProvider {
     if (commandSchema == null) {
       synchronized (this) {
         if (commandSchema == null) {
-          ValidatingJsonMap commands = getSpec().getMap("commands", null);
+          ValidatingJsonMap commands = spec != null ? getSpec().getMap("commands", null) : null;
           commandSchema =
-              commands != null
-                  ? ImmutableMap.copyOf(ApiBag.getParsedSchema(commands))
-                  : ImmutableMap.of();
+              commands != null ? Map.copyOf(ApiBag.getParsedSchema(commands)) : Map.of();
         }
       }
     }

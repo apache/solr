@@ -16,74 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr supports storing field values in an external file with a field type called the `ExternalFileFieldType`.
-It can also consume a stream of tokens that have already undergone analysis with a field type called the `PreAnalyzedFieldType`.
-
-== The ExternalFileField Type
-
-The `ExternalFileField` type makes it possible to specify the values for a field in a file outside the Solr index.
-For such a field, the file contains mappings from a key field to the field value.
-Another way to think of this is that, instead of specifying the field in documents as they are indexed, Solr finds values for this field in the external file.
-
-[IMPORTANT]
-====
-External fields are not searchable.
-They can be used only for function queries or display.
-For more information on function queries, see the section on xref:query-guide:function-queries.adoc[].
-====
-
-The `ExternalFileField` type is handy for cases where you want to update a particular field in many documents more often than you want to update the rest of the documents.
-For example, suppose you have implemented a document rank based on the number of views.
-You might want to update the rank of all the documents daily or hourly, while the rest of the contents of the documents might be updated much less frequently.
-Without `ExternalFileField`, you would need to update each document just to change the rank.
-Using `ExternalFileField` is much more efficient because all document values for a particular field are stored in an external file that can be updated as frequently as you wish.
-
-In the xref:schema-elements.adoc[schema], the definition of this field type might look like this:
-
-[source,xml]
-----
-<fieldType name="entryRankFile" keyField="pkId" defVal="0" stored="false" indexed="false" class="solr.ExternalFileField"/>
-----
-
-The `keyField` attribute defines the key that will be defined in the external file.
-It is usually the unique key for the index, but it doesn't need to be as long as the `keyField` can be used to identify documents in the index.
-A `defVal` defines a default value that will be used if there is no entry in the external file for a particular document.
-
-=== Format of the External File
-
-The file itself is located in Solr's index directory, which by default is `$SOLR_HOME/data`.
-The name of the file should be `external_fieldname_` or `external_fieldname_.*`.
-For the example above, then, the file could be named `external_entryRankFile` or `external_entryRankFile.txt`.
-
-[TIP]
-====
-If any files using the name pattern `.*` (such as `.txt`) appear, the last (after being sorted by name) will be used and previous versions will be deleted.
-This behavior supports implementations on systems where one may not be able to overwrite a file (for example, on Windows, if the file is in use).
-====
-
-The file contains entries that map a key field, on the left of the equals sign, to a value, on the right.
-Here are a few example entries:
-
-[source,text]
-----
-doc33=1.414
-doc34=3.14159
-doc40=42
-----
-
-The keys listed in this file do not need to be unique.
-The file does not need to be sorted, but Solr will be able to perform the lookup faster if it is.
-
-=== Reloading an External File
-
-It's possible to define an event listener to reload an external file when either a searcher is reloaded or when a new searcher is started.
-See the section xref:configuration-guide:caches-warming.adoc#query-related-listeners[Query-Related Listeners] for more information, but a sample definition in `solrconfig.xml` might look like this:
-
-[source,xml]
-----
-<listener event="newSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/>
-<listener event="firstSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/>
-----
+Solr can consume a stream of tokens that have already undergone analysis with a field type called the `PreAnalyzedFieldType`.
 
 == The PreAnalyzedField Type
 

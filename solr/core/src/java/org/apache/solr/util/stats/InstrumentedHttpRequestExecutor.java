@@ -22,7 +22,6 @@ import static org.apache.solr.metrics.SolrMetricManager.mkName;
 import com.codahale.metrics.Timer;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.http.HttpClientConnection;
@@ -34,8 +33,10 @@ import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.tracing.TraceUtils;
 
 /**
  * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr Inspired and partially
@@ -48,8 +49,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
         try {
           final RequestLine requestLine = request.getRequestLine();
           String schemeHostPort = null;
-          if (request instanceof HttpRequestWrapper) {
-            HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
+          if (request instanceof HttpRequestWrapper wrapper) {
             if (wrapper.getTarget() != null) {
               schemeHostPort =
                   wrapper.getTarget().getSchemeName()
@@ -79,8 +79,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
         try {
           final RequestLine requestLine = request.getRequestLine();
           String schemeHostPort = null;
-          if (request instanceof HttpRequestWrapper) {
-            HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
+          if (request instanceof HttpRequestWrapper wrapper) {
             if (wrapper.getTarget() != null) {
               schemeHostPort =
                   wrapper.getTarget().getSchemeName()
@@ -100,7 +99,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
       };
 
   public static final Map<String, HttpClientMetricNameStrategy> KNOWN_METRIC_NAME_STRATEGIES =
-      new HashMap<>(3);
+      CollectionUtil.newHashMap(3);
 
   static {
     KNOWN_METRIC_NAME_STRATEGIES.put("queryLessURLAndMethod", QUERYLESS_URL_AND_METHOD);
@@ -138,6 +137,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
     if (solrMetricsContext != null) {
       timerContext = timer(request).time();
     }
+    TraceUtils.injectTraceContext(request);
     try {
       return super.execute(request, conn, context);
     } finally {

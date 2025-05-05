@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
+import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
@@ -125,7 +126,11 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
       values[i] = parseFloatFromUser(field.getName(), val);
       i++;
     }
-    return FloatPoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      return FloatField.newSetQuery(field.getName(), values);
+    } else {
+      return FloatPoint.newSetQuery(field.getName(), values);
+    }
   }
 
   @Override

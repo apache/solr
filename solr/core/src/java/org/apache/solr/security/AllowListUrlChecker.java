@@ -20,13 +20,14 @@ package org.apache.solr.security;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.core.NodeConfig;
@@ -85,6 +86,9 @@ public class AllowListUrlChecker {
   /** Allow list of hosts. Elements in the list will be host:port (no protocol or context). */
   private final Set<String> hostAllowList;
 
+  private volatile Set<String> liveHostUrlsCache;
+  private volatile Set<String> liveNodesCache;
+
   /**
    * @param urlAllowList List of allowed URLs. URLs must be well-formed, missing protocol is
    *     tolerated. An empty list means there is no explicit allow-list of URLs, in this case no URL
@@ -136,11 +140,11 @@ public class AllowListUrlChecker {
    */
   public void checkAllowList(List<String> urls, ClusterState clusterState)
       throws MalformedURLException {
-    Set<String> clusterHostAllowList =
-        clusterState == null ? Collections.emptySet() : clusterState.getHostAllowList();
+    Set<String> liveHostUrls = getLiveHostUrls(clusterState);
     for (String url : urls) {
       String hostPort = parseHostPort(url);
-      if (!clusterHostAllowList.contains(hostPort) && !hostAllowList.contains(hostPort)) {
+      if (liveHostUrls.stream().noneMatch(hostPort::equalsIgnoreCase)
+          && hostAllowList.stream().noneMatch(hostPort::equalsIgnoreCase)) {
         throw new SolrException(
             SolrException.ErrorCode.FORBIDDEN,
             "URL "
@@ -151,6 +155,33 @@ public class AllowListUrlChecker {
                 + hostAllowList);
       }
     }
+  }
+
+  /**
+   * Gets the set of live hosts urls (host:port) built from the set of live nodes. The set is cached
+   * to be reused until the live nodes change.
+   */
+  private Set<String> getLiveHostUrls(ClusterState clusterState) {
+    if (clusterState == null) {
+      return Set.of();
+    }
+    if (liveHostUrlsCache == null || clusterState.getLiveNodes() != liveNodesCache) {
+      synchronized (this) {
+        Set<String> liveNodes = clusterState.getLiveNodes();
+        if (liveHostUrlsCache == null || liveNodes != liveNodesCache) {
+          liveHostUrlsCache = buildLiveHostUrls(liveNodes);
+          liveNodesCache = liveNodes;
+        }
+      }
+    }
+    return liveHostUrlsCache;
+  }
+
+  @VisibleForTesting
+  Set<String> buildLiveHostUrls(Set<String> liveNodes) {
+    return liveNodes.stream()
+        .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
+        .collect(Collectors.toSet());
   }
 
   /** Whether this checker has been created with a non-empty allow-list of URLs. */
@@ -190,16 +221,16 @@ public class AllowListUrlChecker {
     // Parse the host and port.
     // It doesn't really matter which protocol we set here because we are not going to use it.
     url = url.trim();
-    URL u;
+    URI u;
     Matcher protocolMatcher = PROTOCOL_PATTERN.matcher(url);
     if (protocolMatcher.matches()) {
       // Replace any protocol unsupported by URL.
       if (!protocolMatcher.group(1).startsWith("http")) {
         url = "http" + protocolMatcher.group(2);
       }
-      u = new URL(url);
+      u = URI.create(url);
     } else {
-      u = new URL("http://" + url);
+      u = URI.create("http://" + url);
     }
     if (u.getHost() == null || u.getPort() < 0) {
       throw new MalformedURLException("Invalid host or port in '" + url + "'");

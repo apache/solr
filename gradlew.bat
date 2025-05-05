@@ -13,6 +13,8 @@
 @rem See the License for the specific language governing permissions and
 @rem limitations under the License.
 @rem
+@rem SPDX-License-Identifier: Apache-2.0
+@rem
 
 @if "%DEBUG%"=="" @echo off
 @rem ##########################################################################
@@ -48,11 +50,11 @@ set JAVA_EXE=java.exe
 %JAVA_EXE% -version >NUL 2>&1
 if %ERRORLEVEL% equ 0 goto execute
 
-echo.
-echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
-echo.
-echo Please set the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
+echo. 1>&2
+echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH. 1>&2
+echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
 
 goto fail
 
@@ -62,39 +64,55 @@ set JAVA_EXE=%JAVA_HOME%/bin/java.exe
 
 if exist "%JAVA_EXE%" goto execute
 
-echo.
-echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
-echo.
-echo Please set the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
+echo. 1>&2
+echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME% 1>&2
+echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
 
 goto fail
 
 :execute
+@rem Setup the command line
 
 @rem LUCENE-9266: verify and download the gradle wrapper jar if we don't have one.
 set GRADLE_WRAPPER_JAR=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
-"%JAVA_EXE%" --source 11 "%APP_HOME%/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "%GRADLE_WRAPPER_JAR%"
-IF %ERRORLEVEL% NEQ 0 goto fail
+IF NOT EXIST "%GRADLE_WRAPPER_JAR%" (
+    "%JAVA_EXE%" %JAVA_OPTS% "%APP_HOME%/build-tools/build-infra/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "%GRADLE_WRAPPER_JAR%"
+    IF %ERRORLEVEL% EQU 1 goto failWithJvmMessage
+    IF %ERRORLEVEL% NEQ 0 goto fail
+)
 
 @rem Setup the command line
-set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
+set CLASSPATH=%GRADLE_WRAPPER_JAR%
 
-@rem Don't fork a daemon mode on initial run that generates local defaults.
-SET GRADLE_DAEMON_CTRL=
-IF NOT EXIST "%DIRNAME%\gradle.properties" SET GRADLE_DAEMON_CTRL=--no-daemon
+@rem START OF LUCENE CUSTOMIZATION
+@rem Generate gradle.properties if they don't exist
+IF NOT EXIST "%APP_HOME%\gradle.properties" (
+  @rem local expansion is needed to check ERRORLEVEL inside control blocks.
+  setlocal enableDelayedExpansion
+  "%JAVA_EXE%" %JAVA_OPTS% "%APP_HOME%/build-tools/build-infra/src/main/java/org/apache/lucene/gradle/GradlePropertiesGenerator.java" "%APP_HOME%\gradle\template.gradle.properties" "%APP_HOME%\gradle.properties"
+  IF %ERRORLEVEL% NEQ 0 goto fail
+  endlocal
+)
+@rem END OF LUCENE CUSTOMIZATION
+
+@rem Prevent jgit from forking/searching git.exe
+SET GIT_CONFIG_NOSYSTEM=1
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %GRADLE_DAEMON_CTRL% %*
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
 
 :end
 @rem End local scope for the variables with windows NT shell
 if %ERRORLEVEL% equ 0 goto mainEnd
+goto fail
+
+:failWithJvmMessage
+@rem https://github.com/apache/lucene/pull/819
+echo Error: Something went wrong. Make sure you're using Java version between 21 and 23.
 
 :fail
-@rem https://github.com/apache/lucene/pull/819
-echo Error: Something went wrong. Make sure you're using Java 11 - 19.
-
 rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
 rem the _cmd.exe /c_ return code!
 set EXIT_CODE=%ERRORLEVEL%

@@ -38,30 +38,4 @@ public class ResponseBuilderTest extends SolrTestCaseJ4 {
     ResponseBuilder responseBuilder = new ResponseBuilder(req, rsp, new ArrayList<>(0));
     assertFalse(responseBuilder.isDistributed());
   }
-
-  public void testDoAnalyticsAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
-    assertFalse(rb.isAnalytics());
-    rb.setAnalytics(true);
-    assertTrue(rb.isAnalytics());
-    rb.setAnalytics(false);
-    assertFalse(rb.isAnalytics());
-  }
-
-  public void testIsOlapAnalyticsAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
-    assertFalse(rb.isOlapAnalytics());
-    rb.setOlapAnalytics(true);
-    assertTrue(rb.isOlapAnalytics());
-    rb.setOlapAnalytics(false);
-    assertFalse(rb.isOlapAnalytics());
-  }
-
-  public void testAnalyticsRequestManagerAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
-    assertNull(rb.getAnalyticsRequestManager());
-    rb.setAnalyticsRequestManager(this);
-    assertNotNull(rb.getAnalyticsRequestManager());
-    assertEquals(rb.getAnalyticsRequestManager(), this);
-  }
 }

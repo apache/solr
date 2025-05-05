@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Function;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -67,7 +68,7 @@ public class XMLResponseParser extends ResponseParser {
       factory.setProperty("reuse-instance", Boolean.FALSE);
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
-      // isimplementation specific.
+      // is implementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input factory: {}", factory);
     }
     factory.setXMLReporter(xmllog);
@@ -81,11 +82,10 @@ public class XMLResponseParser extends ResponseParser {
   }
 
   @Override
-  public String getContentType() {
-    return XML_CONTENT_TYPE;
+  public Set<String> getContentTypes() {
+    return Set.of(XML_CONTENT_TYPE);
   }
 
-  @Override
   public NamedList<Object> processResponse(Reader in) {
     XMLStreamReader parser = null;
     try {
@@ -284,7 +284,7 @@ public class XMLResponseParser extends ResponseParser {
             }
           }
 
-          /**
+          /*
            * The name in a NamedList can actually be null if( name == null ) { throw new
            * XMLStreamException( "requires 'name' attribute: "+parser.getLocalName(),
            * parser.getLocation() ); }
@@ -492,7 +492,7 @@ public class XMLResponseParser extends ResponseParser {
             continue; // may be more child docs, or other fields
           }
 
-          // other then nested documents, all other possible nested elements require a name...
+          // other than nested documents, all other possible nested elements require a name...
 
           name = null;
           int cnt = parser.getAttributeCount();

@@ -145,10 +145,8 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   }
 
   protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
-    CloudSolrClient client =
-        getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, socketTimeout);
-    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    return client;
+    return getCloudSolrClient(
+        zkServer.getZkAddress(), defaultCollection, random().nextBoolean(), 30000, socketTimeout);
   }
 
   @Test
@@ -345,7 +343,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);
       numShardsNumReplicas.add(1 + getPullReplicaCount());
-      checkForCollection("testcollection", numShardsNumReplicas, null);
+      checkForCollection("testcollection", numShardsNumReplicas);
 
       testSuccessful = true;
     } finally {

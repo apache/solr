@@ -61,9 +61,8 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // create a collection that has 1 shard but 3 replicas
     String testCollectionName = "c8n_1x3_lf"; // _lf is leader fails
     createCollection(testCollectionName, "conf1", 1, 3);
-    cloudClient.setDefaultCollection(testCollectionName);
 
-    sendDoc(1);
+    sendDoc(testCollectionName, 1);
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
@@ -78,13 +77,12 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
         notLeaders.size());
 
     // ok, now introduce a network partition between the leader and the replica
-    SocketProxy proxy0 = null;
-    proxy0 = getProxyForReplica(notLeaders.get(0));
+    SocketProxy proxy0 = getProxyForReplica(notLeaders.get(0));
 
     proxy0.close();
 
     // indexing during a partition
-    sendDoc(2);
+    sendDoc(testCollectionName, 2);
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
@@ -94,7 +92,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
     proxy1.close();
 
-    sendDoc(3);
+    sendDoc(testCollectionName, 3);
 
     Thread.sleep(sleepMsBeforeHealPartition);
     proxy1.reopen();
@@ -103,7 +101,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
 
-    sendDoc(4);
+    sendDoc(testCollectionName, 4);
 
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);
 
@@ -125,7 +123,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
     // indexing during a partition
     // doc should be on leader and 1 replica
-    sendDoc(5);
+    sendDoc(testCollectionName, 5);
 
     try (SolrClient server = getHttpSolrClient(leader, testCollectionName)) {
       assertDocExists(server, "5");
@@ -192,7 +190,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(6));
     doc.addField("a_t", "hello" + 6);
-    sendDocsWithRetry(Collections.singletonList(doc), 1, 3, 1);
+    sendDocsWithRetry(testCollectionName, Collections.singletonList(doc), 1, 3, 1);
 
     Set<String> replicasToCheck = new HashSet<>();
     for (Replica stillUp : participatingReplicas) replicasToCheck.add(stillUp.getName());

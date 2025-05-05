@@ -21,15 +21,11 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import io.prometheus.client.Collector;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -42,6 +38,7 @@ import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.exporter.PrometheusExporterSettings;
 import org.apache.solr.prometheus.exporter.SolrClientFactory;
+import org.apache.solr.prometheus.exporter.SolrScrapeConfiguration;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.junit.After;
 import org.junit.Before;
@@ -55,16 +52,11 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   private ExecutorService executor;
 
   private SolrCloudScraper createSolrCloudScraper() {
-    var solrClient =
-        new CloudSolrClient.Builder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .withResponseParser(new NoOpResponseParser("json"))
-            .build();
-
-    solrClient.connect();
-
-    SolrClientFactory factory = new SolrClientFactory(PrometheusExporterSettings.builder().build());
-
+    PrometheusExporterSettings settings = PrometheusExporterSettings.builder().build();
+    SolrScrapeConfiguration scrapeConfiguration =
+        SolrScrapeConfiguration.standalone(cluster.getZkServer().getZkAddress());
+    SolrClientFactory factory = new SolrClientFactory(settings, scrapeConfiguration);
+    var solrClient = factory.createCloudSolrClient(cluster.getZkServer().getZkAddress());
     return new SolrCloudScraper(solrClient, executor, factory, "test");
   }
 
@@ -93,10 +85,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   public void tearDown() throws Exception {
     super.tearDown();
     IOUtils.closeQuietly(solrCloudScraper);
-    if (null != executor) {
-      executor.shutdownNow();
-      executor = null;
-    }
+    ExecutorUtil.shutdownNowAndAwaitTermination(executor);
   }
 
   @Test
@@ -126,17 +115,15 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     Map<String, MetricSamples> allCoreMetrics =
         solrCloudScraper.pingAllCores(configuration.getPingConfiguration().get(0));
 
-    Map<String, DocCollection> collectionStates = getClusterState().getCollectionsMap();
+    final List<DocCollection> collectionStates = getClusterState().collectionStream().toList();
 
     long coreCount =
-        collectionStates.entrySet().stream()
-            .mapToInt(entry -> entry.getValue().getReplicas().size())
-            .sum();
+        collectionStates.stream().mapToInt(docColl -> docColl.getReplicas().size()).sum();
 
     assertEquals(coreCount, allCoreMetrics.size());
 
-    for (Map.Entry<String, DocCollection> entry : collectionStates.entrySet()) {
-      String coreName = entry.getValue().getReplicas().get(0).getCoreName();
+    for (DocCollection docColl : collectionStates) {
+      String coreName = docColl.getReplicas().get(0).getCoreName();
       assertTrue(allCoreMetrics.containsKey(coreName));
       List<Collector.MetricFamilySamples> coreMetrics = allCoreMetrics.get(coreName).asList();
       assertEquals(1, coreMetrics.size());

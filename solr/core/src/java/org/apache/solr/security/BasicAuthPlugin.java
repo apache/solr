@@ -33,7 +33,6 @@ import javax.security.auth.Subject;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -103,8 +102,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
       }
     }
     if (!CommandOperation.captureErrors(commands).isEmpty()) return null;
-    if (authenticationProvider instanceof ConfigEditablePlugin) {
-      ConfigEditablePlugin editablePlugin = (ConfigEditablePlugin) authenticationProvider;
+    if (authenticationProvider instanceof ConfigEditablePlugin editablePlugin) {
       return editablePlugin.edit(latestConf, commands);
     }
     throw new SolrException(ErrorCode.BAD_REQUEST, "This cannot be edited");
@@ -139,7 +137,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
             try {
               String credentials =
                   new String(Base64.getDecoder().decode(st.nextToken()), StandardCharsets.UTF_8);
-              int p = credentials.indexOf(":");
+              int p = credentials.indexOf(':');
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
                 String pwd = credentials.substring(p + 1).trim();
@@ -224,11 +222,8 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   @Override
   protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
     if (forwardCredentials) {
-      if (httpContext instanceof HttpClientContext) {
-        HttpClientContext httpClientContext = (HttpClientContext) httpContext;
-        if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal) {
-          BasicAuthUserPrincipal principal =
-              (BasicAuthUserPrincipal) httpClientContext.getUserToken();
+      if (httpContext instanceof HttpClientContext httpClientContext) {
+        if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal principal) {
           String userPassBase64 =
               Base64.getEncoder()
                   .encodeToString(
@@ -246,8 +241,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   protected boolean interceptInternodeRequest(Request request) {
     if (forwardCredentials) {
       Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
-      if (userToken instanceof BasicAuthUserPrincipal) {
-        BasicAuthUserPrincipal principal = (BasicAuthUserPrincipal) userToken;
+      if (userToken instanceof BasicAuthUserPrincipal principal) {
         String userPassBase64 =
             Base64.getEncoder()
                 .encodeToString(
@@ -312,8 +306,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof BasicAuthUserPrincipal)) return false;
-      BasicAuthUserPrincipal that = (BasicAuthUserPrincipal) o;
+      if (!(o instanceof BasicAuthUserPrincipal that)) return false;
       return Objects.equals(username, that.username) && Objects.equals(password, that.password);
     }
 
@@ -324,10 +317,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
 
     @Override
     public String toString() {
-      return new ToStringBuilder(this)
-          .append("username", username)
-          .append("pwd", "*****")
-          .toString();
+      return "BasicAuthPlugin [username=" + username + ",pwd=*****]";
     }
   }
 }

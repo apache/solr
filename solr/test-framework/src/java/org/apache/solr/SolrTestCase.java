@@ -18,25 +18,37 @@
 package org.apache.solr;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import java.io.File;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.LogLevelTestRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.hamcrest.Matcher;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.ComparisonFailure;
+import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
@@ -64,6 +76,7 @@ import org.slf4j.LoggerFactory;
 // on slow machines it could take up to 1s. See discussion on SOLR-15660
 // and SOLR-16187 regarding why this is necessary.
 @ThreadLeakLingering(linger = 1000)
+@SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 public class SolrTestCase extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -79,11 +92,25 @@ public class SolrTestCase extends LuceneTestCase {
       RuleChain.outerRule(new SystemPropertiesRestoreRule())
           .around(
               new VerifyTestClassNamingConvention(
-                  "org.apache.solr.analytics", NAMING_CONVENTION_TEST_SUFFIX))
-          .around(
-              new VerifyTestClassNamingConvention(
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
-          .around(new RevertDefaultThreadHandlerRule());
+          .around(new RevertDefaultThreadHandlerRule())
+          .around(new LogLevelTestRule())
+          .around(
+              new TestRuleAdapter() {
+                @Override
+                protected void afterIfSuccessful() {
+                  // if the tests passed, make sure everything was closed / released
+                  String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+                  assertNull(orr, orr);
+                }
+
+                @Override
+                protected void afterAlways(List<Throwable> errors) {
+                  if (!errors.isEmpty()) {
+                    ObjectReleaseTracker.tryClose();
+                  }
+                }
+              });
 
   /**
    * Sets the <code>solr.default.confdir</code> system property to the value of {@link
@@ -97,7 +124,7 @@ public class SolrTestCase extends LuceneTestCase {
   @BeforeClass
   public static void beforeSolrTestCase() {
     final String existingValue =
-        System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
     if (null != existingValue) {
       log.info(
           "Test env includes configset dir system property '{}'='{}'",
@@ -105,15 +132,16 @@ public class SolrTestCase extends LuceneTestCase {
           existingValue);
       return;
     }
-    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    if (extPath.canRead(/* implies exists() */ ) && extPath.isDirectory()) {
+    final Path extPath = ExternalPaths.DEFAULT_CONFIGSET;
+    if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
           SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
           ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
       System.setProperty(
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ExternalPaths.DEFAULT_CONFIGSET.toString());
     } else {
       log.warn(
           "System property '{}' is not already set, but test-framework derived value ('{}') either "
@@ -125,7 +153,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)
     if (ExternalPaths.SOURCE_HOME != null) {
-      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
+      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME.toString());
     }
 
     if (!TEST_NIGHTLY) {
@@ -150,28 +178,49 @@ public class SolrTestCase extends LuceneTestCase {
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
 
+  @AfterClass
+  public static void afterClassShutdownLogging() {
+    StartupLoggingUtils.shutdown();
+  }
+
+  @Rule public TestRule methodRules = new LogLevelTestRule();
+
   /**
    * Special hook for sanity checking if any tests trigger failures when an Assumption failure
-   * occures in a {@link Before} method
+   * occurs in a {@link Before} method
    *
    * @lucene.internal
    */
   @Before
   public void checkSyspropForceBeforeAssumptionFailure() {
-    // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
     final String PROP = "tests.force.assumption.failure.before";
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
 
-  @AfterClass
-  public static void afterSolrTestCase() throws Exception {
-    if (suiteFailureMarker.wasSuccessful()) {
-      // if the tests passed, make sure everything was closed / released
-      String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
-      assertNull(orr, orr);
-    } else {
-      ObjectReleaseTracker.tryClose();
-    }
-    StartupLoggingUtils.shutdown();
+  //              UTILITY METHODS FOLLOW
+
+  public static void assertJSONEquals(String expected, String actual) {
+    Object json1 = fromJSONString(expected);
+    Object json2 = fromJSONString(actual);
+    if (Objects.equals(json2, json1)) return;
+    throw new ComparisonFailure("", expected, actual);
+  }
+
+  /**
+   * Hide deprecated inherited method with same signature
+   *
+   * @see MatcherAssert#assertThat
+   */
+  public static <T> void assertThat(T actual, Matcher<? super T> matcher) {
+    MatcherAssert.assertThat(actual, matcher);
+  }
+
+  /**
+   * Hide deprecated inherited method with same signature
+   *
+   * @see MatcherAssert#assertThat
+   */
+  public static <T> void assertThat(String message, T actual, Matcher<? super T> matcher) {
+    MatcherAssert.assertThat(message, actual, matcher);
   }
 }

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -23,6 +25,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.loader.JsonLoader;
@@ -32,10 +35,16 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class JsonLoaderTest extends SolrTestCaseJ4 {
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -301,25 +310,6 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertTrue(obj.containsKey("f3"));
 
     // TODO new test method
-    doc = "[{'id':'1'},{'id':'2'}]".replace('\'', '"');
-    req = req("srcField", "_src_");
-    req.getContext().put("path", "/update/json/docs");
-    rsp = new SolrQueryResponse();
-    p = new BufferingRequestProcessor(null);
-    loader = new JsonLoader();
-    loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
-    assertEquals(2, p.addCommands.size());
-
-    content = (String) p.addCommands.get(0).solrDoc.getFieldValue("_src_");
-    assertNotNull(content);
-    obj = (Map) Utils.fromJSONString(content);
-    assertEquals("1", obj.get("id"));
-    content = (String) p.addCommands.get(1).solrDoc.getFieldValue("_src_");
-    assertNotNull(content);
-    obj = (Map) Utils.fromJSONString(content);
-    assertEquals("2", obj.get("id"));
-
-    // TODO new test method
     String json = "{a:{" + "b:[{c:c1, e:e1},{c:c2, e :e2, d:{p:q}}]," + "x:y" + "}}";
     req = req("split", "/|/a/b");
     req.getContext().put("path", "/update/json/docs");
@@ -336,6 +326,115 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
             + "a.x=y"
             + "])",
         p.addCommands.get(0).solrDoc.toString());
+  }
+
+  public void testSrcAndUniqueDocs() throws Exception {
+    BufferingRequestProcessor p;
+    JsonLoader loader;
+    SolrQueryRequest req;
+    SolrQueryResponse rsp;
+    String doc;
+    String content;
+    Map<?, ?> src;
+    doc = "[{'id':'1','a':'b'},{'id':'2','c':'d'}]".replace('\'', '"');
+    boolean idOnly = random().nextBoolean();
+    boolean srcField = random().nextBoolean();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    if (idOnly) {
+      params.set("mapUniqueKeyOnly", "true");
+      params.set("df", "_catch_all");
+    }
+    if (srcField) {
+      params.set("srcField", "_src_");
+    }
+    req = req(params);
+    req.getContext().put("path", "/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
+    assertEquals(2, p.addCommands.size());
+
+    {
+      final SolrInputDocument doc1 = p.addCommands.get(0).solrDoc;
+      if (srcField) {
+        content = (String) doc1.getFieldValue("_src_");
+        assertNotNull(content);
+        src = (Map) Utils.fromJSONString(content);
+        assertEquals("1", src.get("id"));
+        assertEquals("b", src.get("a"));
+      } else {
+        assertFalse(doc1.containsKey("_src_"));
+      }
+      assertEquals("1", doc1.getFieldValue("id"));
+      if (idOnly) {
+        assertEquals(Arrays.asList("1", "b"), new ArrayList<>(doc1.getFieldValues("_catch_all")));
+        assertFalse(doc1.containsKey("a"));
+      } else {
+        assertEquals("b", doc1.getFieldValue("a"));
+        assertFalse(doc1.containsKey("_catch_all"));
+      }
+    }
+    {
+      final SolrInputDocument doc2 = p.addCommands.get(1).solrDoc;
+      if (srcField) {
+        content = (String) doc2.getFieldValue("_src_");
+        assertNotNull(content);
+        src = (Map) Utils.fromJSONString(content);
+        assertEquals("2", src.get("id"));
+        assertEquals("d", src.get("c"));
+      } else {
+        assertFalse(doc2.containsKey("_src_"));
+      }
+      assertEquals("2", doc2.getFieldValue("id"));
+      if (idOnly) {
+        assertEquals(Arrays.asList("2", "d"), new ArrayList<>(doc2.getFieldValues("_catch_all")));
+        assertFalse(doc2.containsKey("c"));
+      } else {
+        assertEquals("d", doc2.getFieldValue("c"));
+        assertFalse(doc2.containsKey("_catch_all"));
+      }
+    }
+  }
+
+  public void testEchoDocs() throws Exception {
+    BufferingRequestProcessor p;
+    JsonLoader loader;
+    SolrQueryRequest req;
+    SolrQueryResponse rsp;
+    String doc;
+
+    doc = "[{'id':'1'},{'id':'2'}]".replace('\'', '"');
+    boolean src = random().nextBoolean();
+    req = src ? req("srcField", "_src_", "echo", "true") : req("echo", "true");
+    req.getContext().put("path", "/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
+    assertEquals(0, p.addCommands.size());
+    @SuppressWarnings("unchecked")
+    final List<Map<String, String>> docs = (List<Map<String, String>>) rsp.getValues().get("docs");
+    assertNotNull(docs);
+    assertEquals(2, docs.size());
+    {
+      Map<String, String> doc1 = docs.get(0);
+      assertEquals("1", doc1.get("id"));
+      if (src) {
+        assertEquals("{\"id\":\"1\"}", doc1.get("_src_"));
+      } else {
+        assertFalse(doc1.containsKey("_src_"));
+      }
+    }
+    {
+      Map<String, String> doc2 = docs.get(1);
+      assertEquals("2", doc2.get("id"));
+      if (src) {
+        assertEquals("{\"id\":\"2\"}", doc2.get("_src_"));
+      } else {
+        assertFalse(doc2.containsKey("_src_"));
+      }
+    }
   }
 
   private static final String PARENT_TWO_CHILDREN_JSON =
@@ -824,7 +923,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs)
       throws Exception {
     if (!anonChildDocs) {
-      rawJsonStr = rawJsonStr.replaceAll("_childDocuments_", "childLabel");
+      rawJsonStr = rawJsonStr.replace("_childDocuments_", "childLabel");
     }
     SolrQueryRequest req = req("commit", "true");
     SolrQueryResponse rsp = new SolrQueryResponse();

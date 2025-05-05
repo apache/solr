@@ -16,8 +16,9 @@
 Welcome to the Apache Solr project!
 -----------------------------------
 
-Solr is the popular, blazing fast open source search platform for all your
-enterprise, e-commerce, and analytics needs, built on Apache Lucene.
+Solr is the blazing-fast, open source, multi-modal search platform built
+on Apache Lucene. It powers full-text, vector, and geospatial search at
+many of the world's largest organizations.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
@@ -29,7 +30,7 @@ How to Use
 To get started run
 
 ```
-  bin/solr -help
+  bin/solr --help
 ```
 
 Solr includes a few examples to help you get started.  For instance, if you want
@@ -56,21 +57,27 @@ Files included in an Apache Solr binary distribution
 
 server/
   A self-contained Solr instance, complete with a sample
-  configuration and documents to index. Please see: bin/solr start -help
+  configuration and documents to index. Please see: bin/solr start --help
   for more information about starting a Solr server.
 
 bin/
    Scripts to startup, manage and interact with Solr instances.
+
+cross-dc-manager/
+  (Not included in the "slim" release)
+  A standalone application, included under `bin/`, that manages Cross-Datacenter indexing across SolrClouds.
 
 example/
   Contains example documents and an alternative Solr home
   directory containing various examples.
 
 modules/
+  (Not included in the "slim" release)
   Contains modules to extend the functionality of Solr.
   Libraries for these modules can be found under modules/*/lib
 
 prometheus-exporter/
+  (Not included in the "slim" release)
   Contains a separate application to monitor Solr instances and export Prometheus metrics
 
 docker/

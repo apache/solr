@@ -203,7 +203,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     // extraction
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,fv:[fv]");
+    query.add("fl", "*, score,fv:[fv logAll=true]");
     query.add("rows", "4");
     query.add("rq", "{!ltr model=nomatchmodel2 reRankDocs=4}");
 

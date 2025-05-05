@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.text.ParseException;
 import java.text.RuleBasedCollator;
@@ -26,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -149,11 +149,8 @@ public class CollationField extends FieldType {
 
     if (language != null && country == null && variant != null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "To specify variant, country is required");
-    else if (language != null && country != null && variant != null)
-      locale = new Locale(language, country, variant);
-    else if (language != null && country != null) locale = new Locale(language, country);
-    else locale = new Locale(language);
-
+    locale =
+        new Locale.Builder().setLanguage(language).setRegion(country).setVariant(variant).build();
     return Collator.getInstance(locale);
   }
 
@@ -162,16 +159,12 @@ public class CollationField extends FieldType {
    * as # might be in the rules!
    */
   private Collator createFromRules(String fileName, ResourceLoader loader) {
-    InputStream input = null;
-    try {
-      input = loader.openResource(fileName);
-      String rules = IOUtils.toString(input, "UTF-8");
+    try (InputStream input = loader.openResource(fileName)) {
+      String rules = new String(input.readAllBytes(), StandardCharsets.UTF_8);
       return new RuleBasedCollator(rules);
     } catch (IOException | ParseException e) {
       // io error or invalid rules
       throw new RuntimeException(e);
-    } finally {
-      IOUtils.closeQuietly(input);
     }
   }
 
@@ -247,6 +240,11 @@ public class CollationField extends FieldType {
 
   @Override
   protected void checkSupportsDocValues() { // we support DocValues
+  }
+
+  @Override
+  protected boolean enableDocValuesByDefault() {
+    return true;
   }
 
   @Override

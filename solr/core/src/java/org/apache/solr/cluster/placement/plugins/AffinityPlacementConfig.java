@@ -17,15 +17,18 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 
 /** Configuration bean for {@link AffinityPlacementFactory}. */
 public class AffinityPlacementConfig implements PlacementPluginConfig {
 
-  public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 20L;
+  public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 5L;
   public static final long DEFAULT_PRIORITIZED_FREE_DISK_GB = 100L;
 
   public static final AffinityPlacementConfig DEFAULT =
@@ -57,6 +60,14 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    * contain commas), which represent a logical OR for the purpose of placement.
    */
   public static final String NODE_TYPE_SYSPROP = "node_type";
+
+  /**
+   * Name of the system property on a node indicating the spread domain group. This is used (if
+   * {@link #spreadAcrossDomains} is set to true) to indicate this placement plugin that replicas
+   * for a particular shard should spread across nodes that have different values for this system
+   * property.
+   */
+  public static final String SPREAD_DOMAIN_SYSPROP = "spread_domain";
 
   /**
    * This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I
@@ -96,6 +107,40 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    */
   @JsonProperty public Map<String, String> collectionNodeType;
 
+  /**
+   * Same as {@link AffinityPlacementConfig#withCollection} but ensures shard to shard
+   * correspondence. should be disjoint with {@link AffinityPlacementConfig#withCollection}.
+   */
+  @JsonProperty public Map<String, String> withCollectionShards;
+
+  /**
+   * When this property is set to {@code true}, Solr will try to place replicas for the same shard
+   * in nodes that have different value for the {@link #SPREAD_DOMAIN_SYSPROP} System property. If
+   * more replicas exist (or are being placed) than the number of different values for {@link
+   * #SPREAD_DOMAIN_SYSPROP} System property in nodes in the cluster, Solr will attempt to
+   * distribute the placement of the replicas evenly across the domains but will fail the placement
+   * if more than {@link #maxReplicasPerShardInDomain} are placed within a single domain. Note that
+   * the domain groups are evaluated within a particular AZ (i.e. Solr will not consider the
+   * placement of replicas in AZ1 when selecting candidate nodes for replicas in AZ2). Example
+   * usages for this config are:
+   *
+   * <ul>
+   *   <li>Rack diversity: You want replicas in different AZs but also, within the AZ you want them
+   *       in different racks
+   *   <li>Host diversity: You are running multiple Solr instances in the same host physical host.
+   *       You want replicas in different AZs but also, within an AZ you want replicas for the same
+   *       shard to go in nodes that run in different hosts
+   * </ul>
+   */
+  @JsonProperty public Boolean spreadAcrossDomains = Boolean.FALSE;
+
+  /**
+   * Determines the maximum number of replicas of a particular type of a particular shard that can
+   * be placed within a single domain (as defined by the @link #SPREAD_DOMAIN_SYSPROP} System
+   * property.
+   */
+  @JsonProperty public Integer maxReplicasPerShardInDomain = -1;
+
   /** Zero-arguments public constructor required for deserialization - don't use. */
   public AffinityPlacementConfig() {
     this(DEFAULT_MINIMAL_FREE_DISK_GB, DEFAULT_PRIORITIZED_FREE_DISK_GB);
@@ -125,12 +170,40 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
       long minimalFreeDiskGB,
       long prioritizedFreeDiskGB,
       Map<String, String> withCollection,
+      Map<String, String> withCollectionShards,
       Map<String, String> collectionNodeType) {
     this.minimalFreeDiskGB = minimalFreeDiskGB;
     this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
     Objects.requireNonNull(withCollection);
+    Objects.requireNonNull(withCollectionShards);
     Objects.requireNonNull(collectionNodeType);
     this.withCollection = withCollection;
+    this.withCollectionShards = withCollectionShards;
     this.collectionNodeType = collectionNodeType;
+  }
+
+  public AffinityPlacementConfig(
+      long minimalFreeDiskGB,
+      long prioritizedFreeDiskGB,
+      Map<String, String> withCollection,
+      Map<String, String> collectionNodeType) {
+    this(
+        minimalFreeDiskGB,
+        prioritizedFreeDiskGB,
+        withCollection,
+        Collections.emptyMap(),
+        collectionNodeType);
+  }
+
+  public void validate() {
+    if (!Collections.disjoint(withCollection.keySet(), withCollectionShards.keySet())) {
+      final ArrayList<String> collections = new ArrayList<>(withCollection.keySet());
+      collections.retainAll(withCollectionShards.keySet());
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "withCollection and withCollectionShards should be disjoint. But there are "
+              + collections
+              + " in common.");
+    }
   }
 }

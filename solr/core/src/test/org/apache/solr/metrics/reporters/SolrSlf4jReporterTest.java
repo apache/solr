@@ -18,10 +18,10 @@
 package org.apache.solr.metrics.reporters;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
@@ -43,21 +43,20 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
   @Test
   public void testReporter() throws Exception {
     ensureLoggingConfiguredAppropriately();
-    Path home = Paths.get(TEST_HOME());
+    Path home = TEST_HOME();
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
     String solrXml =
-        FileUtils.readFileToString(
-            Paths.get(home.toString(), "solr-slf4jreporter.xml").toFile(), "UTF-8");
+        Files.readString(home.resolve("solr-slf4jreporter.xml"), StandardCharsets.UTF_8);
     NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
     CoreContainer cc =
         createCoreContainer(
             cfg,
             new TestHarness.TestCoresLocator(
                 DEFAULT_TEST_CORENAME,
-                initAndGetDataDir().getAbsolutePath(),
+                initAndGetDataDir().toString(),
                 "solrconfig.xml",
                 "schema.xml"));
 

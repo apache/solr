@@ -16,8 +16,9 @@
  */
 package org.apache.solr;
 
-import java.io.File;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,25 +30,24 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest
     // configuration sets we can, so we don't copy that much junk around.
-    String tmpSolrHome = createTempDir().toFile().getAbsolutePath();
+    Path tmpSolrHome = createTempDir();
 
-    File subHome = new File(new File(tmpSolrHome, "core0"), "conf");
-    assertTrue("Failed to make subdirectory ", subHome.mkdirs());
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
-    FileUtils.copyFile(
-        new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
-    FileUtils.copyFile(
-        new File(top, "solrconfig.snippet.randomindexconfig.xml"),
-        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+    Path subHome = tmpSolrHome.resolve("core0/conf");
+    Files.createDirectories(subHome);
+    Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1/conf");
+    Files.copy(top.resolve("schema-tiny.xml"), subHome.resolve("schema-tiny.xml"));
+    Files.copy(top.resolve("solrconfig-minimal.xml"), subHome.resolve("solrconfig-minimal.xml"));
+    Files.copy(
+        top.resolve("solrconfig.snippet.randomindexconfig.xml"),
+        subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
-    FileUtils.copyDirectory(new File(tmpSolrHome, "core0"), new File(tmpSolrHome, "core1"));
+    PathUtils.copyDirectory(tmpSolrHome.resolve("core0"), tmpSolrHome.resolve("core1"));
     // Core discovery will default to the name of the dir the core.properties file is in. So if
     // everything else is OK as defaults, just the _presence_ of this file is sufficient.
-    FileUtils.touch(new File(tmpSolrHome, "core0/core.properties"));
-    FileUtils.touch(new File(tmpSolrHome, "core1/core.properties"));
+    PathUtils.touch(tmpSolrHome.resolve("core0/core.properties"));
+    PathUtils.touch(tmpSolrHome.resolve("core1/core.properties"));
 
-    FileUtils.copyFile(getFile("solr/solr.xml"), new File(tmpSolrHome, "solr.xml"));
+    Files.copy(getFile("solr/solr.xml"), tmpSolrHome.resolve("solr.xml"));
 
     initCore("solrconfig-minimal.xml", "schema-tiny.xml", tmpSolrHome, "core1");
   }

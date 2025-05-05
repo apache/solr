@@ -19,13 +19,13 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import com.codahale.metrics.Gauge;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -34,12 +34,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
@@ -48,9 +51,9 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +65,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static String REDACT_STRING = RedactionUtils.getRedactString();
 
   /**
    * Undocumented expert level system property to prevent doing a reverse lookup of our hostname.
@@ -145,11 +146,12 @@ public class SystemInfoHandler extends RequestHandlerBase {
     }
     if (cc != null) {
       rsp.add("solr_home", cc.getSolrHome());
-      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+      rsp.add("core_root", cc.getCoreRootDirectory());
     }
 
     rsp.add("lucene", getLuceneInfo());
-    rsp.add("jvm", getJvmInfo());
+    NodeConfig nodeConfig = getCoreContainer(req).getNodeConfig();
+    rsp.add("jvm", getJvmInfo(nodeConfig));
     rsp.add("security", getSecurityInfo(req));
     rsp.add("system", getSystemInfo());
     if (solrCloudMode) {
@@ -191,7 +193,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
-    dirs.add("cwd", new File(System.getProperty("user.dir")).getAbsolutePath());
+    dirs.add("cwd", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
     dirs.add("instance", core.getInstancePath().toString());
     try {
       dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));
@@ -232,7 +234,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
   }
 
   /** Get JVM Info - including memory info */
-  public static SimpleOrderedMap<Object> getJvmInfo() {
+  public static SimpleOrderedMap<Object> getJvmInfo(NodeConfig nodeConfig) {
     SimpleOrderedMap<Object> jvm = new SimpleOrderedMap<>();
 
     final String javaVersion = System.getProperty("java.specification.version", "unknown");
@@ -301,7 +303,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
       // the input arguments passed to the Java virtual machine
       // which does not include the arguments to the main method.
-      jmx.add("commandLineArgs", getInputArgumentsRedacted(mx));
+      jmx.add("commandLineArgs", getInputArgumentsRedacted(nodeConfig, mx));
 
       jmx.add("startTime", new Date(mx.getStartTime()));
       jmx.add("upTimeMS", mx.getUptime());
@@ -326,28 +328,31 @@ public class SystemInfoHandler extends RequestHandlerBase {
       }
     }
 
-    // User principal
-    String username = null;
-    if (req.getUserPrincipal() != null) {
-      username = req.getUserPrincipal().getName();
-      info.add("username", username);
+    if (req.getUserPrincipal() != null
+        && req.getUserPrincipal() != PKIAuthenticationPlugin.CLUSTER_MEMBER_NODE) {
+      // User principal
+      info.add("username", req.getUserPrincipal().getName());
 
       // Mapped roles for this principal
       @SuppressWarnings("resource")
       AuthorizationPlugin auth = cc == null ? null : cc.getAuthorizationPlugin();
-      if (auth instanceof RuleBasedAuthorizationPluginBase) {
-        RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
+      if (auth instanceof RuleBasedAuthorizationPluginBase rbap) {
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
-        info.add("permissions", rbap.getPermissionNamesForRoles(roles));
+        if (roles == null) {
+          info.add("permissions", Set.of());
+        } else {
+          info.add(
+              "permissions",
+              rbap.getPermissionNamesForRoles(
+                  Stream.concat(roles.stream(), Stream.of("*", null)).collect(Collectors.toSet())));
+        }
       }
     }
 
     if (cc != null && cc.getZkController() != null) {
       String urlScheme =
-          cc.getZkController()
-              .zkStateReader
-              .getClusterProperty(ZkStateReader.BASE_URL_PROP, "http");
+          cc.getZkController().zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, "http");
       info.add("tls", ZkStateReader.HTTPS.equals(urlScheme));
     }
 
@@ -401,14 +406,18 @@ public class SystemInfoHandler extends RequestHandlerBase {
     return newSizeAndUnits;
   }
 
-  private static List<String> getInputArgumentsRedacted(RuntimeMXBean mx) {
+  private static List<String> getInputArgumentsRedacted(NodeConfig nodeConfig, RuntimeMXBean mx) {
     List<String> list = new ArrayList<>();
     for (String arg : mx.getInputArguments()) {
       if (arg.startsWith("-D")
           && arg.contains("=")
-          && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf("=")))) {
+          && nodeConfig.isSysPropHidden(arg.substring(2, arg.indexOf('=')))) {
         list.add(
-            String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf("=")), REDACT_STRING));
+            String.format(
+                Locale.ROOT,
+                "%s=%s",
+                arg.substring(0, arg.indexOf('=')),
+                NodeConfig.REDACTED_SYS_PROP_VALUE));
       } else {
         list.add(arg);
       }

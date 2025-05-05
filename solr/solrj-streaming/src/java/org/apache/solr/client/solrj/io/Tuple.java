@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.StreamParams;
+import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * A simple abstraction of a record containing key/value pairs. Convenience methods are provided for
@@ -41,30 +42,21 @@ public class Tuple implements Cloneable, MapWriter {
    * record from the stream, but it may contain metrics/aggregates gathered by underlying streams.
    */
   public boolean EOF;
+
   /**
    * When EXCEPTION field is true the Tuple marks an exception in the stream and the corresponding
    * "EXCEPTION" field contains a related message.
    */
   public boolean EXCEPTION;
 
-  /**
-   * Tuple fields.
-   *
-   * @deprecated use {@link #getFields()} instead of this public field.
-   */
-  @Deprecated public Map<String, Object> fields = new HashMap<>(2);
-  /**
-   * External serializable field names.
-   *
-   * @deprecated use {@link #getFieldNames()} instead of this public field.
-   */
-  @Deprecated public List<String> fieldNames;
-  /**
-   * Mapping of external field names to internal tuple field names.
-   *
-   * @deprecated use {@link #getFieldLabels()} instead of this public field.
-   */
-  @Deprecated public Map<String, String> fieldLabels;
+  /** Tuple fields. */
+  private final Map<String, Object> fields = CollectionUtil.newHashMap(2);
+
+  /** External serializable field names. */
+  private List<String> fieldNames;
+
+  /** Mapping of external field names to internal tuple field names. */
+  private Map<String, String> fieldLabels;
 
   public Tuple() {
     // just an empty tuple
@@ -240,16 +232,6 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   /**
-   * Return all tuple fields.
-   *
-   * @deprecated use {@link #getFields()} instead.
-   */
-  @Deprecated(since = "8.6.0")
-  public Map<String, Object> getMap() {
-    return this.fields;
-  }
-
-  /**
    * This represents the mapping of external field labels to the tuple's internal field names if
    * they are different from field names.
    *
@@ -265,7 +247,7 @@ public class Tuple implements Cloneable, MapWriter {
 
   /**
    * A list of field names to serialize. This list (together with the mapping in {@link
-   * #getFieldLabels()} determines what tuple values are serialized and their external (serialized)
+   * #getFieldLabels()}) determines what tuple values are serialized and their external (serialized)
    * names.
    *
    * @return list of external field names or null
@@ -298,13 +280,13 @@ public class Tuple implements Cloneable, MapWriter {
 
   @Override
   public Tuple clone() {
-    Tuple clone = new Tuple(this);
-    return clone;
+    return new Tuple(this);
   }
 
   /**
-   * The other tuples fields and fieldLabels will be putAll'd directly to this's fields and
-   * fieldLabels while other's fieldNames will be added such that duplicates aren't present.
+   * The other tuples fields and fieldLabels will be merged via putAll directly into this Tuple's
+   * fields and fieldLabels while other's fieldNames will be added such that duplicates aren't
+   * present.
    *
    * @param other Tuple to be merged into this.
    */

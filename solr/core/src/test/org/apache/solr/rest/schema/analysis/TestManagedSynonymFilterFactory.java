@@ -42,14 +42,14 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
   @Before
   public void before() throws Exception {
     tmpSolrHome = createTempDir();
-    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome);
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
     createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(),
+        tmpSolrHome,
         "solrconfig-managed-schema.xml",
         "schema-rest.xml",
         "/solr",
@@ -59,10 +59,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;

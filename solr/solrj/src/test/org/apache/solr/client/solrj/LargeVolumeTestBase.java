@@ -41,7 +41,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testMultiThreaded() throws Exception {
-    SolrClient client = this.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
 
     DocThread[] threads = new DocThread[threadCount];
@@ -55,7 +55,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
       threads[i].join();
     }
 
-    // some of the commits could have failed because maxWarmingSearchers exceeded,
+    // some commits could have failed because maxWarmingSearchers exceeded,
     // so do a final commit to make sure everything is visible.
     // This should no longer be true as of SOLR-9712 (Solr 6.4)
     // client.commit();
@@ -65,20 +65,20 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
   }
 
   private void query(int count) throws SolrServerException, IOException {
-    SolrClient client = this.getSolrClient();
+    SolrClient client = getSolrClient();
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = client.query(query);
     assertEquals(0, response.getStatus());
     assertEquals(count, response.getResults().getNumFound());
   }
 
-  public class DocThread extends Thread {
+  public static class DocThread extends Thread {
 
     final SolrClient client;
     final String name;
 
     public DocThread(String name) {
-      client = createNewSolrClient();
+      client = getSolrClient();
       this.name = name;
     }
 

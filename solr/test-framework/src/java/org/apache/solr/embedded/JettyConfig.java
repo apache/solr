@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import javax.servlet.Filter;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 
@@ -28,7 +29,6 @@ public class JettyConfig {
   public final boolean onlyHttp1;
   public final int port;
   public final int portRetryTime;
-  public final String context;
   public final boolean stopAtShutdown;
   public final Long waitForLoadingCoresToFinishMs;
   public final Map<ServletHolder, String> extraServlets;
@@ -40,7 +40,6 @@ public class JettyConfig {
       boolean onlyHttp1,
       int port,
       int portRetryTime,
-      String context,
       boolean stopAtShutdown,
       Long waitForLoadingCoresToFinishMs,
       Map<ServletHolder, String> extraServlets,
@@ -50,7 +49,6 @@ public class JettyConfig {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.portRetryTime = portRetryTime;
-    this.context = context;
     this.stopAtShutdown = stopAtShutdown;
     this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
     this.extraServlets = extraServlets;
@@ -69,7 +67,6 @@ public class JettyConfig {
     builder.onlyHttp1 = other.onlyHttp1;
     builder.port = other.port;
     builder.portRetryTime = other.portRetryTime;
-    builder.context = other.context;
     builder.stopAtShutdown = other.stopAtShutdown;
     builder.waitForLoadingCoresToFinishMs = other.waitForLoadingCoresToFinishMs;
     builder.extraServlets = other.extraServlets;
@@ -83,13 +80,13 @@ public class JettyConfig {
 
     boolean onlyHttp1 = false;
     int port = 0;
-    String context = "/solr";
     boolean enableV2 = true;
     boolean stopAtShutdown = true;
     Long waitForLoadingCoresToFinishMs = 300000L;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
     Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
-    SSLConfig sslConfig = null;
+    SSLConfig sslConfig =
+        SolrTestCaseJ4.sslConfig != null ? SolrTestCaseJ4.sslConfig.buildServerSSLConfig() : null;
     int portRetryTime = 60;
 
     public Builder useOnlyHttp1(boolean useOnlyHttp1) {
@@ -104,11 +101,6 @@ public class JettyConfig {
 
     public Builder setPort(int port) {
       this.port = port;
-      return this;
-    }
-
-    public Builder setContext(String context) {
-      this.context = context;
       return this;
     }
 
@@ -157,7 +149,6 @@ public class JettyConfig {
           onlyHttp1,
           port,
           portRetryTime,
-          context,
           stopAtShutdown,
           waitForLoadingCoresToFinishMs,
           extraServlets,

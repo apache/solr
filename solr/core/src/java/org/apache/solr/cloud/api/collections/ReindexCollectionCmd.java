@@ -21,23 +21,20 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -48,6 +45,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -104,16 +102,16 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   public static final String PHASE = "phase";
 
   private static final List<String> COLLECTION_PARAMS =
-      Arrays.asList(
-          ZkStateReader.CONFIGNAME_PROP,
-          ZkStateReader.NUM_SHARDS_PROP,
-          ZkStateReader.NRT_REPLICAS,
-          ZkStateReader.PULL_REPLICAS,
-          ZkStateReader.TLOG_REPLICAS,
-          ZkStateReader.REPLICATION_FACTOR,
-          "shards",
-          CollectionAdminParams.CREATE_NODE_SET_PARAM,
-          CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM);
+      Stream.concat(
+              CollectionHandlingUtils.numReplicasProperties().stream(),
+              Stream.of(
+                  ZkStateReader.CONFIGNAME_PROP,
+                  ZkStateReader.NUM_SHARDS_PROP,
+                  ZkStateReader.REPLICATION_FACTOR,
+                  "shards",
+                  CollectionAdminParams.CREATE_NODE_SET_PARAM,
+                  CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM))
+          .collect(Collectors.toUnmodifiableList());
 
   private final CollectionCommandContext ccc;
 
@@ -163,8 +161,6 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         Stream.of(Cmd.values())
             .collect(Collectors.toUnmodifiableMap(Cmd::toLower, Function.identity()));
   }
-
-  private String zkHost;
 
   public ReindexCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
@@ -249,9 +245,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     String query = message.getStr(CommonParams.Q, "*:*");
     String fl = message.getStr(CommonParams.FL, "*");
     Integer rf = message.getInt(ZkStateReader.REPLICATION_FACTOR, coll.getReplicationFactor());
-    Integer numNrt = message.getInt(ZkStateReader.NRT_REPLICAS, coll.getNumNrtReplicas());
-    Integer numTlog = message.getInt(ZkStateReader.TLOG_REPLICAS, coll.getNumTlogReplicas());
-    Integer numPull = message.getInt(ZkStateReader.PULL_REPLICAS, coll.getNumPullReplicas());
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, coll);
     int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, coll.getActiveSlices().size());
     DocRouter router = coll.getRouter();
     if (router == null) {
@@ -274,10 +268,10 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     String chkCollection = CHK_COL_PREFIX + extCollection;
     String daemonUrl = null;
+    Replica daemonReplica = null;
     Exception exc = null;
     boolean createdTarget = false;
     try {
-      zkHost = ccc.getZkStateReader().getZkClient().getZkServerAddress();
       // set the running flag
       reindexingState.clear();
       reindexingState.put("actualSourceCollection", collection);
@@ -338,15 +332,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       if (rf != null) {
         propMap.put(ZkStateReader.REPLICATION_FACTOR, rf);
       }
-      if (numNrt != null) {
-        propMap.put(ZkStateReader.NRT_REPLICAS, numNrt);
-      }
-      if (numTlog != null) {
-        propMap.put(ZkStateReader.TLOG_REPLICAS, numTlog);
-      }
-      if (numPull != null) {
-        propMap.put(ZkStateReader.PULL_REPLICAS, numPull);
-      }
+      numReplicas.writeProps(propMap);
       // create the target collection
       cmd = new ZkNodeProps(propMap);
       cmdResults = new NamedList<>();
@@ -369,22 +355,17 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       CollectionHandlingUtils.checkResults(
           "creating checkpoint collection " + chkCollection, cmdResults, true);
       // wait for a while until we see both collections
-      TimeOut waitUntil =
-          new TimeOut(30, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
-      boolean created = false;
-      while (!waitUntil.hasTimedOut()) {
-        waitUntil.sleep(100);
-        // this also refreshes our local var clusterState
-        clusterState = ccc.getSolrCloudManager().getClusterState();
-        created =
-            clusterState.hasCollection(targetCollection)
-                && clusterState.hasCollection(chkCollection);
-        if (created) break;
-      }
-      if (!created) {
+      try {
+        for (String col : List.of(targetCollection, chkCollection)) {
+          ccc.getZkStateReader().waitForState(col, 30, TimeUnit.SECONDS, Objects::nonNull);
+        }
+      } catch (TimeoutException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Could not fully create temporary collection(s)");
       }
+
+      clusterState = ccc.getSolrCloudManager().getClusterState();
+
       if (maybeAbort(collection)) {
         aborted = true;
         return;
@@ -459,17 +440,17 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               + "\","
               + "initialCheckpoint=\"0\"))))");
       log.debug("- starting copying documents from {} to {}", collection, targetCollection);
-      SolrResponse rsp = null;
+      SolrResponse rsp;
       try {
-        rsp = ccc.getSolrCloudManager().request(new QueryRequest(q));
+        rsp = new QueryRequest(q).process(ccc.getSolrCloudManager().getSolrClient());
       } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Unable to copy documents from " + collection + " to " + targetCollection,
             e);
       }
-      daemonUrl = getDaemonUrl(rsp, coll);
-      if (daemonUrl == null) {
+      daemonReplica = getReplicaForDaemon(rsp, coll);
+      if (daemonReplica == null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Unable to copy documents from "
@@ -479,13 +460,13 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 + ": "
                 + Utils.toJSONString(rsp));
       }
-      reindexingState.put("daemonUrl", daemonUrl);
+      reindexingState.put("daemonUrl", daemonReplica.getCoreUrl());
       reindexingState.put("daemonName", targetCollection);
       reindexingState.put(PHASE, "copying documents");
       setReindexingState(collection, State.RUNNING, reindexingState);
 
       // wait for the daemon to finish
-      waitForDaemon(targetCollection, daemonUrl, collection, targetCollection, reindexingState);
+      waitForDaemon(targetCollection, daemonReplica, collection, targetCollection, reindexingState);
       if (maybeAbort(collection)) {
         aborted = true;
         return;
@@ -597,7 +578,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
             collection,
             targetCollection,
             chkCollection,
-            daemonUrl,
+            daemonReplica,
             targetCollection,
             createdTarget);
         if (exc != null) {
@@ -645,8 +626,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private long getNumberOfDocs(String collection) {
-    CloudSolrClient solrClient =
-        ccc.getCoreContainer().getSolrClientCache().getCloudSolrClient(zkHost);
+    var solrClient = ccc.getCoreContainer().getZkController().getSolrClient();
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add(CommonParams.Q, "*:*");
@@ -677,7 +657,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   // XXX see #waitForDaemon() for why we need this
-  private String getDaemonUrl(SolrResponse rsp, DocCollection coll) {
+  private Replica getReplicaForDaemon(SolrResponse rsp, DocCollection coll) {
     @SuppressWarnings({"unchecked"})
     Map<String, Object> rs = (Map<String, Object>) rsp.getResponse().get("result-set");
     if (rs == null || rs.isEmpty()) {
@@ -721,7 +701,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // build a baseUrl of the replica
     for (Replica r : coll.getReplicas()) {
       if (replicaName.equals(r.getCoreName())) {
-        return r.getBaseUrl() + "/" + r.getCoreName();
+        return r;
       }
     }
     return null;
@@ -733,173 +713,165 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   @SuppressWarnings({"unchecked"})
   private void waitForDaemon(
       String daemonName,
-      String daemonUrl,
+      Replica daemonReplica,
       String sourceCollection,
       String targetCollection,
       Map<String, Object> reindexingState)
       throws Exception {
-    HttpClient client = ccc.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    try (SolrClient solrClient =
-        new HttpSolrClient.Builder().withHttpClient(client).withBaseSolrUrl(daemonUrl).build()) {
-      ModifiableSolrParams q = new ModifiableSolrParams();
-      q.set(CommonParams.QT, "/stream");
-      q.set("action", "list");
-      q.set(CommonParams.DISTRIB, false);
-      QueryRequest req = new QueryRequest(q);
-      boolean isRunning;
-      int statusCheck = 0;
-      do {
-        isRunning = false;
-        statusCheck++;
-        try {
-          NamedList<Object> rsp = solrClient.request(req);
-          Map<String, Object> rs = (Map<String, Object>) rsp.get("result-set");
-          if (rs == null || rs.isEmpty()) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Can't find daemon list: missing result-set: " + Utils.toJSONString(rsp));
-          }
-          List<Object> list = (List<Object>) rs.get("docs");
-          if (list == null) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Can't find daemon list: missing result-set: " + Utils.toJSONString(rsp));
-          }
-          if (list.isEmpty()) { // finished?
-            break;
-          }
-          for (Object o : list) {
-            Map<String, Object> map = (Map<String, Object>) o;
-            String id = (String) map.get("id");
-            if (daemonName.equals(id)) {
-              isRunning = true;
-              // fail here
-              TestInjection.injectReindexFailure();
-              break;
-            }
-          }
-        } catch (Exception e) {
+
+    boolean isRunning;
+    int statusCheck = 0;
+    do {
+      isRunning = false;
+      statusCheck++;
+      try {
+        NamedList<Object> rsp = executeDaemonAction("list", daemonName, daemonReplica);
+        Map<String, Object> rs = (Map<String, Object>) rsp.get("result-set");
+        if (rs == null || rs.isEmpty()) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
-              "Exception waiting for daemon " + daemonName + " at " + daemonUrl,
-              e);
+              "Can't find daemon list: missing result-set: " + Utils.toJSONString(rsp));
         }
-        if (statusCheck % 5 == 0) {
-          reindexingState.put("processedDocs", getNumberOfDocs(targetCollection));
-          setReindexingState(sourceCollection, State.RUNNING, reindexingState);
+        List<Object> list = (List<Object>) rs.get("docs");
+        if (list == null) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Can't find daemon list: missing result-set: " + Utils.toJSONString(rsp));
         }
-        ccc.getSolrCloudManager().getTimeSource().sleep(2000);
-      } while (isRunning && !maybeAbort(sourceCollection));
-    }
+        if (list.isEmpty()) { // finished?
+          break;
+        }
+        for (Object o : list) {
+          Map<String, Object> map = (Map<String, Object>) o;
+          String id = (String) map.get("id");
+          if (daemonName.equals(id)) {
+            isRunning = true;
+            // fail here
+            TestInjection.injectReindexFailure();
+            break;
+          }
+        }
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Exception waiting for daemon " + daemonName + " at " + daemonReplica.getCoreUrl(),
+            e);
+      }
+      if (statusCheck % 5 == 0) {
+        reindexingState.put("processedDocs", getNumberOfDocs(targetCollection));
+        setReindexingState(sourceCollection, State.RUNNING, reindexingState);
+      }
+      ccc.getSolrCloudManager().getTimeSource().sleep(2000);
+    } while (isRunning && !maybeAbort(sourceCollection));
   }
 
   @SuppressWarnings({"unchecked"})
-  private void killDaemon(String daemonName, String daemonUrl) throws Exception {
-    log.debug("-- killing daemon {} at {}", daemonName, daemonUrl);
-    HttpClient client = ccc.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    try (SolrClient solrClient =
-        new HttpSolrClient.Builder().withHttpClient(client).withBaseSolrUrl(daemonUrl).build()) {
-      ModifiableSolrParams q = new ModifiableSolrParams();
-      q.set(CommonParams.QT, "/stream");
-      // we should really use 'kill' here, but then we will never
-      // know when the daemon actually finishes running - 'kill' only
-      // sets a flag that may be noticed much later
-      q.set("action", "stop");
-      q.set(CommonParams.ID, daemonName);
-      q.set(CommonParams.DISTRIB, false);
-      QueryRequest req = new QueryRequest(q);
-      NamedList<Object> rsp = solrClient.request(req);
-      // /result-set/docs/[0]/DaemonOp : Deamon:id killed on coreName
-      if (log.isDebugEnabled()) {
-        log.debug(" -- stop daemon response: {}", Utils.toJSONString(rsp));
-      }
-      Map<String, Object> rs = (Map<String, Object>) rsp.get("result-set");
-      if (rs == null || rs.isEmpty()) {
-        log.warn(
-            "Problem killing daemon {}: missing result-set: {}",
-            daemonName,
-            Utils.toJSONString(rsp));
-        return;
-      }
-      List<Object> list = (List<Object>) rs.get("docs");
-      if (list == null) {
-        log.warn(
-            "Problem killing daemon {}: missing result-set: {}",
-            daemonName,
-            Utils.toJSONString(rsp));
-        return;
-      }
-      if (list.isEmpty()) { // already finished?
-        return;
-      }
-      for (Object o : list) {
-        Map<String, Object> map = (Map<String, Object>) o;
-        String op = (String) map.get("DaemonOp");
-        if (op == null) {
-          continue;
-        }
-        if (op.contains(daemonName) && op.contains("stopped")) {
-          // now wait for the daemon to really stop
-          q.set("action", "list");
-          req = new QueryRequest(q);
-          TimeOut timeOut =
-              new TimeOut(60, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
-          while (!timeOut.hasTimedOut()) {
-            rsp = solrClient.request(req);
-            rs = (Map<String, Object>) rsp.get("result-set");
-            if (rs == null || rs.isEmpty()) {
-              log.warn(
-                  "Problem killing daemon {}: missing result-set: {}",
-                  daemonName,
-                  Utils.toJSONString(rsp));
-              break;
-            }
-            List<Object> list2 = (List<Object>) rs.get("docs");
-            if (list2 == null) {
-              log.warn(
-                  "Problem killing daemon {}: missing result-set: {}",
-                  daemonName,
-                  Utils.toJSONString(rsp));
-              break;
-            }
-            if (list2.isEmpty()) { // already finished?
-              break;
-            }
-            Map<String, Object> status2 = null;
-            for (Object o2 : list2) {
-              Map<String, Object> map2 = (Map<String, Object>) o2;
-              if (daemonName.equals(map2.get("id"))) {
-                status2 = map2;
-                break;
-              }
-            }
-            if (status2 == null) { // finished?
-              break;
-            }
-            Number stopTime = (Number) status2.get("stopTime");
-            if (stopTime.longValue() > 0) {
-              break;
-            }
-          }
-          if (timeOut.hasTimedOut()) {
-            log.warn(
-                "Problem killing daemon {}: timed out waiting for daemon to stop.", daemonName);
-            // proceed anyway
-          }
-        }
-      }
-      // now kill it - it's already stopped, this simply removes its status
-      q.set("action", "kill");
-      req = new QueryRequest(q);
-      solrClient.request(req);
+  private void killDaemon(String daemonName, Replica daemonReplica) throws Exception {
+    if (log.isDebugEnabled()) {
+      log.debug("-- killing daemon {} at {}", daemonName, daemonReplica.getCoreUrl());
     }
+
+    // we should really use 'kill' here, but then we will never
+    // know when the daemon actually finishes running - 'kill' only
+    // sets a flag that may be noticed much later
+    NamedList<Object> rsp = executeDaemonAction("stop", daemonName, daemonReplica);
+    // /result-set/docs/[0]/DaemonOp : Deamon:id killed on coreName
+    if (log.isDebugEnabled()) {
+      log.debug(" -- stop daemon response: {}", Utils.toJSONString(rsp));
+    }
+    Map<String, Object> rs = (Map<String, Object>) rsp.get("result-set");
+    if (rs == null || rs.isEmpty()) {
+      log.warn(
+          "Problem killing daemon {}: missing result-set: {}", daemonName, Utils.toJSONString(rsp));
+      return;
+    }
+    List<Object> list = (List<Object>) rs.get("docs");
+    if (list == null) {
+      log.warn(
+          "Problem killing daemon {}: missing result-set: {}", daemonName, Utils.toJSONString(rsp));
+      return;
+    }
+    if (list.isEmpty()) { // already finished?
+      return;
+    }
+    for (Object o : list) {
+      Map<String, Object> map = (Map<String, Object>) o;
+      String op = (String) map.get("DaemonOp");
+      if (op == null) {
+        continue;
+      }
+      if (op.contains(daemonName) && op.contains("stopped")) {
+        // now wait for the daemon to really stop
+        TimeOut timeOut =
+            new TimeOut(60, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
+        while (!timeOut.hasTimedOut()) {
+          rsp = executeDaemonAction("list", daemonName, daemonReplica);
+          rs = (Map<String, Object>) rsp.get("result-set");
+          if (rs == null || rs.isEmpty()) {
+            log.warn(
+                "Problem killing daemon {}: missing result-set: {}",
+                daemonName,
+                Utils.toJSONString(rsp));
+            break;
+          }
+          List<Object> list2 = (List<Object>) rs.get("docs");
+          if (list2 == null) {
+            log.warn(
+                "Problem killing daemon {}: missing result-set: {}",
+                daemonName,
+                Utils.toJSONString(rsp));
+            break;
+          }
+          if (list2.isEmpty()) { // already finished?
+            break;
+          }
+          Map<String, Object> status2 = null;
+          for (Object o2 : list2) {
+            Map<String, Object> map2 = (Map<String, Object>) o2;
+            if (daemonName.equals(map2.get("id"))) {
+              status2 = map2;
+              break;
+            }
+          }
+          if (status2 == null) { // finished?
+            break;
+          }
+          Number stopTime = (Number) status2.get("stopTime");
+          if (stopTime.longValue() > 0) {
+            break;
+          }
+        }
+        if (timeOut.hasTimedOut()) {
+          log.warn("Problem killing daemon {}: timed out waiting for daemon to stop.", daemonName);
+          // proceed anyway
+        }
+      }
+    }
+    // now kill it - it's already stopped, this simply removes its status
+    executeDaemonAction("kill", daemonName, daemonReplica);
+  }
+
+  private NamedList<Object> executeDaemonAction(
+      String action, String daemonName, Replica daemonReplica) throws Exception {
+    final var solrClient = ccc.getCoreContainer().getDefaultHttpSolrClient();
+
+    final var solrParams = new ModifiableSolrParams();
+    solrParams.set(CommonParams.QT, "/stream");
+    solrParams.set("action", action);
+    solrParams.set(CommonParams.ID, daemonName);
+    solrParams.set(CommonParams.DISTRIB, false);
+
+    final var req = new QueryRequest(solrParams);
+    final var solrResponse =
+        solrClient.requestWithBaseUrl(daemonReplica.getBaseUrl(), daemonReplica.getCoreName(), req);
+    return solrResponse.getResponse();
   }
 
   private void cleanup(
       String collection,
       String targetCollection,
       String chkCollection,
-      String daemonUrl,
+      Replica daemonReplica,
       String daemonName,
       boolean createdTarget)
       throws Exception {
@@ -908,8 +880,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // 2. cleanup target / chk collections IFF the source collection still exists and is not empty
     // 3. cleanup collection state
 
-    if (daemonUrl != null) {
-      killDaemon(daemonName, daemonUrl);
+    if (daemonReplica != null) {
+      killDaemon(daemonName, daemonReplica);
     }
     ClusterState clusterState = ccc.getSolrCloudManager().getClusterState();
     NamedList<Object> cmdResults = new NamedList<>();

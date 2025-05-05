@@ -16,13 +16,11 @@
  */
 package org.apache.solr.update;
 
-import io.opentracing.Tracer;
-import io.opentracing.util.GlobalTracer;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** An index update command encapsulated in an object (Command pattern) */
 public abstract class UpdateCommand implements Cloneable {
-  protected SolrQueryRequest req;
+  protected final SolrQueryRequest req;
   protected long version;
   protected String route;
   protected int flags;
@@ -89,18 +87,6 @@ public abstract class UpdateCommand implements Cloneable {
 
   public SolrQueryRequest getReq() {
     return req;
-  }
-
-  public void setReq(SolrQueryRequest req) {
-    this.req = req;
-  }
-
-  /**
-   * Distributed tracing Tracer. Never null but might implement {@link
-   * io.opentracing.noop.NoopTracer}.
-   */
-  public Tracer getTracer() {
-    return (req != null) ? req.getTracer() : GlobalTracer.get();
   }
 
   @Override

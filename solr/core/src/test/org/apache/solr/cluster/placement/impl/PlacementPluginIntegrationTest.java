@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.placement.impl;
 
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.Matchers.instanceOf;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -51,19 +53,29 @@ import org.apache.solr.cluster.placement.ShardMetrics;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 /** Test for {@link MinimizeCoresPlacementFactory} using a {@link MiniSolrCloudCluster}. */
 @LogLevel("org.apache.solr.cluster.placement.impl=DEBUG")
 public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   private static final String COLLECTION =
       PlacementPluginIntegrationTest.class.getSimpleName() + "_collection";
+
+  @Rule
+  public TestRule sysPropRestore =
+      new TestRuleRestoreSystemProperties(
+          PlacementPluginFactoryLoader.PLACEMENTPLUGIN_DEFAULT_SYSPROP);
 
   private static SolrCloudManager cloudManager;
   private static CoreContainer cc;
@@ -90,7 +102,38 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
               .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
               .build();
       req.process(cluster.getSolrClient());
+      // Wait until we see this locally, this is important for tests to make sure they don't start
+      // without a clean coreContainer
+      RetryUtil.retryUntil(
+          "PlacementPluginFactory not removed in coreContainer within 1 second after removal API call",
+          1000,
+          1,
+          TimeUnit.MILLISECONDS,
+          () -> {
+            DelegatingPlacementPluginFactory pluginFactory =
+                (DelegatingPlacementPluginFactory) cc.getPlacementPluginFactory();
+            return pluginFactory.getDelegate() == null;
+          });
     }
+  }
+
+  @Test
+  public void testDefaultConfiguration() {
+    CoreContainer cc = createCoreContainer(TEST_PATH(), "<solr></solr>");
+    assertThat(
+        cc.getPlacementPluginFactory().createPluginInstance(),
+        instanceOf(SimplePlacementFactory.SimplePlacementPlugin.class));
+    cc.shutdown();
+  }
+
+  @Test
+  public void testConfigurationInSystemProps() {
+    System.setProperty(PlacementPluginFactoryLoader.PLACEMENTPLUGIN_DEFAULT_SYSPROP, "random");
+    CoreContainer cc = createCoreContainer(TEST_PATH(), "<solr></solr>");
+    assertThat(
+        cc.getPlacementPluginFactory().createPluginInstance(),
+        instanceOf(RandomPlacementFactory.RandomPlacementPlugin.class));
+    cc.shutdown();
   }
 
   @Test
@@ -142,6 +185,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public void testDynamicReconfiguration() throws Exception {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);
@@ -165,6 +209,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     PlacementPluginFactory<? extends PlacementPluginConfig> factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(),
         factory instanceof MinimizeCoresPlacementFactory);
@@ -183,6 +228,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     AffinityPlacementConfig config = ((AffinityPlacementFactory) factory).getConfig();
@@ -201,6 +247,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
@@ -237,6 +284,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public void testWithCollectionIntegration() throws Exception {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);
@@ -330,7 +378,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient());
       fail("should have failed: " + rsp);
     } catch (Exception e) {
-      assertTrue(e.toString(), e.toString().contains("colocated collection"));
+      assertTrue(e.toString(), e.toString().contains("collocated collection"));
     }
   }
 
@@ -347,6 +395,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);
@@ -377,8 +426,8 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       fail("should have failed due to no nodes with the types: " + rsp);
     } catch (Exception e) {
       assertTrue(
-          "should contain 'no nodes with types':" + e,
-          e.toString().contains("no nodes with types"));
+          "should contain 'Not enough eligible nodes to place':" + e,
+          e.toString().contains("Not enough eligible nodes to place"));
     }
     System.setProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0");
     CollectionAdminResponse rsp =

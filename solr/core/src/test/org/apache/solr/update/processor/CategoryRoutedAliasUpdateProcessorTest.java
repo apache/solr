@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -38,8 +37,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.LogLevel;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,6 +56,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   private int lastDocId = 0;
   private static CloudSolrClient solrClient;
   private int numDocsDeletedOrFailed = 0;
+
   // uncomment to create pause for attaching profiler.
   //  static {
   //    JOptionPane.showMessageDialog(null,"Ready?");
@@ -67,25 +65,12 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   @Before
   public void doBefore() throws Exception {
     configureCluster(1).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = cluster.getSolrClient();
     // log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
       log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // nowarn
     }
-  }
-
-  @After
-  public void doAfter() throws Exception {
-    IOUtils.close(solrClient);
-    if (null != cluster) {
-      shutdownCluster();
-    }
-  }
-
-  @AfterClass
-  public static void cleanUpAfterClass() {
-    solrClient = null;
   }
 
   @Test
@@ -236,11 +221,11 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
 
   private String noDashes(String ship) {
-    return ship.replaceAll("-", "_");
+    return ship.replace("-", "_");
   }
 
   private String noDollar(String ship) {
-    return ship.replaceAll("\\$", "_");
+    return ship.replace("$", "_");
   }
 
   @Test

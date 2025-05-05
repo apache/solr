@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -29,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -53,6 +53,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,6 +149,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
 
         if (persistConf(securityConfig)) {
           securityConfEdited();
+          updateTraceOps(req, configEditablePlugin.getClass().getSimpleName(), commandsCopy);
           return;
         }
       }
@@ -155,6 +157,11 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     }
     throw new SolrException(
         SERVER_ERROR, "Failed to persist security config after 3 attempts. Giving up");
+  }
+
+  private void updateTraceOps(SolrQueryRequest req, String clazz, List<CommandOperation> commands) {
+    TraceUtils.setOperations(
+        req, clazz, commands.stream().map(c -> c.name).collect(Collectors.toUnmodifiableList()));
   }
 
   /** Hook where you can do stuff after a config has been edited. Defaults to NOP */
@@ -337,7 +344,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
                 }
               });
 
-          this.apis = ImmutableList.copyOf(apis);
+          this.apis = List.copyOf(apis);
         }
       }
     }

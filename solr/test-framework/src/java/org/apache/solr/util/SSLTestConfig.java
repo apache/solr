@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -27,7 +26,6 @@ import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -38,7 +36,6 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
@@ -108,10 +105,6 @@ public class SSLTestConfig {
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
-    if (this.useSsl) {
-      assumeSslIsSafeToTest();
-    }
-
     final String resourceName =
         checkPeerName ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
     trustStore = keyStore = Resource.newClassPathResource(resourceName);
@@ -161,7 +154,9 @@ public class SSLTestConfig {
    * (since that's what is almost always used during testing).
    */
   public SSLContext buildClientSSLContext()
-      throws KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException,
+      throws KeyManagementException,
+          UnrecoverableKeyException,
+          NoSuchAlgorithmException,
           KeyStoreException {
 
     assert isSSLMode();
@@ -247,6 +242,21 @@ public class SSLTestConfig {
     };
   }
 
+  public KeyStore defaultKeyStore() {
+    if (keyStore == null) {
+      return null;
+    }
+    return buildKeyStore(keyStore, TEST_PASSWORD);
+  }
+
+  public String defaultKeyStorePassword() {
+    return TEST_PASSWORD;
+  }
+
+  public SecureRandom notSecureSecureRandom() {
+    return NotSecurePseudoRandom.INSTANCE;
+  }
+
   /** Constructs a KeyStore using the specified filename and password */
   private static KeyStore buildKeyStore(Resource resource, String password) {
     try {
@@ -322,6 +332,7 @@ public class SSLTestConfig {
    */
   private static class NotSecurePseudoRandom extends SecureRandom {
     public static final SecureRandom INSTANCE = new NotSecurePseudoRandom();
+
     /**
      * Helper method that can be used to fill an array with non-zero data. (Attempted workarround of
      * Solaris SSL Padding bug: SOLR-9068)
@@ -339,11 +350,13 @@ public class SSLTestConfig {
           public byte[] engineGenerateSeed(int numBytes) {
             return fillData(new byte[numBytes]);
           }
+
           /** fills the byte[] with static data */
           @Override
           public void engineNextBytes(byte[] bytes) {
             fillData(bytes);
           }
+
           /** NOOP */
           @Override
           public void engineSetSeed(byte[] seed) {
@@ -360,6 +373,7 @@ public class SSLTestConfig {
     public byte[] generateSeed(int numBytes) {
       return fillData(new byte[numBytes]);
     }
+
     /** fills the byte[] with static data */
     @Override
     public void nextBytes(byte[] bytes) {
@@ -370,11 +384,13 @@ public class SSLTestConfig {
     public void nextBytes(byte[] bytes, SecureRandomParameters params) {
       fillData(bytes);
     }
+
     /** NOOP */
     @Override
     public void setSeed(byte[] seed) {
       /* NOOP */
     }
+
     /** NOOP */
     @Override
     public void setSeed(long seed) {
@@ -391,50 +407,4 @@ public class SSLTestConfig {
       /* NOOP */
     }
   }
-
-  /**
-   * Helper method for sanity checking if it's safe to use SSL on this JVM
-   *
-   * @see <a href="https://issues.apache.org/jira/browse/SOLR-12988">SOLR-12988</a>
-   * @throws org.junit.internal.AssumptionViolatedException if this JVM is known to have SSL
-   *     problems
-   */
-  public static void assumeSslIsSafeToTest() {
-    if (Constants.JVM_NAME.startsWith("OpenJDK")
-        || Constants.JVM_NAME.startsWith("Java HotSpot(TM)")) {
-      RandomizedTest.assumeFalse(
-          "Test (or randomization for this seed) wants to use SSL, "
-              + "but SSL is known to fail on your JVM: "
-              + Constants.JVM_NAME
-              + " / "
-              + Constants.JVM_VERSION,
-          isOpenJdkJvmVersionKnownToHaveProblems(Constants.JVM_VERSION));
-    }
-  }
-
-  /**
-   * package visibility for tests
-   *
-   * @see Constants#JVM_VERSION
-   * @lucene.internal
-   */
-  static boolean isOpenJdkJvmVersionKnownToHaveProblems(final String jvmVersion) {
-    // TODO: would be nice to replace with Runtime.Version once we don't have to
-    // worry about java8 support when backporting to branch_8x
-    return KNOWN_BAD_OPENJDK_JVMS.matcher(jvmVersion).matches();
-  }
-
-  private static final Pattern KNOWN_BAD_OPENJDK_JVMS =
-      Pattern.compile( // 11 to 11.0.2 were all definitely problematic
-          // - https://bugs.openjdk.java.net/browse/JDK-8212885
-          // - https://bugs.openjdk.java.net/browse/JDK-8213202
-          "(^11(\\.0(\\.0|\\.1|\\.2)?)?($|(\\_|\\+|\\-).*$))|"
-              +
-              // early (pre-ea) "testing" builds of 11, 12, and 13 were also buggy
-              // - https://bugs.openjdk.java.net/browse/JDK-8224829
-              "(^(11|12|13).*-testing.*$)|"
-              +
-              // So far, all 13-ea builds (up to 13-ea-26) have been buggy
-              // - https://bugs.openjdk.java.net/browse/JDK-8226338
-              "(^13-ea.*$)");
 }

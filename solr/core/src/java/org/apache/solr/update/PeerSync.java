@@ -603,11 +603,8 @@ public class PeerSync implements SolrMetricProducer {
     // comparator that sorts update records by absolute value of version, putting lowest first
     private static final Comparator<Object> updateRecordComparator =
         (o1, o2) -> {
-          if (!(o1 instanceof List)) return 1;
-          if (!(o2 instanceof List)) return -1;
-
-          List<?> lst1 = (List<?>) o1;
-          List<?> lst2 = (List<?>) o2;
+          if (!(o1 instanceof List<?> lst1)) return 1;
+          if (!(o2 instanceof List<?> lst2)) return -1;
 
           long l1 = Math.abs((Long) lst1.get(1));
           long l2 = Math.abs((Long) lst2.get(1));
@@ -767,8 +764,8 @@ public class PeerSync implements SolrMetricProducer {
       return handleVersionsWithRanges(otherVersions, completeList, ourUpdates, ourLowThreshold);
     }
 
-    @VisibleForTesting
     /** Implementation assumes the passed in lists are sorted and contain no duplicates. */
+    @VisibleForTesting
     static MissedUpdatesRequest handleVersionsWithRanges(
         List<Long> otherVersions,
         boolean completeList,

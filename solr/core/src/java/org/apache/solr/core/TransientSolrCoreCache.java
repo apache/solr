@@ -21,15 +21,9 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * The base class for custom transient core maintenance. Any custom plugin that want's to take
+ * The base class for custom transient core maintenance. Any custom plugin that wants to take
  * control of transient caches (i.e. any core defined with transient=true) should override this
  * class.
- *
- * <p>Register your plugin in solr.xml similarly to:
- *
- * <p>&lt;transientCoreCacheFactory name="transientCoreCacheFactory"
- * class="TransientSolrCoreCacheFactoryDefault"&gt; &lt;int
- * name="transientCacheSize"&gt;4&lt;/int&gt; &lt;/transientCoreCacheFactory&gt;
  *
  * <p>WARNING: There is quite a bit of higher-level locking done by the CoreContainer to avoid
  * various race conditions etc. You should _only_ manipulate them within the method calls designed
@@ -37,7 +31,7 @@ import java.util.Set;
  *
  * <p>Trust the higher-level code (mainly SolrCores and CoreContainer) to call the appropriate
  * operations when necessary and to coordinate shutting down cores, manipulating the internal
- * structures and the like..
+ * structures and the like.
  *
  * <p>The only real action you should _initiate_ is to close a core for whatever reason, and do that
  * by calling notifyCoreCloseListener(coreToClose); The observer will call back to removeCore(name)
@@ -60,10 +54,8 @@ import java.util.Set;
  * <p>In particular, DO NOT reach into the transientCores structure from a method called to
  * manipulate core descriptors or vice-versa.
  */
+@Deprecated(since = "9.2")
 public abstract class TransientSolrCoreCache {
-
-  /** Gets the core container that encloses this cache. */
-  public abstract CoreContainer getContainer();
 
   /** Adds the newly-opened core to the list of open cores. */
   public abstract SolrCore addCore(String name, SolrCore core);
@@ -85,12 +77,6 @@ public abstract class TransientSolrCoreCache {
 
   /** Returns whether the cache contains the named core. */
   public abstract boolean containsCore(String name);
-
-  /**
-   * This method will be called when the container is to be shut down. It returns all transient solr
-   * cores and clear any internal structures that hold them.
-   */
-  public abstract Collection<SolrCore> prepareForShutdown();
 
   // These methods allow the implementation to maintain control over the core descriptors.
 

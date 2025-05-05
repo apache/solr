@@ -17,7 +17,6 @@
 package org.apache.solr.update;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.file.Path;
@@ -108,14 +107,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   @Override
   protected void createServers(int numShards) throws Exception {
 
-    System.setProperty("configSetBaseDir", TEST_HOME());
+    System.setProperty("configSetBaseDir", TEST_HOME().toString());
 
-    File controlHome = testDir.toPath().resolve("control").toFile();
+    Path controlHome = testDir.resolve("control");
 
     seedSolrHome(controlHome);
     writeCoreProperties(
-        controlHome.toPath().resolve("cores").resolve(DEFAULT_TEST_CORENAME),
-        DEFAULT_TEST_CORENAME);
+        controlHome.resolve("cores").resolve(DEFAULT_TEST_CORENAME), DEFAULT_TEST_CORENAME);
     controlJetty =
         createJetty(
             controlHome, testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
@@ -127,13 +125,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
       String shardname = "shard" + i;
-      Path shardHome = testDir.toPath().resolve(shardname);
-      seedSolrHome(shardHome.toFile());
+      Path shardHome = testDir.resolve(shardname);
+      seedSolrHome(shardHome);
       Path coresPath = shardHome.resolve("cores");
       writeCoreProperties(coresPath.resolve(DEFAULT_TEST_CORENAME), DEFAULT_TEST_CORENAME);
       JettySolrRunner j =
           createJetty(
-              shardHome.toFile(),
+              shardHome,
               testDir + "/shard" + i + "/data",
               null,
               getSolrConfigFile(),
@@ -171,7 +169,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
               ZkStateReader.BASE_URL_PROP,
               ((HttpSolrClient) controlClient).getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              "");
+              controlClient.getDefaultCollection());
       nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
 
       // add one doc to controlClient
@@ -195,7 +193,10 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       client = (HttpSolrClient) clients.get(0);
       nodeProps =
           new ZkNodeProps(
-              ZkStateReader.BASE_URL_PROP, client.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+              ZkStateReader.BASE_URL_PROP,
+              client.getBaseURL(),
+              ZkStateReader.CORE_NAME_PROP,
+              client.getDefaultCollection());
       nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     }
     int id2;
@@ -286,7 +287,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
                   ZkStateReader.BASE_URL_PROP,
                   httpClient.getBaseURL(),
                   ZkStateReader.CORE_NAME_PROP,
-                  "");
+                  httpClient.getDefaultCollection());
           nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
         }
         AddUpdateCommand c = new AddUpdateCommand(null);
@@ -306,7 +307,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
                 ZkStateReader.BASE_URL_PROP,
                 httpClient.getBaseURL(),
                 ZkStateReader.CORE_NAME_PROP,
-                "");
+                httpClient.getDefaultCollection());
 
         nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
       }
@@ -393,7 +394,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
               ZkStateReader.BASE_URL_PROP,
               solrclient.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              "");
+              solrclient.getDefaultCollection());
       Node retryNode =
           new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
             @Override
@@ -457,7 +458,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
               ZkStateReader.BASE_URL_PROP,
               solrclient.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              "");
+              solrclient.getDefaultCollection());
       if (nodeType == NodeType.FORWARD) {
         nodes.add(
             new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
@@ -514,7 +515,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
               ZkStateReader.BASE_URL_PROP,
               solrClient1.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              "");
+              solrClient1.getDefaultCollection());
       Node retryNode;
       if (nodeType == NodeType.FORWARD) {
         retryNode =
@@ -638,7 +639,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
               ZkStateReader.BASE_URL_PROP,
               solrclient.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              "");
+              solrclient.getDefaultCollection());
       Node retryNode;
       if (nodeType == NodeType.FORWARD) {
         retryNode =
@@ -697,7 +698,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
               ZkStateReader.BASE_URL_PROP,
               solrclient.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              "");
+              solrclient.getDefaultCollection());
 
       final AtomicInteger retries = new AtomicInteger();
       Node retryNode;
@@ -760,7 +761,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
               ZkStateReader.BASE_URL_PROP,
               solrclient.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              "");
+              solrclient.getDefaultCollection());
       ForwardNode retryNode =
           new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
             @Override
@@ -808,7 +809,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
               ZkStateReader.BASE_URL_PROP,
               solrclient.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              "");
+              solrclient.getDefaultCollection());
       Node retryNode =
           new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
             @Override
@@ -842,7 +843,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
       ZkNodeProps nodeProps =
           new ZkNodeProps(
-              ZkStateReader.BASE_URL_PROP, DEAD_HOST_1 + context, ZkStateReader.CORE_NAME_PROP, "");
+              ZkStateReader.BASE_URL_PROP, DEAD_HOST_1 + "/solr", ZkStateReader.CORE_NAME_PROP, "");
       ForwardNode retryNode =
           new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
             @Override
@@ -852,7 +853,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
                       ZkStateReader.BASE_URL_PROP,
                       solrclient.getBaseURL(),
                       ZkStateReader.CORE_NAME_PROP,
-                      "");
+                      solrclient.getDefaultCollection());
               this.nodeProps = new ZkCoreNodeProps(leaderProps);
 
               return super.checkRetry(err);

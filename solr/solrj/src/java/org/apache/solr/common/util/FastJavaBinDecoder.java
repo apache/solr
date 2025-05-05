@@ -44,7 +44,6 @@ import static org.apache.solr.common.util.JavaBinCodec.SLONG;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRDOC;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRDOCLST;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
-import static org.apache.solr.common.util.JavaBinCodec.STR;
 import static org.apache.solr.common.util.JavaBinCodec.TAG_AND_LEN;
 import static org.apache.solr.common.util.JavaBinCodec.readVInt;
 
@@ -54,7 +53,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.SolrDocument;
@@ -587,7 +585,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     },
     // types that combine tag + length (or other info) in a single byte
     _TAG_AND_LEN(TAG_AND_LEN, UPPER_3_BITS, null),
-    _STR(STR, UPPER_3_BITS, DataEntry.Type.STR) {
+    _STR(JavaBinCodec.STR, UPPER_3_BITS, DataEntry.Type.STR) {
       @Override
       public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {
         entry.size = readObjSz(codec, this);
@@ -783,7 +781,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     if (e.type().isContainer) {
       Object ctx =
           e.type() == DataEntry.Type.KEYVAL_ITER
-              ? new LinkedHashMap(getSize(e))
+              ? CollectionUtil.newLinkedHashMap(getSize(e))
               : new ArrayList(getSize(e));
       if (e.ctx() != null) {
         if (e.isKeyValEntry()) {

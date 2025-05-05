@@ -34,13 +34,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
+import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 
-// Base interface for all text based writers
+/** Base interface for all text based writers */
 public interface TextWriter extends PushWriter {
 
   default void writeVal(String name, Object val) throws IOException {
@@ -85,6 +86,8 @@ public interface TextWriter extends PushWriter {
       writeIterator(name, (IteratorWriter) val, raw);
     } else if (val instanceof MapWriter) {
       writeMap(name, (MapWriter) val);
+    } else if (val instanceof ReflectWritable) {
+      writeVal(name, Utils.getReflectWriter(val));
     } else if (val instanceof MapSerializable) {
       // todo find a better way to reuse the map more efficiently
       writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
@@ -96,8 +99,7 @@ public interface TextWriter extends PushWriter {
       writeArray(name, ((Iterable) val).iterator(), raw);
     } else if (val instanceof Object[]) {
       writeArray(name, (Object[]) val, raw);
-    } else if (val instanceof byte[]) {
-      byte[] arr = (byte[]) val;
+    } else if (val instanceof byte[] arr) {
       writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof EnumFieldValue) {
       if (raw) {
@@ -106,8 +108,9 @@ public interface TextWriter extends PushWriter {
         writeStr(name, val.toString(), true);
       }
     } else {
-      // default... for debugging only.  Would be nice to "assert false" ?
-      writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
+      // Fallback to do *something*, either use a reflection writer or write as a string
+      // representation.
+      writeVal(name, Utils.getReflectWriter(val));
     }
   }
 

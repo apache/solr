@@ -1,3 +1,5 @@
+import java.util.stream.Collectors
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,7 +22,9 @@
 // 2) notice file
 // 3) checksum validation/ generation.
 
-import org.apache.commons.codec.digest.DigestUtils
+// WARNING: The tasks in this file share internal state between tasks without using files.
+// Because of this all tasks here must always execute together, so they cannot define task outputs.
+// TODO: Rewrite the internal state to use state files containing the ext.jarInfos and its referencedFiles
 
 // This should be false only for debugging.
 def failOnError = true
@@ -32,7 +36,7 @@ buildscript {
   }
 
   dependencies {
-    classpath "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
+    classpath libs.commonscodec.commonscodec
   }
 }
 
@@ -72,14 +76,14 @@ subprojects {
   // Configure jarValidation configuration for all projects. Any dependency
   // declared on this configuration (or any configuration it extends from) will
   // be verified.
-  configurations {
+  project.configurations {
     jarValidation
   }
 
   // For Java projects, add all dependencies from the following configurations
   // to jar validation
   plugins.withType(JavaPlugin) {
-    configurations {
+    project.configurations {
       jarValidation {
         extendsFrom runtimeClasspath
         extendsFrom compileClasspath
@@ -105,16 +109,24 @@ subprojects {
       }
 
       def excludeRules = configurations.jarValidation.excludeRules
+      List<Map<String, String>> excludeRuleMaps;
+      if (excludeRules && excludeRules.size() > 0) {
+        excludeRuleMaps = excludeRules.stream().map {rule ->
+          if (rule.module != null) {
+            Map.of("group", rule.group, "module", rule.module)
+          } else {
+            Map.of("group", rule.group)
+          }
+        }.collect(Collectors.toList())
+      }
 
       ArrayDeque<ResolvedDependency> queue = new ArrayDeque<>()
       configurations.jarValidation.extendsFrom.each { conf ->
-        if (excludeRules) {
+        if (excludeRules && excludeRules.size() > 0) {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
           conf.canBeConsumed = true
-          def newConfExcludeRules = new HashSet<>(conf.excludeRules)
-          newConfExcludeRules.addAll(excludeRules)
-          conf.excludeRules = newConfExcludeRules
+          excludeRuleMaps.forEach {conf.exclude(it)}
         }
         if (conf.canBeResolved) {
           queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
@@ -122,17 +134,24 @@ subprojects {
       }
 
       def visited = new HashSet<>()
+      def seenDeps = new HashSet<>()
       def infos = []
 
       while (!queue.isEmpty()) {
         def dep = queue.removeFirst()
+        seenDeps.add(dep)
 
         // Skip any artifacts from other Solr Modules (they will be resolved there).
         if (dep.moduleGroup == "org.apache.solr") {
           continue
         }
 
-        queue.addAll(dep.children)
+        // Make sure we don't keep visiting the same children over and over again
+        dep.children.each { child ->
+          if (!seenDeps.contains(child)) {
+            queue.add(child)
+          }
+        }
         dep.moduleArtifacts.each { resolvedArtifact ->
           def file = resolvedArtifact.file
           if (visited.add(file)) {
@@ -141,7 +160,7 @@ subprojects {
                 jarName        : file.toPath().getFileName().toString(),
                 path           : file,
                 module         : resolvedArtifact.moduleVersion,
-                checksum       : provider { new DigestUtils(DigestUtils.sha1Digest).digestAsHex(file).trim() },
+                checksum       : provider { buildinfra.sha1Digest().digestAsHex(file).trim() },
                 // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
                 // so that we can determine unused dangling files later on.
                 referencedFiles: []
@@ -165,7 +184,10 @@ subprojects {
       def errors = []
       jarInfos.each { dep ->
         def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
-        if (!expectedChecksumFile.exists()) {
+        def forceLuceneVersion = project.properties['lucene.dev.version']
+        if (dep.module.id.group == 'org.apache.lucene' && forceLuceneVersion != null && forceLuceneVersion.endsWith('-SNAPSHOT')) {
+          logger.log(LogLevel.INFO, "Skipping jar checksum validation for local SNAPSHOT dependency ('${dep.module}')")
+        } else if (!expectedChecksumFile.exists()) {
           errors << "Dependency checksum missing ('${dep.module}'), expected it at: ${expectedChecksumFile}"
         } else {
           dep.referencedFiles += expectedChecksumFile
@@ -195,7 +217,7 @@ subprojects {
   // where 'jar-or-prefix' can be any '-'-delimited prefix of the dependency JAR's name.
   // So for 'commons-io' it can be 'commons-io-LICENSE-foo.txt' or
   // 'commons-LICENSE.txt'
-  task validateJarLicenses() {
+  tasks.register('validateJarLicenses') {
     group = 'Dependency validation'
     description = "Validate license and notice files of dependencies"
     dependsOn collectJarInfos

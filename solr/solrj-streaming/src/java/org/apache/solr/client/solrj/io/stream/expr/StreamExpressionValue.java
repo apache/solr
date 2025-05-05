@@ -47,11 +47,9 @@ public class StreamExpressionValue implements StreamExpressionParameter {
 
   @Override
   public boolean equals(Object other) {
-    if (!(other instanceof StreamExpressionValue)) {
+    if (!(other instanceof StreamExpressionValue check)) {
       return false;
     }
-
-    StreamExpressionValue check = (StreamExpressionValue) other;
 
     if (null == this.value && null == check.value) {
       return true;
@@ -60,7 +58,7 @@ public class StreamExpressionValue implements StreamExpressionParameter {
       return false;
     }
 
-    return this.value.equals(((StreamExpressionValue) other).value);
+    return this.value.equals(check.value);
   }
 
   @Override

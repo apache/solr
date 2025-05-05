@@ -17,7 +17,6 @@
 
 package org.apache.solr.prometheus.exporter;
 
-import java.io.File;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -31,7 +30,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -101,7 +100,7 @@ public class MetricsConfiguration {
           MethodHandles.lookup()
               .lookupClass()
               .getClassLoader()
-              .getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+              .getResourceAsStream(resource.replace(path.getFileSystem().getSeparator(), "/"))) {
         document = dbf.newDocumentBuilder().parse(configInputStream);
       }
     }
@@ -174,7 +173,7 @@ public class MetricsConfiguration {
         Node nameAttr = template.getAttributes().getNamedItem("name");
         String name = nameAttr != null ? nameAttr.getNodeValue() : null;
         String tmpl = template.getTextContent();
-        if (!StringUtils.isEmpty(name) && !StringUtils.isEmpty(tmpl)) {
+        if (StrUtils.isNotNullOrEmpty(name) && StrUtils.isNotNullOrEmpty(tmpl)) {
           Node defaultTypeAttr = template.getAttributes().getNamedItem("defaultType");
           String defaultType = defaultTypeAttr != null ? defaultTypeAttr.getNodeValue() : null;
           map.put(name, new MetricsQueryTemplate(name, tmpl, defaultType));

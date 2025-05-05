@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -60,11 +61,13 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   public void testBadSetup() {
     String url = "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1/?core=xxx";
     // This test does NOT fail for Http2SolrClient
-    expectThrows(Exception.class, () -> getHttp1SolrClient(url));
+    expectThrows(Exception.class, () -> new HttpSolrClient.Builder(url).build());
   }
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
+    // For making raw requests...
+    HttpClient httpClient = HttpClientUtil.createClient(null);
     try (SolrClient client = getSolrClient()) {
       client.deleteByQuery("*:*");
       client.commit();
@@ -72,8 +75,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
       // two docs, one with uniqueKey, another without it
       String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-      HttpClient httpClient = getHttpClient(getServerUrl());
-      HttpPost post = new HttpPost(getRandomizedUpdateUri(getServerUrl()));
+      HttpPost post = new HttpPost(getRandomizedUpdateUri(getCoreUrl()));
       post.setHeader("Content-Type", "application/json");
       post.setEntity(
           new InputStreamEntity(
@@ -96,6 +98,8 @@ public class SolrExampleJettyTest extends SolrExampleTests {
       src = (String) doc.getFieldValue("_src_");
       m = (Map) fromJSONString(src);
       assertEquals("name2", m.get("name"));
+    } finally {
+      HttpClientUtil.close(httpClient);
     }
   }
 

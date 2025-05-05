@@ -35,9 +35,12 @@ allprojects {
 
   // Artifacts will have names after full gradle project path
   // so :solr:core will have solr-core.jar, etc.
-  project.archivesBaseName = project.path.replaceAll("^:", "").replace(':', '-')
+  project.archivesBaseName = project.path
+          .replaceAll("^:", "")
+          .replace(':', '-')
+          .replace("-modules-", "-")
 
-  ext {
+  project.ext {
     // Utility method to support passing overrides via -P or -D.
     propertyOrDefault = { propName, defValue ->
       def result
@@ -168,6 +171,11 @@ allprojects {
     // detect if we run in CI environment by looking at existence of env vars:
     // "CI": Github (https://docs.github.com/en/actions/learn-github-actions/environment-variables)
     // anything starting with "JENKINS_" or "HUDSON_": Jenkins/Hudson (https://jenkins.thetaphi.de/env-vars.html/)
-    isCIBuild = System.getenv().keySet().find { it ==~ /(?i)((JENKINS|HUDSON)(_\w+)?|CI)/ } != null
+    isCIBuild = System.getenv().keySet().any { it ==~ /(?i)((JENKINS|HUDSON)(_\w+)?|CI)/ }
+
+    // Assign different java version for client-side modules 'api' and 'solrj*'
+    var isSolrJ = project.name.matches("^(solrj.*|api)\$")
+    minJavaVersion = isSolrJ ? rootProject.minJavaVersionSolrJ : rootProject.minJavaVersionDefault
+    minJavaTestVersion = rootProject.minJavaVersionDefault
   }
 }

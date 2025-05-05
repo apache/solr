@@ -29,6 +29,7 @@ import org.apache.lucene.classification.document.SimpleNaiveBayesDocumentClassif
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -77,17 +78,24 @@ class ClassificationUpdateProcessor extends UpdateRequestProcessor {
     }
     switch (classificationAlgorithm) {
       case KNN:
-        classifier =
-            new KNearestNeighborDocumentClassifier(
-                indexReader,
-                null,
-                classificationParams.getTrainingFilterQuery(),
-                classificationParams.getK(),
-                classificationParams.getMinDf(),
-                classificationParams.getMinTf(),
-                trainingClassField,
-                field2analyzer,
-                inputFieldNamesWithBoost);
+        try {
+          classifier =
+              new KNearestNeighborDocumentClassifier(
+                  indexReader,
+                  null,
+                  classificationParams.getTrainingFilterQuery(),
+                  classificationParams.getK(),
+                  classificationParams.getMinDf(),
+                  classificationParams.getMinTf(),
+                  trainingClassField,
+                  field2analyzer,
+                  inputFieldNamesWithBoost);
+        } catch (IOException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "IOException occurred while instantiating KNearestNeighborDocumentClassifier",
+              e);
+        }
         break;
       case BAYES:
         classifier =

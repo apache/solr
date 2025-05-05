@@ -54,7 +54,7 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     List<String> list = getStringList(m, "include", false);
     String[] includeList = null;
     if (list != null) {
-      includeList = list.toArray(new String[list.size()]);
+      includeList = list.toArray(new String[0]);
     }
     facet.include = FacetParams.FacetRangeInclude.parseParam(includeList);
     facet.others = EnumSet.noneOf(FacetParams.FacetRangeOther.class);

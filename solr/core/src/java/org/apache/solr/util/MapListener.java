@@ -16,23 +16,22 @@
  */
 package org.apache.solr.util;
 
-import com.google.common.collect.ForwardingMap;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * Wraps another map, keeping track of each key that was seen via {@link #get(Object)} or {@link
  * #remove(Object)}.
  */
-@SuppressWarnings("unchecked")
-public class MapListener<K, V> extends ForwardingMap<K, V> {
+public class MapListener<K, V> implements Map<K, V> {
   private final Map<K, V> target;
   private final Set<K> seenKeys;
 
   public MapListener(Map<K, V> target) {
     this.target = target;
-    seenKeys = new HashSet<>(target.size());
+    seenKeys = CollectionUtil.newHashSet(target.size());
   }
 
   public Set<K> getSeenKeys() {
@@ -40,19 +39,66 @@ public class MapListener<K, V> extends ForwardingMap<K, V> {
   }
 
   @Override
+  public int size() {
+    return target.size();
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return target.isEmpty();
+  }
+
+  @Override
+  public boolean containsKey(Object key) {
+    return target.containsKey(key);
+  }
+
+  @Override
+  public boolean containsValue(Object value) {
+    return target.containsValue(value);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
   public V get(Object key) {
     seenKeys.add((K) key);
-    return super.get(key);
+    return target.get(key);
   }
 
   @Override
+  public V put(K key, V value) {
+    return target.put(key, value);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
   public V remove(Object key) {
     seenKeys.add((K) key);
-    return super.remove(key);
+    return target.remove(key);
   }
 
   @Override
-  protected Map<K, V> delegate() {
-    return target;
+  public void putAll(Map<? extends K, ? extends V> m) {
+    target.putAll(m);
+  }
+
+  @Override
+  public void clear() {
+    target.clear();
+  }
+
+  @Override
+  public Set<K> keySet() {
+    return target.keySet();
+  }
+
+  @Override
+  public Collection<V> values() {
+    return target.values();
+  }
+
+  @Override
+  public Set<Entry<K, V>> entrySet() {
+    return target.entrySet();
   }
 }

@@ -57,12 +57,16 @@ public class FiltersQParser extends QParser {
 
     exclude(clauses.keySet());
 
-    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    BooleanQuery.Builder builder = createBuilder();
     for (Map.Entry<QParser, Occur> clause : clauses.entrySet()) {
       builder.add(unwrapQuery(clause.getKey().getQuery(), clause.getValue()), clause.getValue());
     }
     // what about empty query?
     return builder.build();
+  }
+
+  protected BooleanQuery.Builder createBuilder() {
+    return new BooleanQuery.Builder();
   }
 
   protected Query unwrapQuery(Query query, BooleanClause.Occur occur) {
@@ -129,8 +133,7 @@ public class FiltersQParser extends QParser {
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
       for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
+        if (!(o instanceof QParser qp)) continue;
         excludeSet.put(qp, Boolean.TRUE);
       }
     }

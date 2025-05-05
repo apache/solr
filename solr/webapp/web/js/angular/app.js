@@ -67,6 +67,9 @@ solrAdminApp.config([
         templateUrl: 'partials/index.html',
         controller: 'IndexController'
       }).
+      when('/ui', {
+        redirectTo: 'ui/index.html'
+      }).
       when('/unknown', {
         templateUrl: 'partials/unknown.html',
         controller: 'UnknownController'
@@ -524,6 +527,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
       $scope.usersPermissions = data.security.permissions;
+      $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
 
       $scope.isSchemaDesignerEnabled = $scope.isPermitted([
         permissions.CONFIG_EDIT_PERM,
@@ -588,6 +592,10 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
     $scope.currentUser = sessionStorage.getItem("auth.username");
+    $scope.http401 = sessionStorage.getItem("http401");
+  };
+
+  $scope.showHideMenu = function() {
     $scope.http401 = sessionStorage.getItem("http401");
   };
 

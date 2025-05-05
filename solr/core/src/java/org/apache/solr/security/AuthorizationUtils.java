@@ -137,8 +137,10 @@ public class AuthorizationUtils {
   public static List<AuthorizationContext.CollectionRequest> getCollectionRequests(
       String path, List<String> collectionNames, SolrParams params) {
     final ArrayList<AuthorizationContext.CollectionRequest> collectionRequests = new ArrayList<>();
-    for (String collection : collectionNames) {
-      collectionRequests.add(new AuthorizationContext.CollectionRequest(collection));
+    if (collectionNames != null) {
+      for (String collection : collectionNames) {
+        collectionRequests.add(new AuthorizationContext.CollectionRequest(collection));
+      }
     }
 
     // Extract collection name from the params in case of a Collection Admin request

@@ -109,6 +109,7 @@ public class StatsValuesFactory {
 
     /** may be null if we are collecting stats directly from a function ValueSource */
     protected final SchemaField sf;
+
     /** may be null if we are collecting stats directly from a function ValueSource */
     protected final FieldType ft;
 
@@ -128,11 +129,13 @@ public class StatsValuesFactory {
      * called at least once
      */
     private ValueSource valueSource;
+
     /**
      * Context to use when retrieving FunctionValues, will be null until/unless {@link
      * #setNextReader} is called at least once
      */
     private Map<Object, Object> vsContext;
+
     /**
      * Values to collect, will be null until/unless {@link #setNextReader} is called at least once
      */
@@ -147,6 +150,7 @@ public class StatsValuesFactory {
 
     /** Hash function that must be used by implementations of {@link #hash} */
     protected final HashFunction hasher;
+
     // if null, no HLL logic can be computed; not final because of "union" optimization (see below)
     private HLL hll;
 
@@ -235,29 +239,21 @@ public class StatsValuesFactory {
 
       updateTypeSpecificStats(stv);
 
-      NamedList<?> f = (NamedList<?>) stv.get(FACETS);
+      var f = (NamedList<NamedList<NamedList<?>>>) stv.get(FACETS);
       if (f == null) {
         return;
       }
 
-      for (int i = 0; i < f.size(); i++) {
-        String field = f.getName(i);
-        NamedList<?> vals = (NamedList<?>) f.getVal(i);
-        Map<String, StatsValues> addTo = facets.get(field);
-        if (addTo == null) {
-          addTo = new HashMap<>();
-          facets.put(field, addTo);
-        }
-        for (int j = 0; j < vals.size(); j++) {
-          String val = vals.getName(j);
-          StatsValues vvals = addTo.get(val);
-          if (vvals == null) {
-            vvals = createStatsValues(statsField);
-            addTo.put(val, vvals);
-          }
-          vvals.accumulate((NamedList<?>) vals.getVal(j));
-        }
-      }
+      f.forEach(
+          (field, vals) -> {
+            Map<String, StatsValues> addTo = facets.computeIfAbsent(field, k -> new HashMap<>());
+            vals.forEach(
+                (val, vval) -> {
+                  StatsValues vvals =
+                      addTo.computeIfAbsent(val, k -> createStatsValues(statsField));
+                  vvals.accumulate(vval);
+                });
+          });
     }
 
     @Override

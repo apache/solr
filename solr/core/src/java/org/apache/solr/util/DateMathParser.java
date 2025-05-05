@@ -29,7 +29,6 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -133,28 +132,29 @@ public class DateMathParser {
     // we probably need to change "Locale loc" to default to something
     // from a param via SolrRequestInfo as well.
 
-    Map<String, ChronoUnit> units = new HashMap<>(13);
-    units.put("YEAR", ChronoUnit.YEARS);
-    units.put("YEARS", ChronoUnit.YEARS);
-    units.put("MONTH", ChronoUnit.MONTHS);
-    units.put("MONTHS", ChronoUnit.MONTHS);
-    units.put("DAY", ChronoUnit.DAYS);
-    units.put("DAYS", ChronoUnit.DAYS);
-    units.put("DATE", ChronoUnit.DAYS);
-    units.put("HOUR", ChronoUnit.HOURS);
-    units.put("HOURS", ChronoUnit.HOURS);
-    units.put("MINUTE", ChronoUnit.MINUTES);
-    units.put("MINUTES", ChronoUnit.MINUTES);
-    units.put("SECOND", ChronoUnit.SECONDS);
-    units.put("SECONDS", ChronoUnit.SECONDS);
-    units.put("MILLI", ChronoUnit.MILLIS);
-    units.put("MILLIS", ChronoUnit.MILLIS);
-    units.put("MILLISECOND", ChronoUnit.MILLIS);
-    units.put("MILLISECONDS", ChronoUnit.MILLIS);
-
     // NOTE: Maybe eventually support NANOS
 
-    return units;
+    // NOTE: Any changes here should also make sure to update the list of options in the ref docs:
+    // https://solr.apache.org/guide/solr/latest/indexing-guide/date-formatting-math.html#date-math-syntax.
+
+    return Map.ofEntries(
+        Map.entry("YEAR", ChronoUnit.YEARS),
+        Map.entry("YEARS", ChronoUnit.YEARS),
+        Map.entry("MONTH", ChronoUnit.MONTHS),
+        Map.entry("MONTHS", ChronoUnit.MONTHS),
+        Map.entry("DAY", ChronoUnit.DAYS),
+        Map.entry("DAYS", ChronoUnit.DAYS),
+        Map.entry("DATE", ChronoUnit.DAYS),
+        Map.entry("HOUR", ChronoUnit.HOURS),
+        Map.entry("HOURS", ChronoUnit.HOURS),
+        Map.entry("MINUTE", ChronoUnit.MINUTES),
+        Map.entry("MINUTES", ChronoUnit.MINUTES),
+        Map.entry("SECOND", ChronoUnit.SECONDS),
+        Map.entry("SECONDS", ChronoUnit.SECONDS),
+        Map.entry("MILLI", ChronoUnit.MILLIS),
+        Map.entry("MILLIS", ChronoUnit.MILLIS),
+        Map.entry("MILLISECOND", ChronoUnit.MILLIS),
+        Map.entry("MILLISECONDS", ChronoUnit.MILLIS));
   }
 
   /**
@@ -244,7 +244,7 @@ public class DateMathParser {
       }
     }
 
-    if (null == math || math.equals("")) {
+    if (null == math || math.isEmpty()) {
       return p.getNow();
     }
 

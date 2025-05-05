@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +57,7 @@ import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -129,7 +131,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static HttpClient httpClientMock;
 
   @SuppressWarnings("rawtypes")
-  private static PlacementPluginFactory placementPluginFactoryMock;
+  private final PlacementPluginFactory placementPluginFactory = new SimplePlacementFactory();
 
   private static SolrMetricsContext solrMetricsContextMock;
 
@@ -206,7 +208,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = mock(CoreContainer.class);
     updateShardHandlerMock = mock(UpdateShardHandler.class);
     httpClientMock = mock(HttpClient.class);
-    placementPluginFactoryMock = mock(PlacementPluginFactory.class);
     solrMetricsContextMock = mock(SolrMetricsContext.class);
   }
 
@@ -229,13 +230,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     cloudDataProviderMock = null;
     clusterStateProviderMock = null;
     stateManagerMock = null;
-    ;
     cloudManagerMock = null;
     distribStateManagerMock = null;
     coreContainerMock = null;
     updateShardHandlerMock = null;
     httpClientMock = null;
-    placementPluginFactoryMock = null;
     solrMetricsContextMock = null;
   }
 
@@ -269,7 +268,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(coreContainerMock);
     reset(updateShardHandlerMock);
     reset(httpClientMock);
-    reset(placementPluginFactoryMock);
     reset(solrMetricsContextMock);
 
     zkClientData.clear();
@@ -387,7 +385,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       liveNodes.add(address);
 
       when(zkStateReaderMock.getBaseUrlForNodeName(address))
-          .thenAnswer(invocation -> address.replaceAll("_", "/"));
+          .thenAnswer(invocation -> address.replace("_", "/"));
     }
 
     when(solrZkClientMock.getZkClientTimeout()).thenReturn(30000);
@@ -446,7 +444,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(distributedClusterStateUpdater.createStateChangeRecorder(any(), anyBoolean()))
         .thenReturn(stateChangeRecorder);
     when(coreContainerMock.getUpdateShardHandler()).thenReturn(updateShardHandlerMock);
-    when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactoryMock);
+    when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactory);
     when(coreContainerMock.getConfigSetService())
         .thenReturn(new ZkConfigSetService(solrZkClientMock));
     when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
@@ -670,6 +668,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     handleCreateCollMessageProps(ZkNodeProps.load(bytes));
   }
 
+  @SuppressWarnings("DirectInvocationOnMock")
   private void handleCreateCollMessageProps(ZkNodeProps props) {
     log.info("track created replicas / collections");
     try {
@@ -684,8 +683,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           collectionsSet.put(
               collName,
               new ClusterState.CollectionRef(
-                  new DocCollection(
-                      collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));
+                  DocCollection.create(
+                      collName,
+                      new HashMap<>(),
+                      props.getProperties(),
+                      DocRouter.DEFAULT,
+                      0,
+                      Instant.EPOCH,
+                      distribStateManagerMock.getPrsSupplier(collName))));
       }
       if (CollectionParams.CollectionAction.ADDREPLICA.isEqual(props.getStr("operation"))) {
         replicas.add(props);
@@ -758,7 +763,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
     List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<>(createNodes.size());
     for (String nodeName : createNodes) {
-      String nodeUrlWithoutProtocolPart = nodeName.replaceAll("_", "/");
+      String nodeUrlWithoutProtocolPart = nodeName.replace("_", "/");
       if (nodeUrlWithoutProtocolPart.startsWith("http://"))
         nodeUrlWithoutProtocolPart = nodeUrlWithoutProtocolPart.substring(7);
       nodeUrlWithoutProtocolPartForLiveNodes.add(nodeUrlWithoutProtocolPart);

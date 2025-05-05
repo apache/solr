@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,31 +35,43 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
-  private static final String DEFAULT_COLLECTION = "col1";
+  private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
+  private static final String DEFAULT_COLLECTION = DEBUG_LABEL + "_collection";
+
   private static CloudSolrClient cloudClient;
   private static List<SolrClient> clients; // not CloudSolrClient
 
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    configureCluster(1).addConfig("_default", configset("cloud-minimal")).configure();
-    // replace schema.xml with schema-test.xml
-    Path schemaPath = TEST_COLL1_CONF().resolve("schema-nest.xml");
-    cluster.getZkClient().setData("/configs/_default/schema.xml", schemaPath, true);
+    final String configName = DEBUG_LABEL + "_config-set";
+    final Path configDir = TEST_COLL1_CONF();
 
-    cloudClient = cluster.getSolrClient();
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
+    configureCluster(1).addConfig(configName, configDir).configure();
 
-    CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, 4, 1).process(cloudClient);
+    cloudClient = cluster.getSolrClient(DEFAULT_COLLECTION);
+
+    CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, configName, 4, 1)
+        .withProperty("config", "solrconfig-tlog.xml")
+        .withProperty("schema", "schema-nest.xml")
+        .process(cloudClient);
+
+    cluster.waitForActiveCollection(DEFAULT_COLLECTION, 4, 4);
 
     clients = new ArrayList<>();
     ClusterState clusterState = cloudClient.getClusterState();
     for (Replica replica : clusterState.getCollection(DEFAULT_COLLECTION).getReplicas()) {
-      clients.add(getHttpSolrClient(replica.getCoreUrl()));
+      clients.add(getHttpSolrClient(replica));
     }
   }
 

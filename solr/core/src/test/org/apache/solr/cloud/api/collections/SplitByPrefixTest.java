@@ -150,8 +150,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
 
-    CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(COLLECTION_NAME);
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION_NAME);
 
     // splitting an empty collection by prefix should still work (i.e. fall back to old method of
     // just dividing the hash range
@@ -165,11 +164,12 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT1");
     }
     splitShard.process(client);
-    // expectedReplicas==3 because original replica still exists (just inactive)
+    // expectedReplicas==2 because original replica still exists and active but its shard is
+    // inactive
     waitForState(
         "Timed out waiting for sub shards to be active.",
         COLLECTION_NAME,
-        activeClusterShape(2, 3));
+        activeClusterShape(2, 2));
 
     List<Prefix> prefixes = findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = removeDups(prefixes);
@@ -196,7 +196,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     waitForState(
         "Timed out waiting for sub shards to be active.",
         COLLECTION_NAME,
-        activeClusterShape(3, 5));
+        activeClusterShape(3, 3));
 
     // OK, now let's check that the correct split point was chosen
     // We can use the router to find the shards for the middle prefixes, and they should be
@@ -239,7 +239,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     waitForState(
         "Timed out waiting for sub shards to be active.",
         COLLECTION_NAME,
-        activeClusterShape(4, 7));
+        activeClusterShape(4, 4));
 
     collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =
@@ -267,7 +267,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     waitForState(
         "Timed out waiting for sub shards to be active.",
         COLLECTION_NAME,
-        activeClusterShape(5, 9));
+        activeClusterShape(5, 5));
 
     collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =
@@ -290,7 +290,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     waitForState(
         "Timed out waiting for sub shards to be active.",
         COLLECTION_NAME,
-        activeClusterShape(6, 11));
+        activeClusterShape(6, 6));
 
     collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =

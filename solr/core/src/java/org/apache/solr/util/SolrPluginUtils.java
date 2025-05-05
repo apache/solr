@@ -22,7 +22,6 @@ import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
-import com.google.common.collect.ImmutableMap;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -54,6 +53,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -74,8 +74,10 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.FieldParams;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SortSpecParsing;
@@ -114,8 +116,7 @@ public class SolrPluginUtils {
     purposes = Collections.unmodifiableMap(map);
   }
 
-  private static final MapSolrParams maskUseParams =
-      new MapSolrParams(ImmutableMap.<String, String>builder().put(USEPARAM, "").build());
+  private static final MapSolrParams maskUseParams = new MapSolrParams(Map.of(USEPARAM, ""));
 
   /**
    * Set default-ish params on a SolrQueryRequest.
@@ -224,7 +225,7 @@ public class SolrPluginUtils {
       ResponseBuilder rb, DocList docs, Query query, SolrQueryRequest req, SolrQueryResponse res)
       throws IOException {
     SolrIndexSearcher searcher = req.getSearcher();
-    if (!searcher.getDocFetcher().isLazyFieldLoadingEnabled()) {
+    if (!searcher.interrogateDocFetcher(SolrDocumentFetcher::isLazyFieldLoadingEnabled)) {
       // nothing to do
       return;
     }
@@ -250,9 +251,10 @@ public class SolrPluginUtils {
       }
 
       // get documents
+      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
       DocIterator iter = docs.iterator();
       for (int i = 0; i < docs.size(); i++) {
-        searcher.doc(iter.nextDoc(), fieldFilter);
+        docFetcher.doc(iter.nextDoc(), fieldFilter);
       }
     }
   }
@@ -278,6 +280,7 @@ public class SolrPluginUtils {
     }
     return debugInterests;
   }
+
   /**
    * Returns a NamedList containing many "standard" pieces of debugging information.
    *
@@ -302,6 +305,7 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
+  @Deprecated // move to DebugComponent
   public static NamedList<Object> doStandardDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -316,6 +320,7 @@ public class SolrPluginUtils {
     return dbg;
   }
 
+  @Deprecated // move to DebugComponent
   public static void doStandardQueryDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -336,6 +341,7 @@ public class SolrPluginUtils {
     }
   }
 
+  @Deprecated
   public static void doStandardResultsDebug(
       SolrQueryRequest req, Query query, DocList results, boolean dbgResults, NamedList<Object> dbg)
       throws IOException {
@@ -404,12 +410,13 @@ public class SolrPluginUtils {
       Query query, DocList docs, SolrIndexSearcher searcher, IndexSchema schema)
       throws IOException {
 
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     NamedList<Explanation> explainList = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int id = iterator.nextDoc();
 
-      Document doc = searcher.doc(id);
+      Document doc = docFetcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
 
       explainList.add(strid, searcher.explain(query, id));
@@ -427,6 +434,7 @@ public class SolrPluginUtils {
   }
 
   /** Executes a basic query */
+  @Deprecated
   public static DocList doSimpleQuery(String sreq, SolrQueryRequest req, int start, int limit)
       throws IOException {
     List<String> commands = StrUtils.splitSmart(sreq, ';');
@@ -442,8 +450,13 @@ public class SolrPluginUtils {
         sort = SortSpecParsing.parseSortSpec(commands.get(1), req).getSort();
       }
 
-      DocList results = req.getSearcher().getDocList(query, sort, start, limit);
-      return results;
+      return new QueryCommand()
+          .setQuery(query)
+          .setSort(sort)
+          .setOffset(start)
+          .setLen(limit)
+          .search(req.getSearcher())
+          .getDocList();
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
     }
@@ -467,6 +480,7 @@ public class SolrPluginUtils {
   public static Map<String, Float> parseFieldBoosts(String in) {
     return parseFieldBoosts(new String[] {in});
   }
+
   /**
    * Like <code>parseFieldBoosts(String)</code>, but parses all the strings in the provided array
    * (which may be null).
@@ -479,7 +493,7 @@ public class SolrPluginUtils {
     if (null == fieldLists || 0 == fieldLists.length) {
       return new HashMap<>();
     }
-    Map<String, Float> out = new HashMap<>(7);
+    Map<String, Float> out = CollectionUtil.newHashMap(7);
     for (String in : fieldLists) {
       if (null == in) {
         continue;
@@ -497,6 +511,7 @@ public class SolrPluginUtils {
     }
     return out;
   }
+
   /**
    * /** Like {@link #parseFieldBoosts}, but allows for an optional slop value prefixed by "~".
    *
@@ -625,7 +640,7 @@ public class SolrPluginUtils {
     int result = optionalClauseCount;
     spec = spec.trim();
 
-    if (-1 < spec.indexOf("<")) {
+    if (spec.contains("<")) {
       /* we have conditional spec(s) */
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
@@ -697,8 +712,7 @@ public class SolrPluginUtils {
 
       Query cq = clause.getQuery();
       float boost = fromBoost;
-      while (cq instanceof BoostQuery) {
-        BoostQuery bq = (BoostQuery) cq;
+      while (cq instanceof BoostQuery bq) {
         cq = bq.getQuery();
         boost *= bq.getBoost();
       }
@@ -794,15 +808,15 @@ public class SolrPluginUtils {
       Map<Object, ShardDoc> resultIds,
       Map.Entry<String, Object>[] destArr) {
     assert resultIds.size() == destArr.length;
-    for (int i = 0; i < namedList.size(); i++) {
-      String id = namedList.getName(i);
-      // TODO: lookup won't work for non-string ids... String vs Float
-      ShardDoc sdoc = resultIds.get(id);
-      if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
-        int idx = sdoc.positionInResponse;
-        destArr[idx] = new NamedList.NamedListEntry<>(id, namedList.getVal(i));
-      }
-    }
+    namedList.forEach(
+        (id, val) -> {
+          // TODO: lookup won't work for non-string ids... String vs Float
+          ShardDoc sdoc = resultIds.get(id);
+          if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
+            int idx = sdoc.positionInResponse;
+            destArr[idx] = new NamedList.NamedListEntry<>(id, val);
+          }
+        });
   }
 
   /**
@@ -825,7 +839,7 @@ public class SolrPluginUtils {
      * Where we store a map from field name we expect to see in our query string, to Alias object
      * containing the fields to use in our DisjunctionMaxQuery and the tiebreaker to use.
      */
-    protected Map<String, Alias> aliases = new HashMap<>(3);
+    protected Map<String, Alias> aliases = CollectionUtil.newHashMap(3);
 
     public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
       super(qp, defaultField);
@@ -894,7 +908,7 @@ public class SolrPluginUtils {
   public static Sort getSort(SolrQueryRequest req) {
 
     String sort = req.getParams().get(CommonParams.SORT);
-    if (null == sort || sort.equals("")) {
+    if (null == sort || sort.isEmpty()) {
       return null;
     }
 

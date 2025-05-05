@@ -1,5 +1,6 @@
 = Implicit Request Handlers
 :page-children: system-info-handler
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -326,28 +327,26 @@ To include the expanded paramset in the response, as well as the effective param
 
 For example, for the `/export` request handler, you can make a request like this:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1expandparams]
+[tabs#expandparams]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export&expandParams=true
 ----
 ====
 
-[example.tab-pane#v2expandparams]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://localhost:8983/api/collections/gettingstarted/config/requestHandler?componentName=/export&expandParams=true
 ----
 ====
---
+======
 
 The response will look similar to:
 

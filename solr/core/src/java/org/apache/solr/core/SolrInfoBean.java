@@ -59,8 +59,10 @@ public interface SolrInfoBean extends SolrMetricProducer {
 
   /** Simple common usage name, e.g. BasicQueryHandler, or fully qualified class name. */
   String getName();
+
   /** Simple one or two line description */
   String getDescription();
+
   /** Category of this component */
   Category getCategory();
 }

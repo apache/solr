@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -159,7 +158,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     String result = h.query(req("q", "*:*", "wt", "csv", "csv.header", "true", "fl", "*,score"));
     for (String field :
         "id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss,score".split(",")) {
-      assertTrue(result.indexOf(field) >= 0);
+      assertTrue(result.contains(field));
     }
 
     // test null values
@@ -285,10 +284,10 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     sdl.add(d1);
     sdl.add(d2);
 
-    SolrQueryRequest req = req("q", "*:*");
-    SolrQueryResponse rsp = new SolrQueryResponse();
+    var req = req("q", "*:*");
+    var rsp = new SolrQueryResponse();
     rsp.addResponse(sdl);
-    QueryResponseWriter w = new CSVResponseWriter();
+    var w = new CSVResponseWriter();
 
     rsp.setReturnFields(new SolrReturnFields("id,foo_s", req));
     StringWriter buf = new StringWriter();
@@ -317,7 +316,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     buf = new StringWriter();
     w.write(buf, req, rsp);
     String s = buf.toString();
-    assertTrue(s.indexOf("score") >= 0 && s.indexOf("2.718") > 0 && s.indexOf("89.83") > 0);
+    assertTrue(s.contains("score") && s.indexOf("2.718") > 0 && s.indexOf("89.83") > 0);
 
     // Test field globs
     rsp.setReturnFields(new SolrReturnFields("id,foo*", req));

@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -32,6 +31,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.handler.export.ExportWriter;
 import org.apache.solr.handler.export.ExportWriterStream;
@@ -126,11 +126,10 @@ public class ExportHandler extends SearchHandler {
     }
     String wt = req.getParams().get(CommonParams.WT, JSON);
     if ("xsort".equals(wt)) wt = JSON;
-    Map<String, String> map = new HashMap<>(1);
-    map.put(CommonParams.WT, ReplicationHandler.FILE_STREAM);
+    Map<String, String> map = Map.of(CommonParams.WT, ReplicationAPIBase.FILE_STREAM);
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), req.getParams()));
     rsp.add(
-        ReplicationHandler.FILE_STREAM,
+        ReplicationAPIBase.FILE_STREAM,
         new ExportWriter(
             req, rsp, wt, initialStreamContext, solrMetricsContext, writerMetricsPath));
   }

@@ -205,7 +205,7 @@ public class LukeResponse extends SolrResponseBase {
   public void setResponse(NamedList<Object> res) {
     super.setResponse(res);
 
-    // Parse indexinfo
+    // Parse index information
     indexInfo = (NamedList<Object>) res.get("index");
 
     NamedList<Object> schema = (NamedList<Object>) res.get("schema");

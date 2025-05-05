@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -130,7 +129,7 @@ public class SQLHandler extends RequestHandlerBase
       if (tupleStream != null) {
         tupleStream.close();
       }
-      SolrException.log(log, e);
+      log.error("Exception while SQL parsing and query transformation", e);
       rsp.add("result-set", new StreamHandler.DummyErrorStream(e));
     }
   }

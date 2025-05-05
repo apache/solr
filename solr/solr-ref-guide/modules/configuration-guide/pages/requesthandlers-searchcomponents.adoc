@@ -212,7 +212,8 @@ All the blocks are optional, especially since parameters can also be provided wi
 The defaults/appends/invariants blocks were described earlier in <<defaults-appends-and-invariants>>.
 All query parameters can be defined as parameters for any of the Search Handlers.
 
-The Search Components blocks are described next, and xref:deployment-guide:solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory[shardHandlerFactory] is for fine-tuning of the SolrCloud distributed requests.
+The `shardHandlerFactory` section can be used to provide fine-grained control of how this SearchHandler makes requests to other shards and replicas in a SolrCloud collection.
+See the xref:configuration-guide:configuring-solr-xml.adoc#the-shardhandlerfactory-element[ShardHandler documentation here] for more details.
 
 === Defining Search Components
 The search components themselves are defined outside of the Request Handlers and then are referenced from various Search Handlers that want to use them.
@@ -242,7 +243,6 @@ They are called in the order listed.
 Apart from default components, Solr ships with a number of additional - very useful - components.
 They do need to defined and referenced in `solrconfig.xml` to be actually used.
 
-* `AnalyticsComponent`, described in the section xref:query-guide:analytics.adoc[].
 * `ClusteringComponent`, described in the section xref:query-guide:result-clustering.adoc[].
 * `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}/core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
 * `QueryElevationComponent`, described in the section xref:query-guide:query-elevation-component.adoc[].

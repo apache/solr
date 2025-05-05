@@ -35,7 +35,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.commons.lang3.LocaleUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -44,6 +43,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.DateValueFieldType;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.LocaleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,7 +186,13 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
           return Date.from(parseInstant(parser, srcStringVal, parsePosition));
         } catch (DateTimeParseException e) {
           if (log.isDebugEnabled()) {
-            log.debug("value '{}' is not parseable with format '{}'", srcStringVal, parser);
+            log.debug(
+                "value '{}' is not parseable with format '{}' (using {} + {})",
+                srcStringVal,
+                parser,
+                parser.getLocale(),
+                parser.getZone(),
+                e);
           }
         }
       }

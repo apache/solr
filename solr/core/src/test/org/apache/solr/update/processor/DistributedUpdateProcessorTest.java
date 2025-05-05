@@ -18,12 +18,11 @@
 package org.apache.solr.update.processor;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doReturn;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -37,26 +36,19 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.TimedVersionBucket;
+import org.apache.solr.update.SolrCmdDistributor;
+import org.apache.solr.update.UpdateLocks;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.VersionInfo;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
-  @Rule public MockitoRule rule = MockitoJUnit.rule();
   private static ExecutorService executor;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeWorkingMockito();
     executor = ExecutorUtil.newMDCAwareCachedThreadPool(getClassName());
     System.setProperty("enable.update.log", "true");
     initCore(
@@ -65,10 +57,8 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void AfterClass() {
-    if (null != executor) { // may not have been initialized due to lack of mockito
-      executor.shutdown();
-    }
+  public static void afterClass() {
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
     System.clearProperty("enable.update.log");
   }
 
@@ -106,11 +96,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         };
     int succeeded = runCommands(threads, 1000, req, versionAddFunc);
     // only one should succeed
-    MatcherAssert.assertThat(succeeded, is(1));
+    assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionAddFunc);
     // all should succeed
-    MatcherAssert.assertThat(succeeded, is(threads));
+    assertThat(succeeded, is(threads));
   }
 
   @Test
@@ -131,11 +121,31 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
     int succeeded = runCommands(threads, 1000, req, versionDeleteFunc);
     // only one should succeed
-    MatcherAssert.assertThat(succeeded, is(1));
+    assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionDeleteFunc);
     // all should succeed
-    MatcherAssert.assertThat(succeeded, is(threads));
+    assertThat(succeeded, is(threads));
+  }
+
+  @Test
+  public void testStatusCodeOnDistribError_NotSolrException() {
+
+    // SolrCmdDistributor defaults to a status code of -1, and sets it to a legal value only if
+    // the distributed exception is a SolrException instance. If it isn't it remains as -1,
+    // which should be replaced with a 500
+    final String message = "some communication issue";
+    SolrCmdDistributor.SolrError e = new SolrCmdDistributor.SolrError();
+    e.e = new IOException(message);
+
+    DistributedUpdateProcessor.DistributedUpdatesAsyncException distribError =
+        new DistributedUpdateProcessor.DistributedUpdatesAsyncException(List.of(e));
+    assertEquals(
+        "Expected HTTP 500 status code for distributed update IOException",
+        500,
+        distribError.code());
+    assertEquals(
+        "Async exception during distributed update: " + message, distribError.getMessage());
   }
 
   /**
@@ -143,36 +153,12 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
    */
   private int runCommands(
       int threads,
-      int versionBucketLockTimeoutMs,
+      int docLockTimeoutMs,
       SolrQueryRequest req,
       Function<DistributedUpdateProcessor, Boolean> function)
       throws IOException {
-    try (DistributedUpdateProcessor processor =
-        new DistributedUpdateProcessor(req, null, null, null)) {
-      if (versionBucketLockTimeoutMs > 0) {
-        // use TimedVersionBucket with versionBucketLockTimeoutMs
-        VersionInfo vinfo = Mockito.spy(processor.vinfo);
-        processor.vinfo = vinfo;
 
-        doReturn(
-                new TimedVersionBucket() {
-                  /** simulate the case: it takes 5 seconds to add the doc */
-                  @Override
-                  protected boolean tryLock(int lockTimeoutMs) {
-                    boolean locked = super.tryLock(versionBucketLockTimeoutMs);
-                    if (locked) {
-                      try {
-                        Thread.sleep(5000);
-                      } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                      }
-                    }
-                    return locked;
-                  }
-                })
-            .when(vinfo)
-            .bucket(anyInt());
-      }
+    try (DistributedUpdateProcessor processor = newDurp(req, docLockTimeoutMs)) {
       CountDownLatch latch = new CountDownLatch(1);
       Collection<Future<Boolean>> futures = new ArrayList<>();
       for (int t = 0; t < threads; ++t) {
@@ -198,5 +184,46 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
       }
       return succeeded;
     }
+  }
+
+  private static DistributedUpdateProcessor newDurp(SolrQueryRequest req, long lockTimeoutMs) {
+    if (lockTimeoutMs <= 0) {
+      // default
+      return new DistributedUpdateProcessor(req, null, null);
+    }
+    // customize UpdateLocks with the provided timeout.  And simulate docs taking longer to index
+    final var sleepMs = lockTimeoutMs + 1000;
+    assert sleepMs > lockTimeoutMs;
+    var sleepUrp =
+        new UpdateRequestProcessor(null) {
+          @Override
+          public void processAdd(AddUpdateCommand cmd) throws IOException {
+            sleep();
+            super.processAdd(cmd);
+          }
+
+          @Override
+          public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+            sleep();
+            super.processDelete(cmd);
+          }
+
+          private void sleep() {
+            try {
+              Thread.sleep(sleepMs);
+            } catch (InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+
+    return new DistributedUpdateProcessor(req, null, null, sleepUrp) {
+      UpdateLocks updateLocks = new UpdateLocks(lockTimeoutMs);
+
+      @Override
+      protected UpdateLocks getUpdateLocks() {
+        return updateLocks;
+      }
+    };
   }
 }

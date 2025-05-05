@@ -1,4 +1,5 @@
 = Configsets
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -23,9 +24,45 @@ Such configuration, _configsets_, can be named and then referenced by collection
 Solr ships with two example configsets located in `server/solr/configsets`, which can be used as a base for your own.
 These example configsets are named `_default` and `sample_techproducts_configs`.
 
+== Configsets in SolrCloud Clusters
+
+In SolrCloud, it's critical to understand that configsets are stored in ZooKeeper _and not_ in the file system.
+Solr's `_default` configset is uploaded to ZooKeeper on initialization.
+This and a couple of example configsets remain on the file system but Solr does not use them unless they are used with a new collection.
+
+When you create a collection in SolrCloud, you can specify a named configset.
+If you don't, then the `_default` will be copied and given a unique name for use by the new collection.
+
+A configset can be uploaded to ZooKeeper either via the xref:configsets-api.adoc[] or more directly via xref:deployment-guide:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk upconfig`].
+The Configsets API has some other operations as well, and likewise, so does the CLI.
+
+To upload a file to a configset already stored on ZooKeeper, you can use xref:deployment-guide:solr-control-script-reference.adoc#copy-between-local-files-and-zookeeper-znodes[`bin/solr zk cp`].
+
+CAUTION: By default, ZooKeeper's file size limit is 1MB.
+If your files are larger than this, you'll need to either xref:deployment-guide:zookeeper-ensemble.adoc#increasing-the-file-size-limit[increase the ZooKeeper file size limit] or store them xref:libs.adoc[on the filesystem] of every node in a cluster.
+
+=== Forbidden File Types
+
+Solr does not accept all file types when uploading or downloading configSets.
+By default the excluded file types are:
+
+- `class`
+- `java`
+- `jar`
+- `tgz`
+- `zip`
+- `tar`
+- `gz`
+
+However, users can impose stricter or looser limits on their systems by providing a comma separated list of file types
+(without the preceding dot, e.g. `jar,class,csv`), to either of the following settings:
+
+- System Property: `-DsolrConfigSetForbiddenFileTypes`
+- Environment Variable: `SOLR_CONFIG_SET_FORBIDDEN_FILE_TYPES`
+
 == Configsets in User-Managed Clusters or Single-Node Installations
 
-If you are using Solr in a user-managed cluster or a single-node installation, configsets are managed on the filesystem.
+If you are using Solr in a If you are using Solr in a user-managed cluster or a single-node installation, configsets are managed on the filesystem. installation, configsets are managed on the filesystem.
 
 Each Solr core can have it's very own configset located beneath it in a `<instance_dir>/conf/` dir.
 Here, it is not named or shared and the word _configset_ isn't found.
@@ -55,23 +92,20 @@ This path can be configured with the `configSetBaseDir` parameter in `solr.xml` 
 To create a new core using a configset, pass `configSet` as one of the core properties.
 For example, if you do this via the CoreAdmin API:
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1use-configset]
+[tabs#use-configset]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2
 ----
 ====
 
-[example.tab-pane#v2use-configset]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -v -X POST -H 'Content-type: application/json' -d '{
@@ -82,21 +116,4 @@ curl -v -X POST -H 'Content-type: application/json' -d '{
     http://localhost:8983/api/cores
 ----
 ====
---
-
-== Configsets in SolrCloud Clusters
-
-In SolrCloud, it's critical to understand that configsets are stored in ZooKeeper _and not_ the file system.
-Solr's `_default` configset is uploaded to ZooKeeper on initialization.
-This and a couple of example configsets remain on the file system but Solr does not use them unless they are used with a new collection.
-
-When you create a collection in SolrCloud, you can specify a named configset.
-If you don't, then the `_default` will be copied and given a unique name for use by the new collection.
-
-A configset can be uploaded to ZooKeeper either via the xref:configsets-api.adoc[] or more directly via xref:deployment-guide:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk upconfig`].
-The Configsets API has some other operations as well, and likewise, so does the CLI.
-
-To upload a file to a configset already stored on ZooKeeper, you can use xref:deployment-guide:solr-control-script-reference.adoc#copy-between-local-files-and-zookeeper-znodes[`bin/solr zk cp`].
-
-CAUTION: By default, ZooKeeper's file size limit is 1MB.
-If your files are larger than this, you'll need to either xref:deployment-guide:zookeeper-ensemble.adoc#increasing-the-file-size-limit[increase the ZooKeeper file size limit] or store them xref:libs.adoc#lib-directives-in-solrconfig[on the filesystem] of every node in a cluster.
+======

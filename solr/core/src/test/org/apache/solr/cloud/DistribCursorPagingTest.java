@@ -23,12 +23,13 @@ import static org.apache.solr.common.params.SolrParams.wrapDefaults;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.CursorPagingTest;
@@ -658,7 +659,9 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
                       "forceElevation",
                       "true",
                       "elevateIds",
-                      StringUtils.join(expectedElevated, ',')),
+                      Arrays.stream(expectedElevated)
+                          .mapToObj(String::valueOf)
+                          .collect(Collectors.joining(","))),
                   main),
               ids);
       for (int expected : expectedElevated) {

@@ -20,12 +20,12 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
@@ -58,7 +58,7 @@ public class MLTContentQParserPlugin extends QParserPlugin {
       return moreLikeThis.like(fieldNames[0], new StringReader(content));
     } else {
       Collection<Object> streamValue = Collections.singleton(content);
-      Map<String, Collection<Object>> multifieldDoc = new HashMap<>(fieldNames.length);
+      Map<String, Collection<Object>> multifieldDoc = CollectionUtil.newHashMap(fieldNames.length);
       for (String field : fieldNames) {
         multifieldDoc.put(field, streamValue);
       }

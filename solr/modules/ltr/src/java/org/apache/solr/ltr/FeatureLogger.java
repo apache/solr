@@ -33,9 +33,12 @@ public abstract class FeatureLogger {
 
   protected final FeatureFormat featureFormat;
 
-  protected FeatureLogger(String fvCacheName, FeatureFormat f) {
+  protected Boolean logAll;
+
+  protected FeatureLogger(String fvCacheName, FeatureFormat f, Boolean logAll) {
     this.fvCacheName = fvCacheName;
     this.featureFormat = f;
+    this.logAll = logAll;
   }
 
   /**
@@ -79,5 +82,13 @@ public abstract class FeatureLogger {
   public String getFeatureVector(
       int docid, LTRScoringQuery scoringQuery, SolrIndexSearcher searcher) {
     return (String) searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid));
+  }
+
+  public Boolean isLoggingAll() {
+    return logAll;
+  }
+
+  public void setLogAll(Boolean logAll) {
+    this.logAll = logAll;
   }
 }

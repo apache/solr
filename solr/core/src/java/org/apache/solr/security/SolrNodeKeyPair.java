@@ -18,9 +18,9 @@
 package org.apache.solr.security;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.security.spec.InvalidKeySpecException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.util.CryptoKeys;
 
@@ -50,12 +50,13 @@ public class SolrNodeKeyPair {
     String privateKey = config.getPkiHandlerPrivateKeyPath();
 
     // If both properties unset, then we fall back to generating a new key pair
-    if (StringUtils.isEmpty(publicKey) && StringUtils.isEmpty(privateKey)) {
+    if (StrUtils.isNullOrEmpty(publicKey) && StrUtils.isNullOrEmpty(privateKey)) {
       return new CryptoKeys.RSAKeyPair();
     }
 
     try {
-      return new CryptoKeys.RSAKeyPair(new URL(privateKey), new URL(publicKey));
+      return new CryptoKeys.RSAKeyPair(
+          URI.create(privateKey).toURL(), URI.create(publicKey).toURL());
     } catch (IOException | InvalidKeySpecException e) {
       throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
     }

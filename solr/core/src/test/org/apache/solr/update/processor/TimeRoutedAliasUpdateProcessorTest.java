@@ -67,7 +67,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -90,20 +89,12 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   @Before
   public void doBefore() throws Exception {
     configureCluster(4).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = cluster.getSolrClient();
     // log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
       log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // nowarn
     }
-  }
-
-  @After
-  public void doAfter() throws Exception {
-    if (null != solrClient) {
-      solrClient.close();
-    }
-    shutdownCluster();
   }
 
   @Test
@@ -358,7 +349,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     boolean[] threadFinished = new boolean[2];
     try {
       CountDownLatch starter = new CountDownLatch(1);
-      executorService.submit(
+      executorService.execute(
           () -> {
             threadStarted[0] = true;
             try {
@@ -370,7 +361,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             threadFinished[0] = true;
           });
 
-      executorService.submit(
+      executorService.execute(
           () -> {
             threadStarted[1] = true;
             try {

@@ -54,7 +54,7 @@ public class JettyBridgeResponseWriter implements ContainerResponseWriter {
   @Override
   public OutputStream writeResponseStatusAndHeaders(
       final long contentLength, final ContainerResponse context) throws ContainerException {
-    final javax.ws.rs.core.Response.StatusType statusInfo = context.getStatusInfo();
+    final jakarta.ws.rs.core.Response.StatusType statusInfo = context.getStatusInfo();
     httpServletResponse.setStatus(statusInfo.getStatusCode());
 
     if (contentLength != -1 && contentLength < Integer.MAX_VALUE) {

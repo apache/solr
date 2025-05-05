@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -34,12 +35,12 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
   private int arraySize = Integer.MAX_VALUE;
   private boolean onlyJsonTypes = false;
   int objectSize;
+  private boolean atDocs;
 
   public JavabinTupleStreamParser(InputStream is, boolean onlyJsonTypes) throws IOException {
     this.onlyJsonTypes = onlyJsonTypes;
     this.is = is;
     this.fis = initRead(is);
-    if (!readTillDocs()) arraySize = 0;
   }
 
   private boolean readTillDocs() throws IOException {
@@ -61,6 +62,9 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
             return true;
           }
           return false;
+        } else if ("error".equals(k)) {
+          handleError();
+          return true;
         } else {
           if (readTillDocs()) return true;
         }
@@ -91,7 +95,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     return tagByte == SOLRDOCLST;
   }
 
-  private Map<?, ?> readAsMap(DataInputInputStream dis) throws IOException {
+  private Map<String, ?> readAsMap(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     Map<String, Object> m = new LinkedHashMap<>();
     for (int i = 0; i < sz; i++) {
@@ -175,6 +179,14 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
   @Override
   @SuppressWarnings({"unchecked"})
   public Map<String, Object> next() throws IOException {
+    if (!atDocs) {
+      atDocs = true;
+      if (!readTillDocs()) {
+        arraySize = 0;
+        return null;
+      }
+    }
+
     if (arraySize == 0) return null;
     Object o = readVal(fis);
     arraySize--;
@@ -185,5 +197,13 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
   @Override
   public void close() throws IOException {
     is.close();
+  }
+
+  private void handleError() throws IOException {
+    tagByte = fis.readByte();
+    var error = readAsMap(fis);
+    var msg =
+        Optional.ofNullable(error.get("msg")).map(String::valueOf).orElse("Unknown Exception");
+    throw new SolrStream.HandledException(msg);
   }
 }

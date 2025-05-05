@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -32,16 +33,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.InvertableType;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
@@ -56,6 +57,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -82,6 +84,8 @@ public class SolrDocumentFetcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrIndexSearcher searcher;
+
+  private final int nLeaves;
 
   private final boolean enableLazyFieldLoading;
 
@@ -111,14 +115,41 @@ public class SolrDocumentFetcher {
 
   private final Set<String> largeFields;
 
-  private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
+  private final Collection<String>[] storedHighlightFieldNames; // lazy populated; use getter
 
-  private Collection<String> indexedFieldNames; // lazy populated; use getter
+  private final Collection<String>[] indexedFieldNames; // lazy populated; use getter
 
-  @SuppressWarnings({"unchecked"})
+  private final StoredFields storedFields;
+
+  private SolrDocumentFetcher(SolrDocumentFetcher template, StoredFields storedFields) {
+    this.searcher = template.searcher;
+    this.nLeaves = template.nLeaves;
+    this.enableLazyFieldLoading = template.enableLazyFieldLoading;
+    this.documentCache = template.documentCache;
+    this.nonStoredDVsUsedAsStored = template.nonStoredDVsUsedAsStored;
+    this.allNonStoredDVs = template.allNonStoredDVs;
+    this.nonStoredDVsWithoutCopyTargets = template.nonStoredDVsWithoutCopyTargets;
+    this.largeFields = template.largeFields;
+    this.dvsCanSubstituteStored = template.dvsCanSubstituteStored;
+    this.allStored = template.allStored;
+    this.storedHighlightFieldNames = template.indexedFieldNames;
+    this.indexedFieldNames = template.indexedFieldNames;
+    this.storedFields = storedFields;
+  }
+
+  @Override
+  protected SolrDocumentFetcher clone() {
+    try {
+      return new SolrDocumentFetcher(this, searcher.getIndexReader().storedFields());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
-    this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
+    this.nLeaves = searcher.getTopReaderContext().leaves().size();
     if (cachingEnabled) {
       documentCache =
           solrConfig.documentCacheConfig == null
@@ -127,6 +158,9 @@ public class SolrDocumentFetcher {
     } else {
       documentCache = null;
     }
+
+    // lazy loading makes no sense if we don't have a `documentCache`
+    this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading && documentCache != null;
 
     final Set<String> nonStoredDVsUsedAsStored = new HashSet<>();
     final Set<String> allNonStoredDVs = new HashSet<>();
@@ -168,6 +202,9 @@ public class SolrDocumentFetcher {
     this.largeFields = Collections.unmodifiableSet(storedLargeFields);
     this.dvsCanSubstituteStored = Collections.unmodifiableSet(dvsCanSubstituteStored);
     this.allStored = Collections.unmodifiableSet(allStoreds);
+    this.storedFields = null; // template docFetcher should throw NPE if used directly
+    this.storedHighlightFieldNames = new Collection[1];
+    this.indexedFieldNames = new Collection[1];
   }
 
   // Does this field have both stored=true and docValues=true and is otherwise
@@ -199,9 +236,9 @@ public class SolrDocumentFetcher {
    * reader knows about.
    */
   public Collection<String> getStoredHighlightFieldNames() {
-    synchronized (this) {
-      if (storedHighlightFieldNames == null) {
-        storedHighlightFieldNames = new ArrayList<>();
+    synchronized (storedHighlightFieldNames) {
+      if (storedHighlightFieldNames[0] == null) {
+        Collection<String> storedHighlightFieldNames = new ArrayList<>();
         for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
           final String fieldName = fieldInfo.name;
           try {
@@ -216,23 +253,25 @@ public class SolrDocumentFetcher {
             log.warn("Field [{}] found in index, but not defined in schema.", fieldName);
           }
         }
+        this.storedHighlightFieldNames[0] = storedHighlightFieldNames;
       }
-      return storedHighlightFieldNames;
+      return storedHighlightFieldNames[0];
     }
   }
 
   /** Returns a collection of the names of all indexed fields which the index reader knows about. */
   public Collection<String> getIndexedFieldNames() {
-    synchronized (this) {
-      if (indexedFieldNames == null) {
-        indexedFieldNames = new ArrayList<>();
+    synchronized (indexedFieldNames) {
+      if (indexedFieldNames[0] == null) {
+        Collection<String> indexedFieldNames = new ArrayList<>();
         for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
           if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
             indexedFieldNames.add(fieldInfo.name);
           }
         }
+        this.indexedFieldNames[0] = indexedFieldNames;
       }
-      return indexedFieldNames;
+      return indexedFieldNames[0];
     }
   }
 
@@ -268,10 +307,9 @@ public class SolrDocumentFetcher {
   }
 
   private Document docNC(int i, Set<String> fields) throws IOException {
-    final DirectoryReader reader = searcher.getIndexReader();
     final SolrDocumentStoredFieldVisitor visitor =
-        new SolrDocumentStoredFieldVisitor(fields, reader, i);
-    reader.document(i, visitor);
+        new SolrDocumentStoredFieldVisitor(fields, searcher.getIndexReader(), i);
+    storedFields.document(i, visitor);
     return visitor.getDocument();
   }
 
@@ -364,16 +402,14 @@ public class SolrDocumentFetcher {
     }
   }
 
-  /**
-   * @see SolrIndexSearcher#doc(int, StoredFieldVisitor)
-   */
+  /** Visit a document's fields using a {@link StoredFieldVisitor}. */
   public void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     if (documentCache != null) {
       // get cached document or retrieve it including all fields (and cache it)
       Document cached = doc(docId);
       visitFromCached(cached, visitor);
     } else {
-      searcher.getIndexReader().document(docId, visitor);
+      storedFields.document(docId, visitor);
     }
   }
 
@@ -489,35 +525,33 @@ public class SolrDocumentFetcher {
         return cachedBytes;
       } else {
         BytesRef bytesRef = new BytesRef();
-        searcher
-            .getIndexReader()
-            .document(
-                docId,
-                new StoredFieldVisitor() {
-                  boolean done = false;
+        storedFields.document(
+            docId,
+            new StoredFieldVisitor() {
+              boolean done = false;
 
-                  @Override
-                  public Status needsField(FieldInfo fieldInfo) throws IOException {
-                    if (done) {
-                      return Status.STOP;
-                    }
-                    return fieldInfo.name.equals(name()) ? Status.YES : Status.NO;
-                  }
+              @Override
+              public Status needsField(FieldInfo fieldInfo) throws IOException {
+                if (done) {
+                  return Status.STOP;
+                }
+                return fieldInfo.name.equals(name()) ? Status.YES : Status.NO;
+              }
 
-                  @Override
-                  public void stringField(FieldInfo fieldInfo, String value) throws IOException {
-                    Objects.requireNonNull(value, "String value should not be null");
-                    bytesRef.bytes = value.getBytes(StandardCharsets.UTF_8);
-                    bytesRef.length = bytesRef.bytes.length;
-                    done = true;
-                  }
+              @Override
+              public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+                Objects.requireNonNull(value, "String value should not be null");
+                bytesRef.bytes = value.getBytes(StandardCharsets.UTF_8);
+                bytesRef.length = bytesRef.bytes.length;
+                done = true;
+              }
 
-                  @Override
-                  public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
-                    throw new UnsupportedOperationException(
-                        "'large' binary fields are not (yet) supported");
-                  }
-                });
+              @Override
+              public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
+                throw new UnsupportedOperationException(
+                    "'large' binary fields are not (yet) supported");
+              }
+            });
         if (bytesRef.length < largeValueLengthCacheThreshold) {
           return cachedBytes = bytesRef;
         } else {
@@ -540,6 +574,16 @@ public class SolrDocumentFetcher {
     public Number numericValue() {
       return null;
     }
+
+    @Override
+    public StoredValue storedValue() {
+      return new StoredValue(stringValue());
+    }
+
+    @Override
+    public InvertableType invertableType() {
+      return null;
+    }
   }
 
   /**
@@ -550,16 +594,23 @@ public class SolrDocumentFetcher {
    * @param fields The fields with docValues to populate the document with. DocValues fields which
    *     do not exist or not decodable will be ignored.
    */
-  public void decorateDocValueFields(SolrDocumentBase<?, ?> doc, int docid, Set<String> fields)
+  public void decorateDocValueFields(
+      SolrDocumentBase<?, ?> doc,
+      int docid,
+      Set<String> fields,
+      DocValuesIteratorCache reuseDvIters)
       throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
     final int localId = docid - leafContexts.get(subIndex).docBase;
     final LeafReader leafReader = leafContexts.get(subIndex).reader();
     for (String fieldName : fields) {
-      Object fieldValue = decodeDVField(localId, leafReader, fieldName);
-      if (fieldValue != null) {
-        doc.setField(fieldName, fieldValue);
+      DocValuesIteratorCache.FieldDocValuesSupplier e = reuseDvIters.getSupplier(fieldName);
+      if (e != null) {
+        Object fieldValue = decodeDVField(localId, leafReader, subIndex, e);
+        if (fieldValue != null) {
+          doc.setField(fieldName, fieldValue);
+        }
       }
     }
   }
@@ -569,59 +620,56 @@ public class SolrDocumentFetcher {
    *
    * @return null if DV field is not exist or can not decodable
    */
-  private Object decodeDVField(int localId, LeafReader leafReader, String fieldName)
+  private Object decodeDVField(
+      int localId,
+      LeafReader leafReader,
+      int readerOrd,
+      DocValuesIteratorCache.FieldDocValuesSupplier e)
       throws IOException {
-    final SchemaField schemaField = searcher.getSchema().getFieldOrNull(fieldName);
-    FieldInfo fi = searcher.getFieldInfos().fieldInfo(fieldName);
-    if (schemaField == null || !schemaField.hasDocValues() || fi == null) {
-      return null; // Searcher doesn't have info about this field, hence ignore it.
-    }
 
-    final DocValuesType dvType = fi.getDocValuesType();
+    final DocValuesType dvType = e.type;
     switch (dvType) {
       case NUMERIC:
-        final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
+        final NumericDocValues ndv = e.getNumericDocValues(localId, leafReader, readerOrd);
         if (ndv == null) {
           return null;
         }
-        if (!ndv.advanceExact(localId)) {
-          return null;
-        }
-        Long val = ndv.longValue();
-        return decodeNumberFromDV(schemaField, val, false);
+        long val = ndv.longValue();
+        return decodeNumberFromDV(e.schemaField, val, false);
       case BINARY:
-        BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
-        if (bdv != null && bdv.advanceExact(localId)) {
-          return BytesRef.deepCopyOf(bdv.binaryValue());
+        BinaryDocValues bdv = e.getBinaryDocValues(localId, leafReader, readerOrd);
+        if (bdv != null) {
+          return BytesRef.deepCopyOf(bdv.binaryValue()).bytes;
         }
         return null;
       case SORTED:
-        SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
-        if (sdv != null && sdv.advanceExact(localId)) {
+        SortedDocValues sdv = e.getSortedDocValues(localId, leafReader, readerOrd);
+        if (sdv != null) {
           final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
-          if (schemaField.getType() instanceof BoolField) {
-            return schemaField.getType().toObject(schemaField, bRef);
+          if (e.schemaField.getType() instanceof BoolField) {
+            return e.schemaField.getType().toObject(e.schemaField, bRef);
           } else {
             return bRef.utf8ToString();
           }
         }
         return null;
       case SORTED_NUMERIC:
-        final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
-        if (numericDv != null && numericDv.advance(localId) == localId) {
+        final SortedNumericDocValues numericDv =
+            e.getSortedNumericDocValues(localId, leafReader, readerOrd);
+        if (numericDv != null) {
           final int docValueCount = numericDv.docValueCount();
           final List<Object> outValues = new ArrayList<>(docValueCount);
           for (int i = 0; i < docValueCount; i++) {
             long number = numericDv.nextValue();
-            Object value = decodeNumberFromDV(schemaField, number, true);
+            Object value = decodeNumberFromDV(e.schemaField, number, true);
             // return immediately if the number is not decodable, hence won't return an empty list.
             if (value == null) {
               return null;
             }
             // normally never true but LatLonPointSpatialField uses SORTED_NUMERIC even when single
             // valued
-            else if (schemaField.multiValued() == false) {
+            else if (e.schemaField.multiValued() == false) {
               return value;
             } else {
               outValues.add(value);
@@ -632,21 +680,21 @@ public class SolrDocumentFetcher {
         }
         return null;
       case SORTED_SET:
-        final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
-        if (values != null && values.getValueCount() > 0 && values.advance(localId) == localId) {
+        final SortedSetDocValues values = e.getSortedSetDocValues(localId, leafReader, readerOrd);
+        if (values != null) {
           final List<Object> outValues = new ArrayList<>();
           for (long ord = values.nextOrd();
               ord != SortedSetDocValues.NO_MORE_ORDS;
               ord = values.nextOrd()) {
             BytesRef value = values.lookupOrd(ord);
-            outValues.add(schemaField.getType().toObject(schemaField, value));
+            outValues.add(e.schemaField.getType().toObject(e.schemaField, value));
           }
           assert outValues.size() > 0;
           return outValues;
         }
         return null;
       default:
-        return null;
+        throw new IllegalStateException();
     }
   }
 
@@ -740,6 +788,8 @@ public class SolrDocumentFetcher {
 
     private final SolrReturnFields solrReturnFields;
 
+    private final DocValuesIteratorCache reuseDvIters;
+
     RetrieveFieldsOptimizer(SolrReturnFields solrReturnFields) {
       this.storedFields = calcStoredFieldsForReturn(solrReturnFields);
       this.dvFields = calcDocValueFieldsForReturn(solrReturnFields);
@@ -749,6 +799,7 @@ public class SolrDocumentFetcher {
         dvFields.addAll(storedFields);
         storedFields.clear();
       }
+      reuseDvIters = dvFields.isEmpty() ? null : new DocValuesIteratorCache(searcher);
     }
 
     /**
@@ -762,7 +813,7 @@ public class SolrDocumentFetcher {
     }
 
     private boolean returnDVFields() {
-      return CollectionUtils.isNotEmpty(dvFields);
+      return !dvFields.isEmpty();
     }
 
     private Set<String> getStoredFields() {
@@ -870,7 +921,7 @@ public class SolrDocumentFetcher {
 
         // decorate the document with non-stored docValues fields
         if (returnDVFields()) {
-          decorateDocValueFields(sdoc, luceneDocId, getDvFields());
+          decorateDocValueFields(sdoc, luceneDocId, getDvFields(), reuseDvIters);
         }
       } catch (IOException e) {
         throw new SolrException(

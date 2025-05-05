@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common;
 
+import static org.apache.solr.client.api.model.ErrorInfo.ERROR_CLASS;
+import static org.apache.solr.client.api.model.ErrorInfo.ROOT_ERROR_CLASS;
+
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -24,12 +27,10 @@ import org.slf4j.MDC;
 /** */
 public class SolrException extends RuntimeException {
 
-  public static final String ROOT_ERROR_CLASS = "root-error-class";
-  public static final String ERROR_CLASS = "error-class";
   private final Map<String, String> mdcContext;
 
   /**
-   * This list of valid HTTP Status error codes that Solr may return in the case of a "Server Side"
+   * This list of valid HTTP Status error codes that Solr may return when there is a "Server Side"
    * error.
    *
    * @since solr 1.2
@@ -94,7 +95,7 @@ public class SolrException extends RuntimeException {
 
   /**
    * The HTTP Status code associated with this Exception. For SolrExceptions thrown by Solr "Server
-   * Side", this should valid {@link ErrorCode}, however client side exceptions may contain an
+   * Side", this should be a valid {@link ErrorCode}, however client side exceptions may contain an
    * arbitrary error code based on the behavior of the Servlet Container hosting Solr, or any HTTP
    * Proxies that may exist between the client and the server.
    *
@@ -132,56 +133,6 @@ public class SolrException extends RuntimeException {
     return getMetadata(ROOT_ERROR_CLASS);
   }
 
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public void log(Logger log) {
-    log(log, this);
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, Throwable e) {
-    if (log.isErrorEnabled()) {
-      log.error(e.toString(), e); // nowarn (we are inside of isErrorEnabled, toString as msg is ok)
-    }
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, String msg, Throwable e) {
-    if (log.isErrorEnabled()) {
-      log.error(msg, e);
-    }
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, String msg) {
-    if (log.isErrorEnabled()) {
-      log.error(msg);
-    }
-  }
-
   // TODO: This doesn't handle cause loops
   public static Throwable getRootCause(Throwable t) {
     while (true) {
@@ -206,8 +157,7 @@ public class SolrException extends RuntimeException {
    *     no-op.
    */
   public static SolrException wrapLuceneTragicExceptionIfNecessary(Exception e) {
-    if (e instanceof SolrException) {
-      final SolrException solrException = (SolrException) e;
+    if (e instanceof SolrException solrException) {
       assert solrException.code() >= 500 && solrException.code() < 600;
       return solrException;
     }

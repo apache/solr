@@ -18,11 +18,13 @@
 package org.apache.solr.jersey;
 
 import com.codahale.metrics.Timer;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.container.ContainerRequestContext;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -33,7 +35,7 @@ import org.apache.solr.security.AuthorizationContext;
  * Keys used to store and retrieve values from the Jersey request context.
  *
  * <p>Properties are generally set in V2HttpCall's 'invokeJerseyRequest' and retrieved in individual
- * {@link javax.ws.rs.container.ContainerRequestFilter}s using {@link
+ * {@link jakarta.ws.rs.container.ContainerRequestFilter}s using {@link
  * ContainerRequestContext#getProperty(String)}
  */
 public interface RequestContextKeys {
@@ -42,6 +44,7 @@ public interface RequestContextKeys {
   String SOLR_QUERY_REQUEST = SolrQueryRequest.class.getName();
   String SOLR_QUERY_RESPONSE = SolrQueryResponse.class.getName();
   String CORE_CONTAINER = CoreContainer.class.getName();
+  String RESOURCE_TO_RH_MAPPING = PluginBag.JaxrsResourceToHandlerMappings.class.getName();
   String SOLR_CORE = SolrCore.class.getName();
   String REQUEST_TYPE = AuthorizationContext.RequestType.class.getName();
   String SOLR_PARAMS = SolrParams.class.getName();

@@ -48,32 +48,6 @@ See the section xref:requesthandlers-searchcomponents.adoc[] for more informatio
 The `<requestParsers>` sub-element controls values related to parsing requests.
 This is an empty XML element that doesn't have any content, only attributes.
 
-`enableRemoteStreaming`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-Controls whether remote streaming of content is allowed.
-When set to `false`, streaming will not be allowed.
-Setting it to `true` lets you specify the location of content to be streamed using `stream.file` or `stream.url` parameters.
-
-`enableStreamBody`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-This attribute controls whether streaming content from the HTTP parameter `stream.body` is allowed.
-When set to `false`, streaming will not be allowed.
-Setting it to `true` lets you pass data in the `stream.body` parameter.
-+
-If you enable remote streaming, be sure that you have authentication enabled.
-Otherwise, someone could potentially gain access to your content by accessing arbitrary URLs.
-It's also a good idea to place Solr behind a firewall to prevent it from being accessed from untrusted clients.
-
 `multipartUploadLimitInKB`::
 +
 [%autowidth,frame=none]
@@ -95,56 +69,12 @@ A value of `-1` means MAX_INT, which is also the system default if omitted.
 This attribute sets a limit in kilobytes on the size of form data (`application/x-www-form-urlencoded`) submitted in a HTTP POST request, which can be used to pass request parameters that will not fit in a URL.
 A value of `-1` means MAX_INT, which is also the system default if omitted.
 
-`addHttpRequestToContext`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-This attribute can be used to indicate that the original `HttpServletRequest` object should be included in the context map of the `SolrQueryRequest` using the key `httpRequest`.
-This `HttpServletRequest` is not used by any Solr component, but may be useful when developing custom plugins.
 
 [source,xml]
 ----
-<requestParsers enableRemoteStreaming="false"
-                enableStreamBody="false"
-                multipartUploadLimitInKB="2048"
-                formdataUploadLimitInKB="2048"
-                addHttpRequestToContext="false" />
+<requestParsers multipartUploadLimitInKB="2048"
+                formdataUploadLimitInKB="2048" />
 ----
-
-The below command is an example of how to enable RemoteStreaming and BodyStreaming through the xref:config-api.adoc#commands-for-common-properties[Config API]:
-
-[.dynamic-tabs]
---
-[example.tab-pane#v1enablestreaming]
-====
-[.tab-label]*V1 API*
-[source,bash]
-----
-curl -H 'Content-type:application/json' -d '{"set-property": {"requestDispatcher.requestParsers.enableRemoteStreaming": true}, "set-property": {"requestDispatcher.requestParsers.enableStreamBody": true}}' http://localhost:8983/solr/gettingstarted/config
-----
-====
-
-[example.tab-pane#v2enablestreaming]
-====
-[.tab-label]*V2 API User-Managed / Single-Node*
-[source,bash]
-----
-curl -H 'Content-type:application/json' -d '{"set-property": {"requestDispatcher.requestParsers.enableRemoteStreaming": true}, "set-property":{"requestDispatcher.requestParsers.enableStreamBody": true}}' http://localhost:8983/api/cores/gettingstarted/config
-----
-====
-
-[example.tab-pane#v2enablestreamingcloud]
-====
-[.tab-label]*V2 API SolrCloud*
-[source,bash]
-----
-curl -H 'Content-type:application/json' -d '{"set-property": {"requestDispatcher.requestParsers.enableRemoteStreaming": true}, "set-property":{"requestDispatcher.requestParsers.enableStreamBody": true}}' http://localhost:8983/api/collections/gettingstarted/config
-----
-====
---
 
 == httpCaching Element
 
@@ -206,7 +136,7 @@ The content of this element will be sent as the value of the Cache-Control heade
 This header is used to modify the default caching behavior of the requesting client.
 The possible values for the Cache-Control header are defined by the HTTP 1.1 specification in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9[Section 14.9].
 
-Setting the max-age field controls how long a client may re-use a cached response before requesting it again from the server.
+Setting the max-age field controls how long a client may reuse a cached response before requesting it again from the server.
 This time interval should be set according to how often you update your index and whether or not it is acceptable for your application to use content that is somewhat out of date.
 Setting `must-revalidate` will tell the client to validate with the server that its cached copy is still good before re-using it.
 This will ensure that the most timely result is used, while avoiding a second fetch of the content if it isn't needed, at the cost of a request to the server to do the check.

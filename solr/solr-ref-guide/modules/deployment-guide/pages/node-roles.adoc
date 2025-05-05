@@ -73,7 +73,7 @@ A node with this role can perform duties of an overseer node (unless mode is `di
 
 A node with this role can act as if it has replicas of all collections in the cluster when a query is performed. The workflow is as follows
 
-If the cluster has collections with very large no:of shards, performing distributed requests in your _`data node`_ will lead to
+If the cluster has collections with very large no:of shards, performing distributed requests in your _data node_ will lead to
 
 * large heap utilization
 * frequent GC pauses
@@ -165,7 +165,7 @@ Fetches the current node roles assignment for a specified role.
 *Input*
 [source,text]
 ----
-http://localhost:8983/api/node-roles/role/data
+http://localhost:8983/api/cluster/node-roles/role/data
 ----
 
 *Output*
@@ -184,7 +184,7 @@ http://localhost:8983/api/node-roles/role/data
 *Input*
 [source,text]
 ----
-http://localhost:8983/api/node-roles/role/data/off
+http://localhost:8983/api/cluster/node-roles/role/data/off
 ----
 
 *Output*

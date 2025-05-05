@@ -87,7 +87,7 @@ templates:
 
     The Solr PMC is pleased to announce the release of Apache Solr {{ release_version }}.
 
-    Solr is the popular, blazing fast, open source NoSQL search platform from the Apache Solr project. Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering, database integration, rich document handling, and geospatial search. Solr is highly scalable, providing fault tolerant distributed search and indexing, and powers the search and navigation features of many of the world's largest internet sites.
+    Solr is the blazing-fast, open source, multi-modal search platform built on Apache Lucene. It powers full-text, vector, analytics, and geospatial search at many of the world's largest organizations. Other major features include Kubernetes and docker integration, streaming, highlighting, faceting, and spellchecking.
 
     Solr {{ release_version }} is available for immediate download at:
 
@@ -116,10 +116,11 @@ templates:
 
     (( template=announce_solr_mail_body ))
     ----
-  announce_solr_sign_mail: |
+  announce_solr_announce_mail: |    
     The template below can be used to announce the Solr release to the
-    `announce@apache.org` mailing list. The mail *should be signed with PGP.*
-    and sent *from your `@apache.org` account*.
+    `announce@apache.org` mailing list. The email *must* be sent *from your `@apache.org` account*,
+    and it *can optionally* be signed with your PGP key, using the `--clearsign` option of 
+    gpg, as explained in https://www.gnupg.org/gph/en/manual/x135.html.
 
     .Mail template
     ----
@@ -205,7 +206,7 @@ groups:
   title: Prerequisites
   description: |
     Releasing software requires thorough understanding of the process and careful execution,
-    as it is easy to make mistakes. It also requires an environtment and tools such as gpg
+    as it is easy to make mistakes. It also requires an environment and tools such as gpg
     correctly setup. This section makes sure you're in good shape for the job!
   todos:
   - !Todo
@@ -226,7 +227,7 @@ groups:
       You will need these tools:
 
       * Python v3.4 or later, with dependencies listed in requirements.txt
-      * Java 11 in $JAVA11_HOME
+      * Java 21 in $JAVA21_HOME
       * gpg
       * git
       * svn
@@ -357,8 +358,6 @@ groups:
         cmd: git pull --ff-only
         stdout: true
       - !Command
-        cmd: "{{ gradle_cmd }} localSettings"
-      - !Command
         cmd: "{{ gradle_cmd }} clean check -x test"
   - !Todo
     id: create_stable_branch
@@ -391,7 +390,8 @@ groups:
   - !Todo
     id: create_minor_branch
     title: Create a new minor branch off the stable branch
-    description: In our case we'll create {{ release_branch }}
+    description: |
+      In our case we'll create {{ release_branch }}.
     types:
     - major
     - minor
@@ -417,6 +417,37 @@ groups:
       - !Command
         cmd: git push --set-upstream origin {{ release_branch }}
         tee: true
+  - !Todo
+    id: protect_branches
+    title: Protect the new git branch(es)
+    vars:
+      branch_names: "{{ release_branch }}{% if release_type == 'major' %} and {{ stable_branch }}{% endif %}"
+    description: >
+      Edit `.asf.yaml` to protect new git branch(es) {{ branch_names }}.
+    types:
+      - major
+      - minor
+    depends: create_minor_branch
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to edit `.asf.yaml` and protect the new branch(es)
+      commands:
+        - !Command
+          cmd: git checkout main
+          tee: true
+        - !Command
+          cmd: git pull --ff-only
+          tee: true
+        - !Command
+          cmd: "{{ editor }} .asf.yaml"
+          comment: >
+            Add the newly created branch(es) {{ branch_names }}
+            under `protected_branches` in `.asf.yaml`. An editor will open.
+          stdout: true
+        - !Command
+          cmd: git add .asf.yaml && git commit -m "Add branch protection for {{ branch_names }}" && git push
+          logfile: commit-branch-protection.log
+          tee: true
   - !Todo
     id: update_minor_branch_prerelease_antora
     title: Update Ref Guide Metadata for new Minor Branch
@@ -521,14 +552,44 @@ groups:
     links:
     - https://projects.apache.org/doap.html
   - !Todo
-    id: jenkins_builds
-    title: Add Jenkins task for the release branch
-    description: '...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.'
+    id: new_jenkins_builds
+    title: Add Jenkins tasks for new branch(es)
+    description: |
+      This will make sure we are continuously testing the new branch(es) we have created.
+      Consult the JenkinsReleaseBuilds page for more information.
+      
+      Job Suffixes to create:
+        {% if release_type == 'major' %}
+        *-{{release_version_major}}.x (The new stable branch)
+        {% endif %}
+        *-{{release_version_major}}.{{release_version_minor}} (The new release branch)
     types:
     - major
     - minor
     links:
-    - https://cwiki.apache.org/confluence/display/LUCENEJAVA/JenkinsReleaseBuilds
+      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://ci-builds.apache.org/job/Solr/
+  - !Todo
+    id: old_jenkins_builds
+    title: Remove old Jenkins tasks for decommissioned branches
+    description: |
+      This will make sure we aren't using resources to test branches no longer in development.
+      Consult the JenkinsReleaseBuilds page for more information.
+      
+      Job Suffixes to delete:
+        {% if release_type == 'major' %}
+        *-{{latest_lts_version_major}}.{{latest_lts_version_minor}} (The previous LTS release branch)
+        *-{{latest_version_major}}.x (The previous stable branch)
+        {% else %}
+        *-{{latest_version_major}}.{{latest_version_minor}} (The previous release branch)
+        {% endif %}
+    depends: new_jenkins_builds
+    types:
+      - major
+      - minor
+    links:
+      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://ci-builds.apache.org/job/Solr/
   - !Todo
     id: inform_devs
     title: Inform Devs of the new Release Branch
@@ -546,7 +607,7 @@ groups:
 
       NOTICE:
 
-      Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on stable branch.
+      Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on the stable branch.
 
       Please observe the normal rules:
 
@@ -564,7 +625,7 @@ groups:
         while the branch feature freeze is in effect, think twice: can't the
         addition wait a couple more days? Merges of bug fixes into the branch
         may become more difficult.
-      * Only Jira issues with Fix version {{ release_version_major }}.{{ release_version_minor }} and priority "Blocker" will delay
+      * Only Jira issues with Fix version {{ release_version_jira }} and priority "Blocker" will delay
         a release candidate build.
       ----
     types:
@@ -592,16 +653,41 @@ groups:
 
       * Before committing to the branch, reply to this thread and argue
         why the fix needs backporting and how long it will take.
-      * All issues accepted for backporting should be marked with {{ release_version }}
+      * All issues accepted for backporting should be marked with {{ release_version_jira }}
         in JIRA, and issues that should delay the release must be marked as Blocker
       * All patches that are intended for the branch should first be committed
         to the unstable branch, merged into the stable branch, and then into
         the current release branch.
-      * Only Jira issues with Fix version {{ release_version }} and priority "Blocker" will delay
+      * Only Jira issues with Fix version {{ release_version_jira }} and priority "Blocker" will delay
         a release candidate build.
       ----
     types:
     - bugfix
+  - !Todo
+    id: dependency_updates_changes
+    title: Add dependency updates to CHANGES.txt
+    description: Bulk add all 'solrbot' dependency updates since last release
+    depends: clean_git_checkout
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: We call out to a helper script that modifies CHANGES.txt, and then commit it.
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        stdout: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addDepsToChanges.py --user solrbot --version {{ release_version }}
+        tee: true
+      - !Command
+        cmd: "{{ editor }} solr/CHANGES.txt"
+        comment: |
+          Verify that the modifications in CHANGES.txt under the 'Dependency Upgrades' are ok.
+          Look for duplicates, especially when a committer has manually added a similar entry for the same upgrade.
+        stdout: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add dependency updates to CHANGES for {{ release_version }}"  && git push
+        logfile: dependency-changes.log
   - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
@@ -613,7 +699,7 @@ groups:
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
-      NOTE: Do not add every single JIRA issue, but distill the Release note into important changes!
+      NOTE: Do not add every single JIRA issue, but distill the release notes into important changes!
     links:
     - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
@@ -625,7 +711,7 @@ groups:
       {% if release_type == 'major' -%}
       . Change name of version `main ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
       {%- endif %}
-      . Create a new (unreleased) version `{{ get_next_version }}`
+      . Create a new (unreleased) version `{{ release_version_major }}.{{ release_version_minor + 1 }}`
     types:
     - major
     - minor
@@ -637,7 +723,7 @@ groups:
     description: |-
       To make sure a new release is not announced before the reference guide is complete, add a new
       Blocker JIRA issue for version {{ release_version }} with subject
-      "Complete Major changes and Upgrade Notes in RefGudie for {{ release_version }}".
+      "Complete Major changes and Upgrade Notes in RefGuide for {{ release_version }}".
       Note that this does not block the RC and voting process, but will block announcing the release.
     types:
     - major
@@ -749,7 +835,7 @@ groups:
         cmd: git pull --ff-only
         tee: true
       - !Command
-        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }} --gpg-pass-noprompt
+        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }} --mf-username {{ gpg.apache_id }} --sign {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }} --gpg-pass-noprompt
         comment: "Using gpg command for signing."
         logfile: build_rc.log
         tee: true
@@ -838,13 +924,15 @@ groups:
       python3 -u dev-tools/scripts/smokeTestRelease.py \
       {{ release_candidate_location }}
 
-      You can build a release-candidate of the official docker image using the following command:
+      You can build a release-candidate of the official docker images (full & slim) using the following command:
 
-      DIST_BASE={{ dist_url_base }} && \
-        RC_FOLDER={{ release_candidate_rc_folder }} && \
-        docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official \
-        --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}.tgz \
-        -t solr-rc:{{ release_version }}-{{ rc_number }}
+      SOLR_DOWNLOAD_SERVER={{ release_candidate_location }}/solr && \
+        docker build $SOLR_DOWNLOAD_SERVER/{{ release_version }}/docker/Dockerfile.official-full \
+          --build-arg SOLR_DOWNLOAD_SERVER=$SOLR_DOWNLOAD_SERVER \
+          -t solr-rc:{{ release_version }}-{{ rc_number }} && \
+        docker build $SOLR_DOWNLOAD_SERVER/{{ release_version }}/docker/Dockerfile.official-slim \
+          --build-arg SOLR_DOWNLOAD_SERVER=$SOLR_DOWNLOAD_SERVER \
+          -t solr-rc:{{ release_version }}-{{ rc_number }}-slim
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
@@ -976,7 +1064,7 @@ groups:
       commands_text: This will remove maven and docker artifacts so they do not end up in the Distribution Directory
       commands:
       - !Command
-        cmd: svn rm -m "Delete the solr maven and docker artifacts"  {{ dist_stage_url }}/solr/maven  {{ dist_stage_url }}/solr/docker
+        cmd: svn rm -m "Delete the solr maven and docker artifacts"  {{ dist_stage_url }}/solr/{{ release_version }}/maven  {{ dist_stage_url }}/solr/{{ release_version }}/docker
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
@@ -993,7 +1081,7 @@ groups:
       commands_text: This will move the new release artifacts from staging repo to the release repo
       commands:
       - !Command
-        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/solr  {{ dist_release_url }}/solr/{{ release_version }}
+        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/solr/{{ release_version }}  {{ dist_release_url }}/solr/{{ release_version }}
         logfile: svn_mv_solr.log
         tee: true
       - !Command
@@ -1032,19 +1120,29 @@ groups:
           comment: Checkout the most recent main version
           logfile: solr_docker_git_checkout.log
         - !Command
-          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', 'docker', 'Dockerfile.official'] | path_join }} {{ docker_version }}/Dockerfile"
+          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', release_version, 'docker', 'Dockerfile.official-full'] | path_join }} {{ docker_version }}/Dockerfile"
           cwd: solr-docker
-          comment: Add the new Dockerfile to the repo
-          logfile: solr_docker_add_dockerfile.log
+          comment: Add the new full distribution Dockerfile to the repo
+          logfile: solr_docker_add_dockerfile_full.log
         - !Command
-          cmd: 'git add {{ docker_version }}/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
+          cmd: "mkdir -p {{ docker_version }}-slim && cp {{ [dist_file_path, dist_folder, 'solr', release_version, 'docker', 'Dockerfile.official-slim'] | path_join }} {{ docker_version }}-slim/Dockerfile"
+          cwd: solr-docker
+          comment: Add the new slim distribution Dockerfile to the repo
+          logfile: solr_docker_add_dockerfile_slim.log
+        - !Command
+          cmd: "{% if docker_version_to_remove %}rm -rf {{ docker_version_to_remove }} {{ docker_version_to_remove }}-slim{% else %}echo Nothing to delete{% endif %}"
+          cwd: solr-docker
+          comment: "{% if docker_version_to_remove %}Mark docker image version {{ docker_version_to_remove }} as not supported{% else %}N/A - No docker versions to delete for this release{% endif %}"
+          logfile: solr_remove_old_docker_images.log
+        - !Command
+          cmd: 'git add . && git commit -m "Apache Solr release {{ release_version }}"'
           cwd: solr-docker
           comment: Commit the new Dockerfile
           logfile: solr_docker_commit.log
         - !Command
           cmd: git show HEAD
           cwd: solr-docker
-          comment: Check that the commit look correct. Only one Dockerfile should be added or updated.
+          comment: Check that the commit looks correct. Only two Dockerfiles (full and slim) should be added or updated.
           logfile: solr_docker_check_commit.log
           tee: true
         - !Command
@@ -1065,7 +1163,7 @@ groups:
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
         - !Command
-          cmd: bash dev-tools/scripts/upload-maven.sh -u {{ gpg.apache_id }}  -v {{ release_version }} -c {{ git_sha }} -d "{{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}"
+          cmd: bash dev-tools/scripts/upload-maven.sh -u {{ gpg.apache_id }}  -v {{ release_version }} -c {{ git_sha }} -d "{{ [dist_file_path, dist_folder, 'solr', release_version, 'maven'] | path_join }}"
           tee: true
           logfile: publish_solr_maven.log
     post_description: The artifacts are not published yet, please proceed with the next step to actually publish!
@@ -1300,6 +1398,10 @@ groups:
       Edit a news text for the Solr website. This text will be the basis for the release announcement email later.
       This step will open an editor with a template. You will need to copy/paste the final release announcement text
       from the Wiki page and format it as Markdown.
+
+      If the created file contains `yyyy-mm-dd`, then quit the release wizard and run it again.
+      The release wizard must be re-started (not initialized again, you want to keep all of the state),
+      in order for the release date variable to be populated.
     function: prepare_announce_solr
     commands: !Commands
       root_folder: '{{ git_website_folder }}'
@@ -1363,7 +1465,7 @@ groups:
         cmd: git checkout main && git status
         stdout: true
       - !Command
-        cmd: git diff
+        cmd: git diff origin/main
         redirect: "{{ [release_folder, 'website.diff'] | path_join }}"
         comment: Make a diff of all edits. Will open in next step
       - !Command
@@ -1410,11 +1512,11 @@ groups:
 
       Verify on https://solr.apache.org that the site is OK.
 
-      You can now also verify that https://solr.apache.org/api/solr-core/ redirects to the latest version
+      You can now also verify that https://solr.apache.org/api/core/ redirects to the latest version
     links:
       - https://ci2.apache.org/#/builders/3
       - https://solr.apache.org
-      - https://solr.apache.org/api/solr-core/
+      - https://solr.apache.org/api/core/
   - !Todo
     id: update_doap
     title: Update the DOAP file
@@ -1487,7 +1589,7 @@ groups:
     For feature releases, your announcement should describe the main features included 
     in the release. *Send the announce as Plain-text email, not HTML.*
 
-    This step will generate email templates based on the news files you edited earler for the website.
+    This step will generate email templates based on the news files you edited earlier for the website.
     Do any last-minute necessary edits to the text as you copy it over to the email.
   todos:
   - !Todo
@@ -1496,38 +1598,40 @@ groups:
     description: |
       (( template=announce_solr_mail ))
   - !Todo
-    id: setup_pgp_mail
-    title: Setup your mail client for PGP
-    description: |
-      The announce mail to `announce@apache.org` should be cryptographically signed.
-      Make sure you have a PGP enabled email client with your apache key installed.
-      There are plugins for popular email programs, as well as browser plugins for webmail.
-      See links for help on how to setup your email client for PGP.
-
-      If you prefer to sign the announcements manually rather than using a plugin,
-      you can do so from the command line and then copy the output into your mail program.
-
-      gpg --output - --clearsign solr_announce.txt
-    links:
-    - https://www.openpgp.org/software/
-    - https://ssd.eff.org/en/module/how-use-pgp-mac-os-x
-    - https://ssd.eff.org/en/module/how-use-pgp-linux
-    - https://ssd.eff.org/en/module/how-use-pgp-windows
-    - https://www.openpgp.org/software/mailvelope/
-  - !Todo
     id: announce_solr_sig
     title: Announce the Solr release (announce@a.o)
     description: |
-      (( template=announce_solr_sign_mail ))
+      (( template=announce_solr_announce_mail ))
+    links:
+      - https://www.apache.org/legal/release-policy.html#release-announcements
+      - https://www.gnupg.org/gph/en/manual/x135.html
   - !Todo
     id: add_to_wikipedia
     title: Add the new version to Wikipedia
     description: |
-      Go to Wikipedia and edit the page to include the new release.
-      Major versions should have a small new paragraph under 'History'.
-      If you know other languages than English, edit those as well.
+      Go to Wikidata and edit the page to include the new release.
+
+      - Scroll down to the "software version identifier" section.
+      - Click "add value"
+      - Type {{ release_version }}
+      - Add Qualifiers
+        - Click "add qualifier"
+        - Choose the qualifier publication date
+        - Input the correct value
+      - Add a reference
+        - Click "add reference"
+        - in "Property", type "reference url", and click the auto-complete box.
+        - For the value, go to the solr news page, https://solr.apache.org/news.html, and get the link to the Solr {{ release_version }} section.
+      - Set this as the latest release
+        - To the left of the version number text box there should be an up arrow, a circle and a down arrow.
+          Click these and select "Preferred rank"
+      - Hit publish next to the first text box.
+      - Make sure the previous release is no longer "latest"
+        - Click "edit" on the previous version that is highlighted in green.
+        - Click the ranking next to the version name, and change it from "Preferred rank" to "Normal rank"
+        - Click "publish" for this past release
     links:
-    - https://en.wikipedia.org/wiki/Apache_Solr
+    - https://www.wikidata.org/wiki/Q2858103
   - !Todo
     id: add_to_apache_reporter
     title: Add the new version to the Apache Release Reporter
@@ -1536,6 +1640,7 @@ groups:
       Fill in the same date that you used for the release in previous steps.
       Do not use a product name prefix for the version, as this is the main release of the Solr PMC.
       Just use the version of this release: {{ release_version }}
+      Note: you have to be a member of the Solr PMC to be able to complete this step.
     links:
       - https://reporter.apache.org/addrelease.html?solr
 - !TodoGroup
@@ -1661,7 +1766,7 @@ groups:
     description: |-
       Go to the JIRA "Manage Versions" Administration pages.
 
-      . Next to version {{ release_version }}, click the gear pop-up menu icon and choose "Release"
+      . Next to version {{ release_version_jira }}, click the gear pop-up menu icon and choose "Release"
       . Fill in the release date ({{ release_date | formatdate }})
       . It will give the option of transitioning issues marked fix-for the released version to the 
         next version, but do not do this as it will send an email for each issue :)
@@ -1674,26 +1779,26 @@ groups:
       Go to JIRA search to find all issues that were fixed in the release
       you just made, whose Status is Resolved.
 
-      . Go to https://issues.apache.org/jira/issues/?jql=project+in+(SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
+      . Go to https://issues.apache.org/jira/issues/?jql=project+in+(SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version_jira }}
       . Do a bulk change (Under Tools... menu) to close all of these issues. This is a workflow transition task
       . In the 'Comment' box type `Closing after the {{ release_version }} release`
       . *Uncheck* the box that says `Send mail for this update`
     links:
-    - https://issues.apache.org/jira/issues/?jql=project+in+(SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
+    - https://issues.apache.org/jira/issues/?jql=project+in+(SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version_jira }}
   - !Todo
     id: jira_change_unresolved
     title: Remove fixVersion for unresolved
     description: |-
-      Do another JIRA search to find all issues with Resolution=_Unresolved_ and fixVersion=_{{ release_version }}_.
+      Do another JIRA search to find all issues with Resolution=_Unresolved_ and fixVersion=_{{ release_version_jira }}_.
 
-      . Open https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+      . Open https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version_jira }}
       . In the `Tools` menu, start a bulk change - operation="Edit issues"
       . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
-      . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version }}
+      . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version_jira }}
       . On the bottom of the form, uncheck the box that says `Send mail for this update`
       . Click `Next`, review the changes and click `Confirm`
     links:
-    - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+    - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version_jira }}
   - !Todo
     id: jira_clear_security
     title: Clear Security Level of Public Solr JIRA Issues
@@ -1744,18 +1849,11 @@ groups:
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |
         Run these commands to delete proposed versions from distribution directory.
-        Note, as long as we have some releases (7.x, 8.x) in Lucene dist repo and other
-        releases (9.0 ->) in the Solr dist repo, we may need to delete two places.
-
+        
         WARNING: Validate that the proposal is correct!
       commands:
       - !Command
         cmd: |
-          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
-        logfile: svn-rm-solr.log
-        comment: Delete from Lucene dist area
-      - !Command
-        cmd: |
-          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/{{ ver }}{% endfor %}
+          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-solr.log
         comment: Delete from new Solr dist area

@@ -20,7 +20,6 @@ package org.apache.solr.handler.designer;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.update.processor.ParseDateFieldUpdateProcessorFactory.validateFormatter;
 
-import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
@@ -42,7 +41,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.LocaleUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -57,6 +55,7 @@ import org.apache.solr.update.processor.ParseBooleanFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseDateFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseDoubleFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseLongFieldUpdateProcessorFactory;
+import org.apache.solr.util.LocaleUtils;
 
 // Just a quick hack to flush out the design, more intelligence is needed
 public class DefaultSchemaSuggester implements SchemaSuggester {
@@ -164,7 +163,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     Locale locale = Locale.ROOT;
 
     boolean isMV = isMultiValued(sampleValues);
-    String fieldTypeName = guessFieldType(fieldName, sampleValues, schema, isMV, locale);
+    String fieldTypeName = guessFieldType(sampleValues, isMV, locale);
     FieldType fieldType = schema.getFieldTypeByName(fieldTypeName);
     if (fieldType == null) {
       // TODO: construct this field type on-the-fly ...
@@ -223,12 +222,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     return mapByField;
   }
 
-  protected String guessFieldType(
-      String fieldName,
-      final List<Object> sampleValues,
-      IndexSchema schema,
-      boolean isMV,
-      Locale locale) {
+  protected String guessFieldType(final List<Object> sampleValues, boolean isMV, Locale locale) {
     String type = null;
 
     // flatten values to a single stream for easier analysis; also remove nulls
@@ -276,11 +270,10 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     int maxLength = -1;
     int maxTerms = -1;
     for (Object next : values) {
-      if (!(next instanceof String)) {
+      if (!(next instanceof String cs)) {
         return false;
       }
 
-      String cs = (String) next;
       int len = cs.length();
       if (len > maxLength) {
         maxLength = len;
@@ -298,7 +291,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
         || maxTerms > 12
         || (maxTerms > 4
             && values.size() >= 10
-            && ((float) Sets.newHashSet(values).size() / values.size()) > 0.9f));
+            && ((float) Set.of(values).size() / values.size()) > 0.9f));
   }
 
   protected String isFloatOrDouble(List<Object> values, Locale locale) {
@@ -363,7 +356,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     }
 
     // if all values are less than some smallish threshold, then it's likely this field holds small
-    // numbers but be very conservative here as it's simply an optimization and we can always fall
+    // numbers but be very conservative here as it's simply an optimization, and we can always fall
     // back to long
     return maxLong < 10000 ? "pint" : "plong";
   }

@@ -16,16 +16,13 @@
  */
 package org.apache.solr.servlet;
 
-import static org.apache.solr.security.AuditEvent.EventType;
 import static org.apache.solr.servlet.ServletUtils.closeShield;
 import static org.apache.solr.servlet.ServletUtils.configExcludes;
 import static org.apache.solr.servlet.ServletUtils.excludedPath;
+import static org.apache.solr.util.tracing.TraceUtils.getSpan;
+import static org.apache.solr.util.tracing.TraceUtils.setTracer;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.tag.Tags;
-import io.opentracing.util.GlobalTracer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -36,9 +33,8 @@ import java.util.regex.Pattern;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.client.HttpClient;
@@ -49,14 +45,16 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.logging.MDCSnapshot;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.servlet.CoreContainerProvider.ServiceHolder;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,16 +68,10 @@ import org.slf4j.LoggerFactory;
 // servlets that are more focused in scope. This should become possible now that we have a
 // ServletContextListener for startup/shutdown of CoreContainer that sets up a service from which
 // things like CoreContainer can be requested. (or better yet injected)
-public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
+public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String ATTR_TRACING_SPAN = Span.class.getName();
-  public static final String ATTR_TRACING_TRACER = Tracer.class.getName();
-  public static final String ATTR_RATELIMIT_MANAGER = RateLimitManager.class.getName();
 
-  // TODO: see if we can get rid of the holder here (Servlet spec actually guarantees
-  // ContextListeners run before filter init, but JettySolrRunner that we use for tests is
-  // complicated)
-  private ServiceHolder coreService;
+  private CoreContainerProvider containerProvider;
 
   protected final CountDownLatch init = new CountDownLatch(1);
 
@@ -94,11 +86,11 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   private List<Pattern> excludePatterns;
 
-  public final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
+  public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
   public HttpClient getHttpClient() {
     try {
-      return coreService.getService().getHttpClient();
+      return containerProvider.getHttpClient();
     } catch (UnavailableException e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Internal Http Client Unavailable, startup may have failed");
@@ -140,14 +132,9 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   @Override
   public void init(FilterConfig config) throws ServletException {
     try {
-      coreService = CoreContainerProvider.serviceForContext(config.getServletContext());
+      containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
       boolean isCoordinator =
-          NodeRoles.MODE_ON.equals(
-              coreService
-                  .getService()
-                  .getCoreContainer()
-                  .nodeRoles
-                  .getRoleMode(NodeRoles.Role.COORDINATOR));
+          NodeRoles.MODE_ON.equals(getCores().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
       solrCallFactory =
           isCoordinator ? new CoordinatorHttpSolrCall.Factory() : new HttpSolrCallFactory() {};
       if (log.isTraceEnabled()) {
@@ -155,13 +142,9 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       }
 
       configExcludes(this, config.getInitParameter("excludePatterns"));
-    } catch (InterruptedException e) {
-      throw new ServletException("Interrupted while fetching core service");
-
     } catch (Throwable t) {
       // catch this so our filter still works
-      log.error("Could not start Dispatch Filter.");
-      SolrCore.log(t);
+      log.error("Could not start Dispatch Filter.", t);
       if (t instanceof Error) {
         throw (Error) t;
       }
@@ -171,61 +154,53 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     }
   }
 
+  /** The CoreContainer. It's ready for use, albeit could shut down whenever. Never null. */
   public CoreContainer getCores() throws UnavailableException {
-    return coreService.getService().getCoreContainer();
-  }
-
-  @Override
-  public void destroy() {
-    // CoreService shuts itself down as a ContextListener. The filter does not own anything with a
-    // lifecycle anymore! Yay!
+    return containerProvider.getCoreContainer();
   }
 
   @Override
   @SuppressForbidden(
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+  public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws IOException, ServletException {
+    if (excludedPath(excludePatterns, request, response, chain)) {
+      return;
+    }
+
     try (var mdcSnapshot = MDCSnapshot.create()) {
       assert null != mdcSnapshot; // prevent compiler warning
       MDCLoggingContext.reset();
       MDCLoggingContext.setNode(getCores());
       Thread.currentThread().setContextClassLoader(getCores().getResourceLoader().getClassLoader());
 
-      doFilter(request, response, chain, false);
+      doFilterRetry(closeShield(request), closeShield(response), chain, false);
     }
   }
 
-  public void doFilter(
-      ServletRequest _request, ServletResponse _response, FilterChain chain, boolean retry)
+  protected void doFilterRetry(
+      HttpServletRequest request, HttpServletResponse response, FilterChain chain, boolean retry)
       throws IOException, ServletException {
-    if (!(_request instanceof HttpServletRequest)) return;
-    HttpServletRequest request = closeShield((HttpServletRequest) _request, retry);
-    HttpServletResponse response = closeShield((HttpServletResponse) _response, retry);
-
-    if (excludedPath(excludePatterns, request, response, chain)) {
-      return;
+    setTracer(request, getCores().getTracer());
+    RateLimitManager rateLimitManager = containerProvider.getRateLimitManager();
+    try {
+      ServletUtils.rateLimitRequest(
+          rateLimitManager,
+          request,
+          response,
+          () -> {
+            try {
+              dispatch(chain, request, response, retry);
+            } catch (IOException | ServletException | SolrAuthenticationException e) {
+              throw new ExceptionWhileTracing(e);
+            }
+          });
+    } finally {
+      ServletUtils.consumeInputFully(request, response);
+      SolrRequestInfo.reset();
+      SolrRequestParsers.cleanupMultipartFiles(request);
     }
-    Tracer t = getCores() == null ? GlobalTracer.get() : getCores().getTracer();
-    request.setAttribute(Tracer.class.getName(), t);
-    RateLimitManager rateLimitManager = coreService.getService().getRateLimitManager();
-    request.setAttribute(RateLimitManager.class.getName(), rateLimitManager);
-    ServletUtils.rateLimitRequest(
-        request,
-        response,
-        () -> {
-          try {
-            dispatch(chain, request, response, retry);
-          } catch (IOException | ServletException | SolrAuthenticationException e) {
-            throw new ExceptionWhileTracing(e);
-          }
-        },
-        true);
-  }
-
-  private static Span getSpan(HttpServletRequest req) {
-    return (Span) req.getAttribute(ATTR_TRACING_SPAN);
   }
 
   private void dispatch(
@@ -238,11 +213,18 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       request = wrappedRequest.get();
     }
 
+    var span = getSpan(request);
     if (getCores().getAuthenticationPlugin() != null) {
       if (log.isDebugEnabled()) {
         log.debug("User principal: {}", request.getUserPrincipal());
       }
-      getSpan(request).setTag(Tags.DB_USER, String.valueOf(request.getUserPrincipal()));
+      final String principalName;
+      if (request.getUserPrincipal() != null) {
+        principalName = request.getUserPrincipal().getName();
+      } else {
+        principalName = null;
+      }
+      TraceUtils.setUser(span, String.valueOf(principalName));
     }
 
     HttpSolrCall call = getHttpSolrCall(request, response, retry);
@@ -251,15 +233,15 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       Action result = call.call();
       switch (result) {
         case PASSTHROUGH:
-          getSpan(request).log("SolrDispatchFilter PASSTHROUGH");
+          span.addEvent("SolrDispatchFilter PASSTHROUGH");
           chain.doFilter(request, response);
           break;
         case RETRY:
-          getSpan(request).log("SolrDispatchFilter RETRY");
-          doFilter(request, response, chain, true); // RECURSION
+          span.addEvent("SolrDispatchFilter RETRY");
+          doFilterRetry(request, response, chain, true); // RECURSION
           break;
         case FORWARD:
-          getSpan(request).log("SolrDispatchFilter FORWARD");
+          span.addEvent("SolrDispatchFilter FORWARD");
           request.getRequestDispatcher(call.getPath()).forward(request, response);
           break;
         case ADMIN:
@@ -343,7 +325,12 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         // trivial impl here to keep existing code happy while making the flow clearer. Chain will
         // be called after this method completes. Eventually auth all moves to its own filter
         // (hopefully). Most auth plugins simply return true after calling this anyway, so they
-        // obviously don't care. Kerberos plugins seem to mostly use it to satisfy the api of a
+        // obviously don't care.
+        //
+        // The Hadoop Auth Plugin was removed in SOLR-17540, however leaving the below reference
+        // for future readers, as there may be an option to simplify this logic.
+        //
+        // Kerberos plugins seem to mostly use it to satisfy the api of a
         // wrapped instance of javax.servlet.Filter and neither of those seem to be doing anything
         // fancy with the filter chain, so this would seem to be a hack brought on by the fact that
         // our auth code has been forced to be code within dispatch filter, rather than being a
@@ -401,7 +388,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   @VisibleForTesting
   void replaceRateLimitManager(RateLimitManager rateLimitManager) {
-    coreService.getService().setRateLimitManager(rateLimitManager);
+    containerProvider.setRateLimitManager(rateLimitManager);
   }
 
   /** internal API */

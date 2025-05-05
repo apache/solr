@@ -41,7 +41,7 @@ This is because many of the available options are only applied during the indexi
 Solr has no way to implement the desired change without reindexing the data.
 
 To understand the general reason why reindexing is ever required, it's helpful to understand the relationship between Solr's schema and the underlying Lucene index.
-Lucene does not use a schema, schemas are a Solr-only concept.
+Lucene does not use a schema, schema is a Solr-only concept.
 When you change Solr's schema, the Lucene index is not modified in any way.
 
 This means that there are many types of schema changes that cannot be reflected in the index simply by modifying Solr's schema.
@@ -95,7 +95,7 @@ plan to reindex your documents to avoid unintended behavior.
 When upgrading between major versions (for example, from a 7.x release to 8.x), a best practice is to always reindex your data.
 The reason for this is that subtle changes may occur in default field type definitions or the underlying code.
 
-Lucene works hard to insure one major version back-compatability, thus Solr 8x functions with indexes created with Solr 7x.
+Lucene works hard to insure one major version back-compatibility, thus Solr 8x functions with indexes created with Solr 7x.
 However, given that this guarantee does _not_ apply to Solr X-2 (Solr 6x in this example) we still recommend completely reindexing when moving from Solr X-1 to Solr X.
 
 [NOTE]

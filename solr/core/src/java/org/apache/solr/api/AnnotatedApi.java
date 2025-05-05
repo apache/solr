@@ -34,8 +34,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
@@ -216,7 +215,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     }
 
     for (CommandOperation cmd : cmds) {
-      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.log("Command: " + cmd.name));
+      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.addEvent("Command: " + cmd.name));
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 
@@ -262,8 +261,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     }
 
     private void readPayloadType(Type t) {
-      if (t instanceof ParameterizedType) {
-        ParameterizedType typ = (ParameterizedType) t;
+      if (t instanceof ParameterizedType typ) {
         if (typ.getRawType() == PayloadObj.class) {
           isWrappedInPayloadObj = true;
           if (typ.getActualTypeArguments().length == 0) {
@@ -272,8 +270,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
             return;
           }
           Type t1 = typ.getActualTypeArguments()[0];
-          if (t1 instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) t1;
+          if (t1 instanceof ParameterizedType parameterizedType) {
             parameterClass = (Class<?>) parameterizedType.getRawType();
           } else {
             parameterClass = (Class<?>) typ.getActualTypeArguments()[0];
@@ -339,31 +336,21 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder()
-          .append(command)
-          .append(method)
-          .append(obj)
-          .append(paramsCount)
-          .append(parameterClass)
-          .append(isWrappedInPayloadObj)
-          .toHashCode();
+      return Objects.hash(command, method, obj, paramsCount, parameterClass, isWrappedInPayloadObj);
     }
 
     @Override
     public boolean equals(Object rhs) {
       if (null == rhs) return false;
       if (this == rhs) return true;
-      if (!(rhs instanceof Cmd)) return false;
+      if (!(rhs instanceof Cmd rhsCast)) return false;
 
-      final Cmd rhsCast = (Cmd) rhs;
-      return new EqualsBuilder()
-          .append(command, rhsCast.command)
-          .append(method, rhsCast.method)
-          .append(obj, rhsCast.obj)
-          .append(paramsCount, rhsCast.paramsCount)
-          .append(parameterClass, rhsCast.parameterClass)
-          .append(isWrappedInPayloadObj, rhsCast.isWrappedInPayloadObj)
-          .isEquals();
+      return Objects.equals(command, rhsCast.command)
+          && Objects.equals(method, rhsCast.method)
+          && Objects.equals(obj, rhsCast.obj)
+          && paramsCount == rhsCast.paramsCount
+          && Objects.equals(parameterClass, rhsCast.parameterClass)
+          && isWrappedInPayloadObj == rhsCast.isWrappedInPayloadObj;
     }
 
     private void checkForErrorInPayload(CommandOperation cmd) {
@@ -383,8 +370,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
       t = types[2]; // (SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<PluginMeta>)
     if (types.length == 1) t = types[0]; // (PayloadObj<PluginMeta>)
     if (t != null) {
-      if (t instanceof ParameterizedType) {
-        ParameterizedType typ = (ParameterizedType) t;
+      if (t instanceof ParameterizedType typ) {
         if (typ.getRawType() == PayloadObj.class) {
           t = typ.getActualTypeArguments()[0];
         }

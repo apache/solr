@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -255,7 +254,7 @@ public class StatsField {
       SchemaField sf = null;
       ValueSource vs = null;
 
-      if (StringUtils.isBlank(parserName)) {
+      if (StrUtils.isBlank(parserName)) {
 
         // basic request for field stats
         sf = searcher.getSchema().getField(localParams.get(QueryParsing.V));
@@ -406,8 +405,7 @@ public class StatsField {
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
       for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
+        if (!(o instanceof QParser qp)) continue;
         try {
           excludeSet.put(qp.getQuery(), Boolean.TRUE);
         } catch (SyntaxError e) {
@@ -665,6 +663,7 @@ public class StatsField {
       this.regwidth = regwidth;
       this.hasher = hasher;
     }
+
     /**
      * Creates an HllOptions based on the (local) params specified (if appropriate).
      *
@@ -679,7 +678,7 @@ public class StatsField {
         throws SolrException {
 
       String cardinalityOpt = localParams.get(Stat.cardinality.name());
-      if (StringUtils.isBlank(cardinalityOpt)) {
+      if (StrUtils.isBlank(cardinalityOpt)) {
         return null;
       }
 
@@ -779,18 +778,21 @@ public class StatsField {
       // if we're still here, then we need an HLL...
       return new HllOptions(log2m, regwidth, hasher);
     }
+
     /**
      * @see HLL
      */
     public int getLog2m() {
       return log2m;
     }
+
     /**
      * @see HLL
      */
     public int getRegwidth() {
       return regwidth;
     }
+
     /** May be null if user has indicated that field values are pre-hashed */
     public HashFunction getHasher() {
       return hasher;

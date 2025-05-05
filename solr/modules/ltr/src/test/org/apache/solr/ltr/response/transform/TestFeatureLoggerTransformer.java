@@ -122,6 +122,110 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
         "{\"weights\":{\"featureC1\":5.0, \"featureC2\":25.0}}");
   }
 
+  protected void loadFeaturesAndModelsWithNulls() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features_with_missing_branch.json");
+    loadModels("multipleadditivetreesmodel_with_missing_branch.json");
+    loadModels("multipleadditivetreesmodel_with_missing_branch_for_interleaving.json");
+  }
+
+  @Test
+  public void featureTransformer_shouldWorkInSparseFormat_withNulls() throws Exception {
+    loadFeaturesAndModelsWithNulls();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=sparse]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3}");
+
+    String[] expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0"
+        };
+
+    int[] expectedIds = new int[] {7, 1, 2, 3, 4, 5, 6, 8};
+
+    String[] tests = new String[17];
+    tests[0] = "/response/numFound/==8";
+    for (int i = 1; i <= 8; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedIds[(i - 1)] + "\"";
+      tests[i + 8] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+
+    // user_device has a different default value (NaN), if zero we would like to see the zero value
+    final SolrQuery query2 = new SolrQuery();
+    query2.setQuery("*:*");
+    query2.add("fl", "*, score,features:[fv format=sparse]");
+    query2.add("rows", "10");
+    query2.add("debugQuery", "true");
+    query2.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+
+    expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+        };
+
+    expectedIds = new int[] {7, 1, 2, 3, 4, 5, 6, 8};
+
+    tests = new String[17];
+    tests[0] = "/response/numFound/==8";
+    for (int i = 1; i <= 8; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedIds[(i - 1)] + "\"";
+      tests[i + 8] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query2.toQueryString(), tests);
+  }
+
+  @Test
+  public void featureTransformer_shouldWorkInDenseFormat_withNulls() throws Exception {
+    loadFeaturesAndModelsWithNulls();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=dense]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3}");
+
+    String[] expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN"
+        };
+
+    String[] tests = new String[17];
+    tests[0] = "/response/numFound/==8";
+    for (int i = 1; i <= 8; i++) {
+      tests[i + 8] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
   @Test
   public void interleaving_featureTransformer_shouldWorkInSparseFormat() throws Exception {
     TeamDraftInterleaving.setRANDOM(
@@ -130,7 +234,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=sparse]");
+    query.add("fl", "*, score,features:[fv format=sparse logAll=true]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
@@ -175,7 +279,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=dense]");
+    query.add("fl", "*, score,features:[fv format=dense logAll=true]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
@@ -201,6 +305,99 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
           "featureA1\\=0.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=1.0\\,featureB2\\=0.0"
         };
     int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
+
+    String[] tests = new String[11];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 5] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleaving_featureTransformer_shouldWorkInSparseFormat_withNulls()
+      throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101011)); // Random Boolean Choices Generation from Seed: [0,0,1]
+    loadFeaturesAndModelsWithNulls();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=sparse]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add(
+        "rq",
+        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5' efi.user_device=0}");
+
+    /*
+    Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-45)
+    ModelARerankedList = [7,1,3,4,8]
+    ModelBRerankedList = [1,3,4,8,7]
+
+    Random Boolean Choices Generation from Seed: [0,0,1]
+    */
+    String[] expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 4, 8};
+
+    String[] tests = new String[11];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 5] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleaving_featureTransformer_shouldWorkInDenseFormat_withNulls() throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101011)); // Random Boolean Choices Generation from Seed: [0,0,1]
+    loadFeaturesAndModelsWithNulls();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=dense]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
+
+    /*
+    Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-45)
+    ModelARerankedList = [7,1,3,4,8]
+    ModelBRerankedList = [1,3,4,8,7]
+
+    Random Boolean Choices Generation from Seed: [0,0,1]
+    */
+    String[] expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 4, 8};
 
     String[] tests = new String[11];
     tests[0] = "/response/numFound/==5";
@@ -332,7 +529,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=sparse]");
+    query.add("fl", "*, score,features:[fv format=sparse logAll=true]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8

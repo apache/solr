@@ -17,35 +17,28 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.solr.common.SolrException;
+import org.apache.solr.client.api.model.DeleteSnapshotResponse;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.CoreSnapshot;
+import org.apache.solr.handler.api.V2ApiUtils;
 
 class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final SolrParams params = it.req.getParams();
-    String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
-    String cname = params.required().get(CoreAdminParams.CORE);
+    final String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
+    final String coreName = params.required().get(CoreAdminParams.CORE);
 
-    CoreContainer cc = it.handler.getCoreContainer();
-    SolrCore core = cc.getCore(cname);
-    if (core == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
-    }
+    final CoreContainer coreContainer = it.handler.getCoreContainer();
+    final CoreSnapshot coreSnapshotAPI =
+        new CoreSnapshot(it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
-    try {
-      core.deleteNamedSnapshot(commitName);
-      // Ideally we shouldn't need this. This is added since the RPC logic in
-      // OverseerCollectionMessageHandler can not provide the coreName as part of the result.
-      it.rsp.add(CoreAdminParams.CORE, core.getName());
-      it.rsp.add(CoreAdminParams.COMMIT_NAME, commitName);
-    } finally {
-      core.close();
-    }
+    final DeleteSnapshotResponse response =
+        coreSnapshotAPI.deleteSnapshot(coreName, commitName, null);
+
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
   }
 }

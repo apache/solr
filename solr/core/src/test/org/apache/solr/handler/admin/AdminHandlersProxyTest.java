@@ -20,9 +20,7 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.lucene.util.IOUtils;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -33,13 +31,12 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AdminHandlersProxyTest extends SolrCloudTestCase {
-  private CloseableHttpClient httpClient;
+  private HttpClient httpClient;
   private CloudSolrClient solrClient;
 
   @BeforeClass
@@ -52,23 +49,19 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClient = getCloudSolrClient(cluster);
-    solrClient.connect(1000, TimeUnit.MILLISECONDS);
-    httpClient = (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
-  }
-
-  @After
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-    IOUtils.close(solrClient, httpClient);
+    solrClient = cluster.getSolrClient();
+    httpClient = ((CloudLegacySolrClient) solrClient).getHttpClient();
   }
 
   @Test
   public void proxySystemInfoHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            "/admin/info/system",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     SimpleSolrResponse rsp = req.process(solrClient, null);
     NamedList<Object> nl = rsp.getResponse();
     assertEquals(3, nl.size());
@@ -82,7 +75,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
     SimpleSolrResponse rsp = req.process(solrClient, null);
     NamedList<Object> nl = rsp.getResponse();
     assertEquals(3, nl.size());
@@ -96,7 +90,11 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     MapSolrParams params =
         new MapSolrParams(Collections.singletonMap("nodes", "example.com:1234_solr"));
     GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            "/admin/info/system",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     SimpleSolrResponse rsp = req.process(solrClient, null);
   }
 
@@ -108,7 +106,11 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
         node -> {
           MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", node));
           GenericSolrRequest req =
-              new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET,
+                  "/admin/info/system",
+                  SolrRequest.SolrRequestType.ADMIN,
+                  params);
           SimpleSolrResponse rsp = null;
           try {
             rsp = req.process(solrClient, null);

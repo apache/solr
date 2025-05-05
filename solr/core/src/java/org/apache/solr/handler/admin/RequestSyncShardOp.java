@@ -89,7 +89,7 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Sync Failed");
         }
       } else {
-        SolrException.log(log, "Could not find core to call sync:" + cname);
+        log.error("Could not find core to call sync: {}", cname);
       }
     } finally {
       // no recoveryStrat close for now

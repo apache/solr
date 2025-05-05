@@ -187,7 +187,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         new ValueSourceParser() {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-            return new LongConstValueSource(Thread.currentThread().getId());
+            return new LongConstValueSource(Thread.currentThread().threadId());
           }
         });
     addParser(
@@ -336,18 +336,18 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new SumFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     alias("sum", "add");
-
+    addParser("vectorSimilarity", new VectorSimilaritySourceParser());
     addParser(
         "product",
         new ValueSourceParser() {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new ProductFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     alias("product", "mul");
@@ -541,12 +541,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
             String fieldName = fp.parseArg();
             SchemaField f = fp.getReq().getSchema().getField(fieldName);
-            if (!(f.getType() instanceof CurrencyFieldType)) {
+            if (!(f.getType() instanceof CurrencyFieldType ft)) {
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
                   "Currency function input must be the name of a CurrencyFieldType: " + fieldName);
             }
-            CurrencyFieldType ft = (CurrencyFieldType) f.getType();
             String code = fp.hasMoreArguments() ? fp.parseArg() : null;
             return ft.getConvertedValueSource(code, ft.getValueSource(f, fp));
           }
@@ -712,7 +711,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new MaxFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new MaxFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     addParser(
@@ -721,7 +720,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new MinFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new MinFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
 
@@ -954,6 +953,26 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         });
 
     addParser(
+        "isnan",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource vs = fp.parseValueSource();
+            return new SimpleBoolFunction(vs) {
+              @Override
+              protected String name() {
+                return "isnan";
+              }
+
+              @Override
+              protected boolean func(int doc, FunctionValues vals) throws IOException {
+                return Float.isNaN(vals.floatVal(doc));
+              }
+            };
+          }
+        });
+
+    addParser(
         "not",
         new ValueSourceParser() {
           @Override
@@ -1132,7 +1151,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new ConcatStringFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new ConcatStringFunction(sources.toArray(new ValueSource[0]));
           }
         });
 
@@ -1586,8 +1605,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof LongConstValueSource)) return false;
-      LongConstValueSource other = (LongConstValueSource) o;
+      if (!(o instanceof LongConstValueSource other)) return false;
       return this.constant == other.constant;
     }
 
@@ -1739,8 +1757,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
       @Override
       public boolean equals(Object o) {
-        if (!(o instanceof Function)) return false;
-        Function other = (Function) o;
+        if (!(o instanceof Function other)) return false;
         return this.a.equals(other.a) && this.b.equals(other.b);
       }
     }
@@ -1779,8 +1796,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof BoolConstValueSource)) return false;
-      BoolConstValueSource other = (BoolConstValueSource) o;
+      if (!(o instanceof BoolConstValueSource other)) return false;
       return this.constant == other.constant;
     }
 

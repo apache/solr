@@ -20,24 +20,36 @@
  * spotless and Google Java Format.
  */
 
-def resources = scriptResources(buildscript)
-
-configure(project(":solr").subprojects) { prj ->
+configure(allprojects) { prj ->
   plugins.withType(JavaPlugin) {
-    prj.apply plugin: 'com.diffplug.spotless'
+    prj.apply plugin: libs.plugins.diffplug.spotless.get().pluginId
 
-    spotless {
-      java {
-        toggleOffOn() // obviously, only to be used sparingly.
+    project.ext {
+      spotlessJavaSetup = (Action){
+        it.toggleOffOn() // obviously, only to be used sparingly.
         // TODO: Work out how to support multiple different header files (we have
         // classes in the codebase that have original headers). We currently use
         // Apache RAT to enforce headers so this is of lesser priority.
         //
-        // licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+        // it.licenseHeaderFile(file("${resources}/asl-header.txt"), '^(\\s*package)')
+        it.setLineEndings(Enum.valueOf(rootProject.buildscript.classLoader.loadClass("com.diffplug.spotless.LineEnding"), "UNIX"))
+        it.endWithNewline()
+        it.googleJavaFormat(libs.versions.google.javaformat.get())
 
-        lineEndings 'UNIX'
-        endWithNewline()
-        googleJavaFormat('1.15.0')
+        it.custom('Refuse wildcard imports', { line ->
+          // Wildcard imports can't be resolved by spotless itself.
+          // This will require the developer themselves to adhere to best practices.
+          if (line =~ /\nimport .*\*;/) {
+            throw new AssertionError("Do not use wildcard imports.  'spotlessApply' cannot resolve this issue.")
+          }
+          line
+        })
+      }
+    }
+
+    spotless {
+      java {
+        prj.ext.spotlessJavaSetup.execute(it)
 
         // Apply to all Java sources
         target "src/**/*.java"
@@ -53,22 +65,10 @@ configure(project(":solr").subprojects) { prj ->
               "src/java/org/apache/solr/parser/Token.java",
               "src/java/org/apache/solr/parser/TokenMgrError.java"
             break
-          case ":solr:modules:hdfs":
-            // Exclude Hadoop copied files to make upgrades easier
-            targetExclude "src/**/org/apache/hadoop/**"
-            break
           case ":solr:solr-ref-guide":
             // Apply to all example Java sources in the ref-guide
             target "modules/**/examples/*.java"
             break
-        }
-
-        custom 'Refuse wildcard imports', {
-          // Wildcard imports can't be resolved by spotless itself.
-          // This will require the developer themselves to adhere to best practices.
-          if (it =~ /\nimport .*\*;/) {
-            throw new AssertionError("Do not use wildcard imports.  'spotlessApply' cannot resolve this issue.")
-          }
         }
       }
     }
@@ -89,23 +89,20 @@ configure(project(":solr").subprojects) { prj ->
 
   // Emit a custom message about how to fix formatting errors.
   tasks.matching { task -> task.name == "spotlessJavaCheck" }.configureEach {
-    runToFixMessage.set("\nIMPORTANT: run the top-level './gradlew tidy' to format code automatically (see help/formatting.txt for more info).")
+    it.runToFixMessage.set("\nIMPORTANT: run the top-level './gradlew tidy' to format code automatically (see help/formatting.txt for more info).")
   }
 
-  // Add an alias to 'spotlessApply' simply called 'tidy' and wire up
-  // spotlessCheck to convention's check.
-  task tidy() {
-    description "Applies formatters and cleanups to sources."
-    group "verification"
+  // Hook up spotless to tidy and check tasks.
+
+  tasks.matching { it.name == "tidy" }.configureEach { v ->
+    v.dependsOn tasks.matching { it.name == "spotlessApply" }
   }
 
-  tasks.matching { task -> task.name == "spotlessApply" }.configureEach { v ->
-    tidy.dependsOn v
-    v.dependsOn ":checkJdkInternalsExportedToGradle"
+  tasks.matching { it.name == "check" }.configureEach { v ->
+    v.dependsOn tasks.matching { it.name == "spotlessCheck" }
   }
 
-  tasks.matching { task -> task.name == "spotlessCheck" }.configureEach { v ->
-    check.dependsOn v
+  tasks.matching { task -> task.name in ["spotlessApply", "spotlessCheck"] }.configureEach { v ->
     v.dependsOn ":checkJdkInternalsExportedToGradle"
   }
 }

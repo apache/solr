@@ -27,6 +27,7 @@ import org.apache.lucene.search.Scorable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.ResultContext;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -80,7 +81,7 @@ public class ValueSourceAugmenter extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
     // This is only good for random-access functions
 
     try {

@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,16 +32,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -124,21 +122,10 @@ public class ZkDistributedQueue implements DistributedQueue {
   }
 
   public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats, int maxQueueSize) {
-    this(zookeeper, dir, stats, maxQueueSize, null);
-  }
-
-  public ZkDistributedQueue(
-      SolrZkClient zookeeper,
-      String dir,
-      Stats stats,
-      int maxQueueSize,
-      IsClosed higherLevelIsClosed) {
     this.dir = dir;
 
-    ZkCmdExecutor cmdExecutor =
-        new ZkCmdExecutor(zookeeper.getZkClientTimeout(), higherLevelIsClosed);
     try {
-      cmdExecutor.ensureExists(dir, zookeeper);
+      ZkMaintenanceUtils.ensureExists(dir, zookeeper);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
@@ -187,7 +174,9 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] peek(long wait) throws KeeperException, InterruptedException {
-    Preconditions.checkArgument(wait > 0);
+    if (wait < 0) {
+      throw new IllegalArgumentException("Wait must be greater than 0. Wait was " + wait);
+    }
     Timer.Context time;
     if (wait == Long.MAX_VALUE) {
       time = stats.time(dir + "_peek_wait_forever");
@@ -247,24 +236,19 @@ public class ZkDistributedQueue implements DistributedQueue {
 
   public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
     if (paths.isEmpty()) return;
-    List<Op> ops = new ArrayList<>();
+    List<SolrZkClient.CuratorOpBuilder> ops = new ArrayList<>();
     for (String path : paths) {
-      ops.add(Op.delete(dir + "/" + path, -1));
+      ops.add(op -> op.delete().withVersion(-1).forPath(dir + "/" + path));
     }
     for (int from = 0; from < ops.size(); from += 1000) {
       int to = Math.min(from + 1000, ops.size());
       if (from < to) {
-        try {
-          zookeeper.multi(ops.subList(from, to), true);
-        } catch (KeeperException.NoNodeException e) {
-          // don't know which nodes are not exist, so try to delete one by one node
-          for (int j = from; j < to; j++) {
+        Collection<CuratorTransactionResult> results = zookeeper.multi(ops.subList(from, to));
+        for (CuratorTransactionResult result : results) {
+          if (result.getError() != 0) {
             try {
-              zookeeper.delete(ops.get(j).getPath(), -1, true);
-            } catch (KeeperException.NoNodeException e2) {
-              if (log.isDebugEnabled()) {
-                log.debug("Can not remove node which is not exist : {}", ops.get(j).getPath());
-              }
+              zookeeper.delete(result.getForPath(), -1, true);
+            } catch (KeeperException.NoNodeException ignored) {
             }
           }
         }

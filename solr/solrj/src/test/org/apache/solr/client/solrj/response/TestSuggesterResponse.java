@@ -24,8 +24,8 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -119,8 +119,8 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
   }
 
   private void addSampleDocs() throws SolrServerException, IOException {
-    client.deleteByQuery("*:*");
-    client.commit(true, true);
+    getSolrClient().deleteByQuery("*:*");
+    getSolrClient().commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Computer");
@@ -130,10 +130,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.setField("id", "333");
     doc3.setField(field, "Laptop");
-    client.add(doc);
-    client.add(doc2);
-    client.add(doc3);
-    client.commit(true, true);
+    getSolrClient().add(doc);
+    getSolrClient().add(doc2);
+    getSolrClient().add(doc3);
+    getSolrClient().commit(true, true);
   }
 
   /*
@@ -141,9 +141,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
    */
   private SolrClient createSuggestSolrClient() {
     final ResponseParser randomParser =
-        random().nextBoolean() ? new BinaryResponseParser() : new XMLResponseParser();
+        random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
     return new HttpSolrClient.Builder()
-        .withBaseSolrUrl(jetty.getBaseUrl().toString() + "/collection1")
+        .withBaseSolrUrl(getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .withResponseParser(randomParser)
         .build();
   }

@@ -95,7 +95,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     }
 
     ZkStateReader zkStateReader = cluster.getZkStateReader();
-    PerReplicaStates rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
+    PerReplicaStates rs = PerReplicaStatesOps.fetch(root, zkStateReader.getZkClient(), null);
     assertEquals(3, rs.states.size());
     assertTrue(rs.cversion >= 5);
 
@@ -103,7 +103,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(1, ops.get().size());
     assertEquals(PerReplicaStates.Operation.Type.ADD, ops.ops.get(0).typ);
     ops.persist(root, cluster.getZkClient());
-    rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
+    rs = PerReplicaStatesOps.fetch(root, zkStateReader.getZkClient(), null);
     assertEquals(4, rs.states.size());
     assertTrue(rs.cversion >= 6);
     assertEquals(6, cluster.getZkClient().getChildren(root, null, true).size());
@@ -115,7 +115,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(PerReplicaStates.Operation.Type.DELETE, ops.ops.get(2).typ);
     assertEquals(PerReplicaStates.Operation.Type.DELETE, ops.ops.get(3).typ);
     ops.persist(root, cluster.getZkClient());
-    rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
+    rs = PerReplicaStatesOps.fetch(root, zkStateReader.getZkClient(), null);
     assertEquals(4, rs.states.size());
     assertEquals(3, rs.states.get("R1").version);
 
@@ -123,7 +123,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(1, ops.ops.size());
     ops.persist(root, cluster.getZkClient());
 
-    rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
+    rs = PerReplicaStatesOps.fetch(root, zkStateReader.getZkClient(), null);
     assertEquals(3, rs.states.size());
 
     ops = PerReplicaStatesOps.flipLeader(Set.of("R4", "R3", "R1"), "R4", rs);
@@ -131,11 +131,11 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(PerReplicaStates.Operation.Type.ADD, ops.ops.get(0).typ);
     assertEquals(PerReplicaStates.Operation.Type.DELETE, ops.ops.get(1).typ);
     ops.persist(root, cluster.getZkClient());
-    rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
+    rs = PerReplicaStatesOps.fetch(root, zkStateReader.getZkClient(), null);
     ops = PerReplicaStatesOps.flipLeader(Set.of("R4", "R3", "R1"), "R3", rs);
     assertEquals(4, ops.ops.size());
     ops.persist(root, cluster.getZkClient());
-    rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
+    rs = PerReplicaStatesOps.fetch(root, zkStateReader.getZkClient(), null);
     assertTrue(rs.get("R3").isLeader);
   }
 }

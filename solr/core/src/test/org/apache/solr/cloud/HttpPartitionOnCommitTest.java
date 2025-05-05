@@ -16,8 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -40,7 +40,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   @BeforeClass
   public static void setupSysProps() {
-    System.setProperty("socketTimeout", "5000");
+    System.setProperty("socketTimeout", "10000");
     System.setProperty("distribUpdateSoTimeout", "5000");
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
@@ -74,7 +74,6 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     // create a collection that has 2 shard and 2 replicas
     String testCollectionName = "c8n_2x2_commits";
     createCollection(testCollectionName, "conf1", 2, 2);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 30);
     assertEquals(
@@ -129,7 +128,6 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     // create a collection that has 1 shard and 3 replicas
     String testCollectionName = "c8n_1x3_commits";
     createCollection(testCollectionName, "conf1", 1, 3);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, 30);
     assertEquals(
@@ -177,7 +175,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
   /** Overrides the parent implementation to install a SocketProxy in-front of the Jetty server. */
   @Override
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -192,7 +190,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     String replicaCoreUrl = replica.getCoreUrl();
     log.info("Sending commit request to: {}", replicaCoreUrl);
     final RTimer timer = new RTimer();
-    try (SolrClient client = getHttpSolrClient(replicaCoreUrl)) {
+    try (SolrClient client = getHttpSolrClient(replica)) {
       try {
         client.commit();
 

@@ -19,13 +19,14 @@ package org.apache.solr.cloud;
 
 import static java.util.Collections.singletonList;
 
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,7 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -43,11 +43,8 @@ import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,11 +151,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
       log.info("Updating mappings from zk");
-      waitForNewLeader(
-          cloudClient,
-          "shard1",
-          (Replica) initialLeaderJetty.client.info,
-          new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+      waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
       updateMappingsFromZk(jettys, clients, true);
       assertEquals(
           "PeerSynced node did not become leader",
@@ -332,7 +325,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
             + "/data/replication.properties";
     assertTrue(
         "PeerSync failed. Had to fail back to replication",
-        Files.notExists(Paths.get(replicationProperties)));
+        Files.notExists(Path.of(replicationProperties)));
   }
 
   private void waitTillNodesActive() throws Exception {
@@ -368,12 +361,13 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     SolrInputDocument doc = new SolrInputDocument();
 
     addFields(doc, fields);
-    addFields(doc, "rnd_s", RandomStringUtils.random(random().nextInt(100) + 100));
+    addFields(
+        doc,
+        "rnd_s",
+        RandomStrings.randomAsciiLettersOfLength(random(), random().nextInt(100) + 100));
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    ureq.setParams(params);
     ureq.process(cloudClient);
   }
 

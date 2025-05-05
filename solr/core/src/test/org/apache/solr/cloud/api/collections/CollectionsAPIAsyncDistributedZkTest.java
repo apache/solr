@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -162,25 +164,22 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     // cloudClient watch might take a couple of seconds to reflect it
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            collection,
-            20,
-            TimeUnit.SECONDS,
-            (n, c) -> {
-              if (c == null) return false;
-              Slice slice = c.getSlice("shard1");
-              if (slice == null) {
-                return false;
-              }
+    waitForState(
+        "Wait for replica in cluster state",
+        collection,
+        c -> {
+          if (c == null) return false;
+          Slice slice = c.getSlice("shard1");
+          if (slice == null) {
+            return false;
+          }
 
-              if (slice.getReplicas().size() == 2) {
-                return true;
-              }
+          if (slice.getReplicas().size() == 2) {
+            return true;
+          }
 
-              return false;
-            });
+          return false;
+        });
 
     state =
         CollectionAdminRequest.createAlias("myalias", collection)
@@ -253,7 +252,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
             numThreads, new SolrNamedThreadFactory("testAsyncIdRaceCondition"));
     try {
       for (int i = 0; i < numThreads; i++) {
-        es.submit(
+        es.execute(
             new Runnable() {
 
               @Override
@@ -274,12 +273,13 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
                   reloadCollectionRequest.processAsync(
                       "repeatedId", clients[random().nextInt(clients.length)]);
                   numSuccess.incrementAndGet();
-                } catch (SolrServerException e) {
+                } catch (SolrServerException | SolrClient.RemoteSolrException e) {
                   if (log.isInfoEnabled()) {
                     log.info("Exception during collection reloading, we were waiting for one: ", e);
                   }
-                  assertEquals(
-                      "Task with the same requestid already exists. (repeatedId)", e.getMessage());
+                  assertThat(
+                      e.getMessage(),
+                      containsString("Task with the same requestid already exists. (repeatedId)"));
                   numFailure.incrementAndGet();
                 } catch (IOException e) {
                   throw new RuntimeException();

@@ -81,9 +81,9 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   private void loadExternalFileDictionary(SolrCore core, SolrIndexSearcher searcher) {
     try {
       IndexSchema schema = null == searcher ? core.getLatestSchema() : searcher.getSchema();
-      // Get the field's analyzer
-      if (fieldTypeName != null && schema.getFieldTypeNoEx(fieldTypeName) != null) {
-        FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
+      // Get the fieldType's analyzer
+      if (fieldTypeName != null && schema.getFieldTypeByName(fieldTypeName) != null) {
+        FieldType fieldType = schema.getFieldTypeByName(fieldTypeName);
         // Do index-time analysis using the given fieldType's analyzer
         Directory ramDir = new ByteBuffersDirectory();
 

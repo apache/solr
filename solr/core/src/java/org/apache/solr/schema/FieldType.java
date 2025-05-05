@@ -98,10 +98,13 @@ public abstract class FieldType extends FieldProperties {
 
   /** The name of the type (not the name of the field) */
   protected String typeName;
+
   /** additional arguments specified in the field type declaration */
   protected Map<String, String> args;
+
   /** properties explicitly set to true */
   protected int trueProperties;
+
   /** properties explicitly set to false */
   protected int falseProperties;
 
@@ -175,7 +178,8 @@ public abstract class FieldType extends FieldProperties {
    * which is called by this method.
    */
   protected void setArgs(IndexSchema schema, Map<String, String> args) {
-    // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
+    // default to STORED, INDEXED, OMIT_TF_POSITIONS,MULTIVALUED, USE_DOCVALUES_AS_STORED
+    // and DOC_VALUES depending on schema version
     properties = (STORED | INDEXED);
     float schemaVersion = schema.getVersion();
     if (schemaVersion < 1.1f) properties |= MULTIVALUED;
@@ -184,8 +188,9 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
+    if (schemaVersion >= 1.7f && enableDocValuesByDefault()) properties |= DOC_VALUES;
 
-    properties |= UNINVERTIBLE;
+    if (schemaVersion < 1.7f) properties |= UNINVERTIBLE;
 
     this.args = Collections.unmodifiableMap(args);
     Map<String, String> initArgs = new HashMap<>(args);
@@ -298,6 +303,8 @@ public abstract class FieldType extends FieldProperties {
     String val;
     try {
       val = toInternal(value.toString());
+    } catch (SolrException se) {
+      throw se; //  BAD_REQUEST to fall through
     } catch (RuntimeException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -306,15 +313,6 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val == null) return null;
 
-    /*org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
-    newType.setTokenized(field.isTokenized());
-    newType.setStored(field.stored());
-    newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : IndexOptions.NONE);
-    newType.setStoreTermVectors(field.storeTermVector());
-    newType.setStoreTermVectorOffsets(field.storeTermOffsets());
-    newType.setStoreTermVectorPositions(field.storeTermPositions());
-    newType.setStoreTermVectorPayloads(field.storeTermPayloads());*/
     return createField(field.getName(), val, field);
   }
 
@@ -482,11 +480,12 @@ public abstract class FieldType extends FieldProperties {
    * @return a Query instance to perform prefix search
    */
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    if ("".equals(termStr)) {
+    if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
     PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(parser, query, termStr);
     return query;
   }
 
@@ -1162,6 +1161,19 @@ public abstract class FieldType extends FieldProperties {
         ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values");
   }
 
+  /**
+   * Returns whether this field type should enable docValues by default for schemaVersion &gt;= 1.7.
+   * This should not be enabled for fields that did not have docValues implemented by Solr 9.7, as
+   * users may have indexed documents without docValues (since they weren't supported). Flipping the
+   * default docValues values when they upgrade to a new version will break their index
+   * compatibility.
+   *
+   * <p>New field types can enable this without issue, as long as they support docValues.
+   */
+  protected boolean enableDocValuesByDefault() {
+    return false;
+  }
+
   public static final String TYPE = "type";
   public static final String TYPE_NAME = "name";
   public static final String CLASS_NAME = "class";
@@ -1299,9 +1311,8 @@ public abstract class FieldType extends FieldProperties {
   protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
     SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<>();
 
-    if (analyzer instanceof TokenizerChain) {
+    if (analyzer instanceof TokenizerChain tokenizerChain) {
       Map<String, String> factoryArgs;
-      TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
       CharFilterFactory[] charFilterFactories = tokenizerChain.getCharFilterFactories();
       if (0 < charFilterFactories.length) {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();

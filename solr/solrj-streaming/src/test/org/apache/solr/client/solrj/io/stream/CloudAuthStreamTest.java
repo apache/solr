@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * tests various streaming expressions (via the SolrJ {@link SolrStream} API) against a SolrCloud
- * cluster using both Authenticationand Role based Authorization
+ * cluster using both Authentication and Role based Authorization
  */
 public class CloudAuthStreamTest extends SolrCloudTestCase {
 
@@ -67,8 +67,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   private static String solrUrl = null;
 
   /**
-   * Helper that returns the original {@link SolrRequest} <em>with it's original type</em> so it can
-   * be chained. This menthod knows that for the purpose of this test, every user name is it's own
+   * Helper that returns the original {@link SolrRequest} <em>with its original type</em> so it can
+   * be chained. This method knows that for the purpose of this test, every username is its own
    * password
    *
    * @see SolrRequest#setBasicAuthCredentials
@@ -124,7 +124,6 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
       CollectionAdminRequest.createCollection(collection, "_default", 2, 2)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
           .process(cluster.getSolrClient());
     }
@@ -254,7 +253,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     assertEquals("hello world", tuples.get(0).get("echo"));
   }
 
-  public void testEchoStreamNoCredentials() throws Exception {
+  public void testEchoStreamNoCredentials() {
     final SolrStream solrStream =
         new SolrStream(
             solrUrl + "/" + COLLECTION_X,
@@ -271,7 +270,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
         });
   }
 
-  public void testEchoStreamInvalidCredentials() throws Exception {
+  public void testEchoStreamInvalidCredentials() {
     final SolrStream solrStream =
         new SolrStream(
             solrUrl + "/" + COLLECTION_X,
@@ -490,7 +489,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
                 params("qt", "/stream", "_trace", "executor_via_" + trace, "expr", expr));
         solrStream.setCredentials(user, user);
 
-        // NOTE: Becaue of the backgroun threads, no failures will to be returned to client...
+        // NOTE: Because of the background threads, no failures will to be returned to client...
         final List<Tuple> tuples = getTuples(solrStream);
         assertEquals(0, tuples.size());
 
@@ -512,7 +511,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     {
       // NOTE: in spite of what is implied by 'terminate=true', this daemon will NEVER terminate on
-      // it's own as long as the updates are successful (apparently that requires usage of a topic()
+      // its own as long as the updates are successful (apparently that requires usage of a topic()
       // stream to set a "sleepMillis"?!)
       final String expr =
           "daemon(id=daemonId,runInterval=1000,terminate=true,update("
@@ -937,7 +936,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
   /** Slurps a stream into a List */
   protected static List<Tuple> getTuples(final TupleStream tupleStream) throws IOException {
-    List<Tuple> tuples = new ArrayList<Tuple>();
+    List<Tuple> tuples = new ArrayList<>();
     try {
       log.trace("TupleStream: {}", tupleStream);
       tupleStream.open();
@@ -953,8 +952,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     return tuples;
   }
 
-  /** Sigh. DaemonStream requires polling the same core where the stream was exectured. */
-  protected static String getRandomCoreUrl(final String collection) throws Exception {
+  /** Sigh. DaemonStream requires polling the same core where the stream was executed. */
+  protected static String getRandomCoreUrl(final String collection) {
     final List<String> replicaUrls =
         cluster
             .getZkStateReader()

@@ -1,9 +1,7 @@
 = Configuring Authentication and Authorization
 :page-children: basic-authentication-plugin, \
-    kerberos-authentication-plugin,  \
     jwt-authentication-plugin, \
     cert-authentication-plugin, \
-    hadoop-authentication-plugin, \
     rule-based-authorization-plugin
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -29,8 +27,8 @@ Solr includes some plugins out of the box, and additional plugins can be develop
 
 All authentication, authorization and audit logging plugins can work with Solr whether it is running as a cluster or a single-node installation.
 All related configuration, including users and permission rules, are stored in a file named `security.json`.
-When running Solr as a user-managed cluster or a single-node installation, this file must be in the `$SOLR_HOME` directory (usually `server/solr`).
-When using SolrCloud, this file must be located in ZooKeeper.
+When using SolrCloud, this file must be located at the chroot of the ZooKeeper structure.  If no chroot was given, then it must be at the root.
+When running Solr in standalone mode (without ZooKeeper), this file must be in the `$SOLR_HOME` directory. When manually running Solr from an extracted archive, this will most likely be `server/solr`. If the service installer script is used, its default location will be `/var/solr/data`, which can be changed with options given to the service installer.
 
 == Configuring security.json
 
@@ -87,10 +85,10 @@ Create the file `security.json` with the contents:
 
 [source,json]
 ----
-{"authentication": {"class": "solr.KerberosPlugin"}}
+{"authentication": {"class": "solr.BasicAuthPlugin"}}
 ----
 
-Note that this example defines the `KerberosPlugin` for authentication.
+Note that this example defines the `BasicAuthPlugin` for authentication.
 You will want to modify this section as appropriate for the plugin you are using.
 
 Then use the `bin/solr zk` command to upload the file:
@@ -129,7 +127,7 @@ A custom plugin can be implemented by extending the AuthenticationPlugin class.
 
 An authentication plugin consists of two parts:
 
-. Server-side component, which intercepts and authenticates incoming requests to Solr using a mechanism defined in the plugin, such as Kerberos, Basic Auth or others.
+. Server-side component, which intercepts and authenticates incoming requests to Solr using a mechanism defined in the plugin, such as Basic Auth.
 . Client-side component, i.e., an extension of `HttpClientConfigurer`, which enables a SolrJ client to make requests to a secure Solr instance using the authentication mechanism which the server understands.
 
 === Enabling an Authentication Plugin
@@ -229,7 +227,7 @@ To support rolling restarts from older versions, Solr can be configured to accep
 
 If the `SolrAuthV2` header is present but fails validation, then Solr will not fall back to checking `SolrAuth`. The legacy authentication headers will only be consulted when the newest headers are not present.
 
-Unkown values for `solr.pki.acceptVersion` will emit a warning log message but will not cause errors to more smoothly support future protocol revisions.
+Unknown values for `solr.pki.acceptVersion` will emit a warning log message but will not cause errors to more smoothly support future protocol revisions.
 
 The timeout is configurable through a system property called `pkiauth.ttl`.
 For example, if you wish to increase the time-to-live to 10 seconds (10,000 milliseconds), start each node with a property `'-Dpkiauth.ttl=10000'`.

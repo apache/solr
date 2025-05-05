@@ -19,9 +19,9 @@ package org.apache.solr.common.cloud;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import org.apache.solr.common.StringUtils;
+import org.apache.curator.framework.AuthInfo;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,19 +40,28 @@ public class DigestZkCredentialsProvider extends DefaultZkCredentialsProvider {
     super(zkCredentialsInjector);
   }
 
+  public DigestZkCredentialsProvider(List<AuthInfo> zkCredentials) {
+    super(new DefaultZkCredentialsInjector(), zkCredentials);
+  }
+
+  public DigestZkCredentialsProvider(
+      ZkCredentialsInjector zkCredentialsInjector, List<AuthInfo> zkCredentials) {
+    super(zkCredentialsInjector, zkCredentials);
+  }
+
   @Override
-  protected Collection<ZkCredentials> createCredentials() {
-    List<ZkCredentials> result = new ArrayList<>(1);
+  protected List<AuthInfo> createCredentials() {
+    List<AuthInfo> result = new ArrayList<>(1);
     List<ZkCredentialsInjector.ZkCredential> zkCredentials =
         zkCredentialsInjector.getZkCredentials();
     log.debug("createCredentials using zkCredentials: {}", zkCredentials);
     for (ZkCredentialsInjector.ZkCredential zkCredential : zkCredentials) {
       if (zkCredential.isAll()) {
         // this is the "user" with all perms that SolrZooKeeper uses to connect to zookeeper
-        if (!StringUtils.isEmpty(zkCredential.getUsername())
-            && !StringUtils.isEmpty(zkCredential.getPassword())) {
+        if (StrUtils.isNotNullOrEmpty(zkCredential.getUsername())
+            && StrUtils.isNotNullOrEmpty(zkCredential.getPassword())) {
           result.add(
-              new ZkCredentials(
+              new AuthInfo(
                   "digest",
                   (zkCredential.getUsername() + ":" + zkCredential.getPassword())
                       .getBytes(StandardCharsets.UTF_8)));

@@ -16,16 +16,13 @@
  */
 package org.apache.solr.request;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.util.GlobalTracer;
 import java.io.Closeable;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -38,7 +35,6 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
 
@@ -67,8 +63,8 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   public SolrQueryRequestBase(SolrCore core, SolrParams params, RTimerTree requestTimer) {
     this.core = core;
     this.schema = null == core ? null : core.getLatestSchema();
-    this.params = this.origParams = params;
-    this.requestTimer = requestTimer;
+    this.params = this.origParams = Objects.requireNonNull(params);
+    this.requestTimer = Objects.requireNonNull(requestTimer);
     this.startTime = System.currentTimeMillis();
   }
 
@@ -95,7 +91,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   @Override
   public void setParams(SolrParams params) {
-    this.params = params;
+    this.params = Objects.requireNonNull(params);
   }
 
   // Get the start time of this request in milliseconds
@@ -143,33 +139,6 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   public IndexSchema getSchema() {
     // a request for a core admin will no have a core
     return schema;
-  }
-
-  @Override
-  public Tracer getTracer() {
-    final HttpSolrCall call = getHttpSolrCall();
-    if (call != null) {
-      final Tracer tracer = (Tracer) call.getReq().getAttribute(Tracer.class.getName());
-      if (tracer != null) {
-        return tracer;
-      }
-    }
-    if (core != null) {
-      return core.getCoreContainer().getTracer();
-    }
-    return GlobalTracer.get(); // this way is not ideal (particularly in tests) but it's okay
-  }
-
-  @Override
-  public Span getSpan() {
-    final HttpSolrCall call = getHttpSolrCall();
-    if (call != null) {
-      final Span span = (Span) call.getReq().getAttribute(Span.class.getName());
-      if (span != null) {
-        return span;
-      }
-    }
-    return NoopSpan.INSTANCE;
   }
 
   @Override

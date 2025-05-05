@@ -16,9 +16,9 @@
  */
 package org.apache.solr.handler.sql;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -88,23 +88,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
     String zk = this.properties.getProperty("zk");
     CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
     ClusterState clusterState = cloudSolrClient.getClusterState();
-
-    final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
-
-    Set<String> collections = clusterState.getCollectionsMap().keySet();
-    for (String collection : collections) {
-      builder.put(collection, new SolrTable(this, collection));
-    }
-
     Aliases aliases = ZkStateReader.from(cloudSolrClient).getAliases();
-    for (String alias : aliases.getCollectionAliasListMap().keySet()) {
-      // don't create duplicate entries
-      if (!collections.contains(alias)) {
-        builder.put(alias, new SolrTable(this, alias));
-      }
-    }
 
-    return builder.build();
+    Collection<String> collectionNames = clusterState.getCollectionNames();
+    Set<String> aliasNames = aliases.getCollectionAliasListMap().keySet();
+    return Stream.concat(collectionNames.stream(), aliasNames.stream())
+        .collect(Collectors.toMap(n -> n, n -> new SolrTable(this, n), (t1, t2) -> t1));
   }
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {

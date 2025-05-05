@@ -22,16 +22,16 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.NodesSysProps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * This comparator makes sure that the given replicas are sorted according to the given list of
  * preferences. E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive
- * less requests from healthy nodes. This will help prevent a distributed deadlock or timeouts in
+ * fewer requests from healthy nodes. This will help prevent a distributed deadlock or timeouts in
  * all the healthy nodes due to one bad node.
  *
  * <p>Optional final preferenceRule is *not* used for pairwise sorting, but instead defines how
@@ -104,6 +104,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
   private static final ReplicaListTransformerFactory NOOP_RLTF =
       (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) ->
           NOOP_RLT;
+
   /**
    * For compatibility with tests, which expect this constructor to have no effect on the *base*
    * order.
@@ -184,7 +185,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       return false;
     }
     if (prefix.equals(ShardParams.REPLICA_LOCAL)) {
-      return !StringUtils.isEmpty(localHostAddress) && s.startsWith(localHostAddress);
+      return StrUtils.isNotNullOrEmpty(localHostAddress) && s.startsWith(localHostAddress);
     } else {
       return s.startsWith(prefix);
     }

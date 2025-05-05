@@ -52,7 +52,9 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -64,6 +66,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
@@ -72,6 +75,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.CopyField;
@@ -134,8 +138,9 @@ public class LukeRequestHandler extends RequestHandlerBase {
     ShowStyle style = ShowStyle.get(params.get("show"));
 
     // If no doc is given, show all fields and top terms
-
-    rsp.add("index", getIndexInfo(reader));
+    final var indexVals = new SimpleOrderedMap<>();
+    V2ApiUtils.squashIntoNamedList(indexVals, getIndexInfo(reader));
+    rsp.add("index", indexVals);
 
     if (ShowStyle.INDEX == style) {
       return; // that's all we need
@@ -161,7 +166,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       }
       Document doc = null;
       try {
-        doc = reader.document(docId);
+        doc = reader.storedFields().document(docId);
       } catch (Exception ex) {
       }
       if (doc == null) {
@@ -316,6 +321,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       Document doc, int docId, IndexReader reader, IndexSchema schema) throws IOException {
     final CharsRefBuilder spare = new CharsRefBuilder();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<>();
+    TermVectors termVectors = null;
     for (Object o : doc.getFields()) {
       Field field = (Field) o;
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<>();
@@ -353,7 +359,8 @@ public class LukeRequestHandler extends RequestHandlerBase {
       // If we have a term vector, return that
       if (field.fieldType().storeTermVectors()) {
         try {
-          Terms v = reader.getTermVector(docId, field.name());
+          if (termVectors == null) termVectors = reader.termVectors();
+          Terms v = termVectors.get(docId, field.name());
           if (v != null) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
             final TermsEnum termsEnum = v.iterator();
@@ -462,6 +469,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     PostingsEnum postingsEnum = null;
     TermsEnum termsEnum = terms.iterator();
     BytesRef text;
+    StoredFields storedFields = reader.storedFields();
     // Deal with the chance that the first bunch of terms are in deleted documents. Is there a
     // better way?
     for (int idx = 0; idx < 1000 && postingsEnum == null; ++idx) {
@@ -476,7 +484,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
         if (liveDocs != null && liveDocs.get(postingsEnum.docID())) {
           continue;
         }
-        return reader.document(postingsEnum.docID());
+        return storedFields.document(postingsEnum.docID());
       }
     }
     return null;
@@ -542,9 +550,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
   private static SimpleOrderedMap<Object> getAnalyzerInfo(Analyzer analyzer) {
     SimpleOrderedMap<Object> aninfo = new SimpleOrderedMap<>();
     aninfo.add("className", analyzer.getClass().getName());
-    if (analyzer instanceof TokenizerChain) {
-
-      TokenizerChain tchain = (TokenizerChain) analyzer;
+    if (analyzer instanceof TokenizerChain tchain) {
 
       CharFilterFactory[] cfiltfacs = tchain.getCharFilterFactories();
       if (0 < cfiltfacs.length) {
@@ -619,28 +625,29 @@ public class LukeRequestHandler extends RequestHandlerBase {
   // This method just gets the top-most level of information. This was conflated with getting
   // detailed info for *all* the fields, called from CoreAdminHandler etc.
 
-  public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader) throws IOException {
+  public static CoreStatusResponse.IndexDetails getIndexInfo(DirectoryReader reader)
+      throws IOException {
     Directory dir = reader.directory();
-    SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<>();
+    final var indexInfo = new CoreStatusResponse.IndexDetails();
 
-    indexInfo.add("numDocs", reader.numDocs());
-    indexInfo.add("maxDoc", reader.maxDoc());
-    indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
+    indexInfo.numDocs = reader.numDocs();
+    indexInfo.maxDoc = reader.maxDoc();
+    indexInfo.deletedDocs = reader.maxDoc() - reader.numDocs();
     // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
-    indexInfo.add("version", reader.getVersion());
-    indexInfo.add("segmentCount", reader.leaves().size());
-    indexInfo.add("current", closeSafe(reader::isCurrent));
-    indexInfo.add("hasDeletions", reader.hasDeletions());
-    indexInfo.add("directory", dir);
+    indexInfo.version = reader.getVersion();
+    indexInfo.segmentCount = reader.leaves().size();
+    indexInfo.current = closeSafe(reader::isCurrent);
+    indexInfo.hasDeletions = reader.hasDeletions();
+    indexInfo.directory = dir.toString();
     IndexCommit indexCommit = reader.getIndexCommit();
     String segmentsFileName = indexCommit.getSegmentsFileName();
-    indexInfo.add("segmentsFile", segmentsFileName);
-    indexInfo.add("segmentsFileSizeInBytes", getSegmentsFileLength(indexCommit));
+    indexInfo.segmentsFile = segmentsFileName;
+    indexInfo.segmentsFileSizeInBytes = getSegmentsFileLength(indexCommit);
     Map<String, String> userData = indexCommit.getUserData();
-    indexInfo.add("userData", userData);
+    indexInfo.userData = userData;
     String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
     if (s != null) {
-      indexInfo.add("lastModified", new Date(Long.parseLong(s)));
+      indexInfo.lastModified = new Date(Long.parseLong(s));
     }
     return indexInfo;
   }
@@ -650,7 +657,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     boolean get() throws IOException;
   }
 
-  private static Object closeSafe(IOSupplier isCurrent) {
+  private static boolean closeSafe(IOSupplier isCurrent) {
     try {
       return isCurrent.get();
     } catch (AlreadyClosedException | IOException exception) {
@@ -772,6 +779,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
         _buckets[idx] = buckets[idx];
       }
     }
+
     // TODO? should this be a list or a map?
     public NamedList<Integer> toNamedList() {
       NamedList<Integer> nl = new NamedList<>();
@@ -781,6 +789,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       return nl;
     }
   }
+
   /** Private internal class that counts up frequent terms */
   private static class TopTermQueue extends PriorityQueue<TopTermQueue.TermInfo> {
     static class TermInfo {

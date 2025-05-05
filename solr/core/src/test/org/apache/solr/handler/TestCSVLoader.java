@@ -16,12 +16,10 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,7 +41,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   String filename;
-  File file;
+  Path file;
 
   @Override
   @Before
@@ -51,9 +49,9 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
-    File tempDir = createTempDir("TestCSVLoader").toFile();
-    file = new File(tempDir, "solr_tmp.csv");
-    filename = file.getPath();
+    Path tempDir = createTempDir("TestCSVLoader");
+    file = tempDir.resolve("solr_tmp.csv");
+    filename = file.toString();
     cleanup();
   }
 
@@ -64,18 +62,13 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // the super classes version
     super.tearDown();
     if (null != file) {
-      Files.delete(file.toPath());
+      Files.delete(file);
       file = null;
     }
   }
 
-  void makeFile(String contents) {
-    try (Writer out =
-        new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
-      out.write(contents);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  void makeFile(String contents) throws IOException {
+    Files.writeString(Path.of(filename), contents, StandardCharsets.UTF_8);
   }
 
   void cleanup() {
@@ -89,7 +82,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // TODO: stop using locally defined streams once stream.file and
     // stream.body work everywhere
     List<ContentStream> cs = new ArrayList<>(1);
-    ContentStreamBase f = new ContentStreamBase.FileStream(new File(filename));
+    ContentStreamBase f = new ContentStreamBase.FileStream(Path.of(filename));
     f.setContentType("text/csv");
     cs.add(f);
     req.setContentStreams(cs);

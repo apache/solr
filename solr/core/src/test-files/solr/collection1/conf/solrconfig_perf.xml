@@ -28,7 +28,7 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <updateHandler class="solr.DirectUpdateHandler2"/>
@@ -58,8 +58,7 @@
   </query>
 
   <requestDispatcher>
-    <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime"
                  etagSeed="Solr">
     </httpCaching>

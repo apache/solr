@@ -23,18 +23,19 @@ setup_file() {
   # set up paths and helpers
   common_clean_setup
 
-  solr start -c -V
+  solr start --verbose
   # echo $output >&3
 }
 
 teardown_file() {
   # set up paths, not preserved from setup
   common_setup
+  sleep 3
 
   # Conversely, on shutdown, we do need this to execute strictly
-  # because using "run" will eat filing test exit codes
-  solr stop -all
-  # DEBUG : (echo -n "# " ; solr stop -V -all) >&3
+  # because using "run" will eat failing test exit codes
+  solr stop --all
+  # DEBUG : (echo -n "# " ; solr stop --verbose --all) >&3
 }
 
 teardown() {

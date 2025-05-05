@@ -16,9 +16,9 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Standard Solr deletion policy that allows reserving index commit points for certain amounts of
- * time to support features such as index replication or snapshooting directly out of a live index
+ * time to support features such as index replication or snapshotting directly out of a live index
  * directory.
  *
  * @see org.apache.lucene.index.IndexDeletionPolicy
@@ -113,8 +113,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
     protected void appendDetails(StringBuilder sb, IndexCommit c) {
       Directory dir = c.getDirectory();
-      if (dir instanceof FSDirectory) {
-        FSDirectory fsd = (FSDirectory) dir;
+      if (dir instanceof FSDirectory fsd) {
         sb.append("dir=").append(fsd.getDirectory());
       } else {
         sb.append("dir=").append(dir);
@@ -143,7 +142,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
   private void updateCommits(List<? extends IndexCommit> commits) {
     // to be safe, we should only call delete on a commit point passed to us
-    // in this specific call (may be across diff IndexWriter instances).
+    // in this specific call (which may be across diff IndexWriter instances).
     // this will happen rarely, so just synchronize everything
     // for safety and to avoid race conditions
 
@@ -198,10 +197,9 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
     // For anything persistent, make something that will
     // be the same, regardless of the Directory instance.
-    if (dir instanceof FSDirectory) {
-      FSDirectory fsd = (FSDirectory) dir;
-      File fdir = fsd.getDirectory().toFile();
-      sb.append(fdir.getPath());
+    if (dir instanceof FSDirectory fsd) {
+      Path fdir = fsd.getDirectory();
+      sb.append(fdir.toString());
     } else {
       sb.append(dir);
     }

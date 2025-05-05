@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -94,7 +95,7 @@ public abstract class BaseSolrResource {
       final String path = solrRequest.getPath();
       if (!RestManager.SCHEMA_BASE_PATH.equals(path)) {
         // don't set webapp property on the request when context and core/collection are excluded
-        final int cutoffPoint = path.indexOf("/", 1);
+        final int cutoffPoint = path.indexOf('/', 1);
         final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);
         solrRequest.getContext().put("webapp", firstPathElement); // Context path
       }
@@ -143,7 +144,12 @@ public abstract class BaseSolrResource {
     Exception exception = getSolrResponse().getException();
     if (null != exception) {
       NamedList<Object> info = new SimpleOrderedMap<>();
-      this.statusCode = ResponseUtils.getErrorInfo(exception, info, log);
+      this.statusCode =
+          ResponseUtils.getErrorInfo(
+              exception,
+              info,
+              log,
+              solrCore != null && solrCore.getCoreContainer().hideStackTrace());
       getSolrResponse().add("error", info);
       String message = (String) info.get("msg");
       if (null != message && !message.trim().isEmpty()) {
@@ -154,6 +160,6 @@ public abstract class BaseSolrResource {
 
   /** Decode URL-encoded strings as UTF-8, and avoid converting "+" to space */
   protected static String urlDecode(String str) throws UnsupportedEncodingException {
-    return URLDecoder.decode(str.replace("+", "%2B"), "UTF-8");
+    return URLDecoder.decode(str.replace("+", "%2B"), StandardCharsets.UTF_8);
   }
 }

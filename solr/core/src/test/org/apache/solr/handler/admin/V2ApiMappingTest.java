@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -113,7 +112,7 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
     final Api api = apiBag.lookup(v2Path, v2Method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
     final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
+        new LocalSolrQueryRequest(null, Map.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             if (v2RequestBody == null) return Collections.emptyList();

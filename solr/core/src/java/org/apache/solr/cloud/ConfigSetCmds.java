@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -70,12 +69,9 @@ public class ConfigSetCmds {
       throws IOException {
     byte[] oldPropsData = configSetService.downloadFileFromConfig(configName, propertyPath);
     if (oldPropsData != null) {
-      InputStreamReader reader =
-          new InputStreamReader(new ByteArrayInputStream(oldPropsData), StandardCharsets.UTF_8);
-      try {
+      try (InputStreamReader reader =
+          new InputStreamReader(new ByteArrayInputStream(oldPropsData), StandardCharsets.UTF_8)) {
         return ConfigSetProperties.readFromInputStream(reader);
-      } finally {
-        reader.close();
       }
     }
     return null;
@@ -187,16 +183,18 @@ public class ConfigSetCmds {
       String configSetName, boolean force, CoreContainer coreContainer) throws IOException {
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
 
-    for (Map.Entry<String, DocCollection> entry :
-        zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
-      String configName = entry.getValue().getConfigName();
-      if (configSetName.equals(configName))
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Can not delete ConfigSet as it is currently being used by collection ["
-                + entry.getKey()
-                + "]");
-    }
+    zkStateReader
+        .getClusterState()
+        .forEachCollection(
+            state -> {
+              String configName = state.getConfigName();
+              if (configSetName.equals(configName))
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "Can not delete ConfigSet as it is currently being used by collection ["
+                        + state.getName()
+                        + "]");
+            });
 
     String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;
     NamedList<Object> properties =

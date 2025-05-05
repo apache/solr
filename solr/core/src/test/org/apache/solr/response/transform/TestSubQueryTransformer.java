@@ -17,6 +17,7 @@
 package org.apache.solr.response.transform;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.StringTokenizer;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -36,7 +36,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -630,10 +629,8 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     SolrQueryResponse response =
         h.queryAndResponse(johnTwoFL.getParams().get(CommonParams.QT), johnTwoFL);
 
-    BinaryQueryResponseWriter responseWriter =
-        (BinaryQueryResponseWriter) core.getQueryResponseWriter(johnTwoFL);
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    responseWriter.write(bytes, johnTwoFL, response);
+    johnTwoFL.getResponseWriter().write(bytes, johnTwoFL, response);
 
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       unmarshalled =

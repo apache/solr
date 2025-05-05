@@ -34,12 +34,13 @@ import java.util.regex.PatternSyntaxException;
 import opennlp.tools.util.Span;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.opennlp.OpenNLPTokenizer;
+import org.apache.lucene.analysis.opennlp.SentenceAttributeExtractor;
 import org.apache.lucene.analysis.opennlp.tools.NLPNERTaggerOp;
 import org.apache.lucene.analysis.opennlp.tools.OpenNLPOpsFactory;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.SentenceAttribute;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -199,6 +200,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
    * @see #pattern
    */
   private String dest = null;
+
   /**
    * @see #dest
    */
@@ -256,7 +258,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
     analyzerFieldType = analyzerFieldTypeParam.toString();
 
     if (0 < args.size()) {
-      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
+      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): " + args);
     }
 
     super.init(args);
@@ -392,20 +394,18 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
             throw new SolrException(
                 SERVER_ERROR, "Init param '" + SOURCE_PARAM + "' child 'exclude' can not be null");
           }
-          if (!(excObj instanceof NamedList)) {
+          if (!(excObj instanceof NamedList<?> exc)) {
             throw new SolrException(
                 SERVER_ERROR, "Init param '" + SOURCE_PARAM + "' child 'exclude' must be <lst/>");
           }
-          NamedList<?> exc = (NamedList<?>) excObj;
           srcExclusions.add(parseSelectorParams(exc));
           if (0 < exc.size()) {
             throw new SolrException(
                 SERVER_ERROR,
                 "Init param '"
                     + SOURCE_PARAM
-                    + "' has unexpected 'exclude' sub-param(s): '"
-                    + selectorConfig.getName(0)
-                    + "'");
+                    + "' has unexpected 'exclude' sub-param(s): "
+                    + selectorConfig);
           }
           // call once per instance
           selectorConfig.remove("exclude");
@@ -416,15 +416,14 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
               SERVER_ERROR,
               "Init param '"
                   + SOURCE_PARAM
-                  + "' contains unexpected child param(s): '"
-                  + selectorConfig.getName(0)
-                  + "'");
+                  + "' contains unexpected child param(s): "
+                  + selectorConfig);
         }
         // consume from the named list so it doesn't interfere with subsequent processing
         sources.remove(0);
       }
     }
-    if (1 <= sources.size()) {
+    if (!sources.isEmpty()) {
       // source better be one or more strings
       srcInclusions.fieldName = new HashSet<>(args.removeConfigArgs("source"));
     }
@@ -443,8 +442,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
               + "for OpenNLPExtractNamedEntitiesUpdateProcessor for further details.");
     }
 
-    if (d instanceof NamedList) {
-      NamedList<?> destList = (NamedList<?>) d;
+    if (d instanceof NamedList<?> destList) {
 
       Object patt = destList.remove(PATTERN_PARAM);
       Object replacement = destList.remove(REPLACEMENT_PARAM);
@@ -473,12 +471,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
       }
       if (0 != destList.size()) {
         throw new SolrException(
-            SERVER_ERROR,
-            "Init param '"
-                + DEST_PARAM
-                + "' has unexpected children: '"
-                + destList.getName(0)
-                + "'");
+            SERVER_ERROR, "Init param '" + DEST_PARAM + "' has unexpected children: " + destList);
       }
 
       try {
@@ -636,28 +629,23 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
         List<Integer> endOffsets = new ArrayList<>();
         String fullText = srcFieldValue.toString();
         TokenStream tokenStream = analyzer.tokenStream("", fullText);
-        CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
-        OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
-        FlagsAttribute flagsAtt = tokenStream.addAttribute(FlagsAttribute.class);
+        SentenceAttributeExtractor sentenceAttributeExtractor =
+            new SentenceAttributeExtractor(
+                tokenStream, tokenStream.addAttribute(SentenceAttribute.class));
         tokenStream.reset();
         synchronized (nerTaggerOp) {
-          while (tokenStream.incrementToken()) {
-            terms.add(termAtt.toString());
-            startOffsets.add(offsetAtt.startOffset());
-            endOffsets.add(offsetAtt.endOffset());
-            boolean endOfSentence = 0 != (flagsAtt.getFlags() & OpenNLPTokenizer.EOS_FLAG_BIT);
-            if (endOfSentence) { // extract named entities one sentence at a time
-              extractEntitiesFromSentence(
-                  fullText, terms, startOffsets, endOffsets, entitiesWithType);
+          while (!sentenceAttributeExtractor.allSentencesProcessed()) {
+            for (AttributeSource attributeSource :
+                sentenceAttributeExtractor.extractSentenceAttributes()) {
+              terms.add(attributeSource.getAttribute(CharTermAttribute.class).toString());
+              startOffsets.add(attributeSource.getAttribute(OffsetAttribute.class).startOffset());
+              endOffsets.add(attributeSource.getAttribute(OffsetAttribute.class).endOffset());
             }
-          }
-          tokenStream.end();
-          tokenStream.close();
-          if (!terms.isEmpty()) { // In case last token of last sentence isn't properly flagged with
-            // EOS_FLAG_BIT
             extractEntitiesFromSentence(
                 fullText, terms, startOffsets, endOffsets, entitiesWithType);
           }
+          tokenStream.end();
+          tokenStream.close();
           nerTaggerOp.reset(); // Forget all adaptive data collected during previous calls
         }
         return entitiesWithType;
@@ -669,7 +657,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
           List<Integer> startOffsets,
           List<Integer> endOffsets,
           List<Pair<String, String>> entitiesWithType) {
-        for (Span span : nerTaggerOp.getNames(terms.toArray(new String[terms.size()]))) {
+        for (Span span : nerTaggerOp.getNames(terms.toArray(new String[0]))) {
           String text =
               fullText.substring(
                   startOffsets.get(span.getStart()), endOffsets.get(span.getEnd() - 1));

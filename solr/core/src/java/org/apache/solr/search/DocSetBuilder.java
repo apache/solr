@@ -42,11 +42,7 @@ public final class DocSetBuilder {
 
   public DocSetBuilder(int maxDoc, long costEst) {
     this.maxDoc = maxDoc;
-    // For ridiculously small sets, we'll just use a sorted int[]
-    // maxDoc >>> 7 is a good value if you want to save memory, lower values
-    // such as maxDoc >>> 11 should provide faster building but at the expense
-    // of using a full bitset even for quite sparse data
-    this.threshold = (maxDoc >>> 7) + 4; // the +4 is for better testing on small indexes
+    this.threshold = DocSetUtil.smallSetSize(maxDoc);
 
     if (costEst > threshold) {
       bitSet = new FixedBitSet(maxDoc);

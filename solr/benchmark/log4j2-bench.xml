@@ -31,8 +31,8 @@
 
     <RollingRandomAccessFile
         name="MainLogFile"
-        fileName="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}.log"
-        filePattern="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}.log.%i">
+        fileName="${sys:solr.log.dir:-build/work/solr-logs}/${sys:solr.log.name:-solr}.log"
+        filePattern="${sys:solr.log.dir:-build/work/solr-logs}/${sys:solr.log.name:-solr}.log.%i">
       <PatternLayout>
         <Pattern>
           %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
@@ -48,8 +48,8 @@
 
     <RollingRandomAccessFile
         name="SlowLogFile"
-        fileName="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}_slow_requests.log"
-        filePattern="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}_slow_requests.log.%i">
+        fileName="${sys:solr.log.dir:-build/work/solr-logs}/${sys:solr.log.name:-solr}_slow_requests.log"
+        filePattern="${sys:solr.log.dir:-build/work/solr-logs}/${sys:solr.log.name:-solr}_slow_requests.log.%i">
       <PatternLayout>
         <Pattern>
           %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
@@ -66,8 +66,8 @@
 
     <RollingRandomAccessFile
         name="RandomCountsFile"
-        fileName="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}_random_counts.log"
-        filePattern="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}_random_counts.log.%i">
+        fileName="${sys:solr.log.dir:-build/work/solr-logs}/${sys:solr.log.name:-solr}_random_counts.log"
+        filePattern="${sys:solr.log.dir:-build/work/solr-logs}/${sys:solr.log.name:-solr}_random_counts.log.%i">
       <PatternLayout>
         <Pattern>
           %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
@@ -83,7 +83,6 @@
   </Appenders>
   <Loggers>
     <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
-    <AsyncLogger name="org.apache.hadoop" level="warn"/>
     <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
     <AsyncLogger name="org.apache.zookeeper" level="warn"/>
     <!-- HttpSolrCall adds markers denoting the handler class to allow fine grained control, metrics are
@@ -104,4 +103,3 @@
     </AsyncRoot>
   </Loggers>
 </Configuration>
-

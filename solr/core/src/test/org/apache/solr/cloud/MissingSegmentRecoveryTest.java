@@ -16,12 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -55,7 +56,6 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     waitForState(
         "Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
-    cluster.getSolrClient().setDefaultCollection(collection);
 
     List<SolrInputDocument> docs = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
@@ -64,8 +64,8 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
       docs.add(doc);
     }
 
-    cluster.getSolrClient().add(docs);
-    cluster.getSolrClient().commit();
+    cluster.getSolrClient().add(collection, docs);
+    cluster.getSolrClient().commit(collection);
 
     DocCollection state = getCollectionState(collection);
     leader = state.getLeader("shard1");
@@ -93,7 +93,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     System.setProperty("CoreInitFailedAction", "fromleader");
 
     // Simulate failure by truncating the segment_* files
-    for (File segment : getSegmentFiles(replica)) {
+    for (Path segment : getSegmentFiles(replica)) {
       truncate(segment);
     }
 
@@ -109,18 +109,19 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     assertEquals(10, resp.getResults().getNumFound());
   }
 
-  private File[] getSegmentFiles(Replica replica) {
+  private List<Path> getSegmentFiles(Replica replica) throws IOException {
     try (SolrCore core =
         cluster.getReplicaJetty(replica).getCoreContainer().getCore(replica.getCoreName())) {
-      File indexDir = new File(core.getDataDir(), "index");
-      return indexDir.listFiles(
-          (File dir, String name) -> {
-            return name.startsWith("segments_");
-          });
+      Path indexDir = Path.of(core.getDataDir(), "index");
+      try (Stream<Path> files = Files.list(indexDir)) {
+        return files
+            .filter((file) -> file.getFileName().toString().startsWith("segments_"))
+            .toList();
+      }
     }
   }
 
-  private void truncate(File file) throws IOException {
-    Files.write(file.toPath(), new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
+  private void truncate(Path file) throws IOException {
+    Files.write(file, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
   }
 }

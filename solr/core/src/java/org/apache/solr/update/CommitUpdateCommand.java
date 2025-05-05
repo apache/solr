@@ -21,12 +21,25 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /** A commit index command encapsulated in an object. */
 public class CommitUpdateCommand extends UpdateCommand {
+
+  // Behavior about opening a searcher after a hard commit.
+  // - Open a standard searcher and wait for it. (default)
+  //   openSearcher == true && waitSearcher == true && closeSearcher == false
+  // - Open a standard searcher, but do not wait for it.
+  //   openSearcher == true && waitSearcher == false && closeSearcher == false
+  // - Open a real-time searcher quicker without auto-warming.
+  //   openSearcher == false && closeSearcher == false
+  // - Do not open any searcher and prevent further updates (e.g. when the core is closing).
+  //   closeSearcher == true
+
   public boolean optimize;
   public boolean openSearcher = true; // open a new searcher as part of a hard commit
   public boolean waitSearcher = true;
+  private boolean closeSearcher = false;
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
   public boolean prepareCommit = false;
+
   /**
    * User provided commit data. Can be let to null if there is none. It is possible to commit this
    * user data, even if there is no uncommitted change in the index writer, provided this user data
@@ -44,6 +57,26 @@ public class CommitUpdateCommand extends UpdateCommand {
   public CommitUpdateCommand(SolrQueryRequest req, boolean optimize) {
     super(req);
     this.optimize = optimize;
+  }
+
+  /**
+   * Creates a {@link CommitUpdateCommand} to commit before closing the core and also prevent any
+   * new update by setting the core in read-only mode. Does not open a new searcher.
+   */
+  public static CommitUpdateCommand closeOnCommit(SolrQueryRequest req, boolean optimize) {
+    CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize);
+    cmd.openSearcher = false;
+    cmd.waitSearcher = false;
+    cmd.closeSearcher = true;
+    return cmd;
+  }
+
+  /**
+   * Indicates whether this command is a commit before the core is closed. Any new updates must be
+   * prevented after the commit.
+   */
+  public boolean isClosingOnCommit() {
+    return closeSearcher;
   }
 
   @Override
