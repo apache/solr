@@ -36,7 +36,7 @@ setup() {
 }
 
 @test "auth enable/disable lifecycle" {
-  solr start -c
+  solr start
   solr auth enable --type basicAuth --credentials name:password
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
@@ -46,5 +46,18 @@ setup() {
   solr auth disable
   run curl "http://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
+  solr stop --all
+}
+
+@test "enable auth connects via zookeeper" {
+  solr start
+  run solr auth enable --type basicAuth --credentials name:password -z localhost:${ZK_PORT}
+  assert_output --partial 'Successfully enabled basic auth'
+  run curl -u name:password --basic "http://localhost:${SOLR_PORT}/api/cluster"
+  assert_output --partial '"status":0'
+  
+  solr auth disable -z localhost:${ZK_PORT}
+  run curl "http://localhost:${SOLR_PORT}/api/cluster"
+  assert_output --partial '"status":0' 
   solr stop --all
 }

@@ -177,6 +177,15 @@ public interface CommonParams {
    */
   String CPU_ALLOWED = "cpuAllowed";
 
+  /**
+   * Max query memory allocation value in mebibytes (float). If not set, or the value is &lt;= 0.0,
+   * there is no limit.
+   */
+  String MEM_ALLOWED = "memAllowed";
+
+  /** The max hits to be collected per shard. */
+  String MAX_HITS_ALLOWED = "maxHitsAllowed";
+
   /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";
 
@@ -218,6 +227,7 @@ public interface CommonParams {
   String OK = "OK";
   String FAILURE = "FAILURE";
 
+  /** /admin paths which don't require a target collection */
   Set<String> ADMIN_PATHS =
       Set.of(
           CORES_HANDLER_PATH,
@@ -230,6 +240,7 @@ public interface CommonParams {
           AUTHC_PATH,
           AUTHZ_PATH,
           METRICS_PATH);
+
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 

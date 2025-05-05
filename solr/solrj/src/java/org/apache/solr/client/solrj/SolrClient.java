@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
-import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
+import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -51,7 +52,6 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   private static final long serialVersionUID = 1L;
 
-  private DocumentObjectBinder binder;
   protected String defaultCollection;
 
   /**
@@ -260,7 +260,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public UpdateResponse addBean(String collection, Object obj, int commitWithinMs)
       throws IOException, SolrServerException {
-    return add(collection, getBinder().toSolrInputDocument(obj), commitWithinMs);
+    return add(collection, DocumentObjectBinder.INSTANCE.toSolrInputDocument(obj), commitWithinMs);
   }
 
   /**
@@ -276,7 +276,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public UpdateResponse addBean(Object obj, int commitWithinMs)
       throws IOException, SolrServerException {
-    return add(null, getBinder().toSolrInputDocument(obj), commitWithinMs);
+    return add(null, DocumentObjectBinder.INSTANCE.toSolrInputDocument(obj), commitWithinMs);
   }
 
   /**
@@ -323,15 +323,14 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
    * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   * @see SolrClient#getBinder()
+   * @see DocumentObjectBinder
    * @since solr 5.1
    */
   public UpdateResponse addBeans(String collection, Collection<?> beans, int commitWithinMs)
       throws SolrServerException, IOException {
-    DocumentObjectBinder binder = this.getBinder();
     ArrayList<SolrInputDocument> docs = new ArrayList<>(beans.size());
     for (Object bean : beans) {
-      docs.add(binder.toSolrInputDocument(bean));
+      docs.add(DocumentObjectBinder.INSTANCE.toSolrInputDocument(bean));
     }
     return add(collection, docs, commitWithinMs);
   }
@@ -347,7 +346,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
    * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   * @see SolrClient#getBinder()
+   * @see DocumentObjectBinder
    * @since solr 3.5
    */
   public UpdateResponse addBeans(Collection<?> beans, int commitWithinMs)
@@ -379,7 +378,7 @@ public abstract class SolrClient implements Serializable, Closeable {
           public SolrInputDocument next() {
             Object o = beanIterator.next();
             if (o == null) return null;
-            return getBinder().toSolrInputDocument(o);
+            return DocumentObjectBinder.INSTANCE.toSolrInputDocument(o);
           }
 
           @Override
@@ -991,21 +990,21 @@ public abstract class SolrClient implements Serializable, Closeable {
   public QueryResponse queryAndStreamResponse(
       String collection, SolrParams params, StreamingResponseCallback callback)
       throws SolrServerException, IOException {
-    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+    return getQueryResponse(collection, params, new StreamingJavaBinResponseParser(callback));
   }
 
   public QueryResponse queryAndStreamResponse(
       String collection, SolrParams params, FastStreamingDocsCallback callback)
       throws SolrServerException, IOException {
-    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+    return getQueryResponse(collection, params, new StreamingJavaBinResponseParser(callback));
   }
 
   private QueryResponse getQueryResponse(
       String collection, SolrParams params, ResponseParser parser)
       throws SolrServerException, IOException {
     QueryRequest req = new QueryRequest(params);
-    if (parser instanceof StreamingBinaryResponseParser) {
-      req.setStreamingResponseCallback(((StreamingBinaryResponseParser) parser).callback);
+    if (parser instanceof StreamingJavaBinResponseParser) {
+      req.setStreamingResponseCallback(((StreamingJavaBinResponseParser) parser).callback);
     }
     req.setResponseParser(parser);
     return req.process(this, collection);
@@ -1195,20 +1194,6 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Get the {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder} for this client.
-   *
-   * @return a DocumentObjectBinder
-   * @see SolrClient#addBean
-   * @see SolrClient#addBeans
-   */
-  public DocumentObjectBinder getBinder() {
-    if (binder == null) {
-      binder = new DocumentObjectBinder();
-    }
-    return binder;
-  }
-
-  /**
    * This method defines the context in which this Solr client is being used (e.g. for internal
    * communication between Solr nodes or as an external client). The default value is {@code
    * SolrClientContext#Client}
@@ -1224,5 +1209,21 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public String getDefaultCollection() {
     return defaultCollection;
+  }
+
+  /**
+   * Subclass of SolrException that allows us to capture an arbitrary HTTP status code that may have
+   * been returned by the remote server or a proxy along the way.
+   */
+  public static class RemoteSolrException extends SolrException {
+    /**
+     * @param remoteHost the host the error was received from
+     * @param code Arbitrary HTTP status code
+     * @param msg Exception Message
+     * @param th Throwable to wrap with this Exception
+     */
+    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
+      super(code, "Error from server at " + remoteHost + ": " + msg, th);
+    }
   }
 }

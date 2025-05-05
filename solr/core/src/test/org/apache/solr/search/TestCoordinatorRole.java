@@ -361,11 +361,17 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // TODO: could separate this out into a different test method, but this should suffice for
         // now
         pullJetty.start(true);
+        waitForState(
+            "Pull jetty replicas didn't become active in time",
+            COLL,
+            ((liveNodes, collectionState) ->
+                collectionState.getReplicasOnNode(pullJettyF.getNodeName()).stream()
+                    .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
         AtomicBoolean done = new AtomicBoolean();
         long runMinutes = 1;
         long finishTimeMs =
             new Date().getTime() + TimeUnit.MILLISECONDS.convert(runMinutes, TimeUnit.MINUTES);
-        JettySolrRunner[] jettys = new JettySolrRunner[] {nrtJettyF, pullJettyF};
+        JettySolrRunner[] jettys = new JettySolrRunner[] {pullJettyF, nrtJettyF};
         Random threadRandom = new Random(r.nextInt());
         Future<Integer> f =
             executor.submit(
@@ -386,6 +392,12 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                       log.info("restarting {} ...", idx);
                       toManipulate.start(true);
                       log.info("restarted {}.", idx);
+                      waitForState(
+                          toManipulate.getNodeName() + " replicas didn't become active in time",
+                          COLL,
+                          ((liveNodes, collectionState) ->
+                              collectionState.getReplicasOnNode(toManipulate.getNodeName()).stream()
+                                  .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
                     } catch (Exception e) {
                       throw new RuntimeException(e);
                     }
@@ -750,7 +762,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Failed to wait for child shards after split",
           COLLECTION_NAME,
-          (liveNodes, collectionState) ->
+          collectionState ->
               collectionState.getSlice("shard1_0") != null
                   && collectionState.getSlice("shard1_0").getState() == Slice.State.ACTIVE
                   && collectionState.getSlice("shard1_1") != null
@@ -761,7 +773,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Parent shard is not yet deleted after split",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> collectionState.getSlice("shard1") == null);
+          collectionState -> collectionState.getSlice("shard1") == null);
 
       response =
           new QueryRequest(new SolrQuery("*:*"))
@@ -796,7 +808,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Cannot find replica on first node yet",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             if (collectionState.getReplicas().size() == 1) {
               Replica replica = collectionState.getReplicas().get(0);
               return fromNode.equals(replica.getNodeName())
@@ -837,7 +849,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Cannot find replica on second node yet after repliac move",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             if (collectionState.getReplicas().size() == 1) {
               Replica replica = collectionState.getReplicas().get(0);
               return toNodeName.equals(replica.getNodeName())

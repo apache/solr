@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request;
 
-import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayDeque;
@@ -24,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.http.HttpServletRequest;
@@ -51,12 +51,12 @@ public class SolrRequestInfo {
   private SolrQueryRequest req;
   private SolrQueryResponse rsp;
   private Date now;
-  public HttpServletRequest httpRequest;
   private TimeZone tz;
   private ResponseBuilder rb;
-  private List<Closeable> closeHooks;
+  private List<AutoCloseable> closeHooks;
   private SolrDispatchFilter.Action action;
   private boolean useServerToken = false;
+  private Principal principal;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -64,6 +64,14 @@ public class SolrRequestInfo {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     if (stack.isEmpty()) return null;
     return stack.peek();
+  }
+
+  public static Optional<SolrRequestInfo> getReqInfo() {
+    return Optional.ofNullable(getRequestInfo());
+  }
+
+  public static Optional<SolrQueryRequest> getRequest() {
+    return getReqInfo().map(i -> i.req);
   }
 
   /**
@@ -129,7 +137,7 @@ public class SolrRequestInfo {
     }
 
     if (closeHooks != null) {
-      for (Closeable hook : closeHooks) {
+      for (AutoCloseable hook : closeHooks) {
         try {
           hook.close();
         } catch (Exception e) {
@@ -143,6 +151,7 @@ public class SolrRequestInfo {
   public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp) {
     this.req = req;
     this.rsp = rsp;
+    this.principal = req != null ? req.getUserPrincipal() : null;
   }
 
   public SolrRequestInfo(
@@ -152,8 +161,8 @@ public class SolrRequestInfo {
   }
 
   public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp) {
-    this.httpRequest = httpReq;
     this.rsp = rsp;
+    this.principal = httpReq != null ? httpReq.getUserPrincipal() : null;
   }
 
   public SolrRequestInfo(
@@ -163,9 +172,7 @@ public class SolrRequestInfo {
   }
 
   public Principal getUserPrincipal() {
-    if (req != null) return req.getUserPrincipal();
-    if (httpRequest != null) return httpRequest.getUserPrincipal();
-    return null;
+    return principal;
   }
 
   public Date getNOW() {
@@ -209,7 +216,7 @@ public class SolrRequestInfo {
     this.rb = rb;
   }
 
-  public void addCloseHook(Closeable hook) {
+  public void addCloseHook(AutoCloseable hook) {
     // is this better here, or on SolrQueryRequest?
     synchronized (this) {
       if (isClosed()) {
@@ -244,10 +251,12 @@ public class SolrRequestInfo {
    */
   public QueryLimits getLimits() {
     // make sure the ThreadCpuTime is always initialized
-    return req == null || rsp == null
-        ? QueryLimits.NONE
-        : (QueryLimits)
-            req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req, rsp));
+    return req == null || rsp == null ? QueryLimits.NONE : getQueryLimits(req, rsp);
+  }
+
+  public static QueryLimits getQueryLimits(SolrQueryRequest request, SolrQueryResponse response) {
+    return (QueryLimits)
+        request.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(request, response));
   }
 
   public SolrDispatchFilter.Action getAction() {

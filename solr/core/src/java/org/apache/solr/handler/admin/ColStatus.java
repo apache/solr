@@ -21,27 +21,27 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.api.model.GetSegmentDataResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,9 +49,9 @@ import org.slf4j.LoggerFactory;
 public class ColStatus {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private final Http2SolrClient solrClient;
   private final ClusterState clusterState;
   private final ZkNodeProps props;
-  private final SolrClientCache solrClientCache;
 
   public static final String CORE_INFO_PROP = SegmentsInfoRequestHandler.CORE_INFO_PARAM;
   public static final String FIELD_INFO_PROP = SegmentsInfoRequestHandler.FIELD_INFO_PARAM;
@@ -65,10 +65,10 @@ public class ColStatus {
       SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
-  public ColStatus(SolrClientCache solrClientCache, ClusterState clusterState, ZkNodeProps props) {
-    this.props = props;
-    this.solrClientCache = solrClientCache;
+  public ColStatus(Http2SolrClient solrClient, ClusterState clusterState, ZkNodeProps props) {
+    this.solrClient = solrClient;
     this.clusterState = clusterState;
+    this.props = props;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -76,17 +76,21 @@ public class ColStatus {
     Collection<String> collections;
     String col = props.getStr(ZkStateReader.COLLECTION_PROP);
     if (col == null) {
-      collections = new HashSet<>(clusterState.getCollectionStates().keySet());
+      collections = clusterState.getCollectionNames();
     } else {
       collections = Collections.singleton(col);
     }
     boolean withFieldInfo = props.getBool(FIELD_INFO_PROP, false);
-    boolean withSegments = props.getBool(SEGMENTS_PROP, false);
     boolean withCoreInfo = props.getBool(CORE_INFO_PROP, false);
     boolean withSizeInfo = props.getBool(SIZE_INFO_PROP, false);
     boolean withRawSizeInfo = props.getBool(RAW_SIZE_PROP, false);
     boolean withRawSizeSummary = props.getBool(RAW_SIZE_SUMMARY_PROP, false);
     boolean withRawSizeDetails = props.getBool(RAW_SIZE_DETAILS_PROP, false);
+    // FieldInfo and SizeInfo imply segments=true, since they add to the data reported about each
+    // segment
+    boolean withSegments = props.getBool(SEGMENTS_PROP, false);
+    withSegments |= withFieldInfo || withSizeInfo;
+
     Object samplingPercentVal = props.get(RAW_SIZE_SAMPLING_PERCENT_PROP);
     Float samplingPercent =
         samplingPercentVal != null ? Float.parseFloat(String.valueOf(samplingPercentVal)) : null;
@@ -95,6 +99,7 @@ public class ColStatus {
     }
     boolean getSegments = false;
     if (withFieldInfo
+        || withSegments
         || withSizeInfo
         || withCoreInfo
         || withRawSizeInfo
@@ -178,12 +183,12 @@ public class ColStatus {
         if (!leader.isActive(clusterState.getLiveNodes())) {
           continue;
         }
-        String url = ZkCoreNodeProps.getCoreUrl(leader);
+        String url = leader.getCoreUrl();
         if (url == null) {
           continue;
         }
         if (getSegments) {
-          try (SolrClient client = solrClientCache.getHttpSolrClient(url)) {
+          try {
             ModifiableSolrParams params = new ModifiableSolrParams();
             params.add(CommonParams.QT, "/admin/segments");
             params.add(FIELD_INFO_PROP, "true");
@@ -196,43 +201,46 @@ public class ColStatus {
               params.add(RAW_SIZE_SAMPLING_PERCENT_PROP, String.valueOf(samplingPercent));
             }
             QueryRequest req = new QueryRequest(params);
-            NamedList<Object> rsp = client.request(req);
-            rsp.remove("responseHeader");
-            leaderMap.add("segInfos", rsp);
-            NamedList<?> segs = (NamedList<?>) rsp.get("segments");
+            NamedList<Object> rsp = solrClient.requestWithBaseUrl(url, null, req).getResponse();
+            final var segmentResponse =
+                SolrJacksonMapper.getObjectMapper().convertValue(rsp, GetSegmentDataResponse.class);
+            segmentResponse.responseHeader = null;
+
+            final var segs = segmentResponse.segments;
             if (segs != null) {
-              for (Map.Entry<String, ?> entry : segs) {
-                NamedList<Object> fields =
-                    (NamedList<Object>) ((NamedList<Object>) entry.getValue()).get("fields");
-                if (fields != null) {
-                  for (Map.Entry<String, Object> fEntry : fields) {
-                    Object nc = ((NamedList<Object>) fEntry.getValue()).get("nonCompliant");
-                    if (nc != null) {
+              for (Map.Entry<String, GetSegmentDataResponse.SingleSegmentData> entry :
+                  segs.entrySet()) {
+                final var fieldInfoByName = entry.getValue().fields;
+                if (fieldInfoByName != null) {
+                  for (Map.Entry<String, GetSegmentDataResponse.SegmentSingleFieldInfo> fEntry :
+                      fieldInfoByName.entrySet()) {
+                    if (fEntry.getValue().nonCompliant != null) {
                       nonCompliant.add(fEntry.getKey());
                     }
                   }
                 }
                 if (!withFieldInfo) {
-                  ((NamedList<Object>) entry.getValue()).remove("fields");
+                  entry.getValue().fields = null;
                 }
               }
             }
             if (!withSegments) {
-              rsp.remove("segments");
+              segmentResponse.segments = null;
             }
             if (!withFieldInfo) {
-              rsp.remove("fieldInfoLegend");
+              segmentResponse.fieldInfoLegend = null;
             }
+            leaderMap.add("segInfos", Utils.reflectToMap(segmentResponse));
           } catch (SolrServerException | IOException e) {
             log.warn("Error getting details of replica segments from {}", url, e);
           }
-        }
-      }
+        } // if getSegments
+      } // for slice
       if (nonCompliant.isEmpty()) {
         nonCompliant.add("(NONE)");
       }
       colMap.add("schemaNonCompliant", nonCompliant);
       colMap.add("shards", shards);
-    }
+    } // for collection
   }
 }

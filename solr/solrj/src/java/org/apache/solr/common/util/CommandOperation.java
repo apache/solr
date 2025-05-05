@@ -101,8 +101,7 @@ public class CommandOperation {
       }
       return commandData;
     }
-    if (commandData instanceof Map) {
-      Map<?, ?> metaData = (Map<?, ?>) commandData;
+    if (commandData instanceof Map<?, ?> metaData) {
       return metaData.get(key);
     } else {
       String msg = " value has to be an object for operation :" + name;
@@ -284,8 +283,7 @@ public class CommandOperation {
       Object key = ob.getKey();
       ev = parser.nextEvent();
       Object val = ob.getVal();
-      if (val instanceof List && !singletonCommands.contains(key)) {
-        List<?> list = (List<?>) val;
+      if (val instanceof List<?> list && !singletonCommands.contains(key)) {
         for (Object o : list) {
           if (!(o instanceof Map)) {
             operations.add(new CommandOperation(String.valueOf(key), list));
@@ -371,8 +369,7 @@ public class CommandOperation {
   public Integer getInt(String name, Integer def) {
     Object o = getVal(name);
     if (o == null) return def;
-    if (o instanceof Number) {
-      Number number = (Number) o;
+    if (o instanceof Number number) {
       return number.intValue();
     } else {
       try {

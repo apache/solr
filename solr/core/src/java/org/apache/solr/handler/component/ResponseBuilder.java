@@ -122,13 +122,13 @@ public class ResponseBuilder {
    * public static final String LOCAL_SHARD = "local"; public static final String DOC_QUERY = "dq";
    * *
    */
-  public static int STAGE_START = 0;
+  public static final int STAGE_START = 0;
 
-  public static int STAGE_PARSE_QUERY = 1000;
-  public static int STAGE_TOP_GROUPS = 1500;
-  public static int STAGE_EXECUTE_QUERY = 2000;
-  public static int STAGE_GET_FIELDS = 3000;
-  public static int STAGE_DONE = Integer.MAX_VALUE;
+  public static final int STAGE_PARSE_QUERY = 1000;
+  public static final int STAGE_TOP_GROUPS = 1500;
+  public static final int STAGE_EXECUTE_QUERY = 2000;
+  public static final int STAGE_GET_FIELDS = 3000;
+  public static final int STAGE_DONE = Integer.MAX_VALUE;
 
   public int stage; // What stage is this current request at?
 
@@ -444,11 +444,23 @@ public class ResponseBuilder {
   /** Sets results from a SolrIndexSearcher.QueryResult. */
   public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
+    if (result.isPartialResultOmitted() || result.isPartialResults()) {
+      rsp.setPartialResults(req);
+    }
     if (result.isPartialResults()) {
-      rsp.setPartialResults();
       if (getResults() != null && getResults().docList == null) {
         getResults().docList =
             new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
+      }
+      final Object partialResponseDetail = result.getPartialResultsDetails();
+      if (partialResponseDetail != null) {
+        rsp.addPartialResponseDetail(partialResponseDetail);
+      }
+      final Object approximateTotalHits = result.getApproximateTotalHits();
+      if (approximateTotalHits != null) {
+        rsp.getResponseHeader()
+            .add(
+                SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
       }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();
@@ -457,6 +469,13 @@ public class ResponseBuilder {
           .add(
               SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
               segmentTerminatedEarly);
+    }
+    final Boolean maxHitsTerminatedEarly = result.getMaxHitsTerminatedEarly();
+    if (maxHitsTerminatedEarly != null) {
+      rsp.getResponseHeader()
+          .add(
+              SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY,
+              maxHitsTerminatedEarly);
     }
     if (null != cursorMark) {
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";

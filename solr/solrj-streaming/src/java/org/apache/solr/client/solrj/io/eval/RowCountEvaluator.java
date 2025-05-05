@@ -31,7 +31,7 @@ public class RowCountEvaluator extends RecursiveObjectEvaluator implements OneVa
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof Matrix)) {
+    if (!(value instanceof Matrix matrix)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -39,7 +39,6 @@ public class RowCountEvaluator extends RecursiveObjectEvaluator implements OneVa
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      Matrix matrix = (Matrix) value;
       return matrix.getRowCount();
     }
   }

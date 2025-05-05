@@ -338,7 +338,7 @@ If you are working in xref:schemaless-mode.adoc[], however, fields that don't ex
 
 === Reusing Parameters in Multiple Requests
 
-You can store and re-use parameters with Solr's xref:configuration-guide:request-parameters-api.adoc[].
+You can store and reuse parameters with Solr's xref:configuration-guide:request-parameters-api.adoc[].
 
 Say we wanted to define parameters to split documents at the `exams` field, and map several other fields.
 We could make an API request such as:

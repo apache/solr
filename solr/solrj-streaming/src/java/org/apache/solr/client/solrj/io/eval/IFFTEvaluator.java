@@ -46,9 +46,8 @@ public class IFFTEvaluator extends RecursiveObjectEvaluator implements OneValueW
   @Override
   public Object doWork(Object v) throws IOException {
 
-    if (v instanceof Matrix) {
+    if (v instanceof Matrix matrix) {
 
-      Matrix matrix = (Matrix) v;
       double[][] data = matrix.getData();
       double[] real = data[0];
       double[] imaginary = data[1];

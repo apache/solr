@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
@@ -48,7 +47,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Test the behavior of {@link CloudSolrClient#isUpdatesToLeaders} and {@link
- * IsUpdateRequest#isSendToLeaders}.
+ * UpdateRequest#isSendToLeaders}.
  *
  * <p>This class uses {@link TrackingUpdateProcessorFactory} instances (configured both before, and
  * after the <code>distrib</code> processor) to inspect which replicas receive various {@link
@@ -83,12 +82,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
     configureCluster(numNodes)
         .addConfig(
             CONFIG,
-            getFile("solrj")
-                .toPath()
-                .resolve("solr")
-                .resolve("configsets")
-                .resolve(CONFIG)
-                .resolve("conf"))
+            getFile("solrj").resolve("solr").resolve("configsets").resolve(CONFIG).resolve("conf"))
         .configure();
 
     // create 2 shard collection with 1 NRT (leader) and 1 PULL replica
@@ -207,7 +201,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
    * setting <code>shards.preference=replica.type:PULL</code> on the input req, and then returning
    * that req
    */
-  private static AbstractUpdateRequest prefPull(final AbstractUpdateRequest req) {
+  private static UpdateRequest prefPull(final UpdateRequest req) {
     req.setParam("shards.preference", "replica.type:PULL");
     return req;
   }
@@ -486,7 +480,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   }
 
   /**
-   * Given a SolrClient, sends various updates were {@link IsUpdateRequest#isSendToLeaders} returns
+   * Given a SolrClient, sends various updates were {@link UpdateRequest#isSendToLeaders} returns
    * false, and asserts expectations that requests using {@link #prefPull} are all sent to PULL
    * replicas, regardless of how the client is configured.
    */

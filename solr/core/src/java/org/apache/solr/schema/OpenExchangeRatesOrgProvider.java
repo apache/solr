@@ -35,8 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Exchange Rates Provider for {@link CurrencyField} and {@link CurrencyFieldType} capable of
- * fetching &amp; parsing the freely available exchange rates from openexchangerates.org
+ * Exchange Rates Provider for {@link CurrencyFieldType} capable of fetching &amp; parsing the
+ * freely available exchange rates from openexchangerates.org
  *
  * <p>Configuration Options:
  *
@@ -122,9 +122,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof OpenExchangeRatesOrgProvider)) return false;
+    if (!(o instanceof OpenExchangeRatesOrgProvider that)) return false;
 
-    OpenExchangeRatesOrgProvider that = (OpenExchangeRatesOrgProvider) o;
     return Objects.equals(rates, that.rates);
   }
 

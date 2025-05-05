@@ -19,11 +19,12 @@ package org.apache.solr.common.util;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -106,6 +107,20 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     parentDocument.addChildDocument(secondKid);
 
     return parentDocument;
+  }
+
+  @Test
+  public void testPrimitiveArrays() throws Exception {
+    List<Object> types = new ArrayList<>();
+
+    types.add(new float[] {1.0678f, 4.094565f, 0.000456f});
+    types.add(new double[] {1.0678d, 4.094565d, 0.000456d});
+    types.add(new int[] {145543, 4546354, 9789857});
+    types.add(new long[] {145543L, 4546354L, 9789857L});
+    types.add(new short[] {43, 454, 857});
+    types.add(new boolean[] {true, true, false});
+
+    compareObjects((List<?>) getObject(getBytes(types)), types);
   }
 
   private List<Object> generateAllDataTypes() {
@@ -209,9 +224,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertEquals(unmarshalledObj.size(), matchObj.size());
     for (int i = 0; i < unmarshalledObj.size(); i++) {
 
-      if (unmarshalledObj.get(i) instanceof byte[] && matchObj.get(i) instanceof byte[]) {
-        byte[] b1 = (byte[]) unmarshalledObj.get(i);
-        byte[] b2 = (byte[]) matchObj.get(i);
+      if (unmarshalledObj.get(i) instanceof byte[] b1 && matchObj.get(i) instanceof byte[] b2) {
         assertArrayEquals(b1, b2);
       } else if (unmarshalledObj.get(i) instanceof SolrDocument
           && matchObj.get(i) instanceof SolrDocument) {
@@ -225,6 +238,23 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       } else if (unmarshalledObj.get(i) instanceof SolrInputField
           && matchObj.get(i) instanceof SolrInputField) {
         assertTrue(assertSolrInputFieldEquals(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof float[] a
+          && matchObj.get(i) instanceof float[] e) {
+        assertArrayEquals(e, a, 0.000000f);
+      } else if (unmarshalledObj.get(i) instanceof double[] a
+          && matchObj.get(i) instanceof double[] e) {
+        assertArrayEquals(e, a, 0.000000d);
+      } else if (unmarshalledObj.get(i) instanceof long[] a
+          && matchObj.get(i) instanceof long[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof int[] a && matchObj.get(i) instanceof int[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof short[] a
+          && matchObj.get(i) instanceof short[] e) {
+        assertArrayEquals(e, a);
+      } else if (unmarshalledObj.get(i) instanceof boolean[] a
+          && matchObj.get(i) instanceof boolean[] e) {
+        assertArrayEquals(e, a);
       } else {
         assertEquals(unmarshalledObj.get(i), matchObj.get(i));
       }
@@ -454,14 +484,14 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     Object data = generateAllDataTypes();
     byte[] out = getBytes(data);
-    FileOutputStream fs = new FileOutputStream(new File(BIN_FILE_LOCATION));
+    OutputStream fs = Files.newOutputStream(Path.of(BIN_FILE_LOCATION));
     BufferedOutputStream bos = new BufferedOutputStream(fs);
     bos.write(out);
     bos.close();
 
     // Binary file with child documents
     SolrDocument sdoc = generateSolrDocumentWithChildDocs();
-    fs = new FileOutputStream(new File(BIN_FILE_LOCATION_CHILD_DOCS));
+    fs = Files.newOutputStream(Path.of(BIN_FILE_LOCATION_CHILD_DOCS));
     bos = new BufferedOutputStream(fs);
     bos.write(getBytes(sdoc));
     bos.close();

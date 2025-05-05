@@ -297,12 +297,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    * @return list of {@link Range}
    */
   private List<Range> parseRanges(Object input) {
-    if (!(input instanceof List)) {
+    if (!(input instanceof List<?> intervals)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Expected List for ranges but got " + input.getClass().getSimpleName() + " = " + input);
     }
-    List<?> intervals = (List<?>) input;
     List<Range> ranges = new ArrayList<>();
     for (Object obj : intervals) {
       if (!(obj instanceof Map)) {
@@ -921,7 +920,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       if (!(this.field.getType() instanceof CurrencyFieldType)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Cannot perform range faceting over non CurrencyField fields");
+            "Cannot perform range faceting over non CurrencyFieldType fields");
       }
       defaultCurrencyCode = ((CurrencyFieldType) this.field.getType()).getDefaultCurrency();
       exchangeRateProvider = ((CurrencyFieldType) this.field.getType()).getProvider();

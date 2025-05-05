@@ -16,10 +16,9 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -27,12 +26,26 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 /** Supports snapshot-create command in the bin/solr script. */
 public class SnapshotCreateTool extends ToolBase {
 
-  public SnapshotCreateTool() {
-    this(CLIO.getOutStream());
-  }
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of collection to be snapshot.")
+          .build();
 
-  public SnapshotCreateTool(PrintStream stdout) {
-    super(stdout);
+  private static final Option SNAPSHOT_NAME_OPTION =
+      Option.builder()
+          .longOpt("snapshot-name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of the snapshot to produce")
+          .build();
+
+  public SnapshotCreateTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -41,35 +54,19 @@ public class SnapshotCreateTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_SOLRURL,
-        Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of collection to be snapshot.")
-            .build(),
-        Option.builder()
-            .longOpt("snapshot-name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of the snapshot to produce")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(SNAPSHOT_NAME_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-
-    String snapshotName = cli.getOptionValue("snapshot-name");
-    String collectionName = cli.getOptionValue("name");
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
+    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
+    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
       createSnapshot(solrClient, collectionName, snapshotName);
     }
   }

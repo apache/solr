@@ -22,11 +22,12 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -38,6 +39,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.LogLevelTestRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -48,6 +50,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.ComparisonFailure;
+import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
@@ -93,24 +96,23 @@ public class SolrTestCase extends LuceneTestCase {
               new VerifyTestClassNamingConvention(
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
           .around(new RevertDefaultThreadHandlerRule())
+          .around(new LogLevelTestRule())
           .around(
-              (base, description) ->
-                  new StatementAdapter(base) {
-                    @Override
-                    protected void afterIfSuccessful() {
-                      // if the tests passed, make sure everything was closed / released
-                      String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
-                      assertNull(orr, orr);
-                    }
+              new TestRuleAdapter() {
+                @Override
+                protected void afterIfSuccessful() {
+                  // if the tests passed, make sure everything was closed / released
+                  String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+                  assertNull(orr, orr);
+                }
 
-                    @Override
-                    protected void afterAlways(List<Throwable> errors) {
-                      if (!errors.isEmpty()) {
-                        ObjectReleaseTracker.tryClose();
-                      }
-                      StartupLoggingUtils.shutdown();
-                    }
-                  });
+                @Override
+                protected void afterAlways(List<Throwable> errors) {
+                  if (!errors.isEmpty()) {
+                    ObjectReleaseTracker.tryClose();
+                  }
+                }
+              });
 
   /**
    * Sets the <code>solr.default.confdir</code> system property to the value of {@link
@@ -132,15 +134,16 @@ public class SolrTestCase extends LuceneTestCase {
           existingValue);
       return;
     }
-    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    if (extPath.canRead(/* implies exists() */ ) && extPath.isDirectory()) {
+    final Path extPath = ExternalPaths.DEFAULT_CONFIGSET;
+    if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
           SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
           ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
       System.setProperty(
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ExternalPaths.DEFAULT_CONFIGSET.toString());
     } else {
       log.warn(
           "System property '{}' is not already set, but test-framework derived value ('{}') either "
@@ -152,7 +155,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)
     if (ExternalPaths.SOURCE_HOME != null) {
-      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME);
+      System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME.toString());
     }
 
     if (!TEST_NIGHTLY) {
@@ -173,7 +176,7 @@ public class SolrTestCase extends LuceneTestCase {
    * <p>Rationale: to have better coverage of all methods that deal with span creation without
    * having to enable tracing.
    *
-   * @see TraceUtils#resetRecordingFlag().
+   * @see TraceUtils#resetRecordingFlag()
    */
   private static void injectRandomTraceRecordingFlag() {
     if (LuceneTestCase.rarely()) {
@@ -194,15 +197,21 @@ public class SolrTestCase extends LuceneTestCase {
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
 
+  @AfterClass
+  public static void afterClassShutdownLogging() {
+    StartupLoggingUtils.shutdown();
+  }
+
+  @Rule public TestRule methodRules = new LogLevelTestRule();
+
   /**
    * Special hook for sanity checking if any tests trigger failures when an Assumption failure
-   * occures in a {@link Before} method
+   * occurs in a {@link Before} method
    *
    * @lucene.internal
    */
   @Before
   public void checkSyspropForceBeforeAssumptionFailure() {
-    // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
     final String PROP = "tests.force.assumption.failure.before";
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
@@ -211,6 +220,8 @@ public class SolrTestCase extends LuceneTestCase {
   public static void afterSolrTestCase() {
     GlobalOpenTelemetry.resetForTest();
   }
+
+  //              UTILITY METHODS FOLLOW
 
   public static void assertJSONEquals(String expected, String actual) {
     Object json1 = fromJSONString(expected);

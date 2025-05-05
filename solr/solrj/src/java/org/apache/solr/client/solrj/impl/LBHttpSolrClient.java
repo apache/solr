@@ -191,7 +191,7 @@ public class LBHttpSolrClient extends LBSolrClient {
   }
 
   @Override
-  public String removeSolrServer(Endpoint server) {
+  public synchronized String removeSolrServer(Endpoint server) {
     urlToClient.remove(server.toString());
     return super.removeSolrServer(server);
   }
@@ -219,7 +219,7 @@ public class LBHttpSolrClient extends LBSolrClient {
 
     public Builder() {
       this.solrEndpoints = new ArrayList<>();
-      this.responseParser = new BinaryResponseParser();
+      this.responseParser = new JavaBinResponseParser();
     }
 
     public HttpSolrClient.Builder getHttpSolrClientBuilder() {

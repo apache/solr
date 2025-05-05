@@ -21,12 +21,8 @@ import static org.apache.solr.client.api.model.Constants.COLLECTION;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
 
-/**
- * The Response for {@link DeleteCollectionSnapshotApi#deleteCollectionSnapshot(String, String,
- * boolean, String)}
- */
+/** The Response for {@link org.apache.solr.client.api.endpoint.CollectionSnapshotApis.Delete} */
 public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
   @Schema(description = "The name of the collection.")
   @JsonProperty(COLLECTION)

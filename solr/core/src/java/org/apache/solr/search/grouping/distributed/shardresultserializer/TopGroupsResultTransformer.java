@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
@@ -72,12 +73,10 @@ public class TopGroupsResultTransformer
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     for (Command<?> command : data) {
       NamedList<Object> commandResult;
-      if (command instanceof TopGroupsFieldCommand) {
-        TopGroupsFieldCommand fieldCommand = (TopGroupsFieldCommand) command;
+      if (command instanceof TopGroupsFieldCommand fieldCommand) {
         SchemaField groupField = schema.getField(fieldCommand.getKey());
         commandResult = serializeTopGroups(fieldCommand.result(), groupField);
-      } else if (command instanceof QueryCommand) {
-        QueryCommand queryCommand = (QueryCommand) command;
+      } else if (command instanceof QueryCommand queryCommand) {
         commandResult = serializeTopDocs(queryCommand.result());
       } else {
         commandResult = null;
@@ -130,10 +129,17 @@ public class TopGroupsResultTransformer
       Integer totalHitCount = (Integer) commandResult.get("totalHitCount");
 
       List<GroupDocs<BytesRef>> groupDocs = new ArrayList<>();
-      for (int i = 2; i < commandResult.size(); i++) {
-        String groupValue = commandResult.getName(i);
+
+      // Skip first two entries (totalGroupedHitCount and totalHitCount) and process the rest
+      int skipCount = 0;
+      for (Entry<String, ?> groupEntry : commandResult) {
+        if (skipCount++ < 2) {
+          continue;
+        }
+
+        String groupValue = groupEntry.getKey();
         @SuppressWarnings("unchecked")
-        NamedList<Object> groupResult = (NamedList<Object>) commandResult.getVal(i);
+        NamedList<Object> groupResult = (NamedList<Object>) groupEntry.getValue();
         // previously Integer now Long
         Number totalGroupHits = (Number) groupResult.get("totalHits");
         Float maxScore = (Float) groupResult.get("maxScore");
@@ -241,11 +247,10 @@ public class TopGroupsResultTransformer
         if (!Float.isNaN(searchGroup.scoreDocs[i].score)) {
           document.add("score", searchGroup.scoreDocs[i].score);
         }
-        if (!(searchGroup.scoreDocs[i] instanceof FieldDoc)) {
+        if (!(searchGroup.scoreDocs[i] instanceof FieldDoc fieldDoc)) {
           continue; // thus don't add sortValues below
         }
 
-        FieldDoc fieldDoc = (FieldDoc) searchGroup.scoreDocs[i];
         Object[] convertedSortValues = new Object[fieldDoc.fields.length];
         for (int j = 0; j < fieldDoc.fields.length; j++) {
           Object sortValue = fieldDoc.fields[j];
@@ -304,11 +309,10 @@ public class TopGroupsResultTransformer
       if (!Float.isNaN(scoreDoc.score)) {
         document.add("score", scoreDoc.score);
       }
-      if (!(scoreDoc instanceof FieldDoc)) {
+      if (!(scoreDoc instanceof FieldDoc fieldDoc)) {
         continue; // thus don't add sortValues below
       }
 
-      FieldDoc fieldDoc = (FieldDoc) scoreDoc;
       Object[] convertedSortValues = new Object[fieldDoc.fields.length];
       for (int j = 0; j < fieldDoc.fields.length; j++) {
         Object sortValue = fieldDoc.fields[j];

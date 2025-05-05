@@ -94,7 +94,8 @@ public class PackageToolTest extends SolrCloudTestCase {
 
   @Test
   public void testPackageTool() throws Exception {
-    PackageTool tool = new PackageTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PackageTool tool = new PackageTool(runtime);
 
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
@@ -157,6 +158,7 @@ public class PackageToolTest extends SolrCloudTestCase {
           SecurityJson.USER_PASS
         });
 
+    // Leaving -p in for --param to test the deprecated value continues to work.
     run(
         tool,
         new String[] {
@@ -167,7 +169,7 @@ public class PackageToolTest extends SolrCloudTestCase {
           "-y",
           "--collections",
           "abc",
-          "-p",
+          "--param",
           "RH-HANDLER-PATH=" + rhPath,
           "--credentials",
           SecurityJson.USER_PASS
@@ -263,7 +265,7 @@ public class PackageToolTest extends SolrCloudTestCase {
               "question-answer",
               "--collections",
               "abc",
-              "-p",
+              "--param",
               "RH-HANDLER-PATH=" + rhPath,
               "--credentials",
               SecurityJson.USER_PASS
@@ -354,7 +356,8 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     boolean success = false;
 
-    ApiTool apiTool = new ApiTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    ApiTool apiTool = new ApiTool(runtime);
     String response = apiTool.callGet(testServerBaseUrl + uri, credentials);
 
     LinkedHashMapWriter m =

@@ -35,8 +35,8 @@ import java.util.concurrent.Future;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -308,15 +308,16 @@ public class SolrCmdDistributor implements Closeable {
     // Copy user principal from the original request to the new update request, for later
     // authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
-      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
+      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getUserPrincipal());
     }
 
     if (req.synchronous) {
       blockAndDoRetries();
 
       try {
-        req.uReq.setBasePath(req.node.getUrl());
-        clients.getHttpClient().request(req.uReq);
+        clients
+            .getHttpClient()
+            .requestWithBaseUrl(req.node.getBaseUrl(), req.node.getCoreName(), req.uReq);
       } catch (Exception e) {
         log.error("Exception making request", e);
         SolrError error = new SolrError();
@@ -448,7 +449,7 @@ public class SolrCmdDistributor implements Closeable {
     private int getRfFromResponse(InputStream inputStream) {
       if (inputStream != null) {
         try {
-          BinaryResponseParser brp = new BinaryResponseParser();
+          JavaBinResponseParser brp = new JavaBinResponseParser();
           NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {
@@ -616,8 +617,7 @@ public class SolrCmdDistributor implements Closeable {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof StdNode)) return false;
-      StdNode other = (StdNode) obj;
+      if (!(obj instanceof StdNode other)) return false;
       return (this.retry == other.retry)
           && (this.maxRetries == other.maxRetries)
           && Objects.equals(this.nodeProps.getBaseUrl(), other.nodeProps.getBaseUrl())
@@ -699,8 +699,7 @@ public class SolrCmdDistributor implements Closeable {
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (!super.equals(obj)) return false;
-      if (!(obj instanceof ForwardNode)) return false;
-      ForwardNode other = (ForwardNode) obj;
+      if (!(obj instanceof ForwardNode other)) return false;
       return Objects.equals(nodeProps.getCoreUrl(), other.nodeProps.getCoreUrl());
     }
   }
