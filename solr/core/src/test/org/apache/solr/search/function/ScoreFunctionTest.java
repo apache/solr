@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -252,5 +253,18 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
         "/response/docs/[2]/id=='1'",
         "/response/docs/[2]/score==1.0",
         "/response/docs/[2]/score_plus_one==2.0");
+  }
+
+  // @Ignore // TODO would like this to work someday
+  @Test
+  public void testSortFunction_sort() throws Exception {
+    // TODO incorporate a docValues value, and some assertions on the order
+    assertQEx(
+        "unsupported",
+        "score() function cannot access the document scores",
+        req(
+            "q", "*:*",
+            "sort", "div(1,score()) desc"),
+        ErrorCode.BAD_REQUEST);
   }
 }
