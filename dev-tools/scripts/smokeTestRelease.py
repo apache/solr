@@ -41,8 +41,8 @@ import scriptutil
 # must have a working gpg, tar in your path.  This has been
 # tested on Linux and on Cygwin under Windows 7.
 
-BASE_JAVA_VERSION = "21"
-SOLRJ_JAVA_VERSION = "17"
+BASE_JAVA_VERSION = "11"
+SOLRJ_JAVA_VERSION = "11"
 
 cygwin = platform.system().lower().startswith('cygwin')
 cygwinWindowsRoot = os.popen('cygpath -w /').read().strip().replace('\\','/') if cygwin else ''
