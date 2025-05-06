@@ -83,9 +83,9 @@ NOTE: If you setup Solr as a service on Linux using the steps outlined in xref:t
 SOLR_SSL_ENABLED=true
 # Uncomment to set SSL-related system properties
 # Be sure to update the paths to the correct keystore for your environment
-SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
+SOLR_SSL_KEY_STORE=/etc/solr-ssl.keystore.p12
 SOLR_SSL_KEY_STORE_PASSWORD=secret
-SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
+SOLR_SSL_TRUST_STORE=/etc/solr-ssl.keystore.p12
 SOLR_SSL_TRUST_STORE_PASSWORD=secret
 # Require clients to authenticate
 SOLR_SSL_NEED_CLIENT_AUTH=false
@@ -109,9 +109,9 @@ REM to enable https module with custom jetty configuration.
 set SOLR_SSL_ENABLED=true
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
-set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
+set SOLR_SSL_KEY_STORE=C:\solr-ssl.keystore.p12
 set SOLR_SSL_KEY_STORE_PASSWORD=secret
-set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
+set SOLR_SSL_TRUST_STORE=C:\solr-ssl.keystore.p12
 set SOLR_SSL_TRUST_STORE_PASSWORD=secret
 REM Require clients to authenticate
 set SOLR_SSL_NEED_CLIENT_AUTH=false
