@@ -334,7 +334,7 @@ public class PackageTool extends ToolBase {
         "Note: (a) Please add '--solr-url http://host:port' parameter if needed (usually on Windows).");
     format(
         sb,
-        "      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
+        "      (b) Please make sure that all Solr nodes are started with '-Dsolr.enable.packages=true' parameter.");
     format(sb, "\n");
     format(sb, "List of options:");
     return sb.toString();

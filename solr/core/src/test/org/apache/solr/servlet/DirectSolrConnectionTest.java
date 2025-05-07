@@ -26,7 +26,7 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.enableStreamBody", "true");
+    System.setProperty("solr.enable.stream.body", "true");
     initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
   }
 

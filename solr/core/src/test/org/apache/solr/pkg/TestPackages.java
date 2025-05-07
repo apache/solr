@@ -91,7 +91,7 @@ public class TestPackages extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.enable.packages", "true");
     configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
         .addConfig("conf", configset("conf3"))
@@ -105,7 +105,7 @@ public class TestPackages extends SolrCloudTestCase {
     if (cluster != null) {
       cluster.shutdown();
     }
-    System.clearProperty("enable.packages");
+    System.clearProperty("solr.enable.packages");
 
     super.tearDown();
   }
