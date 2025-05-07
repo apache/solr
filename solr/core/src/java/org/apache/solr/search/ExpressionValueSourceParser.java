@@ -39,11 +39,12 @@ import org.apache.solr.schema.SchemaField;
 
 /**
  * A ValueSource parser that can be configured with (named) pre-complied Expressions that can then
- * be evaluated at request time. :nocommit: more docs, example configs, example usage :nocommit:
- * need "bad-solrconfig..." level test of cycle expressions, using score w/null score binding,
- * etc..."
+ * be evaluated at request time.
  */
 public class ExpressionValueSourceParser extends ValueSourceParser {
+
+  // TODO: more docs, example configs, example usage
+
   public static final String SCORE_KEY = "score-name";
   public static final String EXPRESSIONS_KEY = "expressions";
 
@@ -155,8 +156,8 @@ public class ExpressionValueSourceParser extends ValueSourceParser {
 
   /**
    * Recursively checks for cycles, returning null if none found - otherwise the string is a
-   * representation of the cycle found (may not be the shortest cycle) This method recursively
-   * adds to visitedKeys and checkedKeys
+   * representation of the cycle found (may not be the shortest cycle) This method recursively adds
+   * to visitedKeys and checkedKeys
    */
   private static String makeCycleErrString(
       String key,
@@ -198,6 +199,7 @@ public class ExpressionValueSourceParser extends ValueSourceParser {
     private final String scoreKey;
     private final Map<String, Expression> expressions;
     private final IndexSchema schema;
+
     /**
      * @param scoreKey The binding name that should be used to represent the score, may be null
      * @param expressions Mapping of expression names that will be consulted as the primary

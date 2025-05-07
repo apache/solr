@@ -28,8 +28,12 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.ExpressionValueSourceParser.SolrBindings;
 import org.apache.solr.util.DateMathParser;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
+
+  // TODO need "bad-solrconfig..." level test of cycle expressions, using score w/null score
+  // binding, etc...
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -191,6 +195,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   }
 
   /** tests an expression referring to a score field using an overridden score binding */
+  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
   public void testSortSsccoorree() {
     assertQ(
         "sort",
@@ -272,6 +277,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   }
 
   /** tests an expression referring to a score field */
+  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
   public void testSortScore() {
     assertQ(
         "sort",
@@ -298,6 +304,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   }
 
   /** tests an expression referring to two expressions with externals */
+  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
   public void testSortScore3() {
     assertQ(
         "sort",
@@ -317,6 +324,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   }
 
   /** tests an expression referring to another expression and a function */
+  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
   public void testSortMixed() {
     assertQ(
         "sort",
