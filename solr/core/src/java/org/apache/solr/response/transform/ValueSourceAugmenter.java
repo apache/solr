@@ -72,15 +72,6 @@ public class ValueSourceAugmenter extends DocTransformer {
   List<LeafReaderContext> readerContexts;
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score) throws IOException {
-    if (context != null && context.wantsScores()) {
-      fcontext.put("scorer", new ScoreAndDoc(docid, score));
-    }
-
-    transform(doc, docid);
-  }
-
-  @Override
   public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
     // This is only good for random-access functions
 
@@ -89,8 +80,13 @@ public class ValueSourceAugmenter extends DocTransformer {
       // TODO: calculate this stuff just once across diff functions
       int idx = ReaderUtil.subIndex(docid, readerContexts);
       LeafReaderContext rcontext = readerContexts.get(idx);
-      FunctionValues values = valueSource.getValues(fcontext, rcontext);
       int localId = docid - rcontext.docBase;
+
+      if (context.wantsScores()) {
+        fcontext.put("scorer", new ScoreAndDoc(localId, docInfo.score()));
+      }
+
+      FunctionValues values = valueSource.getValues(fcontext, rcontext);
       setValue(doc, values.objectVal(localId));
     } catch (IOException e) {
       throw new SolrException(
