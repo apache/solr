@@ -22,6 +22,7 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.store.StartStore.Intent
 import org.apache.solr.ui.components.start.store.StartStoreProvider
@@ -35,7 +36,7 @@ class DefaultStartComponent(
     httpClient: HttpClient,
 ) : StartComponent, AppComponentContext by componentContext {
 
-    private val mainScope = coroutineScope(mainContext)
+    private val mainScope = coroutineScope(mainContext + SupervisorJob())
 
     private val store = instanceKeeper.getStore {
         StartStoreProvider(
