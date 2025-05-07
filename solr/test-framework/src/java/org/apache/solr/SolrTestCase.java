@@ -24,6 +24,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +42,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
@@ -163,6 +165,23 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("zookeeper.forceSync", "no");
       System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
+
+    injectRandomTraceRecordingFlag();
+  }
+
+  /**
+   * Randomizes the tracing {@link TraceUtils#ifNotNoop(io.opentelemetry.api.trace.Span,
+   * java.util.function.Consumer)} check.
+   *
+   * <p>Rationale: to have better coverage of all methods that deal with span creation without
+   * having to enable tracing.
+   *
+   * @see TraceUtils#resetRecordingFlag()
+   */
+  private static void injectRandomTraceRecordingFlag() {
+    if (LuceneTestCase.rarely()) {
+      TraceUtils.IS_RECORDING = (ignored) -> true;
+    } // else default behavior is fine -- which is to honor Span::isRecording
   }
 
   /**
@@ -195,6 +214,11 @@ public class SolrTestCase extends LuceneTestCase {
   public void checkSyspropForceBeforeAssumptionFailure() {
     final String PROP = "tests.force.assumption.failure.before";
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
+  }
+
+  @AfterClass
+  public static void afterSolrTestCase() {
+    GlobalOpenTelemetry.resetForTest();
   }
 
   //              UTILITY METHODS FOLLOW
