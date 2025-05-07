@@ -28,6 +28,7 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.components.auth.UnauthenticatedComponent
+import org.apache.solr.ui.components.auth.integration.DefaultUnauthenticatedComponent
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.main.integration.DefaultMainComponent
 import org.apache.solr.ui.components.root.RootComponent
@@ -87,7 +88,12 @@ class SimpleRootComponent(
             )
         },
         unauthenticatedComponent = { childContext, output ->
-            TODO("Not yet implemented")
+            DefaultUnauthenticatedComponent(
+                componentContext = childContext,
+                storeFactory = storeFactory,
+                httpClient = httpClient,
+                output = output,
+            )
         }
     )
 
