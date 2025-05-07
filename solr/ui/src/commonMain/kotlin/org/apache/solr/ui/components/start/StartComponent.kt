@@ -46,4 +46,22 @@ interface StartComponent {
         val url: String = "",
         val error: StringResource? = null,
     )
+
+    /**
+     * Possible component outputs that may be emitted to the parent component.
+     */
+    sealed interface Output {
+
+        /**
+         * Emitted when a connection to a Solr instance has been
+         * established and no authentication is required.
+         */
+        data object OnConnected : Output
+
+        /**
+         * Emitted when a connection to a Solr instance has been established and authentication
+         * is needed.
+         */
+        data object OnAuthRequired : Output
+    }
 }

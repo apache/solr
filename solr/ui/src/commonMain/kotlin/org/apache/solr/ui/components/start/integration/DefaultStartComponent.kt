@@ -19,11 +19,15 @@ package org.apache.solr.ui.components.start.integration
 
 import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
+import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.components.start.store.StartStore
 import org.apache.solr.ui.components.start.store.StartStore.Intent
 import org.apache.solr.ui.components.start.store.StartStoreProvider
 import org.apache.solr.ui.utils.AppComponentContext
@@ -34,6 +38,7 @@ class DefaultStartComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
+    output: (StartComponent.Output) -> Unit,
 ) : StartComponent, AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(mainContext + SupervisorJob())
@@ -44,6 +49,15 @@ class DefaultStartComponent(
             client = HttpStartStoreClient(httpClient),
             ioContext = ioContext,
         ).provide()
+    }
+
+    init {
+        store.labels.onEach { label ->
+            when (label) {
+                is StartStore.Label.AuthRequired -> output(StartComponent.Output.OnAuthRequired)
+                is StartStore.Label.Connected -> output(StartComponent.Output.OnConnected)
+            }
+        }.launchIn(mainScope)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

@@ -55,6 +55,8 @@ fun RootContent(
                     component = child.component,
                     modifier = Modifier.fillMaxSize(),
                 )
+
+                is RootComponent.Child.Unauthenticated -> TODO("Not yet implemented")
             }
         }
         Footer(modifier = Modifier.fillMaxWidth())
