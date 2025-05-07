@@ -2,6 +2,11 @@ package org.apache.solr.ui.components.auth
 
 interface UnauthenticatedComponent {
 
+    /**
+     * Aborts the authentication attempt.
+     */
+    fun onAbort()
+
     sealed interface Output {
 
         /**

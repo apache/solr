@@ -20,10 +20,13 @@ package org.apache.solr.ui.views.root
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import org.apache.solr.ui.components.root.RootComponent
+import org.apache.solr.ui.views.auth.UserAuthenticationContent
 import org.apache.solr.ui.views.main.MainContent
 import org.apache.solr.ui.views.navigation.Footer
 import org.apache.solr.ui.views.start.StartContent
@@ -56,7 +59,10 @@ fun RootContent(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                is RootComponent.Child.Unauthenticated -> TODO("Not yet implemented")
+                is RootComponent.Child.Unauthenticated -> UserAuthenticationContent(
+                    component = child.component,
+                    modifier = Modifier.padding(16.dp),
+                )
             }
         }
         Footer(modifier = Modifier.fillMaxWidth())
