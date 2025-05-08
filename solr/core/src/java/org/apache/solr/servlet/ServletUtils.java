@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 import org.apache.http.HttpHeaders;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
@@ -251,9 +252,7 @@ public abstract class ServletUtils {
   // connection - see SOLR-8453 and SOLR-8683
   static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
     try {
-      ServletInputStream is = req.getInputStream();
-      //noinspection StatementWithEmptyBody
-      while (!is.isFinished() && is.read() != -1) {}
+      Utils.readFully(req.getInputStream());
     } catch (IOException e) {
       if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
         log.debug("No input stream to consume from client");

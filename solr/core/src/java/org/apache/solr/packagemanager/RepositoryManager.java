@@ -151,7 +151,7 @@ public class RepositoryManager {
     String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Path.of(solrHome));
     final var syncRequest = new FileStoreApi.SyncFile(path);
-    final var syncResponse = syncRequest.process(solrClient).getParsed();
+    final var syncResponse = syncRequest.process(solrClient);
     final var status = syncResponse.responseHeader.status;
     if (status != 0) {
       throw new SolrException(

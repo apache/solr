@@ -19,13 +19,11 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.Part;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PushbackInputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -43,6 +41,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -89,7 +88,6 @@ public class SolrRequestParsers {
   private final boolean enableStreamBody;
   private StandardRequestParser standard;
   private boolean handleSelect = true;
-  private boolean addHttpRequestToContext;
 
   /**
    * Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote
@@ -107,7 +105,6 @@ public class SolrRequestParsers {
       enableRemoteStreams = false;
       enableStreamBody = false;
       handleSelect = false;
-      addHttpRequestToContext = false;
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
 
@@ -119,8 +116,6 @@ public class SolrRequestParsers {
 
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.isHandleSelect();
-
-      addHttpRequestToContext = globalConfig.isAddHttpRequestToContext();
     }
     init(multipartUploadLimitKB, formUploadLimitKB);
   }
@@ -129,7 +124,6 @@ public class SolrRequestParsers {
     enableRemoteStreams = false;
     enableStreamBody = false;
     handleSelect = false;
-    addHttpRequestToContext = false;
     init(Integer.MAX_VALUE, Integer.MAX_VALUE);
   }
 
@@ -175,10 +169,6 @@ public class SolrRequestParsers {
     // the handler could use it for RESTful URLs
     sreq.getContext().put(PATH, RequestHandlers.normalize(path));
     sreq.getContext().put("httpMethod", req.getMethod());
-
-    if (addHttpRequestToContext) {
-      sreq.getContext().put("httpRequest", req);
-    }
     return sreq;
   }
 
@@ -534,14 +524,6 @@ public class SolrRequestParsers {
     this.handleSelect = handleSelect;
   }
 
-  public boolean isAddRequestHeadersToContext() {
-    return addHttpRequestToContext;
-  }
-
-  public void setAddRequestHeadersToContext(boolean addRequestHeadersToContext) {
-    this.addHttpRequestToContext = addRequestHeadersToContext;
-  }
-
   public boolean isEnableRemoteStreams() {
     return enableRemoteStreams;
   }
@@ -596,26 +578,21 @@ public class SolrRequestParsers {
 
   /** The raw parser just uses the params directly */
   static class RawRequestParser implements SolrRequestParser {
+
+    // Methods that shouldn't have a body according to HTTP spec
+    private static Set<String> NO_BODY_METHODS = Set.of("GET", "HEAD", "DELETE");
+
     @Override
     public SolrParams parseParamsAndFillStreams(
         final HttpServletRequest req, ArrayList<ContentStream> streams) throws Exception {
-      // If we wrongly add a stream that actually has no content, then it can confuse
-      //  some of our code that sees a stream but has no content-type.
-      // If we wrongly don't add a stream, then obviously we'll miss data.
-      final ServletInputStream inputStream = req.getInputStream(); // don't close it
-      if (req.getContentLengthLong() >= 0
+      if (req.getContentLengthLong() > 0
           || req.getHeader("Transfer-Encoding") != null
-          || inputStream.available() > 0) {
-        streams.add(new HttpRequestContentStream(req, inputStream));
-      } else if (!req.getMethod().equals("GET")) { // GET shouldn't have data
-        // We're not 100% sure there is no data, so check by reading a byte (and put back).
-        PushbackInputStream pbInputStream = new PushbackInputStream(inputStream);
-        int b = pbInputStream.read();
-        if (b != -1) {
-          pbInputStream.unread(b); // put back
-          streams.add(new HttpRequestContentStream(req, pbInputStream));
-        }
+          || !NO_BODY_METHODS.contains(req.getMethod())) {
+        // If Content-Length > 0 OR Transfer-Encoding exists OR
+        // it's a method that can have a body (POST/PUT/PATCH etc)
+        streams.add(new HttpRequestContentStream(req, req.getInputStream()));
       }
+
       return parseQueryString(req.getQueryString());
     }
   }

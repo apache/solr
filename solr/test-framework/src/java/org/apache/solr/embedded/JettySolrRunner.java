@@ -87,6 +87,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -430,6 +431,11 @@ public class JettySolrRunner {
     gzipHandler.setIncludedMethods("GET");
 
     server.setHandler(gzipHandler);
+
+    // Mimic "graceful.mod"
+    GracefulHandler graceful = new GracefulHandler();
+    server.insertHandler(graceful);
+    server.setStopTimeout(15 * 1000);
   }
 
   /**
@@ -711,7 +717,7 @@ public class JettySolrRunner {
       final var coreStatusReq = new CoresApi.GetAllCoreStatus();
       coreStatusReq.setIndexInfo(true);
       try (final var client = newClient()) {
-        final var coreStatusRsp = coreStatusReq.process(client).getParsed();
+        final var coreStatusRsp = coreStatusReq.process(client);
         Utils.writeJson(coreStatusRsp, pw, true);
       } catch (SolrServerException | IOException e) {
         // Worth logging but not re-throwing

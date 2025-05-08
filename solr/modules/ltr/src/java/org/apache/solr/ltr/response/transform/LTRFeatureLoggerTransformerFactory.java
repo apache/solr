@@ -192,6 +192,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private LTRScoringQuery.ModelWeight[] modelWeights;
     private FeatureLogger featureLogger;
     private boolean docsWereReranked;
+    private boolean docsHaveScores;
 
     /**
      * @param name Name of the field to be added in a document representing the feature vectors
@@ -235,6 +236,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       rerankingQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);
       docsWereReranked =
           (rerankingQueriesFromContext != null && rerankingQueriesFromContext.length != 0);
+      docsHaveScores = context.wantsScores();
       String transformerFeatureStore = SolrQueryRequestContextUtils.getFvStoreName(req);
       FeatureLogger featureLogger = SolrQueryRequestContextUtils.getFeatureLogger(req);
 
@@ -408,11 +410,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       implTransform(doc, docid, docInfo);
     }
 
-    @Override
-    public void transform(SolrDocument doc, int docid) throws IOException {
-      implTransform(doc, docid, null);
-    }
-
     private void implTransform(SolrDocument doc, int docid, DocIterationInfo docInfo)
         throws IOException {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
@@ -433,7 +430,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                   LTRRescorer.extractFeaturesInfo(
                       rerankingModelWeight,
                       docid,
-                      (!docsWereReranked && docInfo != null) ? docInfo.score() : null,
+                      (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
                       leafContexts));
         }
         doc.addField(name, featureVector);

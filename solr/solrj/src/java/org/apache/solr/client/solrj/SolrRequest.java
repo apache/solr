@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -99,6 +100,7 @@ public abstract class SolrRequest<T> implements Serializable {
 
   private METHOD method = METHOD.GET;
   private String path = null;
+  private SolrRequestType requestType = SolrRequestType.UNSPECIFIED;
   private Map<String, String> headers;
   private List<String> preferredNodes;
 
@@ -136,9 +138,10 @@ public abstract class SolrRequest<T> implements Serializable {
   // ---------------------------------------------------------
   // ---------------------------------------------------------
 
-  public SolrRequest(METHOD m, String path) {
+  public SolrRequest(METHOD m, String path, SolrRequestType requestType) {
     this.method = m;
     this.path = path;
+    this.requestType = requestType;
   }
 
   // ---------------------------------------------------------
@@ -194,8 +197,20 @@ public abstract class SolrRequest<T> implements Serializable {
     this.queryParams = queryParams;
   }
 
-  /** This method defines the type of this Solr request. */
-  public abstract String getRequestType();
+  /**
+   * The type of this Solr request.
+   *
+   * <p>Pattern matches {@link SolrRequest#getPath} to identify ADMIN requests and other special
+   * cases. Overriding this method may affect request routing within various clients (i.e. {@link
+   * CloudSolrClient}).
+   */
+  public SolrRequestType getRequestType() {
+    return requestType;
+  }
+
+  public void setRequestType(SolrRequestType requestType) {
+    this.requestType = requestType;
+  }
 
   /**
    * The parameters for this request; never null. The runtime type may be mutable but modifications

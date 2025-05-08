@@ -43,7 +43,7 @@ public abstract class DelegationTokenRequest<
     // path doesn't really matter -- the filter will respond to any path.
     // setting the path to admin/collections lets us pass through CloudSolrServer
     // without having to specify a collection (that may not even exist yet).
-    super(m, "/admin/collections");
+    super(m, "/admin/collections", SolrRequestType.ADMIN);
   }
 
   protected abstract Q getThis();
@@ -82,11 +82,6 @@ public abstract class DelegationTokenRequest<
     public DelegationTokenResponse.Get createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Get();
     }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequestType.ADMIN.toString();
-    }
   }
 
   public static class Renew extends DelegationTokenRequest<Renew, DelegationTokenResponse.Renew> {
@@ -115,11 +110,6 @@ public abstract class DelegationTokenRequest<
     @Override
     public DelegationTokenResponse.Renew createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Renew();
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequestType.ADMIN.toString();
     }
   }
 
@@ -150,11 +140,6 @@ public abstract class DelegationTokenRequest<
     @Override
     public DelegationTokenResponse.Cancel createResponse(NamedList<Object> namedList) {
       return new DelegationTokenResponse.Cancel();
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequestType.ADMIN.toString();
     }
   }
 }
