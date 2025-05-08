@@ -660,6 +660,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
     assert ObjectReleaseTracker.release(this);
+
+    fingerprintExecutor.shutdownNow();
   }
 
   /** Direct access to the IndexSchema for use with this searcher */
@@ -2551,32 +2553,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
     final SolrIndexSearcher searcher = this;
-    final AtomicReference<IOException> exception = new AtomicReference<>();
-    List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
-    try {
-      List<Callable<IndexFingerprint>> tasks =
-          leaves.stream()
-              .map(
-                  ctx ->
-                      (Callable<IndexFingerprint>)
-                          () -> {
-                            try {
-                              return searcher
-                                  .getCore()
-                                  .getIndexFingerprint(searcher, ctx, maxVersion);
-                            } catch (IOException e) {
-                              exception.set(e);
-                              return null;
-                            }
-                          })
-              .collect(Collectors.toList());
-      return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(fingerprintExecutor, tasks).parallelStream()
-          .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
-    } finally {
-      fingerprintExecutor.shutdown();
-      ExecutorUtil.awaitTermination(fingerprintExecutor);
-      if (exception.get() != null) throw exception.get();
-    }
+    List<Callable<IndexFingerprint>> tasks =
+        searcher.getTopReaderContext().leaves().stream()
+            .map(
+                ctx ->
+                    (Callable<IndexFingerprint>)
+                        () -> searcher
+                                .getCore()
+                                .getIndexFingerprint(searcher, ctx, maxVersion))
+            .collect(Collectors.toList());
+    return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(fingerprintExecutor, tasks).stream()
+        .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
   }
 
   /////////////////////////////////////////////////////////////////////
