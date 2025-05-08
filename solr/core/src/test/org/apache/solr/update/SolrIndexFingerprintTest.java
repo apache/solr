@@ -19,7 +19,6 @@ package org.apache.solr.update;
 import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,7 +50,7 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "109"));
     assertU(commit());
 
-    final SolrIndexSearcher searcher = core.openNewSearcher(true, true).get();
+    var searcher = core.getSearcher().get();
 
     // Compute fingerprint sequentially to compare with parallel computation
     IndexFingerprint expectedFingerprint =
@@ -59,12 +58,16 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
             .map(
                 ctx -> {
                   try {
-                    return core.getIndexFingerprint(searcher, ctx, maxVersion);
+                    IndexFingerprint f = core.getIndexFingerprint(searcher, ctx, maxVersion);
+                    return f;
                   } catch (IOException e) {
                     throw new RuntimeException(e);
                   }
                 })
             .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
+
+    // Clear the fingerprint cache so parallel computation can run
+    core.clearPerSegmentFingerprintCache();
 
     IndexFingerprint actualFingerprint = searcher.getIndexFingerprint(maxVersion);
 
