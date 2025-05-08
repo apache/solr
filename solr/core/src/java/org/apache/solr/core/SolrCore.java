@@ -2204,6 +2204,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return f;
   }
 
+  /** Clear the per‐segment fingerprint cache. */
+  public void clearPerSegmentFingerprintCache() {
+    perSegmentFingerprintCache.clear();
+  }
+
   /**
    * Returns the current registered searcher with its reference count incremented, or null if none
    * are registered.
