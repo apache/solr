@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -136,17 +137,19 @@ public class IndexFingerprint implements MapSerializable {
     return f;
   }
 
-  public static IndexFingerprint reduce(IndexFingerprint acc, IndexFingerprint f2) {
-    // acc should have maxVersionSpecified already set in it using IndexFingerprint(long
-    // maxVersionSpecified) constructor
-    acc.maxDoc = Math.max(acc.maxDoc, f2.maxDoc);
-    acc.numDocs += f2.numDocs;
-    acc.maxVersionEncountered = Math.max(acc.maxVersionEncountered, f2.maxVersionEncountered);
-    acc.maxInHash = Math.max(acc.maxInHash, f2.maxInHash);
-    acc.versionsHash += f2.versionsHash;
-    acc.numVersions += f2.numVersions;
+  public static IndexFingerprint reduce(IndexFingerprint acc, IndexFingerprint other) {
+    // The resulting IndexFingerprint will inherit maxVersionSpecified from
+    // acc already set in it using IndexFingerprint(long maxVersionSpecified) constructor
+    IndexFingerprint result = new IndexFingerprint(acc.maxVersionSpecified);
 
-    return acc;
+    result.maxVersionEncountered = Math.max(acc.maxVersionEncountered, other.maxVersionEncountered);
+    result.maxInHash = Math.max(acc.maxInHash, other.maxInHash);
+    result.versionsHash = acc.versionsHash + other.versionsHash;
+    result.numVersions = acc.numVersions + other.numVersions;
+    result.numDocs = acc.numDocs + other.numDocs;
+    result.maxDoc = Math.max(acc.maxDoc, other.maxDoc);
+
+    return result;
   }
 
   /** returns 0 for equal, negative if f1 is less recent than f2, positive if more recent */
@@ -218,5 +221,30 @@ public class IndexFingerprint implements MapSerializable {
   @Override
   public String toString() {
     return toMap(new LinkedHashMap<>()).toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof IndexFingerprint other)) return false;
+    return maxVersionSpecified == other.maxVersionSpecified
+        && this.maxVersionEncountered == other.maxVersionEncountered
+        && this.maxInHash == other.maxInHash
+        && this.versionsHash == other.versionsHash
+        && this.numVersions == other.numVersions
+        && this.numDocs == other.numDocs
+        && this.maxDoc == other.maxDoc;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        maxVersionSpecified,
+        maxVersionEncountered,
+        maxInHash,
+        versionsHash,
+        numVersions,
+        numDocs,
+        maxDoc);
   }
 }
