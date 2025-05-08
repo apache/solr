@@ -74,7 +74,8 @@ public class FunctionQParser extends QParser {
    *
    * @see QParser#parseAsValueSource()
    */
-  public static ValueSource parseAsValueSource(String string, SolrQueryRequest request) throws SyntaxError {
+  public static ValueSource parseAsValueSource(String string, SolrQueryRequest request)
+      throws SyntaxError {
     return getParser(string, FunctionQParserPlugin.NAME, request).parseAsValueSource();
   }
 
