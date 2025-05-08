@@ -17,6 +17,9 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
@@ -58,16 +61,23 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
             .map(
                 ctx -> {
                   try {
-                    IndexFingerprint f = core.getIndexFingerprint(searcher, ctx, maxVersion);
-                    return f;
+                    LeafReader noCacheLeafReader = new FilterLeafReader(ctx.reader()) {
+                      @Override
+                      public CacheHelper getReaderCacheHelper() {
+                        return null;
+                      }
+
+                      @Override
+                      public CacheHelper getCoreCacheHelper() {
+                        return null;
+                      }
+                    };
+                    return core.getIndexFingerprint(searcher, noCacheLeafReader.getContext(), maxVersion);
                   } catch (IOException e) {
                     throw new RuntimeException(e);
                   }
                 })
             .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
-
-    // Clear the fingerprint cache so parallel computation can run
-    core.clearPerSegmentFingerprintCache();
 
     IndexFingerprint actualFingerprint = searcher.getIndexFingerprint(maxVersion);
 
