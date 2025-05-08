@@ -196,6 +196,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private SolrMetricsContext solrMetricsContext;
 
+  private final ExecutorService fingerprintExecutor;
+
   private static DirectoryReader getReader(
       SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory, String path)
       throws IOException {
@@ -399,6 +401,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             + "]"
             + (name != null ? " " + name : "");
     log.debug("Opening [{}]", this.name);
+    this.fingerprintExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(EXECUTOR_MAX_CPU_THREADS, new SolrNamedThreadFactory("IndexFingerprintPool"));
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher
@@ -2550,9 +2553,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final SolrIndexSearcher searcher = this;
     final AtomicReference<IOException> exception = new AtomicReference<>();
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
-    ExecutorService executor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            EXECUTOR_MAX_CPU_THREADS, new SolrNamedThreadFactory("IndexFingerprintPool"));
     try {
       List<Callable<IndexFingerprint>> tasks =
           leaves.stream()
@@ -2570,11 +2570,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                             }
                           })
               .collect(Collectors.toList());
-      return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(executor, tasks).parallelStream()
+      return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(fingerprintExecutor, tasks).parallelStream()
           .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
     } finally {
-      executor.shutdown();
-      ExecutorUtil.awaitTermination(executor);
+      fingerprintExecutor.shutdown();
+      ExecutorUtil.awaitTermination(fingerprintExecutor);
       if (exception.get() != null) throw exception.get();
     }
   }
