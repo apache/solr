@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -96,6 +97,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -2547,21 +2549,32 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
     final SolrIndexSearcher searcher = this;
     final AtomicReference<IOException> exception = new AtomicReference<>();
+    List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            EXECUTOR_MAX_CPU_THREADS, new SolrNamedThreadFactory("IndexFingerprintPool"));
     try {
-      return searcher.getTopReaderContext().leaves().stream()
-          .map(
-              ctx -> {
-                try {
-                  return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
-                } catch (IOException e) {
-                  exception.set(e);
-                  return null;
-                }
-              })
-          .filter(java.util.Objects::nonNull)
+      List<Callable<IndexFingerprint>> tasks =
+          leaves.stream()
+              .map(
+                  ctx ->
+                      (Callable<IndexFingerprint>)
+                          () -> {
+                            try {
+                              return searcher
+                                  .getCore()
+                                  .getIndexFingerprint(searcher, ctx, maxVersion);
+                            } catch (IOException e) {
+                              exception.set(e);
+                              return null;
+                            }
+                          })
+              .collect(Collectors.toList());
+      return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(executor, tasks).parallelStream()
           .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
-
     } finally {
+      executor.shutdown();
+      ExecutorUtil.awaitTermination(executor);
       if (exception.get() != null) throw exception.get();
     }
   }
