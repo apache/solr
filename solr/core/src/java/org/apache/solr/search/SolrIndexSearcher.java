@@ -37,7 +37,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -401,7 +400,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             + "]"
             + (name != null ? " " + name : "");
     log.debug("Opening [{}]", this.name);
-    this.fingerprintExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(EXECUTOR_MAX_CPU_THREADS, new SolrNamedThreadFactory("IndexFingerprintPool"));
+    this.fingerprintExecutor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            EXECUTOR_MAX_CPU_THREADS, new SolrNamedThreadFactory("IndexFingerprintPool"));
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher
@@ -2558,9 +2559,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             .map(
                 ctx ->
                     (Callable<IndexFingerprint>)
-                        () -> searcher
-                                .getCore()
-                                .getIndexFingerprint(searcher, ctx, maxVersion))
+                        () -> searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion))
             .collect(Collectors.toList());
     return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(fingerprintExecutor, tasks).stream()
         .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
