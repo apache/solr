@@ -224,11 +224,18 @@
   <field name="uniq3" type="string" indexed="true" stored="true"/>
   <field name="nouniq" type="string" indexed="true" stored="true" multiValued="true"/>
 
-
-  <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
-
   <field name="payload" type="sortable_binary" indexed="false"
          stored="true" multiValued="false"/>
+
+  <!-- to test copyField in MLT qf -->
+  <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="copyfield_dest" type="nametext" indexed="true" stored="true" multiValued="true"/>
+  <copyField source="copyfield_source" dest="copyfield_dest" />
+
+  <field name="copyfield_source_2" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="copyfield_dest_multiple_sources" type="nametext" indexed="true" stored="true" multiValued="true"/>
+  <copyField source="copyfield_source" dest="copyfield_dest_multiple_sources" />
+  <copyField source="copyfield_source_2" dest="copyfield_dest_multiple_sources" />
 
   <!-- for versioning -->
   <field name="_version_" type="long" indexed="true" stored="true"/>
