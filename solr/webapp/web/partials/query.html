@@ -548,6 +548,15 @@ limitations under the License.
         <input type="text" ng-model="val['spellcheck.accuracy']" name="spellcheck.accuracy" id="spellcheck_accuracy">
        </div>
       </fieldset>
+      <fieldset class="ubi optional">
+        <legend>
+          <label for="ubi" class="checkbox" title="Generate a query_id to enable tracking user behavior.">
+            <input type="checkbox" ng-model="val['ubi']" name="ubi" id="ubi">
+              ubi
+          </label>
+        </legend>
+        <div class="fieldset" ng-show="val['ubi']">
+      </fieldset>
       <label for="custom_parameters" title="Raw Query Parameters">
         <a rel="help">Raw Query Parameters</a>
       </label>
