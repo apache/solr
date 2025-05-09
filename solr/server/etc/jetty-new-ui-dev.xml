@@ -31,8 +31,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/ui/*</Set>
-            <Set name="name">Content-Security-Policy</Set>
-            <Set name="value">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; worker-src 'self';</Set>
+            <Set name="headerName">Content-Security-Policy</Set>
+            <Set name="headerValue">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; worker-src 'self';</Set>
           </New>
         </Arg>
       </Call>
