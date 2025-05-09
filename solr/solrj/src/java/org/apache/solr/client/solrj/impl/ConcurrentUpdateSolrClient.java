@@ -322,11 +322,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                     }
                   });
 
-          // The parser 'wt=' and 'version=' params are used instead of the
-          // original params
-          ModifiableSolrParams requestParams = new ModifiableSolrParams(origParams);
-          requestParams.set(CommonParams.WT, client.parser.getWriterType());
-          requestParams.set(CommonParams.VERSION, client.parser.getVersion());
+          // The parser 'wt=' param is used instead of the original params
+          var addParams = SolrParams.of(CommonParams.WT, client.parser.getWriterType());
+          var requestParams = SolrParams.wrapDefaults(addParams, origParams);
 
           String basePath = client.getBaseURL();
           if (update.getCollection() != null) {

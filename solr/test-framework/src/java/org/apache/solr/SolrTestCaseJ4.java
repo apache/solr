@@ -467,7 +467,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.write(
         solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE), xmlStr.getBytes(StandardCharsets.UTF_8));
     h = new TestHarness(SolrXmlConfig.fromSolrHome(solrHome, new Properties()));
-    lrf = h.getRequestFactory("/select", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("/select", 0, 20);
   }
 
   /**
@@ -730,21 +730,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     h =
         new TestHarness(
             coreName, initAndGetDataDir().toAbsolutePath().toString(), solrConfig, getSchemaFile());
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
   }
 
   public static CoreContainer createCoreContainer(Path solrHome, String solrXML) {
     testSolrHome = requireNonNull(solrHome);
     System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h = new TestHarness(solrHome, solrXML);
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 
   public static CoreContainer createCoreContainer(NodeConfig config, CoresLocator locator) {
     testSolrHome = config.getSolrHome();
     h = new TestHarness(config, locator);
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 
@@ -766,7 +766,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             initAndGetDataDir().toAbsolutePath().toString(),
             "solrconfig.xml",
             "schema.xml");
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 

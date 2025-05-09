@@ -59,9 +59,4 @@ public class JsonMapResponseParser extends ResponseParser {
   public Collection<String> getContentTypes() {
     return Set.of("application/json");
   }
-
-  @Override
-  public String getVersion() {
-    return "2.2";
-  }
 }

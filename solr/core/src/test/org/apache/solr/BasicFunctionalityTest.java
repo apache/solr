@@ -105,7 +105,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testIgnoredFields() {
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertU("adding doc with ignored field", adoc("id", "42", "foo_ignored", "blah blah"));
     assertU("commit", commit());
 
@@ -137,7 +136,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     Gauge<Number> g = (Gauge<Number>) metrics.get("CORE.refCount");
     assertTrue(g.getValue().intValue() > 0);
 
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ(
         "test query on empty index",
         req("qlkciyopsbgzyvkylsjhchghjrdf"),
@@ -644,7 +642,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultFieldValues() {
     clearIndex();
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertU(
         adoc(
             "id", "4055",

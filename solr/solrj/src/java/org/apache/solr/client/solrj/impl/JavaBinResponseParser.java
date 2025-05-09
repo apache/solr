@@ -57,9 +57,4 @@ public class JavaBinResponseParser extends ResponseParser {
   public Collection<String> getContentTypes() {
     return Set.of(JAVABIN_CONTENT_TYPE, JAVABIN_CONTENT_TYPE_V2);
   }
-
-  @Override
-  public String getVersion() {
-    return "2";
-  }
 }

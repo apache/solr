@@ -266,10 +266,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       // default wt
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      // default version
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       // agent
       assertEquals(
           "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
@@ -293,9 +289,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
@@ -317,9 +310,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
@@ -347,9 +337,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
@@ -368,9 +355,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
@@ -391,9 +375,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
       assertEquals(
@@ -426,10 +407,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       // default wt
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      // default version
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       // agent
       assertEquals(
           "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
@@ -456,9 +433,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals(
           "Solr[" + HttpSolrClient.class.getName() + "] " + UA_VERSION,
           DebugServlet.headers.get("User-Agent"));
@@ -499,10 +473,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       // default wt
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      // default version
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       // content type
       assertEquals("application/javabin", DebugServlet.headers.get("Content-Type"));
       // parameter encoding
@@ -529,9 +499,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("application/xml; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
@@ -556,9 +523,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("User-Agent"));
       assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("application/javabin", DebugServlet.headers.get("Content-Type"));
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);

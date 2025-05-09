@@ -38,7 +38,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   void createIndex(String field, int... values) {
-    // lrf.args.put("version","2.0");
     for (int val : values) {
       String s = Integer.toString(val);
 
@@ -120,7 +119,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   void doTest(String field) {
     clearIndex();
 
-    // lrf.args.put("version","2.0");
     int[] vals = {100, -4, 0, 10, 25, 5};
     createIndex(field, vals);
     createIndex(null, 88); // id with no value
