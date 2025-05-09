@@ -27,6 +27,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     String FIELD1 = "lowerfilt_u";
     String FIELD2 = "lowerfilt1_u";
     String FIELD3 = "copyfield_source";
-    String FIELD4 = "copyfield_source_multiple";
+    String FIELD4 = "copyfield_source_2";
 
     new UpdateRequest()
         .add(sdoc(id, "1", FIELD1, "toyota"))
@@ -123,7 +124,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
                 "yellow white black"))
         .add(sdoc(id, "33", FIELD3, "hard rock", FIELD4, "instrumental version"))
         .add(sdoc(id, "34", FIELD3, "hard rock", FIELD4, "instrumental version"))
-        .add(sdoc(id, "35", FIELD3, "pop rock", FIELD4, "full version"))
+        .add(sdoc(id, "35", FIELD3, "pop rock"))
         .commit(client, COLLECTION);
   }
 
@@ -346,10 +347,9 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUsesACopyFieldInQf_shouldUseTheSourceFieldAndReturnResults() throws Exception {
-    // Verifies that when a copyField destination is used in the qf parameter, the MLT query
-    // correctly
-    // retrieves values from the source field(s) and returns relevant results.
+  public void testUsesACopyFieldInQf_shouldReturnExpectResults() throws Exception {
+    // Verifies that when a copyField destination is used in the qf parameter, the field values are
+    // correctly retrieved from the source field(s) and the MLT query returns the expected results.
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
@@ -368,6 +368,26 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testUsesACopyFieldInQf_shouldGenerateNonEmptyQuery() throws Exception {
+    // Verifies that the MLT query correctly uses the content of the source field(s) when a
+    // copyField destination is specified in the qf parameter.
+    QueryResponse queryResponse =
+        cluster
+            .getSolrClient()
+            .query(
+                COLLECTION,
+                new SolrQuery("{!mlt qf=copyfield_dest mindf=0 mintf=1}33").setShowDebugInfo(true));
+
+    NamedList<?> debugInfo = (NamedList<?>) queryResponse.getResponse().get("debug");
+    // Extract the parsed query string
+    String parsedQuery = (String) debugInfo.get("parsedquery_toString");
+    // Assert it matches the expected query string
+    assertEquals("+(copyfield_dest:rock copyfield_dest:hard) -id:33", parsedQuery);
+    // Assert it is not the incorrect fallback
+    assertNotEquals("+() -id:33", parsedQuery);
+  }
+
+  @Test
   public void testCopyFieldSourceMissing_shouldReturnNoResults() throws Exception {
     // Ensures that no results are returned when the copyField source field is missing in the source
     // document.
@@ -380,15 +400,15 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCopyFieldDestinationNotStored_shouldReturnResults() throws Exception {
-    // Even if the copyField destination field used in the MLT query (qf) is NOT stored, documents
-    // can still be returned, as long as its source field contains the text used
-    // to build the similarity query.
+  public void testCopyFieldDestinMultipleSources_shouldReturnExpectResults() throws Exception {
+    // Validates that when multiple source fields map to a single copyField destination, their
+    //  values are correctly combined and expected results are returned.
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
             .query(
-                COLLECTION, new SolrQuery("{!mlt qf=copyfield_dest_not_stored mindf=0 mintf=1}33"));
+                COLLECTION,
+                new SolrQuery("{!mlt qf=copyfield_dest_multiple_sources mindf=0 mintf=1}33"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] expectedIds = new int[] {34, 35};
     int[] actualIds = new int[solrDocuments.size()];
@@ -403,25 +423,28 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCopyFieldDestinationMultiple_shouldReturnResults() throws Exception {
+  public void
+      testCopyFieldDestinationMultipleSources_shouldGenerateQueryUsingMultipleSourcesValues()
+          throws Exception {
     // Validates that when multiple source fields map to a single copyField destination, their
     // values are
-    // correctly combined to construct the MLT query, and appropriate results are returned.
+    // correctly combined and the resulting MLT query is properly constructed.
     QueryResponse queryResponse =
         cluster
             .getSolrClient()
             .query(
-                COLLECTION, new SolrQuery("{!mlt qf=copyfield_dest_multiple mindf=0 mintf=1}33"));
-    SolrDocumentList solrDocuments = queryResponse.getResults();
-    int[] expectedIds = new int[] {34, 35};
-    int[] actualIds = new int[solrDocuments.size()];
-    int i = 0;
-    for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
-    }
+                COLLECTION,
+                new SolrQuery("{!mlt qf=copyfield_dest_multiple_sources mindf=0 mintf=1}33")
+                    .setShowDebugInfo(true));
 
-    Arrays.sort(actualIds);
-    Arrays.sort(expectedIds);
-    assertArrayEquals(expectedIds, actualIds);
+    NamedList<?> debugInfo = (NamedList<?>) queryResponse.getResponse().get("debug");
+    // Extract the parsed query string
+    String parsedQuery = (String) debugInfo.get("parsedquery_toString");
+    // Assert it matches the expected query string
+    assertEquals(
+        "+(copyfield_dest_multiple_sources:rock copyfield_dest_multiple_sources:version copyfield_dest_multiple_sources:hard copyfield_dest_multiple_sources:instrumental) -id:33",
+        parsedQuery);
+    // Assert it is not the incorrect fallback
+    assertNotEquals("+() -id:33", parsedQuery);
   }
 }

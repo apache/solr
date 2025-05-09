@@ -67,7 +67,7 @@ public class CloudMLTQParser extends SimpleMLTQParser {
     Map<String, Collection<Object>> filteredDocument = new HashMap<>();
 
     for (String field : moreLikeThis.getFieldNames()) {
-      Collection<Object> fieldValues = getFieldOrCopyFieldValues(doc, field);
+      Collection<Object> fieldValues = getFieldValuesIncludingCopyField(doc, field);
 
       if (fieldValues != null) {
         Collection<Object> values = new ArrayList<>();
@@ -112,7 +112,7 @@ public class CloudMLTQParser extends SimpleMLTQParser {
     return (SolrDocument) response.get("doc");
   }
 
-  private Collection<Object> getFieldOrCopyFieldValues(SolrDocument doc, String field) {
+  private Collection<Object> getFieldValuesIncludingCopyField(SolrDocument doc, String field) {
     Collection<Object> fieldValues = doc.getFieldValues(field);
     if (fieldValues != null) return fieldValues;
 
@@ -121,8 +121,8 @@ public class CloudMLTQParser extends SimpleMLTQParser {
     // from its source field instead. If there are multiple source fields, their values must be
     // combined.
     Collection<Object> combinedValues = new ArrayList<>();
-    for (String fieldSource : req.getSchema().getCopySources(field)) {
-      Collection<Object> sourceValues = doc.getFieldValues(fieldSource);
+    for (String sourceField : req.getSchema().getCopySources(field)) {
+      Collection<Object> sourceValues = doc.getFieldValues(sourceField);
       if (sourceValues != null) {
         combinedValues.addAll(sourceValues);
       }
