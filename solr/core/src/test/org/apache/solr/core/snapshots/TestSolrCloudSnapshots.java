@@ -183,7 +183,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       BackupRestoreUtils.verifyDocs(0, solrClient, collectionName);
     }
 
-    String backupLocation = createTempDir().toFile().getAbsolutePath();
+    String backupLocation = createTempDir().toString();
     String backupName = "mytestbackup";
     String restoreCollectionName = collectionName + "_restored";
 
