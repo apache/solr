@@ -25,7 +25,7 @@ import org.apache.solr.common.params.CollectionParams;
 
 /**
  * A distributed lock factory for Solr collections, shards, and replicas, using Apache Curator's
- * {@link org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock} to manage
+ * InterProcessReadWriteLock to manage
  * hierarchical distributed locks within a Zookeeper-backed collection znode structure.
  *
  * <p>This factory supports multi-level locking:
@@ -117,7 +117,7 @@ public class CuratorDistributedCollectionLockFactory extends CuratorDistributedL
    * "{@code Locks}". Also note the returned path does not contain the separator ({@code "/"}) at
    * the end.
    *
-   * <p>This method is used in conjunction with Curator's InterProcessReadWriteLock to manage
+   * <p>This method is conceptually based on Curator's InterProcessReadWriteLock to manage
    * distributed locks.
    */
   private String getLockPath(

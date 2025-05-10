@@ -132,9 +132,6 @@ dependencies {
   implementation(libs.apache.curator.client, {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
   })
-  implementation(libs.apache.curator.recipes, {
-    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
-  })
   testImplementation(libs.apache.curator.test, {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
   })

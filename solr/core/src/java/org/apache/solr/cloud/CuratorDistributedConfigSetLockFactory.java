@@ -21,8 +21,7 @@ import java.util.Objects;
 import org.apache.curator.framework.CuratorFramework;
 
 /**
- * A distributed lock factory for Solr config sets, using Apache Curator's {@link
- * org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock} to manage distributed locks
+ * A distributed lock factory for Solr config sets, using Apache Curator's InterProcessReadWriteLock to manage distributed locks
  * within a flat Zookeeper-backed config set znode structure.
  *
  * <p>This factory supports locking at the config set level only. The lock path hierarchy is flat:
@@ -75,7 +74,7 @@ public class CuratorDistributedConfigSetLockFactory extends CuratorDistributedLo
    *
    * <p>The returned path does not contain the separator ({@code "/"}) at the end.
    *
-   * <p>This method is used in conjunction with Curator's InterProcessReadWriteLock to manage
+   * <p>This method is conceptually based on Curator's InterProcessReadWriteLock to manage
    * distributed locks.
    */
   private String getLockPath(String configSetName) {
