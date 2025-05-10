@@ -105,7 +105,7 @@ public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequest
       @Override
       public void processAdd(AddUpdateCommand cmd) throws IOException {
         String id = cmd.getPrintableId();
-        final String messageSuffix = warnOnly ? "Blocking update of document " + id : "";
+        final String messageSuffix = !warnOnly ? "Blocking update of document: " + id : "";
         final String message =
             String.format(
                 Locale.ROOT,
@@ -115,6 +115,7 @@ public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequest
                 messageSuffix);
         if (warnOnly) {
           log.warn(message);
+          super.processAdd(cmd);
         } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
         }
