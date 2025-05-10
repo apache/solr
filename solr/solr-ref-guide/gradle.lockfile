@@ -71,6 +71,7 @@ org.apache.commons:commons-lang3:3.15.0=testRuntimeClasspath
 org.apache.commons:commons-math3:3.6.1=testRuntimeClasspath
 org.apache.curator:curator-client:5.8.0=testCompileClasspath,testRuntimeClasspath
 org.apache.curator:curator-framework:5.8.0=testCompileClasspath,testRuntimeClasspath
+org.apache.curator:curator-recipes:5.8.0=testRuntimeClasspath
 org.apache.curator:curator-test:5.8.0=testRuntimeClasspath
 org.apache.httpcomponents:httpclient:4.5.14=testCompileClasspath,testRuntimeClasspath
 org.apache.httpcomponents:httpcore:4.4.16=testCompileClasspath,testRuntimeClasspath

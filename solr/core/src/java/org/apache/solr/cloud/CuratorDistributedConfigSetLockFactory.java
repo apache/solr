@@ -18,21 +18,35 @@
 package org.apache.solr.cloud;
 
 import java.util.Objects;
-import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.curator.framework.CuratorFramework;
 
 /**
- * A distributed lock implementation using Zookeeper "directory" nodes created within a collection
- * znode hierarchy, for use with the distributed Collection API implementation. The locks are
- * implemented using ephemeral nodes placed below the "directory" nodes.
+ * A distributed lock factory for Solr config sets, using Apache Curator's {@link
+ * org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock} to manage distributed locks
+ * within a flat Zookeeper-backed config set znode structure.
  *
+ * <p>This factory supports locking at the config set level only. The lock path hierarchy is flat:
+ *
+ * <pre>{@code
+ * rootPath/
+ *   configSet1/
+ *   configSet2/
+ *   ...
+ * }</pre>
+ *
+ * <p>Each config set has its own lock directory under the root path. This is distinct from the
+ * collection lock factory, which supports hierarchical locking for collections, shards, and
+ * replicas.
+ *
+ * @see <a href="https://curator.apache.org/curator-recipes/locks.html">Curator Recipes - Locks</a>
  * @see <a href="https://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Locks">Zookeeper
  *     lock recipe</a>
  */
-public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
+public class CuratorDistributedConfigSetLockFactory extends CuratorDistributedLockFactory
     implements DistributedConfigSetLockFactory {
 
-  public ZkDistributedConfigSetLockFactory(SolrZkClient zkClient, String rootPath) {
-    super(zkClient, rootPath);
+  public CuratorDistributedConfigSetLockFactory(CuratorFramework curator, String rootPath) {
+    super(curator, rootPath);
   }
 
   @Override
@@ -60,6 +74,9 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
    * This method will create the path where the {@code EPHEMERAL} lock nodes should go.
    *
    * <p>The returned path does not contain the separator ({@code "/"}) at the end.
+   *
+   * <p>This method is used in conjunction with Curator's InterProcessReadWriteLock to manage
+   * distributed locks.
    */
   private String getLockPath(String configSetName) {
     return getPathPrefix().append(configSetName).toString();

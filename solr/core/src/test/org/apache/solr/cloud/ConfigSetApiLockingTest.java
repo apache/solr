@@ -47,7 +47,8 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
               .build()) {
         ConfigSetApiLockFactory apiLockFactory =
             new ConfigSetApiLockFactory(
-                new ZkDistributedConfigSetLockFactory(zkClient, "/apiLockTestRoot"));
+                new CuratorDistributedConfigSetLockFactory(
+                    zkClient.getCuratorFramework(), "/apiLockTestRoot"));
 
         monothreadedTests(apiLockFactory);
         multithreadedTests(apiLockFactory);

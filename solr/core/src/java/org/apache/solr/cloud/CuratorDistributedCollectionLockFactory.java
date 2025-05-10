@@ -18,24 +18,44 @@
 package org.apache.solr.cloud;
 
 import java.util.Objects;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
 
 /**
- * A distributed lock implementation using Zookeeper "directory" nodes created within a collection
- * znode hierarchy, for use with the distributed Collection API implementation. The locks are
- * implemented using ephemeral nodes placed below the "directory" nodes.
+ * A distributed lock factory for Solr collections, shards, and replicas, using Apache Curator's
+ * {@link org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock} to manage
+ * hierarchical distributed locks within a Zookeeper-backed collection znode structure.
  *
+ * <p>This factory supports multi-level locking:
+ *
+ * <ul>
+ *   <li><b>Collection-level</b> locks: for operations affecting the entire collection
+ *   <li><b>Shard-level</b> locks: for operations affecting a specific shard
+ *   <li><b>Replica-level</b> locks: for operations affecting a specific replica
+ * </ul>
+ *
+ * <p>The lock path hierarchy is as follows:
+ *
+ * <pre>{@code
+ * rootPath/
+ *   collName/
+ *     Locks
+ *     _shardName/
+ *       Locks
+ *       _replicaName
+ * }</pre>
+ *
+ * @see <a href="https://curator.apache.org/curator-recipes/locks.html">Curator Recipes - Locks</a>
  * @see <a href="https://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Locks">Zookeeper
  *     lock recipe</a>
  */
-public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
+public class CuratorDistributedCollectionLockFactory extends CuratorDistributedLockFactory
     implements DistributedCollectionLockFactory {
 
-  public ZkDistributedCollectionLockFactory(SolrZkClient zkClient, String rootPath) {
-    super(zkClient, rootPath);
+  public CuratorDistributedCollectionLockFactory(CuratorFramework curator, String rootPath) {
+    super(curator, rootPath);
   }
 
   @Override
@@ -96,6 +116,9 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
    * Note the {@code _} prefixing shards and replica names is to support shards or replicas called
    * "{@code Locks}". Also note the returned path does not contain the separator ({@code "/"}) at
    * the end.
+   *
+   * <p>This method is used in conjunction with Curator's InterProcessReadWriteLock to manage
+   * distributed locks.
    */
   private String getLockPath(
       CollectionParams.LockLevel level, String collName, String shardId, String replicaName) {
