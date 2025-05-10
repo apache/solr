@@ -68,10 +68,7 @@ class CuratorDistributedLocks {
           throw new IllegalStateException(
               "waitUntilAcquired() called after release(): " + lockNode);
         }
-        // Note: We do not sort the children or only watch the immediate predecessor as in the ZK
-        // recipe. Instead, we watch the first blocking node we find. This may cause more wakeups
-        // (thundering herd), but is simpler and matches the legacy Solr lock semantics. For Solr's
-        // expected lock contention, this is a safe and robust trade-off.
+        // Watch the first blocking node found; may cause more wakeups.
         String nodeToWatch = nodeToWatch();
         while (nodeToWatch != null) {
           final DeletedNodeWatcher watcher = new DeletedNodeWatcher();
