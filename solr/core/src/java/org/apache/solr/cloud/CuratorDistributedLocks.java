@@ -32,7 +32,7 @@ import org.apache.zookeeper.Watcher.Event.EventType;
  * <p>This lock is used to coordinate actions across cluster nodes, such as in the distributed
  * Collection API and Config Set API in Solr. It leverages Curator's {@link CuratorFramework} for all ZooKeeper operations.
  *
- * <p><b>Lock acquisition strategy:</b> Unlike the standard ZooKeeper lock recipe, this implementation does not sort the children or only watch the immediate predecessor node. Instead, it watches the first blocking node it finds (i.e., any lower-numbered write lock for read locks, or any lower-numbered lock for write locks). This may cause more wakeups (thundering herd effect), but is simpler and matches the legacy Solr lock semantics. For Solr's expected lock contention, this is a safe and robust trade-off.
+ * <p><b>Lock acquisition strategy:</b> watches the first blocking node it finds (i.e., any lower-numbered write lock for read locks, or any lower-numbered lock for write locks), rather than sorting children or only watching the immediate predecessor node as in the standard ZooKeeper lock recipe. This approach may cause more wakeups (thundering herd effect), but is simpler and well-suited to Solr's expected lock contention and operational requirements.
  *
  * <p>Read locks are only blocked by lower-numbered write locks. Write locks are blocked by any lower-numbered lock. Lock nodes are created as ephemeral sequential znodes with "R_" or "W_" prefixes.
  */
