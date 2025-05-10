@@ -59,14 +59,17 @@ public class FunctionQParser extends QParser {
    */
   public StrParser sp;
 
-  boolean parseMultipleSources = true;
-  boolean parseToEnd = true;
+  @Deprecated private boolean parseMultipleSources = false;
+  private boolean parseToEnd = true;
 
   public FunctionQParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
     setFlags(FLAG_DEFAULT);
     setString(qstr);
+    if (localParams != null && localParams.getPrimitiveBool("multiple")) {
+      setParseMultipleSources(true);
+    }
   }
 
   /**
@@ -87,11 +90,18 @@ public class FunctionQParser extends QParser {
     }
   }
 
+  @Deprecated
   public void setParseMultipleSources(boolean parseMultipleSources) {
     this.parseMultipleSources = parseMultipleSources;
   }
 
-  /** parse multiple comma separated value sources */
+  /**
+   * Parse multiple comma separated value sources encapsulated into a {@link VectorValueSource} when
+   * {@link #getQuery()} or {@link #parseAsValueSource()} is called.
+   *
+   * @deprecated this is only needed for an unusual use-case and seems hard to support
+   */
+  @Deprecated
   public boolean getParseMultipleSources() {
     return parseMultipleSources;
   }
@@ -102,7 +112,7 @@ public class FunctionQParser extends QParser {
 
   /** throw exception if there is extra stuff at the end of the parsed valuesource(s). */
   public boolean getParseToEnd() {
-    return parseMultipleSources;
+    return parseToEnd;
   }
 
   @Override

@@ -188,7 +188,6 @@ public class SortSpecParsing {
   static ValueSource parseValueSource(QParser parser, StrParser sp, int start) throws SyntaxError {
     ValueSource vs;
     if (parser instanceof FunctionQParser fparser) {
-      fparser.setParseMultipleSources(false);
       fparser.setParseToEnd(false);
 
       vs = fparser.parseAsValueSource();
