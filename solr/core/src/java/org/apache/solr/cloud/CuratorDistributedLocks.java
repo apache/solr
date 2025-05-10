@@ -30,13 +30,29 @@ import org.apache.zookeeper.Watcher.Event.EventType;
  * A distributed lock implementation using Apache Curator and ZooKeeper.
  *
  * <p>This lock is used to coordinate actions across cluster nodes, such as in the distributed
- * Collection API and Config Set API in Solr. It leverages Curator's {@link CuratorFramework} for all ZooKeeper operations.
+ * Collection API and Config Set API in Solr. It leverages Curator's {@link CuratorFramework} for
+ * all ZooKeeper operations.
  *
- * <p><b>Lock acquisition strategy:</b> watches the first blocking node it finds (i.e., any lower-numbered write lock for read locks, or any lower-numbered lock for write locks), rather than sorting children or only watching the immediate predecessor node as in the standard ZooKeeper lock recipe. This approach may cause more wakeups (thundering herd effect), but is simpler and well-suited to Solr's expected lock contention and operational requirements.
+ * <p><b>Lock acquisition strategy:</b> watches the first blocking node it finds (i.e., any
+ * lower-numbered write lock for read locks, or any lower-numbered lock for write locks), rather
+ * than sorting children or only watching the immediate predecessor node as in the standard
+ * ZooKeeper lock recipe. This approach may cause more wakeups (thundering herd effect), but is
+ * simpler and well-suited to Solr's expected lock contention and operational requirements.
  *
- * <p>Read locks are only blocked by lower-numbered write locks. Write locks are blocked by any lower-numbered lock. Lock nodes are created as ephemeral sequential znodes with "R_" or "W_" prefixes.
+ * <p>Read locks are only blocked by lower-numbered write locks. Write locks are blocked by any
+ * lower-numbered lock. Lock nodes are created as ephemeral sequential znodes with "R_" or "W_"
+ * prefixes.
  */
 class CuratorDistributedLocks {
+
+  /** End of the lock node name prefix before the sequential part */
+  static final char LOCK_PREFIX_SUFFIX = '_';
+
+  /** Prefix of EPHEMERAL read lock node names */
+  static final String READ_LOCK_PREFIX = "R" + LOCK_PREFIX_SUFFIX;
+
+  /** Prefix of EPHEMERAL write lock node names */
+  static final String WRITE_LOCK_PREFIX = "W" + LOCK_PREFIX_SUFFIX;
 
   private CuratorDistributedLocks() {
     /* not instantiable */
@@ -159,7 +175,7 @@ class CuratorDistributedLocks {
 
   static class Write extends CuratorLockBase {
     public Write(CuratorFramework curator, String path) throws Exception {
-      super(curator, path, "W_");
+      super(curator, path, WRITE_LOCK_PREFIX);
     }
 
     @Override
@@ -171,13 +187,13 @@ class CuratorDistributedLocks {
 
   static class Read extends CuratorLockBase {
     public Read(CuratorFramework curator, String path) throws Exception {
-      super(curator, path, "R_");
+      super(curator, path, READ_LOCK_PREFIX);
     }
 
     @Override
     protected boolean isBlockedByNodeType(String otherLockName) {
       // Read lock is only blocked by lower-numbered write locks
-      return otherLockName.startsWith("W_");
+      return otherLockName.startsWith(WRITE_LOCK_PREFIX);
     }
   }
 }
