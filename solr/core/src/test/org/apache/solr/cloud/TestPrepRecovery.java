@@ -110,9 +110,9 @@ public class TestPrepRecovery extends SolrCloudTestCase {
       waitForState(
           "Expected collection: testLeaderNotResponding to be live with 1 shard and 2 replicas",
           collectionName,
-          clusterShape(1, 2),
           30,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          clusterShape(1, 2));
     } finally {
       TestInjection.prepRecoveryOpPauseForever = null;
       TestInjection.notifyPauseForeverDone();

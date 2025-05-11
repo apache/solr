@@ -63,10 +63,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected final Set<String> urlParamNames;
 
-  protected RequestWriter requestWriter = new BinaryRequestWriter();
+  protected RequestWriter requestWriter = new JavaBinRequestWriter();
 
   // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
-  protected ResponseParser parser = new BinaryResponseParser();
+  protected ResponseParser parser = new JavaBinResponseParser();
 
   protected Set<String> defaultParserMimeTypes;
 
@@ -217,13 +217,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
       }
 
       if (wantStream(processor)) {
-        // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<>();
-        rsp.add("stream", is);
-        rsp.add("responseStatus", httpStatus);
         // Only case where stream should not be closed
         shouldClose = false;
-        return rsp;
+        // no processor specified, return raw stream
+        return InputStreamResponseParser.createInputStreamNamedList(httpStatus, is);
       }
 
       checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
@@ -325,7 +322,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
       return;
     }
     final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
-    if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+    if (!processorSupportedContentTypes.isEmpty()) {
       boolean processorAcceptsMimeType =
           processorAcceptsMimeType(processorSupportedContentTypes, mimeType);
       if (!processorAcceptsMimeType) {

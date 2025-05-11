@@ -16,7 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,27 +38,27 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   public static void beforeTest() throws Exception {
     System.setProperty("solr.enableRemoteStreaming", "true"); // needed for testCacheVetoHandler
 
-    File solrHomeDirectory = createTempDir().toFile();
+    Path solrHomeDirectory = createTempDir();
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
+    createAndStartJetty(solrHomeDirectory);
   }
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 
   @Test
   public void testCacheVetoHandler() throws Exception {
-    File f = makeFile(CacheHeaderTest.CONTENTS, StandardCharsets.UTF_8.name());
+    Path f = makeFile(CacheHeaderTest.CONTENTS, StandardCharsets.UTF_8.name());
     HttpRequestBase m =
         getUpdateMethod(
             "GET",
             CommonParams.STREAM_FILE,
-            f.getCanonicalPath(),
+            f.toRealPath().toString(),
             CommonParams.STREAM_CONTENTTYPE,
             "text/csv");
     HttpResponse response = getHttpClient().execute(m);
     assertEquals(200, response.getStatusLine().getStatusCode());
     checkVetoHeaders(response, true);
-    Files.delete(f.toPath());
+    Files.delete(f);
   }
 
   @Test
@@ -266,11 +265,11 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     }
   }
 
-  protected File makeFile(String contents, String charset) {
+  protected Path makeFile(String contents, String charset) {
     try {
       Path f = createTempFile("cachetest", "csv");
       Files.writeString(f, contents, Charset.forName(charset));
-      return f.toFile();
+      return f;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

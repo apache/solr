@@ -23,7 +23,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -38,7 +38,6 @@ import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,21 +144,22 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       // start the freshNode
       restartNodes(singletonList(freshNode));
       String coreName = freshNode.jetty.getCoreContainer().getCores().iterator().next().getName();
-      String replicationProperties =
-          freshNode.jetty.getSolrHome() + "/cores/" + coreName + "/data/replication.properties";
-      String md5 = DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties)));
+      Path replicationProperties =
+          Path.of(
+              freshNode.jetty.getSolrHome(), "cores", coreName, "data", "replication.properties");
+      String md5 = DigestUtils.md5Hex(Files.readAllBytes(replicationProperties));
 
       // shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
-      waitForNewLeader(cloudClient, "shard1", (Replica) initialLeaderJetty.client.info);
+      waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
       waitTillNodesActive();
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);
       assertEquals(
           "Node went into replication",
           md5,
-          DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties))));
+          DigestUtils.md5Hex(Files.readAllBytes(replicationProperties)));
 
       success = true;
     } finally {
@@ -241,8 +241,6 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    ureq.setParams(params);
     ureq.process(cloudClient);
   }
 

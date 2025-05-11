@@ -258,7 +258,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
     analyzerFieldType = analyzerFieldTypeParam.toString();
 
     if (0 < args.size()) {
-      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
+      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): " + args);
     }
 
     super.init(args);
@@ -404,9 +404,8 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
                 SERVER_ERROR,
                 "Init param '"
                     + SOURCE_PARAM
-                    + "' has unexpected 'exclude' sub-param(s): '"
-                    + selectorConfig.getName(0)
-                    + "'");
+                    + "' has unexpected 'exclude' sub-param(s): "
+                    + selectorConfig);
           }
           // call once per instance
           selectorConfig.remove("exclude");
@@ -417,15 +416,14 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
               SERVER_ERROR,
               "Init param '"
                   + SOURCE_PARAM
-                  + "' contains unexpected child param(s): '"
-                  + selectorConfig.getName(0)
-                  + "'");
+                  + "' contains unexpected child param(s): "
+                  + selectorConfig);
         }
         // consume from the named list so it doesn't interfere with subsequent processing
         sources.remove(0);
       }
     }
-    if (1 <= sources.size()) {
+    if (!sources.isEmpty()) {
       // source better be one or more strings
       srcInclusions.fieldName = new HashSet<>(args.removeConfigArgs("source"));
     }
@@ -473,12 +471,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
       }
       if (0 != destList.size()) {
         throw new SolrException(
-            SERVER_ERROR,
-            "Init param '"
-                + DEST_PARAM
-                + "' has unexpected children: '"
-                + destList.getName(0)
-                + "'");
+            SERVER_ERROR, "Init param '" + DEST_PARAM + "' has unexpected children: " + destList);
       }
 
       try {

@@ -22,10 +22,10 @@ plugins {
   id 'base'
   id 'solr.build-infra'
 
-  alias(libs.plugins.carrotsearch.dependencychecks)
   alias(libs.plugins.owasp.dependencycheck)
   alias(libs.plugins.cutterslade.analyze)
   alias(libs.plugins.benmanes.versions)
+  alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
   alias(libs.plugins.thetaphi.forbiddenapis) apply false
   alias(libs.plugins.undercouch.download) apply false
@@ -38,6 +38,9 @@ plugins {
 // Declare default Java versions for the entire project and for SolrJ separately
 rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(libs.versions.java.min.get())
 rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
+
+// Check development mode for entire project (defaults to true if 'production' not provided and set to true)
+rootProject.ext.development = !project.hasProperty('production') || project.findProperty('production') != 'true'
 
 apply from: file('gradle/globals.gradle')
 
@@ -111,6 +114,9 @@ ext {
     logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
     return luceneBaseVersion
   }
+
+  // For testing code
+  vectorIncubatorJavaVersions = [ JavaVersion.VERSION_21, JavaVersion.VERSION_22, JavaVersion.VERSION_23, JavaVersion.VERSION_24, JavaVersion.VERSION_25 ] as Set
 }
 
 // Include smaller chunks configuring dedicated build areas.

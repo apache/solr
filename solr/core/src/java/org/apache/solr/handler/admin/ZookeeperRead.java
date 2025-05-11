@@ -21,19 +21,21 @@ import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_READ
 import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.StreamingOutput;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.ZooKeeperReadApis;
-import org.apache.solr.client.api.model.ZooKeeperFileResponse;
 import org.apache.solr.client.api.model.ZooKeeperListChildrenResponse;
 import org.apache.solr.client.api.model.ZooKeeperStat;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.jersey.PermissionName;
@@ -64,7 +66,7 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
   /** Request contents of a znode, except security.json */
   @Override
   @PermissionName(ZK_READ_PERM)
-  public ZooKeeperFileResponse readNode(String zkPath) {
+  public StreamingOutput readNode(String zkPath) {
     zkPath = sanitizeZkPath(zkPath);
     return readNodeAndAddToResponse(zkPath);
   }
@@ -72,7 +74,7 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
   /** Request contents of the security.json node */
   @Override
   @PermissionName(SECURITY_READ_PERM)
-  public ZooKeeperFileResponse readSecurityJsonNode() {
+  public StreamingOutput readSecurityJsonNode() {
     return readNodeAndAddToResponse("/security.json");
   }
 
@@ -136,23 +138,24 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
       case '?':
         return XMLResponseParser.XML_CONTENT_TYPE;
       default:
-        return BinaryResponseParser.BINARY_CONTENT_TYPE;
+        return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     }
   }
 
   /** Reads content of a znode */
-  private ZooKeeperFileResponse readNodeAndAddToResponse(String zkPath) {
-    final ZooKeeperFileResponse zkFileResponse =
-        instantiateJerseyResponse(ZooKeeperFileResponse.class);
-
+  private StreamingOutput readNodeAndAddToResponse(String zkPath) {
     byte[] d = readPathFromZookeeper(zkPath);
     if (d == null || d.length == 0) {
-      zkFileResponse.zkData = EMPTY;
-      return zkFileResponse;
+      d = new byte[0];
     }
 
-    zkFileResponse.output = new ContentStreamBase.ByteArrayStream(d, null, guessMime(d[0]));
-    return zkFileResponse;
+    final var bytesToWrite = d;
+    return new StreamingOutput() {
+      @Override
+      public void write(OutputStream output) throws IOException, WebApplicationException {
+        output.write(bytesToWrite);
+      }
+    };
   }
 
   /** Reads a single node from zookeeper and return as byte array */

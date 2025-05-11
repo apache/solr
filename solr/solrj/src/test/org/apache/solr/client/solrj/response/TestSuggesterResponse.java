@@ -24,8 +24,8 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -141,7 +141,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
    */
   private SolrClient createSuggestSolrClient() {
     final ResponseParser randomParser =
-        random().nextBoolean() ? new BinaryResponseParser() : new XMLResponseParser();
+        random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
     return new HttpSolrClient.Builder()
         .withBaseSolrUrl(getBaseUrl())
         .withDefaultCollection(DEFAULT_TEST_CORENAME)

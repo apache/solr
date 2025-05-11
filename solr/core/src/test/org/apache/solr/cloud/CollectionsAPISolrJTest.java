@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +51,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -132,7 +130,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected " + collectionName + " to disappear from cluster state",
         collectionName,
-        (n, c) -> c == null);
+        Objects::isNull);
   }
 
   @Test
@@ -260,7 +258,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected " + collectionName + " to disappear from cluster state",
         collectionName,
-        (n, c) -> c == null);
+        Objects::isNull);
 
     // Test Creating a new collection.
     collectionName = "solrj_test2";
@@ -274,7 +272,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected " + collectionName + " to appear in cluster state",
         collectionName,
-        (n, c) -> c != null);
+        Objects::nonNull);
   }
 
   @Test
@@ -328,13 +326,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            collectionName,
-            30,
-            TimeUnit.SECONDS,
-            (l, c) -> c != null && c.getSlice("shardC") != null);
+    waitForState(
+        "Wait for shard to be visible",
+        collectionName,
+        c -> c != null && c.getSlice("shardC") != null);
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(3, coresStatus.size());
     int replicaTlog = 0;
@@ -423,9 +418,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
 
     waitForState(
-        "Expected 5 slices to be active",
-        collectionName,
-        (n, c) -> c.getActiveSlices().size() == 5);
+        "Expected 5 slices to be active", collectionName, c -> c.getActiveSlices().size() == 5);
   }
 
   @Test
@@ -454,9 +447,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     DocCollection testCollection = getCollectionState(collectionName);
 
     Replica replica1 = testCollection.getReplicas().iterator().next();
-    CoreStatus coreStatus = getCoreStatus(replica1);
+    final var coreStatus = getCoreStatus(replica1);
 
-    assertEquals(Paths.get(coreStatus.getDataDirectory()).toString(), dataDir.toString());
+    assertEquals(Path.of(coreStatus.dataDir).toString(), dataDir.toString());
   }
 
   @Test
@@ -493,7 +486,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected replica " + newReplica.getName() + " to vanish from cluster state",
         collectionName,
-        (n, c) -> c.getSlice("shard1").getReplica(newReplica.getName()) == null);
+        c -> c.getSlice("shard1").getReplica(newReplica.getName()) == null);
   }
 
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
@@ -804,9 +797,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     indexSomeDocs(simpleCollName);
 
     final var simpleResponse =
-        new CollectionsApi.GetCollectionStatus(simpleCollName)
-            .process(cluster.getSolrClient())
-            .getParsed();
+        new CollectionsApi.GetCollectionStatus(simpleCollName).process(cluster.getSolrClient());
     assertEquals(simpleCollName, simpleResponse.name);
     assertEquals(2, simpleResponse.shards.size());
     assertEquals(Integer.valueOf(2), simpleResponse.activeShards);
@@ -821,7 +812,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Ensure segment data present when request sets 'segments=true' flag
     final var segmentDataRequest = new CollectionsApi.GetCollectionStatus(simpleCollName);
     segmentDataRequest.setSegments(true);
-    final var segmentDataResponse = segmentDataRequest.process(cluster.getSolrClient()).getParsed();
+    final var segmentDataResponse = segmentDataRequest.process(cluster.getSolrClient());
     var segmentData = segmentDataResponse.shards.get("shard1").leader.segInfos;
     assertNotNull(segmentData);
     assertTrue(segmentData.info.numSegments > 0); // Expect at least one segment
@@ -834,8 +825,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Ensure file-size data present when request sets sizeInfo flag
     final var segmentFileSizeRequest = new CollectionsApi.GetCollectionStatus(simpleCollName);
     segmentFileSizeRequest.setSizeInfo(true);
-    final var segmentFileSizeResponse =
-        segmentFileSizeRequest.process(cluster.getSolrClient()).getParsed();
+    final var segmentFileSizeResponse = segmentFileSizeRequest.process(cluster.getSolrClient());
     segmentData = segmentFileSizeResponse.shards.get("shard1").leader.segInfos;
     assertNotNull(segmentData);
     final var largeFileList = segmentData.segments.get("_0").largestFilesByName;
@@ -887,7 +877,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         ZkStateReader.from(solrClient).getLeaderRetry(collectionName, "shard1", DEFAULT_TIMEOUT);
 
     final AtomicReference<Long> coreStartTime =
-        new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
+        new AtomicReference<>(getCoreStatus(leader).startTime.getTime());
 
     // Check for value change
     CollectionAdminRequest.modifyCollection(
@@ -908,7 +898,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         () -> {
           long restartTime = 0;
           try {
-            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+            restartTime = getCoreStatus(leader).startTime.getTime();
           } catch (Exception e) {
             log.warn("Exception getting core start time: ", e);
             return false;
@@ -916,7 +906,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           return restartTime > coreStartTime.get();
         });
 
-    coreStartTime.set(getCoreStatus(leader).getCoreStartTime().getTime());
+    coreStartTime.set(getCoreStatus(leader).startTime.getTime());
 
     // check for docs - reloading should have committed the new docs
     // this also verifies that searching works in read-only mode
@@ -979,7 +969,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         () -> {
           long restartTime = 0;
           try {
-            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+            restartTime = getCoreStatus(leader).startTime.getTime();
           } catch (Exception e) {
             log.warn("Exception getting core start time: ", e);
             return false;
@@ -1277,7 +1267,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expecting property 'preferredleader' to appear on replica " + replica.getName(),
         collection,
-        (n, c) -> "true".equals(c.getReplica(replica.getName()).getProperty("preferredleader")));
+        c -> "true".equals(c.getReplica(replica.getName()).getProperty("preferredleader")));
 
     response =
         CollectionAdminRequest.deleteReplicaProperty(
@@ -1288,7 +1278,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expecting property 'preferredleader' to be removed from replica " + replica.getName(),
         collection,
-        (n, c) -> c.getReplica(replica.getName()).getProperty("preferredleader") == null);
+        c -> c.getReplica(replica.getName()).getProperty("preferredleader") == null);
   }
 
   @Test
@@ -1308,7 +1298,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expecting 'preferredleader' property to be balanced across all shards",
         collection,
-        (n, c) -> {
+        c -> {
           for (Slice slice : c) {
             int count = 0;
             for (Replica replica : slice) {
@@ -1335,7 +1325,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expecting attribute 'replicationFactor' to be 25",
         collection,
-        (n, c) -> 25 == c.getReplicationFactor());
+        c -> 25 == c.getReplicationFactor());
 
     expectThrows(
         IllegalArgumentException.class,

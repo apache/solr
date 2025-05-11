@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,14 +26,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** */
 public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -86,6 +82,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertEquals("{name={n8=88, n9=99}}", link.args.toString());
   }
 
+  @LogLevel("org.apache.solr.update.processor.LogUpdateProcessorFactory=INFO")
   public void testUpdateDistribChainSkipping() throws IOException {
 
     // a key part of this test is verifying that LogUpdateProcessor is found in all chains because
@@ -99,7 +96,8 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertTrue(
         "Tests must be run with INFO level logging "
             + "otherwise LogUpdateProcessor isn't used and can't be tested.",
-        log.isInfoEnabled());
+        LoggerFactory.getLogger(LogUpdateProcessorFactory.class)
+            .isInfoEnabled()); // nowarn_valid_logger
 
     final int EXPECTED_CHAIN_LENGTH = 5;
     SolrCore core = h.getCore();

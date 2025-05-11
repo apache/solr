@@ -127,7 +127,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     waitForState(
         "Expected shard 'x' to be active",
         collection,
-        (n, c) -> {
+        c -> {
           if (c.getSlice("x") == null) return false;
           for (Replica r : c.getSlice("x")) {
             if (r.getState() != Replica.State.ACTIVE) return false;
@@ -255,8 +255,6 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     waitForState(
         "Not enough active replicas in shard 'x'",
         collectionName,
-        (n, c) -> {
-          return c.getSlice("x").getReplicas().size() == 1;
-        });
+        c -> c.getSlice("x").getReplicas().size() == 1);
   }
 }

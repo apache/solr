@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -92,7 +91,7 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
           solrClient
               .requestWithBaseUrl(zkStateReader.getBaseUrlForNodeName(nodeName), null, req)
               .getResponse();
-      NavigableObject metrics = (NavigableObject) response._get("metrics", MapWriter.EMPTY);
+      var metrics = NavigableObject.wrap(response._get("metrics", null));
       keys.forEach((tag, key) -> result.put(tag, metrics._get(key, null)));
       return result;
     } catch (Exception e) {
