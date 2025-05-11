@@ -763,9 +763,12 @@ public class RunExampleTool extends ToolBase {
 
       if (!jvmOptsArg.isEmpty()) {
         cmd.addArgument("--jvm-opts");
-        // cmd.exe launched by commons-exec tends to strip off the quotes and break up the argument
+
+        // cmd.exe launched by commons-exec tends to strip off the quotes and break up the
+        // argument
         // value on certain characters
-        // This may break the value in unintended ways thereby passing incorrect value to start.cmd
+        // This may break the value in unintended ways thereby passing incorrect value to
+        // start.cmd
         // (eg: for "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:18983", it
         // breaks apart the value at "-agentlib:jdwp" passing incorrect args to start.cmd )
         // The 'false' here tells Exec: “don’t touch my quotes—this is one atomic argument”
@@ -783,16 +786,16 @@ public class RunExampleTool extends ToolBase {
       if (handler.hasResult() && handler.getExitValue() != 0) {
         throw new Exception(
             "Failed to start Solr using command: "
-                + startCmd
+                + startCmdWithJvmOpts
                 + " Exception : "
                 + handler.getException());
       }
     } else {
       try {
-        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmd));
+        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmdWithJvmOpts));
       } catch (ExecuteException e) {
         throw new Exception(
-            "Failed to start Solr using command: " + startCmd + " Exception : " + e);
+            "Failed to start Solr using command: " + startCmdWithJvmOpts + " Exception : " + e);
       }
     }
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
