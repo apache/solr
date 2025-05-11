@@ -131,7 +131,7 @@ public class SolrCLI implements CLIO {
     List<String> dashDList = new ArrayList<>();
     for (int a = 1; a < args.length; a++) {
       String arg = args[a];
-      if (arg.startsWith("-D")) {
+      if (!args[a - 1].equals("--jvm-opts") && arg.startsWith("-D")) {
         dashDList.add(arg);
       } else {
         toolArgList.add(arg);

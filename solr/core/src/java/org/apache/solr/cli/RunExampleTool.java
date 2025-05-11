@@ -690,7 +690,8 @@ public class RunExampleTool extends ToolBase {
     String verboseArg = isVerbose() ? "--verbose" : "";
 
     String jvmOpts = cli.getOptionValue(JVM_OPTS_OPTION);
-    String jvmOptsArg = (jvmOpts != null) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
+    String jvmOptsArg =
+        (jvmOpts != null && !jvmOpts.isEmpty()) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
 
     Path cwd = Path.of(System.getProperty("user.dir"));
     Path binDir = Path.of(script).getParent();
@@ -713,7 +714,7 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d --solr-home \"%s\" --server-dir \"%s\" %s %s %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d --solr-home \"%s\" --server-dir \"%s\" %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
@@ -725,12 +726,13 @@ public class RunExampleTool extends ToolBase {
             forceArg,
             verboseArg,
             extraArgs,
-            jvmOptsArg,
             syspropArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
+    String startCmdWithJvmOpts = startCmd + jvmOptsArg;
+
     echo("\nStarting up Solr on port " + port + " using command:");
-    echo(startCmd + "\n");
+    echo(startCmdWithJvmOpts + "\n");
 
     String solrUrl =
         String.format(
@@ -759,7 +761,19 @@ public class RunExampleTool extends ToolBase {
         }
       }
       DefaultExecuteResultHandler handler = new DefaultExecuteResultHandler();
-      executor.execute(org.apache.commons.exec.CommandLine.parse(startCmd), startEnv, handler);
+      org.apache.commons.exec.CommandLine cmd = org.apache.commons.exec.CommandLine.parse(startCmd);
+
+      if (!jvmOptsArg.isEmpty()) {
+        cmd.addArgument("--jvm-opts");
+        // cmd.exe launched by commons-exec tends to strip off the quotes and break up the argument
+        // value on certain characters
+        // This may break the value in unintended ways thereby passing incorrect value to start.cmd
+        // (eg: for "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:18983", it
+        // breaks apart the value at "-agentlib:jdwp" passing incorrect args to start.cmd )
+        // The 'false' here tells Exec: “don’t touch my quotes—this is one atomic argument”
+        cmd.addArgument("\"" + jvmOpts + "\"", false);
+      }
+      executor.execute(cmd, startEnv, handler);
 
       // wait for execution.
       try {
