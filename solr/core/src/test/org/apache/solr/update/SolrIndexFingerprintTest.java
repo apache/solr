@@ -52,37 +52,35 @@ public class SolrIndexFingerprintTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "109"));
     assertU(commit());
 
-    var searcher = core.getSearcher().get();
+    try (var searcher = core.getSearcher().get()) {
+      // Compute fingerprint sequentially to compare with parallel computation
+      IndexFingerprint expectedFingerprint =
+          searcher.getTopReaderContext().leaves().stream()
+              .map(
+                  ctx -> {
+                    try {
+                      LeafReader noCacheLeafReader =
+                          new FilterLeafReader(ctx.reader()) {
+                            @Override
+                            public CacheHelper getReaderCacheHelper() {
+                              return null;
+                            }
 
-    // Compute fingerprint sequentially to compare with parallel computation
-    IndexFingerprint expectedFingerprint =
-        searcher.getTopReaderContext().leaves().stream()
-            .map(
-                ctx -> {
-                  try {
-                    LeafReader noCacheLeafReader =
-                        new FilterLeafReader(ctx.reader()) {
-                          @Override
-                          public CacheHelper getReaderCacheHelper() {
-                            return null;
-                          }
+                            @Override
+                            public CacheHelper getCoreCacheHelper() {
+                              return null;
+                            }
+                          };
+                      return core.getIndexFingerprint(
+                          searcher, noCacheLeafReader.getContext(), maxVersion);
+                    } catch (IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  })
+              .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
 
-                          @Override
-                          public CacheHelper getCoreCacheHelper() {
-                            return null;
-                          }
-                        };
-                    return core.getIndexFingerprint(
-                        searcher, noCacheLeafReader.getContext(), maxVersion);
-                  } catch (IOException e) {
-                    throw new RuntimeException(e);
-                  }
-                })
-            .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
-
-    IndexFingerprint actualFingerprint = searcher.getIndexFingerprint(maxVersion);
-
-    assertEquals(expectedFingerprint, actualFingerprint);
-    searcher.close();
+      IndexFingerprint actualFingerprint = searcher.getIndexFingerprint(maxVersion);
+      assertEquals(expectedFingerprint, actualFingerprint);
+    }
   }
 }

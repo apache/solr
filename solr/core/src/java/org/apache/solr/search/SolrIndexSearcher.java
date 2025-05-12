@@ -195,8 +195,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private SolrMetricsContext solrMetricsContext;
 
-  private final ExecutorService fingerprintExecutor;
-
   private static DirectoryReader getReader(
       SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory, String path)
       throws IOException {
@@ -400,9 +398,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             + "]"
             + (name != null ? " " + name : "");
     log.debug("Opening [{}]", this.name);
-    this.fingerprintExecutor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            EXECUTOR_MAX_CPU_THREADS, new SolrNamedThreadFactory("IndexFingerprintPool"));
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher
@@ -661,8 +656,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
     assert ObjectReleaseTracker.release(this);
-
-    fingerprintExecutor.shutdownNow();
   }
 
   /** Direct access to the IndexSchema for use with this searcher */
@@ -2561,7 +2554,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                     (Callable<IndexFingerprint>)
                         () -> searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion))
             .collect(Collectors.toList());
-    return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(fingerprintExecutor, tasks).stream()
+    return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(
+            core.getCoreContainer().getIndexFingerprintExecutor(), tasks)
+        .stream()
         .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
   }
 
