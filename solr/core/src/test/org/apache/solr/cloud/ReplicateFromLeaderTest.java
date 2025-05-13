@@ -20,27 +20,12 @@ package org.apache.solr.cloud;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrConfig;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
-public class ReplicateFromLeaderTest {
-
-  private String jettyTestMode;
-
-  @Before
-  public void setUp() {
-    jettyTestMode = System.getProperty("jetty.testMode");
-  }
-
-  @After
-  public void tearDown() {
-    if (jettyTestMode != null) {
-      System.setProperty("jetty.testMode", jettyTestMode);
-    }
-  }
+public class ReplicateFromLeaderTest extends SolrTestCaseJ4 {
 
   @Test
   public void determineTestPollIntervalString() {

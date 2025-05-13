@@ -30,7 +30,6 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.STATUS;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -1486,7 +1485,6 @@ public class ReplicationHandler extends RequestHandlerBase
     return TimeUnit.MILLISECONDS.convert(readIntervalNs(interval), TimeUnit.NANOSECONDS);
   }
 
-  @VisibleForTesting
   public static Long readIntervalNs(String interval) {
     if (interval == null) return null;
     int result = 0;

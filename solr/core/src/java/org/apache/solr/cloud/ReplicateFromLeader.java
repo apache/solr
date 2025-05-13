@@ -170,6 +170,7 @@ public class ReplicateFromLeader {
 
     // validate poll interval and fail early
     ReplicationHandler.readIntervalNs(pollIntervalStr);
+    assert pollIntervalStr != null;
     return pollIntervalStr;
   }
 
