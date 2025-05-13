@@ -130,8 +130,6 @@ public class SolrConfig implements MapSerializable {
 
   private boolean handleSelect;
 
-  private boolean addHttpRequestToContext;
-
   private final SolrRequestParsers solrRequestParsers;
 
   /**
@@ -366,7 +364,6 @@ public class SolrConfig implements MapSerializable {
       }
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
-      addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -966,10 +963,6 @@ public class SolrConfig implements MapSerializable {
     return handleSelect;
   }
 
-  public boolean isAddHttpRequestToContext() {
-    return addHttpRequestToContext;
-  }
-
   @Override
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (znodeVersion > -1) result.put(ZNODEVER, znodeVersion);
@@ -1025,9 +1018,7 @@ public class SolrConfig implements MapSerializable {
             "multipartUploadLimitKB",
             multipartUploadLimitKB,
             "formUploadLimitKB",
-            formUploadLimitKB,
-            "addHttpRequestToContext",
-            addHttpRequestToContext));
+            formUploadLimitKB));
     if (indexConfig != null) result.put("indexConfig", indexConfig);
 
     // TODO there is more to add

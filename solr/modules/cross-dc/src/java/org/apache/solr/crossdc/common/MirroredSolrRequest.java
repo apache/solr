@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Objects;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -36,6 +35,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Class to encapsulate a mirrored Solr request. This adds a timestamp and #attempts to the request
@@ -59,10 +59,9 @@ public class MirroredSolrRequest<T extends SolrResponse> {
   }
 
   public static class MirroredAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
-    private ModifiableSolrParams params;
+    private SolrParams params;
 
-    public MirroredAdminRequest(
-        CollectionParams.CollectionAction action, ModifiableSolrParams params) {
+    public MirroredAdminRequest(CollectionParams.CollectionAction action, SolrParams params) {
       super(action);
       this.params = params;
     }
@@ -72,12 +71,12 @@ public class MirroredSolrRequest<T extends SolrResponse> {
       return params;
     }
 
-    public void setParams(ModifiableSolrParams params) {
+    public void setParams(SolrParams params) {
       this.params = params;
     }
 
     @Override
-    protected CollectionAdminResponse createResponse(SolrClient client) {
+    protected CollectionAdminResponse createResponse(NamedList<Object> namedList) {
       return new CollectionAdminResponse();
     }
   }
@@ -117,7 +116,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
     }
 
     @Override
-    protected ConfigSetAdminResponse createResponse(SolrClient client) {
+    protected ConfigSetAdminResponse createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse();
     }
   }
@@ -247,10 +246,10 @@ public class MirroredSolrRequest<T extends SolrResponse> {
   }
 
   public static void setParams(SolrRequest<?> request, ModifiableSolrParams params) {
-    if (request instanceof MirroredAdminRequest) {
-      ((MirroredAdminRequest) request).setParams(params);
-    } else if (request instanceof UpdateRequest) {
-      ((UpdateRequest) request).setParams(params);
+    if (request instanceof MirroredAdminRequest mReq) {
+      mReq.setParams(params);
+    } else if (request instanceof UpdateRequest uReq) {
+      uReq.setParams(params);
     } else {
       throw new UnsupportedOperationException("Can't setParams on request " + request);
     }

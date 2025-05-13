@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core.backup;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -24,6 +23,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -255,16 +255,12 @@ public class BackupManager {
    * @throws IOException in case of I/O errors.
    */
   public void uploadConfigDir(
-      String sourceConfigName,
-      String targetConfigName,
-      ConfigSetService configSetService,
-      boolean requestIsTrusted)
+      String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
     if (!repository.exists(source)) {
       throw new IllegalArgumentException("Configset expected at " + source + " does not exist");
     }
-    configSetService.setConfigSetTrust(targetConfigName, requestIsTrusted);
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 
@@ -343,7 +339,8 @@ public class BackupManager {
     // getAllConfigFiles always separates file paths with '/'
     for (String filePath : filePaths) {
       // Replace '/' to ensure that propre file is resolved for writing.
-      URI uri = repository.resolve(dir, filePath.replace('/', File.separatorChar));
+      URI uri =
+          repository.resolve(dir, filePath.replace("/", FileSystems.getDefault().getSeparator()));
       // checking for '/' is correct for a directory since ConfigSetService#getAllConfigFiles
       // always separates file paths with '/'
       if (!filePath.endsWith("/")) {

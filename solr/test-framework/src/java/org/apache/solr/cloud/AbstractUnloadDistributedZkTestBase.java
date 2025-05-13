@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -242,12 +241,12 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
 
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
 
-    ZkCoreNodeProps leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
+    Replica leader = getLeaderFromZk("unloadcollection", "shard1");
 
     Random random = random();
     if (random.nextBoolean()) {
       try (SolrClient collectionClient =
-          getHttpSolrClient(leaderProps.getBaseUrl(), leaderProps.getCoreName())) {
+          getHttpSolrClient(leader.getBaseUrl(), leader.getCoreName())) {
         // lets try and use the solrj client to index and retrieve a couple
         // documents
         SolrInputDocument doc1 =
@@ -292,10 +291,10 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     // collectionClient.commit();
 
     // unload the leader
-    try (SolrClient collectionClient = newSolrClient(leaderProps.getBaseUrl())) {
+    try (SolrClient collectionClient = newSolrClient(leader.getBaseUrl())) {
 
       Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(leaderProps.getCoreName());
+      unloadCmd.setCoreName(leader.getCoreName());
       ModifiableSolrParams p = (ModifiableSolrParams) unloadCmd.getParams();
 
       collectionClient.request(unloadCmd);
@@ -304,7 +303,7 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     //    printLayout();
 
     int tries = 50;
-    while (leaderProps
+    while (leader
         .getCoreUrl()
         .equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
       Thread.sleep(100);
@@ -341,15 +340,15 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
 
     // unload the leader again
-    leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
-    try (SolrClient collectionClient = newSolrClient(leaderProps.getBaseUrl())) {
+    leader = getLeaderFromZk("unloadcollection", "shard1");
+    try (SolrClient collectionClient = newSolrClient(leader.getBaseUrl())) {
 
       Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(leaderProps.getCoreName());
+      unloadCmd.setCoreName(leader.getCoreName());
       collectionClient.request(unloadCmd);
     }
     tries = 50;
-    while (leaderProps
+    while (leader
         .getCoreUrl()
         .equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
       Thread.sleep(100);
@@ -363,9 +362,9 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     TestInjection.skipIndexWriterCommitOnClose = false; // set this back
     assertTrue(
         CollectionAdminRequest.addReplicaToShard("unloadcollection", "shard1")
-            .setCoreName(leaderProps.getCoreName())
+            .setCoreName(leader.getCoreName())
             .setDataDir(core1DataDir)
-            .setNode(leaderProps.getNodeName())
+            .setNode(leader.getNodeName())
             .process(cloudClient)
             .isSuccess());
 

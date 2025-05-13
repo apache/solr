@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
@@ -128,10 +129,17 @@ public class TopGroupsResultTransformer
       Integer totalHitCount = (Integer) commandResult.get("totalHitCount");
 
       List<GroupDocs<BytesRef>> groupDocs = new ArrayList<>();
-      for (int i = 2; i < commandResult.size(); i++) {
-        String groupValue = commandResult.getName(i);
+
+      // Skip first two entries (totalGroupedHitCount and totalHitCount) and process the rest
+      int skipCount = 0;
+      for (Entry<String, ?> groupEntry : commandResult) {
+        if (skipCount++ < 2) {
+          continue;
+        }
+
+        String groupValue = groupEntry.getKey();
         @SuppressWarnings("unchecked")
-        NamedList<Object> groupResult = (NamedList<Object>) commandResult.getVal(i);
+        NamedList<Object> groupResult = (NamedList<Object>) groupEntry.getValue();
         // previously Integer now Long
         Number totalGroupHits = (Number) groupResult.get("totalHits");
         Float maxScore = (Float) groupResult.get("maxScore");

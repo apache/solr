@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -38,6 +37,7 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.4
  */
+@LogLevel("org.apache.solr.client.solrj.impl=DEBUG")
 public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -80,8 +81,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
     super.setUp();
 
     for (int i = 0; i < solr.length; i++) {
-      solr[i] =
-          new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i).toFile(), 0);
+      solr[i] = new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i), 0);
       solr[i].setUp();
       solr[i].startJetty();
       addDocs(solr[i]);
@@ -216,7 +216,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
   private void startJettyAndWaitForAliveCheckQuery(SolrInstance solrInstance) throws Exception {
     try (LogListener logListener =
-        LogListener.debug().substring(LBSolrClient.UPDATE_LIVE_SERVER_MESSAGE)) {
+        LogListener.debug(LBSolrClient.class).substring(LBSolrClient.UPDATE_LIVE_SERVER_MESSAGE)) {
       solrInstance.startJetty();
       if (logListener.pollMessage(10, TimeUnit.SECONDS) == null) {
         fail("The alive check query was not logged within 10 seconds.");
@@ -226,19 +226,19 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
   private static class SolrInstance {
     String name;
-    File homeDir;
-    File dataDir;
-    File confDir;
+    Path homeDir;
+    Path dataDir;
+    Path confDir;
     int port;
     JettySolrRunner jetty;
 
-    public SolrInstance(String name, File homeDir, int port) {
+    public SolrInstance(String name, Path homeDir, int port) {
       this.name = name;
       this.homeDir = homeDir;
       this.port = port;
 
-      dataDir = new File(homeDir + "/collection1", "data");
-      confDir = new File(homeDir + "/collection1", "conf");
+      dataDir = homeDir.resolve("collection1").resolve("data");
+      confDir = homeDir.resolve("collection1").resolve("conf");
     }
 
     public String getHomeDir() {
@@ -278,22 +278,22 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
     }
 
     public void setUp() throws Exception {
-      homeDir.mkdirs();
-      dataDir.mkdirs();
-      confDir.mkdirs();
+      Files.createDirectories(homeDir);
+      Files.createDirectories(dataDir);
+      Files.createDirectories(confDir);
 
-      Files.copy(SolrTestCaseJ4.getFile(getSolrXmlFile()), homeDir.toPath().resolve("solr.xml"));
+      Files.copy(SolrTestCaseJ4.getFile(getSolrXmlFile()), homeDir.resolve("solr.xml"));
 
-      Path f = confDir.toPath().resolve("solrconfig.xml");
+      Path f = confDir.resolve("solrconfig.xml");
       Files.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
-      f = confDir.toPath().resolve("schema.xml");
+      f = confDir.resolve("schema.xml");
       Files.copy(SolrTestCaseJ4.getFile(getSchemaFile()), f);
-      Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
+      Files.createFile(homeDir.resolve("collection1/core.properties"));
     }
 
     public void tearDown() throws Exception {
       if (jetty != null) jetty.stop();
-      IOUtils.rm(homeDir.toPath());
+      IOUtils.rm(homeDir);
     }
 
     public void startJetty() throws Exception {

@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -341,7 +340,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   protected SolrClient getSolrClient(Replica replica, String coll) {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    return getHttpSolrClient(zkProps.getBaseUrl(), coll);
+    return getHttpSolrClient(replica.getBaseUrl(), coll);
   }
 }

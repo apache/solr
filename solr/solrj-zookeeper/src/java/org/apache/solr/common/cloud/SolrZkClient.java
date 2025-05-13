@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,15 +49,12 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -84,23 +80,18 @@ public class SolrZkClient implements Closeable {
   private ExecutorService curatorSafeServiceExecutor;
   private CuratorFramework client;
 
-  private final ZkMetrics metrics = new ZkMetrics();
+  private static final SolrZKMetricsListener metricsListener = new SolrZKMetricsListener();
 
   private Compressor compressor;
   private int minStateByteLenForCompression;
 
-  // Allow method reference to return a reference to a functional interface (Mapwriter),
-  // rather than a reference to a ZkMetrics object
-  @SuppressWarnings("UnnecessaryMethodReference")
+  // The metrics collector is shared across all SolrZkClient objects
   public MapWriter getMetrics() {
-    return metrics::writeMap;
+    return metricsListener;
   }
 
   private final ExecutorService zkCallbackExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
-  private final ExecutorService zkConnectionListenerCallbackExecutor =
-      ExecutorUtil.newMDCAwareSingleThreadExecutor(
-          new SolrNamedThreadFactory("zkConnectionListenerCallback"));
 
   private volatile boolean isClosed = false;
   private int zkClientTimeout;
@@ -122,8 +113,6 @@ public class SolrZkClient implements Closeable {
         builder.zkClientConnectTimeout,
         builder.zkCredentialsProvider,
         builder.aclProvider,
-        builder.onReconnect,
-        builder.onDisconnect,
         builder.higherLevelIsClosed,
         builder.minStateByteLenForCompression,
         builder.compressor,
@@ -137,8 +126,6 @@ public class SolrZkClient implements Closeable {
       int clientConnectTimeout,
       ZkCredentialsProvider zkCredentialsProvider,
       ACLProvider aclProvider,
-      final OnReconnect onReconnect,
-      OnDisconnect onDisconnect,
       IsClosed higherLevelIsClosed,
       int minStateByteLenForCompression,
       Compressor compressor,
@@ -202,17 +189,14 @@ public class SolrZkClient implements Closeable {
             .authorization(zkCredentialsProvider.getCredentials())
             .retryPolicy(retryPolicy)
             .runSafeService(curatorSafeServiceExecutor)
+            .compressionProvider(
+                new SolrZkCompressionProvider(compressor, minStateByteLenForCompression))
+            .enableCompression()
             .build();
-    if (onReconnect != null) {
-      client
-          .getConnectionStateListenable()
-          .addListener(onReconnect, zkConnectionListenerCallbackExecutor);
-    }
-    if (onDisconnect != null) {
-      client
-          .getConnectionStateListenable()
-          .addListener(onDisconnect, zkConnectionListenerCallbackExecutor);
-    }
+    // This will collect metrics for foreground curator commands
+    client.getZookeeperClient().setTracerDriver(metricsListener);
+    // This will collect metrics for background curator commands
+    client.getCuratorListenable().addListener(metricsListener);
     client.start();
     try {
       if (!client.blockUntilConnected(clientConnectTimeout, TimeUnit.MILLISECONDS)) {
@@ -231,18 +215,6 @@ public class SolrZkClient implements Closeable {
     }
 
     assert ObjectReleaseTracker.track(this);
-    if (aclProvider == null) {
-      this.aclProvider = useDefaultCredsAndACLs ? createACLProvider() : new DefaultZkACLProvider();
-    } else {
-      this.aclProvider = aclProvider;
-    }
-
-    if (compressor == null) {
-      this.compressor = new ZLibCompressor();
-    } else {
-      this.compressor = compressor;
-    }
-    this.minStateByteLenForCompression = minStateByteLenForCompression;
   }
 
   public CuratorFramework getCuratorFramework() {
@@ -350,7 +322,6 @@ public class SolrZkClient implements Closeable {
       throws InterruptedException, KeeperException {
     runWithCorrectThrows(
         "deleting znode", () -> client.delete().withVersion(version).forPath(path));
-    metrics.deletes.increment();
   }
 
   /**
@@ -385,7 +356,6 @@ public class SolrZkClient implements Closeable {
         runWithCorrectThrows(
             "checking exists",
             () -> client.checkExists().usingWatcher(wrapWatcher(watcher)).forPath(path));
-    metrics.existsChecks.increment();
     return result;
   }
 
@@ -394,7 +364,6 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     Boolean result =
         runWithCorrectThrows("checking exists", () -> client.checkExists().forPath(path) != null);
-    metrics.existsChecks.increment();
     return result;
   }
 
@@ -405,11 +374,6 @@ public class SolrZkClient implements Closeable {
         runWithCorrectThrows(
             "getting children",
             () -> client.getChildren().usingWatcher(wrapWatcher(watcher)).forPath(path));
-
-    metrics.childFetches.increment();
-    if (result != null) {
-      metrics.cumulativeChildrenFetched.add(result.size());
-    }
     return result;
   }
 
@@ -426,11 +390,6 @@ public class SolrZkClient implements Closeable {
                     .storingStatIn(stat)
                     .usingWatcher(wrapWatcher(watcher))
                     .forPath(path));
-
-    metrics.childFetches.increment();
-    if (result != null) {
-      metrics.cumulativeChildrenFetched.add(result.size());
-    }
     return result;
   }
 
@@ -447,22 +406,6 @@ public class SolrZkClient implements Closeable {
                     .storingStatIn(stat)
                     .usingWatcher(wrapWatcher(watcher))
                     .forPath(path));
-    if (compressor.isCompressedBytes(result)) {
-      log.debug("Zookeeper data at path {} is compressed", path);
-      try {
-        result = compressor.decompressBytes(result);
-      } catch (Exception e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            String.format(
-                Locale.ROOT, "Unable to decompress data at path: %s from zookeeper", path),
-            e);
-      }
-    }
-    metrics.reads.increment();
-    if (result != null) {
-      metrics.bytesRead.add(result.length);
-    }
     return result;
   }
 
@@ -473,20 +416,12 @@ public class SolrZkClient implements Closeable {
   }
 
   /** Returns node's state */
-  public Stat setData(final String path, byte data[], final int version, boolean retryOnConnLoss)
+  public Stat setData(
+      final String path, final byte[] data, final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    if (SolrZkClient.shouldCompressData(data, path, minStateByteLenForCompression)) {
-      // state.json should be compressed before being put to ZK
-      data = compressor.compressBytes(data);
-    }
-    final byte[] finalData = data;
     Stat result =
         runWithCorrectThrows(
-            "setting data", () -> client.setData().withVersion(version).forPath(path, finalData));
-    metrics.writes.increment();
-    if (data != null) {
-      metrics.bytesWritten.add(data.length);
-    }
+            "setting data", () -> client.setData().withVersion(version).forPath(path, data));
     return result;
   }
 
@@ -533,10 +468,6 @@ public class SolrZkClient implements Closeable {
     String result =
         runWithCorrectThrows(
             "creating znode", () -> client.create().withMode(createMode).forPath(path, data));
-    metrics.writes.increment();
-    if (data != null) {
-      metrics.bytesWritten.add(data.length);
-    }
     return result;
   }
 
@@ -556,10 +487,6 @@ public class SolrZkClient implements Closeable {
         runWithCorrectThrows(
             "creating znode",
             () -> client.create().storingStatIn(stat).withMode(createMode).forPath(path, data));
-    metrics.writes.increment();
-    if (data != null) {
-      metrics.bytesWritten.add(data.length);
-    }
     return result;
   }
 
@@ -676,16 +603,6 @@ public class SolrZkClient implements Closeable {
     var createBuilder = client.create();
     if (!failOnExists) {
       createBuilder.orSetData();
-    }
-
-    if (SolrZkClient.shouldCompressData(data, path, minStateByteLenForCompression)) {
-      // state.json should be compressed before being put to ZK
-      data = compressor.compressBytes(data);
-    }
-
-    metrics.writes.increment();
-    if (data != null) {
-      metrics.bytesWritten.add(data.length);
     }
 
     if (path.startsWith("/")) {
@@ -876,10 +793,6 @@ public class SolrZkClient implements Closeable {
                             .map(op -> op.buildWithoutThrows(client.transactionOp()))
                             .collect(Collectors.toList())));
 
-    metrics.multiOps.increment();
-    if (result != null) {
-      metrics.cumulativeMultiOps.add(result.size());
-    }
     return result;
   }
 
@@ -965,12 +878,6 @@ public class SolrZkClient implements Closeable {
       ExecutorUtil.shutdownAndAwaitTermination(zkCallbackExecutor);
     } catch (Exception e) {
       log.error("Error shutting down zkCallbackExecutor", e);
-    }
-
-    try {
-      ExecutorUtil.shutdownAndAwaitTermination(zkConnectionListenerCallbackExecutor);
-    } catch (Exception e) {
-      log.error("Error shutting down zkConnManagerCallbackExecutor", e);
     }
   }
 
@@ -1175,7 +1082,8 @@ public class SolrZkClient implements Closeable {
       try {
         zkCallbackExecutor.execute(
             () -> {
-              metrics.watchesFired.increment();
+              // Curator still does not have a way of counting fired watches natively
+              metricsListener.watchesFired.increment();
               watcher.process(event);
             });
       } catch (RejectedExecutionException e) {
@@ -1206,44 +1114,6 @@ public class SolrZkClient implements Closeable {
     }
   }
 
-  // all fields of this class are public because ReflectMapWriter requires them to be.
-  // however the object itself is private and only this class can modify it
-  public static class ZkMetrics implements ReflectMapWriter {
-    @JsonProperty public final LongAdder watchesFired = new LongAdder();
-    @JsonProperty public final LongAdder reads = new LongAdder();
-    @JsonProperty public final LongAdder writes = new LongAdder();
-    @JsonProperty public final LongAdder bytesRead = new LongAdder();
-    @JsonProperty public final LongAdder bytesWritten = new LongAdder();
-
-    @JsonProperty public final LongAdder multiOps = new LongAdder();
-
-    @JsonProperty public final LongAdder cumulativeMultiOps = new LongAdder();
-
-    @JsonProperty public final LongAdder childFetches = new LongAdder();
-
-    @JsonProperty public final LongAdder cumulativeChildrenFetched = new LongAdder();
-
-    @JsonProperty public final LongAdder existsChecks = new LongAdder();
-
-    @JsonProperty public final LongAdder deletes = new LongAdder();
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ReflectMapWriter.super.writeMap(
-          new EntryWriter() {
-            @Override
-            public EntryWriter put(CharSequence k, Object v) throws IOException {
-              if (v instanceof LongAdder) {
-                ew.put(k, ((LongAdder) v).longValue());
-              } else {
-                ew.put(k, v);
-              }
-              return this;
-            }
-          });
-    }
-  }
-
   public static class NodeData {
 
     public final Stat stat;
@@ -1259,8 +1129,6 @@ public class SolrZkClient implements Closeable {
     public String zkServerAddress;
     public int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     public int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
-    public OnReconnect onReconnect;
-    public OnDisconnect onDisconnect;
     public ZkCredentialsProvider zkCredentialsProvider;
     public ACLProvider aclProvider;
     public IsClosed higherLevelIsClosed;
@@ -1311,16 +1179,6 @@ public class SolrZkClient implements Closeable {
       return this;
     }
 
-    public Builder withReconnectListener(OnReconnect onReconnect) {
-      this.onReconnect = onReconnect;
-      return this;
-    }
-
-    public Builder withDisconnectListener(OnDisconnect onDisconnect) {
-      this.onDisconnect = onDisconnect;
-      return this;
-    }
-
     public Builder withZkCredentialsProvider(ZkCredentialsProvider zkCredentialsProvider) {
       this.zkCredentialsProvider = zkCredentialsProvider;
       return this;
@@ -1355,15 +1213,5 @@ public class SolrZkClient implements Closeable {
     public SolrZkClient build() {
       return new SolrZkClient(this);
     }
-  }
-
-  static boolean shouldCompressData(byte[] data, String path, int minStateByteLenForCompression) {
-    if (path.endsWith("state.json")
-        && minStateByteLenForCompression > -1
-        && data.length > minStateByteLenForCompression) {
-      // state.json should be compressed before being put to ZK
-      return true;
-    }
-    return false;
   }
 }

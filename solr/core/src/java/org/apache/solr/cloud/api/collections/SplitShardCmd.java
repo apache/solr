@@ -27,7 +27,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -844,7 +843,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       Replica parentShardLeader,
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
-      throws SolrException, IOException {
+      throws Exception {
 
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
@@ -859,8 +858,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             .add("key", indexSizeMetricName)
             .add("key", freeDiskSpaceMetricName);
     SolrResponse rsp =
-        cloudManager.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params));
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params)
+            .process(cloudManager.getSolrClient());
 
     Number size = (Number) rsp.getResponse().findRecursive("metrics", indexSizeMetricName);
     if (size == null) {

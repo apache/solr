@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +51,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -449,9 +447,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     DocCollection testCollection = getCollectionState(collectionName);
 
     Replica replica1 = testCollection.getReplicas().iterator().next();
-    CoreStatus coreStatus = getCoreStatus(replica1);
+    final var coreStatus = getCoreStatus(replica1);
 
-    assertEquals(Paths.get(coreStatus.getDataDirectory()).toString(), dataDir.toString());
+    assertEquals(Path.of(coreStatus.dataDir).toString(), dataDir.toString());
   }
 
   @Test
@@ -799,9 +797,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     indexSomeDocs(simpleCollName);
 
     final var simpleResponse =
-        new CollectionsApi.GetCollectionStatus(simpleCollName)
-            .process(cluster.getSolrClient())
-            .getParsed();
+        new CollectionsApi.GetCollectionStatus(simpleCollName).process(cluster.getSolrClient());
     assertEquals(simpleCollName, simpleResponse.name);
     assertEquals(2, simpleResponse.shards.size());
     assertEquals(Integer.valueOf(2), simpleResponse.activeShards);
@@ -816,7 +812,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Ensure segment data present when request sets 'segments=true' flag
     final var segmentDataRequest = new CollectionsApi.GetCollectionStatus(simpleCollName);
     segmentDataRequest.setSegments(true);
-    final var segmentDataResponse = segmentDataRequest.process(cluster.getSolrClient()).getParsed();
+    final var segmentDataResponse = segmentDataRequest.process(cluster.getSolrClient());
     var segmentData = segmentDataResponse.shards.get("shard1").leader.segInfos;
     assertNotNull(segmentData);
     assertTrue(segmentData.info.numSegments > 0); // Expect at least one segment
@@ -829,8 +825,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Ensure file-size data present when request sets sizeInfo flag
     final var segmentFileSizeRequest = new CollectionsApi.GetCollectionStatus(simpleCollName);
     segmentFileSizeRequest.setSizeInfo(true);
-    final var segmentFileSizeResponse =
-        segmentFileSizeRequest.process(cluster.getSolrClient()).getParsed();
+    final var segmentFileSizeResponse = segmentFileSizeRequest.process(cluster.getSolrClient());
     segmentData = segmentFileSizeResponse.shards.get("shard1").leader.segInfos;
     assertNotNull(segmentData);
     final var largeFileList = segmentData.segments.get("_0").largestFilesByName;
@@ -882,7 +877,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         ZkStateReader.from(solrClient).getLeaderRetry(collectionName, "shard1", DEFAULT_TIMEOUT);
 
     final AtomicReference<Long> coreStartTime =
-        new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
+        new AtomicReference<>(getCoreStatus(leader).startTime.getTime());
 
     // Check for value change
     CollectionAdminRequest.modifyCollection(
@@ -903,7 +898,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         () -> {
           long restartTime = 0;
           try {
-            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+            restartTime = getCoreStatus(leader).startTime.getTime();
           } catch (Exception e) {
             log.warn("Exception getting core start time: ", e);
             return false;
@@ -911,7 +906,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           return restartTime > coreStartTime.get();
         });
 
-    coreStartTime.set(getCoreStatus(leader).getCoreStartTime().getTime());
+    coreStartTime.set(getCoreStatus(leader).startTime.getTime());
 
     // check for docs - reloading should have committed the new docs
     // this also verifies that searching works in read-only mode
@@ -974,7 +969,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         () -> {
           long restartTime = 0;
           try {
-            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+            restartTime = getCoreStatus(leader).startTime.getTime();
           } catch (Exception e) {
             log.warn("Exception getting core start time: ", e);
             return false;

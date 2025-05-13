@@ -75,7 +75,7 @@ public interface SolrQueryRequest extends AutoCloseable {
     return !allowPartialResults(params);
   }
 
-  /** returns the current request parameters */
+  /** The parameters for this request; never null. Use {@link #setParams(SolrParams)} to change. */
   SolrParams getParams();
 
   /**
@@ -88,8 +88,8 @@ public interface SolrQueryRequest extends AutoCloseable {
   Iterable<ContentStream> getContentStreams();
 
   /**
-   * Returns the original request parameters. As this does not normally include configured defaults
-   * it's more suitable for logging.
+   * The original request parameters; never null. As this does not normally include configured
+   * defaults, it's more suitable for logging.
    */
   SolrParams getOriginalParams();
 
@@ -186,6 +186,10 @@ public interface SolrQueryRequest extends AutoCloseable {
     return core == null ? null : core.getCoreContainer();
   }
 
+  /**
+   * @deprecated use getCore().getCoreDescriptor().getCloudDescriptor()
+   */
+  @Deprecated
   default CloudDescriptor getCloudDescriptor() {
     return getCore().getCoreDescriptor().getCloudDescriptor();
   }
@@ -201,5 +205,56 @@ public interface SolrQueryRequest extends AutoCloseable {
       return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(
           wt, SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
     }
+  }
+
+  /**
+   * Returns a new "Sub Request" of the current request.
+   *
+   * <p>This is useful in situations where some code handling an existing request wishes to invoke a
+   * new request -- as if it came from the same user. The request returned uses the same {@link
+   * #getSearcher} and {@link #getUserPrincipal} as the current request, and is initialized using
+   * the same {@link #getSchema()} (but {@link #updateSchemaToLatest} is handled independently for
+   * the two requests)
+   *
+   * <p>The behavior of a sub-request is undefined if the original request is closed.
+   */
+  default SolrQueryRequest subRequest(final SolrParams params) {
+    final SolrQueryRequest outerRequest = this;
+    // NOTE: we explicitly do not use DelegatingSolrQueryRequest because we do not want
+    // any existing (or future) "setter" methods to delegate to the outerRequest
+    return new SolrQueryRequestBase(outerRequest.getCore(), params) {
+      { // super() implicitly uses core.getLatestSchema(), but we want
+        // whatever outerRequest is currently using
+        this.schema = outerRequest.getSchema();
+      }
+
+      @Override
+      public SolrIndexSearcher getSearcher() {
+        // We do not use/set this.searcherHolder, so that super.close() doesn't
+        // double close
+        return outerRequest.getSearcher();
+      }
+
+      @Override
+      public Principal getUserPrincipal() {
+        return outerRequest.getUserPrincipal();
+      }
+    };
+  }
+
+  /**
+   * Returns a request that explicitly uses the specified <code>SolrIndexSearcher</code> (even if it
+   * is not registered or fully initialized) in conjunction with the <code>SolrCore</code>
+   * identified via {@link SolrIndexSearcher#getCore}
+   */
+  static SolrQueryRequest wrapSearcher(final SolrIndexSearcher searcher, final SolrParams params) {
+    return new SolrQueryRequestBase(searcher.getCore(), params) {
+      @Override
+      public SolrIndexSearcher getSearcher() {
+        // We do not use/set this.searcherHolder, so that super.close() doesn't
+        // double close
+        return searcher;
+      }
+    };
   }
 }

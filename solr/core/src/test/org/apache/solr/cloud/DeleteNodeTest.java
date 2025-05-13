@@ -71,7 +71,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     boolean shouldFail = false;
     DocCollection docColl = state.getCollection(coll);
     log.info("#### DocCollection: {}", docColl);
-    List<Replica> replicas = docColl.getReplicas(nodeToBeDecommissioned);
+    List<Replica> replicas = docColl.getReplicasOnNode(nodeToBeDecommissioned);
     if (replicas != null) {
       for (Replica replica : replicas) {
         String shard =
