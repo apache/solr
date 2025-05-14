@@ -813,7 +813,51 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     EXPUNGE_DEL(
         "UPDATE.updateHandler.expungeDeletes",
         "expunge_deletes",
-        "cumulative number of expungeDeletes across cores");
+        "cumulative number of expungeDeletes across cores"),
+    FOREGROUND_REQUEST_COUNT(
+        "PriorityBasedRateLimiter.foregroundRequestDelay",
+        "foreground_requests_count",
+        "total foreground requests to solr"),
+    FOREGROUND_REQUEST_DELAY_P50(
+        "PriorityBasedRateLimiter.foregroundRequestDelay",
+        "foreground_requests_delay_p75",
+        "foreground request p50 delay",
+        "p75_ms",
+        PrometheusMetricType.GAUGE),
+    FOREGROUND_REQUEST_DELAY_P95(
+        "PriorityBasedRateLimiter.foregroundRequestDelay",
+        "foreground_requests_delay_p95",
+        "foreground request p95 duration",
+        "p95_ms",
+        PrometheusMetricType.GAUGE),
+    FOREGROUND_REQUEST_DELAY_P99(
+        "PriorityBasedRateLimiter.foregroundRequestDelay",
+        "foreground_requests_delay_p99",
+        "foreground request p99 duration",
+        "p99_ms",
+        PrometheusMetricType.GAUGE),
+    BACKGROUND_REQUEST_COUNT(
+        "PriorityBasedRateLimiter.backgroundRequestDelay",
+        "background_requests_count",
+        "Total foreground requests to solr"),
+    BACKGROUND_REQUEST_DELAY_P50(
+        "PriorityBasedRateLimiter.backgroundRequestDelay",
+        "background_requests_delay_p75",
+        "background request p50 delay",
+        "p75_ms",
+        PrometheusMetricType.GAUGE),
+    BACKGROUND_REQUEST_DELAY_P95(
+        "PriorityBasedRateLimiter.backgroundRequestDelay",
+        "background_requests_delay_p95",
+        "background request p95 duration",
+        "p95_ms",
+        PrometheusMetricType.GAUGE),
+    BACKGROUND_REQUEST_DELAY_P99(
+        "PriorityBasedRateLimiter.backgroundRequestDelay",
+        "background_requests_delay_p99",
+        "background request p99 duration",
+        "p99_ms",
+        PrometheusMetricType.GAUGE);
     final String key, metricName, desc, property;
     private final PrometheusMetricType metricType;
     private static final Map<String, CoreMetric> lookup = new HashMap<>();

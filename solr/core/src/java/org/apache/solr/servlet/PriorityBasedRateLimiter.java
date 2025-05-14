@@ -42,9 +42,9 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter {
     this.waitTimeoutInNanos = rateLimiterConfig.waitForSlotAcquisition * 1000000l;
     this.solrMetricsContext = solrMetricsContext;
     this.foregroundRequestDelay =
-        solrMetricsContext.timer("foregroundRequestDelay", "RateLimitManager");
+        solrMetricsContext.timer("foregroundRequestDelay", "PriorityBasedRateLimiter");
     this.backgroundRequestDelay =
-        solrMetricsContext.timer("backgroundRequestDelay", "RateLimitManager");
+        solrMetricsContext.timer("backgroundRequestDelay", "PriorityBasedRateLimiter");
   }
 
   @Override
