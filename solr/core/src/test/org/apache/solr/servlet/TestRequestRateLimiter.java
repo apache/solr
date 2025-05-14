@@ -72,7 +72,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
   private static final String SECOND_COLLECTION = "c2";
 
   private static SolrMetricManager metricManager = new SolrMetricManager();
-  private static SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, "RateLimitManager", "rl");
+  private static SolrMetricsContext solrMetricsContext =
+      new SolrMetricsContext(metricManager, "RateLimitManager", "rl");
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -690,7 +691,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
             true /* isSlotBorrowing */,
             true);
 
-    PriorityBasedRateLimiter requestRateLimiter = new PriorityBasedRateLimiter(rateLimiterConfig);
+    PriorityBasedRateLimiter requestRateLimiter = new PriorityBasedRateLimiter(rateLimiterConfig, solrMetricsContext);
 
     rateLimitManager.registerRequestRateLimiter(
         requestRateLimiter, SolrRequest.SolrRequestType.PRIORITY_BASED);
@@ -741,7 +742,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
             true /* isSlotBorrowing */,
             true);
 
-    PriorityBasedRateLimiter requestRateLimiter = new PriorityBasedRateLimiter(rateLimiterConfig);
+    PriorityBasedRateLimiter requestRateLimiter = new PriorityBasedRateLimiter(rateLimiterConfig, solrMetricsContext);
 
     rateLimitManager.registerRequestRateLimiter(
         requestRateLimiter, SolrRequest.SolrRequestType.PRIORITY_BASED);

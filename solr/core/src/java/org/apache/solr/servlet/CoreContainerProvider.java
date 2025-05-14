@@ -61,7 +61,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrInfoBean.Group;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
@@ -246,10 +245,7 @@ public class CoreContainerProvider implements ServletContextListener {
       String hostname = zkController != null ? zkController.getHostName() : "";
 
       SolrMetricsContext solrMetricsContext =
-              new SolrMetricsContext(
-                      coresInit.getMetricManager(),
-                      Group.node.toString(),
-                      metricTag);
+          new SolrMetricsContext(coresInit.getMetricManager(), Group.node.toString(), metricTag);
 
       this.rateLimitManager = builder.build(hostname, solrMetricsContext);
 

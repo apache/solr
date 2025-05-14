@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PA
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
 import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
-import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -68,13 +67,10 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
   private final SolrMetricsContext solrMetricsContext;
 
-  private final Timer requestDelayedByRateLimiting;
-
   public RateLimitManager(String hostname, SolrMetricsContext solrMetricsContext) {
     this.hostname = hostname;
     this.requestRateLimiterMap = new ConcurrentHashMap<>();
     this.solrMetricsContext = solrMetricsContext;
-    this.requestDelayedByRateLimiting = solrMetricsContext.timer("requestDelayedByRateLimiting", "RateLimitManager");
   }
 
   @Override
@@ -108,7 +104,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
             } else {
               log.info("updated config: {}", newConfig);
               if (newConfig.priorityBasedEnabled) {
-                return new PriorityBasedRateLimiter(newConfig);
+                return new PriorityBasedRateLimiter(newConfig, this.solrMetricsContext);
               }
               return new QueryRateLimiter(newConfig);
             }
@@ -126,49 +122,43 @@ public class RateLimitManager implements ClusterPropertiesListener {
   // Returns true if request is accepted for processing, false if it should be rejected
   public RequestRateLimiter.SlotReservation handleRequest(HttpServletRequest request)
       throws InterruptedException {
-    Timer.Context timer = this.requestDelayedByRateLimiting.time();
-    try {
+    String requestContext = request.getHeader(SOLR_REQUEST_CONTEXT_PARAM);
+    String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
 
-      String requestContext = request.getHeader(SOLR_REQUEST_CONTEXT_PARAM);
-      String typeOfRequest = request.getHeader(SOLR_REQUEST_TYPE_PARAM);
-
-      if (typeOfRequest == null) {
-        // Cannot determine if this request should be throttled
-        return RequestRateLimiter.UNLIMITED;
-      }
-
-      // Do not throttle internal requests
-      // TODO: the block below is disabled temporarily to evaluate datanode-level throttling,
-      //  which is where the resources actually are. It should be re-enabled and fixed upstream
-      //  to support datanode-level throttling in a more nuanced way. But for FS usecase, most
-      //  requests will be `shards.tolerant=true`, and we shouldn't hit throttling unless there
-      //  are real problems on a node, in which case we're probably better off rejecting the
-      //  requests anyway.
-      //    if (requestContext != null
-      //        && requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
-      //      return RequestRateLimiter.UNLIMITED;
-      //    }
-
-      RequestRateLimiter requestRateLimiter = requestRateLimiterMap.get(typeOfRequest);
-
-      if (requestRateLimiter == null) {
-        // No request rate limiter for this request type
-        return RequestRateLimiter.UNLIMITED;
-      }
-
-      // slot borrowing should be fallback behavior, so if `slotAcquisitionTimeoutInMS`
-      // is configured it will be applied here (blocking if necessary), to make a best
-      // effort to draw from the request's own slot pool.
-      RequestRateLimiter.SlotReservation result = requestRateLimiter.handleRequest(request);
-
-      if (result != null) {
-        return result;
-      }
-
-      return trySlotBorrowing(typeOfRequest); // possibly null, if unable to borrow a slot
-    }finally {
-      timer.stop();
+    if (typeOfRequest == null) {
+      // Cannot determine if this request should be throttled
+      return RequestRateLimiter.UNLIMITED;
     }
+
+    // Do not throttle internal requests
+    // TODO: the block below is disabled temporarily to evaluate datanode-level throttling,
+    //  which is where the resources actually are. It should be re-enabled and fixed upstream
+    //  to support datanode-level throttling in a more nuanced way. But for FS usecase, most
+    //  requests will be `shards.tolerant=true`, and we shouldn't hit throttling unless there
+    //  are real problems on a node, in which case we're probably better off rejecting the
+    //  requests anyway.
+    //    if (requestContext != null
+    //        && requestContext.equals(SolrRequest.SolrClientContext.SERVER.toString())) {
+    //      return RequestRateLimiter.UNLIMITED;
+    //    }
+
+    RequestRateLimiter requestRateLimiter = requestRateLimiterMap.get(typeOfRequest);
+
+    if (requestRateLimiter == null) {
+      // No request rate limiter for this request type
+      return RequestRateLimiter.UNLIMITED;
+    }
+
+    // slot borrowing should be fallback behavior, so if `slotAcquisitionTimeoutInMS`
+    // is configured it will be applied here (blocking if necessary), to make a best
+    // effort to draw from the request's own slot pool.
+    RequestRateLimiter.SlotReservation result = requestRateLimiter.handleRequest(request);
+
+    if (result != null) {
+      return result;
+    }
+
+    return trySlotBorrowing(typeOfRequest); // possibly null, if unable to borrow a slot
   }
 
   /* For a rejected request type, do the following:
@@ -239,7 +229,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
       if (rateLimiterConfig.priorityBasedEnabled) {
         rateLimitManager.registerRequestRateLimiter(
-            new PriorityBasedRateLimiter(rateLimiterConfig),
+            new PriorityBasedRateLimiter(rateLimiterConfig, solrMetricsContext),
             SolrRequest.SolrRequestType.PRIORITY_BASED);
       } else {
         rateLimitManager.registerRequestRateLimiter(
