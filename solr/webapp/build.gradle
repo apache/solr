@@ -94,24 +94,24 @@ task downloadBrowserify(type: NpmTask) {
   outputs.dir("${nodeProjectDir}/node_modules/browserify")
 }
 
-tasks.register("generateUiDevFiles") {
-  description = "Generate new UI for development and add files to outputs for later referencing."
-  group = "build"
-  onlyIf { rootProject.ext.withUiModule }
-
-  // Development files are larger in size but have shorter compile times.
-  dependsOn project(":solr:ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
-  outputs.dir(project(":solr:ui").file("build/dist/wasmJs/developmentExecutable/"))
+if (gradle.ext.withUiModule) {
+  tasks.register("generateUiDevFiles") {
+    description = "Generate new UI for development and add files to outputs for later referencing."
+    group = "build"
+    dependsOn project(":solr:ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
+    outputs.dir(project(":solr:ui").file("build/dist/wasmJs/developmentExecutable/"))
+  }
 }
 
-tasks.register("generateUiProdFiles") {
-  description = "Generate new UI for production and add files to outputs for later referencing"
-  group = "build"
-  onlyIf { rootProject.ext.withUiModule }
+if (gradle.ext.withUiModule) {
+  tasks.register("generateUiProdFiles") {
+    description = "Generate new UI for production and add files to outputs for later referencing"
+    group = "build"
 
-  // Production files are smaller in size but have longer compile times.
-  dependsOn project(":solr:ui").tasks.wasmJsBrowserDistribution
-  outputs.dir(project(":solr:ui").file("build/dist/wasmJs/productionExecutable/"))
+    // Production files are smaller in size but have longer compile times.
+    dependsOn project(":solr:ui").tasks.wasmJsBrowserDistribution
+    outputs.dir(project(":solr:ui").file("build/dist/wasmJs/productionExecutable/"))
+  }
 }
 
 task generateJsClientBundle(type: NpxTask) {
@@ -153,7 +153,7 @@ war {
 
   // Include new Admin UI files in webapp
   // By default, we always build dev that does not optimize generated files for release to reduce build times.
-  if (rootProject.ext.withUiModule) {
+  if (gradle.ext.withUiModule) {
     if (rootProject.ext.development) {
       from (tasks.generateUiDevFiles) {
         into "ui"
