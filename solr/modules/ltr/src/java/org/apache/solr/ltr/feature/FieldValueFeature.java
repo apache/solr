@@ -125,6 +125,9 @@ public class FieldValueFeature extends Feature {
       super(FieldValueFeature.this, searcher, request, originalQuery, efi);
       if (searcher instanceof SolrIndexSearcher) {
         schemaField = ((SolrIndexSearcher) searcher).getSchema().getFieldOrNull(field);
+        if (schemaField.getDefaultValue() != null) {
+          setDefaultValue(schemaField.getDefaultValue());
+        }
       } else { // some tests pass a null or a non-SolrIndexSearcher searcher
         schemaField = null;
       }
