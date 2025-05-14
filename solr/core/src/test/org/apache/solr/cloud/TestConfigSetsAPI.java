@@ -594,7 +594,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .build()) {
       String configPath = "/configs/" + configsetName + configsetSuffix;
       assertEquals(
-          0, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, true, false));
+          400, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, true, false));
+
       for (String fileEnding : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
         String f = configPath + "/test." + fileEnding;
         assertFalse(

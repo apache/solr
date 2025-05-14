@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -344,11 +345,11 @@ public class ZkMaintenanceUtils {
               return FileVisitResult.CONTINUE;
             }
             if (isFileForbiddenInConfigSets(filename)) {
-              log.info(
-                  "uploadToZK skipping '{}' due to forbidden file types '{}'",
-                  filename,
-                  USE_FORBIDDEN_FILE_TYPES);
-              return FileVisitResult.CONTINUE;
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "The file type provided for upload, '"
+                      + filename
+                      + "', is forbidden for use in uploading configSets.");
             }
             // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
             String zkNode = createZkNodeName(zkPath, rootPath, file);
