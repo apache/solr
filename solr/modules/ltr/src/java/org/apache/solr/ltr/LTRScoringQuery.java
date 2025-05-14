@@ -598,7 +598,9 @@ public class LTRScoringQuery extends Query implements Accountable {
               Feature.FeatureWeight scFW = (Feature.FeatureWeight) subScorer.getWeight();
               final int featureId = scFW.getIndex();
               featuresInfo[featureId].setValue(subScorer.score());
-              featuresInfo[featureId].setUsed(true);
+              if (featuresInfo[featureId].getValue() != scFW.getDefaultValue()) {
+                featuresInfo[featureId].setUsed(true);
+              }
             }
           }
           return makeNormalizedFeaturesAndScore();
@@ -683,7 +685,9 @@ public class LTRScoringQuery extends Query implements Accountable {
                 Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
                 final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setValue(scorer.score());
-                featuresInfo[featureId].setUsed(true);
+                if (featuresInfo[featureId].getValue() != scFW.getDefaultValue()) {
+                  featuresInfo[featureId].setUsed(true);
+                }
               }
             }
           }
