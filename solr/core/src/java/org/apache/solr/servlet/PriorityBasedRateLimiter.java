@@ -1,5 +1,6 @@
 package org.apache.solr.servlet;
 
+import com.codahale.metrics.Timer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
@@ -8,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.RateLimiterConfig;
+import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
  * PriorityBasedRateLimiter allocates the slot based on their request priority Currently, it has two
@@ -27,11 +29,22 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter {
 
   private final long waitTimeoutInNanos;
 
-  public PriorityBasedRateLimiter(RateLimiterConfig rateLimiterConfig) {
+  private final SolrMetricsContext solrMetricsContext;
+
+  private final Timer foregroundRequestDelay;
+  private final Timer backgroundRequestDelay;
+
+  public PriorityBasedRateLimiter(
+      RateLimiterConfig rateLimiterConfig, SolrMetricsContext solrMetricsContext) {
     super(rateLimiterConfig);
     this.numRequestsAllowed = new Semaphore(rateLimiterConfig.allowedRequests, true);
     this.totalAllowedRequests = rateLimiterConfig.allowedRequests;
     this.waitTimeoutInNanos = rateLimiterConfig.waitForSlotAcquisition * 1000000l;
+    this.solrMetricsContext = solrMetricsContext;
+    this.foregroundRequestDelay =
+        solrMetricsContext.timer("foregroundRequestDelay", "RateLimitManager");
+    this.backgroundRequestDelay =
+        solrMetricsContext.timer("backgroundRequestDelay", "RateLimitManager");
   }
 
   @Override
@@ -45,12 +58,18 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter {
           SolrException.ErrorCode.BAD_REQUEST,
           "Request priority header is not defined or not set properly");
     }
+    Timer.Context timer =
+        requestPriority == RequestPriorities.FOREGROUND
+            ? this.foregroundRequestDelay.time()
+            : this.backgroundRequestDelay.time();
     try {
       if (!acquire(requestPriority)) {
         return null;
       }
     } catch (InterruptedException ie) {
       return null;
+    } finally {
+      timer.stop();
     }
     return () -> PriorityBasedRateLimiter.this.release();
   }
