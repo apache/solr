@@ -298,7 +298,7 @@ public class QueryParsing {
         } else if (c.isRequired()) {
           out.append('+');
         }
-        Query subQuery = c.getQuery();
+        Query subQuery = c.query();
 
         toString(subQuery, schema, out, subflag | FLAG_IS_CLAUSE);
       }
