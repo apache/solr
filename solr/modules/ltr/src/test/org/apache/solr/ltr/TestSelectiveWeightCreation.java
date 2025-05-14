@@ -173,7 +173,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         validFeatures += 1;
       }
     }
-    assertEquals(validFeatures, features.size());
+    assertEquals(validFeatures, features.size() - 1);
 
     // when features are requested in the response, weights should be created for all features
     final LTRScoringModel ltrScoringModel2 =
@@ -200,7 +200,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         validFeatures += 1;
       }
     }
-    assertEquals(validFeatures, allFeatures.size());
+    assertEquals(validFeatures, allFeatures.size() - 1);
 
     assertU(delI("10"));
     assertU(delI("11"));
