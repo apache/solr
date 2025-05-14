@@ -190,7 +190,7 @@ Other Changes
 New Features
 ---------------------
 * SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
-  fetching and computing it on the fly.  To avoid a backwards compatibilty concern, this won't work
+  fetching and computing it on the fly.  To avoid a backwards compatibility concern, this won't work
   for wt=javabin.  (Matthew Biscocho, David Smiley)
 
 * SOLR-17626: Add RawTFSimilarityFactory class. (Christine Poerschke)
@@ -278,6 +278,9 @@ Bug Fixes
 * SOLR-17638: Some CLI errors not logged when starting prometheus exporter (Alex Deparvu)
 
 * SOLR-17745: Cancel leader election was being skipped on core container shutdown due to incorrect zkClient check (Matthew Biscocho, Luke Kot-Zaniewski)
+
+* SOLR-17754: Fix rare bug in overseer main loop in case of high load, that may cause the overseer be fully stuck until
+  server restart. (Pierre Salagnac)
 
 Dependency Upgrades
 ---------------------
