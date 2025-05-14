@@ -458,8 +458,10 @@ public class CoreContainer {
     this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
 
     this.indexFingerprintExecutor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            EXECUTOR_MAX_CPU_THREADS, new SolrNamedThreadFactory("IndexFingerprintPool"));
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            EXECUTOR_MAX_CPU_THREADS,
+            Integer.MAX_VALUE,
+            new SolrNamedThreadFactory("IndexFingerprintPool"));
   }
 
   @SuppressWarnings({"unchecked"})
