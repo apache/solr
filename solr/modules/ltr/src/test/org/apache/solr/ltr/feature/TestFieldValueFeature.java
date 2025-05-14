@@ -250,6 +250,17 @@ public class TestFieldValueFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='42'");
 
+    final String docs0fv_dense_csv =
+            FeatureLoggerTestUtils.toFeatureVector(
+                    "popularity", "0.0", "dvIntPopularity", "0.0", "dvLongPopularity", "0.0",
+                    "dvFloatPopularity", "0.0", "dvDoublePopularity", "0.0", "dvStringPopularity", "0.0",
+                    "isTrendy", "0.0", "dvIsTrendy", "0.0", "storedDvIsTrendy", "0.0");
+    final String docs0fv_sparse_csv =
+            FeatureLoggerTestUtils.toFeatureVector("");
+
+    final String docs0fv_default_csv =
+            chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+
     query = new SolrQuery();
     query.setQuery("id:42");
     query.add("rq", "{!ltr model=model reRankDocs=4}");
@@ -262,9 +273,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ(
         "/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'[fv]':'popularity=0.0,dvIntPopularity=0.0,dvLongPopularity=0.0,"
-            + "dvFloatPopularity=0.0,dvDoublePopularity=0.0,"
-            + "dvStringPopularity=0.0,isTrendy=0.0,dvIsTrendy=0.0,storedDvIsTrendy=0.0'}");
+        "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
   }
 
   @Test
@@ -292,16 +301,24 @@ public class TestFieldValueFeature extends TestRerankBase {
 
       assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
       assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='42'");
+
+      final String docs0fv_dense_csv =
+              FeatureLoggerTestUtils.toFeatureVector(field + "42", "42.0");
+      final String docs0fv_sparse_csv =
+              FeatureLoggerTestUtils.toFeatureVector("");
+
+      final String docs0fv_default_csv =
+              chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+
       query = new SolrQuery();
       query.setQuery("id:42");
       query.add("rq", "{!ltr model=" + field + "-model42 reRankDocs=4}");
       query.add("fl", "[fv]");
+
       assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
       assertJQ(
-          "/query" + query.toQueryString(),
-          "/response/docs/[0]/=={'[fv]':'"
-              + FeatureLoggerTestUtils.toFeatureVector(field + "42", "42.0")
-              + "'}");
+              "/query" + query.toQueryString(),
+              "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
     }
   }
 
@@ -329,16 +346,22 @@ public class TestFieldValueFeature extends TestRerankBase {
           fstore,
           "{\"weights\":{\"" + field + "\":1.0}}");
 
+      final String docs0fv_dense_csv =
+              FeatureLoggerTestUtils.toFeatureVector(field, defaultValue);
+      final String docs0fv_sparse_csv =
+              FeatureLoggerTestUtils.toFeatureVector("");
+
+      final String docs0fv_default_csv =
+              chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+
       final SolrQuery query = new SolrQuery("id:21");
       query.add("rq", "{!ltr model=" + field + "-model reRankDocs=4}");
       query.add("fl", "[fv]");
 
       assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
       assertJQ(
-          "/query" + query.toQueryString(),
-          "/response/docs/[0]/=={'[fv]':'"
-              + FeatureLoggerTestUtils.toFeatureVector(field, defaultValue)
-              + "'}");
+              "/query" + query.toQueryString(),
+              "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
     }
   }
 
