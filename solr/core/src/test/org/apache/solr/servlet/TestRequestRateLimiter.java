@@ -691,7 +691,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
             true /* isSlotBorrowing */,
             true);
 
-    PriorityBasedRateLimiter requestRateLimiter = new PriorityBasedRateLimiter(rateLimiterConfig, solrMetricsContext);
+    PriorityBasedRateLimiter requestRateLimiter =
+        new PriorityBasedRateLimiter(rateLimiterConfig, solrMetricsContext);
 
     rateLimitManager.registerRequestRateLimiter(
         requestRateLimiter, SolrRequest.SolrRequestType.PRIORITY_BASED);
@@ -742,7 +743,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
             true /* isSlotBorrowing */,
             true);
 
-    PriorityBasedRateLimiter requestRateLimiter = new PriorityBasedRateLimiter(rateLimiterConfig, solrMetricsContext);
+    PriorityBasedRateLimiter requestRateLimiter =
+        new PriorityBasedRateLimiter(rateLimiterConfig, solrMetricsContext);
 
     rateLimitManager.registerRequestRateLimiter(
         requestRateLimiter, SolrRequest.SolrRequestType.PRIORITY_BASED);
