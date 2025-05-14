@@ -709,7 +709,7 @@ public class RunExampleTool extends ToolBase {
             ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
             : "";
 
-    String startCmd =
+    String startCmdStr =
         String.format(
             Locale.ROOT,
             "\"%s\" start %s -p %d --solr-home \"%s\" --server-dir \"%s\" %s %s %s %s %s %s %s",
@@ -725,12 +725,10 @@ public class RunExampleTool extends ToolBase {
             verboseArg,
             extraArgs,
             syspropArg);
-    startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
-
-    String startCmdWithJvmOpts = startCmd + jvmOptsArg;
+    startCmdStr = startCmdStr.replaceAll("\\s+", " ").trim(); // for pretty printing
 
     echo("\nStarting up Solr on port " + port + " using command:");
-    echo(startCmdWithJvmOpts + "\n");
+    echo(startCmdStr + jvmOptsArg + "\n");
 
     String solrUrl =
         String.format(
@@ -759,23 +757,21 @@ public class RunExampleTool extends ToolBase {
         }
       }
       DefaultExecuteResultHandler handler = new DefaultExecuteResultHandler();
-      org.apache.commons.exec.CommandLine cmd = org.apache.commons.exec.CommandLine.parse(startCmd);
+      org.apache.commons.exec.CommandLine startCmd =
+          org.apache.commons.exec.CommandLine.parse(startCmdStr);
 
       if (!jvmOptsArg.isEmpty()) {
-        cmd.addArgument("--jvm-opts");
+        startCmd.addArgument("--jvm-opts");
 
-        // cmd.exe launched by commons-exec tends to strip off the quotes and break up the
-        // argument
-        // value on certain characters
-        // This may break the value in unintended ways thereby passing incorrect value to
-        // start.cmd
-        // (eg: for "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:18983", it
-        // breaks apart the value at "-agentlib:jdwp" passing incorrect args to start.cmd )
-        // The 'false' here tells Exec: “don’t touch my quotes—this is one atomic argument”
-        cmd.addArgument("\"" + jvmOpts + "\"", false);
+        /* CommandLine.parse() tends to strip off the quotes by default before sending to cmd.exe.
+        This may cause cmd to break up the argument value on certain characters in unintended ways
+        thereby passing incorrect value to start.cmd
+        (eg: for "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:18983", it
+        breaks apart the value at "-agentlib:jdwp" passing incorrect args to start.cmd ).
+        The 'false' here tells Exec: “don’t touch my quotes—this is one atomic argument” */
+        startCmd.addArgument("\"" + jvmOpts + "\"", false);
       }
-      executor.execute(cmd, startEnv, handler);
-
+      executor.execute(startCmd, startEnv, handler);
       // wait for execution.
       try {
         handler.waitFor(3000);
@@ -784,21 +780,25 @@ public class RunExampleTool extends ToolBase {
         Thread.interrupted();
       }
       if (handler.hasResult() && handler.getExitValue() != 0) {
+        startCmdStr += jvmOptsArg;
         throw new Exception(
             "Failed to start Solr using command: "
-                + startCmdWithJvmOpts
+                + startCmdStr
                 + " Exception : "
                 + handler.getException());
       }
     } else {
+      // Unlike Windows, special handling of jvmOpts is not required on linux. We can simply
+      // concatenate to form the complete command
+      startCmdStr += jvmOptsArg;
       try {
-        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmdWithJvmOpts));
+        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmdStr));
       } catch (ExecuteException e) {
         throw new Exception(
-            "Failed to start Solr using command: " + startCmdWithJvmOpts + " Exception : " + e);
+            "Failed to start Solr using command: " + startCmdStr + " Exception : " + e);
       }
+      if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmdStr);
     }
-    if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
     return getNodeStatus(
         solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION), maxWaitSecs);
