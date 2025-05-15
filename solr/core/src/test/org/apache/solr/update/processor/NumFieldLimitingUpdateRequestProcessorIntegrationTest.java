@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,6 +38,25 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
     final var configPath =
         TEST_PATH().resolve("configsets").resolve("cloud-minimal-field-limiting").resolve("conf");
     configureCluster(1).addConfig(FIELD_LIMITING_CS_NAME, configPath).configure();
+
+    System.setProperty("solr.test.fieldLimit.warnOnly", "false");
+    System.setProperty("solr.test.maxFields", String.valueOf(100));
+  }
+
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+
+    System.setProperty("solr.test.fieldLimit.warnOnly", "false");
+    System.setProperty("solr.test.maxFields", String.valueOf(100));
+
+    // Collection might already exist if test is being run multiple times
+    final var collections = CollectionAdminRequest.listCollections(cluster.getSolrClient());
+    if (collections.contains(COLLECTION_NAME)) {
+      final var deleteRequest = CollectionAdminRequest.deleteCollection(COLLECTION_NAME);
+      deleteRequest.processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    }
 
     final var createRequest =
         CollectionAdminRequest.createCollection(COLLECTION_NAME, FIELD_LIMITING_CS_NAME, 1, 1);
