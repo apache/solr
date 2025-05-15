@@ -114,7 +114,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
               () -> {
                 configSetService.uploadConfig("_testconf", tempConfigForbidden);
               });
-      assertTrue(ex.getMessage().contains("is forbidden for use in uploading configSets."));
+      assertTrue(ex.getMessage().contains("is forbidden for use in uploading configsets."));
 
       // check downloading
       Path downloadPath = createTempDir("download");

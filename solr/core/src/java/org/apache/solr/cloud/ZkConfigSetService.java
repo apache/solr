@@ -183,7 +183,7 @@ public class ZkConfigSetService extends ConfigSetService {
             SolrException.ErrorCode.BAD_REQUEST,
             "The file type provided for upload, '"
                 + fileName
-                + "', is forbidden for use in uploading configSets.");
+                + "', is forbidden for use in uploading configsets.");
       } else if (FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
         String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
         throw new SolrException(

@@ -349,7 +349,7 @@ public class ZkMaintenanceUtils {
                   SolrException.ErrorCode.BAD_REQUEST,
                   "The file type provided for upload, '"
                       + filename
-                      + "', is forbidden for use in uploading configSets.");
+                      + "', is forbidden for use in uploading configsets.");
             }
             // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
             String zkNode = createZkNodeName(zkPath, rootPath, file);
