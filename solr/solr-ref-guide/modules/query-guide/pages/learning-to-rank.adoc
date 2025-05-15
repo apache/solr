@@ -322,6 +322,35 @@ http://localhost:8983/solr/techproducts/schema/feature-store/_DEFAULT_
 ]
 ----
 
+==== Feature Parameters
+
+All the ltr feature types accept the parameters described below.
+
+`defaultValue`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0.0`
+|===
++
+This parameter specifies the default value of the feature to use for both logging and reranking.
++
+
+.Example: /path/myFeatures.json
+[source,json]
+----
+[
+  {
+    "name": "productReviewScore",
+    "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+    "params": {
+      "field": "product_review_score",
+      "defaultValue": "5.2"
+    }
+  }
+]
+----
+
 === Logging Features
 
 To log features as part of a query, add `[features]` to the `fl` parameter, for example:
