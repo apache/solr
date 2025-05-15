@@ -331,12 +331,12 @@ public class LTRScoringQuery extends Query implements Accountable {
   public static class FeatureInfo {
     private final String name;
     private float value;
-    private boolean used;
+    private boolean isDefaultValue;
 
-    FeatureInfo(String n, float v, boolean u) {
-      name = n;
-      value = v;
-      used = u;
+    FeatureInfo(String name, float value, boolean isDefaultValue) {
+      this.name = name;
+      this.value = value;
+      this.isDefaultValue = isDefaultValue;
     }
 
     public void setValue(float value) {
@@ -351,12 +351,12 @@ public class LTRScoringQuery extends Query implements Accountable {
       return value;
     }
 
-    public boolean isUsed() {
-      return used;
+    public boolean isDefaultValue() {
+      return isDefaultValue;
     }
 
-    public void setUsed(boolean used) {
-      this.used = used;
+    public void setIsDefaultValue(boolean isDefaultValue) {
+      this.isDefaultValue = isDefaultValue;
     }
   }
 
@@ -440,12 +440,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getIndex();
         FeatureInfo fInfo = featuresInfo[featureId];
-        // not checking for finfo == null as that would be a bug we should catch
-        if (fInfo.isUsed()) {
-          modelFeatureValuesNormalized[pos] = fInfo.getValue();
-        } else {
-          modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
-        }
+        modelFeatureValuesNormalized[pos] = fInfo.getValue();
         pos++;
       }
       ltrScoringModel.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
@@ -480,7 +475,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         // need to set default value everytime as the default value is used in 'dense'
         // mode even if used=false
         featuresInfo[featId].setValue(value);
-        featuresInfo[featId].setUsed(false);
+        featuresInfo[featId].setIsDefaultValue(true);
       }
     }
 
@@ -599,7 +594,7 @@ public class LTRScoringQuery extends Query implements Accountable {
               final int featureId = scFW.getIndex();
               featuresInfo[featureId].setValue(subScorer.score());
               if (featuresInfo[featureId].getValue() != scFW.getDefaultValue()) {
-                featuresInfo[featureId].setUsed(true);
+                featuresInfo[featureId].setIsDefaultValue(false);
               }
             }
           }
@@ -686,7 +681,7 @@ public class LTRScoringQuery extends Query implements Accountable {
                 final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setValue(scorer.score());
                 if (featuresInfo[featureId].getValue() != scFW.getDefaultValue()) {
-                  featuresInfo[featureId].setUsed(true);
+                  featuresInfo[featureId].setIsDefaultValue(false);
                 }
               }
             }
