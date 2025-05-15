@@ -171,7 +171,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
     int notDefaultFeatures = 0;
     for (int i = 0; i < featuresInfo.length; ++i) {
-      if (featuresInfo[i] != null && featuresInfo[i].isUsed()) {
+      if (featuresInfo[i] != null && !featuresInfo[i].isDefaultValue()) {
         notDefaultFeatures += 1;
       }
     }
@@ -198,7 +198,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
 
     notDefaultFeatures = 0;
     for (int i = 0; i < featuresInfo.length; ++i) {
-      if (featuresInfo[i] != null && featuresInfo[i].isUsed()) {
+      if (featuresInfo[i] != null && !featuresInfo[i].isDefaultValue()) {
         notDefaultFeatures += 1;
       }
     }
