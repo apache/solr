@@ -335,7 +335,6 @@ All the ltr feature types accept the parameters described below.
 +
 This parameter specifies the default value of the feature to use for both logging and reranking.
 +
-
 .Example: /path/myFeatures.json
 [source,json]
 ----
@@ -350,6 +349,8 @@ This parameter specifies the default value of the feature to use for both loggin
   }
 ]
 ----
++
+CAUTION: When defining a `defaultValue` for a `FieldValueFeature`, check that no `default` is assigned to that field in the schema, otherwise, the feature value will be the one defined in the schema and not in the feature store.
 
 === Logging Features
 
