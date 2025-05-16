@@ -144,7 +144,8 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     List<Feature> expectedNotDefaultFeatures = makeFeatures(new int[] {1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
-    List<Feature> expectedNotDefaultAllFeatures = makeFeatures(new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    List<Feature> expectedNotDefaultAllFeatures =
+        makeFeatures(new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     final List<Normalizer> norms = new ArrayList<>();
     for (int k = 0; k < features.size(); ++k) {
       norms.add(IdentityNormalizer.INSTANCE);
