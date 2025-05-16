@@ -26,9 +26,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    lrf =
-        h.getRequestFactory(
-            "/dismax", 0, 20, CommonParams.VERSION, "2.2", "facet", "true", "facet.field", "t_s");
+    lrf = h.getRequestFactory("/dismax", 0, 20, "facet", "true", "facet.field", "t_s");
     // Add some documents to the index
     assertNull(
         h.validateUpdate(
@@ -129,17 +127,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "multi qf",
-        req(
-            "q",
-            "cool",
-            "qt",
-            qt,
-            CommonParams.VERSION,
-            "2.2",
-            "qf",
-            "subject",
-            "qf",
-            "features_t"),
+        req("q", "cool", "qt", qt, "qf", "subject", "qf", "features_t"),
         "//*[@numFound='3']");
 
     assertQ(
@@ -149,7 +137,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "boost query",
-        req("q", "cool stuff", "qt", qt, CommonParams.VERSION, "2.2", "bq", "subject:hell^400"),
+        req("q", "cool stuff", "qt", qt, "bq", "subject:hell^400"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='666']",
         "//result/doc[2]/str[@name='id'][.='42']",
@@ -162,8 +150,6 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
             "cool stuff",
             "qt",
             qt,
-            CommonParams.VERSION,
-            "2.2",
             "bq",
             "subject:hell^400",
             "bq",
@@ -247,8 +233,6 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 "cool stuff",
                 "qt",
                 "/dismax",
-                CommonParams.VERSION,
-                "2.2",
                 "bq",
                 "subject:hell OR subject:cool",
                 CommonParams.DEBUG_QUERY,
@@ -263,8 +247,6 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 "cool stuff",
                 "qt",
                 "/dismax",
-                CommonParams.VERSION,
-                "2.2",
                 "bq",
                 "subject:hell OR subject:cool",
                 "bq",
