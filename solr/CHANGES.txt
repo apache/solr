@@ -125,6 +125,9 @@ Deprecation Removals
 
 * SOLR-17738: Removed deprecated `transform()` from `DocTransformer`. (Abhishek Umarjikar, Houston Putman)
 
+* SOLR-17634: Removed the "version" parameter that the SolrJ client would add to almost all Solr
+ requests in relation to the version of the response format parsing ("wt" param). (David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -278,6 +281,8 @@ Bug Fixes
 * SOLR-17638: Some CLI errors not logged when starting prometheus exporter (Alex Deparvu)
 
 * SOLR-17745: Cancel leader election was being skipped on core container shutdown due to incorrect zkClient check (Matthew Biscocho, Luke Kot-Zaniewski)
+
+* SOLR-17761: Global circuit breakers can no longer trigger ConcurrentModificationException's on Solr startup (Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
