@@ -282,6 +282,8 @@ Bug Fixes
 
 * SOLR-17745: Cancel leader election was being skipped on core container shutdown due to incorrect zkClient check (Matthew Biscocho, Luke Kot-Zaniewski)
 
+* SOLR-17761: Global circuit breakers can no longer trigger ConcurrentModificationException's on Solr startup (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
