@@ -822,7 +822,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         "PriorityBasedRateLimiter.foregroundRequestDelay",
         "foreground_requests_delay_p75",
         "foreground request p50 delay",
-        "p75_ms",
+        "median_ms",
         PrometheusMetricType.GAUGE),
     FOREGROUND_REQUEST_DELAY_P95(
         "PriorityBasedRateLimiter.foregroundRequestDelay",
@@ -844,7 +844,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         "PriorityBasedRateLimiter.backgroundRequestDelay",
         "background_requests_delay_p75",
         "background request p50 delay",
-        "p75_ms",
+        "median_ms",
         PrometheusMetricType.GAUGE),
     BACKGROUND_REQUEST_DELAY_P95(
         "PriorityBasedRateLimiter.backgroundRequestDelay",
