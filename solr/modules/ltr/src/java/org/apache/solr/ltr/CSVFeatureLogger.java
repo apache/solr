@@ -44,7 +44,7 @@ public class CSVFeatureLogger extends FeatureLogger {
     StringBuilder sb = new StringBuilder(featuresInfo.length * 3);
     boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
     for (LTRScoringQuery.FeatureInfo featInfo : featuresInfo) {
-      if (featInfo != null && (isDense || featInfo.isUsed())) {
+      if (featInfo != null && (isDense || !featInfo.isDefaultValue())) {
         sb.append(featInfo.getName())
             .append(keyValueSep)
             .append(featInfo.getValue())
