@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
@@ -211,8 +213,24 @@ class SlowNodeDetector implements SolrMetricProducer {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    parentContext.gauge(slowNodes::keySet, true, "slowNodes", scope);
-    parentContext.gauge(slowNodes::size, true, "slowNodeCount", scope);
+    String nodeRegistry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
+    SolrMetricManager manager = parentContext.getMetricManager();
+    manager.registerGauge(
+        parentContext,
+        nodeRegistry,
+        slowNodes::keySet,
+        parentContext.getTag(),
+        SolrMetricManager.ResolutionStrategy.REPLACE,
+        "slowNodes",
+        scope);
+    manager.registerGauge(
+        parentContext,
+        nodeRegistry,
+        slowNodes::size,
+        parentContext.getTag(),
+        SolrMetricManager.ResolutionStrategy.REPLACE,
+        "slowNodeCount",
+        scope);
   }
 
   @Override
