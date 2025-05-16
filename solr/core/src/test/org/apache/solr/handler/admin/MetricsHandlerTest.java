@@ -27,6 +27,7 @@ import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
@@ -479,7 +480,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key1),
         resp);
     NamedList<?> values = resp.getValues();
-    Object val = values.findRecursive("metrics", key1);
+    Object value4 = values._get(List.of(new String[] {"metrics", key1}), null);
+    Object val = value4;
     assertNotNull(val);
     assertTrue(val instanceof MapWriter);
     assertTrue(((MapWriter) val)._size() >= 2);
@@ -573,8 +575,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     NamedList<?> metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "foo"));
-    assertNotNull(values.findRecursive("errors", "foo:bar:baz:xyz"));
+    Object value3 = values._get(List.of(new String[] {"errors", "foo"}), null);
+    assertNotNull(value3);
+    Object value2 = values._get(List.of(new String[] {"errors", "foo:bar:baz:xyz"}), null);
+    assertNotNull(value2);
 
     // unknown registry
     resp = new SolrQueryResponse();
@@ -590,7 +594,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "foo:bar:baz"));
+    Object value1 = values._get(List.of(new String[] {"errors", "foo:bar:baz"}), null);
+    assertNotNull(value1);
 
     // unknown metric
     resp = new SolrQueryResponse();
@@ -606,7 +611,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "solr.jetty:unknown:baz"));
+    Object value = values._get(List.of(new String[] {"errors", "solr.jetty:unknown:baz"}), null);
+    assertNotNull(value);
 
     handler.close();
   }
@@ -628,9 +634,13 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key1),
         resp);
     // response structure is like in the case of non-key params
-    Object val =
-        resp.getValues()
-            .findRecursive("metrics", "solr.core.collection1", "QUERY./select.requestTimes");
+    NamedList<Object> entries2 = resp.getValues();
+    Object value2 =
+        entries2._get(
+            List.of(
+                new String[] {"metrics", "solr.core.collection1", "QUERY./select.requestTimes"}),
+            null);
+    Object val = value2;
     assertNotNull(val);
     assertTrue(val instanceof MapWriter);
     Map<String, Object> map = new HashMap<>();
@@ -655,7 +665,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key2),
         resp);
     // response structure is like in the case of non-key params
-    val = resp.getValues().findRecursive("metrics", "solr.core.collection1");
+    NamedList<Object> entries1 = resp.getValues();
+    Object value1 = entries1._get(List.of(new String[] {"metrics", "solr.core.collection1"}), null);
+    val = value1;
     assertNotNull(val);
     Object v = ((SimpleOrderedMap<Object>) val).get("QUERY./select.requestTimes");
     assertNotNull(v);
@@ -689,7 +701,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             MetricsHandler.EXPR_PARAM,
             key3),
         resp);
-    val = resp.getValues().findRecursive("metrics", "solr.core.collection1");
+    NamedList<Object> entries = resp.getValues();
+    Object value = entries._get(List.of(new String[] {"metrics", "solr.core.collection1"}), null);
+    val = value;
     assertNotNull(val);
     // for requestTimes only the full set of values from the first expr should be present
     assertNotNull(val);

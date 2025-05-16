@@ -613,9 +613,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     } else {
       name = category + "." + (scope != null ? scope : key) + ".requests";
     }
+    Object value = resp._get(List.of(new String[] {"solr-mbeans", category, key, "stats"}), null);
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> map =
-        (Map<String, Object>) resp.findRecursive("solr-mbeans", category, key, "stats");
+    Map<String, Object> map = (Map<String, Object>) value;
     if (map == null) {
       return null;
     }

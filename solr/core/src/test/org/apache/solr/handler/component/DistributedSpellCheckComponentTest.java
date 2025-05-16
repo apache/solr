@@ -64,8 +64,10 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   public void validateControlData(QueryResponse control) {
     NamedList<Object> nl = control.getResponse();
 
-    Object explicitNumSuggestExpected =
-        nl.findRecursive("responseHeader", "params", "test.expected.suggestions");
+    Object value =
+        nl._get(
+            List.of(new String[] {"responseHeader", "params", "test.expected.suggestions"}), null);
+    Object explicitNumSuggestExpected = value;
 
     @SuppressWarnings("unchecked")
     NamedList<Object> sc = (NamedList<Object>) nl.get("spellcheck");

@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.containsString;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
@@ -79,7 +80,8 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     NamedList<Object> createResponse = null;
     try {
       createResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) createResponse.findRecursive("status", "msg");
+      Object value = createResponse._get(List.of(new String[] {"status", "msg"}), null);
+      message = (String) value;
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }
@@ -122,7 +124,8 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     NamedList<Object> splitResponse = null;
     try {
       splitResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) splitResponse.findRecursive("status", "msg");
+      Object value = splitResponse._get(List.of(new String[] {"status", "msg"}), null);
+      message = (String) value;
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }
@@ -154,7 +157,8 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     try {
       NamedList<Object> response = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) response.findRecursive("status", "msg");
+      Object value = response._get(List.of(new String[] {"status", "msg"}), null);
+      message = (String) value;
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }

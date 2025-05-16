@@ -286,16 +286,17 @@ public class TestTlogReplica extends SolrCloudTestCase {
                     "qt", "/admin/plugins",
                     "stats", "true");
             QueryResponse statsResponse = tlogReplicaClient.query(req);
+            NamedList<Object> entries = (statsResponse.getResponse());
+            Object value =
+                entries._get(
+                    List.of(new String[] {"plugins", "UPDATE", "updateHandler", "stats"}), null);
             assertEquals(
                 "Append replicas should recive all updates. Replica: "
                     + r
                     + ", response: "
                     + statsResponse,
                 1L,
-                ((Map<String, Object>)
-                        (statsResponse.getResponse())
-                            .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
-                    .get("UPDATE.updateHandler.cumulativeAdds.count"));
+                ((Map<String, Object>) value).get("UPDATE.updateHandler.cumulativeAdds.count"));
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {

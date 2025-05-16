@@ -36,6 +36,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -1403,8 +1404,9 @@ public class HighlighterTest extends SolrTestCaseJ4 {
       hlComp.prepare(rb);
       hlComp.process(rb);
       // inspect response
-      final String[] snippets =
-          (String[]) resp.getValues().findRecursive("highlighting", "0", FIELD_NAME);
+      NamedList<Object> entries = resp.getValues();
+      Object value = entries._get(List.of(new String[] {"highlighting", "0", FIELD_NAME}), null);
+      final String[] snippets = (String[]) value;
       assertEquals("<em>word|7</em> word|2", snippets[0]);
     } finally {
       req.close();

@@ -862,14 +862,18 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
                 SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params)
             .process(cloudManager.getSolrClient());
 
-    Number size = (Number) rsp.getResponse().findRecursive("metrics", indexSizeMetricName);
+    NamedList<Object> entries1 = rsp.getResponse();
+    Object value1 = entries1._get(List.of(new String[] {"metrics", indexSizeMetricName}), null);
+    Number size = (Number) value1;
     if (size == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
     double indexSize = size.doubleValue();
 
-    Number freeSize = (Number) rsp.getResponse().findRecursive("metrics", freeDiskSpaceMetricName);
+    NamedList<Object> entries = rsp.getResponse();
+    Object value = entries._get(List.of(new String[] {"metrics", freeDiskSpaceMetricName}), null);
+    Number freeSize = (Number) value;
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;

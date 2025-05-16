@@ -18,6 +18,7 @@
 package org.apache.solr.cli;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.MissingArgumentException;
@@ -124,7 +125,8 @@ public class ConfigTool extends ToolBase {
     try (SolrClient solrClient =
         CLIUtils.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
-      Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
+      Object value1 = result._get(List.of(new String[] {"responseHeader", "status"}), null);
+      Integer statusCode = (Integer) value1;
       if (statusCode == 0) {
         if (value != null) {
           echo("Successfully " + action + " " + property + " to " + value);

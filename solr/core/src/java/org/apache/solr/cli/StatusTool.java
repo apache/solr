@@ -314,12 +314,17 @@ public class StatusTool extends ToolBase {
 
     String solrHome = (String) info.get("solr_home");
     status.put("solr_home", solrHome != null ? solrHome : "?");
-    status.put("version", info.findRecursive("lucene", "solr-impl-version"));
-    status.put("startTime", info.findRecursive("jvm", "jmx", "startTime").toString());
-    status.put("uptime", SolrCLI.uptime((Long) info.findRecursive("jvm", "jmx", "upTimeMS")));
+    Object value4 = info._get(List.of(new String[] {"lucene", "solr-impl-version"}), null);
+    status.put("version", value4);
+    Object value3 = info._get(List.of(new String[] {"jvm", "jmx", "startTime"}), null);
+    status.put("startTime", value3.toString());
+    Object value2 = info._get(List.of(new String[] {"jvm", "jmx", "upTimeMS"}), null);
+    status.put("uptime", SolrCLI.uptime((Long) value2));
 
-    String usedMemory = (String) info.findRecursive("jvm", "memory", "used");
-    String totalMemory = (String) info.findRecursive("jvm", "memory", "total");
+    Object value1 = info._get(List.of(new String[] {"jvm", "memory", "used"}), null);
+    String usedMemory = (String) value1;
+    Object value = info._get(List.of(new String[] {"jvm", "memory", "total"}), null);
+    String totalMemory = (String) value;
     status.put("memory", usedMemory + " of " + totalMemory);
 
     // if this is a Solr in solrcloud mode, gather some basic cluster info
@@ -344,11 +349,13 @@ public class StatusTool extends ToolBase {
     // TODO add booleans to request just what we want; not everything
     NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
 
-    List<String> liveNodes = (List<String>) json.findRecursive("cluster", "live_nodes");
+    Object value1 = json._get(List.of(new String[] {"cluster", "live_nodes"}), null);
+    List<String> liveNodes = (List<String>) value1;
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
     // TODO get this as a metric from the metrics API instead, or something else.
-    var collections = (Map<String, Object>) json.findRecursive("cluster", "collections");
+    Object value = json._get(List.of(new String[] {"cluster", "collections"}), null);
+    var collections = (Map<String, Object>) value;
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

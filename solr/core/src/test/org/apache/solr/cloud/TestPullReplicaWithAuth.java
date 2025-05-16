@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -153,10 +154,9 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   @SuppressWarnings("unchecked")
   private Object getUpdateHandlerMetric(QueryResponse statsResponse, String metric) {
-    return ((Map<String, Object>)
-            statsResponse
-                .getResponse()
-                .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
-        .get(metric);
+    NamedList<Object> entries = statsResponse.getResponse();
+    Object value =
+        entries._get(List.of(new String[] {"plugins", "UPDATE", "updateHandler", "stats"}), null);
+    return ((Map<String, Object>) value).get(metric);
   }
 }
