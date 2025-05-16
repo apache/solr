@@ -20,7 +20,6 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
-import static org.apache.solr.common.params.CommonParams.VERSION;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -158,7 +157,7 @@ public class BlobHandler extends RequestHandlerBase
                 md5,
                 "blobName",
                 blobName,
-                VERSION,
+                "version",
                 version,
                 "timestamp",
                 new Date(),
