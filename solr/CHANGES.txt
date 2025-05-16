@@ -130,7 +130,8 @@ Deprecation Removals
 
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
 
 Other Changes
 ---------------------

@@ -16,13 +16,13 @@
  */
 package org.apache.solr.security;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.cert.X509Certificate;
 import java.util.Map;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpHeaders;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
