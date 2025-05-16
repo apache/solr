@@ -133,11 +133,9 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
+    // The parser 'wt=' param is used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
     wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    wparams.set(CommonParams.VERSION, parserToUse.getVersion());
     return wparams;
   }
 

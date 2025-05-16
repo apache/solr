@@ -157,7 +157,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client = b.build()) {
       client.query(q, method);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
     } catch (SolrClient.RemoteSolrException ignored) {
     }
   }
@@ -240,8 +240,6 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         client.deleteById("id");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
@@ -260,8 +258,6 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         client.deleteByQuery("*:*");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
