@@ -28,10 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -382,46 +379,9 @@ public class SolrReturnFields extends ReturnFields {
 
         // let's try it as a function instead
         QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
-        Query q = null;
-        ValueSource vs = null;
-
         try {
-          if (parser instanceof FunctionQParser fparser) {
-            fparser.setParseMultipleSources(false);
-            fparser.setParseToEnd(false);
-
-            q = fparser.getQuery();
-
-            if (fparser.localParams != null) {
-              if (fparser.valFollowedParams) {
-                // need to find the end of the function query via the string parser
-                int leftOver = fparser.sp.end - fparser.sp.pos;
-                sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
-              } else {
-                // the value was via the "v" param in localParams, so we need to find
-                // the end of the local params themselves to pick up where we left off
-                sp.pos = start + fparser.localParamsEnd;
-              }
-            } else {
-              // need to find the end of the function query via the string parser
-              int leftOver = fparser.sp.end - fparser.sp.pos;
-              sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
-            }
-          } else {
-            // A QParser that's not for function queries.
-            // It must have been specified via local params.
-            q = parser.getQuery();
-
-            assert parser.getLocalParams() != null;
-            sp.pos = start + parser.localParamsEnd;
-          }
+          ValueSource vs = SortSpecParsing.parseValueSource(parser, sp, start);
           funcStr = sp.val.substring(start, sp.pos);
-
-          if (q instanceof FunctionQuery) {
-            vs = ((FunctionQuery) q).getValueSource();
-          } else {
-            vs = new QueryValueSource(q, 0.0f);
-          }
 
           if (key == null) {
             SolrParams localParams = parser.getLocalParams();
