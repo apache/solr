@@ -396,7 +396,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         new Http2SolrClient.Builder("http://localhost:" + bindPort + "/solr").build()) {
       propValue = getSystemProperty(solrClient, sysProp);
     }
-    assertEquals("System property provided with --jvm-opts not found", "hello", propValue);
+    assertEquals(
+        "System property \"" + sysProp + "\" provided with --jvm-opts not found.",
+        "hello",
+        propValue);
     // stop the test instance
     executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
   }
