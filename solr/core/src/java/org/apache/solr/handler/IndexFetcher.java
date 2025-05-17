@@ -259,6 +259,7 @@ public class IndexFetcher {
         .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
         .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
         .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+        .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
         .build();
   }
 
