@@ -307,7 +307,7 @@ public class CoreContainerProvider implements ServletContextListener {
               "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
                   + "Unable to get the specific file due to an exception."
                   + "The cause of the OOME will be logged in a crash file in the logs directory: %s",
-              System.getProperty("solr.log.dir"));
+              System.getProperty("solr.logs.dir"));
       log.info(logMessage, e);
     }
   }
