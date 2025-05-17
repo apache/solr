@@ -195,7 +195,7 @@ public final class BackupStatusChecker {
             .process(client);
     final NamedList<?> data = rsp.getResponse();
     log.info("Checking Status of {}: {}", label, data);
-    Object value = data._get(List.of(new String[] {"details", "backup"}), null);
+    Object value = data._get(List.of("details", "backup"), null);
     @SuppressWarnings({"unchecked"})
     final NamedList<String> backupData = (NamedList<String>) value;
     if (null == backupData) {
@@ -272,7 +272,7 @@ public final class BackupStatusChecker {
             .process(client);
     final NamedList<?> data = rsp.getResponse();
     log.info("Checking Deletion Status of {}: {}", backupName, data);
-    Object value = data._get(List.of(new String[] {"details", "backup"}), null);
+    Object value = data._get(List.of("details", "backup"), null);
     @SuppressWarnings({"unchecked"})
     final NamedList<String> backupData = (NamedList<String>) value;
     if (null == backupData

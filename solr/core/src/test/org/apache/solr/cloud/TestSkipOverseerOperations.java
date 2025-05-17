@@ -239,8 +239,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
    */
   private int getNumLeaderOperations(CollectionAdminResponse resp) {
     NamedList<Object> entries = resp.getResponse();
-    Object value =
-        entries._get(List.of(new String[] {"overseer_operations", "leader", "requests"}), null);
+    Object value = entries._get(List.of("overseer_operations", "leader", "requests"), null);
     return (int) value;
   }
 
@@ -250,8 +249,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
    */
   private int getNumStateOperations(CollectionAdminResponse resp) {
     NamedList<Object> entries = resp.getResponse();
-    Object value =
-        entries._get(List.of(new String[] {"overseer_operations", "state", "requests"}), null);
+    Object value = entries._get(List.of("overseer_operations", "state", "requests"), null);
     return (int) value;
   }
 

@@ -173,14 +173,11 @@ public class HealthcheckTool extends ToolBase {
                   solrClient.request(
                       new GenericSolrRequest(
                           SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-              Object value2 =
-                  systemInfo._get(List.of(new String[] {"jvm", "jmx", "upTimeMS"}), null);
+              Object value2 = systemInfo._get(List.of("jvm", "jmx", "upTimeMS"), null);
               uptime = SolrCLI.uptime((Long) value2);
-              Object value1 =
-                  systemInfo._get(List.of(new String[] {"jvm", "memory", "used"}), null);
+              Object value1 = systemInfo._get(List.of("jvm", "memory", "used"), null);
               String usedMemory = (String) value1;
-              Object value =
-                  systemInfo._get(List.of(new String[] {"jvm", "memory", "total"}), null);
+              Object value = systemInfo._get(List.of("jvm", "memory", "total"), null);
               String totalMemory = (String) value;
               memory = usedMemory + " of " + totalMemory;
             }

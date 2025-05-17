@@ -610,17 +610,14 @@ public class SearchHandler extends RequestHandlerBase
                             return false;
                           }
                           Object value1 =
-                              resp._get(
-                                  List.of(new String[] {"responseHeader", "partialResults"}), null);
+                              resp._get(List.of("responseHeader", "partialResults"), null);
                           Object recursive = value1;
                           if (recursive != null) {
                             Object value =
                                 resp._get(
                                     List.of(
-                                        new String[] {
-                                          "responseHeader",
-                                          RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY
-                                        }),
+                                        "responseHeader",
+                                        RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY),
                                     null);
                             Object message = "[Shard:" + response.getShardAddress() + "]" + value;
                             detailMesg.compareAndSet(null, message); // first one, ingore rest

@@ -529,8 +529,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       assertNotNull(params + " is null topNamedList?", topNamedList);
 
       // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
-      Object value =
-          topNamedList._get(List.of(new String[] {"debug", "facet-trace", "sub-facet"}), null);
+      Object value = topNamedList._get(List.of("debug", "facet-trace", "sub-facet"), null);
       @SuppressWarnings({"unchecked"})
       final List<NamedList<Object>> facetDebug = (List<NamedList<Object>>) value;
       assertNotNull(topNamedList + " ... null facet debug?", facetDebug);
