@@ -166,7 +166,7 @@ public class CoreContainerProvider implements ServletContextListener {
       try {
         this.rateLimitManager.close();
       } catch (Exception e) {
-        log.warn("Exception closing RateLimitManage", e);
+        log.warn("Exception closing RateLimitManager", e);
       }
       if (metricManager != null) {
         try {

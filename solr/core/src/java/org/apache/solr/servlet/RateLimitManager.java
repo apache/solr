@@ -71,7 +71,7 @@ public class RateLimitManager implements ClusterPropertiesListener, SolrMetricPr
   public RateLimitManager(String hostname, SolrMetricsContext parentContext) {
     this.hostname = hostname;
     this.requestRateLimiterMap = new ConcurrentHashMap<>();
-    this.initializeMetrics(parentContext, null);
+    this.initializeMetrics(parentContext, "RateLimitManager");
   }
 
   @Override

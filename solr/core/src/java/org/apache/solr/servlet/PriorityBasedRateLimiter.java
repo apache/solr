@@ -32,8 +32,8 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter implements Solr
 
   private SolrMetricsContext solrMetricsContext;
 
-  private final Timer foregroundRequestDelay;
-  private final Timer backgroundRequestDelay;
+  private Timer foregroundRequestDelay;
+  private Timer backgroundRequestDelay;
 
   public PriorityBasedRateLimiter(
       RateLimiterConfig rateLimiterConfig, SolrMetricsContext solrMetricsContext) {
@@ -42,10 +42,6 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter implements Solr
     this.totalAllowedRequests = rateLimiterConfig.allowedRequests;
     this.waitTimeoutInNanos = rateLimiterConfig.waitForSlotAcquisition * 1000000l;
     this.initializeMetrics(solrMetricsContext, null);
-    this.foregroundRequestDelay =
-        solrMetricsContext.timer("foregroundRequestDelay", "PriorityBasedRateLimiter");
-    this.backgroundRequestDelay =
-        solrMetricsContext.timer("backgroundRequestDelay", "PriorityBasedRateLimiter");
   }
 
   @Override
@@ -146,6 +142,10 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter implements Solr
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
+    this.foregroundRequestDelay =
+        solrMetricsContext.timer("foregroundRequestDelay", "PriorityBasedRateLimiter");
+    this.backgroundRequestDelay =
+        solrMetricsContext.timer("backgroundRequestDelay", "PriorityBasedRateLimiter");
   }
 
   @Override
