@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import java.util.Set;
-import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,8 +38,6 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
        a uniqueKey field and defeat the point of the tests
     */
     assertNull("UniqueKey Field isn't null", h.getCore().getLatestSchema().getUniqueKeyField());
-
-    lrf.args.put(CommonParams.VERSION, "2.2");
 
     assertNull(
         "Simple assertion that adding a document works",

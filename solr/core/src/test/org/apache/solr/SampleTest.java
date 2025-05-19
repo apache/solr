@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
@@ -39,7 +38,6 @@ public class SampleTest extends SolrTestCaseJ4 {
   /** Demonstration of some simple ways to use the base class */
   @Test
   public void testSimple() {
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertU(
         "Simple assertion that adding a document works",
         adoc(
@@ -65,7 +63,6 @@ public class SampleTest extends SolrTestCaseJ4 {
   /** Demonstration of some of the more complex ways to use the base class */
   @Test
   public void testAdvanced() throws Exception {
-    lrf.args.put(CommonParams.VERSION, "2.2");
     assertU(
         "less common case, a complex addition with options",
         add(
@@ -101,8 +98,7 @@ public class SampleTest extends SolrTestCaseJ4 {
      *
      * Note: the qt proves we are using our custom config...
      */
-    TestHarness.LocalRequestFactory l =
-        h.getRequestFactory("/crazy_custom_qt", 100, 200, CommonParams.VERSION, "2.2");
+    TestHarness.LocalRequestFactory l = h.getRequestFactory("/crazy_custom_qt", 100, 200);
     assertQ("how did i find Mack Daddy? ", l.makeRequest("Mack Daddy"), "//result[@numFound=0]");
 
     /* you can access the harness directly as well*/
