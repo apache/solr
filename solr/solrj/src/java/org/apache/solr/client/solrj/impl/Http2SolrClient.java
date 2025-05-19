@@ -94,15 +94,12 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
- * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
+ * An HTTP {@link SolrClient} using Jetty {@link HttpClient}. This is Solr's most mature client for
+ * direct HTTP.
  *
- * <ul>
- *   <li>{@link Http2SolrClient} sends requests in HTTP/2
- *   <li>{@link Http2SolrClient} can point to multiple urls
- *   <li>{@link Http2SolrClient} does not expose its internal httpClient like {@link
- *       HttpSolrClient#getHttpClient()}, sharing connection pools should be done by {@link
- *       Http2SolrClient.Builder#withHttpClient(Http2SolrClient)}
- * </ul>
+ * <p>Despite the name, this client supports HTTP 1.1 and 2 -- toggle with {@link
+ * HttpSolrClientBuilderBase#useHttp1_1(boolean)}. In retrospect, the name should have been {@code
+ * HttpJettySolrClient}.
  */
 public class Http2SolrClient extends HttpSolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -129,6 +126,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
     super(serverBaseUrl, builder);
 
     if (builder.httpClient != null) {
+      if (builder.followRedirects != null
+          || builder.connectionTimeoutMillis != null
+          || builder.idleTimeoutMillis != null) {
+        throw new IllegalArgumentException(
+            "You cannot provide the HttpClient and also specify options that are used to build a new client");
+      }
       this.httpClient = builder.httpClient;
       if (this.executor == null) {
         this.executor = builder.executor;
@@ -252,7 +255,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
-    httpClient.setIdleTimeout(idleTimeoutMillis);
+    httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
+    httpClient.setIdleTimeout(builder.getIdleTimeoutMillis());
+    // note: request timeout is set per request
 
     if (builder.cookieStore != null) {
       httpClient.setCookieStore(builder.cookieStore);
@@ -260,8 +265,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
-
-    httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
 
     setupProxy(builder, httpClient);
 
@@ -327,6 +330,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   public void setAuthenticationStore(AuthenticationStore authenticationStore) {
     this.authenticationStore.updateAuthenticationStore(authenticationStore);
+  }
+
+  /** (visible for testing) */
+  public long getIdleTimeout() {
+    return getHttpClient().getIdleTimeout();
   }
 
   public static class OutStream implements Closeable {
@@ -514,7 +522,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     try {
       InputStreamResponseListener listener = new InputStreamReleaseTrackingResponseListener();
       req = sendRequest(makeRequest(solrRequest, url, false), listener);
-      Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
+      Response response = listener.get(requestTimeoutMillis, TimeUnit.MILLISECONDS);
       url = req.getURI().toString();
       InputStream is = listener.getInputStream();
       return processErrorsAndResponse(solrRequest, response, is, url);
@@ -622,11 +630,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
     req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
 
-    if (requestTimeoutMillis > 0) {
-      req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
-    } else {
-      req.timeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
-    }
+    req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
+
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
     }
@@ -1020,12 +1025,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (cookieStore == null) {
         cookieStore = getDefaultCookieStore();
       }
-      if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
-        idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
-      }
-      if (connectionTimeoutMillis == null) {
-        connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
-      }
 
       if (keyStoreReloadIntervalSecs != null
           && keyStoreReloadIntervalSecs > 0
@@ -1085,17 +1084,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.basicAuthAuthorizationStr == null) {
         this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
       }
-      if (this.followRedirects == null) {
-        this.followRedirects = http2SolrClient.httpClient.isFollowRedirects();
-      }
-      if (this.idleTimeoutMillis == null) {
-        this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
+      if (this.requestTimeoutMillis == null) {
+        this.requestTimeoutMillis = http2SolrClient.requestTimeoutMillis;
       }
       if (this.requestWriter == null) {
         this.requestWriter = http2SolrClient.requestWriter;
-      }
-      if (this.requestTimeoutMillis == null) {
-        this.requestTimeoutMillis = http2SolrClient.requestTimeoutMillis;
       }
       if (this.responseParser == null) {
         this.responseParser = http2SolrClient.parser;
@@ -1104,8 +1097,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
         this.urlParamNames = http2SolrClient.urlParamNames;
       }
       if (this.listenerFactory == null) {
-        this.listenerFactory = new ArrayList<HttpListenerFactory>();
-        http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
+        this.listenerFactory = new ArrayList<>(http2SolrClient.listenerFactory);
       }
       if (this.executor == null) {
         this.executor = http2SolrClient.executor;

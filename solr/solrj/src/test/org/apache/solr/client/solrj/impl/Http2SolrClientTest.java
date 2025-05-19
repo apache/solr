@@ -661,14 +661,16 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         assertEquals(oldClient.getIdleTimeout(), onlyBaseUrlChangedClient.getIdleTimeout());
         assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
       }
-      try (Http2SolrClient idleTimeoutChangedClient =
-          new Http2SolrClient.Builder("baseSolrUrl")
-              .withHttpClient(oldClient)
-              .withIdleTimeout(3000, TimeUnit.MILLISECONDS)
-              .build()) {
-        assertFalse(oldClient.getIdleTimeout() == idleTimeoutChangedClient.getIdleTimeout());
-        assertEquals(3000, idleTimeoutChangedClient.getIdleTimeout());
-      }
+
+      assertThrows(
+          "You cannot provide the HttpClient and also specify", // etc...
+          IllegalArgumentException.class,
+          () -> {
+            new Http2SolrClient.Builder("baseSolrUrl")
+                .withHttpClient(oldClient)
+                .withIdleTimeout(3000, TimeUnit.MILLISECONDS)
+                .build();
+          });
     }
   }
 
