@@ -69,7 +69,6 @@ import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
 import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.servlet.RateLimitManager.Builder;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
@@ -249,8 +248,8 @@ public class CoreContainerProvider implements ServletContextListener {
 
       String hostname = zkController != null ? zkController.getHostName() : "";
 
-      this.rateLimitManager = builder.build(hostname, coresInit.getMetricsHandler().getSolrMetricsContext());
-
+      this.rateLimitManager =
+          builder.build(hostname, coresInit.getMetricsHandler().getSolrMetricsContext());
 
       if (zkController != null) {
         zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);

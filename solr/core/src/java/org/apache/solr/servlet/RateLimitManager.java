@@ -36,7 +36,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RateLimiterConfig;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
@@ -108,7 +107,7 @@ public class RateLimitManager implements ClusterPropertiesListener, SolrMetricPr
               if (v instanceof AutoCloseable) {
                 try {
                   ((AutoCloseable) v).close();
-                } catch (Exception e){
+                } catch (Exception e) {
                   log.warn("Exception while closing rate limiter ", e);
                 }
               }

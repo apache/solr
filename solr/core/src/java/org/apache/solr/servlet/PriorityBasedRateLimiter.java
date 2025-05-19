@@ -1,8 +1,6 @@
 package org.apache.solr.servlet;
 
 import com.codahale.metrics.Timer;
-
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
