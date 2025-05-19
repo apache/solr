@@ -163,6 +163,11 @@ public class CoreContainerProvider implements ServletContextListener {
 
     cores = null;
     try {
+      try {
+        this.rateLimitManager.close();
+      } catch (Exception e) {
+        log.warn("Exception closing RateLimitManager", e);
+      }
       if (metricManager != null) {
         try {
           metricManager.unregisterGauges(registryName, metricTag);
@@ -243,7 +248,8 @@ public class CoreContainerProvider implements ServletContextListener {
 
       String hostname = zkController != null ? zkController.getHostName() : "";
 
-      this.rateLimitManager = builder.build(hostname);
+      this.rateLimitManager =
+          builder.build(hostname, coresInit.getMetricsHandler().getSolrMetricsContext());
 
       if (zkController != null) {
         zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);

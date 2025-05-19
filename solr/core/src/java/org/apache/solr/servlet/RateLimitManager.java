@@ -36,6 +36,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RateLimiterConfig;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -52,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * the specifics of how the rate limiting is being done for a specific request type.
  */
 @ThreadSafe
-public class RateLimitManager implements ClusterPropertiesListener {
+public class RateLimitManager implements ClusterPropertiesListener, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   public static final String ERROR_MESSAGE =
@@ -64,9 +66,12 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
   private final String hostname;
 
-  public RateLimitManager(String hostname) {
+  private SolrMetricsContext solrMetricsContext;
+
+  public RateLimitManager(String hostname, SolrMetricsContext parentContext) {
     this.hostname = hostname;
     this.requestRateLimiterMap = new ConcurrentHashMap<>();
+    this.initializeMetrics(parentContext, "RateLimitManager");
   }
 
   @Override
@@ -99,8 +104,15 @@ public class RateLimitManager implements ClusterPropertiesListener {
               return v;
             } else {
               log.info("updated config: {}", newConfig);
+              if (v instanceof AutoCloseable) {
+                try {
+                  ((AutoCloseable) v).close();
+                } catch (Exception e) {
+                  log.warn("Exception while closing rate limiter ", e);
+                }
+              }
               if (newConfig.priorityBasedEnabled) {
-                return new PriorityBasedRateLimiter(newConfig);
+                return new PriorityBasedRateLimiter(newConfig, this.solrMetricsContext);
               }
               return new QueryRateLimiter(newConfig);
             }
@@ -211,6 +223,16 @@ public class RateLimitManager implements ClusterPropertiesListener {
     return requestRateLimiterMap.get(requestType.toString());
   }
 
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return this.solrMetricsContext;
+  }
+
   public static class Builder {
     protected SolrZkClient solrZkClient;
 
@@ -218,14 +240,14 @@ public class RateLimitManager implements ClusterPropertiesListener {
       this.solrZkClient = solrZkClient;
     }
 
-    public RateLimitManager build(String hostname) {
-      RateLimitManager rateLimitManager = new RateLimitManager(hostname);
+    public RateLimitManager build(String hostname, SolrMetricsContext solrMetricsContext) {
+      RateLimitManager rateLimitManager = new RateLimitManager(hostname, solrMetricsContext);
 
       RateLimiterConfig rateLimiterConfig = constructQueryRateLimiterConfig(solrZkClient, hostname);
 
       if (rateLimiterConfig.priorityBasedEnabled) {
         rateLimitManager.registerRequestRateLimiter(
-            new PriorityBasedRateLimiter(rateLimiterConfig),
+            new PriorityBasedRateLimiter(rateLimiterConfig, solrMetricsContext),
             SolrRequest.SolrRequestType.PRIORITY_BASED);
       } else {
         rateLimitManager.registerRequestRateLimiter(
