@@ -125,9 +125,13 @@ Deprecation Removals
 
 * SOLR-17738: Removed deprecated `transform()` from `DocTransformer`. (Abhishek Umarjikar, Houston Putman)
 
+* SOLR-17634: Removed the "version" parameter that the SolrJ client would add to almost all Solr
+ requests in relation to the version of the response format parsing ("wt" param). (David Smiley)
+
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
 
 Other Changes
 ---------------------
@@ -235,6 +239,9 @@ Improvements
 
 * SOLR-17744: Solr now enables Jetty's Graceful Shutdown features to prevent client connections from being abruptly terminated on orderly shutdown (hossman)
 
+* SOLR-17187: The polling interval for PULL and TLOG replicas can now be overridden using the `commitPollInterval` setting, which takes a String
+  formatted as "HH:mm:ss" (Torsten Koster via Christine Poerschke, Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
@@ -278,6 +285,11 @@ Bug Fixes
 * SOLR-17638: Some CLI errors not logged when starting prometheus exporter (Alex Deparvu)
 
 * SOLR-17745: Cancel leader election was being skipped on core container shutdown due to incorrect zkClient check (Matthew Biscocho, Luke Kot-Zaniewski)
+
+* SOLR-17761: Global circuit breakers can no longer trigger ConcurrentModificationException's on Solr startup (Jason Gerlowski)
+
+* SOLR-17758: The NumFieldLimitingUpdateRequestProcessor's "warnOnly" mode has been fixed, and now processes documents even
+  when the limit has been exceeded. (Jason Gerlowski, Rahul Goswami)
 
 Dependency Upgrades
 ---------------------
