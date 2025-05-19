@@ -230,17 +230,13 @@ public class RunExampleTool extends ToolBase {
         throw new IllegalArgumentException(
             "Value of --script option is invalid! " + script + " not found");
     } else {
-      Path scriptFile = serverDir.getParent().resolve("bin").resolve("solr");
+      Path scriptFile =
+          serverDir.getParent().resolve("bin").resolve(CLIUtils.isWindows() ? "solr.cmd" : "solr");
       if (Files.isRegularFile(scriptFile)) {
         script = scriptFile.toAbsolutePath().toString();
       } else {
-        scriptFile = serverDir.getParent().resolve("bin").resolve("solr.cmd");
-        if (Files.isRegularFile(scriptFile)) {
-          script = scriptFile.toAbsolutePath().toString();
-        } else {
-          throw new IllegalArgumentException(
-              "Cannot locate the bin/solr script! Please pass --script to this application.");
-        }
+        throw new IllegalArgumentException(
+            "Cannot locate the bin/solr script! Please pass --script to this application.");
       }
     }
 
