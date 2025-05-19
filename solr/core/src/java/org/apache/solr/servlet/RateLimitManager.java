@@ -105,6 +105,13 @@ public class RateLimitManager implements ClusterPropertiesListener, SolrMetricPr
               return v;
             } else {
               log.info("updated config: {}", newConfig);
+              if (v instanceof AutoCloseable) {
+                try {
+                  ((AutoCloseable) v).close();
+                } catch (Exception e){
+                  log.warn("Exception while closing rate limiter ", e);
+                }
+              }
               if (newConfig.priorityBasedEnabled) {
                 return new PriorityBasedRateLimiter(newConfig, this.solrMetricsContext);
               }
