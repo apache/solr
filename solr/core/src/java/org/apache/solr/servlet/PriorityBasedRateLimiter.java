@@ -1,6 +1,8 @@
 package org.apache.solr.servlet;
 
 import com.codahale.metrics.Timer;
+
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
@@ -9,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.RateLimiterConfig;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
@@ -18,7 +21,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
  * the foreground and background request. Foreground requests has high priority than background
  * requests
  */
-public class PriorityBasedRateLimiter extends RequestRateLimiter {
+public class PriorityBasedRateLimiter extends RequestRateLimiter implements SolrMetricProducer {
   public static final String SOLR_REQUEST_PRIORITY_PARAM = "Solr-Request-Priority";
   private final AtomicInteger activeRequests = new AtomicInteger();
   private final Semaphore numRequestsAllowed;
@@ -29,7 +32,7 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter {
 
   private final long waitTimeoutInNanos;
 
-  private final SolrMetricsContext solrMetricsContext;
+  private SolrMetricsContext solrMetricsContext;
 
   private final Timer foregroundRequestDelay;
   private final Timer backgroundRequestDelay;
@@ -40,7 +43,7 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter {
     this.numRequestsAllowed = new Semaphore(rateLimiterConfig.allowedRequests, true);
     this.totalAllowedRequests = rateLimiterConfig.allowedRequests;
     this.waitTimeoutInNanos = rateLimiterConfig.waitForSlotAcquisition * 1000000l;
-    this.solrMetricsContext = solrMetricsContext;
+    this.initializeMetrics(solrMetricsContext, null);
     this.foregroundRequestDelay =
         solrMetricsContext.timer("foregroundRequestDelay", "PriorityBasedRateLimiter");
     this.backgroundRequestDelay =
@@ -140,6 +143,16 @@ public class PriorityBasedRateLimiter extends RequestRateLimiter {
     } catch (IllegalArgumentException iae) {
     }
     return null;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return this.solrMetricsContext;
   }
 
   public enum RequestPriorities {

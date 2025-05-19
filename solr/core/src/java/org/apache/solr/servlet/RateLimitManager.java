@@ -36,6 +36,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RateLimiterConfig;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
@@ -53,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * the specifics of how the rate limiting is being done for a specific request type.
  */
 @ThreadSafe
-public class RateLimitManager implements ClusterPropertiesListener {
+public class RateLimitManager implements ClusterPropertiesListener, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   public static final String ERROR_MESSAGE =
@@ -65,12 +67,12 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
   private final String hostname;
 
-  private final SolrMetricsContext solrMetricsContext;
+  private SolrMetricsContext solrMetricsContext;
 
-  public RateLimitManager(String hostname, SolrMetricsContext solrMetricsContext) {
+  public RateLimitManager(String hostname, SolrMetricsContext parentContext) {
     this.hostname = hostname;
     this.requestRateLimiterMap = new ConcurrentHashMap<>();
-    this.solrMetricsContext = solrMetricsContext;
+    this.initializeMetrics(parentContext, null);
   }
 
   @Override
@@ -213,6 +215,16 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
   public RequestRateLimiter getRequestRateLimiter(SolrRequest.SolrRequestType requestType) {
     return requestRateLimiterMap.get(requestType.toString());
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return this.solrMetricsContext;
   }
 
   public static class Builder {

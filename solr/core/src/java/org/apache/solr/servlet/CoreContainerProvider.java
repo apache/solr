@@ -166,6 +166,11 @@ public class CoreContainerProvider implements ServletContextListener {
     try {
       if (metricManager != null) {
         try {
+          this.rateLimitManager.close();
+        } catch (Exception e) {
+          log.warn("Exception closing RateLimitManage", e);
+        }
+        try {
           metricManager.unregisterGauges(registryName, metricTag);
         } catch (NullPointerException e) {
           // okay
@@ -247,7 +252,8 @@ public class CoreContainerProvider implements ServletContextListener {
       SolrMetricsContext solrMetricsContext =
           new SolrMetricsContext(coresInit.getMetricManager(), Group.node.toString(), metricTag);
 
-      this.rateLimitManager = builder.build(hostname, solrMetricsContext);
+      this.rateLimitManager = builder.build(hostname, coresInit.getMetricsHandler().getSolrMetricsContext());
+
 
       if (zkController != null) {
         zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
