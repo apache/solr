@@ -288,6 +288,8 @@ Bug Fixes
 
 * SOLR-17761: Global circuit breakers can no longer trigger ConcurrentModificationException's on Solr startup (Jason Gerlowski)
 
+* SOLR-17726: MoreLikeThis to support copy-fields (Ilaria Petreti via Alessandro Benedetti)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
