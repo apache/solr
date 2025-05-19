@@ -69,7 +69,7 @@ public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequest
 
   @Override
   public void init(NamedList<?> args) {
-    warnOnly = args.indexOf(WARN_ONLY_PARAM, 0) > 0 ? args.getBooleanArg(WARN_ONLY_PARAM) : false;
+    warnOnly = args.indexOf(WARN_ONLY_PARAM, 0) >= 0 ? args.getBooleanArg(WARN_ONLY_PARAM) : false;
 
     if (args.indexOf(MAXIMUM_FIELDS_PARAM, 0) < 0) {
       throw new IllegalArgumentException(
