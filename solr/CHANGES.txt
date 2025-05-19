@@ -54,7 +54,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-16667: Fixed dense/sparse representation in LTR module. (Anna Ruggero)
 
 Deprecation Removals
 ----------------------
