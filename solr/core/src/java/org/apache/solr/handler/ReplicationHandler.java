@@ -1490,7 +1490,7 @@ public class ReplicationHandler extends RequestHandlerBase
     return TimeUnit.MILLISECONDS.convert(readIntervalNs(interval), TimeUnit.NANOSECONDS);
   }
 
-  private Long readIntervalNs(String interval) {
+  public static Long readIntervalNs(String interval) {
     if (interval == null) return null;
     int result = 0;
     Matcher m = INTERVAL_PATTERN.matcher(interval.trim());
