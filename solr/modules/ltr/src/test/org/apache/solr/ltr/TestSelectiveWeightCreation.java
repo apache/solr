@@ -142,9 +142,9 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals("11", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
 
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
-    List<Feature> expectedNotDefaultFeatures = makeFeatures(new int[] {1, 2});
+    List<Feature> expectedNonDefaultFeatures = makeFeatures(new int[] {1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
-    List<Feature> expectedNotDefaultAllFeatures =
+    List<Feature> expectedNonDefaultAllFeatures =
         makeFeatures(new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     final List<Normalizer> norms = new ArrayList<>();
     for (int k = 0; k < features.size(); ++k) {
@@ -170,13 +170,13 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getFeaturesInfo();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
-    int notDefaultFeatures = 0;
+    int nonDefaultFeatures = 0;
     for (int i = 0; i < featuresInfo.length; ++i) {
       if (featuresInfo[i] != null && !featuresInfo[i].isDefaultValue()) {
-        notDefaultFeatures += 1;
+        nonDefaultFeatures += 1;
       }
     }
-    assertEquals(expectedNotDefaultFeatures.size(), notDefaultFeatures);
+    assertEquals(expectedNonDefaultFeatures.size(), nonDefaultFeatures);
 
     // when features are requested in the response, weights should be created for all features
     final LTRScoringModel ltrScoringModel2 =
@@ -197,13 +197,13 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
     assertEquals(allFeatures.size(), modelWeight.getExtractedFeatureWeights().length);
 
-    notDefaultFeatures = 0;
+    nonDefaultFeatures = 0;
     for (int i = 0; i < featuresInfo.length; ++i) {
       if (featuresInfo[i] != null && !featuresInfo[i].isDefaultValue()) {
-        notDefaultFeatures += 1;
+        nonDefaultFeatures += 1;
       }
     }
-    assertEquals(expectedNotDefaultAllFeatures.size(), notDefaultFeatures);
+    assertEquals(expectedNonDefaultAllFeatures.size(), nonDefaultFeatures);
 
     assertU(delI("10"));
     assertU(delI("11"));
