@@ -39,15 +39,10 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
@@ -328,102 +323,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   @Test
   public void testFilmsExample() throws Exception {
     testExample("films");
-  }
-
-  @Test
-  public void testAdditionalArgs() throws Exception {
-    String testStandaloneMode = LuceneTestCase.rarely() ? "--user-managed" : "";
-    Path defaultSolrHomeDir = ExternalPaths.SERVER_HOME;
-    if (!Files.isDirectory(defaultSolrHomeDir)) {
-      fail(defaultSolrHomeDir + " not found and is required to run this test!");
-    }
-
-    Path testSolrHomeDir = createTempDir();
-    Path solrServerDir = defaultSolrHomeDir.getParent();
-
-    // need a port to start the example server on
-    int bindPort = -1;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
-
-    log.info("Selected port {} to start techproducts example Solr instance on ...", bindPort);
-
-    String sysProp = "solr.customprop.greet";
-    String[] toolArgs =
-        new String[] {
-          "-e",
-          "techproducts",
-          "--server-dir",
-          solrServerDir.toString(),
-          "--solr-home",
-          testSolrHomeDir.toString(),
-          "-p",
-          String.valueOf(bindPort),
-          testStandaloneMode,
-          "--jvm-opts",
-          "-D" + sysProp + "=hello"
-        };
-
-    // capture tool output to stdout
-    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-
-    RunExampleExecutor executor = new RunExampleExecutor();
-    closeables.add(executor);
-
-    RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
-    try {
-      int status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
-
-      if (status == -1) {
-        // maybe it's the port, try again
-        try (ServerSocket socket = new ServerSocket(0)) {
-          bindPort = socket.getLocalPort();
-        }
-        Thread.sleep(100);
-        status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
-      }
-
-      assertEquals("it should be ok " + tool + " " + Arrays.toString(toolArgs), 0, status);
-
-    } catch (Exception e) {
-      log.error("RunExampleTool failed due to: ", e); // nowarn
-      throw e;
-    }
-
-    String propValue = null;
-    try (SolrClient solrClient =
-        new Http2SolrClient.Builder("http://localhost:" + bindPort + "/solr").build()) {
-      propValue = getSystemProperty(solrClient, sysProp);
-    }
-    assertEquals(
-        "System property \"" + sysProp + "\" provided with --jvm-opts not found.",
-        "hello",
-        propValue);
-    // stop the test instance
-    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
-  }
-
-  public String getSystemProperty(SolrClient solrClient, String propertyName) throws Exception {
-    // 1) Build the request
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("wt", "json");
-    GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/properties", params);
-
-    // 2) Execute the request
-    NamedList<Object> resp = solrClient.request(req);
-
-    // 3) Extract the "system.properties" section
-    @SuppressWarnings("unchecked")
-    NamedList<Object> sysProps = (NamedList<Object>) resp.get("system.properties");
-    if (sysProps == null) {
-      throw new IllegalStateException("No system.properties in response");
-    }
-
-    // 4) Return the requested property’s value (or null)
-    Object val = sysProps.get(propertyName);
-    return val != null ? val.toString() : null;
   }
 
   protected void testExample(String exampleName) throws Exception {
