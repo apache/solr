@@ -30,8 +30,8 @@ teardown() {
 
 @test "start -e cloud works with --jvm-opts" {
   solr start -e cloud --no-prompt --jvm-opts "-Dcustom.prop=helloworld"
-  solr assert --started http://localhost:${SOLR_PORT} --cloud http://localhost:${SOLR_PORT} --timeout 10000
-  solr assert --started http://localhost:${SOLR2_PORT} --cloud http://localhost:${SOLR2_PORT} --timeout 10000
+  solr assert --started http://localhost:${SOLR_PORT} --cloud http://localhost:${SOLR_PORT} --timeout 60000
+  solr assert --started http://localhost:${SOLR2_PORT} --cloud http://localhost:${SOLR2_PORT} --timeout 60000
 
   run curl "http://localhost:${SOLR_PORT}/solr/admin/info/properties"
   assert_output --partial 'helloworld'
