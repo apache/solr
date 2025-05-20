@@ -61,7 +61,7 @@ public class PackageToolTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.enable.packages", "true");
 
     configureCluster(2)
         .addConfig(
@@ -83,7 +83,7 @@ public class PackageToolTest extends SolrCloudTestCase {
         repositoryServer.stop();
       }
     } finally {
-      System.clearProperty("enable.packages");
+      System.clearProperty("solr.enable.packages");
     }
   }
 

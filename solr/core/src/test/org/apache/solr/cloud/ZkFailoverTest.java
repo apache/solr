@@ -47,7 +47,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void resetWaitForZk() {
-    System.setProperty("waitForZk", "30");
+    System.setProperty("solr.wait.for.zk", "30");
   }
 
   public void testRestartZkWhenClusterDown() throws Exception {
@@ -58,12 +58,12 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     zkTestServer = cluster.getZkServer();
 
     // This attempt will fail since it will time out after 1 second
-    System.setProperty("waitForZk", "1");
+    System.setProperty("solr.wait.for.zk", "1");
     restartSolrAndZk();
     waitForLiveNodes(0);
 
     // This attempt will succeed since there will be enough time to connect
-    System.setProperty("waitForZk", "20");
+    System.setProperty("solr.wait.for.zk", "20");
     restartSolrAndZk();
     waitForLiveNodes(cluster.getJettySolrRunners().size());
     waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2));

@@ -29,8 +29,8 @@
 
     <RollingFile
         name="RollingFile"
-        fileName="${sys:solr.log.dir}/solr.log"
-        filePattern="${sys:solr.log.dir}/solr.log.%i" >
+        fileName="${sys:solr.logs.dir}/solr.log"
+        filePattern="${sys:solr.logs.dir}/solr.log.%i" >
       <PatternLayout>
         <Pattern>
           %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n
@@ -45,8 +45,8 @@
     
     <RollingFile
         name="RollingJsonFile"
-        fileName="${sys:solr.log.dir}/solr.json.log"
-        filePattern="${sys:solr.log.dir}/solr.json.log.%i" >
+        fileName="${sys:solr.logs.dir}/solr.json.log"
+        filePattern="${sys:solr.logs.dir}/solr.json.log.%i" >
       <JsonTemplateLayout eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json" /> <!-- provided by log4j-layout-template-json.jar -->
       <Policies>
         <OnStartupTriggeringPolicy />
@@ -57,8 +57,8 @@
 
     <RollingFile
         name="SlowFile"
-        fileName="${sys:solr.log.dir}/solr_slow_requests.log"
-        filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
+        fileName="${sys:solr.logs.dir}/solr_slow_requests.log"
+        filePattern="${sys:solr.logs.dir}/solr_slow_requests.log.%i" >
       <PatternLayout>
         <Pattern>
           %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n

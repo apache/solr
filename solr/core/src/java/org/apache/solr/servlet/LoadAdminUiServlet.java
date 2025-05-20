@@ -39,9 +39,9 @@ import org.apache.solr.core.SolrCore;
  */
 public final class LoadAdminUiServlet extends HttpServlet {
 
-  // check system properties for whether or not admin UI is disabled, default is false
+  // check system properties for whether the admin UI is disabled, default is false
   private static final boolean disabled =
-      Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
+      Boolean.parseBoolean(System.getProperty("solr.admin.ui.disabled", "false"));
   // list of comma separated URLs to inject into the CSP connect-src directive
   public static final String SYSPROP_CSP_CONNECT_SRC_URLS = "solr.ui.headers.csp.connect-src.urls";
 

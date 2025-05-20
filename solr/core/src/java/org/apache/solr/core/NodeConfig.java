@@ -248,7 +248,7 @@ public class NodeConfig {
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOut = 1000 * Integer.getInteger("waitForZk", 0);
+      int startUpZkTimeOut = 1000 * Integer.getInteger("solr.wait.for.zk", 0);
       if (startUpZkTimeOut == 0) {
         startUpZkTimeOut = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
       }
