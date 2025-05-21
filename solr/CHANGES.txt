@@ -47,7 +47,7 @@ Improvements
 
 * SOLR-17043: "LB" and "Cloud" clients no longer use brittle URL pattern-matching when routing requests. (Jude Muriithi via David Smiley, Jason Gerlowski)
 
-* SOLR-17739: Uploading a config sets with forbidden file types will produces a Exception. Previously it was just ignoring those files and logging a WARN.
+* SOLR-17739: Uploading a config sets with forbidden file types will produces a Exception. Previously it was just ignoring those files and logging a WARN. (Abhishek Umarjikar via Eric Pugh)
 
 Optimizations
 ---------------------
