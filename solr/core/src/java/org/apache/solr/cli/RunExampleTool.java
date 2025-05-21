@@ -236,7 +236,9 @@ public class RunExampleTool extends ToolBase {
         script = scriptFile.toAbsolutePath().toString();
       } else {
         throw new IllegalArgumentException(
-            "Cannot locate the bin/solr script! Please pass --script to this application.");
+            "Cannot locate the bin/"
+                + scriptFile.getFileName().toString()
+                + " script! Please pass --script to this application.");
       }
     }
 
