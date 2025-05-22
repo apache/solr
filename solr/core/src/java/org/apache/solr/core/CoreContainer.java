@@ -35,6 +35,7 @@ import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -1002,13 +1003,32 @@ public class CoreContainer {
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
     solrMetricsContext.gauge(
-        () -> dataHome.toFile().getTotalSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(dataHome).getTotalSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving total space for data home directory" + dataHome,
+                e);
+          }
+        },
         true,
         "totalSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
         "fs");
+
     solrMetricsContext.gauge(
-        () -> dataHome.toFile().getUsableSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(dataHome).getUsableSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for data home directory" + dataHome,
+                e);
+          }
+        },
         true,
         "usableSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
@@ -1016,14 +1036,34 @@ public class CoreContainer {
     solrMetricsContext.gauge(
         dataHome::toString, true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(
-        () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error retrieving total space for core root directory: "
+                    + cfg.getCoreRootDirectory(),
+                e);
+          }
+        },
         true,
         "totalSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
         "fs",
         "coreRoot");
     solrMetricsContext.gauge(
-        () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for core root directory: "
+                    + cfg.getCoreRootDirectory(),
+                e);
+          }
+        },
         true,
         "usableSpace",
         SolrInfoBean.Category.CONTAINER.toString(),

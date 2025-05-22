@@ -92,7 +92,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
     create.process(solrClient);
 
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = createTempDir().toString();
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
 
     DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
