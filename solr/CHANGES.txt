@@ -62,6 +62,8 @@ Optimizations
 
 * SOLR-17669: Reduced memory usage in SolrJ getBeans() method when handling dynamic fields with wildcards. (Martin Anzinger)
 
+* SOLR-17756: Parallelize index fingerprint computation across segments via a dedicated thread pool (Matthew Biscocho, Luke Kot-Zaniewski)
+
 Bug Fixes
 ---------------------
 * SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
