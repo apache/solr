@@ -1032,6 +1032,9 @@ IF "%GC_TUNE%"=="" (
 REM Add vector optimizations module
 set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
 
+REM Support native madvise for MemorySegmentIndexInputProvider
+set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --enable-native-access=ALL-UNNAMED
+
 IF "%GC_LOG_OPTS%"=="" (
   set GC_LOG_OPTS="-Xlog:gc*"
 )
