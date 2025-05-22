@@ -69,7 +69,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
-      assertTrue(e.getMessage().contains("timeout") || e.getMessage().contains("Timeout"));
+      assertTrue(isTimeout(e));
     }
   }
 
@@ -100,7 +100,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
-      assertTrue(e.getMessage().contains("timeout") || e.getMessage().contains("Timeout"));
+      assertTrue(isTimeout(e));
     }
   }
 
@@ -651,26 +651,68 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testIdleTimeoutWithHttpClient() {
+  public void testIdleTimeoutWithHttpClient() throws Exception {
+    String url = getBaseUrl() + SLOW_SERVLET_PATH;
     try (Http2SolrClient oldClient =
-        new Http2SolrClient.Builder("baseSolrUrl")
-            .withIdleTimeout(5000, TimeUnit.MILLISECONDS)
-            .build()) {
+        new Http2SolrClient.Builder(url).withIdleTimeout(10, TimeUnit.SECONDS).build()) {
       try (Http2SolrClient onlyBaseUrlChangedClient =
-          new Http2SolrClient.Builder("newBaseSolrUrl").withHttpClient(oldClient).build()) {
+          new Http2SolrClient.Builder(url).withHttpClient(oldClient).build()) {
         assertEquals(oldClient.getIdleTimeout(), onlyBaseUrlChangedClient.getIdleTimeout());
         assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
       }
+      SolrQuery q = new SolrQuery("*:*");
+      int newTimeoutMs = 500;
       try (Http2SolrClient idleTimeoutChangedClient =
-          new Http2SolrClient.Builder("baseSolrUrl")
+          new Http2SolrClient.Builder(url)
               .withHttpClient(oldClient)
-              .withIdleTimeout(3000, TimeUnit.MILLISECONDS)
+              .withIdleTimeout(newTimeoutMs, TimeUnit.MILLISECONDS)
               .build()) {
         assertFalse(oldClient.getIdleTimeout() == idleTimeoutChangedClient.getIdleTimeout());
-        assertEquals(3000, idleTimeoutChangedClient.getIdleTimeout());
+        assertEquals(newTimeoutMs, idleTimeoutChangedClient.getIdleTimeout());
+        idleTimeoutChangedClient.query(q, SolrRequest.METHOD.GET);
+        fail("No exception thrown.");
+      } catch (SolrServerException e) {
+        assertTrue(isTimeout(e));
+      }
+
+      try {
+        oldClient.query(q, SolrRequest.METHOD.GET);
+      } catch (SolrClient.RemoteSolrException e) {
+        assertTrue(
+            e.getMessage().contains("Error from server") && e.getMessage().matches(".*: null$"));
       }
     }
   }
 
+  @Test
+  public void testRequestTimeoutWithHttpClient() throws Exception {
+    String url = getBaseUrl() + SLOW_SERVLET_PATH;
+    try (Http2SolrClient oldClient =
+        new Http2SolrClient.Builder(url).withRequestTimeout(10, TimeUnit.SECONDS).build()) {
+      SolrQuery q = new SolrQuery("*:*");
+      int newTimeoutMs = 500;
+      try (Http2SolrClient requestTimeOutChangedClient =
+          new Http2SolrClient.Builder(url)
+              .withHttpClient(oldClient)
+              .withRequestTimeout(newTimeoutMs, TimeUnit.MILLISECONDS)
+              .build()) {
+        requestTimeOutChangedClient.query(q, SolrRequest.METHOD.GET);
+        fail("No exception thrown.");
+      } catch (SolrServerException e) {
+        assertTrue(isTimeout(e));
+      }
+
+      try {
+        oldClient.query(q, SolrRequest.METHOD.GET);
+      } catch (SolrClient.RemoteSolrException e) {
+        assertTrue(
+            e.getMessage().contains("Error from server") && e.getMessage().matches(".*: null$"));
+      }
+    }
+  }
+
+  private static boolean isTimeout(SolrServerException e) {
+    return e.getMessage().contains("timeout") || e.getMessage().contains("Timeout");
+  }
   /* Missed tests : - set cookies via interceptor - invariant params - compression */
 }
