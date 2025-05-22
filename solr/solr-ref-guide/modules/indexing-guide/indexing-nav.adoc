@@ -53,6 +53,7 @@
 *** xref:transforming-and-indexing-custom-json.adoc[]
 ** xref:indexing-with-cbor.adoc[]
 ** xref:indexing-with-tika.adoc[]
+* xref:indexing-with-tika-server.adoc[]
 ** xref:indexing-nested-documents.adoc[]
 ** xref:post-tool.adoc[]
 ** xref:documents-screen.adoc[]

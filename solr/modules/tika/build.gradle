@@ -1,0 +1,13 @@
+plugins {
+  id 'java-library'
+}
+
+dependencies {
+  api project(':solr:solrj')
+  implementation 'org.eclipse.jetty:jetty-client:11.0.15'
+  implementation 'org.noggit:noggit:0.8' // Solr's common JSON library
+
+  testImplementation project(':solr:test-framework')
+  testImplementation 'junit:junit:4.13.2'
+  testImplementation 'org.mockito:mockito-core:4.11.0'
+}

@@ -1,0 +1,72 @@
+= Indexing with an External Tika Server
+
+Solr provides the `TikaServerRequestHandler` to enable rich document parsing by delegating to an external, running Tika Server instance. This approach offloads the parsing process from Solr, offering better resource isolation and potentially more flexible Tika deployment options.
+
+== Overview
+
+The `TikaServerRequestHandler` is a request handler that processes incoming documents by sending them to a configured Tika Server's `/rmeta` endpoint. It retrieves the extracted text and metadata from the Tika Server and then uses this information to construct Solr documents for indexing.
+
+This handler is an alternative to the traditional in-process `ExtractingRequestHandler` (Solr Cell).
+
+== Configuration Parameters
+
+The `TikaServerRequestHandler` is configured in `solrconfig.xml`. Here are the available parameters:
+
+`tikaServer.url` (Required)::
+The base URL of the Tika Server. The handler will typically append `/rmeta` or other specific Tika endpoints to this URL. Example: `http://localhost:9998`.
+
+`tikaServer.connectionTimeout` (Optional, Default: `5000` ms)::
+Timeout in milliseconds for establishing a connection to the Tika Server.
+
+`tikaServer.socketTimeout` (Optional, Default: `60000` ms)::
+Timeout in milliseconds for waiting for data from the Tika Server after a connection is established.
+
+`tikaServer.contentField` (Optional, Default: `content`)::
+The Solr field name to which the main extracted text content from the document will be mapped.
+
+`tikaServer.idField` (Optional, Default: none)::
+Specifies a metadata field returned by Tika Server to be used as the unique ID for the Solr document. This refers to the original field name from Tika's output (before any prefix is applied). If not specified, Solr's standard mechanisms for document IDs will apply. Example: `X-TIKA:resourceName`.
+
+`tikaServer.returnMetadata` (Optional, Default: `true`)::
+A boolean indicating whether to index all metadata fields returned by the Tika Server. If `false`, only the `tikaServer.contentField` and the (if configured) `tikaServer.idField` are indexed.
+
+`tikaServer.metadataPrefix` (Optional, Default: empty string)::
+A prefix to be added to all metadata field names extracted by Tika before they are added to the Solr document. This helps prevent field name collisions with existing Solr schema fields. For example, if Tika returns a metadata field `Author` and `tikaServer.metadataPrefix` is `meta_`, the Solr field will be `meta_Author`. This prefix is not applied to the `tikaServer.contentField` or the field designated by `tikaServer.idField`.
+
+== Example Configuration
+
+Below is an example of how to configure the `TikaServerRequestHandler` in `solrconfig.xml`:
+
+[source,xml]
+----
+<requestHandler name="/tika-server" class="org.apache.solr.handler.tika.TikaServerRequestHandler">
+  <str name="tikaServer.url">http://localhost:9998</str>
+  <int name="tikaServer.connectionTimeout">10000</int>
+  <int name="tikaServer.socketTimeout">120000</int>
+  <str name="tikaServer.contentField">extracted_text</str>
+  <str name="tikaServer.idField">resourceName</str> <1>
+  <bool name="tikaServer.returnMetadata">true</bool>
+  <str name="tikaServer.metadataPrefix">tika_</str>
+</requestHandler>
+----
+<1> Assuming Tika Server returns a metadata field named `resourceName` (like from `X-TIKA:resourceName` where the `X-TIKA:` part might be stripped by some Tika versions/configurations or if using `/tika` endpoint for metadata). Adjust as per your Tika Server's output.
+
+== Usage
+
+Once configured, you can post rich documents to this handler's endpoint. For example, using `curl`:
+
+[source,bash]
+----
+curl -X POST --data-binary @/path/to/your/document.pdf       -H 'Content-type: application/pdf'       'http://localhost:8983/solr/your_collection_name/tika-server?commit=true'
+----
+
+The handler will send `document.pdf` to the Tika Server, receive the extracted content and metadata, and index it into Solr.
+
+== Benefits and Comparison
+
+*   **Resource Isolation**: Tika parsing occurs in a separate process, preventing Tika-related memory or CPU spikes from directly impacting Solr.
+*   **Independent Scaling**: Tika Server can be scaled independently of Solr.
+*   **Simplified Solr Dependencies**: Solr nodes do not need all of Tika's direct dependencies, potentially reducing the Solr classpath size and complexity.
+*   **Centralized Tika Management**: Tika Server can be managed and updated as a central service.
+
+The existing in-process `ExtractingRequestHandler` (Solr Cell) embeds Tika within Solr. While convenient for simple setups, the `TikaServerRequestHandler` offers more robustness and flexibility for production environments.
