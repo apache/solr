@@ -1310,6 +1310,8 @@ function start_solr() {
 
   # Add vector optimizations module
   SCRIPT_SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
+  # Support native madvise for MemorySegmentIndexInputProvider
+  SCRIPT_SOLR_OPTS+=("--enable-native-access=ALL-UNNAMED")
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.log.dir="$SOLR_LOGS_DIR" \
