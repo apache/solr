@@ -609,20 +609,18 @@ public class SearchHandler extends RequestHandlerBase
                           if (resp == null) {
                             return false;
                           }
-                          Object value1 =
-                              resp._get(
-                                  List.of(new String[] {"responseHeader", "partialResults"}), null);
-                          Object recursive = value1;
+                          Object recursive =
+                              resp._get(List.of("responseHeader", "partialResults"), null);
                           if (recursive != null) {
-                            Object value =
-                                resp._get(
-                                    List.of(
-                                        new String[] {
-                                          "responseHeader",
-                                          RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY
-                                        }),
-                                    null);
-                            Object message = "[Shard:" + response.getShardAddress() + "]" + value;
+                            Object message =
+                                "[Shard:"
+                                    + response.getShardAddress()
+                                    + "]"
+                                    + resp._get(
+                                        List.of(
+                                            "responseHeader",
+                                            RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY),
+                                        null);
                             detailMesg.compareAndSet(null, message); // first one, ingore rest
                           }
                           return recursive != null;

@@ -149,15 +149,14 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
       final QueryResponse response = query(params);
       assertEquals(6, getHmObj(response).get("gridLevel")); // same test as above
       NamedList<Object> entries1 = response.getResponse();
-      Object value1 =
-          entries1._get(
-              List.of(new String[] {"facet_counts", "facet_heatmaps", "course", "gridLevel"}),
-              null);
-      assertEquals(2, value1);
+      assertEquals(
+          2, entries1._get(List.of("facet_counts", "facet_heatmaps", "course", "gridLevel"), null));
       NamedList<Object> entries = response.getResponse();
-      Object value =
-          entries._get(List.of(new String[] {"facet_counts", "facet_heatmaps", "course"}), null);
-      assertTrue(((NamedList<Object>) value).indexOf("counts_" + courseFormat, 0) >= 0);
+      assertTrue(
+          ((NamedList<Object>)
+                      entries._get(List.of("facet_counts", "facet_heatmaps", "course"), null))
+                  .indexOf("counts_" + courseFormat, 0)
+              >= 0);
     }
 
     // ------ Index data
@@ -440,12 +439,10 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
                       + "}"));
       {
         NamedList<Object> entries1 = response.getResponse();
-        Object value1 = entries1._get(List.of(new String[] {"facets", "q1"}), null);
-        final NamedList<?> q1Res = (NamedList<?>) value1;
+        final NamedList<?> q1Res = (NamedList<?>) entries1._get(List.of("facets", "q1"), null);
         assertEquals("1", q1Res.get("count").toString());
         NamedList<Object> entries = response.getResponse();
-        Object value = entries._get(List.of(new String[] {"facets", "q2"}), null);
-        final NamedList<?> q2Res = (NamedList<?>) value;
+        final NamedList<?> q2Res = (NamedList<?>) entries._get(List.of("facets", "q2"), null);
         assertEquals("1", q2Res.get("count").toString());
         // essentially, these will differ only in the heatmap counts but otherwise will be the same
         assertNotNull(compare(q1Res, q2Res, flags, handle));
@@ -506,16 +503,14 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   private NamedList<?> getHmObj(QueryResponse response) {
     // classic faceting
     NamedList<Object> entries1 = response.getResponse();
-    Object value1 =
-        entries1._get(List.of(new String[] {"facet_counts", "facet_heatmaps", FIELD}), null);
-    final NamedList<?> classicResp = (NamedList<?>) value1;
+    final NamedList<?> classicResp =
+        (NamedList<?>) entries1._get(List.of("facet_counts", "facet_heatmaps", FIELD), null);
     if (classicResp != null) {
       return classicResp;
     }
     // JSON Facet
     NamedList<Object> entries = response.getResponse();
-    Object value = entries._get(List.of(new String[] {"facets", "f1"}), null);
-    return (NamedList<?>) value;
+    return (NamedList<?>) entries._get(List.of("facets", "f1"), null);
   }
 
   @Test

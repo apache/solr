@@ -798,10 +798,9 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result = handler.analyzeValues(request, fieldType, "fieldNameUnused");
     // just test that we see "900" in the flags attribute here
-    Object value =
-        result._get(List.of(new String[] {"index", CustomTokenFilter.class.getName()}), null);
     @SuppressWarnings({"unchecked", "rawtypes"})
-    List<NamedList> tokenInfoList = (List<NamedList>) value;
+    List<NamedList> tokenInfoList =
+        (List<NamedList>) result._get(List.of("index", CustomTokenFilter.class.getName()), null);
     // '1' from CustomTokenFilter plus 900 from CustomFlagsAttributeImpl.
     assertEquals(
         901,

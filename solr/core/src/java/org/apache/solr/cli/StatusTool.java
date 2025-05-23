@@ -314,17 +314,12 @@ public class StatusTool extends ToolBase {
 
     String solrHome = (String) info.get("solr_home");
     status.put("solr_home", solrHome != null ? solrHome : "?");
-    Object value4 = info._get(List.of(new String[] {"lucene", "solr-impl-version"}), null);
-    status.put("version", value4);
-    Object value3 = info._get(List.of(new String[] {"jvm", "jmx", "startTime"}), null);
-    status.put("startTime", value3.toString());
-    Object value2 = info._get(List.of(new String[] {"jvm", "jmx", "upTimeMS"}), null);
-    status.put("uptime", SolrCLI.uptime((Long) value2));
+    status.put("version", info._getStr(List.of("lucene", "solr-impl-version"), null));
+    status.put("startTime", info._getStr(List.of("jvm", "jmx", "startTime"), null).toString());
+    status.put("uptime", SolrCLI.uptime((Long) info._get(List.of("jvm", "jmx", "upTimeMS"), null)));
 
-    Object value1 = info._get(List.of(new String[] {"jvm", "memory", "used"}), null);
-    String usedMemory = (String) value1;
-    Object value = info._get(List.of(new String[] {"jvm", "memory", "total"}), null);
-    String totalMemory = (String) value;
+    String usedMemory = info._getStr(List.of("jvm", "memory", "used"), null);
+    String totalMemory =  info._getStr(List.of("jvm", "memory", "total"), null);
     status.put("memory", usedMemory + " of " + totalMemory);
 
     // if this is a Solr in solrcloud mode, gather some basic cluster info
@@ -349,13 +344,11 @@ public class StatusTool extends ToolBase {
     // TODO add booleans to request just what we want; not everything
     NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
 
-    Object value1 = json._get(List.of(new String[] {"cluster", "live_nodes"}), null);
-    List<String> liveNodes = (List<String>) value1;
+    List<String> liveNodes = (List<String>) json._get(List.of("cluster", "live_nodes"), null);
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
     // TODO get this as a metric from the metrics API instead, or something else.
-    Object value = json._get(List.of(new String[] {"cluster", "collections"}), null);
-    var collections = (Map<String, Object>) value;
+    var collections = (Map<String, Object>) json._get(List.of("cluster", "collections"), null);
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

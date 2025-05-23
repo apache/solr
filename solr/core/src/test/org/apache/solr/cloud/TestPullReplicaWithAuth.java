@@ -155,8 +155,8 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   private Object getUpdateHandlerMetric(QueryResponse statsResponse, String metric) {
     NamedList<Object> entries = statsResponse.getResponse();
-    Object value =
-        entries._get(List.of(new String[] {"plugins", "UPDATE", "updateHandler", "stats"}), null);
-    return ((Map<String, Object>) value).get(metric);
+    return ((Map<String, Object>)
+            entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
+        .get(metric);
   }
 }
