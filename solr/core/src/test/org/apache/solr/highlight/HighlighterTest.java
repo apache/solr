@@ -1405,8 +1405,8 @@ public class HighlighterTest extends SolrTestCaseJ4 {
       hlComp.process(rb);
       // inspect response
       NamedList<Object> entries = resp.getValues();
-      Object value = entries._get(List.of(new String[] {"highlighting", "0", FIELD_NAME}), null);
-      final String[] snippets = (String[]) value;
+      final String[] snippets =
+          (String[]) entries._get(List.of("highlighting", "0", FIELD_NAME), null);
       assertEquals("<em>word|7</em> word|2", snippets[0]);
     } finally {
       req.close();

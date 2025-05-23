@@ -226,9 +226,12 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
 
       // flags needs to be called here since only terms response is passed to compare
       // other way is to pass whole response to compare
-      Object value = controlRsp._get(List.of(new String[] {"terms"}), null);
-      Object value1 = rsp._get(List.of(new String[] {"terms"}), null);
-      assertNull(compare(value1, value, flags(handle, "terms"), handle));
+      assertNull(
+          compare(
+              rsp._get(List.of("terms"), null),
+              controlRsp._get(List.of("terms"), null),
+              flags(handle, "terms"),
+              handle));
     }
     return queryResponse;
   }

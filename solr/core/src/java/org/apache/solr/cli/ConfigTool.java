@@ -125,8 +125,7 @@ public class ConfigTool extends ToolBase {
     try (SolrClient solrClient =
         CLIUtils.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
-      Object value1 = result._get(List.of(new String[] {"responseHeader", "status"}), null);
-      Integer statusCode = (Integer) value1;
+      Integer statusCode = (Integer) result._get(List.of("responseHeader", "status"), null);
       if (statusCode == 0) {
         if (value != null) {
           echo("Successfully " + action + " " + property + " to " + value);
