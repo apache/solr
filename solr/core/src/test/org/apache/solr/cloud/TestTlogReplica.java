@@ -288,7 +288,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
             QueryResponse statsResponse = tlogReplicaClient.query(req);
             NamedList<Object> entries = (statsResponse.getResponse());
             Object value =
-                entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null);
+                entries._get(
+                    List.of(new String[] {"plugins", "UPDATE", "updateHandler", "stats"}), null);
             assertEquals(
                 "Append replicas should recive all updates. Replica: "
                     + r

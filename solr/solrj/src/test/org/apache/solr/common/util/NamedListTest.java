@@ -142,36 +142,36 @@ public class NamedListTest extends SolrTestCase {
     nl.add("key3", nl3);
 
     // Simple three-level checks.
-    Object value11 = nl._get(List.of("key2", "key2b", "key2b2"), null);
+    Object value11 = nl._get(List.of(new String[] {"key2", "key2b", "key2b2"}), null);
     String test1 = (String) value11;
     assertEquals("value2b2", test1);
-    Object value10 = nl._get(List.of("key3", "key3a", "key3a3"), null);
+    Object value10 = nl._get(List.of(new String[] {"key3", "key3a", "key3a3"}), null);
     String test2 = (String) value10;
     assertEquals("value3a3", test2);
     // Two-level check.
-    Object value9 = nl._get(List.of("key3", "key3c"), null);
+    Object value9 = nl._get(List.of(new String[] {"key3", "key3c"}), null);
     String test3 = (String) value9;
     assertEquals("value3c", test3);
     // Checking that invalid values return null.
-    Object value8 = nl._get(List.of("key3", "key3c", "invalid"), null);
+    Object value8 = nl._get(List.of(new String[] {"key3", "key3c", "invalid"}), null);
     String test4 = (String) value8;
     assertNull(test4);
-    Object value7 = nl._get(List.of("key3", "invalid", "invalid"), null);
+    Object value7 = nl._get(List.of(new String[] {"key3", "invalid", "invalid"}), null);
     String test5 = (String) value7;
     assertNull(test5);
-    Object value6 = nl._get(List.of("invalid", "key3c"), null);
+    Object value6 = nl._get(List.of(new String[] {"invalid", "key3c"}), null);
     String test6 = (String) value6;
     assertNull(test6);
     // Verify that retrieved NamedList objects have the right type.
-    Object value5 = nl._get(List.of("key2", "key2b"), null);
+    Object value5 = nl._get(List.of(new String[] {"key2", "key2b"}), null);
     Object test7 = value5;
     assertTrue(test7 instanceof NamedList);
     // Integer check.
-    Object value4 = nl._get(List.of("key2", "k2int1"), null);
+    Object value4 = nl._get(List.of(new String[] {"key2", "k2int1"}), null);
     int test8 = (Integer) value4;
     assertEquals(5, test8);
     // Check that a single argument works the same as get(String).
-    Object value3 = nl._get(List.of("key1"), null);
+    Object value3 = nl._get(List.of(new String[] {"key1"}), null);
     String test9 = (String) value3;
     assertEquals("value1", test9);
     // enl == explicit nested list
@@ -190,17 +190,17 @@ public class NamedListTest extends SolrTestCase {
 
     // Tests that are very similar to the test above, just repeated
     // on the explicitly nested object type.
-    Object value2 = enl._get(List.of("key1", "key1a"), null);
+    Object value2 = enl._get(List.of(new String[] {"key1", "key1a"}), null);
     String enltest1 = (String) value2;
     assertEquals("value1a", enltest1);
-    Object value1 = enl._get(List.of("key1", "key1b"), null);
+    Object value1 = enl._get(List.of(new String[] {"key1", "key1b"}), null);
     String enltest2 = (String) value1;
     assertEquals("value1b", enltest2);
     // Verify that when a null value is stored, the standard get method
     // says it is null, then check the recursive method.
     Object enltest3 = enl.get("key2");
     assertNull(enltest3);
-    Object value = enl._get(List.of("key2"), null);
+    Object value = enl._get(List.of(new String[] {"key2"}), null);
     Object enltest4 = value;
     assertNull(enltest4);
   }

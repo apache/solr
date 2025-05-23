@@ -317,7 +317,9 @@ public class TestPullReplica extends SolrCloudTestCase {
           QueryResponse statsResponse = pullReplicaClient.query(req);
           // The adds gauge metric should be null for pull replicas since they don't process adds
           NamedList<Object> entries = (statsResponse.getResponse());
-          Object value = entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null);
+          Object value =
+              entries._get(
+                  List.of(new String[] {"plugins", "UPDATE", "updateHandler", "stats"}), null);
           assertNull(
               "Replicas shouldn't process the add document request: " + statsResponse,
               ((Map<String, Object>) value).get("UPDATE.updateHandler.adds"));

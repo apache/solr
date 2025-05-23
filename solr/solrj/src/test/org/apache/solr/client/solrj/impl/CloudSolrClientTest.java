@@ -613,7 +613,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     } else {
       name = category + "." + (scope != null ? scope : key) + ".requests";
     }
-    Object value = resp._get(List.of("solr-mbeans", category, key, "stats"), null);
+    Object value = resp._get(List.of(new String[] {"solr-mbeans", category, key, "stats"}), null);
     @SuppressWarnings({"unchecked"})
     Map<String, Object> map = (Map<String, Object>) value;
     if (map == null) {

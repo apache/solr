@@ -621,25 +621,27 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     assertNotNull(rsp.getResponse().get(collectionName));
     NamedList<Object> entries5 = rsp.getResponse();
-    Object value5 = entries5._get(List.of(collectionName, "properties"), null);
+    Object value5 = entries5._get(List.of(new String[] {collectionName, "properties"}), null);
     assertNotNull(value5);
     NamedList<Object> entries4 = rsp.getResponse();
-    Object value4 = entries4._get(List.of(collectionName, "properties"), null);
+    Object value4 = entries4._get(List.of(new String[] {collectionName, "properties"}), null);
     final var collPropMap = (Map<String, Object>) value4;
     assertEquals("conf2", collPropMap.get("configName"));
     assertEquals(2L, collPropMap.get("nrtReplicas"));
     assertEquals("0", collPropMap.get("tlogReplicas"));
     assertEquals("0", collPropMap.get("pullReplicas"));
     NamedList<Object> entries3 = rsp.getResponse();
-    Object value3 = entries3._get(List.of(collectionName, "shards"), null);
+    Object value3 = entries3._get(List.of(new String[] {collectionName, "shards"}), null);
     assertEquals(2, ((NamedList<Object>) value3).size());
     NamedList<Object> entries2 = rsp.getResponse();
-    Object value2 = entries2._get(List.of(collectionName, "shards", "shard1", "leader"), null);
+    Object value2 =
+        entries2._get(List.of(new String[] {collectionName, "shards", "shard1", "leader"}), null);
     assertNotNull(value2);
     // Ensure more advanced info is not returned
     NamedList<Object> entries1 = rsp.getResponse();
     Object value1 =
-        entries1._get(List.of(collectionName, "shards", "shard1", "leader", "segInfos"), null);
+        entries1._get(
+            List.of(new String[] {collectionName, "shards", "shard1", "leader", "segInfos"}), null);
     assertNull(value1);
 
     // Returns segment metadata iff requested
@@ -696,7 +698,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
     NamedList<Object> entries = rsp.getResponse();
-    Object value = entries._get(List.of(collectionName, "schemaNonCompliant"), null);
+    Object value = entries._get(List.of(new String[] {collectionName, "schemaNonCompliant"}), null);
     @SuppressWarnings({"unchecked"})
     List<Object> nonCompliant = (List<Object>) value;
     assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
