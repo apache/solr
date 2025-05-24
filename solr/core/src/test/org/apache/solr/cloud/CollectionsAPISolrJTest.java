@@ -620,19 +620,24 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
     assertNotNull(rsp.getResponse().get(collectionName));
-    assertNotNull(rsp.getResponse().findRecursive(collectionName, "properties"));
+    NamedList<Object> entries3 = rsp.getResponse();
+    assertNotNull(entries3._get(List.of(collectionName, "properties"), null));
+    NamedList<Object> entries2 = rsp.getResponse();
     final var collPropMap =
-        (Map<String, Object>) rsp.getResponse().findRecursive(collectionName, "properties");
+        (Map<String, Object>) entries2._get(List.of(collectionName, "properties"), null);
     assertEquals("conf2", collPropMap.get("configName"));
     assertEquals(2L, collPropMap.get("nrtReplicas"));
     assertEquals("0", collPropMap.get("tlogReplicas"));
     assertEquals("0", collPropMap.get("pullReplicas"));
+    NamedList<Object> entries1 = rsp.getResponse();
     assertEquals(
-        2, ((NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards")).size());
-    assertNotNull(rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader"));
+        2, ((NamedList<Object>) entries1._get(List.of(collectionName, "shards"), null)).size());
+    NamedList<Object> entries4 = rsp.getResponse();
+    assertNotNull(entries4._get(List.of(collectionName, "shards", "shard1", "leader"), null));
     // Ensure more advanced info is not returned
+    NamedList<Object> entries5 = rsp.getResponse();
     assertNull(
-        rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos"));
+        entries5._get(List.of(collectionName, "shards", "shard1", "leader", "segInfos"), null));
 
     // Returns segment metadata iff requested
     req = CollectionAdminRequest.collectionStatus(collectionName);
@@ -687,9 +692,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     req.setWithSizeInfo(true);
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
+    NamedList<Object> entries = rsp.getResponse();
     @SuppressWarnings({"unchecked"})
     List<Object> nonCompliant =
-        (List<Object>) rsp.getResponse().findRecursive(collectionName, "schemaNonCompliant");
+        (List<Object>) entries._get(List.of(collectionName, "schemaNonCompliant"), null);
     assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
     assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
     @SuppressWarnings({"unchecked"})

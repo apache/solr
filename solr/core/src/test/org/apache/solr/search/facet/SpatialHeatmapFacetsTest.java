@@ -148,16 +148,13 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
               + FIELD);
       final QueryResponse response = query(params);
       assertEquals(6, getHmObj(response).get("gridLevel")); // same test as above
+      NamedList<Object> entries1 = response.getResponse();
       assertEquals(
-          2,
-          response
-              .getResponse()
-              .findRecursive("facet_counts", "facet_heatmaps", "course", "gridLevel"));
+          2, entries1._get(List.of("facet_counts", "facet_heatmaps", "course", "gridLevel"), null));
+      NamedList<Object> entries = response.getResponse();
       assertTrue(
           ((NamedList<Object>)
-                      response
-                          .getResponse()
-                          .findRecursive("facet_counts", "facet_heatmaps", "course"))
+                      entries._get(List.of("facet_counts", "facet_heatmaps", "course"), null))
                   .indexOf("counts_" + courseFormat, 0)
               >= 0);
     }
@@ -441,11 +438,11 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
                       + " } "
                       + "}"));
       {
-        final NamedList<?> q1Res =
-            (NamedList<?>) response.getResponse().findRecursive("facets", "q1");
+        NamedList<Object> entries1 = response.getResponse();
+        final NamedList<?> q1Res = (NamedList<?>) entries1._get(List.of("facets", "q1"), null);
         assertEquals("1", q1Res.get("count").toString());
-        final NamedList<?> q2Res =
-            (NamedList<?>) response.getResponse().findRecursive("facets", "q2");
+        NamedList<Object> entries = response.getResponse();
+        final NamedList<?> q2Res = (NamedList<?>) entries._get(List.of("facets", "q2"), null);
         assertEquals("1", q2Res.get("count").toString());
         // essentially, these will differ only in the heatmap counts but otherwise will be the same
         assertNotNull(compare(q1Res, q2Res, flags, handle));
@@ -505,14 +502,15 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
 
   private NamedList<?> getHmObj(QueryResponse response) {
     // classic faceting
+    NamedList<Object> entries1 = response.getResponse();
     final NamedList<?> classicResp =
-        (NamedList<?>)
-            response.getResponse().findRecursive("facet_counts", "facet_heatmaps", FIELD);
+        (NamedList<?>) entries1._get(List.of("facet_counts", "facet_heatmaps", FIELD), null);
     if (classicResp != null) {
       return classicResp;
     }
     // JSON Facet
-    return (NamedList<?>) response.getResponse().findRecursive("facets", "f1");
+    NamedList<Object> entries = response.getResponse();
+    return (NamedList<?>) entries._get(List.of("facets", "f1"), null);
   }
 
   @Test
