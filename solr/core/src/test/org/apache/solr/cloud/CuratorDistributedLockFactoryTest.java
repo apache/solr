@@ -24,7 +24,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
 import org.junit.Test;
 
-public class ZkDistributedLockTest extends SolrTestCaseJ4 {
+public class CuratorDistributedLockFactoryTest extends SolrTestCaseJ4 {
 
   private static final String COLLECTION_NAME = "lockColl";
   private final String SHARD_NAME = "lockShard";
@@ -55,13 +55,15 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
               .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
               .build()) {
         DistributedCollectionLockFactory collLockFactory =
-            new ZkDistributedCollectionLockFactory(zkClient, "/lockTestCollectionRoot");
+            new CuratorDistributedCollectionLockFactory(
+                zkClient.getCuratorFramework(), "/lockTestCollectionRoot");
 
         monothreadedCollectionTests(collLockFactory);
         multithreadedCollectionTests(collLockFactory);
 
         DistributedConfigSetLockFactory configSetLockFactory =
-            new ZkDistributedConfigSetLockFactory(zkClient, "/lockTestConfigSetRoot");
+            new CuratorDistributedConfigSetLockFactory(
+                zkClient.getCuratorFramework(), "/lockTestConfigSetRoot");
 
         monothreadedConfigSetTests(configSetLockFactory);
         multithreadedConfigSetTests(configSetLockFactory);
