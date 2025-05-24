@@ -224,7 +224,8 @@ public class IndexFingerprint implements MapSerializable {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof IndexFingerprint other)) return false;
+    if (!(o instanceof IndexFingerprint)) return false;
+    IndexFingerprint other = (IndexFingerprint) o;
     return maxVersionSpecified == other.maxVersionSpecified
         && this.maxVersionEncountered == other.maxVersionEncountered
         && this.maxInHash == other.maxInHash
