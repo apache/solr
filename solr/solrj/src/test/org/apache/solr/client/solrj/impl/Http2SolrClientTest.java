@@ -661,32 +661,37 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient oldClient =
         new Http2SolrClient.Builder(url)
             .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
-            .withIdleTimeout(5, TimeUnit.SECONDS)
+            .withIdleTimeout(100, TimeUnit.MILLISECONDS)
             .build()) {
+
       try (Http2SolrClient onlyBaseUrlChangedClient =
           new Http2SolrClient.Builder(url).withHttpClient(oldClient).build()) {
         assertEquals(oldClient.getIdleTimeout(), onlyBaseUrlChangedClient.getIdleTimeout());
         assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
       }
+
+      // too little time to succeed
       QueryRequest req = new QueryRequest();
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-      int newIdleTimeoutMs = 100;
+      assertExceptionThrownWithMessageContaining(
+              SolrServerException.class,
+              List.of("Timeout"),
+              () -> oldClient.request(req));
+
+      int newIdleTimeoutMs = 5*1000; // enough time to succeed
       try (Http2SolrClient idleTimeoutChangedClient =
           new Http2SolrClient.Builder(url)
               .withHttpClient(oldClient)
               .withIdleTimeout(newIdleTimeoutMs, TimeUnit.MILLISECONDS)
               .build()) {
-        assertFalse(oldClient.getIdleTimeout() == idleTimeoutChangedClient.getIdleTimeout());
+        assertNotEquals(oldClient.getIdleTimeout(), idleTimeoutChangedClient.getIdleTimeout());
         assertEquals(newIdleTimeoutMs, idleTimeoutChangedClient.getIdleTimeout());
-        assertExceptionThrownWithMessageContaining(
-            SolrServerException.class,
-            List.of("Timeout"),
-            () -> idleTimeoutChangedClient.request(req));
+        NamedList<Object> response = idleTimeoutChangedClient.request(req);
+        try (InputStream is = (InputStream) response.get("stream")) {
+          assertEquals("0123456789", new String(is.readAllBytes()));
+        }
       }
-      NamedList<Object> response = oldClient.request(req);
-      try (InputStream is = (InputStream) response.get("stream")) {
-        assertEquals("0123456789", new String(is.readAllBytes()));
-      }
+
     }
   }
 
