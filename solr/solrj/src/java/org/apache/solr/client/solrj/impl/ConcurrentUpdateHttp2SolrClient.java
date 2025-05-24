@@ -256,7 +256,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             }
 
             Response response =
-                responseListener.get(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
+                responseListener.get(client.getRequestTimeoutMillis(), TimeUnit.MILLISECONDS);
             rspBody = responseListener.getInputStream();
 
             int statusCode = response.getStatus();
