@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,7 +52,7 @@ public class CircuitBreakerRegistry implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<SolrRequestType, List<CircuitBreaker>> circuitBreakerMap = new HashMap<>();
   private static final Map<SolrRequestType, List<CircuitBreaker>> globalCircuitBreakerMap =
-      new HashMap<>();
+      new ConcurrentHashMap<>();
   private static final Pattern SYSPROP_REGEX =
       Pattern.compile("solr.circuitbreaker\\.(update|query)\\.(cpu|mem|loadavg)");
   public static final String SYSPROP_PREFIX = "solr.circuitbreaker.";

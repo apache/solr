@@ -69,6 +69,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
@@ -382,6 +383,9 @@ public class SolrConfig implements MapSerializable {
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
       addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
+      if (addHttpRequestToContext) {
+        DeprecationLog.log("addHttpRequestToContext", "addHttpRequestToContext is deprecated");
+      }
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -818,6 +822,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final String commitPollInterval;
     public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
@@ -833,7 +838,8 @@ public class SolrConfig implements MapSerializable {
         boolean openSearcher,
         int autoSoftCommmitMaxDocs,
         int autoSoftCommmitMaxTime,
-        boolean commitWithinSoftCommit) {
+        boolean commitWithinSoftCommit,
+        String commitPollInterval) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
@@ -844,6 +850,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.commitPollInterval = commitPollInterval;
       this.aggregateNodeLevelMetricsEnabled = false;
     }
 
@@ -859,6 +866,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
       this.commitWithinSoftCommit =
           updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.commitPollInterval = updateHandler.get("commitPollInterval").txt();
       this.aggregateNodeLevelMetricsEnabled =
           updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
@@ -875,6 +883,7 @@ public class SolrConfig implements MapSerializable {
       map.put(
           "autoSoftCommit",
           Map.of("maxDocs", autoSoftCommmitMaxDocs, "maxTime", autoSoftCommmitMaxTime));
+      map.put("commitPollInterval", commitPollInterval);
       return map;
     }
   }

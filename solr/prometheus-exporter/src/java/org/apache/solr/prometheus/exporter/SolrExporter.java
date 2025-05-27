@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -32,10 +33,12 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
@@ -49,9 +52,8 @@ public class SolrExporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int DEFAULT_PORT = 8989;
-  private static final String DEFAULT_BASE_URL = "http://localhost:8983/solr";
+  private static final String DEFAULT_BASE_URL = getDefaultSolrUrl();
   private static final String DEFAULT_ZK_HOST = "";
-  private static final String DEFAULT_CLUSTER_ID = "";
   private static final String DEFAULT_CONFIG = "solr-exporter-config.xml";
   private static final int DEFAULT_SCRAPE_INTERVAL = 60;
   private static final Integer DEFAULT_NUM_THREADS = 1;
@@ -105,7 +107,9 @@ public class SolrExporter {
   }
 
   void stop() {
-    httpServer.stop();
+    if (httpServer != null) {
+      httpServer.stop();
+    }
 
     metricsCollector.removeObserver(prometheusCollector);
 
@@ -153,7 +157,9 @@ public class SolrExporter {
             .argName("BASE_URL")
             .type(String.class)
             .desc(
-                "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.")
+                "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to "
+                    + DEFAULT_BASE_URL
+                    + ".")
             .build();
     mainOptions.addOption(baseUrlOption);
 
@@ -327,7 +333,9 @@ public class SolrExporter {
             .argName("ZK_HOST")
             .type(String.class)
             .desc(
-                "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'localhost:2181/solr'.")
+                "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -b parameter and the -z parameter, connect to "
+                    + DEFAULT_BASE_URL
+                    + ".")
             .build();
     mainOptions.addOption(zkHostOption);
 
@@ -346,9 +354,8 @@ public class SolrExporter {
         return;
       }
 
-      SolrScrapeConfiguration scrapeConfiguration = null;
-
-      String defaultClusterId = "";
+      final SolrScrapeConfiguration scrapeConfiguration;
+      final String defaultClusterId;
       if (commandLine.hasOption(zkHostOption)) {
         String zkHost = commandLine.getOptionValue(zkHostOption, DEFAULT_ZK_HOST);
         defaultClusterId = makeShortHash(zkHost);
@@ -361,17 +368,21 @@ public class SolrExporter {
                 : commandLine.getOptionValue(baseUrlDepOption, DEFAULT_BASE_URL);
         defaultClusterId = makeShortHash(baseUrl);
         scrapeConfiguration = SolrScrapeConfiguration.standalone(baseUrl);
-      }
-
-      if (scrapeConfiguration == null) {
-        log.error(
-            "Must provide either --{} or --{}",
-            baseUrlOption.getLongOpt(),
-            zkHostOption.getLongOpt());
+      } else {
+        String baseUrl = DEFAULT_BASE_URL;
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Neither --{} or --{} parameters provided so assuming solr url is {}",
+              baseUrlOption.getLongOpt(),
+              zkHostOption.getLongOpt(),
+              baseUrl);
+        }
+        defaultClusterId = makeShortHash(baseUrl);
+        scrapeConfiguration = SolrScrapeConfiguration.standalone(baseUrl);
       }
 
       int port = commandLine.getParsedOptionValue(portOption, DEFAULT_PORT);
-      String clusterId = commandLine.getOptionValue(clusterIdOption, DEFAULT_CLUSTER_ID);
+      String clusterId = commandLine.getOptionValue(clusterIdOption, defaultClusterId);
       if (commandLine.hasOption("i")) {
         clusterId = commandLine.getOptionValue("i");
       }
@@ -433,9 +444,9 @@ public class SolrExporter {
           clusterId,
           scrapeConfiguration);
     } catch (IOException e) {
-      log.error("Failed to start Solr Prometheus Exporter: ", e);
+      exit(1, "Failed to start Solr Prometheus Exporter: " + e.getMessage());
     } catch (ParseException e) {
-      log.error("Failed to parse command line arguments: ", e);
+      exit(1, "Failed to parse command line arguments: " + e.getMessage());
     }
   }
 
@@ -460,5 +471,25 @@ public class SolrExporter {
 
   private static String getSystemVariable(String name) {
     return System.getProperty(name, System.getenv(name));
+  }
+
+  @SuppressForbidden(reason = "For use in command line tools only")
+  public static void exit(int exitStatus, String message) {
+    System.err.println(message);
+    try {
+      System.exit(exitStatus);
+    } catch (java.lang.SecurityException secExc) {
+      if (exitStatus != 0)
+        throw new RuntimeException("SolrExporter failed to exit with status " + exitStatus);
+    }
+  }
+
+  // copied over from CLIUtils
+  private static String getDefaultSolrUrl() {
+    // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
+    String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
+    String host = EnvUtils.getProperty("solr.tool.host", "localhost");
+    String port = EnvUtils.getProperty("jetty.port", "8983"); // from SOLR_PORT env
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 }

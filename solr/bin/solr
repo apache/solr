@@ -304,6 +304,11 @@ else
 fi
 export SOLR_URL_SCHEME
 
+# Gracefully wait for existing requests on shutdown
+if [ "${SOLR_JETTY_GRACEFUL:-true}" == "true" ]; then
+  SOLR_JETTY_CONFIG+=("--module=graceful")
+fi
+
 # Requestlog options
 if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
