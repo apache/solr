@@ -60,7 +60,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -514,7 +513,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     // XML response and writer
     try (HttpSolrClient client =
         new HttpSolrClient.Builder(getBaseUrl())
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
       UpdateRequest req = new UpdateRequest();
@@ -541,8 +540,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     // javabin request
     try (HttpSolrClient client =
         new HttpSolrClient.Builder(getBaseUrl())
-            .withRequestWriter(new BinaryRequestWriter())
-            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
             .build()) {
       UpdateRequest req = new UpdateRequest();
       req.add(new SolrInputDocument());

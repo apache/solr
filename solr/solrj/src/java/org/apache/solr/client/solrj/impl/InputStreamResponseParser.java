@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.InputStream;
-import java.io.Reader;
+import java.util.Set;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -44,13 +44,13 @@ public class InputStreamResponseParser extends ResponseParser {
   }
 
   @Override
-  public NamedList<Object> processResponse(Reader reader) {
+  public NamedList<Object> processResponse(InputStream body, String encoding) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public NamedList<Object> processResponse(InputStream body, String encoding) {
-    throw new UnsupportedOperationException();
+  public Set<String> getContentTypes() {
+    return Set.of(); // don't enforce
   }
 
   public static NamedList<Object> createInputStreamNamedList(

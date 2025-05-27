@@ -43,8 +43,6 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |DoublePointField |Double field (64-bit IEEE floating point). This class encodes double values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|ExternalFileField |Pulls values from a file on disk. See the section xref:external-files-processes.adoc[] for more information.
-
 |EnumFieldType |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section xref:enum-fields.adoc[] for more information.
 
 |FloatPointField |Floating point field (32-bit IEEE floating point). This class encodes float values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
@@ -94,8 +92,6 @@ This shortcoming may be addressed in a future release.
 [cols="25,75",options="header"]
 |===
 |Class |Description
-
-|CurrencyField |Use CurrencyFieldType instead.
 
 |EnumField |Use EnumFieldType instead.
 

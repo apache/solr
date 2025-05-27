@@ -225,7 +225,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
    * the current schema from ZooKeeper.
    */
   @Override
-  public void command() {
+  public void onReconnect() {
     try {
       // setup a new watcher to get notified when the managed schema changes
       schemaWatcher = createSchemaWatcher();

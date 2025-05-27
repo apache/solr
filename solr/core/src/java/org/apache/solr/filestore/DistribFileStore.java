@@ -31,7 +31,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Date;
@@ -76,7 +75,7 @@ public class DistribFileStore implements FileStore {
 
   public DistribFileStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    this.solrHome = Paths.get(this.coreContainer.getSolrHome());
+    this.solrHome = this.coreContainer.getSolrHome();
   }
 
   @Override
@@ -240,7 +239,7 @@ public class DistribFileStore implements FileStore {
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
           final var metadataRequest = new FileStoreApi.GetMetadata(path);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
-          final var metadataResponse = metadataRequest.process(client).getParsed();
+          final var metadataResponse = metadataRequest.process(client);
           boolean nodeHasBlob =
               metadataResponse.files != null && metadataResponse.files.containsKey(path);
 
@@ -388,7 +387,7 @@ public class DistribFileStore implements FileStore {
           pullFileRequest.setGetFrom(nodeToFetchFrom);
           final var client = coreContainer.getSolrClientCache().getHttpSolrClient(baseUrl);
           // fire and forget
-          pullFileRequest.process(client).getParsed();
+          pullFileRequest.process(client);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception

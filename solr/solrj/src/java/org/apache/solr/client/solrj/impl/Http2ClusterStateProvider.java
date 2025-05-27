@@ -29,7 +29,7 @@ public class Http2ClusterStateProvider extends BaseHttpClusterStateProvider {
       throws Exception {
     this.httpClient = httpClient == null ? new Http2SolrClient.Builder().build() : httpClient;
     this.closeClient = httpClient == null;
-    init(solrUrls);
+    initConfiguredNodes(solrUrls);
   }
 
   @Override

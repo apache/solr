@@ -30,7 +30,7 @@ import org.junit.Test;
 public class LBHttpSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_BASE_SOLR_URL = "ANY_BASE_SOLR_URL";
   private static final HttpClient ANY_HTTP_CLIENT = HttpClientBuilder.create().build();
-  private static final ResponseParser ANY_RESPONSE_PARSER = new NoOpResponseParser();
+  private static final ResponseParser ANY_RESPONSE_PARSER = new NoOpResponseParser("xml");
 
   @Test
   public void providesHttpClientToClient() {
@@ -57,7 +57,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
         new Builder().withBaseEndpoint(ANY_BASE_SOLR_URL).build()) {
       final ResponseParser usedParser = createdClient.getParser();
 
-      assertTrue(usedParser instanceof BinaryResponseParser);
+      assertTrue(usedParser instanceof JavaBinResponseParser);
     }
   }
 

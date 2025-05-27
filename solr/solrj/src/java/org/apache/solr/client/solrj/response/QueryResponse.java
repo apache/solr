@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.common.SolrDocumentList;
@@ -102,21 +101,10 @@ public class QueryResponse extends SolrResponseBase {
   private Map<String, Object> _debugMap = null;
   private Map<String, Object> _explainMap = null;
 
-  // utility variable used for automatic binding -- it should not be serialized
-  private final transient SolrClient solrClient;
+  public QueryResponse() {}
 
-  public QueryResponse() {
-    solrClient = null;
-  }
-
-  /** Utility constructor to set the solrServer and namedList */
-  public QueryResponse(NamedList<Object> res, SolrClient solrClient) {
+  public QueryResponse(NamedList<Object> res) {
     this.setResponse(res);
-    this.solrClient = solrClient;
-  }
-
-  public QueryResponse(SolrClient solrClient) {
-    this.solrClient = solrClient;
   }
 
   @Override
@@ -125,58 +113,62 @@ public class QueryResponse extends SolrResponseBase {
     super.setResponse(res);
 
     // Look for known things
-    for (int i = 0; i < res.size(); i++) {
-      String n = res.getName(i);
-      if ("responseHeader".equals(n)) {
-        _header = (NamedList<Object>) res.getVal(i);
-      } else if ("response".equals(n)) {
-        _results = (SolrDocumentList) res.getVal(i);
-      } else if ("sort_values".equals(n)) {
-        _sortvalues = (NamedList<ArrayList>) res.getVal(i);
-      } else if ("facet_counts".equals(n)) {
-        _facetInfo = (NamedList<Object>) res.getVal(i);
-        // extractFacetInfo inspects _results, so defer calling it
-        // in case it hasn't been populated yet.
-      } else if ("debug".equals(n)) {
-        _debugInfo = (NamedList<Object>) res.getVal(i);
-        extractDebugInfo(_debugInfo);
-      } else if ("grouped".equals(n)) {
-        _groupedInfo = (NamedList<Object>) res.getVal(i);
-        extractGroupedInfo(_groupedInfo);
-      } else if ("expanded".equals(n)) {
-        NamedList map = (NamedList) res.getVal(i);
-        _expandedResults = map.asMap(1);
-      } else if ("highlighting".equals(n)) {
-        _highlightingInfo = (NamedList<Object>) res.getVal(i);
-        extractHighlightingInfo(_highlightingInfo);
-      } else if ("spellcheck".equals(n)) {
-        _spellInfo = (NamedList<Object>) res.getVal(i);
-        extractSpellCheckInfo(_spellInfo);
-      } else if ("clusters".equals(n)) {
-        _clusterInfo = (ArrayList<NamedList<Object>>) res.getVal(i);
-        extractClusteringInfo(_clusterInfo);
-      } else if ("facets".equals(n)) {
-        _jsonFacetingInfo = (NamedList<Object>) res.getVal(i);
-        // Don't call extractJsonFacetingInfo(_jsonFacetingInfo) here in an effort to do it lazily
-      } else if ("suggest".equals(n)) {
-        _suggestInfo = (NamedList<NamedList<Object>>) res.getVal(i);
-        extractSuggesterInfo(_suggestInfo);
-      } else if ("stats".equals(n)) {
-        _statsInfo = (NamedList<Object>) res.getVal(i);
-        extractStatsInfo(_statsInfo);
-      } else if ("terms".equals(n)) {
-        _termsInfo = (NamedList<NamedList<Object>>) res.getVal(i);
-        extractTermsInfo(_termsInfo);
-      } else if ("moreLikeThis".equals(n)) {
-        _moreLikeThisInfo = (NamedList<SolrDocumentList>) res.getVal(i);
-      } else if ("taskList".equals(n)) {
-        _tasksInfo = (NamedList<String>) res.getVal(i);
-      } else if ("cancellationResult".equals(n)) {
-        _cancellationInfo = (String) res.getVal(i);
-      } else if ("taskResult".equals(n)) {
-        _taskStatusCheckInfo = (String) res.getVal(i);
-      } else if (CursorMarkParams.CURSOR_MARK_NEXT.equals(n)) {
-        _cursorMarkNext = (String) res.getVal(i);
+    for (Map.Entry<String, Object> resEntry : res) {
+      String n = resEntry.getKey();
+      Object val = resEntry.getValue();
+
+      switch (n) {
+        case "responseHeader" -> _header = (NamedList<Object>) val;
+        case "response" -> _results = (SolrDocumentList) val;
+        case "sort_values" -> _sortvalues = (NamedList<ArrayList>) val;
+        case "facet_counts" -> _facetInfo = (NamedList<Object>) val;
+
+          // extractFacetInfo inspects _results, so defer calling it
+          // in case it hasn't been populated yet.
+        case "debug" -> {
+          _debugInfo = (NamedList<Object>) val;
+          extractDebugInfo(_debugInfo);
+        }
+        case "grouped" -> {
+          _groupedInfo = (NamedList<Object>) val;
+          extractGroupedInfo(_groupedInfo);
+        }
+        case "expanded" -> {
+          NamedList map = (NamedList) val;
+          _expandedResults = map.asMap(1);
+        }
+        case "highlighting" -> {
+          _highlightingInfo = (NamedList<Object>) val;
+          extractHighlightingInfo(_highlightingInfo);
+        }
+        case "spellcheck" -> {
+          _spellInfo = (NamedList<Object>) val;
+          extractSpellCheckInfo(_spellInfo);
+        }
+        case "clusters" -> {
+          _clusterInfo = (ArrayList<NamedList<Object>>) val;
+          extractClusteringInfo(_clusterInfo);
+        }
+        case "facets" -> _jsonFacetingInfo = (NamedList<Object>) val;
+
+          // Don't call extractJsonFacetingInfo(_jsonFacetingInfo) here in an effort to do it lazily
+        case "suggest" -> {
+          _suggestInfo = (NamedList<NamedList<Object>>) val;
+          extractSuggesterInfo(_suggestInfo);
+        }
+        case "stats" -> {
+          _statsInfo = (NamedList<Object>) val;
+          extractStatsInfo(_statsInfo);
+        }
+        case "terms" -> {
+          _termsInfo = (NamedList<NamedList<Object>>) val;
+          extractTermsInfo(_termsInfo);
+        }
+        case "moreLikeThis" -> _moreLikeThisInfo = (NamedList<SolrDocumentList>) val;
+        case "taskList" -> _tasksInfo = (NamedList<String>) val;
+        case "cancellationResult" -> _cancellationInfo = (String) val;
+        case "taskResult" -> _taskStatusCheckInfo = (String) val;
+        case CursorMarkParams.CURSOR_MARK_NEXT -> _cursorMarkNext = (String) val;
       }
     }
     if (_facetInfo != null) extractFacetInfo(_facetInfo);
@@ -243,11 +235,9 @@ public class QueryResponse extends SolrResponseBase {
   private void extractGroupedInfo(NamedList<Object> info) {
     if (info != null) {
       _groupResponse = new GroupResponse();
-      int size = info.size();
-      for (int i = 0; i < size; i++) {
-        String fieldName = info.getName(i);
-        Object fieldGroups = info.getVal(i);
-        SimpleOrderedMap<Object> simpleOrderedMap = (SimpleOrderedMap<Object>) fieldGroups;
+      for (Map.Entry<String, Object> infoEntry : info) {
+        String fieldName = infoEntry.getKey();
+        SimpleOrderedMap<Object> simpleOrderedMap = (SimpleOrderedMap<Object>) infoEntry.getValue();
 
         Object oMatches = simpleOrderedMap.get("matches");
         Object oNGroups = simpleOrderedMap.get("ngroups");
@@ -348,12 +338,10 @@ public class QueryResponse extends SolrResponseBase {
     }
 
     // Parse pivot facets
-    NamedList pf = (NamedList) info.get("facet_pivot");
+    var pf = (NamedList<List<NamedList>>) info.get("facet_pivot");
     if (pf != null) {
       _facetPivot = new NamedList<>();
-      for (int i = 0; i < pf.size(); i++) {
-        _facetPivot.add(pf.getName(i), readPivots((List<NamedList>) pf.getVal(i)));
-      }
+      pf.forEach((name, pivot) -> _facetPivot.add(name, readPivots(pivot)));
     }
 
     // Parse interval facets
@@ -427,64 +415,53 @@ public class QueryResponse extends SolrResponseBase {
   protected List<PivotField> readPivots(List<NamedList> list) {
     ArrayList<PivotField> values = new ArrayList<>(list.size());
     for (NamedList nl : list) {
-      // NOTE, this is cheating, but we know the order they are written in, so no need to check
-      assert "field".equals(nl.getName(0));
-      String f = (String) nl.getVal(0);
-      assert "value".equals(nl.getName(1));
-      Object v = nl.getVal(1);
-      assert "count".equals(nl.getName(2));
-      int cnt = ((Integer) nl.getVal(2)).intValue();
-
+      // Required fields:
+      String field = null;
+      Object value = null;
+      int count = -1;
+      // Optional fields:
       List<PivotField> subPivots = null;
       Map<String, FieldStatsInfo> fieldStatsInfos = null;
       Map<String, Integer> queryCounts = null;
       List<RangeFacet> ranges = null;
 
-      if (4 <= nl.size()) {
-        for (int index = 3; index < nl.size(); index++) {
-          final String key = nl.getName(index);
-          final Object val = nl.getVal(index);
-          switch (key) {
-            case "pivot":
-              {
-                assert null != val : "Server sent back 'null' for sub pivots?";
-                assert val instanceof List : "Server sent non-List for sub pivots?";
+      // Process all entries with a single approach
+      for (Map.Entry<String, ?> entry : (Iterable<Map.Entry<String, ?>>) nl) {
+        final String key = entry.getKey();
+        final Object val = entry.getValue();
 
-                subPivots = readPivots((List<NamedList>) val);
-                break;
-              }
-            case "stats":
-              {
-                assert null != val : "Server sent back 'null' for stats?";
-                assert val instanceof NamedList : "Server sent non-NamedList for stats?";
-
-                fieldStatsInfos = extractFieldStatsInfo((NamedList<Object>) val);
-                break;
-              }
-            case "queries":
-              {
-                // Parse the queries
-                queryCounts = new LinkedHashMap<>();
-                NamedList<Integer> fq = (NamedList<Integer>) val;
-                if (fq != null) {
-                  for (Map.Entry<String, Integer> entry : fq) {
-                    queryCounts.put(entry.getKey(), entry.getValue());
-                  }
-                }
-                break;
-              }
-            case "ranges":
-              {
-                ranges = extractRangeFacets((NamedList<NamedList<Object>>) val);
-                break;
-              }
-            default:
-              throw new RuntimeException("unknown key in pivot: " + key + " [" + val + "]");
+        switch (key) {
+          case "field" -> field = (String) val;
+          case "value" -> value = val;
+          case "count" -> count = ((Integer) val).intValue();
+          case "pivot" -> {
+            assert null != val : "Server sent back 'null' for sub pivots?";
+            assert val instanceof List : "Server sent non-List for sub pivots?";
+            subPivots = readPivots((List<NamedList>) val);
           }
+          case "stats" -> {
+            assert null != val : "Server sent back 'null' for stats?";
+            assert val instanceof NamedList : "Server sent non-NamedList for stats?";
+            fieldStatsInfos = extractFieldStatsInfo((NamedList<Object>) val);
+          }
+          case "queries" -> {
+            // Parse the queries
+            queryCounts = new LinkedHashMap<>();
+            NamedList<Integer> fq = (NamedList<Integer>) val;
+            if (fq != null) {
+              for (Map.Entry<String, Integer> e : fq) {
+                queryCounts.put(e.getKey(), e.getValue());
+              }
+            }
+          }
+          case "ranges" -> ranges = extractRangeFacets((NamedList<NamedList<Object>>) val);
+          default -> throw new RuntimeException("unknown key in pivot: " + key + " [" + val + "]");
         }
       }
 
-      values.add(new PivotField(f, v, cnt, subPivots, fieldStatsInfos, queryCounts, ranges));
+      // Create and add the PivotField with all gathered information
+      values.add(
+          new PivotField(field, value, count, subPivots, fieldStatsInfos, queryCounts, ranges));
     }
     return values;
   }
@@ -643,9 +620,7 @@ public class QueryResponse extends SolrResponseBase {
   }
 
   public <T> List<T> getBeans(Class<T> type) {
-    return solrClient == null
-        ? new DocumentObjectBinder().getBeans(type, _results)
-        : solrClient.getBinder().getBeans(type, _results);
+    return DocumentObjectBinder.INSTANCE.getBeans(type, _results);
   }
 
   public Map<String, FieldStatsInfo> getFieldStatsInfo() {
