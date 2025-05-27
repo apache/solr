@@ -315,11 +315,11 @@ public class StatusTool extends ToolBase {
     String solrHome = (String) info.get("solr_home");
     status.put("solr_home", solrHome != null ? solrHome : "?");
     status.put("version", info._getStr(List.of("lucene", "solr-impl-version"), null));
-    status.put("startTime", info._getStr(List.of("jvm", "jmx", "startTime"), null).toString());
+    status.put("startTime", info._getStr(List.of("jvm", "jmx", "startTime"), null));
     status.put("uptime", SolrCLI.uptime((Long) info._get(List.of("jvm", "jmx", "upTimeMS"), null)));
 
     String usedMemory = info._getStr(List.of("jvm", "memory", "used"), null);
-    String totalMemory =  info._getStr(List.of("jvm", "memory", "total"), null);
+    String totalMemory = info._getStr(List.of("jvm", "memory", "total"), null);
     status.put("memory", usedMemory + " of " + totalMemory);
 
     // if this is a Solr in solrcloud mode, gather some basic cluster info
