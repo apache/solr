@@ -32,6 +32,7 @@ dependencies {
   implementation libs.amazon.awssdk.awscore
   implementation libs.amazon.awssdk.regions
   implementation libs.amazon.awssdk.httpclient.spi
+  implementation libs.amazon.awssdk.retries.spi
   implementation(libs.amazon.awssdk.s3) {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }

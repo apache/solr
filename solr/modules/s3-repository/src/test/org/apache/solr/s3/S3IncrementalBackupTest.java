@@ -88,6 +88,19 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   public static void setupClass() throws Exception {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
+    String retryMode;
+    switch (random().nextInt(3)) {
+      case 0:
+        retryMode = "legacy";
+        break;
+      case 1:
+        retryMode = "standard";
+        break;
+      default:
+        retryMode = "adaptive";
+        break;
+    }
+    System.setProperty("aws.retryMode", retryMode);
 
     AbstractS3ClientTest.setS3ConfFile();
 

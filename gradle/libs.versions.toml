@@ -225,6 +225,7 @@ amazon-awssdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "amaz
 amazon-awssdk-httpclient-spi = { module = "software.amazon.awssdk:http-client-spi", version.ref = "amazon-awssdk" }
 amazon-awssdk-profiles = { module = "software.amazon.awssdk:profiles", version.ref = "amazon-awssdk" }
 amazon-awssdk-regions = { module = "software.amazon.awssdk:regions", version.ref = "amazon-awssdk" }
+amazon-awssdk-retries-spi = { module = "software.amazon.awssdk:retries-spi", version.ref = "amazon-awssdk" }
 amazon-awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "amazon-awssdk" }
 amazon-awssdk-sdkcore = { module = "software.amazon.awssdk:sdk-core", version.ref = "amazon-awssdk" }
 amazon-awssdk-sts = { module = "software.amazon.awssdk:sts", version.ref = "amazon-awssdk" }
