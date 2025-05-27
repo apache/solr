@@ -58,7 +58,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetBlobInfoAPI;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.admin.api.UploadBlobAPI;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
@@ -330,7 +329,7 @@ public class BlobHandler extends RequestHandlerBase
   // works OK for real-time get (which is all that BlobHandler uses it for).
   private static void forward(
       SolrQueryRequest req, String handler, SolrParams params, SolrQueryResponse rsp) {
-    LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), params);
+    SolrQueryRequest r = req.subRequest(params);
     SolrRequestInfo.getRequestInfo().addCloseHook(r); // Close as late as possible...
     req.getCore().getRequestHandler(handler).handleRequest(r, rsp);
   }

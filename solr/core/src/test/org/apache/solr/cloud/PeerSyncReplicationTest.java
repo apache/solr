@@ -152,7 +152,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
       log.info("Updating mappings from zk");
-      waitForNewLeader(cloudClient, "shard1", (Replica) initialLeaderJetty.client.info);
+      waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
       updateMappingsFromZk(jettys, clients, true);
       assertEquals(
           "PeerSynced node did not become leader",

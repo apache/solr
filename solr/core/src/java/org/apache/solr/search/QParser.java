@@ -21,6 +21,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -30,6 +34,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.ValueSourceParser.LongConstValueSource;
 
 /**
  * <b>Note: This API is experimental and may change in non backward-compatible ways in the
@@ -322,6 +327,23 @@ public abstract class QParser {
     }
 
     return getReq().getCore().getSolrConfig().prefixQueryMinPrefixLength;
+  }
+
+  /**
+   * Parse the string into a {@link ValueSource} <em>instead of a {@link Query}</em>. Solr calls
+   * this in most places that "function queries" go. Overridden by {@link FunctionQParser}.
+   */
+  public ValueSource parseAsValueSource() throws SyntaxError {
+    Query q = getQuery();
+    if (q == null) {
+      return new LongConstValueSource(0);
+    } else if (q instanceof FunctionQuery) {
+      return ((FunctionQuery) q).getValueSource();
+    } else if (q instanceof FunctionScoreQuery) {
+      return ValueSource.fromDoubleValuesSource(((FunctionScoreQuery) q).getSource());
+    } else {
+      return new QueryValueSource(q, 0.0f);
+    }
   }
 
   /**

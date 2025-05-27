@@ -2111,7 +2111,8 @@ public class ZkController implements Closeable {
 
   /** Attempts to cancel all leader elections. This method should be called on node shutdown. */
   public void tryCancelAllElections() {
-    if (zkClient.isClosed()) {
+    if (!zkClient.isConnected()) {
+      log.warn("Skipping leader election node cleanup since we're disconnected from ZooKeeper.");
       return;
     }
     Collection<ElectionContext> values = electionContexts.values();

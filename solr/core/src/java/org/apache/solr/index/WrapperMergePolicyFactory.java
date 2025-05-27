@@ -38,7 +38,7 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
   protected WrapperMergePolicyFactory(
       SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
-    wrappedMergePolicyArgs = filterWrappedMergePolicyFactoryArgs();
+    wrappedMergePolicyArgs = filterWrappedMergePolicyFactoryArgs(WRAPPED_PREFIX);
     if (wrappedMergePolicyArgs == null) {
       wrappedMergePolicyClassName = null;
     } else {
@@ -108,8 +108,8 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
    * Returns a {@link MergePolicyFactoryArgs} for the wrapped {@link MergePolicyFactory}. This
    * method also removes all args from this instance's args.
    */
-  private MergePolicyFactoryArgs filterWrappedMergePolicyFactoryArgs() {
-    final String wrappedPolicyPrefix = (String) args.remove(WRAPPED_PREFIX);
+  protected MergePolicyFactoryArgs filterWrappedMergePolicyFactoryArgs(String wrappedPrefix) {
+    final String wrappedPolicyPrefix = (String) args.remove(wrappedPrefix);
     if (wrappedPolicyPrefix == null) {
       return null;
     }

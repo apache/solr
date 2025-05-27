@@ -41,7 +41,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -155,12 +154,11 @@ public class HealthcheckTool extends ToolBase {
         String replicaStatus;
         long numDocs = -1L;
 
-        ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(r);
-        String coreUrl = replicaCoreProps.getCoreUrl();
+        String coreUrl = r.getCoreUrl();
         boolean isLeader = coreUrl.equals(leaderUrl);
 
         // if replica's node is not live, its status is DOWN
-        String nodeName = replicaCoreProps.getNodeName();
+        String nodeName = r.getNodeName();
         if (nodeName == null || !liveNodes.contains(nodeName)) {
           replicaStatus = Replica.State.DOWN.toString();
         } else {
@@ -178,7 +176,7 @@ public class HealthcheckTool extends ToolBase {
                   .build()) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
-            try (var solrClient = SolrCLI.getSolrClient(replicaCoreProps.getBaseUrl())) {
+            try (var solrClient = SolrCLI.getSolrClient(r.getBaseUrl())) {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(
@@ -190,7 +188,7 @@ public class HealthcheckTool extends ToolBase {
             }
 
             // if we get here, we can trust the state
-            replicaStatus = replicaCoreProps.getState();
+            replicaStatus = String.valueOf(r.getState());
           } catch (Exception exc) {
             log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
 

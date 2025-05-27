@@ -73,7 +73,6 @@ import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -164,7 +163,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     public String url;
 
     public CloudSolrServerClient client;
-    public ZkNodeProps info;
+    public Replica info;
 
     @Override
     public int hashCode() {
@@ -190,9 +189,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   public static class CloudSolrServerClient {
     SolrClient solrClient;
-    String shardName;
+    String nodeName;
     int port;
-    public ZkNodeProps info;
 
     public CloudSolrServerClient() {}
 
@@ -939,8 +937,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.solrClient = client;
             csc.port = port;
-            csc.shardName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
-            csc.info = replica;
+            csc.nodeName = replica.getNodeName();
 
             theClients.add(csc);
 
@@ -1137,12 +1134,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     controlClient.add(doc);
   }
 
-  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) throws IOException {
+  protected Replica getLeaderFromZk(String collection, String slice) {
     getCommonCloudSolrClient();
     ClusterState clusterState = cloudClient.getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null && docCollection.getLeader(slice) != null) {
-      return new ZkCoreNodeProps(docCollection.getLeader(slice));
+      return docCollection.getLeader(slice);
     }
     throw new RuntimeException("Could not find leader:" + collection + " " + slice);
   }
@@ -1474,10 +1471,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     assertNotNull("no jetties found for shard: " + shard, solrJetties);
 
     for (CloudJettyRunner cjetty : solrJetties) {
-      ZkNodeProps props = cjetty.info;
-      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
-      boolean active =
-          Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
+      Replica replica = cjetty.info;
+      String nodeName = replica.getNodeName();
+      boolean active = replica.getState() == Replica.State.ACTIVE;
       boolean live = zkStateReader.getClusterState().liveNodesContain(nodeName);
       if (active && live) {
         shardClients.add(cjetty.client.solrClient);
@@ -1543,9 +1539,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     CloudJettyRunner lastJetty = null;
     for (CloudJettyRunner cjetty : solrJetties) {
-      ZkNodeProps props = cjetty.info;
+      Replica replica = cjetty.info;
       log.debug("client{}", cnt);
-      log.debug("PROPS:{}", props);
+      log.debug("REPLICA:{}", replica);
       cnt++;
 
       try {
@@ -1567,15 +1563,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
 
       boolean live = false;
-      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
+      String nodeName = replica.getNodeName();
       if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         live = true;
       }
       log.debug(" live:{}", live);
       log.debug(" num:{}", num);
 
-      boolean active =
-          Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
+      boolean active = replica.getState() == Replica.State.ACTIVE;
       if (active && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
           failMessage =
@@ -1619,8 +1614,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       List<CloudJettyRunner> solrJetties = shardToJetty.get(shard);
 
       for (CloudJettyRunner cjetty : solrJetties) {
-        ZkNodeProps props = cjetty.info;
-        log.debug("PROPS:{}", props);
+        Replica info = cjetty.info;
+        log.debug("REPLICA:{}", info);
 
         try {
           SolrParams query =
@@ -1643,7 +1638,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           continue;
         }
         boolean live = false;
-        String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
+        String nodeName = info.getNodeName();
         ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
         if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
           live = true;
@@ -1736,18 +1731,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       for (int i = 0; i < times; i++) {
         try {
           CloudJettyRunner cjetty = shardToJetty.get(s).get(i);
-          ZkNodeProps props = cjetty.info;
+          Replica replica = cjetty.info;
           SolrClient client = cjetty.client.solrClient;
-          boolean active =
-              Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP))
-                  == Replica.State.ACTIVE;
+          boolean active = replica.getState() == Replica.State.ACTIVE;
           if (active) {
             SolrQuery query = new SolrQuery("*:*");
             query.set("distrib", false);
             long results = client.query(query).getResults().getNumFound();
-            if (verbose)
-              System.err.println(new ZkCoreNodeProps(props).getCoreUrl() + " : " + results);
-            if (verbose) System.err.println("shard:" + props.getStr(ZkStateReader.SHARD_ID_PROP));
+            if (verbose) System.err.println(replica.getCoreUrl() + " : " + results);
+            if (verbose) System.err.println("shard:" + replica.getShard());
             cnt += results;
             break;
           }
@@ -1781,7 +1773,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient getClient(String nodeName) {
     for (CloudJettyRunner cjetty : cloudJettys) {
       CloudSolrServerClient client = cjetty.client;
-      if (client.shardName.equals(nodeName)) {
+      if (client.nodeName.equals(nodeName)) {
         return client.solrClient;
       }
     }
@@ -1834,12 +1826,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
       ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
       long count = 0;
-      final Replica.State currentState =
-          Replica.State.getState(cjetty.info.getStr(ZkStateReader.STATE_PROP));
+      final Replica.State currentState = cjetty.info.getState();
       if (currentState == Replica.State.ACTIVE
-          && zkStateReader
-              .getClusterState()
-              .liveNodesContain(cjetty.info.getStr(ZkStateReader.NODE_NAME_PROP))) {
+          && zkStateReader.getClusterState().liveNodesContain(cjetty.info.getNodeName())) {
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);
         count = client.solrClient.query(query).getResults().getNumFound();
@@ -2547,10 +2536,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
-    ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
-    String coreName = coreProps.getCoreName();
+    String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

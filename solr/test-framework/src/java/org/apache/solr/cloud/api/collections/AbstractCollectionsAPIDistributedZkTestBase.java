@@ -56,7 +56,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -568,13 +567,12 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     if (collectionState != null) {
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
-          ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
           CoreStatus coreStatus;
-          try (SolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
-            coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
+          try (SolrClient server = getHttpSolrClient(replica.getBaseUrl())) {
+            coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
           }
           long before = coreStatus.getCoreStartTime().getTime();
-          urlToTime.put(coreProps.getCoreUrl(), before);
+          urlToTime.put(replica.getCoreUrl(), before);
         }
       }
     } else {
@@ -658,6 +656,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .process(cluster.getSolrClient());
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
+    cluster.waitForActiveCollection(collectionName, 2, 6);
 
     try (SolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
@@ -699,6 +698,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals(
         "'core' should be 'propertyDotName' ", "propertyDotName", newReplica.getStr("core"));
+    cluster.waitForActiveCollection(collectionName, 2, 7);
   }
 
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {

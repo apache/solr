@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
+import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
@@ -191,6 +192,10 @@ public class CoreContainer {
     return indexSearcherExecutor;
   }
 
+  public ExecutorService getIndexFingerprintExecutor() {
+    return indexFingerprintExecutor;
+  }
+
   public static class CoreLoadFailure {
 
     public final CoreDescriptor cd;
@@ -297,6 +302,8 @@ public class CoreContainer {
   public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
+
+  private final ExecutorService indexFingerprintExecutor;
 
   private final ClusterSingletons clusterSingletons =
       new ClusterSingletons(
@@ -455,6 +462,12 @@ public class CoreContainer {
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
     this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
+
+    this.indexFingerprintExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            EXECUTOR_MAX_CPU_THREADS,
+            Integer.MAX_VALUE,
+            new SolrNamedThreadFactory("IndexFingerprintPool"));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -682,6 +695,7 @@ public class CoreContainer {
     allowPaths = null;
     allowListUrlChecker = null;
     indexSearcherExecutor = null;
+    indexFingerprintExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -1301,6 +1315,7 @@ public class CoreContainer {
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
+    ExecutorUtil.shutdownNowAndAwaitTermination(indexFingerprintExecutor);
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 

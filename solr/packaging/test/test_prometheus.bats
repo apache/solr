@@ -48,3 +48,9 @@ teardown() {
   assert_output --partial 'core="COLL_NAME"'
   assert_output --partial 'bats-test'
 }
+
+@test "unrecognized option logging" {
+  run ! solr-exporter --unknown-option unknown-option
+
+  assert_output --partial 'Unrecognized option: --unknown-option'
+}
