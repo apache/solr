@@ -430,7 +430,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
             sLen,
             compress,
             indexGen,
-            useChecksum);
+            useChecksum,
+            e);
       } finally {
         IOUtils.closeQuietly(in);
         if (dir != null) {
