@@ -42,7 +42,7 @@ public class TikaServerRequestHandler extends ContentStreamHandlerBase
 
   @Override
   public void inform(SolrCore core) {
-    SolrParams params = initArgs;
+    SolrParams params = initArgs.toSolrParams();
     if (params == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "TikaServerRequestHandler initArgs are missing.");
