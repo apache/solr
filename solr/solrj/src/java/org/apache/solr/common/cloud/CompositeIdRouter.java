@@ -225,7 +225,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     Range completeRange = new KeyParser(id).getRange();
 
     List<Slice> targetSlices = new ArrayList<>(1);
-    for (Slice slice : collection.getActiveSlicesArr()) {
+    for (Slice slice : collection.getActiveSlices()) {
       Range range = slice.getRange();
       if (range != null && range.overlaps(completeRange)) {
         targetSlices.add(slice);

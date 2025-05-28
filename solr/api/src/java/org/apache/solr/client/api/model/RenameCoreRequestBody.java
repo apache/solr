@@ -20,7 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public class RenameCoreRequestBody {
-  @Schema(description = "The new name for the Solr core.", required = true)
+  @Schema(
+      description = "The new name for the Solr core.",
+      requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty
   public String to;
 

@@ -24,7 +24,9 @@ dependencies {
   api project(':solr:solrj')
 
   implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.http
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.mockito.core
+  testImplementation libs.junit.junit
 }

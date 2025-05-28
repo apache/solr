@@ -126,29 +126,15 @@ public class TikaServerDocumentLoader extends ContentStreamLoader {
       String jsonString = response.getContentAsString();
       Object parsedJson = ObjectBuilder.getVal(new JSONParser(jsonString));
 
-      if (!(parsedJson instanceof List)) {
+      if (!(parsedJson instanceof List<?> tikaOutput)) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Unexpected JSON response format from Tika Server (expected an array). Got: "
                 + jsonString);
       }
 
-      if (!(parsedJson instanceof List<?>)) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unexpected JSON response format from Tika Server (expected an array). Got: "
-                + parsedJson);
-      }
-
-      List<?> tikaOutput = (List<?>) parsedJson;
       if (tikaOutput.isEmpty()) {
         return;
-      }
-
-      if (!(tikaOutput.getFirst() instanceof Map)) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Expected first element of Tika JSON array to be a Map, got: " + tikaOutput.getFirst());
       }
 
       if (!(tikaOutput.getFirst() instanceof Map)) {

@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import java.lang.reflect.Field;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.loader.ContentStreamLoader;
@@ -53,6 +54,7 @@ public class TikaServerRequestHandlerTest {
     when(mockSolrCore.getResourceLoader()).thenReturn(mockResourceLoader);
   }
 
+  @SuppressForbidden(reason = "Only used for testing private fields")
   private Object getField(Object instance, String fieldName)
       throws NoSuchFieldException, IllegalAccessException {
     Field field = instance.getClass().getDeclaredField(fieldName);
