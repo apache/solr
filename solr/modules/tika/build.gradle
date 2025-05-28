@@ -23,10 +23,8 @@ dependencies {
   api project(':solr:core')
   api project(':solr:solrj')
 
-  implementation 'org.eclipse.jetty:jetty-client' // Version removed
-  implementation 'org.noggit:noggit'             // Version removed
+  implementation libs.eclipse.jetty.client
 
-  testImplementation project(':solr:test-framework') // Stays as is
-  testImplementation 'junit:junit'                   // Version removed
-  testImplementation 'org.mockito:mockito-core'      // Version removed
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.mockito.core
 }
