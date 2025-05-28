@@ -68,6 +68,11 @@
         <Set name="idleTimeout"><Property name="solr.jetty.https.timeout" default="120000"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="solr.jetty.ssl.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="solr.jetty.https.acceptQueueSize" default="0"/></Set>
+        <Set name="reuseAddress"><Property name="solr.jetty.ssl.reuseAddress" default="true"/></Set>
+        <Set name="reusePort"><Property name="solr.jetty.ssl.reusePort" default="false"/></Set>
+        <Set name="acceptedTcpNoDelay"><Property name="solr.jetty.ssl.acceptedTcpNoDelay" default="true"/></Set>
+        <Set name="acceptedReceiveBufferSize" property="solr.jetty.ssl.acceptedReceiveBufferSize" />
+        <Set name="acceptedSendBufferSize" property="solr.jetty.ssl.acceptedSendBufferSize" />
       </New>
     </Arg>
   </Call>
