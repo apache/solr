@@ -54,7 +54,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -316,11 +315,11 @@ public class TestPullReplica extends SolrCloudTestCase {
           SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
           QueryResponse statsResponse = pullReplicaClient.query(req);
           // The adds gauge metric should be null for pull replicas since they don't process adds
-          NamedList<Object> entries = (statsResponse.getResponse());
           assertNull(
               "Replicas shouldn't process the add document request: " + statsResponse,
               ((Map<String, Object>)
-                      entries._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
+                      (statsResponse.getResponse())
+                          ._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
                   .get("UPDATE.updateHandler.adds"));
         }
       }

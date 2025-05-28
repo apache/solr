@@ -80,7 +80,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     NamedList<Object> createResponse = null;
     try {
       createResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) createResponse._get(List.of("status", "msg"), null);
+      message = createResponse._getStr(List.of("status", "msg"), null);
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }
@@ -123,7 +123,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     NamedList<Object> splitResponse = null;
     try {
       splitResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) splitResponse._get(List.of("status", "msg"), null);
+      message = splitResponse._getStr(List.of("status", "msg"), null);
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }
@@ -155,7 +155,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     try {
       NamedList<Object> response = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) response._get(List.of("status", "msg"), null);
+      message = response._getStr(List.of("status", "msg"), null);
     } catch (SolrServerException | IOException e) {
       log.error("error sending request", e);
     }

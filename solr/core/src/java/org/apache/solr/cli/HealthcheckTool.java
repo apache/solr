@@ -175,9 +175,8 @@ public class HealthcheckTool extends ToolBase {
                           SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
               uptime =
                   SolrCLI.uptime((Long) systemInfo._get(List.of("jvm", "jmx", "upTimeMS"), null));
-              String usedMemory = (String) systemInfo._get(List.of("jvm", "memory", "used"), null);
-              String totalMemory =
-                  (String) systemInfo._get(List.of("jvm", "memory", "total"), null);
+              String usedMemory = systemInfo._getStr(List.of("jvm", "memory", "used"), null);
+              String totalMemory = systemInfo._getStr(List.of("jvm", "memory", "total"), null);
               memory = usedMemory + " of " + totalMemory;
             }
 
