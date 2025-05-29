@@ -154,7 +154,9 @@ dependencies {
   implementation libs.tdunning.tdigest
 
   // Distributed Tracing
-  api libs.opentelemetry.api // Tracer is exposed on some methods
+  api libs.opentelemetry.api
+  implementation libs.opentelemetry.sdk
+  implementation libs.opentelemetry.exporter.prometheus
   implementation libs.opentelemetry.context
 
   implementation libs.apache.commons.exec

@@ -171,6 +171,7 @@ nodejs = "16.20.2"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.46.0"
+opentelemetry-prometheus = "1.50.0-alpha"
 osgi-annotation = "8.1.0"
 oshai-logging = "7.0.3"
 # @keep for version alignment
@@ -471,6 +472,7 @@ opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref
 opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry" }
 opentelemetry-context = { module = "io.opentelemetry:opentelemetry-context", version.ref = "opentelemetry" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
+opentelemetry-exporter-prometheus = { module = "io.opentelemetry:opentelemetry-exporter-prometheus", version.ref = "opentelemetry-prometheus" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 opentelemetry-sdkextension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
 opentelemetry-sdktesting = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
