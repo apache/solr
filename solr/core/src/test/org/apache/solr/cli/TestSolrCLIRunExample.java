@@ -102,7 +102,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       commandsExecuted.add(cmd);
 
       String exe = cmd.getExecutable();
-      if (exe.endsWith("solr")) {
+      if (exe.endsWith("solr") || exe.endsWith("solr.cmd")) {
         String[] args = cmd.getArguments();
         if ("start".equals(args[0])) {
           if (hasFlag("--user-managed", args)) {
