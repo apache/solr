@@ -155,11 +155,19 @@ dependencies {
 
   // Distributed Tracing
   api libs.opentelemetry.api
-  implementation libs.opentelemetry.sdk
-  implementation libs.opentelemetry.exporter.prometheus
   implementation libs.opentelemetry.context
 
-  implementation libs.apache.commons.exec
+  implementation(libs.opentelemetry.exporter.prometheus, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-exporter-httpserver"
+    exclude group: "io.prometheus", module: "prometheus-metrics-model"
+  })g
+
+  implementation(libs.opentelemetry.sdk, {
+    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-extension-autoconfigure-spi"
+    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
+  })
+
+  implementation libs.apachge.commons.exec
 
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
