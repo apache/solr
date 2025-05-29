@@ -629,9 +629,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key1),
         resp);
     // response structure is like in the case of non-key params
-    NamedList<Object> entries2 = resp.getValues();
-    Object val =
-        entries2._get(
+      Object val =
+        resp.getValues()._get(
             List.of("metrics", "solr.core.collection1", "QUERY./select.requestTimes"), null);
     assertNotNull(val);
     assertTrue(val instanceof MapWriter);
@@ -657,8 +656,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key2),
         resp);
     // response structure is like in the case of non-key params
-    NamedList<Object> entries1 = resp.getValues();
-    val = entries1._get(List.of("metrics", "solr.core.collection1"), null);
+      val = resp.getValues()._get(List.of("metrics", "solr.core.collection1"), null);
     assertNotNull(val);
     Object v = ((SimpleOrderedMap<Object>) val).get("QUERY./select.requestTimes");
     assertNotNull(v);
@@ -692,8 +690,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             MetricsHandler.EXPR_PARAM,
             key3),
         resp);
-    NamedList<Object> entries = resp.getValues();
-    val = entries._get(List.of("metrics", "solr.core.collection1"), null);
+      val = resp.getValues()._get(List.of("metrics", "solr.core.collection1"), null);
     assertNotNull(val);
     // for requestTimes only the full set of values from the first expr should be present
     assertNotNull(val);

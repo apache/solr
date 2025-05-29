@@ -148,13 +148,11 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
               + FIELD);
       final QueryResponse response = query(params);
       assertEquals(6, getHmObj(response).get("gridLevel")); // same test as above
-      NamedList<Object> entries1 = response.getResponse();
-      assertEquals(
-          2, entries1._get(List.of("facet_counts", "facet_heatmaps", "course", "gridLevel"), null));
-      NamedList<Object> entries = response.getResponse();
-      assertTrue(
+        assertEquals(
+          2, response.getResponse()._get(List.of("facet_counts", "facet_heatmaps", "course", "gridLevel"), null));
+        assertTrue(
           ((NamedList<Object>)
-                      entries._get(List.of("facet_counts", "facet_heatmaps", "course"), null))
+                      response.getResponse()._get(List.of("facet_counts", "facet_heatmaps", "course"), null))
                   .indexOf("counts_" + courseFormat, 0)
               >= 0);
     }
@@ -438,8 +436,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
                       + " } "
                       + "}"));
       {
-        NamedList<Object> entries1 = response.getResponse();
-        final NamedList<?> q1Res = (NamedList<?>) entries1._get(List.of("facets", "q1"), null);
+          final NamedList<?> q1Res = (NamedList<?>) response.getResponse()._get(List.of("facets", "q1"), null);
         assertEquals("1", q1Res.get("count").toString());
         NamedList<Object> entries = response.getResponse();
         final NamedList<?> q2Res = (NamedList<?>) entries._get(List.of("facets", "q2"), null);
@@ -502,15 +499,13 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
 
   private NamedList<?> getHmObj(QueryResponse response) {
     // classic faceting
-    NamedList<Object> entries1 = response.getResponse();
-    final NamedList<?> classicResp =
-        (NamedList<?>) entries1._get(List.of("facet_counts", "facet_heatmaps", FIELD), null);
+      final NamedList<?> classicResp =
+        (NamedList<?>) response.getResponse()._get(List.of("facet_counts", "facet_heatmaps", FIELD), null);
     if (classicResp != null) {
       return classicResp;
     }
     // JSON Facet
-    NamedList<Object> entries = response.getResponse();
-    return (NamedList<?>) entries._get(List.of("facets", "f1"), null);
+      return (NamedList<?>) response.getResponse()._get(List.of("facets", "f1"), null);
   }
 
   @Test
