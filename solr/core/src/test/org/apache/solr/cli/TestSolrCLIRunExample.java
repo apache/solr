@@ -98,93 +98,84 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     @Override
     public int execute(org.apache.commons.exec.CommandLine cmd) throws IOException {
+      String exe = cmd.getExecutable();
+      assert (exe.endsWith("solr") || exe.endsWith("solr.cmd"));
+
       // collect the commands as they are executed for analysis by the test
       commandsExecuted.add(cmd);
 
-      String exe = cmd.getExecutable();
-      if (exe.endsWith("solr")) {
-        String[] args = cmd.getArguments();
-        if ("start".equals(args[0])) {
-          if (hasFlag("--user-managed", args)) {
-            return startStandaloneSolr(args);
-          }
+      String[] args = cmd.getArguments();
+      if ("start".equals(args[0])) {
+        if (hasFlag("--user-managed", args)) {
+          return startStandaloneSolr(args);
+        }
 
-          String solrHomeDir = getArg("--solr-home", args);
-          int port = Integer.parseInt(getArg("-p", args));
-          Path solrXmlPath = Path.of(solrHomeDir).resolve("solr.xml");
-          if (!Files.exists(solrXmlPath)) {
-            String solrServerDir = getArg("--server-dir", args);
-            solrXmlPath = Path.of(solrServerDir).resolve("solr").resolve("solr.xml");
-          }
-          String solrxml = Files.readString(solrXmlPath, Charset.defaultCharset());
+        String solrHomeDir = getArg("--solr-home", args);
+        int port = Integer.parseInt(getArg("-p", args));
+        Path solrXmlPath = Path.of(solrHomeDir).resolve("solr.xml");
+        if (!Files.exists(solrXmlPath)) {
+          String solrServerDir = getArg("--server-dir", args);
+          solrXmlPath = Path.of(solrServerDir).resolve("solr").resolve("solr.xml");
+        }
+        String solrxml = Files.readString(solrXmlPath, Charset.defaultCharset());
 
-          JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
-          try {
-            if (solrCloudCluster == null) {
-              Path logDir = createTempDir("solr_logs");
-              System.setProperty("solr.log.dir", logDir.toString());
-              System.setProperty("host", "localhost");
-              System.setProperty("jetty.port", String.valueOf(port));
-              solrCloudCluster = new MiniSolrCloudCluster(1, createTempDir(), solrxml, jettyConfig);
-            } else {
-              // another member of this cluster -- not supported yet, due to how
-              // MiniSolrCloudCluster works
-              throw new IllegalArgumentException(
-                  "Only launching one SolrCloud node is supported by this test!");
-            }
-          } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-              throw (RuntimeException) e;
-            } else {
-              throw new RuntimeException(e);
-            }
-          }
-        } else if ("stop".equals(args[0])) {
-
-          int port = Integer.parseInt(getArg("-p", args));
-
-          // stop the requested node
-          if (standaloneSolr != null) {
-            int localPort = standaloneSolr.getLocalPort();
-            if (port == localPort) {
-              try {
-                standaloneSolr.stop();
-                log.info("Stopped standalone Solr instance running on port {}", port);
-              } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                  throw (RuntimeException) e;
-                } else {
-                  throw new RuntimeException(e);
-                }
-              }
-            } else {
-              throw new IllegalArgumentException("No Solr is running on port " + port);
-            }
+        JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
+        try {
+          if (solrCloudCluster == null) {
+            Path logDir = createTempDir("solr_logs");
+            System.setProperty("solr.log.dir", logDir.toString());
+            System.setProperty("host", "localhost");
+            System.setProperty("jetty.port", String.valueOf(port));
+            solrCloudCluster = new MiniSolrCloudCluster(1, createTempDir(), solrxml, jettyConfig);
           } else {
-            if (solrCloudCluster != null) {
-              try {
-                solrCloudCluster.shutdown();
-                log.info("Stopped SolrCloud test cluster");
-              } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                  throw (RuntimeException) e;
-                } else {
-                  throw new RuntimeException(e);
-                }
-              }
-            } else {
-              throw new IllegalArgumentException("No Solr nodes found to stop!");
-            }
+            // another member of this cluster -- not supported yet, due to how
+            // MiniSolrCloudCluster works
+            throw new IllegalArgumentException(
+                "Only launching one SolrCloud node is supported by this test!");
+          }
+        } catch (Exception e) {
+          if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+          } else {
+            throw new RuntimeException(e);
           }
         }
-      } else {
-        String cmdLine = joinArgs(cmd.getArguments());
-        log.info("Executing command: {}", cmdLine);
-        try {
-          return super.execute(cmd);
-        } catch (Exception exc) {
-          log.error("Execute command [{}] failed due to: {}", cmdLine, exc, exc);
-          throw exc;
+      } else if ("stop".equals(args[0])) {
+
+        int port = Integer.parseInt(getArg("-p", args));
+
+        // stop the requested node
+        if (standaloneSolr != null) {
+          int localPort = standaloneSolr.getLocalPort();
+          if (port == localPort) {
+            try {
+              standaloneSolr.stop();
+              log.info("Stopped standalone Solr instance running on port {}", port);
+            } catch (Exception e) {
+              if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+              } else {
+                throw new RuntimeException(e);
+              }
+            }
+          } else {
+            throw new IllegalArgumentException("No Solr is running on port " + port);
+          }
+        } else {
+          if (solrCloudCluster != null) {
+            try {
+              solrCloudCluster.shutdown();
+              log.info("Stopped SolrCloud test cluster");
+            } catch (Exception e) {
+              if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+              } else {
+                throw new RuntimeException(e);
+              }
+            }
+          } else {
+            throw new IllegalArgumentException("No Solr nodes found to stop!");
+          }
         }
       }
 
