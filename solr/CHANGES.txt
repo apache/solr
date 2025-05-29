@@ -56,7 +56,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962. 
+  Additionally achieves simplification of CLI tests (Rahul Goswami via Eric Pugh)
 
 Deprecation Removals
 ----------------------
@@ -295,9 +296,6 @@ Bug Fixes
 
 * SOLR-7962: Passing additional arguments to solr.cmd using "--jvm-opts" (formerly "-a") in conjunction with "-e" (examples like 'techproducts') 
   wouldn't reflect on Windows (Rahul Goswami via Eric Pugh)
-
-* SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962. 
-  Additionally achieves simplification of CLI tests (Rahul Goswami via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
