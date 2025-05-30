@@ -26,7 +26,6 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.opentelemetry.sdk.trace.samplers.Sampler;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -64,11 +63,10 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
       ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
       builder.setPropagators(ContextPropagators.create(SimplePropagator.getInstance()));
     }
+
     if (sdkMeterProvider != null) builder.setMeterProvider(sdkMeterProvider);
-    builder.setTracerProvider(
-        SdkTracerProvider.builder()
-            .setSampler(Sampler.alwaysOff()) // never record spans
-            .build());
+    if (sdkTracerProvider != null) builder.setTracerProvider(sdkTracerProvider);
+
     GlobalOpenTelemetry.set(builder.build());
     loaded = true;
   }

@@ -35,6 +35,8 @@ import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -504,8 +506,10 @@ public class CoreContainer {
     } else if (OpenTelemetryConfigurator.shouldAutoConfigOTEL()) {
       OpenTelemetryConfigurator.autoConfigureOpenTelemetrySdk(loader);
     } else {
+      // Initializing sampler as always off to replicate no-op Tracer provider
       OpenTelemetryConfigurator.configureOpenTelemetrySdk(
-          SdkMeterProvider.builder().registerMetricReader(prometheusMetricReader).build(), null);
+          SdkMeterProvider.builder().registerMetricReader(prometheusMetricReader).build(),
+          SdkTracerProvider.builder().setSampler(Sampler.alwaysOff()).build());
     }
   }
 
