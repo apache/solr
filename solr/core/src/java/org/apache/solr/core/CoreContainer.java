@@ -31,7 +31,12 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -162,6 +167,7 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ApplicationHandler;
@@ -285,6 +291,10 @@ public class CoreContainer {
   protected volatile SolrMetricsContext solrMetricsContext;
 
   protected volatile Tracer tracer;
+
+  protected volatile MeterProvider meterProvider;
+
+  protected volatile PrometheusMetricReader prometheusMetricReader;
 
   protected MetricsHandler metricsHandler;
 
@@ -423,6 +433,11 @@ public class CoreContainer {
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
+    this.prometheusMetricReader = new PrometheusMetricReader(true, null);
+    initializeOpenTelemetrySdk();
+    this.tracer = TraceUtils.getGlobalTracer();
+    this.meterProvider = MetricUtils.getMeterProvider();
+
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
@@ -463,6 +478,39 @@ public class CoreContainer {
             EXECUTOR_MAX_CPU_THREADS,
             Integer.MAX_VALUE,
             new SolrNamedThreadFactory("IndexFingerprintPool"));
+  }
+
+  /**
+   * Initializes the {@link io.opentelemetry.api.GlobalOpenTelemetry} instance by configuring the
+   * {@link io.opentelemetry.sdk.OpenTelemetrySdk}. The initialization process prioritizes in the
+   * following order:
+   *
+   * <p>{@link PluginInfo} for an OpenTelemetry configurator is provided and enabled, it will be
+   * used to load and initialize a custom OpenTelemetry SDK.
+   *
+   * <p>If auto-configuration is enabled, the SDK will be auto-configured using default behavior of
+   * AutoConfiguredOpenTelemetrySdk
+   *
+   * <p>If neither is enabled, the default creates a basic SDK is configured with a {@link
+   * SdkMeterProvider} and {@link org.apache.solr.util.tracing.SimplePropagator} for context
+   * propagation
+   *
+   * @see OpenTelemetryConfigurator
+   */
+  private void initializeOpenTelemetrySdk() {
+    PluginInfo info = cfg.getTracerConfiguratorPluginInfo();
+
+    if (info != null && info.isEnabled()) {
+      OpenTelemetryConfigurator.configureCustomOpenTelemetrySdk(
+          loader, cfg.getTracerConfiguratorPluginInfo());
+    } else if (OpenTelemetryConfigurator.shouldAutoConfigOTEL()) {
+      OpenTelemetryConfigurator.autoConfigureOpenTelemetrySdk(loader);
+    } else {
+      // Initializing sampler as always off to replicate no-op Tracer provider
+      OpenTelemetryConfigurator.configureOpenTelemetrySdk(
+          SdkMeterProvider.builder().registerMetricReader(prometheusMetricReader).build(),
+          SdkTracerProvider.builder().setSampler(Sampler.alwaysOff()).build());
+    }
   }
 
   @SuppressWarnings({"unchecked"})
@@ -836,8 +884,6 @@ public class CoreContainer {
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
-
-    tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
 
     coreContainerWorkExecutor =
         MetricUtils.instrumentedExecutorService(

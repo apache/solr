@@ -120,8 +120,10 @@ public class TraceUtils {
    * @param consumer consumer to be called
    */
   public static void ifValidTraceId(Span span, Consumer<Span> consumer) {
-    if (TraceId.isValid(span.getSpanContext().getTraceId())) {
-      consumer.accept(span);
+    if (span.isRecording()) {
+      if (TraceId.isValid(span.getSpanContext().getTraceId())) {
+        consumer.accept(span);
+      }
     }
   }
 
