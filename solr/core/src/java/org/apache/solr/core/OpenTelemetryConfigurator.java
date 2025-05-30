@@ -38,7 +38,7 @@ import org.apache.solr.util.tracing.SimplePropagator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Produces a {@link Tracer} from configuration. */
+/** Configures and loads/sets {@link GlobalOpenTelemetry} from a {@link OpenTelemetrySdk}. */
 public abstract class OpenTelemetryConfigurator implements NamedListInitializedPlugin {
 
   public static final boolean TRACE_ID_GEN_ENABLED =
@@ -64,8 +64,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     }
     if (sdkMeterProvider != null) builder.setMeterProvider(sdkMeterProvider);
     if (sdkTracerProvider != null) builder.setTracerProvider(sdkTracerProvider);
-    OpenTelemetrySdk sdk = builder.build();
-    GlobalOpenTelemetry.set(sdk);
+    GlobalOpenTelemetry.set(builder.build());
     loaded = true;
   }
 
@@ -76,20 +75,17 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
         loader.newInstance(DEFAULT_CLASS_NAME, OpenTelemetryConfigurator.class);
     configurator.init(new NamedList<>());
     ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-    OpenTelemetrySdk sdk = configurator.getOpenTelemetrySdk();
-    GlobalOpenTelemetry.set(sdk);
     loaded = true;
   }
 
-  public static synchronized void loadOpenTelemetrySdk(SolrResourceLoader loader, PluginInfo info) {
+  public static synchronized void configureCustomOpenTelemetrySdk(
+      SolrResourceLoader loader, PluginInfo info) {
     if (loaded) return;
 
     OpenTelemetryConfigurator configurator =
         loader.newInstance(info.className, OpenTelemetryConfigurator.class);
     configurator.init(info.initArgs);
     ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-    OpenTelemetrySdk sdk = configurator.getOpenTelemetrySdk();
-    GlobalOpenTelemetry.set(sdk);
     loaded = true;
   }
 

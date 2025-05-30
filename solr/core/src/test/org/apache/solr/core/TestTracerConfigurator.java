@@ -41,7 +41,7 @@ public class TestTracerConfigurator extends SolrTestCaseJ4 {
   public void configuratorClassDoesNotExistTest() {
     assertTrue(OpenTelemetryConfigurator.shouldAutoConfigOTEL());
     SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
-    OpenTelemetryConfigurator.loadOpenTelemetrySdk(loader, null);
+    OpenTelemetryConfigurator.configureCustomOpenTelemetrySdk(loader, null);
     assertEquals(
         "Expecting noop otel after failure to auto-init",
         TracerProvider.noop().get(null),

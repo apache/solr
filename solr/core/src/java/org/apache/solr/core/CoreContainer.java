@@ -31,10 +31,8 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import jakarta.inject.Singleton;
@@ -480,13 +478,31 @@ public class CoreContainer {
             new SolrNamedThreadFactory("IndexFingerprintPool"));
   }
 
+  /**
+   * Initializes the {@link io.opentelemetry.api.GlobalOpenTelemetry} instance by configuring the
+   * {@link io.opentelemetry.sdk.OpenTelemetrySdk}. The initialization process prioritizes in the
+   * following order:
+   *
+   * <p>{@link PluginInfo} for an OpenTelemetry configurator is provided and enabled, it will be
+   * used to load and initialize a custom OpenTelemetry SDK.
+   *
+   * <p>If auto-configuration is enabled, the SDK will be auto-configured using default behavior of
+   * AutoConfiguredOpenTelemetrySdk
+   *
+   * <p>If neither is enabled, the default creates a basic SDK is configured with a {@link
+   * SdkMeterProvider} and {@link org.apache.solr.util.tracing.SimplePropagator} for context
+   * propagation
+   *
+   * @see OpenTelemetryConfigurator
+   */
   private void initializeOpenTelemetrySdk() {
     PluginInfo info = cfg.getTracerConfiguratorPluginInfo();
 
-    if (OpenTelemetryConfigurator.shouldAutoConfigOTEL()) {
+    if (info != null && info.isEnabled()) {
+      OpenTelemetryConfigurator.configureCustomOpenTelemetrySdk(
+          loader, cfg.getTracerConfiguratorPluginInfo());
+    } else if (OpenTelemetryConfigurator.shouldAutoConfigOTEL()) {
       OpenTelemetryConfigurator.autoConfigureOpenTelemetrySdk(loader);
-    } else if (info != null && info.isEnabled()) {
-      OpenTelemetryConfigurator.loadOpenTelemetrySdk(loader, cfg.getTracerConfiguratorPluginInfo());
     } else {
       OpenTelemetryConfigurator.configureOpenTelemetrySdk(
           SdkMeterProvider.builder().registerMetricReader(prometheusMetricReader).build(), null);
