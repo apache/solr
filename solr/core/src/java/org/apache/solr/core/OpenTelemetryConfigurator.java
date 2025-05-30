@@ -26,10 +26,12 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -63,19 +65,28 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
       builder.setPropagators(ContextPropagators.create(SimplePropagator.getInstance()));
     }
     if (sdkMeterProvider != null) builder.setMeterProvider(sdkMeterProvider);
-    if (sdkTracerProvider != null) builder.setTracerProvider(sdkTracerProvider);
+    builder.setTracerProvider(
+        SdkTracerProvider.builder()
+            .setSampler(Sampler.alwaysOff()) // never record spans
+            .build());
     GlobalOpenTelemetry.set(builder.build());
     loaded = true;
   }
 
   public static synchronized void autoConfigureOpenTelemetrySdk(SolrResourceLoader loader) {
     if (loaded) return;
-
-    OpenTelemetryConfigurator configurator =
-        loader.newInstance(DEFAULT_CLASS_NAME, OpenTelemetryConfigurator.class);
-    configurator.init(new NamedList<>());
-    ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-    loaded = true;
+    try {
+      OpenTelemetryConfigurator configurator =
+          loader.newInstance(DEFAULT_CLASS_NAME, OpenTelemetryConfigurator.class);
+      configurator.init(new NamedList<>());
+      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
+      loaded = true;
+    } catch (SolrException e) {
+      log.error(
+          "Unable to auto-config OpenTelemetry with class {}. Make sure you have enabled the 'opentelemetry' module",
+          DEFAULT_CLASS_NAME,
+          e);
+    }
   }
 
   public static synchronized void configureCustomOpenTelemetrySdk(
