@@ -186,9 +186,6 @@ Other Changes
 
 * SOLR-17703: SolrJ - Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to "JavaBin.." equivalent. (Abhishek Umarjikar)
 
-* SOLR-17625: Replaced NamedList.findRecursive usages with _get, which can do Map traversal, and
-  thus makes it easier to transition intermediate NamedLists to Maps. (Gaurav Tuli)
-
 ==================  9.9.0 ==================
 New Features
 ---------------------
