@@ -318,7 +318,7 @@ public class TestPullReplica extends SolrCloudTestCase {
               "Replicas shouldn't process the add document request: " + statsResponse,
               ((Map<String, Object>)
                       (statsResponse.getResponse())
-                          .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
+                          ._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
                   .get("UPDATE.updateHandler.adds"));
         }
       }

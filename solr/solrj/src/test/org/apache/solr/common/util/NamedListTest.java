@@ -142,28 +142,28 @@ public class NamedListTest extends SolrTestCase {
     nl.add("key3", nl3);
 
     // Simple three-level checks.
-    String test1 = (String) nl.findRecursive("key2", "key2b", "key2b2");
+    String test1 = nl._getStr(List.of("key2", "key2b", "key2b2"), null);
     assertEquals("value2b2", test1);
-    String test2 = (String) nl.findRecursive("key3", "key3a", "key3a3");
+    String test2 = nl._getStr(List.of("key3", "key3a", "key3a3"), null);
     assertEquals("value3a3", test2);
     // Two-level check.
-    String test3 = (String) nl.findRecursive("key3", "key3c");
+    String test3 = nl._getStr(List.of("key3", "key3c"), null);
     assertEquals("value3c", test3);
     // Checking that invalid values return null.
-    String test4 = (String) nl.findRecursive("key3", "key3c", "invalid");
+    String test4 = nl._getStr(List.of("key3", "key3c", "invalid"), null);
     assertNull(test4);
-    String test5 = (String) nl.findRecursive("key3", "invalid", "invalid");
+    String test5 = nl._getStr(List.of("key3", "invalid", "invalid"), null);
     assertNull(test5);
-    String test6 = (String) nl.findRecursive("invalid", "key3c");
+    String test6 = nl._getStr(List.of("invalid", "key3c"), null);
     assertNull(test6);
     // Verify that retrieved NamedList objects have the right type.
-    Object test7 = nl.findRecursive("key2", "key2b");
+    Object test7 = nl._get(List.of("key2", "key2b"), null);
     assertTrue(test7 instanceof NamedList);
     // Integer check.
-    int test8 = (Integer) nl.findRecursive("key2", "k2int1");
+    int test8 = (Integer) nl._get(List.of("key2", "k2int1"), null);
     assertEquals(5, test8);
     // Check that a single argument works the same as get(String).
-    String test9 = (String) nl.findRecursive("key1");
+    String test9 = nl._getStr(List.of("key1"), null);
     assertEquals("value1", test9);
     // enl == explicit nested list
     //
@@ -181,15 +181,15 @@ public class NamedListTest extends SolrTestCase {
 
     // Tests that are very similar to the test above, just repeated
     // on the explicitly nested object type.
-    String enltest1 = (String) enl.findRecursive("key1", "key1a");
+    String enltest1 = enl._getStr(List.of("key1", "key1a"), null);
     assertEquals("value1a", enltest1);
-    String enltest2 = (String) enl.findRecursive("key1", "key1b");
+    String enltest2 = enl._getStr(List.of("key1", "key1b"), null);
     assertEquals("value1b", enltest2);
     // Verify that when a null value is stored, the standard get method
     // says it is null, then check the recursive method.
     Object enltest3 = enl.get("key2");
     assertNull(enltest3);
-    Object enltest4 = enl.findRecursive("key2");
+    Object enltest4 = enl._get(List.of("key2"), null);
     assertNull(enltest4);
   }
 
