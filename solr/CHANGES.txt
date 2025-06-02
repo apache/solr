@@ -342,6 +342,9 @@ Other Changes
 
 * SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
 
+* SOLR-17625: Replaced NamedList.findRecursive usages with _get, which can do Map traversal, and
+  thus makes it easier to transition intermediate NamedLists to Maps. (Gaurav Tuli)
+
 ==================  9.8.1 ==================
 Bug Fixes
 ---------------------
