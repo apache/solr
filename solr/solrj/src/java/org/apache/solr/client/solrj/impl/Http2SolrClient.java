@@ -111,6 +111,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private final HttpClient httpClient;
 
+  private final long idleTimeoutMillis;
+
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   protected AsyncTracker asyncTracker = new AsyncTracker();
 
@@ -128,7 +130,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
     if (builder.httpClient != null) {
       if (builder.followRedirects != null
           || builder.connectionTimeoutMillis != null
-          || builder.idleTimeoutMillis != null) {
+          || builder.maxConnectionsPerHost != null
+          || builder.useHttp1_1
+              != builder.httpClient.getTransport() instanceof HttpClientTransportOverHTTP
+          || builder.proxyHost != null
+          || builder.cookieStore != null
+          || builder.sslConfig != null
+          || builder.keyStoreReloadIntervalSecs != null) {
         throw new IllegalArgumentException(
             "You cannot provide the HttpClient and also specify options that are used to build a new client");
       }
@@ -147,8 +155,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.listenerFactory.addAll(builder.listenerFactory);
     }
     updateDefaultMimeTypeForParser();
-
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
+    this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -256,8 +264,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
-    httpClient.setIdleTimeout(builder.getIdleTimeoutMillis());
-    // note: request timeout is set per request
+    // note: idle & request timeouts are set per request
 
     if (builder.cookieStore != null) {
       httpClient.setCookieStore(builder.cookieStore);
@@ -334,7 +341,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   /** (visible for testing) */
   public long getIdleTimeout() {
-    return getHttpClient().getIdleTimeout();
+    return idleTimeoutMillis;
   }
 
   public static class OutStream implements Closeable {
@@ -522,7 +529,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
     try {
       InputStreamResponseListener listener = new InputStreamReleaseTrackingResponseListener();
       req = sendRequest(makeRequest(solrRequest, url, false), listener);
-      Response response = listener.get(requestTimeoutMillis, TimeUnit.MILLISECONDS);
+      // only waits for headers, so use the idle timeout
+      Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       url = req.getURI().toString();
       InputStream is = listener.getInputStream();
       return processErrorsAndResponse(solrRequest, response, is, url);
@@ -629,7 +637,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
     req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
-
+    req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
     req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
     if (solrRequest.getUserPrincipal() != null) {
@@ -1083,6 +1091,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
       if (this.basicAuthAuthorizationStr == null) {
         this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
+      }
+      if (this.idleTimeoutMillis == null) {
+        this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
       }
       if (this.requestTimeoutMillis == null) {
         this.requestTimeoutMillis = http2SolrClient.requestTimeoutMillis;
