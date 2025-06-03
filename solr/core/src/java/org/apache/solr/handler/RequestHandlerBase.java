@@ -19,9 +19,9 @@ package org.apache.solr.handler;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +42,8 @@ import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.BoundLongCounter;
+import org.apache.solr.metrics.otel.instruments.BoundLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -159,7 +161,7 @@ public abstract class RequestHandlerBase
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     if (aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
           new SolrDelegateRegistryMetricsContext(
@@ -170,9 +172,11 @@ public abstract class RequestHandlerBase
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
-    metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
-    solrMetricsContext.gauge(
-        () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
+    metrics = new HandlerMetrics(solrMetricsContext, attributes);
+
+    // TODO I don't think this metric is useful or add value
+    //    solrMetricsContext.gauge(
+    //        () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
   /** Metrics for this handler. */
@@ -181,26 +185,80 @@ public abstract class RequestHandlerBase
         new HandlerMetrics(
             new SolrMetricsContext(
                 new SolrMetricManager(
-                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
+                    null,
+                    new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build(),
+                    GlobalOpenTelemetry.getMeterProvider()),
                 "NO_OP",
-                "NO_OP"));
+                "NO_OP"),
+            Attributes.of(AttributeKey.stringKey("NO_OP"), "NO_OP"));
 
-    public final Meter numErrors;
-    public final Meter numServerErrors;
-    public final Meter numClientErrors;
-    public final Meter numTimeouts;
-    public final Counter requests;
-    public final Timer requestTimes;
-    public final Counter totalTime;
+    public BoundLongCounter requests;
+    public BoundLongCounter numErrors;
+    public BoundLongCounter numServerErrors;
+    public BoundLongCounter numClientErrors;
+    public BoundLongCounter numTimeouts;
+    public BoundLongTimer requestTimes;
 
-    public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
-      numErrors = solrMetricsContext.meter("errors", metricPath);
-      numServerErrors = solrMetricsContext.meter("serverErrors", metricPath);
-      numClientErrors = solrMetricsContext.meter("clientErrors", metricPath);
-      numTimeouts = solrMetricsContext.meter("timeouts", metricPath);
-      requests = solrMetricsContext.counter("requests", metricPath);
-      requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
-      totalTime = solrMetricsContext.counter("totalTime", metricPath);
+    public HandlerMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
+
+      var baseRequestMetric =
+          solrMetricsContext.longCounter(
+              "solr_metrics_core_requests",
+              "HTTP/Solr count of requests handled by the base request handler");
+
+      var baseRequestTimeMetric =
+          solrMetricsContext.longHistogram(
+              "solr_metrics_core_requests_times",
+              "HTTP/Solr request times handled by the base request handler");
+
+      requests =
+          new BoundLongCounter(
+              baseRequestMetric,
+              Attributes.builder()
+                  .putAll(attributes)
+                  .put(AttributeKey.stringKey("type"), "requests")
+                  .build());
+
+      numErrors =
+          new BoundLongCounter(
+              baseRequestMetric,
+              Attributes.builder()
+                  .putAll(attributes)
+                  .put(AttributeKey.stringKey("type"), "errors")
+                  .build());
+
+      numServerErrors =
+          new BoundLongCounter(
+              baseRequestMetric,
+              Attributes.builder()
+                  .putAll(attributes)
+                  .put(AttributeKey.stringKey("type"), "serverErrors")
+                  .build());
+
+      numClientErrors =
+          new BoundLongCounter(
+              baseRequestMetric,
+              Attributes.builder()
+                  .putAll(attributes)
+                  .put(AttributeKey.stringKey("type"), "clientErrors")
+                  .build());
+
+      numTimeouts =
+          new BoundLongCounter(
+              baseRequestMetric,
+              Attributes.builder()
+                  .putAll(attributes)
+                  .put(AttributeKey.stringKey("type"), "timeouts")
+                  .build());
+
+      requestTimes = new BoundLongTimer(baseRequestTimeMetric, attributes);
+
+      requests.record(0L);
+      numErrors.record(0L);
+      numServerErrors.record(0L);
+      numClientErrors.record(0L);
+      numTimeouts.record(0L);
+      requestTimes.record(0L);
     }
   }
 
@@ -226,8 +284,7 @@ public abstract class RequestHandlerBase
     }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
-
-    Timer.Context timer = metrics.requestTimes.time();
+    metrics.requestTimes.start();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
@@ -239,7 +296,8 @@ public abstract class RequestHandlerBase
       // count timeouts
 
       if (!haveCompleteResults(rsp.getResponseHeader())) {
-        metrics.numTimeouts.mark();
+        //        metrics.numTimeouts.mark();
+        metrics.numTimeouts.inc();
         rsp.setHttpCaching(false);
       }
     } catch (QueryLimitsExceededException e) {
@@ -250,8 +308,7 @@ public abstract class RequestHandlerBase
       rsp.setException(normalized);
     } finally {
       try {
-        long elapsed = timer.stop();
-        metrics.totalTime.inc(elapsed);
+        metrics.requestTimes.stop();
 
         if (publishCpuTime) {
           Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);
@@ -293,13 +350,13 @@ public abstract class RequestHandlerBase
       }
     }
 
-    metrics.numErrors.mark();
+    metrics.numErrors.inc();
     if (isClientError) {
       log.error("Client exception", e);
-      metrics.numClientErrors.mark();
+      metrics.numClientErrors.inc();
     } else {
       log.error("Server exception", e);
-      metrics.numServerErrors.mark();
+      metrics.numServerErrors.inc();
     }
   }
 

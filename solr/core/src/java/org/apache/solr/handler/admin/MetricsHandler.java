@@ -128,10 +128,11 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
 
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      response = handlePrometheusExport(params);
-      consumer.accept("metrics", response);
+      //      response = handlePrometheusExport(params);
+      consumer.accept("metrics", cc.getPrometheusMetricReader().collect());
       return;
     }
+
     String[] keys = params.getParams(KEY_PARAM);
     if (keys != null && keys.length > 0) {
       handleKeyRequest(keys, consumer);

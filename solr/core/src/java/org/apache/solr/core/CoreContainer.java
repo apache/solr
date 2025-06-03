@@ -31,6 +31,7 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
@@ -881,7 +882,7 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig(), meterProvider);
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 
@@ -1137,7 +1138,7 @@ public class CoreContainer {
         "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    fieldCacheBean.initializeMetrics(solrMetricsContext, null);
+    fieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty());
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
@@ -2738,6 +2739,10 @@ public class CoreContainer {
             }
           }
         });
+  }
+
+  public PrometheusMetricReader getPrometheusMetricReader() {
+    return prometheusMetricReader;
   }
 }
 

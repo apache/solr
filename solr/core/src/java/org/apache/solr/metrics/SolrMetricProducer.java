@@ -16,6 +16,7 @@
  */
 package org.apache.solr.metrics;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 
 /** Used by objects that expose metrics through {@link SolrMetricManager}. */
@@ -40,15 +41,25 @@ public interface SolrMetricProducer extends AutoCloseable {
   }
 
   /**
-   * Initialize metrics specific to this producer.
-   *
-   * @param parentContext parent metrics context. If this component has the same life-cycle as the
-   *     parent it can simply use the parent context, otherwise it should obtain a child context
-   *     using {@link SolrMetricsContext#getChildContext(Object)} passing <code>this</code> as the
-   *     child object.
-   * @param scope component scope
+   * Legacy entry point. By default, convert the single String scope into a one‐entry Attributes map
+   * and delegate to the Attributes version. TODO This will be deprecated for Attributes instead of
+   * scope
    */
-  void initializeMetrics(SolrMetricsContext parentContext, String scope);
+  default void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    // If someone wants only the String‐based signature, they override this method.
+    // By default, we turn it into an Attributes map with a single key “scope”.
+    Attributes attrs = Attributes.builder().put("scope", scope).build();
+    initializeMetrics(parentContext, attrs);
+  }
+
+  /**
+   * New preferred entry point, taking a full set of Attributes. Implement this if you want to
+   * receive an Attributes object. Otherwise the default is a no‐op (metrics won’t be registered).
+   */
+  default void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    // By default, do nothing. Implementors override this if they only need Attributes.
+    // If someone overrode the String‐version, it already delegated here.
+  }
 
   /**
    * Implementations should return the context used in {@link #initializeMetrics(SolrMetricsContext,

@@ -22,6 +22,7 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
@@ -30,7 +31,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreFormatter;
@@ -57,13 +57,8 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
   public void write(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
-    NamedList<Object> prometheusRegistries =
-        (NamedList<Object>) response.getValues().get("metrics");
     var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
-    for (Map.Entry<String, Object> prometheusRegistry : prometheusRegistries) {
-      var prometheusFormatter = (SolrPrometheusFormatter) prometheusRegistry.getValue();
-      prometheusTextFormatWriter.write(out, prometheusFormatter.collect());
-    }
+    prometheusTextFormatWriter.write(out, (MetricSnapshots) response.getValues().get("metrics"));
   }
 
   @Override
