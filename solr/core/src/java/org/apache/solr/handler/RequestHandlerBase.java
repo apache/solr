@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
@@ -173,10 +172,6 @@ public abstract class RequestHandlerBase
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
     metrics = new HandlerMetrics(solrMetricsContext, attributes);
-
-    // TODO I don't think this metric is useful or add value
-    //    solrMetricsContext.gauge(
-    //        () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
   /** Metrics for this handler. */
@@ -187,10 +182,10 @@ public abstract class RequestHandlerBase
                 new SolrMetricManager(
                     null,
                     new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build(),
-                    GlobalOpenTelemetry.getMeterProvider()),
+                    io.opentelemetry.api.metrics.MeterProvider.noop()),
                 "NO_OP",
                 "NO_OP"),
-            Attributes.of(AttributeKey.stringKey("NO_OP"), "NO_OP"));
+            Attributes.empty());
 
     public BoundLongCounter requests;
     public BoundLongCounter numErrors;
@@ -258,7 +253,6 @@ public abstract class RequestHandlerBase
       numServerErrors.record(0L);
       numClientErrors.record(0L);
       numTimeouts.record(0L);
-      requestTimes.record(0L);
     }
   }
 
@@ -296,7 +290,6 @@ public abstract class RequestHandlerBase
       // count timeouts
 
       if (!haveCompleteResults(rsp.getResponseHeader())) {
-        //        metrics.numTimeouts.mark();
         metrics.numTimeouts.inc();
         rsp.setHttpCaching(false);
       }

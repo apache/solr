@@ -169,14 +169,6 @@ public class SolrMetricManager {
     this.meterProvider = meterProvider;
   }
 
-  public io.opentelemetry.api.metrics.Meter registry(String registry, String noop) {
-    return meterProvider.get(enforcePrefix(registry));
-  }
-
-  public void clearOtelRegistry(String registry) {
-    meters.remove(registry);
-  }
-
   public LongCounter longCounter(
       String registry, String counterName, String description, String unit) {
     LongCounterBuilder builder =
@@ -615,16 +607,11 @@ public class SolrMetricManager {
   }
 
   /** Return a set of existing registry names. */
-  // TODO don't need
   public Set<String> registryNames() {
     Set<String> set = new HashSet<>();
     set.addAll(registries.keySet());
     set.addAll(SharedMetricRegistries.names());
     return set;
-  }
-
-  public Set<String> otelRegistryNames() {
-    return Set.copyOf(meters.keySet());
   }
 
   /**
@@ -633,7 +620,7 @@ public class SolrMetricManager {
    * @param name registry name
    * @return true if this name points to a registry that already exists, false otherwise
    */
-  // TODO don't really need
+  // TODO SOLR-17458: We may not need
   public boolean hasRegistry(String name) {
     Set<String> names = registryNames();
     name = enforcePrefix(name);
@@ -647,7 +634,7 @@ public class SolrMetricManager {
    *     with a wildcard use the full registry name starting with {@link #REGISTRY_NAME_PREFIX}
    * @return set of existing registry names where at least one pattern matched.
    */
-  // TODO CHANGE TO CHECK ON OTEL REGISTRIES
+  // TODO SOLR-17458: We may not need? Maybe make a custom OTEL metric reader instead
   public Set<String> registryNames(String... patterns) throws PatternSyntaxException {
     if (patterns == null || patterns.length == 0) {
       return registryNames();
@@ -659,7 +646,6 @@ public class SolrMetricManager {
     return registryNames(compiled.toArray(new Pattern[0]));
   }
 
-  // TODO this relates to functon above
   public Set<String> registryNames(Pattern... patterns) {
     Set<String> allNames = registryNames();
     if (patterns == null || patterns.length == 0) {
@@ -685,7 +671,7 @@ public class SolrMetricManager {
    * @param registry already normalized name
    * @return true if the name matches one of shared registries
    */
-  // TODO Maybe this isnt needed anymore?
+  // TODO SOLR-17458: We may not need
   private static boolean isSharedRegistry(String registry) {
     return JETTY_REGISTRY.equals(registry) || JVM_REGISTRY.equals(registry);
   }
@@ -696,7 +682,7 @@ public class SolrMetricManager {
    * @param registry name of the registry
    * @return existing or newly created registry
    */
-  // TODO I don't think we'll need this anymore? Otel is also thread safe
+  // TODO SOLR-17458: We may not need
   public MetricRegistry registry(String registry) {
     registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
@@ -711,7 +697,7 @@ public class SolrMetricManager {
     }
   }
 
-  // TODO Do we really need to getOrCreate?
+  // TODO SOLR-17458: We may not need
   private static MetricRegistry getOrCreateRegistry(
       ConcurrentMap<String, MetricRegistry> map, String registry) {
     final MetricRegistry existing = map.get(registry);
@@ -733,7 +719,7 @@ public class SolrMetricManager {
    *
    * @param registry name of the registry to remove
    */
-  // TODO seems like you can't delete otel meters. They are facotry methods. Just stop using
+  // TODO SOLR-17458: You can't delete OTEL meters
   public void removeRegistry(String registry) {
     // close any reporters for this registry first
     closeReporters(registry, null);
@@ -760,7 +746,7 @@ public class SolrMetricManager {
    *     exist, so the swap operation will only rename the existing registry without creating an
    *     empty one under the previous name.
    */
-  // TODO I don't think we need this for otel?
+  // TODO SOLR-17458: Don't think we need
   public void swapRegistries(String registry1, String registry2) {
     registry1 = enforcePrefix(registry1);
     registry2 = enforcePrefix(registry2);
@@ -792,7 +778,7 @@ public class SolrMetricManager {
    * Potential conflict resolution strategies when attempting to register a new metric that already
    * exists
    */
-  // TODO may or may not need this. Lets come back
+  // TODO SOLR-17458: Don't think we need
   public enum ResolutionStrategy {
     /**
      * The existing metric will be kept and the new metric will be ignored. If no metric exists,
@@ -839,7 +825,7 @@ public class SolrMetricManager {
    *
    * @param registry registry name
    */
-  // TODO might not need this
+  // TODO SOLR-17458: Don't think we need
   public void clearRegistry(String registry) {
     registry(registry).removeMatching(MetricFilter.ALL);
   }
@@ -854,7 +840,8 @@ public class SolrMetricManager {
    *     start with the prefix will be removed.
    * @return set of metrics names that have been removed.
    */
-  // TODO This is not supported in otel. Metrics are immutable
+  // TODO SOLR-17458: This is not supported in otel. Metrics are immutable. We can at best filter
+  // them
   public Set<String> clearMetrics(String registry, String... metricPath) {
     PrefixFilter filter;
     if (metricPath == null || metricPath.length == 0) {
@@ -874,8 +861,8 @@ public class SolrMetricManager {
    * @param metricFilter filter (null is equivalent to {@link MetricFilter#ALL}).
    * @return map of matching names and metrics
    */
-  // TODO Otel API only allows creation to work with the SDK. You cannot read without a
-  // InMemoryMetricReader. Remove this most likely
+  // TODO SOLR-17458: We will create an OTEL metric reader for this instead. For tests, we can
+  // create an in-memory metric reader
   public Map<String, Metric> getMetrics(String registry, MetricFilter metricFilter) {
     if (metricFilter == null || metricFilter == MetricFilter.ALL) {
       return registry(registry).getMetrics();
@@ -894,7 +881,7 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Meter}
    */
-  // TODO Remove this
+  // TODO SOLR-17458: Don't need this
   public Meter meter(
       SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
@@ -913,7 +900,7 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Timer}
    */
-  // TODO remove this
+  // TODO SOLR-17458: Don't need this
   public Timer timer(
       SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
@@ -932,7 +919,7 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Counter}
    */
-  // TODO remove this
+  // TODO SOLR-17458: Don't need this
   public Counter counter(
       SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
@@ -951,7 +938,7 @@ public class SolrMetricManager {
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Histogram}
    */
-  // TODO remove this
+  // TODO SOLR-17458: Don't need this
   public Histogram histogram(
       SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
@@ -965,7 +952,7 @@ public class SolrMetricManager {
    * @deprecated use {@link #registerMetric(SolrMetricsContext, String, Metric, ResolutionStrategy,
    *     String, String...)}
    */
-  // TODO dont think we need this
+  // TODO SOLR-17458: Don't need this
   @Deprecated
   public void registerMetric(
       SolrMetricsContext context,
@@ -993,7 +980,7 @@ public class SolrMetricManager {
    *     notation
    * @param metricPath (optional) additional top-most metric name path elements
    */
-  // TODO dont think we need this
+  // TODO SOLR-17458: Don't need this
   public void registerMetric(
       SolrMetricsContext context,
       String registry,

@@ -31,7 +31,6 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
@@ -1138,7 +1137,8 @@ public class CoreContainer {
         "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    fieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty());
+    // TODO SOLR-17458: Otel migration
+    fieldCacheBean.initializeMetrics(solrMetricsContext, "");
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);

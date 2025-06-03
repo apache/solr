@@ -88,7 +88,6 @@ public class RequestMetricHandling {
           (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
       final RequestHandlerBase.HandlerMetrics metrics =
           handlerBase.getMetricsForThisRequest(solrQueryRequest);
-      // TODO FIX THIS
       requestContext.setProperty(HANDLER_METRICS, metrics);
       requestContext.setProperty(TIMER, metrics.requestTimes);
       metrics.requestTimes.start();

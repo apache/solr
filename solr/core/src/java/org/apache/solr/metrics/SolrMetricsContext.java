@@ -209,6 +209,14 @@ public class SolrMetricsContext {
     return metricManager.observableLongGauge(registryName, metricName, description, callback, null);
   }
 
+  public ObservableLongGauge observableLongGauge(
+      String metricName,
+      String description,
+      String unit,
+      Consumer<ObservableLongMeasurement> callback) {
+    return metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
+  }
+
   /**
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String,
    * String...)}.

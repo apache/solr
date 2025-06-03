@@ -41,24 +41,17 @@ public interface SolrMetricProducer extends AutoCloseable {
   }
 
   /**
-   * Legacy entry point. By default, convert the single String scope into a one‐entry Attributes map
-   * and delegate to the Attributes version. TODO This will be deprecated for Attributes instead of
-   * scope
+   * Deprecated entry point for initializing metrics. TODO SOLR-17458: This will be removed after
+   * completely removing Dropwizard
    */
   default void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    // If someone wants only the String‐based signature, they override this method.
-    // By default, we turn it into an Attributes map with a single key “scope”.
     Attributes attrs = Attributes.builder().put("scope", scope).build();
     initializeMetrics(parentContext, attrs);
   }
 
-  /**
-   * New preferred entry point, taking a full set of Attributes. Implement this if you want to
-   * receive an Attributes object. Otherwise the default is a no‐op (metrics won’t be registered).
-   */
+  /** TODO SOLR-17458: New preferred entry point for initializing metrics. */
   default void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    // By default, do nothing. Implementors override this if they only need Attributes.
-    // If someone overrode the String‐version, it already delegated here.
+    // NOOP by default
   }
 
   /**

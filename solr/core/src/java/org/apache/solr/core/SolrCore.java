@@ -21,6 +21,8 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -177,7 +179,6 @@ import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -1109,7 +1110,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       setLatestSchema(schema);
 
       // initialize core metrics
-      initializeMetrics(solrMetricsContext, MetricUtils.createAttributes("initCore", "myCore"));
+      // TODO SOLR-17458: Migrate to OTEL
+      initializeMetrics(solrMetricsContext, "");
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1117,8 +1119,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      solrFieldCacheBean.initializeMetrics(
-          solrMetricsContext, MetricUtils.createAttributes("fieldCache", "beanCache"));
+      solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1195,8 +1196,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
         ((SolrMetricProducer) directoryFactory)
-            .initializeMetrics(
-                solrMetricsContext, MetricUtils.createAttributes("dirFactory", "factory"));
+            .initializeMetrics(solrMetricsContext, "directoryFactory");
       }
 
       bufferUpdatesIfConstructing(coreDescriptor);
@@ -1277,7 +1277,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private UpdateHandler initUpdateHandler(UpdateHandler updateHandler) throws IOException {
+  private UpdateHandler initUpdateHandler(UpdateHandler updateHandler) {
     String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
     if (updateHandlerClass == null) {
       updateHandlerClass = DirectUpdateHandler2.class.getName();
@@ -1325,15 +1325,18 @@ public class SolrCore implements SolrInfoBean, Closeable {
     var baseGaugeCoreAttributes =
         baseAttributes.put(AttributeKey.stringKey("category"), Category.CORE.toString());
 
-    var baseSearcherCounterMetric =
-        parentContext.longCounter("solr_searcher_metric", "Searcher metrics");
-    var baseSearcherTimerMetric =
-        parentContext.longHistogram("solr_searcher_metric_timer", "Searcher metrics");
+    LongCounter baseSearcherCounterMetric =
+        parentContext.longCounter(
+            "solr_metrics_core_searcher", "Solr core counts on searcher events");
+    LongHistogram baseSearcherTimerMetric =
+        parentContext.longHistogram(
+            "solr_metrics_core_searcher_timer",
+            "Solr core metrics on new searchers and warmup times");
 
     newSearcherCounter =
         new BoundLongCounter(
             baseSearcherCounterMetric,
-            baseSearcherAttributes.put(AttributeKey.stringKey("type"), "new").build());
+            baseSearcherAttributes.put(AttributeKey.stringKey("type"), "newSearcher").build());
 
     newSearcherMaxReachedCounter =
         new BoundLongCounter(
@@ -1357,46 +1360,43 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     coreMetric =
         parentContext.observableLongGauge(
-            "solr_core_metric",
-            "Solr core metrics",
+            "solr_metrics_core_index_size_bytes",
+            "Solr core index disk metrics",
             (observableLongMeasurement -> {
-              observableLongMeasurement.record(
-                  startTime.getTime(),
-                  baseGaugeCoreAttributes.put(AttributeKey.stringKey("type"), "startTime").build());
+              Attributes sizeInBytes =
+                  baseGaugeCoreAttributes
+                      .put(AttributeKey.stringKey("type"), "sizeInBytes")
+                      .build();
 
-              if (!isClosed())
-                observableLongMeasurement.record(
-                    getIndexSize(),
-                    baseGaugeCoreAttributes
-                        .put(AttributeKey.stringKey("type"), "sizeInBytes")
-                        .build());
-              if (isReady())
-                observableLongMeasurement.record(
-                    getSegmentCount(),
-                    baseGaugeCoreAttributes
-                        .put(AttributeKey.stringKey("type"), "segmentCount")
-                        .build());
+              Attributes segmentCount =
+                  baseGaugeCoreAttributes
+                      .put(AttributeKey.stringKey("type"), "segmentCount")
+                      .build();
+
+              Attributes totalSpace =
+                  baseGaugeCoreAttributes.put(AttributeKey.stringKey("type"), "totalSpace").build();
+
+              Attributes usableSpace =
+                  baseGaugeCoreAttributes
+                      .put(AttributeKey.stringKey("type"), "usableSpace")
+                      .build();
+
+              if (!isClosed()) observableLongMeasurement.record(getIndexSize(), sizeInBytes);
+              if (isReady()) observableLongMeasurement.record(getSegmentCount(), segmentCount);
 
               // initialize disk total / free metrics
               Path dataDirPath = Path.of(dataDir);
-              // TODO this try/catch doesn't seem right
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getTotalSpace(),
-                    baseGaugeCoreAttributes
-                        .put(AttributeKey.stringKey("type"), "totalSpace")
-                        .build());
+                    Files.getFileStore(dataDirPath).getTotalSpace(), totalSpace);
               } catch (IOException e) {
-                throw new RuntimeException(e);
+                observableLongMeasurement.record(0L, totalSpace);
               }
               try {
                 observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getUsableSpace(),
-                    baseGaugeCoreAttributes
-                        .put(AttributeKey.stringKey("type"), "usableSpace")
-                        .build());
+                    Files.getFileStore(dataDirPath).getUsableSpace(), usableSpace);
               } catch (IOException e) {
-                throw new RuntimeException(e);
+                observableLongMeasurement.record(0L, usableSpace);
               }
             }));
   }
@@ -1640,7 +1640,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /** Load the request processors */
-  private Map<String, UpdateRequestProcessorChain> loadUpdateProcessorChains() throws IOException {
+  private Map<String, UpdateRequestProcessorChain> loadUpdateProcessorChains() {
     Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
     UpdateRequestProcessorChain def =
         initPlugins(

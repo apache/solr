@@ -127,8 +127,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
+    // TODO SOLR-17458: Make this the default option
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      //      response = handlePrometheusExport(params);
       consumer.accept("metrics", cc.getPrometheusMetricReader().collect());
       return;
     }

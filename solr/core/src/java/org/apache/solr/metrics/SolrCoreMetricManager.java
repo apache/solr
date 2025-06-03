@@ -26,6 +26,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.util.stats.MetricUtils;
 
 /**
  * Helper class for managing registration of {@link SolrMetricProducer}'s and {@link
@@ -136,7 +137,19 @@ public class SolrCoreMetricManager implements Closeable {
               + producer);
     }
     // use deprecated method for back-compat, remove in 9.0
-    producer.initializeMetrics(solrMetricsContext, scope);
+    producer.initializeMetrics(
+        solrMetricsContext,
+        MetricUtils.createAttributes(
+            "collection",
+            collectionName,
+            "core",
+            core.getCoreDescriptor().getName(),
+            "shard",
+            shardName,
+            "replica",
+            replicaName,
+            "scope",
+            scope));
   }
 
   /** Return the registry used by this SolrCore. */
