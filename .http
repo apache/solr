@@ -1,2 +1,0 @@
-###
-POST http://localhost:8983/solr/.system/select?q=*:*
