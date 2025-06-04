@@ -128,18 +128,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
     super(serverBaseUrl, builder);
 
     if (builder.httpClient != null) {
-      if (builder.followRedirects != null
-          || builder.connectionTimeoutMillis != null
-          || builder.maxConnectionsPerHost != null
-          || builder.useHttp1_1
-              != builder.httpClient.getTransport() instanceof HttpClientTransportOverHTTP
-          || builder.proxyHost != null
-          || builder.cookieStore != null
-          || builder.sslConfig != null
-          || builder.keyStoreReloadIntervalSecs != null) {
-        throw new IllegalArgumentException(
-            "You cannot provide the HttpClient and also specify options that are used to build a new client");
-      }
       this.httpClient = builder.httpClient;
       if (this.executor == null) {
         this.executor = builder.executor;
@@ -1029,22 +1017,31 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     @Override
     public Http2SolrClient build() {
-      if (sslConfig == null) {
-        sslConfig = Http2SolrClient.defaultSSLConfig;
-      }
-      if (cookieStore == null) {
-        cookieStore = getDefaultCookieStore();
-      }
-
-      if (keyStoreReloadIntervalSecs != null
-          && keyStoreReloadIntervalSecs > 0
-          && this.httpClient != null) {
-        log.warn("keyStoreReloadIntervalSecs can't be set when using external httpClient");
-        keyStoreReloadIntervalSecs = null;
-      } else if (keyStoreReloadIntervalSecs == null
-          && this.httpClient == null
-          && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
-        keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
+      if (httpClient == null) {
+        // set defaults for building an httpClient...
+        if (sslConfig == null) {
+          sslConfig = Http2SolrClient.defaultSSLConfig;
+        }
+        if (cookieStore == null) {
+          cookieStore = getDefaultCookieStore();
+        }
+        if (keyStoreReloadIntervalSecs == null
+            && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
+          keyStoreReloadIntervalSecs =
+              Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
+        }
+      } else {
+        if (followRedirects != null
+            || connectionTimeoutMillis != null
+            || maxConnectionsPerHost != null
+            || useHttp1_1 != httpClient.getTransport() instanceof HttpClientTransportOverHTTP
+            || proxyHost != null
+            || sslConfig != null
+            || cookieStore != null
+            || keyStoreReloadIntervalSecs != null) {
+          throw new IllegalArgumentException(
+              "You cannot provide the HttpClient and also specify options that are used to build a new client");
+        }
       }
 
       Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
