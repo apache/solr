@@ -686,7 +686,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         assertEquals(newIdleTimeoutMs, idleTimeoutChangedClient.getIdleTimeout());
         NamedList<Object> response = idleTimeoutChangedClient.request(req);
         try (InputStream is = (InputStream) response.get("stream")) {
-          assertEquals("0123456789", new String(is.readAllBytes()));
+          assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
         }
       }
     }
@@ -716,7 +716,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       }
       NamedList<Object> response = oldClient.request(req);
       try (InputStream is = (InputStream) response.get("stream")) {
-        assertEquals("0123456789", new String(is.readAllBytes()));
+        assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
       }
     }
   }

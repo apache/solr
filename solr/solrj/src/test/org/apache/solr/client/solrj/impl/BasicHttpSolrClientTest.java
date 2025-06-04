@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -110,7 +111,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
               i -> {
                 try {
                   Thread.sleep(500);
-                  resp.getOutputStream().write(String.valueOf(i).getBytes());
+                  resp.getOutputStream().write(String.valueOf(i).getBytes(StandardCharsets.UTF_8));
                   resp.getOutputStream().flush();
                 } catch (IOException | InterruptedException e) {
                   throw new RuntimeException(e);
