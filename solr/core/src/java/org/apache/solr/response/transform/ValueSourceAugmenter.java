@@ -40,16 +40,18 @@ import org.apache.solr.search.SolrIndexSearcher;
  * @since solr 4.0
  */
 public class ValueSourceAugmenter extends DocTransformer {
-
+  private static final Object NULL_SENTINEL = new Object();
   public final String name;
   public final QParser qparser;
   public final ValueSource valueSource;
-  private static final Object NULL_SENTINEL = new Object();
+  private final int maxPrefetchSize;
 
   public ValueSourceAugmenter(String name, QParser qparser, ValueSource valueSource) {
     this.name = name;
     this.qparser = qparser;
     this.valueSource = valueSource;
+    String maxPrefetchSizeRaw = qparser.getParam("preFetchDocs");
+    this.maxPrefetchSize = maxPrefetchSizeRaw != null ? Integer.parseInt(maxPrefetchSizeRaw) : 1000;
   }
 
   @Override
@@ -70,14 +72,15 @@ public class ValueSourceAugmenter extends DocTransformer {
         return;
       }
 
-      final int[] ids = new int[docList.size()];
+      final int prefetchSize = Math.min(docList.size(), maxPrefetchSize);
+      final int[] ids = new int[prefetchSize];
       int i = 0;
       var iter = docList.iterator();
-      while (iter.hasNext()) {
+      while (iter.hasNext() && i < prefetchSize) {
         ids[i++] = iter.nextDoc();
       }
       Arrays.sort(ids);
-      scores = new IntObjectHashMap<>(ids.length);
+      cachedValuesById = new IntObjectHashMap<>(ids.length);
 
       FunctionValues values = null;
       int docBase = -1;
@@ -92,7 +95,7 @@ public class ValueSourceAugmenter extends DocTransformer {
         }
         int localId = docid - docBase;
         var value = values.objectVal(localId);
-        scores.put(docid, value != null ? value : NULL_SENTINEL);
+        cachedValuesById.put(docid, value != null ? value : NULL_SENTINEL);
       }
     } catch (IOException e) {
       throw new SolrException(
@@ -103,13 +106,13 @@ public class ValueSourceAugmenter extends DocTransformer {
   Map<Object, Object> fcontext;
   SolrIndexSearcher searcher;
   List<LeafReaderContext> readerContexts;
-  IntObjectHashMap<Object> scores;
+  IntObjectHashMap<Object> cachedValuesById;
 
   @Override
   public void transform(SolrDocument doc, int docid, DocIterationInfo docIterationInfo) {
-    Object scoreValue = (scores != null) ? scores.get(docid) : null;
-    if (scoreValue != null) {
-      setValue(doc, scoreValue != NULL_SENTINEL ? scoreValue : null);
+    Object cacheValue = (cachedValuesById != null) ? cachedValuesById.get(docid) : null;
+    if (cacheValue != null) {
+      setValue(doc, cacheValue != NULL_SENTINEL ? cacheValue : null);
     } else {
       // Fallback to on-demand calculation for documents not in the pre-calculated set, RTG use case
       try {
