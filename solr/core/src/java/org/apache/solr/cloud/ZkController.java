@@ -1206,7 +1206,7 @@ public class ZkController implements Closeable {
         zkClient.create(
             NodeRoles.getZNodeForRoleMode(e.getKey(), e.getValue()) + "/" + nodeName,
             null,
-            CreateMode.EPHEMERAL,
+            CreateMode.PERSISTENT, // creating persistent as once node is live then it won't change.
             true);
       } catch (KeeperException.NodeExistsException ex) {
         // ignore , it already exists
