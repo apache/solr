@@ -27,6 +27,8 @@ import io.ktor.http.Url
 import io.ktor.http.parseUrl
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.start.store.StartStore.Intent
@@ -46,6 +48,7 @@ import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
 internal class StartStoreProvider(
     private val storeFactory: StoreFactory,
     private val client: Client,
+    private val mainContext: CoroutineContext,
     private val ioContext: CoroutineContext,
 ) {
 
@@ -76,7 +79,7 @@ internal class StartStoreProvider(
         data class ConnectionFailed(val error: Throwable) : Message
     }
 
-    private inner class ExecutorImpl : CoroutineExecutor<Intent, Unit, State, Message, Label>() {
+    private inner class ExecutorImpl : CoroutineExecutor<Intent, Unit, State, Message, Label>(mainContext) {
         override fun executeIntent(intent: Intent) {
             when (intent) {
                 is Intent.UpdateSolrUrl -> dispatch(Message.UrlUpdated(intent.url))

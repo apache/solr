@@ -38,13 +38,15 @@ class DefaultEnvironmentComponent(
     httpClient: HttpClient,
 ) : EnvironmentComponent, AppComponentContext by componentContext {
 
-    private val mainScope = coroutineScope(mainContext + SupervisorJob())
+    private val mainScope = coroutineScope(SupervisorJob() + mainContext)
+    private val ioScope = coroutineScope(SupervisorJob() + ioContext)
 
     private val store = instanceKeeper.getStore {
         EnvironmentStoreProvider(
             storeFactory = storeFactory,
             client = HttpEnvironmentStoreClient(httpClient),
-            ioContext = ioContext,
+            mainContext = mainScope.coroutineContext,
+            ioContext = ioScope.coroutineContext,
         ).provide()
     }
 
