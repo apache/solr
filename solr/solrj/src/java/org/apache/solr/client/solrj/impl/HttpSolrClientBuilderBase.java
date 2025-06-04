@@ -25,6 +25,12 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 
 public abstract class HttpSolrClientBuilderBase<
     B extends HttpSolrClientBuilderBase<?, ?>, C extends HttpSolrClientBase> {
+  /**
+   * About 24 days in milliseconds -- basically forever to wait for something. But not so large to
+   * cause overflow.
+   */
+  protected static final long FOREVER_MILLIS = Integer.MAX_VALUE;
+
   protected Long idleTimeoutMillis;
   protected Long connectionTimeoutMillis;
   protected Long requestTimeoutMillis;
@@ -128,7 +134,7 @@ public abstract class HttpSolrClientBuilderBase<
 
   public long getIdleTimeoutMillis() {
     return idleTimeoutMillis != null
-        ? (idleTimeoutMillis > 0 ? idleTimeoutMillis : Long.MAX_VALUE)
+        ? (idleTimeoutMillis > 0 ? idleTimeoutMillis : FOREVER_MILLIS)
         : HttpClientUtil.DEFAULT_SO_TIMEOUT;
   }
 
@@ -141,7 +147,7 @@ public abstract class HttpSolrClientBuilderBase<
 
   public long getConnectionTimeoutMillis() {
     return connectionTimeoutMillis != null
-        ? (connectionTimeoutMillis > 0 ? connectionTimeoutMillis : Long.MAX_VALUE)
+        ? (connectionTimeoutMillis > 0 ? connectionTimeoutMillis : FOREVER_MILLIS)
         : HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
   }
 
@@ -154,7 +160,7 @@ public abstract class HttpSolrClientBuilderBase<
 
   public long getRequestTimeoutMillis() {
     return requestTimeoutMillis != null && requestTimeoutMillis >= 0
-        ? (requestTimeoutMillis > 0 ? requestTimeoutMillis : Long.MAX_VALUE)
+        ? (requestTimeoutMillis > 0 ? requestTimeoutMillis : FOREVER_MILLIS)
         : getIdleTimeoutMillis();
   }
 
