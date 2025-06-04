@@ -41,13 +41,15 @@ class DefaultStartComponent(
     output: (StartComponent.Output) -> Unit,
 ) : StartComponent, AppComponentContext by componentContext {
 
-    private val mainScope = coroutineScope(mainContext + SupervisorJob())
+    private val mainScope = coroutineScope(SupervisorJob() + mainContext)
+    private val ioScope = coroutineScope(SupervisorJob() + ioContext)
 
     private val store = instanceKeeper.getStore {
         StartStoreProvider(
             storeFactory = storeFactory,
             client = HttpStartStoreClient(httpClient),
-            ioContext = ioContext,
+            mainContext = mainScope.coroutineContext,
+            ioContext = ioScope.coroutineContext,
         ).provide()
     }
 
