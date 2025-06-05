@@ -388,8 +388,4 @@ public abstract class HttpSolrClientBase extends SolrClient {
   public Set<String> getUrlParamNames() {
     return urlParamNames;
   }
-
-  long getRequestTimeoutMillis() {
-    return requestTimeoutMillis;
-  }
 }
