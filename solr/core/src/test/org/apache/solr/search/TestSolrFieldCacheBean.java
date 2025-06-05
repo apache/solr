@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import io.opentelemetry.api.common.Attributes;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
@@ -70,7 +71,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     SolrMetricsContext solrMetricsContext =
         new SolrMetricsContext(metricManager, registryName, "foo");
-    mbean.initializeMetrics(solrMetricsContext, null);
+    mbean.initializeMetrics(solrMetricsContext, Attributes.empty());
     MetricsMap metricsMap =
         (MetricsMap)
             ((SolrMetricManager.GaugeWrapper)
@@ -89,7 +90,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     SolrMetricsContext solrMetricsContext =
         new SolrMetricsContext(metricManager, registryName, "foo");
-    mbean.initializeMetrics(solrMetricsContext, null);
+    mbean.initializeMetrics(solrMetricsContext, Attributes.empty());
     MetricsMap metricsMap =
         (MetricsMap)
             ((SolrMetricManager.GaugeWrapper)
