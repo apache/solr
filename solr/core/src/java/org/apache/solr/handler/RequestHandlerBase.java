@@ -182,7 +182,8 @@ public abstract class RequestHandlerBase
                 new SolrMetricManager(
                     null,
                     new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build(),
-                    io.opentelemetry.api.metrics.MeterProvider.noop()),
+                    io.opentelemetry.api.metrics.MeterProvider.noop(),
+                    null),
                 "NO_OP",
                 "NO_OP"),
             Attributes.empty());

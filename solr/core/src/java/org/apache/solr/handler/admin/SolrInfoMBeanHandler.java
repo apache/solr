@@ -145,6 +145,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     mBeanInfo.add("class", m.getName());
     mBeanInfo.add("description", m.getDescription());
 
+    var msnap = solrMetricsContext.getPrometheusMetrics();
     if (req.getParams().getFieldBool(key, "stats", false) && m.getSolrMetricsContext() != null)
       mBeanInfo.add("stats", m.getSolrMetricsContext().getMetricsSnapshot());
 

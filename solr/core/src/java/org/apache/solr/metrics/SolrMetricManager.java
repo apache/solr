@@ -51,6 +51,8 @@ import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -147,6 +149,7 @@ public class SolrMetricManager {
   private final MetricRegistry.MetricSupplier<Histogram> histogramSupplier;
 
   private final MeterProvider meterProvider;
+  private final PrometheusMetricReader prometheusMetricReader;
   private final Map<String, io.opentelemetry.api.metrics.Meter> meters = new ConcurrentHashMap<>();
 
   public SolrMetricManager() {
@@ -156,10 +159,14 @@ public class SolrMetricManager {
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
     histogramSupplier = MetricSuppliers.histogramSupplier(null, null);
     meterProvider = GlobalOpenTelemetry.getMeterProvider();
+    prometheusMetricReader = new PrometheusMetricReader(true, null);
   }
 
   public SolrMetricManager(
-      SolrResourceLoader loader, MetricsConfig metricsConfig, MeterProvider meterProvider) {
+      SolrResourceLoader loader,
+      MetricsConfig metricsConfig,
+      MeterProvider meterProvider,
+      PrometheusMetricReader metricReader) {
     this.metricsConfig = metricsConfig;
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
@@ -167,6 +174,7 @@ public class SolrMetricManager {
     histogramSupplier =
         MetricSuppliers.histogramSupplier(loader, metricsConfig.getHistogramSupplier());
     this.meterProvider = meterProvider;
+    this.prometheusMetricReader = metricReader;
   }
 
   public LongCounter longCounter(
@@ -870,6 +878,11 @@ public class SolrMetricManager {
     return registry(registry).getMetrics().entrySet().stream()
         .filter(entry -> metricFilter.matches(entry.getKey(), entry.getValue()))
         .collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
+  }
+
+  // TODO SOLR-17458: We should make a filter here
+  public MetricSnapshots getPrometheusMetrics() {
+    return prometheusMetricReader.collect();
   }
 
   /**
