@@ -209,7 +209,8 @@ public class SolrClientCache implements Closeable {
     } else {
       builder.withConnectionTimeout(minConnTimeout, TimeUnit.MILLISECONDS);
     }
-    builder.withIdleTimeout(minSocketTimeout, TimeUnit.MILLISECONDS);
+    builder.withIdleTimeout(
+        Math.max(minSocketTimeout, builder.getIdleTimeoutMillis()), TimeUnit.MILLISECONDS);
     builder.withOptionalBasicAuthCredentials(basicAuthCredentials);
 
     return builder;
