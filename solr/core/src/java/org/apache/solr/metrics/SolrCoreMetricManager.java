@@ -149,7 +149,8 @@ public class SolrCoreMetricManager implements Closeable {
             "replica",
             replicaName,
             "scope",
-            scope));
+            scope),
+        scope);
   }
 
   /** Return the registry used by this SolrCore. */

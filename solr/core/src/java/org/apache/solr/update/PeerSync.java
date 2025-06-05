@@ -24,6 +24,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
@@ -143,7 +144,8 @@ public class PeerSync implements SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
     syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);

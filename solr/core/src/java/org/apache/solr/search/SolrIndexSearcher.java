@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 
 import com.codahale.metrics.Gauge;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -591,9 +592,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache<?, ?> cache : cacheList) {
       cache.initializeMetrics(
-          solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+          // TODO SOLR-17458: Add Otel
+          solrMetricsContext,
+          Attributes.empty(),
+          SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
-    initializeMetrics(solrMetricsContext, STATISTICS_KEY);
+    // TODO SOLR-17458: Add Otel
+    initializeMetrics(solrMetricsContext, Attributes.empty(), STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -2585,7 +2590,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     parentContext.gauge(() -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);

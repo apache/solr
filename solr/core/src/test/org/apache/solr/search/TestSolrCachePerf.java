@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -105,7 +106,9 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       CacheRegenerator cr = new NoOpRegenerator();
       Object o = cache.init(params, null, cr);
       cache.setState(SolrCache.State.LIVE);
-      cache.initializeMetrics(new SolrMetricsContext(metricManager, "foo", "bar"), "foo");
+      // TODO SOLR-17458: Fix test later
+      cache.initializeMetrics(
+          new SolrMetricsContext(metricManager, "foo", "bar"), Attributes.empty(), "foo");
       AtomicBoolean stop = new AtomicBoolean();
       SummaryStatistics perImplRatio =
           ratioStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());

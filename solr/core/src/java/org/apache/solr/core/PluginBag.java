@@ -75,8 +75,7 @@ public class PluginBag<T> implements AutoCloseable {
    * resource classes
    *
    * <p>Used primarily by JAX-RS when recording per-request metrics, which requires a {@link
-   * org.apache.solr.handler.RequestHandlerBase.HandlerMetrics} object from the relevant
-   * requestHandler.
+   * RequestHandlerBase.HandlerMetrics} object from the relevant requestHandler.
    */
   public static class JaxrsResourceToHandlerMappings
       extends HashMap<Class<? extends JerseyResource>, RequestHandlerBase> {}

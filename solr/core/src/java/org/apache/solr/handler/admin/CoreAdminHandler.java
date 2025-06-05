@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.Ticker;
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,8 +130,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    super.initializeMetrics(parentContext, attributes, scope);
     coreAdminAsyncTracker.standardExecutor =
         MetricUtils.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,

@@ -21,6 +21,7 @@ import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.TIMER;
 
+import com.codahale.metrics.Timer;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -59,8 +60,8 @@ public class RequestMetricHandling {
    * Sets up the metrics-context for individual requests
    *
    * <p>Looks up the requestHandler associated with the particular Jersey request and attaches its
-   * {@link org.apache.solr.handler.RequestHandlerBase.HandlerMetrics} to the request context to be
-   * manipulated by other pre- and post-request filters in this chain.
+   * {@link RequestHandlerBase.HandlerMetrics} to the request context to be manipulated by other
+   * pre- and post-request filters in this chain.
    */
   public static class PreRequestMetricsFilter implements ContainerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -89,8 +90,10 @@ public class RequestMetricHandling {
       final RequestHandlerBase.HandlerMetrics metrics =
           handlerBase.getMetricsForThisRequest(solrQueryRequest);
       requestContext.setProperty(HANDLER_METRICS, metrics);
+      requestContext.setProperty("dropwizardTimer", metrics.requestTimes.time());
+
+      metrics.otelRequestTimes.start();
       requestContext.setProperty(TIMER, metrics.requestTimes);
-      metrics.requestTimes.start();
       metrics.requests.inc();
     }
   }
@@ -116,11 +119,16 @@ public class RequestMetricHandling {
           && SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
         final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
         if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
-          metrics.numTimeouts.inc();
+          metrics.numTimeouts.mark();
+          metrics.otelNumTimeouts.inc();
         }
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
+      final Timer.Context dropwizardTimer =
+          (Timer.Context) requestContext.getProperty("dropwizardTimer");
+      metrics.totalTime.inc(dropwizardTimer.stop());
+
       final BoundLongTimer timer = (BoundLongTimer) requestContext.getProperty(TIMER);
       timer.stop();
     }

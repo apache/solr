@@ -23,6 +23,7 @@ import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -627,7 +628,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     bufferedOpsGauge =
         () -> {

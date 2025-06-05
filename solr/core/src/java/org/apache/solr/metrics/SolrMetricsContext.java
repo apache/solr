@@ -136,7 +136,7 @@ public class SolrMetricsContext {
    * registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order to capture
    * what metric names are reported from this component (which in turn is called from {@link
    * SolrMetricProducer#initializeMetrics(SolrMetricsContext,
-   * io.opentelemetry.api.common.Attributes)}).
+   * io.opentelemetry.api.common.Attributes, String)}).
    */
   // TODO We can continue to register metric names
   public void registerMetricName(String name) {

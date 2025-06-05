@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -146,7 +147,8 @@ public class ZkContainer {
               SolrMetricsContext ctx;
 
               @Override
-              public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+              public void initializeMetrics(
+                  SolrMetricsContext parentContext, Attributes attributes, String scope) {
                 ctx = parentContext.getChildContext(this);
                 ctx.gauge(
                     metricsMap, true, scope, null, SolrInfoBean.Category.CONTAINER.toString());
