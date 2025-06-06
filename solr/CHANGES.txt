@@ -56,7 +56,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-* SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962. 
+* SOLR-17772: Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962.
   Additionally achieves simplification of CLI tests (Rahul Goswami via Eric Pugh)
 
 Deprecation Removals
@@ -195,7 +195,7 @@ Other Changes
 New Features
 ---------------------
 * SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
-  fetching and computing it on the fly.  To avoid a backwards compatibilty concern, this won't work
+  fetching and computing it on the fly.  To avoid a backwards compatibility concern, this won't work
   for wt=javabin.  (Matthew Biscocho, David Smiley)
 
 * SOLR-17626: Add RawTFSimilarityFactory class. (Christine Poerschke)
@@ -296,8 +296,11 @@ Bug Fixes
 * SOLR-17758: The NumFieldLimitingUpdateRequestProcessor's "warnOnly" mode has been fixed, and now processes documents even
   when the limit has been exceeded. (Jason Gerlowski, Rahul Goswami)
 
-* SOLR-7962: Passing additional arguments to solr.cmd using "--jvm-opts" (formerly "-a") in conjunction with "-e" (examples like 'techproducts') 
+* SOLR-7962: Passing additional arguments to solr.cmd using "--jvm-opts" (formerly "-a") in conjunction with "-e" (examples like 'techproducts')
   wouldn't reflect on Windows (Rahul Goswami via Eric Pugh)
+
+* SOLR-17754: Fix rare bug in overseer main loop in case of high load, that may cause the overseer be fully stuck until
+  server restart. (Pierre Salagnac)
 
 Dependency Upgrades
 ---------------------
