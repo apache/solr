@@ -14,23 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.otel.instruments;
 
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.DoubleGauge;
-import org.apache.solr.metrics.otel.OtelDoubleMetric;
-
-public class BoundDoubleGauge implements OtelDoubleMetric {
-  private final DoubleGauge gauge;
-  private final Attributes attributes;
-
-  public BoundDoubleGauge(DoubleGauge gauge, Attributes attributes) {
-    this.gauge = gauge;
-    this.attributes = attributes;
-  }
-
-  @Override
-  public void record(Double value) {
-    gauge.set(value, attributes);
-  }
-}
+/**
+ * {@link org.apache.solr.metrics.otel.OtelLongMetric} and {@link
+ * org.apache.solr.metrics.otel.OtelDoubleMetric} are interfaces for creating wrappers around Open
+ * Telemetry instruments created from {@link io.opentelemetry.api.metrics.MeterProvider} to record
+ * and measure metrics
+ */
+package org.apache.solr.metrics.otel;

@@ -60,8 +60,8 @@ public class RequestMetricHandling {
    * Sets up the metrics-context for individual requests
    *
    * <p>Looks up the requestHandler associated with the particular Jersey request and attaches its
-   * {@link RequestHandlerBase.HandlerMetrics} to the request context to be manipulated by other
-   * pre- and post-request filters in this chain.
+   * {@link org.apache.solr.handler.RequestHandlerBase.HandlerMetrics} to the request context to be
+   * manipulated by other pre- and post-request filters in this chain.
    */
   public static class PreRequestMetricsFilter implements ContainerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

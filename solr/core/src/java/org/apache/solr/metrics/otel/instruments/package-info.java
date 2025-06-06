@@ -14,23 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * A collection of bound OTEL instruments which are reusable wrappers around OpenTelemetry metric
+ * instruments that are pre-bound to a fixed set of Attributes. This avoids repeated attribute
+ * allocation on every metric recording. These classes implement Solr’s internal OtelMetric
+ * interfaces {@link org.apache.solr.metrics.otel.OtelDoubleMetric} and {@link
+ * org.apache.solr.metrics.otel.OtelLongMetric} which allow Solr’s metric producers to abstract over
+ * the OTEL API.
+ */
 package org.apache.solr.metrics.otel.instruments;
-
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.DoubleGauge;
-import org.apache.solr.metrics.otel.OtelDoubleMetric;
-
-public class BoundDoubleGauge implements OtelDoubleMetric {
-  private final DoubleGauge gauge;
-  private final Attributes attributes;
-
-  public BoundDoubleGauge(DoubleGauge gauge, Attributes attributes) {
-    this.gauge = gauge;
-    this.attributes = attributes;
-  }
-
-  @Override
-  public void record(Double value) {
-    gauge.set(value, attributes);
-  }
-}
