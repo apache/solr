@@ -114,6 +114,10 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
             } else {
               actualValue = actualMetric.split(" ")[1];
             }
+            if (actualMetric.startsWith("target_info")) {
+              // Skip standard OTEL metric
+              return;
+            }
             assertTrue(
                 "All metrics should start with 'solr_metrics_'",
                 actualMetric.startsWith("solr_metrics_"));
