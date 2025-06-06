@@ -80,3 +80,12 @@ teardown() {
   run cat ${SOLR_LOGS_DIR}/solr-${SOLR_PORT}-console.log
   refute_output --partial 'Exception'
 }
+
+@test "solr starts with --jettyconfig" { 
+  run solr start --jettyconfig 
+  assert_output --partial 'ERROR: Jetty config is required when using the --jettyconfig option'  
+
+  # Test that parsing works.  Note, Solr doesn't actually start as we are not referencing a real jetty configuration directory.
+  run solr start --jettyconfig "--include-jetty-dir=/etc/jetty/custom/server/"
+  refute_output --partial 'ERROR: Jetty config is required when using the --jettyconfig option'  
+}
