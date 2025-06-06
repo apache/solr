@@ -16,29 +16,12 @@
  */
 package org.apache.solr.response;
 
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.AggregateMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
-import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreFormatter;
-import org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyFormatter;
-import org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmFormatter;
-import org.apache.solr.metrics.prometheus.node.SolrPrometheusNodeFormatter;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,78 +47,5 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return CONTENT_TYPE_PROMETHEUS;
-  }
-
-  /**
-   * Provides a representation of the given Dropwizard metric registry as {@link
-   * SolrPrometheusCoreFormatter}-s. Only those metrics are converted which match at least one of
-   * the given MetricFilter instances.
-   *
-   * @param registry the {@link MetricRegistry} to be converted
-   * @param shouldMatchFilters a list of {@link MetricFilter} instances. A metric must match <em>any
-   *     one</em> of the filters from this list to be included in the output
-   * @param mustMatchFilter a {@link MetricFilter}. A metric <em>must</em> match this filter to be
-   *     included in the output.
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreFormatter}-s
-   */
-  public static void toPrometheus(
-      MetricRegistry registry,
-      String registryName,
-      List<MetricFilter> shouldMatchFilters,
-      MetricFilter mustMatchFilter,
-      Predicate<CharSequence> propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      Consumer<SolrPrometheusFormatter> consumer) {
-    Map<String, Metric> dropwizardMetrics = registry.getMetrics();
-    var formatter = getFormatterType(registryName);
-    if (formatter == null) {
-      return;
-    }
-
-    MetricUtils.toMaps(
-        registry,
-        shouldMatchFilters,
-        mustMatchFilter,
-        propertyFilter,
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        false,
-        (metricName, metric) -> {
-          try {
-            Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            formatter.exportDropwizardMetric(dropwizardMetric, metricName);
-          } catch (Exception e) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error occurred exporting Dropwizard Metric to Prometheus",
-                e);
-          }
-        });
-
-    consumer.accept(formatter);
-  }
-
-  public static SolrPrometheusFormatter getFormatterType(String registryName) {
-    String[] parsedRegistry = registryName.split("\\.");
-
-    switch (parsedRegistry[1]) {
-      case "core":
-        return new SolrPrometheusCoreFormatter();
-      case "jvm":
-        return new SolrPrometheusJvmFormatter();
-      case "jetty":
-        return new SolrPrometheusJettyFormatter();
-      case "node":
-        return new SolrPrometheusNodeFormatter();
-      default:
-        return null;
-    }
   }
 }
