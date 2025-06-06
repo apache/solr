@@ -160,7 +160,7 @@ ltgt-errorprone = "3.1.0"
 mockito = "5.16.1"
 morethan-jmhreport = "0.9.0"
 mvikotlin = "4.3.0"
-navsecurity = "0.5.10"
+navsecurity = "2.2.1"
 netty = "4.1.114.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.66.Final"
