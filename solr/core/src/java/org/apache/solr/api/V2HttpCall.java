@@ -24,6 +24,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
 import io.opentelemetry.api.trace.Span;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -35,8 +37,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -437,7 +437,12 @@ public class V2HttpCall extends HttpSolrCall {
         // SolrCore counter
         core.close();
         core = null;
-        response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
+        // Skip specific headers
+        // workaround for response.setHeader(name, null)
+        response.getHeaderNames().stream()
+            .filter(name -> !name.equalsIgnoreCase("Content-Length"))
+            .forEach(name -> response.setHeader(name, ""));
+        response.setContentLength(-1);
         invokeJerseyRequest(
             cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), rsp);
       }
