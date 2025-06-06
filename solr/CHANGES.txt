@@ -251,6 +251,8 @@ Optimizations
 
 * SOLR-17756: Parallelize index fingerprint computation across segments via a dedicated thread pool (Matthew Biscocho, Luke Kot-Zaniewski)
 
+* SOLR-17775: Speed up function queries in 'fl' param. (Yura Korolov)
+
 Bug Fixes
 ---------------------
 * SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
