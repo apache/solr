@@ -255,6 +255,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
               responseListener = out.getResponseListener();
             }
 
+            // just wait for the headers, so the idle timeout is sensible
             Response response =
                 responseListener.get(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
             rspBody = responseListener.getInputStream();
