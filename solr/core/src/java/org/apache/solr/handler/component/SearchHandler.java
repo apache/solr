@@ -171,7 +171,9 @@ public class SearchHandler extends RequestHandlerBase
                 .putAll(attributes)
                 .put(AttributeKey.stringKey("category"), getCategory().toString())
                 .put(AttributeKey.stringKey("internal"), "true")
-                .build());
+                .build(),
+            getCategory().toString(),
+            scope + SHARD_HANDLER_SUFFIX);
   }
 
   @Override

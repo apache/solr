@@ -89,12 +89,14 @@ public class RequestMetricHandling {
           (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
       final RequestHandlerBase.HandlerMetrics metrics =
           handlerBase.getMetricsForThisRequest(solrQueryRequest);
-      requestContext.setProperty(HANDLER_METRICS, metrics);
-      requestContext.setProperty("dropwizardTimer", metrics.requestTimes.time());
 
-      metrics.otelRequestTimes.start();
-      requestContext.setProperty(TIMER, metrics.requestTimes);
+      // TODO SOLR-17458: Recording both Otel and dropwizard for now. Will remove Dropwizard after
+      // removal
       metrics.requests.inc();
+      metrics.otelRequestTimes.start();
+      requestContext.setProperty(TIMER, metrics.otelRequestTimes);
+      requestContext.setProperty("dropwizardTimer", metrics.requestTimes.time());
+      requestContext.setProperty(HANDLER_METRICS, metrics);
     }
   }
 

@@ -886,9 +886,7 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    metricManager =
-        new SolrMetricManager(
-            loader, cfg.getMetricsConfig(), meterProvider, prometheusMetricReader);
+    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig(), meterProvider);
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 

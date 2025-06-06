@@ -32,7 +32,6 @@ import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
-import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -147,10 +146,6 @@ public class SolrMetricsContext {
   // TODO Don't think this is needed anymore
   public Map<String, Object> getMetricsSnapshot() {
     return MetricUtils.convertMetrics(getMetricRegistry(), metricNames);
-  }
-
-  public MetricSnapshots getPrometheusMetrics() {
-    return metricManager.getPrometheusMetrics();
   }
 
   public LongCounter longCounter(String metricName, String description) {
