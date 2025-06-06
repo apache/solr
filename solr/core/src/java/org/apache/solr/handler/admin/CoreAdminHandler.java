@@ -129,6 +129,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             + "it is a special Handler configured directly by the RequestDispatcher");
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {

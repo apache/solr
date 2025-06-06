@@ -947,6 +947,7 @@ public class CoreContainer {
               this,
               zkSys.getZkController().getNodeName(),
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+      // TODO SOLR-17458: Add Otel
       pkiAuthenticationSecurityBuilder.initializeMetrics(
           solrMetricsContext, Attributes.empty(), "/authentication/pki");
 
@@ -1025,9 +1026,11 @@ public class CoreContainer {
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
+    // TODO SOLR-17458: Add Otel
     metricsHandler.initializeMetrics(solrMetricsContext, Attributes.empty(), METRICS_PATH);
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
+    // TODO SOLR-17458: Add Otel
     securityConfHandler.initializeMetrics(solrMetricsContext, Attributes.empty(), AUTHZ_PATH);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
 
@@ -2488,6 +2491,7 @@ public class CoreContainer {
     }
     if (handler instanceof SolrMetricProducer) {
       ((SolrMetricProducer) handler)
+          // TODO SOLR-17458: Add Otel
           .initializeMetrics(solrMetricsContext, Attributes.empty(), path);
     }
     return handler;

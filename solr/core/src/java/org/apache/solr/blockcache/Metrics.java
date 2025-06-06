@@ -55,6 +55,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   private SolrMetricsContext solrMetricsContext;
   private long previous = System.nanoTime();
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {

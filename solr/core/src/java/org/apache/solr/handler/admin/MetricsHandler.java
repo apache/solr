@@ -126,7 +126,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
-    // TODO SOLR-17458: Make this the default option
+    // TODO SOLR-17458: Make this the default option after dropwizard removal
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
       consumer.accept("metrics", cc.getPrometheusMetricReader().collect());
       return;
