@@ -32,6 +32,7 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -162,6 +163,7 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ApplicationHandler;
@@ -423,6 +425,11 @@ public class CoreContainer {
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
+    PrometheusMetricReader metricReader = new PrometheusMetricReader(true, null);
+    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader, metricReader);
+    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig(), metricReader);
+    this.tracer = TraceUtils.getGlobalTracer();
+
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
@@ -833,11 +840,9 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
-    String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
-    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
-
-    tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
+    solrMetricsContext =
+        new SolrMetricsContext(
+            metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
 
     coreContainerWorkExecutor =
         MetricUtils.instrumentedExecutorService(

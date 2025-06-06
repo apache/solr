@@ -26,6 +26,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -55,6 +57,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -120,16 +123,26 @@ public class SolrMetricManager {
   private final MetricRegistry.MetricSupplier<Timer> timerSupplier;
   private final MetricRegistry.MetricSupplier<Histogram> histogramSupplier;
 
+  private final MeterProvider meterProvider;
+  private final PrometheusMetricReader prometheusMetricReader;
+
   public SolrMetricManager() {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     counterSupplier = MetricSuppliers.counterSupplier(null, null);
     meterSupplier = MetricSuppliers.meterSupplier(null, null);
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
     histogramSupplier = MetricSuppliers.histogramSupplier(null, null);
+    meterProvider = MetricUtils.getMeterProvider();
+    prometheusMetricReader = null;
   }
 
-  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
+  public SolrMetricManager(
+      SolrResourceLoader loader,
+      MetricsConfig metricsConfig,
+      PrometheusMetricReader prometheusMetricReader) {
     this.metricsConfig = metricsConfig;
+    this.prometheusMetricReader = prometheusMetricReader;
+    this.meterProvider = MetricUtils.getMeterProvider();
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
