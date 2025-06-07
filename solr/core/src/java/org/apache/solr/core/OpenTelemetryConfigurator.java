@@ -22,10 +22,12 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -53,7 +55,29 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
 
   private static volatile boolean loaded = false;
 
-  public static synchronized void configureOpenTelemetrySdk(
+  /**
+   * Initializes the {@link io.opentelemetry.api.GlobalOpenTelemetry} instance by configuring the
+   * {@link io.opentelemetry.sdk.OpenTelemetrySdk} through custom plugin, auto-configure or default
+   * SDK.
+   */
+  public static synchronized void initializeOpenTelemetrySdk(
+      NodeConfig cfg, SolrResourceLoader loader, PrometheusMetricReader prometheusMetricReader) {
+    PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
+
+    if (info != null && info.isEnabled()) {
+      OpenTelemetryConfigurator.configureCustomOpenTelemetrySdk(
+          loader, cfg.getTracerConfiguratorPluginInfo());
+    } else if (OpenTelemetryConfigurator.shouldAutoConfigOTEL()) {
+      OpenTelemetryConfigurator.autoConfigureOpenTelemetrySdk(loader);
+    } else {
+      // Initializing sampler as always off to replicate no-op Tracer provider
+      OpenTelemetryConfigurator.configureOpenTelemetrySdk(
+          SdkMeterProvider.builder().registerMetricReader(prometheusMetricReader).build(),
+          SdkTracerProvider.builder().setSampler(Sampler.alwaysOff()).build());
+    }
+  }
+
+  private static void configureOpenTelemetrySdk(
       SdkMeterProvider sdkMeterProvider, SdkTracerProvider sdkTracerProvider) {
     if (loaded) return;
 
@@ -71,7 +95,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     loaded = true;
   }
 
-  public static synchronized void autoConfigureOpenTelemetrySdk(SolrResourceLoader loader) {
+  private static void autoConfigureOpenTelemetrySdk(SolrResourceLoader loader) {
     if (loaded) return;
     try {
       OpenTelemetryConfigurator configurator =
@@ -87,8 +111,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     }
   }
 
-  public static synchronized void configureCustomOpenTelemetrySdk(
-      SolrResourceLoader loader, PluginInfo info) {
+  private static void configureCustomOpenTelemetrySdk(SolrResourceLoader loader, PluginInfo info) {
     if (loaded) return;
 
     OpenTelemetryConfigurator configurator =

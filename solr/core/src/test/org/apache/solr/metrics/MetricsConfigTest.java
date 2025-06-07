@@ -36,10 +36,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   public void testDefaults() {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
     SolrMetricManager mgr =
-        new SolrMetricManager(
-            cfg.getSolrResourceLoader(),
-            cfg.getMetricsConfig(),
-            GlobalOpenTelemetry.getMeterProvider());
+        new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig(), null);
     assertTrue(mgr.getCounterSupplier() instanceof MetricSuppliers.DefaultCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MetricSuppliers.DefaultMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MetricSuppliers.DefaultTimerSupplier);
@@ -58,10 +55,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     System.setProperty("histogram.reservoir", SlidingTimeWindowReservoir.class.getName());
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
     SolrMetricManager mgr =
-        new SolrMetricManager(
-            cfg.getSolrResourceLoader(),
-            cfg.getMetricsConfig(),
-            GlobalOpenTelemetry.getMeterProvider());
+        new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig(), null);
     assertTrue(mgr.getCounterSupplier() instanceof MetricSuppliers.DefaultCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MetricSuppliers.DefaultMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MetricSuppliers.DefaultTimerSupplier);
@@ -80,10 +74,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     System.setProperty("histogram.class", MockHistogramSupplier.class.getName());
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
     SolrMetricManager mgr =
-        new SolrMetricManager(
-            cfg.getSolrResourceLoader(),
-            cfg.getMetricsConfig(),
-            GlobalOpenTelemetry.getMeterProvider());
+        new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig(), null);
     assertTrue(mgr.getCounterSupplier() instanceof MockCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MockMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MockTimerSupplier);
@@ -110,10 +101,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     System.setProperty("metricsEnabled", "false");
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
     SolrMetricManager mgr =
-        new SolrMetricManager(
-            cfg.getSolrResourceLoader(),
-            cfg.getMetricsConfig(),
-            GlobalOpenTelemetry.getMeterProvider());
+        new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig(), null);
     assertTrue(mgr.getCounterSupplier() instanceof MetricSuppliers.NoOpCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MetricSuppliers.NoOpMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MetricSuppliers.NoOpTimerSupplier);
@@ -124,10 +112,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   public void testMissingValuesConfig() {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig1.xml");
     SolrMetricManager mgr =
-        new SolrMetricManager(
-            cfg.getSolrResourceLoader(),
-            cfg.getMetricsConfig(),
-            GlobalOpenTelemetry.getMeterProvider());
+        new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig(), null);
     assertNull("nullNumber", mgr.nullNumber());
     assertEquals("notANumber", -1, mgr.notANumber());
     assertEquals("nullNumber", "", mgr.nullString());
