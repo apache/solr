@@ -87,6 +87,25 @@ configure(project(':solr:documentation')) {
 // filter that can be used with the "copy" task of Gradle that transforms Markdown files
 // from source location to HTML (adding HTML header, styling,...)
 class MarkdownFilter extends FilterReader {
+  private static String MATOMO_SCRIPT = '''\
+    <!-- Matomo -->
+    <script>
+      var _paq = window._paq = window._paq || [];
+      /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+      _paq.push(["setDoNotTrack", true]);
+      _paq.push(["disableCookies"]);
+      _paq.push(['trackPageView']);
+      _paq.push(['enableLinkTracking']);
+      (function() {
+        var u="https://analytics.apache.org/";
+        _paq.push(['setTrackerUrl', u+'matomo.php']);
+        _paq.push(['setSiteId', '76']);
+        var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+        g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+      })();
+    </script>
+    <!-- End Matomo Code -->
+    '''.stripMargin()
 
   public MarkdownFilter(Reader reader) throws IOException {
     // this is not really a filter: it reads whole file in ctor,
@@ -113,6 +132,7 @@ class MarkdownFilter extends FilterReader {
       html.append('<title>').append(Escaping.escapeHtml(title, false)).append('</title>\n');
     }
     html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
+      .append(MATOMO_SCRIPT)
       .append('</head>\n<body>\n');
     HtmlRenderer.builder(options).build().render(parsed, html);
     html.append('</body>\n</html>\n');
