@@ -22,6 +22,9 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -37,9 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
@@ -61,7 +61,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -454,11 +454,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
             if ("v1".equals(System.getProperty(SEND_VERSION))) {
               preFetchedUser
                   .map(generatedV1TokenCache::get)
-                  .ifPresent(token -> request.header(HEADER, token));
+                  .ifPresent(token -> request.headers(httpFields -> httpFields.add(HEADER, token)));
             } else {
               preFetchedUser
                   .map(generatedV2TokenCache::get)
-                  .ifPresent(token -> request.header(HEADER_V2, token));
+                  .ifPresent(
+                  token -> request.headers(httpFields -> httpFields.add(HEADER_V2, token)));
             }
           }
 
