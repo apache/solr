@@ -21,7 +21,6 @@ import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.SlidingTimeWindowReservoir;
 import com.codahale.metrics.UniformReservoir;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;

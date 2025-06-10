@@ -26,7 +26,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleCounterBuilder;
 import io.opentelemetry.api.metrics.DoubleGauge;
@@ -51,7 +50,6 @@ import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
-import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -1622,5 +1620,9 @@ public class SolrMetricManager {
 
   public MetricsConfig getMetricsConfig() {
     return metricsConfig;
+  }
+
+  public PrometheusMetricReader getPrometheusMetricReader() {
+    return prometheusMetricReader;
   }
 }

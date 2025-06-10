@@ -24,7 +24,6 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.MeterProvider;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;

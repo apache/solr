@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
@@ -184,5 +185,11 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
    */
   protected static String envNameToSyspropName(String envName) {
     return envName.toLowerCase(Locale.ROOT).replace("_", ".");
+  }
+
+  @VisibleForTesting
+  public static void resetForTest() {
+    loaded = false;
+    GlobalOpenTelemetry.resetForTest();
   }
 }
