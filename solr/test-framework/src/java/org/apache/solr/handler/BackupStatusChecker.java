@@ -22,6 +22,7 @@ import static org.apache.lucene.tests.util.LuceneTestCase.assertTrue;
 import static org.apache.solr.SolrTestCaseJ4.params;
 
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -196,7 +197,7 @@ public final class BackupStatusChecker {
     log.info("Checking Status of {}: {}", label, data);
     @SuppressWarnings({"unchecked"})
     final NamedList<String> backupData =
-        (NamedList<String>) data.findRecursive("details", "backup");
+        (NamedList<String>) data._get(List.of("details", "backup"), null);
     if (null == backupData) {
       // no backup has finished yet
       return null;
@@ -273,7 +274,7 @@ public final class BackupStatusChecker {
     log.info("Checking Deletion Status of {}: {}", backupName, data);
     @SuppressWarnings({"unchecked"})
     final NamedList<String> backupData =
-        (NamedList<String>) data.findRecursive("details", "backup");
+        (NamedList<String>) data._get(List.of("details", "backup"), null);
     if (null == backupData
         || null == backupData.get("status")
         || !backupName.equals(backupData.get("snapshotName"))) {

@@ -17,6 +17,9 @@
 package org.apache.solr.servlet;
 
 import com.google.common.net.HttpHeaders;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -25,9 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;

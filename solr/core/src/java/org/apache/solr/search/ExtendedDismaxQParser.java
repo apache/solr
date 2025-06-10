@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
@@ -532,13 +531,11 @@ public class ExtendedDismaxQParser extends QParser {
     List<ValueSource> boosts = new ArrayList<>();
     if (config.hasMultiplicativeBoosts()) {
       for (String boostStr : config.multBoosts) {
-        if (boostStr == null || boostStr.length() == 0) continue;
-        Query boost = subQuery(boostStr, FunctionQParserPlugin.NAME).getQuery();
-        ValueSource vs;
-        if (boost instanceof FunctionQuery) {
-          vs = ((FunctionQuery) boost).getValueSource();
-        } else {
-          vs = new QueryValueSource(boost, 1.0f);
+        if (boostStr == null || boostStr.isEmpty()) continue;
+        ValueSource vs = subQuery(boostStr, FunctionQParserPlugin.NAME).parseAsValueSource();
+        // the default score should be 1, not 0
+        if (vs instanceof QueryValueSource qvs && qvs.getDefaultValue() == 0.0f) {
+          vs = new QueryValueSource(qvs.getQuery(), 1.0f);
         }
         boosts.add(vs);
       }
