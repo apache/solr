@@ -459,7 +459,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
               preFetchedUser
                   .map(generatedV2TokenCache::get)
                   .ifPresent(
-                  token -> request.headers(httpFields -> httpFields.add(HEADER_V2, token)));
+                      token -> request.headers(httpFields -> httpFields.add(HEADER_V2, token)));
             }
           }
 
