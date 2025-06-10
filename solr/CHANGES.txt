@@ -58,6 +58,9 @@ Improvements
 
 * SOLR-17750: S3 File downloads now handle connection issues more gracefully (Houston Putman, Mark Miller)
 
+* SOLR-16951: Add PKI Auth Caching for both generation of the PKI Auth Tokens and validation of received tokens.
+  The default PKI Auth validity TTL has been increased from 5 seconds to 10 seconds. (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
