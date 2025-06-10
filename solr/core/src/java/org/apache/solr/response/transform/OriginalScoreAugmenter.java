@@ -20,14 +20,14 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.search.DocIterationInfo;
 
 /**
- * Simple Augmenter that adds the matchScore
+ * Simple Augmenter that adds the originalScore
  *
  * @since solr 4.0
  */
-public class MatchScoreAugmenter extends DocTransformer {
+public class OriginalScoreAugmenter extends DocTransformer {
   final String name;
 
-  public MatchScoreAugmenter(String display) {
+  public OriginalScoreAugmenter(String display) {
     this.name = display;
   }
 
@@ -38,7 +38,7 @@ public class MatchScoreAugmenter extends DocTransformer {
 
   @Override
   public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
-    doc.setField(name, docInfo.matchScore());
+    doc.setField(name, docInfo.originalScore());
   }
 
   @Override

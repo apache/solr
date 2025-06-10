@@ -21,7 +21,7 @@ New Features
 
 * SOLR-17714: Added a FuzzyQParser to enable all FuzzyQuery customizations. (Houston Putman, Siju Varghese)
 
-* SOLR-17678: ReRank queries can now return the matchScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
+* SOLR-17678: ReRank queries can now return the originalScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
 
 * SOLR-17447: Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
 
