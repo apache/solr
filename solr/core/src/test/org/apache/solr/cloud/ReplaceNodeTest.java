@@ -179,7 +179,8 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     // check replication metrics on this jetty - see SOLR-14924
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      if (jetty.getCoreContainer() == null) {
+      if (emptyNode.equals(jetty.getNodeName())) {
+        // No cores on this node, ignore it
         continue;
       }
       SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
