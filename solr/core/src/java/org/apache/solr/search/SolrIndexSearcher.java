@@ -165,6 +165,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<Query, DocSet> filterCache;
   private final SolrCache<QueryResultKey, DocList> queryResultCache;
   private final SolrCache<String, UnInvertedField> fieldValueCache;
+  private final SolrCache<Integer, float[]> rerankingFeatureVectorCache;
+  private final SolrCache<Integer, float[]> loggingFeatureVectorCache;
   private final LongAdder fullSortCount = new LongAdder();
   private final LongAdder skipSortCount = new LongAdder();
   private final LongAdder liveDocsNaiveCacheHitCount = new LongAdder();
@@ -449,6 +451,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               ? null
               : solrConfig.queryResultCacheConfig.newInstance();
       if (queryResultCache != null) clist.add(queryResultCache);
+      rerankingFeatureVectorCache =
+          solrConfig.rerankingFeatureVectorCacheConfig == null
+              ? null
+              : solrConfig.rerankingFeatureVectorCacheConfig.newInstance();
+      if (rerankingFeatureVectorCache != null) clist.add(rerankingFeatureVectorCache);
+      loggingFeatureVectorCache =
+              solrConfig.loggingFeatureVectorCacheConfig == null
+                      ? null
+                      : solrConfig.loggingFeatureVectorCacheConfig.newInstance();
+      if (loggingFeatureVectorCache != null) clist.add(loggingFeatureVectorCache);
       SolrCache<Integer, Document> documentCache = docFetcher.getDocumentCache();
       if (documentCache != null) clist.add(documentCache);
 
@@ -470,6 +482,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       this.filterCache = null;
       this.queryResultCache = null;
       this.fieldValueCache = null;
+      this.rerankingFeatureVectorCache = null;
+      this.loggingFeatureVectorCache = null;
       this.cacheMap = NO_GENERIC_CACHES;
       this.cacheList = NO_CACHES;
     }
@@ -685,6 +699,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return filterCache;
   }
 
+  public SolrCache<Integer, float[]> getRerankingFeatureVectorCache() {
+    return rerankingFeatureVectorCache;
+  }
+
+  public SolrCache<Integer, float[]> getLoggingFeatureVectorCache() {
+    return loggingFeatureVectorCache;
+  }
+
   //
   // Set default regenerators on filter and query caches if they don't have any
   //
@@ -725,6 +747,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               return true;
             }
           });
+    }
+
+    if (solrConfig.rerankingFeatureVectorCacheConfig != null
+        && solrConfig.rerankingFeatureVectorCacheConfig.getRegenerator() == null) {
+      solrConfig.rerankingFeatureVectorCacheConfig.setRegenerator(new NoOpRegenerator());
+    }
+
+    if (solrConfig.loggingFeatureVectorCacheConfig != null
+            && solrConfig.loggingFeatureVectorCacheConfig.getRegenerator() == null) {
+      solrConfig.loggingFeatureVectorCacheConfig.setRegenerator(new NoOpRegenerator());
     }
 
     if (solrConfig.queryResultCacheConfig != null
