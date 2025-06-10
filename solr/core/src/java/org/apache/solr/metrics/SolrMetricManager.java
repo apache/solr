@@ -149,7 +149,7 @@ public class SolrMetricManager {
 
   private final MeterProvider meterProvider;
   private final Map<String, io.opentelemetry.api.metrics.Meter> meters = new ConcurrentHashMap<>();
-  private final PrometheusMetricReader prometheusMetricReader;
+  private final PrometheusMetricReader metricReader;
 
   public SolrMetricManager() {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
@@ -158,15 +158,13 @@ public class SolrMetricManager {
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
     histogramSupplier = MetricSuppliers.histogramSupplier(null, null);
     meterProvider = MetricUtils.getMeterProvider();
-    prometheusMetricReader = null;
+    metricReader = null;
   }
 
   public SolrMetricManager(
-      SolrResourceLoader loader,
-      MetricsConfig metricsConfig,
-      PrometheusMetricReader prometheusMetricReader) {
+      SolrResourceLoader loader, MetricsConfig metricsConfig, PrometheusMetricReader metricReader) {
     this.metricsConfig = metricsConfig;
-    this.prometheusMetricReader = prometheusMetricReader;
+    this.metricReader = metricReader;
     this.meterProvider = MetricUtils.getMeterProvider();
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
@@ -1622,7 +1620,7 @@ public class SolrMetricManager {
     return metricsConfig;
   }
 
-  public PrometheusMetricReader getPrometheusMetricReader() {
-    return prometheusMetricReader;
+  public PrometheusMetricReader getMetricReader() {
+    return this.metricReader;
   }
 }

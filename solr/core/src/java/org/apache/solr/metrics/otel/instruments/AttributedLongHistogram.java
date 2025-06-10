@@ -17,25 +17,22 @@
 package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.DoubleCounter;
-import org.apache.solr.metrics.otel.OtelDoubleMetric;
+import io.opentelemetry.api.metrics.LongHistogram;
+import org.apache.solr.metrics.otel.OtelLongMetric;
 
-public class BoundDoubleCounter implements OtelDoubleMetric {
+public class AttributedLongHistogram implements OtelLongMetric {
 
-  private final DoubleCounter counter;
-  private final Attributes attributes;
+  protected final LongHistogram histogram;
+  protected final Attributes attributes;
 
-  public BoundDoubleCounter(DoubleCounter counter, Attributes attributes) {
-    this.counter = counter;
+  public AttributedLongHistogram(
+      LongHistogram histogram, io.opentelemetry.api.common.Attributes attributes) {
+    this.histogram = histogram;
     this.attributes = attributes;
   }
 
-  public void inc() {
-    record(1.0);
-  }
-
   @Override
-  public void record(Double value) {
-    counter.add(value, attributes);
+  public void record(Long value) {
+    histogram.record(value, attributes);
   }
 }

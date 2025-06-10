@@ -474,6 +474,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {

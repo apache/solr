@@ -44,8 +44,8 @@ import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.otel.instruments.BoundLongCounter;
-import org.apache.solr.metrics.otel.instruments.BoundLongTimer;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -205,12 +205,12 @@ public abstract class RequestHandlerBase
     public final Timer requestTimes;
     public final Counter totalTime;
 
-    public BoundLongCounter otelRequests;
-    public BoundLongCounter otelNumErrors;
-    public BoundLongCounter otelNumServerErrors;
-    public BoundLongCounter otelNumClientErrors;
-    public BoundLongCounter otelNumTimeouts;
-    public BoundLongTimer otelRequestTimes;
+    public AttributedLongCounter otelRequests;
+    public AttributedLongCounter otelNumErrors;
+    public AttributedLongCounter otelNumServerErrors;
+    public AttributedLongCounter otelNumClientErrors;
+    public AttributedLongCounter otelNumTimeouts;
+    public AttributedLongTimer otelRequestTimes;
 
     public HandlerMetrics(
         SolrMetricsContext solrMetricsContext, Attributes attributes, String... metricPath) {
@@ -235,7 +235,7 @@ public abstract class RequestHandlerBase
               "HTTP/Solr request times handled by the base request handler");
 
       otelRequests =
-          new BoundLongCounter(
+          new AttributedLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
@@ -243,7 +243,7 @@ public abstract class RequestHandlerBase
                   .build());
 
       otelNumErrors =
-          new BoundLongCounter(
+          new AttributedLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
@@ -251,7 +251,7 @@ public abstract class RequestHandlerBase
                   .build());
 
       otelNumServerErrors =
-          new BoundLongCounter(
+          new AttributedLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
@@ -259,7 +259,7 @@ public abstract class RequestHandlerBase
                   .build());
 
       otelNumClientErrors =
-          new BoundLongCounter(
+          new AttributedLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
@@ -267,14 +267,14 @@ public abstract class RequestHandlerBase
                   .build());
 
       otelNumTimeouts =
-          new BoundLongCounter(
+          new AttributedLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
                   .put(AttributeKey.stringKey("type"), "timeouts")
                   .build());
 
-      otelRequestTimes = new BoundLongTimer(baseRequestTimeMetric, attributes);
+      otelRequestTimes = new AttributedLongTimer(baseRequestTimeMetric, attributes);
 
       otelRequests.record(0L);
       otelNumErrors.record(0L);

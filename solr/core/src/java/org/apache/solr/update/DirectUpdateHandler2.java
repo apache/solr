@@ -206,6 +206,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     }
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {

@@ -2589,6 +2589,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return solrMetricsContext;
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {

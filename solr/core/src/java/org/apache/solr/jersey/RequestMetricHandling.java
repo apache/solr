@@ -33,7 +33,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.metrics.otel.instruments.BoundLongTimer;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,7 +131,7 @@ public class RequestMetricHandling {
           (Timer.Context) requestContext.getProperty("dropwizardTimer");
       metrics.totalTime.inc(dropwizardTimer.stop());
 
-      final BoundLongTimer timer = (BoundLongTimer) requestContext.getProperty(TIMER);
+      final AttributedLongTimer timer = (AttributedLongTimer) requestContext.getProperty(TIMER);
       timer.stop();
     }
   }

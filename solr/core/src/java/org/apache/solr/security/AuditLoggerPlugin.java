@@ -261,6 +261,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     this.formatter = formatter;
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, final String scope) {

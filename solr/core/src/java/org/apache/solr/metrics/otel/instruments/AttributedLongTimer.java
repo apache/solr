@@ -21,18 +21,14 @@ import io.opentelemetry.api.metrics.LongHistogram;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A thread-local timer built on top of an OpenTelemetry {@link LongHistogram}.
- *
- * <p>This class tracks the elapsed time between calls to {@link #start()} and {@link #stop()} on a
- * per-thread basis. It records the elapsed time (in milliseconds) to the underlying histogram with
- * a fixed set of {@link Attributes}. Each thread maintains its own start time using a {@link
- * ThreadLocal}, allowing concurrent timing operations on separate threads without interference.
+ * This class records the elapsed time (in milliseconds) to a {@link LongHistogram}. Each thread
+ * measures its own timer allowing concurrent timing operations on separate threads..
  */
-public class BoundLongTimer extends BoundLongHistogram {
+public class AttributedLongTimer extends AttributedLongHistogram {
 
   private final ThreadLocal<Long> startTimeNanos = new ThreadLocal<>();
 
-  public BoundLongTimer(LongHistogram histogram, Attributes attributes) {
+  public AttributedLongTimer(LongHistogram histogram, Attributes attributes) {
     super(histogram, attributes);
   }
 

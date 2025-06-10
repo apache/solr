@@ -136,6 +136,7 @@ public class SolrCoreMetricManager implements Closeable {
               + ", producer = "
               + producer);
     }
+    // TODO SOLR-17458: These attributes may not work for standalone mode
     // use deprecated method for back-compat, remove in 9.0
     producer.initializeMetrics(
         solrMetricsContext,

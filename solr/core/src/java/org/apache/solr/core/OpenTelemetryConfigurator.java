@@ -23,10 +23,10 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import java.lang.invoke.MethodHandles;
@@ -62,7 +62,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
    * SDK.
    */
   public static synchronized void initializeOpenTelemetrySdk(
-      NodeConfig cfg, SolrResourceLoader loader, PrometheusMetricReader prometheusMetricReader) {
+      NodeConfig cfg, SolrResourceLoader loader, MetricReader metricReader) {
     PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
 
     if (info != null && info.isEnabled()) {
@@ -73,7 +73,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     } else {
       // Initializing sampler as always off to replicate no-op Tracer provider
       OpenTelemetryConfigurator.configureOpenTelemetrySdk(
-          SdkMeterProvider.builder().registerMetricReader(prometheusMetricReader).build(),
+          SdkMeterProvider.builder().registerMetricReader(metricReader).build(),
           SdkTracerProvider.builder().setSampler(Sampler.alwaysOff()).build());
     }
   }

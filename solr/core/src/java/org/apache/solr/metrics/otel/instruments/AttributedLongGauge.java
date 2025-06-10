@@ -17,20 +17,21 @@
 package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.DoubleGauge;
-import org.apache.solr.metrics.otel.OtelDoubleMetric;
+import io.opentelemetry.api.metrics.LongGauge;
+import org.apache.solr.metrics.otel.OtelLongMetric;
 
-public class BoundDoubleGauge implements OtelDoubleMetric {
-  private final DoubleGauge gauge;
+public class AttributedLongGauge implements OtelLongMetric {
+
+  private final LongGauge gauge;
   private final Attributes attributes;
 
-  public BoundDoubleGauge(DoubleGauge gauge, Attributes attributes) {
+  public AttributedLongGauge(LongGauge gauge, Attributes attributes) {
     this.gauge = gauge;
     this.attributes = attributes;
   }
 
   @Override
-  public void record(Double value) {
+  public void record(Long value) {
     gauge.set(value, attributes);
   }
 }

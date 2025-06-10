@@ -153,6 +153,7 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
+  // TODO SOLR-17458: Fix metric Attributes
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {

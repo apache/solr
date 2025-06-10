@@ -63,15 +63,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo:bar");
     c.inc(3);
 
-    // Manually register for Prometheus Formatter tests
-    //    registerGauge("solr.jvm", "gc.G1-Old-Generation.count");
-    //    registerGauge("solr.jvm", "gc.G1-Old-Generation.time");
-    //    registerGauge("solr.jvm", "memory.heap.committed");
-    //    registerGauge("solr.jvm", "memory.pools.CodeHeap-'non-nmethods'.committed");
-    //    registerGauge("solr.jvm", "threads.count");
-    //    registerGauge("solr.jvm", "os.availableProcessors");
-    //    registerGauge("solr.jvm", "buffers.direct.Count");
-    //    registerGauge("solr.jvm", "buffers.direct.MemoryUsed");
     h.getCoreContainer()
         .getMetricManager()
         .meter(null, "solr.jetty", "org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses");

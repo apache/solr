@@ -163,6 +163,7 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
     return solrMetricsContext;
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {

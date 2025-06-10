@@ -17,29 +17,25 @@
 package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.DoubleUpDownCounter;
-import org.apache.solr.metrics.otel.OtelDoubleMetric;
+import io.opentelemetry.api.metrics.LongCounter;
+import org.apache.solr.metrics.otel.OtelLongMetric;
 
-public class BoundDoubleUpDownCounter implements OtelDoubleMetric {
+public class AttributedLongCounter implements OtelLongMetric {
 
-  private final DoubleUpDownCounter upDownCounter;
-  private final Attributes attributes;
+  private final LongCounter baseCounter;
+  private final io.opentelemetry.api.common.Attributes attributes;
 
-  public BoundDoubleUpDownCounter(DoubleUpDownCounter upDownCounter, Attributes attributes) {
-    this.upDownCounter = upDownCounter;
+  public AttributedLongCounter(LongCounter baseCounter, Attributes attributes) {
+    this.baseCounter = baseCounter;
     this.attributes = attributes;
   }
 
   public void inc() {
-    record(1.0);
-  }
-
-  public void dec() {
-    record(-1.0);
+    record(1L);
   }
 
   @Override
-  public void record(Double value) {
-    upDownCounter.add(value, attributes);
+  public void record(Long value) {
+    baseCounter.add(value, attributes);
   }
 }

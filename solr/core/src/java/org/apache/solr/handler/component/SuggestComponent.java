@@ -381,6 +381,7 @@ public class SuggestComponent extends SearchComponent
     return "Suggester component";
   }
 
+  // TODO SOLR-17458: Migrate to OTEL
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
