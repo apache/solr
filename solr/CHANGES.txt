@@ -116,6 +116,8 @@ Bug Fixes
 * SOLR-17754: Fix rare bug in overseer main loop in case of high load, that may cause the overseer be fully stuck until
   server restart. (Pierre Salagnac)
 
+* SOLR-17769: Use S3 RetryStrategy instead of RetryPolicy. This fixes the error caused by using the "Adaptive" retry mode. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)

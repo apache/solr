@@ -38,15 +38,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
-import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.retries.api.RetryStrategy;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
@@ -137,23 +138,16 @@ public class S3StorageClient {
     /*
      * Retry logic
      */
-    RetryPolicy retryPolicy;
+    RetryStrategy retryStrategy;
     if (disableRetries) {
-      retryPolicy = RetryPolicy.none();
+      retryStrategy = AwsRetryStrategy.doNotRetry();
     } else {
       RetryMode.Resolver retryModeResolver = RetryMode.resolver();
       if (StrUtils.isNotNullOrEmpty(profile)) {
         retryModeResolver.profileName(profile);
       }
       RetryMode retryMode = retryModeResolver.resolve();
-      RetryPolicy.Builder retryPolicyBuilder = RetryPolicy.builder(retryMode);
-
-      // Do not fail fast on rate limiting
-      if (retryMode == RetryMode.ADAPTIVE) {
-        retryPolicyBuilder.fastFailRateLimiting(false);
-      }
-
-      retryPolicy = retryPolicyBuilder.build();
+      retryStrategy = AwsRetryStrategy.forRetryMode(retryMode);
     }
 
     /*
@@ -171,7 +165,7 @@ public class S3StorageClient {
     S3ClientBuilder clientBuilder =
         S3Client.builder()
             .credentialsProvider(credentialsProviderBuilder.build())
-            .overrideConfiguration(builder -> builder.retryPolicy(retryPolicy))
+            .overrideConfiguration(builder -> builder.retryStrategy(retryStrategy))
             .serviceConfiguration(configBuilder.build())
             .httpClient(sdkHttpClientBuilder.build());
 
