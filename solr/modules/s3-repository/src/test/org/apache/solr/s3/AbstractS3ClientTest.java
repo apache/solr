@@ -19,9 +19,11 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -30,21 +32,25 @@ import software.amazon.awssdk.profiles.ProfileFileSystemSetting;
 /** Abstract class for test with S3Mock. */
 public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
-  private static final String BUCKET_NAME = "test-bucket";
+  protected static final String BUCKET_NAME = "test-bucket";
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
       S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
 
   S3StorageClient client;
+  private SocketProxy proxy;
 
   @Before
-  public void setUpClient() throws URISyntaxException {
+  public void setUpClient() throws Exception {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
 
     setS3ConfFile();
 
+    // We are using a proxy in front of S3Mock to be able to test connection loss
+    proxy = new SocketProxy();
+    proxy.open(URI.create("http://localhost:" + S3_MOCK_RULE.getHttpPort()));
     client =
         new S3StorageClient(
             BUCKET_NAME,
@@ -52,7 +58,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
             "us-east-1",
             "",
             false,
-            "http://localhost:" + S3_MOCK_RULE.getHttpPort(),
+            "http://localhost:" + proxy.getListenPort(),
             false);
   }
 
@@ -70,6 +76,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   @After
   public void tearDownClient() {
     client.close();
+    proxy.close();
   }
 
   /**
@@ -79,10 +86,23 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
    * @param content Arbitrary content for the test.
    */
   void pushContent(String path, String content) throws S3Exception {
+    pushContent(path, content.getBytes(StandardCharsets.UTF_8));
+  }
+
+  void pushContent(String path, byte[] content) throws S3Exception {
     try (OutputStream output = client.pushStream(path)) {
-      output.write(content.getBytes(StandardCharsets.UTF_8));
+      output.write(content);
     } catch (IOException e) {
       throw new S3Exception(e);
     }
+  }
+
+  /**
+   * Test a connection loss in S3. This will close the existing connections receiving socket, while
+   * keeping S3 open to new connections. This affects all connections open to S3 at the time of
+   * calling.
+   */
+  void initiateS3ConnectionLoss() {
+    proxy.halfClose();
   }
 }
