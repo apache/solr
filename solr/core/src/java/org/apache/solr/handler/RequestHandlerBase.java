@@ -223,14 +223,11 @@ public abstract class RequestHandlerBase
       totalTime = solrMetricsContext.counter("totalTime", metricPath);
 
       var baseRequestMetric =
-          solrMetricsContext.longCounter(
-              "solr_metrics_core_requests",
-              "HTTP/Solr count of requests handled by the base request handler");
+          solrMetricsContext.longCounter("solr_metrics_core_requests", "HTTP Solr request counts");
 
       var baseRequestTimeMetric =
           solrMetricsContext.longHistogram(
-              "solr_metrics_core_requests_times",
-              "HTTP/Solr request times handled by the base request handler");
+              "solr_metrics_core_requests_times", "HTTP Solr request times", "ms");
 
       otelRequests =
           new AttributedLongCounter(
