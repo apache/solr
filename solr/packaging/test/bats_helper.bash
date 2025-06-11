@@ -64,7 +64,9 @@ shutdown_all() {
 
 shutdown_exporter(){
   EXPORTER_PID=$(ps auxww | grep org.apache.solr.prometheus.exporter.SolrExporter | awk "/-classpath/"' {print $2}' | sort -r)
-  kill -9 $EXPORTER_PID
+  if [[ -n $EXPORTER_PID ]]; then
+    kill -9 $EXPORTER_PID
+  fi
 }
 
 delete_all_collections() {

@@ -314,12 +314,12 @@ public class StatusTool extends ToolBase {
 
     String solrHome = (String) info.get("solr_home");
     status.put("solr_home", solrHome != null ? solrHome : "?");
-    status.put("version", info.findRecursive("lucene", "solr-impl-version"));
-    status.put("startTime", info.findRecursive("jvm", "jmx", "startTime").toString());
-    status.put("uptime", SolrCLI.uptime((Long) info.findRecursive("jvm", "jmx", "upTimeMS")));
+    status.put("version", info._getStr(List.of("lucene", "solr-impl-version"), null));
+    status.put("startTime", info._getStr(List.of("jvm", "jmx", "startTime"), null));
+    status.put("uptime", SolrCLI.uptime((Long) info._get(List.of("jvm", "jmx", "upTimeMS"), null)));
 
-    String usedMemory = (String) info.findRecursive("jvm", "memory", "used");
-    String totalMemory = (String) info.findRecursive("jvm", "memory", "total");
+    String usedMemory = info._getStr(List.of("jvm", "memory", "used"), null);
+    String totalMemory = info._getStr(List.of("jvm", "memory", "total"), null);
     status.put("memory", usedMemory + " of " + totalMemory);
 
     // if this is a Solr in solrcloud mode, gather some basic cluster info
@@ -344,11 +344,11 @@ public class StatusTool extends ToolBase {
     // TODO add booleans to request just what we want; not everything
     NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
 
-    List<String> liveNodes = (List<String>) json.findRecursive("cluster", "live_nodes");
+    List<String> liveNodes = (List<String>) json._get(List.of("cluster", "live_nodes"), null);
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
     // TODO get this as a metric from the metrics API instead, or something else.
-    var collections = (Map<String, Object>) json.findRecursive("cluster", "collections");
+    var collections = (Map<String, Object>) json._get(List.of("cluster", "collections"), null);
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

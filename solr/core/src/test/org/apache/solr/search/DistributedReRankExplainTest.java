@@ -160,18 +160,18 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
                     CommonParams.Q,
                     "test_s:hello",
                     "fl",
-                    "id,test_s,score,originalScore:matchScore,matchScore")));
+                    "id,test_s,score,matchScore:originalScore(),originalScore()")));
 
     final QueryResponse queryResponse = queryRequest.process(client, COLLECTIONORALIAS);
     for (SolrDocument doc : queryResponse.getResults()) {
       assertNotNull("test_s", doc.getFieldValue("test_s"));
+      assertNotNull("originalScore()", doc.getFieldValue("originalScore()"));
+      assertTrue(queryResponse.toString(), doc.getFieldValue("originalScore()") instanceof Float);
       assertNotNull("matchScore", doc.getFieldValue("matchScore"));
-      assertTrue(queryResponse.toString(), doc.getFieldValue("matchScore") instanceof Float);
-      assertNotNull("originalScore", doc.getFieldValue("originalScore"));
       assertTrue(
-          doc.getFieldValue("originalScore").toString(),
-          doc.getFieldValue("originalScore") instanceof Float);
-      assertEquals(doc.getFieldValue("matchScore"), doc.getFieldValue("originalScore"));
+          doc.getFieldValue("matchScore").toString(),
+          doc.getFieldValue("matchScore") instanceof Float);
+      assertEquals(doc.getFieldValue("originalScore()"), doc.getFieldValue("matchScore"));
     }
     return queryResponse;
   }

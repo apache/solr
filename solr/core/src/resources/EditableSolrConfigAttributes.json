@@ -59,8 +59,5 @@
     "handleSelect":0,
     "requestParsers":{
       "multipartUploadLimitInKB":0,
-      "formdataUploadLimitInKB":0,
-      "enableRemoteStreaming":10,
-      "enableStreamBody":10,
-      "addHttpRequestToContext":0}},
+      "formdataUploadLimitInKB":0}}
 }

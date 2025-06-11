@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.apache.lucene.search.TotalHits.Relation;
@@ -45,7 +44,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -248,13 +246,7 @@ public class EmbeddedSolrServer extends SolrClient {
     if (responseParser == null) {
       responseParser = new JavaBinResponseParser();
     }
-    var addParams =
-        new MapSolrParams(
-            Map.of(
-                CommonParams.WT,
-                responseParser.getWriterType(),
-                CommonParams.VERSION,
-                responseParser.getVersion()));
+    var addParams = SolrParams.of(CommonParams.WT, responseParser.getWriterType());
     return SolrParams.wrapDefaults(addParams, params);
   }
 

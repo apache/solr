@@ -153,7 +153,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.setQuery(solrQuery);
     query.setFields("id", "score");
     query.setRows(4);
-    query.setTimeAllowed(300);
+    query.setTimeAllowed(800);
     query.add("fv", "true");
     query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
 
@@ -187,7 +187,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.setQuery(solrQuery);
     query.setFields("id", "score");
     query.setRows(4);
-    query.setTimeAllowed(300);
+    query.setTimeAllowed(800);
     query.add("partialResults", "false");
     query.add("fv", "true");
     query.add("rq", "{!ltr model=slowModel reRankDocs=3}");

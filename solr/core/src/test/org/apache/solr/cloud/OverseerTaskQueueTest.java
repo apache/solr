@@ -92,7 +92,7 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     }
     assertNotNull("Didn't find event with requestid " + requestId2, requestId2Event);
     requestId2Event.setBytes("foo bar".getBytes(StandardCharsets.UTF_8));
-    tq.remove(requestId2Event);
+    tq.remove(requestId2Event, true);
 
     // Make sure this call to check if requestId exists doesn't barf with Json parse exception
     assertTrue(

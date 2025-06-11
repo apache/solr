@@ -16,11 +16,14 @@
 # limitations under the License.
 
 """
-This script processes all static html files for Solr's refernce guide
-and downloads external JS and CSS files to local folders js/ and css/ for
-each version. It also updates the HTML files to reference the local files.
-Context is that ASF policy for web sites changed to not allow external
-references to JS and CSS files, and these sites were generated long ago.
+This script processes all static html files for Solr's reference guide
+and adds canonical URLs for old pages (Solr 6 - Solr 8, Solr 9+ should not
+be affected). Since Google doesn't always respect the canonical URL
+directive, the meta tag for robots "noindex" is also added to ensure these
+outdated pages do not show up on Google search results.
+This script uses the same logic as the htaccess generation script to
+determine which pages are the "last" versions of that page, so that it can
+be indexed by google as the most recent information.
 """
 
 import os
@@ -30,6 +33,7 @@ from urllib.parse import urlparse
 import re
 import argparse
 
+robots_no_index_html = "<meta name=\"robots\" content=\"noindex\">"
 
 def lines_from_file(filename):
     with open(filename, 'r') as fp:
@@ -144,6 +148,7 @@ def process_html_file(html_file_path, url, mappings):
         if title and not found_title:
             new_lines.append(line)
             new_lines.append(canonical_link_html)
+            new_lines.append(robots_no_index_html)
             found_title = True
         elif not (found_title and canon_link):
             # Skip any other canonical url we find

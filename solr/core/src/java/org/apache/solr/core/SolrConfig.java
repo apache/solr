@@ -129,8 +129,6 @@ public class SolrConfig implements MapSerializable {
 
   private boolean handleSelect;
 
-  private boolean addHttpRequestToContext;
-
   private final SolrRequestParsers solrRequestParsers;
 
   /**
@@ -365,7 +363,6 @@ public class SolrConfig implements MapSerializable {
       }
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
-      addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -802,6 +799,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final String commitPollInterval;
     public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
@@ -817,7 +815,8 @@ public class SolrConfig implements MapSerializable {
         boolean openSearcher,
         int autoSoftCommmitMaxDocs,
         int autoSoftCommmitMaxTime,
-        boolean commitWithinSoftCommit) {
+        boolean commitWithinSoftCommit,
+        String commitPollInterval) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
@@ -828,6 +827,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.commitPollInterval = commitPollInterval;
       this.aggregateNodeLevelMetricsEnabled = false;
     }
 
@@ -843,6 +843,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
       this.commitWithinSoftCommit =
           updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.commitPollInterval = updateHandler.get("commitPollInterval").txt();
       this.aggregateNodeLevelMetricsEnabled =
           updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
@@ -859,6 +860,7 @@ public class SolrConfig implements MapSerializable {
       map.put(
           "autoSoftCommit",
           Map.of("maxDocs", autoSoftCommmitMaxDocs, "maxTime", autoSoftCommmitMaxTime));
+      map.put("commitPollInterval", commitPollInterval);
       return map;
     }
   }
@@ -960,10 +962,6 @@ public class SolrConfig implements MapSerializable {
     return handleSelect;
   }
 
-  public boolean isAddHttpRequestToContext() {
-    return addHttpRequestToContext;
-  }
-
   @Override
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (znodeVersion > -1) result.put(ZNODEVER, znodeVersion);
@@ -1019,9 +1017,7 @@ public class SolrConfig implements MapSerializable {
             "multipartUploadLimitKB",
             multipartUploadLimitKB,
             "formUploadLimitKB",
-            formUploadLimitKB,
-            "addHttpRequestToContext",
-            addHttpRequestToContext));
+            formUploadLimitKB));
     if (indexConfig != null) result.put("indexConfig", indexConfig);
 
     // TODO there is more to add

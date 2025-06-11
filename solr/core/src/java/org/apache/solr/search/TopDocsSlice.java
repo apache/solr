@@ -79,9 +79,9 @@ public class TopDocsSlice extends DocSlice {
 
   @Override
   public DocIterator iterator() {
-    boolean hasMatchScore =
+    boolean hasOriginalScore =
         topDocs.scoreDocs.length > 0 && topDocs.scoreDocs[0] instanceof ReRankCollector.RescoreDoc;
-    if (hasMatchScore) {
+    if (hasOriginalScore) {
       return new ReRankedTopDocsIterator();
     } else {
       return new TopDocsIterator();
@@ -123,9 +123,9 @@ public class TopDocsSlice extends DocSlice {
   class ReRankedTopDocsIterator extends TopDocsIterator {
 
     @Override
-    public Float matchScore() {
+    public Float originalScore() {
       try {
-        return ((ReRankCollector.RescoreDoc) topDocs.scoreDocs[pos - 1]).matchScore;
+        return ((ReRankCollector.RescoreDoc) topDocs.scoreDocs[pos - 1]).originalScore;
       } catch (ClassCastException e) {
         return null;
       }

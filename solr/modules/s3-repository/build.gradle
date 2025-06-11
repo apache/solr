@@ -21,7 +21,7 @@ description = 'S3 Repository'
 
 dependencies {
   implementation platform(project(':platform'))
-  api project(':solr:core')
+  api(project(':solr:core'))
   implementation project(':solr:solrj')
 
   implementation libs.apache.lucene.core
@@ -32,10 +32,12 @@ dependencies {
   implementation libs.amazon.awssdk.awscore
   implementation libs.amazon.awssdk.regions
   implementation libs.amazon.awssdk.httpclient.spi
+  implementation libs.amazon.awssdk.retries.spi
   implementation(libs.amazon.awssdk.s3) {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
   implementation libs.amazon.awssdk.sdkcore
+
   runtimeOnly(libs.amazon.awssdk.sts) {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
@@ -81,7 +83,7 @@ dependencies {
 
   testImplementation libs.commonsio.commonsio
 
-  testRuntimeOnly libs.eclipse.jetty.webapp
+  testRuntimeOnly libs.eclipse.jetty.ee10.webapp
 
   testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"

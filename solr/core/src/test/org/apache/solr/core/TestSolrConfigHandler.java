@@ -54,7 +54,7 @@ import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.TimeOut;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.noggit.JSONParser;
@@ -160,7 +160,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     String payload =
         "{\n"
-            + " 'set-property' : { 'updateHandler.autoCommit.maxDocs':100, 'updateHandler.autoCommit.maxTime':10 , 'requestDispatcher.requestParsers.addHttpRequestToContext':true} \n"
+            + " 'set-property' : { 'updateHandler.autoCommit.maxDocs':100, 'updateHandler.autoCommit.maxTime':10 } \n"
             + " }";
     runConfigCommand(harness, "/config", payload);
 
@@ -178,8 +178,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     assertEquals("100", m._getStr("config/updateHandler/autoCommit/maxDocs", null));
     assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime", null));
-    assertEquals(
-        "true", m._getStr("config/requestDispatcher/requestParsers/addHttpRequestToContext", null));
+
     payload = "{\n" + " 'unset-property' :  'updateHandler.autoCommit.maxDocs' \n" + " }";
     runConfigCommand(harness, "/config", payload);
 

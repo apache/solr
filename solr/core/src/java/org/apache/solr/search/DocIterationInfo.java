@@ -19,20 +19,29 @@ package org.apache.solr.search;
 /** Information for the current document in the <code>DocIterator</code>. */
 public interface DocIterationInfo {
 
+  DocIterationInfo NONE = new NoDocIterationInfo();
+
   /**
    * Returns the score for the document just returned by <code>nextDoc()</code>
    *
    * <p>The value returned may be meaningless depending on the context in which the DocIterator
    * instance was retrieved.
    */
-  public float score();
+  float score();
 
   /**
-   * Returns the query match score in case of rerank queries
+   * Returns the original query match score in case of rerank queries
    *
-   * @return the query match score in case of a rerank query, null otherwise.
+   * @return the original query match score in case of a rerank query, null otherwise.
    */
-  public default Float matchScore() {
+  default Float originalScore() {
     return null;
+  }
+
+  class NoDocIterationInfo implements DocIterationInfo {
+    @Override
+    public float score() {
+      return 0;
+    }
   }
 }

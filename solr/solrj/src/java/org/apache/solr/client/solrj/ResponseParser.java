@@ -41,11 +41,4 @@ public abstract class ResponseParser {
    *     no enforcement.
    */
   public abstract Collection<String> getContentTypes();
-
-  /**
-   * @return the version param passed to solr
-   */
-  public String getVersion() {
-    return "2.2";
-  }
 }

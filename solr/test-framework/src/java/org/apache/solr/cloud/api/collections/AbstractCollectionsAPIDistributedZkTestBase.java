@@ -655,6 +655,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .process(cluster.getSolrClient());
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
+    cluster.waitForActiveCollection(collectionName, 2, 6);
 
     try (SolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
@@ -697,6 +698,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals(
         "'core' should be 'propertyDotName' ", "propertyDotName", newReplica.getStr("core"));
+    cluster.waitForActiveCollection(collectionName, 2, 7);
   }
 
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {

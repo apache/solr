@@ -20,6 +20,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -34,10 +37,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -407,36 +406,6 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     assertTrue(e.getMessage().startsWith("Solr requires that request parameters"));
     assertEquals(500, e.code());
     verify(request).getInputStream();
-  }
-
-  @Test
-  @SuppressWarnings("JdkObsolete")
-  public void testAddHttpRequestToContext() throws Exception {
-    HttpServletRequest request = getMock("/solr/select", null, -1);
-    when(request.getMethod()).thenReturn("GET");
-    when(request.getQueryString()).thenReturn("q=title:solr");
-    Map<String, String> headers = new HashMap<>();
-    headers.put("X-Forwarded-For", "10.0.0.1");
-    when(request.getHeaderNames()).thenReturn(new Vector<>(headers.keySet()).elements());
-    for (Map.Entry<String, String> entry : headers.entrySet()) {
-      Vector<String> v = new Vector<>();
-      v.add(entry.getValue());
-      when(request.getHeaders(entry.getKey())).thenReturn(v.elements());
-    }
-
-    SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
-    assertFalse(parsers.isAddRequestHeadersToContext());
-    SolrQueryRequest solrReq = parsers.parse(h.getCore(), "/select", request);
-    assertFalse(solrReq.getContext().containsKey("httpRequest"));
-
-    parsers.setAddRequestHeadersToContext(true);
-    solrReq = parsers.parse(h.getCore(), "/select", request);
-    assertEquals(request, solrReq.getContext().get("httpRequest"));
-    assertEquals(
-        "10.0.0.1",
-        ((HttpServletRequest) solrReq.getContext().get("httpRequest"))
-            .getHeaders("X-Forwarded-For")
-            .nextElement());
   }
 
   public void testPostMissingContentType() throws Exception {

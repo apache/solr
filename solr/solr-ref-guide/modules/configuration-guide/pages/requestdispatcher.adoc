@@ -69,21 +69,11 @@ A value of `-1` means MAX_INT, which is also the system default if omitted.
 This attribute sets a limit in kilobytes on the size of form data (`application/x-www-form-urlencoded`) submitted in a HTTP POST request, which can be used to pass request parameters that will not fit in a URL.
 A value of `-1` means MAX_INT, which is also the system default if omitted.
 
-`addHttpRequestToContext`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-This attribute can be used to indicate that the original `HttpServletRequest` object should be included in the context map of the `SolrQueryRequest` using the key `httpRequest`.
-This `HttpServletRequest` is not used by any Solr component, but may be useful when developing custom plugins.
 
 [source,xml]
 ----
 <requestParsers multipartUploadLimitInKB="2048"
-                formdataUploadLimitInKB="2048"
-                addHttpRequestToContext="false" />
+                formdataUploadLimitInKB="2048" />
 ----
 
 == httpCaching Element

@@ -101,21 +101,39 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     return false;
   }
 
-  /** Remove the event and save the response into the other path. */
-  public void remove(QueueEvent event) throws KeeperException, InterruptedException {
+  /**
+   * Remove the event and save the response into the other path.
+   *
+   * <p>The response node should be updated only for a synchronous command, where the request node
+   * was created with specialized {@link #offer(byte[], long)}, that also created the response node.
+   * For an asynchronous command, the request node was created with standard {@link #offer(byte[])}
+   * method, which does not create the response node. For such commands, the result is stored using
+   * {@link DistributedMap} instances.
+   *
+   * @param setResult Whether we set data into the result node (true for synchronous commands).
+   */
+  public void remove(QueueEvent event, boolean setResult)
+      throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_remove_event");
     try {
       String path = event.getId();
-      String responsePath = dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
 
-      try {
-        zookeeper.setData(responsePath, event.getBytes(), true);
-      } catch (KeeperException.NoNodeException ignored) {
-        // we must handle the race case where the node no longer exists
-        log.info(
-            "Response ZK path: {} doesn't exist. Requestor may have disconnected from ZooKeeper",
-            responsePath);
+      // Set response data in the response node
+      if (setResult) {
+        String responsePath =
+            dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
+
+        try {
+          zookeeper.setData(responsePath, event.getBytes(), true);
+        } catch (KeeperException.NoNodeException ignored) {
+          // we must handle the race case where the node no longer exists
+          log.info(
+              "Response ZK path: {} doesn't exist. Requestor may have disconnected from ZooKeeper",
+              responsePath);
+        }
       }
+
+      // Remove the request node
       try {
         zookeeper.delete(path, -1, true);
       } catch (KeeperException.NoNodeException ignored) {
@@ -190,7 +208,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   /**
    * Inserts data into zookeeper.
    *
-   * @return true if data was successfully added
+   * @return The path of the created node.
    */
   private String createData(String path, byte[] data, CreateMode mode)
       throws KeeperException, InterruptedException {
@@ -322,18 +340,14 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       return Objects.equals(id, other.id);
     }
 
-    private WatchedEvent event = null;
-    private String id;
+    private final WatchedEvent event;
+    private final String id;
     private byte[] bytes;
 
     QueueEvent(String id, byte[] bytes, WatchedEvent event) {
       this.id = id;
       this.bytes = bytes;
       this.event = event;
-    }
-
-    public void setId(String id) {
-      this.id = id;
     }
 
     public String getId() {

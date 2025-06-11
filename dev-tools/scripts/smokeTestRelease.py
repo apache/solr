@@ -41,6 +41,9 @@ import scriptutil
 # must have a working gpg, tar in your path.  This has been
 # tested on Linux and on Cygwin under Windows 7.
 
+BASE_JAVA_VERSION = "21"
+SOLRJ_JAVA_VERSION = "17"
+
 cygwin = platform.system().lower().startswith('cygwin')
 cygwinWindowsRoot = os.popen('cygpath -w /').read().strip().replace('\\','/') if cygwin else ''
 
@@ -141,9 +144,9 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
 
     s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
 
-    compileJDK = '21'
+    compileJDK = BASE_JAVA_VERSION
     if 'solrj' in desc or 'api' in desc:
-      compileJDK = '17'
+      compileJDK = SOLRJ_JAVA_VERSION
     for verify in (
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
@@ -152,7 +155,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'X-Compile-Source-JDK: %s' % compileJDK,
       'X-Compile-Target-JDK: %s' % compileJDK,
       'Specification-Version: %s' % version,
-      'X-Build-JDK: 21.',
+      'X-Build-JDK: %s.' % BASE_JAVA_VERSION,
       'Extension-Name: org.apache.solr'):
       if type(verify) is not tuple:
         verify = (verify,)
@@ -291,12 +294,14 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   gpgLogFile = '%s/solr.gpg.import.log' % tmpDir
   run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile), gpgLogFile)
 
+  logfile = '%s/solr.assertions.log' % tmpDir
+
   if mavenURL is None:
-    stopGpgAgent(gpgHomeDir, logFile)
+    stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing maven')
 
   if dockerURL is None:
-    stopGpgAgent(gpgHomeDir, logFile)
+    stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing docker')
 
   if changesURL is None:
@@ -663,47 +668,50 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
     validateCmd = './gradlew --no-daemon check -p solr/documentation'
     print('    run "%s"' % validateCmd)
-    java.run_java21(validateCmd, '%s/validate.log' % unpackPath)
+    java.run_java(validateCmd, '%s/validate.log' % unpackPath)
 
-    print("    run tests w/ Java 21 and testArgs='%s'..." % testArgs)
-    java.run_java21('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
-    print("    run integration tests w/ Java 21")
-    java.run_java21('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
-    print("    build binary release w/ Java 21")
-    java.run_java21('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
-    testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java21_home, False)
+    print("    run tests w/ Java %s and testArgs='%s'..." % (BASE_JAVA_VERSION, testArgs))
+    java.run_java('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
+    print("    run integration tests w/ Java %s" % BASE_JAVA_VERSION)
+    java.run_java('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
+    print("    build binary release w/ Java %s" % BASE_JAVA_VERSION)
+    java.run_java('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
+    testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
 
-    if java.run_java25:
-      print("    run tests w/ Java 25 and testArgs='%s'..." % testArgs)
-      java.run_java25('./gradlew --no-daemon clean test %s' % testArgs, '%s/test-java25.log' % unpackPath)
-      print("    run integration tests w/ Java 25")
-      java.run_java25('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java25.log' % unpackPath)
-      print("    build binary release w/ Java 25")
-      java.run_java25('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java25.log' % unpackPath)
-      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java25_home, False)
+    if java.run_alt_javas:
+      for run_alt_java, alt_java_version in zip(java.run_alt_javas, java.alt_java_versions):
+        print("    run tests w/ Java %s and testArgs='%s'..." % (alt_java_version, testArgs))
+        run_alt_java('./gradlew --no-daemon clean test %s' % testArgs, '%s/test-java%s.log' % (unpackPath, alt_java_version))
+        print("    run integration tests w/ Java %s" % alt_java_version)
+        run_alt_java('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java%s.log' % (unpackPath, alt_java_version))
+        print("    build binary release w/ Java %s" % alt_java_version)
+        run_alt_java('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java%s.log' % (unpackPath, alt_java_version))
+        testSolrExample("%s/solr/packaging/build/dev" % unpackPath, run_alt_java, False)
 
   else:
     # Binary tarball
     checkAllJARs(os.getcwd(), gitRevision, version)
 
-    print('    copying unpacked distribution for Java 21 ...')
-    java21UnpackPath = '%s-java21' % unpackPath
-    if os.path.exists(java21UnpackPath):
-      shutil.rmtree(java21UnpackPath)
-    shutil.copytree(unpackPath, java21UnpackPath)
-    os.chdir(java21UnpackPath)
-    print('    test solr example w/ Java 21...')
-    testSolrExample(java21UnpackPath, java.java21_home, isSlim)
+    print('    copying unpacked distribution for Java %s ...' % BASE_JAVA_VERSION)
+    javaBaseVersionUnpackPath = '%s-java%s' % (unpackPath, BASE_JAVA_VERSION)
+    if os.path.exists(javaBaseVersionUnpackPath):
+      shutil.rmtree(javaBaseVersionUnpackPath)
+    shutil.copytree(unpackPath, javaBaseVersionUnpackPath)
+    os.chdir(javaBaseVersionUnpackPath)
+    print('    test solr example w/ Java %s...' % BASE_JAVA_VERSION)
+    testSolrExample(javaBaseVersionUnpackPath, java.java_home, isSlim)
 
-    if java.run_java25:
-      print('    copying unpacked distribution for Java 25 ...')
-      java25UnpackPath = '%s-java25' % unpackPath
-      if os.path.exists(java25UnpackPath):
-        shutil.rmtree(java25UnpackPath)
-      shutil.copytree(unpackPath, java25UnpackPath)
-      os.chdir(java25UnpackPath)
-      print('    test solr example w/ Java 25...')
-      testSolrExample(java25UnpackPath, java.java25_home, isSlim)
+    if java.run_alt_javas:
+      for run_alt_java, alt_java_version in zip(java.run_alt_javas, java.alt_java_versions):
+        print("The alt version of java", run_alt_java, alt_java_version)
+        print('    copying unpacked distribution for Java %s ...' % alt_java_version)
+        javaAltVersionUnpackPath = '%s-java%s' % (unpackPath, alt_java_version)
+        if os.path.exists(javaAltVersionUnpackPath):
+          shutil.rmtree(javaAltVersionUnpackPath)
+        shutil.copytree(unpackPath, javaAltVersionUnpackPath)
+        os.chdir(javaAltVersionUnpackPath)
+        print('    test solr example w/ Java %s...' % alt_java_version)
+        testSolrExample(javaAltVersionUnpackPath, run_alt_java, isSlim)
 
     os.chdir(unpackPath)
 
@@ -1022,30 +1030,42 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         sys.stdout.write('.')
 
 
-def make_java_config(parser, java25_home):
-  def _make_runner(java_home, version):
-    print('Java %s JAVA_HOME=%s' % (version, java_home))
+def make_java_config(parser, alt_java_homes):
+  def _make_runner(java_home, is_base_version=False):
     if cygwin:
       java_home = subprocess.check_output('cygpath -u "%s"' % java_home, shell=True).decode('utf-8').strip()
     cmd_prefix = 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java"' % \
                  (java_home, java_home, java_home)
     s = subprocess.check_output('%s; java -version' % cmd_prefix,
                                 shell=True, stderr=subprocess.STDOUT).decode('utf-8')
-    if s.find(' version "%s' % version) == -1:
-      parser.error('got wrong version for java %s:\n%s' % (version, s))
+    actual_version = re.search(r'version "([1-9][0-9]*)', s).group(1)
+    print('Java %s JAVA_HOME=%s' % (actual_version, java_home))
+
+    # validate Java version
+    if is_base_version:
+      if BASE_JAVA_VERSION != actual_version:
+        parser.error('got wrong base version for java %s:\n%s' % (BASE_JAVA_VERSION, s))
+      else:
+        if int(actual_version) < int(BASE_JAVA_VERSION):
+          parser.error('got wrong version for java %s, less than base version %s:\n%s' % (actual_version, BASE_JAVA_VERSION, s))
     def run_java(cmd, logfile):
       run('%s; %s' % (cmd_prefix, cmd), logfile)
-    return run_java
-  java21_home =  os.environ.get('JAVA_HOME')
-  if java21_home is None:
-    parser.error('JAVA_HOME must be set')
-  run_java21 = _make_runner(java21_home, '21')
-  run_java25 = None
-  if java25_home is not None:
-    run_java25 = _make_runner(java25_home, '25')
+    return run_java, actual_version
 
-  jc = namedtuple('JavaConfig', 'run_java21 java21_home run_java25 java25_home')
-  return jc(run_java21, java21_home, run_java25, java25_home)
+  java_home =  os.environ.get('JAVA_HOME')
+  if java_home is None:
+    parser.error('JAVA_HOME must be set')
+  run_java, _ = _make_runner(java_home, True)
+  run_alt_javas = []
+  alt_java_versions = []
+  if alt_java_homes:
+    for alt_java_home in alt_java_homes:
+      run_alt_java, version = _make_runner(alt_java_home)
+      run_alt_javas.append(run_alt_java)
+      alt_java_versions.append(version)
+  print("alt java ", run_alt_javas, alt_java_versions)
+  jc = namedtuple('JavaConfig', 'run_java java_home run_alt_javas alt_java_homes alt_java_versions')
+  return jc(run_java, java_home, run_alt_javas, alt_java_homes, alt_java_versions)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev-([a-f\d]+)')
@@ -1067,8 +1087,8 @@ def parse_config():
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
-  parser.add_argument('--test-java25', metavar='java25_home',
-                      help='Path to Java25 home directory, to run tests with if specified')
+  parser.add_argument('--test-alt-java', action='append',
+                      help='Path to Java alternative home directory, to run tests with if specified')
   parser.add_argument('--download-only', action='store_true', default=False,
                       help='Only perform download and sha hash check steps')
   parser.add_argument('--dev-mode', action='store_true', default=False,
@@ -1097,7 +1117,7 @@ def parse_config():
   if c.local_keys is not None and not os.path.exists(c.local_keys):
     parser.error('Local KEYS file "%s" not found' % c.local_keys)
 
-  c.java = make_java_config(parser, c.test_java25)
+  c.java = make_java_config(parser, c.test_alt_java)
 
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)
