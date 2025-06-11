@@ -173,35 +173,35 @@ public class SolrMetricsContext {
   }
 
   public DoubleHistogram doubleHistogram(String metricName, String description) {
-    return metricManager.doubleHistogram(this, registryName, metricName, description, null);
+    return metricManager.doubleHistogram(registryName, metricName, description, null);
   }
 
   public DoubleHistogram doubleHistogram(String metricName, String description, String unit) {
-    return metricManager.doubleHistogram(this, registryName, metricName, description, unit);
+    return metricManager.doubleHistogram(registryName, metricName, description, unit);
   }
 
   public LongHistogram longHistogram(String metricName, String description) {
-    return metricManager.longHistogram(this, registryName, metricName, description, null);
+    return metricManager.longHistogram(registryName, metricName, description, null);
   }
 
   public LongHistogram longHistogram(String metricName, String description, String unit) {
-    return metricManager.longHistogram(this, registryName, metricName, description, unit);
+    return metricManager.longHistogram(registryName, metricName, description, unit);
   }
 
   public LongGauge longGauge(String metricName, String description) {
-    return metricManager.longGauge(this, registryName, metricName, description, null);
+    return metricManager.longGauge(registryName, metricName, description, null);
   }
 
   public LongGauge longGauge(String metricName, String description, String unit) {
-    return metricManager.longGauge(this, registryName, metricName, description, unit);
+    return metricManager.longGauge(registryName, metricName, description, unit);
   }
 
   public DoubleGauge doubleGauge(String metricName, String description) {
-    return metricManager.doubleGauge(this, registryName, metricName, description, null);
+    return metricManager.doubleGauge(registryName, metricName, description, null);
   }
 
   public DoubleGauge doubleGauge(String metricName, String description, String unit) {
-    return metricManager.doubleGauge(this, registryName, metricName, description, unit);
+    return metricManager.doubleGauge(registryName, metricName, description, unit);
   }
 
   public ObservableLongGauge observableLongGauge(

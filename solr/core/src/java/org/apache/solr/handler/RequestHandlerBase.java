@@ -177,9 +177,7 @@ public abstract class RequestHandlerBase
     }
 
     var attr = Attributes.builder();
-    if (scope != null) {
-      attr.put(AttributeKey.stringKey("scope"), scope);
-    }
+    if (scope != null) attr.put(AttributeKey.stringKey("scope"), scope);
 
     metrics = new HandlerMetrics(solrMetricsContext, attr.build(), getCategory().toString(), scope);
     solrMetricsContext.gauge(

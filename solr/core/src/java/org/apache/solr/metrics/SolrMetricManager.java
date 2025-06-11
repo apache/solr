@@ -177,9 +177,8 @@ public class SolrMetricManager {
       String registry, String counterName, String description, String unit) {
     LongCounterBuilder builder =
         meterProvider.get(registry).counterBuilder(counterName).setDescription(description);
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.build();
   }
 
@@ -187,9 +186,8 @@ public class SolrMetricManager {
       String registry, String counterName, String description, String unit) {
     LongUpDownCounterBuilder builder =
         meterProvider.get(registry).upDownCounterBuilder(counterName).setDescription(description);
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.build();
   }
 
@@ -201,9 +199,8 @@ public class SolrMetricManager {
             .upDownCounterBuilder(counterName)
             .setDescription(description)
             .ofDoubles();
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.build();
   }
 
@@ -215,32 +212,22 @@ public class SolrMetricManager {
             .counterBuilder(counterName)
             .setDescription(description)
             .ofDoubles();
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.build();
   }
 
   public DoubleHistogram doubleHistogram(
-      SolrMetricsContext context,
-      String registry,
-      String histogramName,
-      String description,
-      String unit) {
+      String registry, String histogramName, String description, String unit) {
     DoubleHistogramBuilder builder =
         meterProvider.get(registry).histogramBuilder(histogramName).setDescription(description);
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.build();
   }
 
   public LongHistogram longHistogram(
-      SolrMetricsContext context,
-      String registry,
-      String histogramName,
-      String description,
-      String unit) {
+      String registry, String histogramName, String description, String unit) {
     LongHistogramBuilder builder =
         meterProvider
             .get(registry)
@@ -248,39 +235,24 @@ public class SolrMetricManager {
             .setDescription(description)
             .ofLongs();
 
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
 
     return builder.build();
   }
 
   public DoubleGauge doubleGauge(
-      SolrMetricsContext context,
-      String registry,
-      String gaugeName,
-      String description,
-      String unit) {
+      String registry, String gaugeName, String description, String unit) {
     DoubleGaugeBuilder builder =
         meterProvider.get(registry).gaugeBuilder(gaugeName).setDescription(description);
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
 
     return builder.build();
   }
 
-  public LongGauge longGauge(
-      SolrMetricsContext context,
-      String registry,
-      String gaugeName,
-      String description,
-      String unit) {
+  public LongGauge longGauge(String registry, String gaugeName, String description, String unit) {
     LongGaugeBuilder builder =
         meterProvider.get(registry).gaugeBuilder(gaugeName).setDescription(description).ofLongs();
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
 
     return builder.build();
   }
@@ -293,9 +265,8 @@ public class SolrMetricManager {
       String unit) {
     LongCounterBuilder builder =
         meterProvider.get(registry).counterBuilder(counterName).setDescription(description);
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.buildWithCallback(callback);
   }
 
@@ -311,9 +282,8 @@ public class SolrMetricManager {
             .counterBuilder(counterName)
             .setDescription(description)
             .ofDoubles();
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.buildWithCallback(callback);
   }
 
@@ -325,9 +295,8 @@ public class SolrMetricManager {
       String unit) {
     LongGaugeBuilder builder =
         meterProvider.get(registry).gaugeBuilder(gaugeName).setDescription(description).ofLongs();
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.buildWithCallback(callback);
   }
 
@@ -339,9 +308,8 @@ public class SolrMetricManager {
       String unit) {
     LongUpDownCounterBuilder builder =
         meterProvider.get(registry).upDownCounterBuilder(counterName).setDescription(description);
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.buildWithCallback(callback);
   }
 
@@ -357,9 +325,8 @@ public class SolrMetricManager {
             .upDownCounterBuilder(counterName)
             .setDescription(description)
             .ofDoubles();
-    if (unit != null) {
-      builder.setUnit(unit);
-    }
+    if (unit != null) builder.setUnit(unit);
+
     return builder.buildWithCallback(callback);
   }
 
