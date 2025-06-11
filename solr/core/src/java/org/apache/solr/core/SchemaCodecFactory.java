@@ -28,7 +28,9 @@ import org.apache.lucene.codecs.KnnVectorsWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene101.Lucene101Codec;
 import org.apache.lucene.codecs.lucene101.Lucene101Codec.Mode;
+import org.apache.lucene.codecs.lucene99.Lucene99HnswScalarQuantizedVectorsFormat;
 import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
+import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.solr.common.SolrException;
@@ -36,10 +38,13 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.ScalarQuantizedDenseVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_NUM_MERGE_WORKER;
 
 /**
  * Per-field CodecFactory implementation, extends Lucene's and returns postings format
@@ -126,16 +131,41 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
           public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
             FieldType fieldType = (schemaField == null ? null : schemaField.getType());
-            if (fieldType instanceof DenseVectorField vectorType) {
+            KnnVectorsFormat delegate;
+            if (fieldType instanceof ScalarQuantizedDenseVectorField scalarQuantizedVectorType) {
+              final String knnAlgorithm = scalarQuantizedVectorType.getKnnAlgorithm();
+              switch (knnAlgorithm) {
+                case DenseVectorField.FLAT_ALGORITHM:
+                  delegate = new Lucene99ScalarQuantizedVectorsFormat(
+                          scalarQuantizedVectorType.getConfidenceInterval(),
+                          scalarQuantizedVectorType.getBits(),
+                          scalarQuantizedVectorType.useCompression());
+                  break;
+                case DenseVectorField.HNSW_ALGORITHM:
+                  int maxConn = scalarQuantizedVectorType.getHnswMaxConn();
+                  int beamWidth = scalarQuantizedVectorType.getHnswBeamWidth();
+                  delegate = new Lucene99HnswScalarQuantizedVectorsFormat(maxConn,
+                          beamWidth,
+                          DEFAULT_NUM_MERGE_WORKER,
+                          scalarQuantizedVectorType.getBits(),
+                          scalarQuantizedVectorType.useCompression(),
+                          scalarQuantizedVectorType.getConfidenceInterval(),
+                          null);
+                  break;
+                default:
+                  throw new SolrException(ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
+              }
+              return new SolrDelegatingKnnVectorsFormat(delegate, scalarQuantizedVectorType.getDimension());
+            } else if (fieldType instanceof DenseVectorField vectorType) {
               String knnAlgorithm = vectorType.getKnnAlgorithm();
               if (DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)) {
                 int maxConn = vectorType.getHnswMaxConn();
                 int beamWidth = vectorType.getHnswBeamWidth();
-                var delegate = new Lucene99HnswVectorsFormat(maxConn, beamWidth);
+                delegate = new Lucene99HnswVectorsFormat(maxConn, beamWidth);
                 return new SolrDelegatingKnnVectorsFormat(delegate, vectorType.getDimension());
               } else {
                 throw new SolrException(
-                    ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
+                        ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
               }
             }
             return super.getKnnVectorsFormatForField(field);
