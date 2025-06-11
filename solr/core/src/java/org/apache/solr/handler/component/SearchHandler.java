@@ -28,6 +28,8 @@ import static org.apache.solr.request.SolrRequestInfo.getQueryLimits;
 import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY;
 
 import com.codahale.metrics.Counter;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -62,7 +64,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
@@ -152,18 +153,28 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
+  // TODO SOLR-17458: Fix metric Attributes
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    super.initializeMetrics(
+        parentContext,
+        Attributes.builder()
+            .putAll(attributes)
+            .put(AttributeKey.stringKey("category"), getCategory().toString())
+            .put(AttributeKey.stringKey("internal"), "false")
+            .build(),
+        scope);
     metricsShard =
         new HandlerMetrics( // will register various metrics in the context
-            solrMetricsContext, getCategory().toString(), scope + SHARD_HANDLER_SUFFIX);
-    solrMetricsContext.gauge(
-        new MetricsMap(map -> shardPurposes.forEach((k, v) -> map.putNoEx(k, v.getCount()))),
-        true,
-        "purposes",
-        getCategory().toString(),
-        scope + SHARD_HANDLER_SUFFIX);
+            solrMetricsContext,
+            Attributes.builder()
+                .putAll(attributes)
+                .put(AttributeKey.stringKey("category"), getCategory().toString())
+                .put(AttributeKey.stringKey("internal"), "true")
+                .build(),
+            getCategory().toString(),
+            scope + SHARD_HANDLER_SUFFIX);
   }
 
   @Override

@@ -14,12 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.otel.instruments;
 
-/**
- * The {@link org.apache.solr.metrics.prometheus.SolrPrometheusFormatter} is responsible for
- * collecting Prometheus metrics from exporting {@link com.codahale.metrics.Metric}'s from {@link
- * com.codahale.metrics.MetricRegistry} {@link org.apache.solr.metrics.prometheus.SolrMetric} is a
- * wrapper to export {@link com.codahale.metrics.Metric} to {@link
- * io.prometheus.metrics.model.snapshots.DataPointSnapshot}
- */
-package org.apache.solr.metrics.prometheus;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongUpDownCounter;
+import org.apache.solr.metrics.otel.OtelLongMetric;
+
+public class AttributedLongUpDownCounter implements OtelLongMetric {
+
+  private final LongUpDownCounter upDownCounter;
+  private final Attributes attributes;
+
+  public AttributedLongUpDownCounter(LongUpDownCounter upDownCounter, Attributes attributes) {
+    this.upDownCounter = upDownCounter;
+    this.attributes = attributes;
+  }
+
+  public void inc() {
+    record(1L);
+  }
+
+  public void dec() {
+    record(-1L);
+  }
+
+  @Override
+  public void record(Long value) {
+    upDownCounter.add(value, attributes);
+  }
+}

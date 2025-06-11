@@ -14,9 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.otel.instruments;
 
-/**
- * The {@link org.apache.solr.metrics.prometheus.node.SolrPrometheusNodeFormatter} is responsible
- * for exporting solr.node registry metrics to Prometheus.
- */
-package org.apache.solr.metrics.prometheus.node;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleCounter;
+import org.apache.solr.metrics.otel.OtelDoubleMetric;
+
+public class AttributedDoubleCounter implements OtelDoubleMetric {
+
+  private final DoubleCounter counter;
+  private final Attributes attributes;
+
+  public AttributedDoubleCounter(DoubleCounter counter, Attributes attributes) {
+    this.counter = counter;
+    this.attributes = attributes;
+  }
+
+  public void inc() {
+    record(1.0);
+  }
+
+  @Override
+  public void record(Double value) {
+    counter.add(value, attributes);
+  }
+}

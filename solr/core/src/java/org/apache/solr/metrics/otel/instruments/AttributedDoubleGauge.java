@@ -14,9 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.otel.instruments;
 
-/**
- * The {@link org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyFormatter} is responsible
- * for exporting solr.jetty registry metrics to Prometheus.
- */
-package org.apache.solr.metrics.prometheus.jetty;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleGauge;
+import org.apache.solr.metrics.otel.OtelDoubleMetric;
+
+public class AttributedDoubleGauge implements OtelDoubleMetric {
+  private final DoubleGauge gauge;
+  private final Attributes attributes;
+
+  public AttributedDoubleGauge(DoubleGauge gauge, Attributes attributes) {
+    this.gauge = gauge;
+    this.attributes = attributes;
+  }
+
+  @Override
+  public void record(Double value) {
+    gauge.set(value, attributes);
+  }
+}

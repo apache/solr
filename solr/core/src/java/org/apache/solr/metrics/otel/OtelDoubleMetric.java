@@ -14,20 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.otel;
 
-public interface PrometheusCoreFormatterInfo {
-  /** Category of prefix Solr Core dropwizard handler metric names */
-  enum CoreCategory {
-    ADMIN,
-    QUERY,
-    UPDATE,
-    REPLICATION,
-    TLOG,
-    CACHE,
-    SEARCHER,
-    HIGHLIGHTER,
-    INDEX,
-    CORE
-  }
+@FunctionalInterface
+public interface OtelDoubleMetric {
+  void record(Double value);
 }

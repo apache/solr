@@ -14,14 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.jetty;
+package org.apache.solr.metrics.otel.instruments;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrMetric;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleUpDownCounter;
+import org.apache.solr.metrics.otel.OtelDoubleMetric;
 
-/** Base class is a wrapper to export a solr.jetty {@link com.codahale.metrics.Metric} */
-public abstract class SolrJettyMetric extends SolrMetric {
-  public SolrJettyMetric(Metric dropwizardMetric, String metricName) {
-    super(dropwizardMetric, metricName);
+public class AttributedDoubleUpDownCounter implements OtelDoubleMetric {
+
+  private final DoubleUpDownCounter upDownCounter;
+  private final Attributes attributes;
+
+  public AttributedDoubleUpDownCounter(DoubleUpDownCounter upDownCounter, Attributes attributes) {
+    this.upDownCounter = upDownCounter;
+    this.attributes = attributes;
+  }
+
+  public void inc() {
+    record(1.0);
+  }
+
+  public void dec() {
+    record(-1.0);
+  }
+
+  @Override
+  public void record(Double value) {
+    upDownCounter.add(value, attributes);
   }
 }

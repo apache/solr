@@ -14,16 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.node;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrMetric;
-
-/** Base class is a wrapper to export a solr.node {@link com.codahale.metrics.Metric} */
-public abstract class SolrNodeMetric extends SolrMetric {
-  public static final String NODE_THREAD_POOL = "solr_metrics_node_thread_pool";
-
-  public SolrNodeMetric(Metric dropwizardMetric, String metricName) {
-    super(dropwizardMetric, metricName);
-  }
-}
+/**
+ * A collection of bound OTEL instruments which are reusable wrappers around OpenTelemetry metric
+ * instruments that are pre-bound to a fixed set of Attributes. This avoids repeated attribute
+ * allocation on every metric recording. These classes implement Solr’s internal OtelMetric
+ * interfaces {@link org.apache.solr.metrics.otel.OtelDoubleMetric} and {@link
+ * org.apache.solr.metrics.otel.OtelLongMetric} which allow Solr’s metric producers to abstract over
+ * the OTEL API.
+ */
+package org.apache.solr.metrics.otel.instruments;

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.metrics;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 
 /** Used by objects that expose metrics through {@link SolrMetricManager}. */
@@ -40,20 +41,16 @@ public interface SolrMetricProducer extends AutoCloseable {
   }
 
   /**
-   * Initialize metrics specific to this producer.
-   *
-   * @param parentContext parent metrics context. If this component has the same life-cycle as the
-   *     parent it can simply use the parent context, otherwise it should obtain a child context
-   *     using {@link SolrMetricsContext#getChildContext(Object)} passing <code>this</code> as the
-   *     child object.
-   * @param scope component scope
+   * Deprecated entry point for initializing metrics. TODO SOLR-17458: This will be removed Change
+   * to only take attributes completely removing Dropwizard
    */
-  void initializeMetrics(SolrMetricsContext parentContext, String scope);
+  void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes, String scope);
 
   /**
    * Implementations should return the context used in {@link #initializeMetrics(SolrMetricsContext,
-   * String)} to ensure proper cleanup of metrics at the end of the life-cycle of this component.
-   * This should be the child context if one was created, or null if the parent context was used.
+   * Attributes, String)} to ensure proper cleanup of metrics at the end of the life-cycle of this
+   * component. This should be the child context if one was created, or null if the parent context
+   * was used.
    */
   SolrMetricsContext getSolrMetricsContext();
 

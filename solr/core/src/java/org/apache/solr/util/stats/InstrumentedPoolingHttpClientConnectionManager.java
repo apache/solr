@@ -17,6 +17,7 @@
 
 package org.apache.solr.util.stats;
 
+import io.opentelemetry.api.common.Attributes;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -43,8 +44,10 @@ public class InstrumentedPoolingHttpClientConnectionManager
     return solrMetricsContext;
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     solrMetricsContext.gauge(
         () -> getTotalStats().getAvailable(),

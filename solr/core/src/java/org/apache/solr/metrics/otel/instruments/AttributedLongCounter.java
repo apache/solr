@@ -14,14 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.jvm;
+package org.apache.solr.metrics.otel.instruments;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrMetric;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+import org.apache.solr.metrics.otel.OtelLongMetric;
 
-/** Base class is a wrapper to export a solr.jvm {@link com.codahale.metrics.Metric} */
-public abstract class SolrJvmMetric extends SolrMetric {
-  public SolrJvmMetric(Metric dropwizardMetric, String metricName) {
-    super(dropwizardMetric, metricName);
+public class AttributedLongCounter implements OtelLongMetric {
+
+  private final LongCounter baseCounter;
+  private final io.opentelemetry.api.common.Attributes attributes;
+
+  public AttributedLongCounter(LongCounter baseCounter, Attributes attributes) {
+    this.baseCounter = baseCounter;
+    this.attributes = attributes;
+  }
+
+  public void inc() {
+    record(1L);
+  }
+
+  @Override
+  public void record(Long value) {
+    baseCounter.add(value, attributes);
   }
 }

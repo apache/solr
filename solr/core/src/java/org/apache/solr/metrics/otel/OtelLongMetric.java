@@ -14,14 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.node;
+package org.apache.solr.metrics.otel;
 
-public interface PrometheusNodeFormatterInfo {
-  /** Category of prefix Solr Node dropwizard handler metric names */
-  enum NodeCategory {
-    ADMIN,
-    UPDATE,
-    CONTAINER,
-    CACHE
-  }
+@FunctionalInterface
+public interface OtelLongMetric {
+  void record(Long value);
 }

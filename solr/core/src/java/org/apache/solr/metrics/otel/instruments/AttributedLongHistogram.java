@@ -14,17 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.jvm;
+package org.apache.solr.metrics.otel.instruments;
 
-public interface PrometheusJvmFormatterInfo {
-  /** Category of prefix Solr JVM dropwizard handler metric names */
-  enum JvmCategory {
-    buffers,
-    gc,
-    memory,
-    os,
-    threads,
-    classes,
-    system
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongHistogram;
+import org.apache.solr.metrics.otel.OtelLongMetric;
+
+public class AttributedLongHistogram implements OtelLongMetric {
+
+  protected final LongHistogram histogram;
+  protected final Attributes attributes;
+
+  public AttributedLongHistogram(
+      LongHistogram histogram, io.opentelemetry.api.common.Attributes attributes) {
+    this.histogram = histogram;
+    this.attributes = attributes;
+  }
+
+  @Override
+  public void record(Long value) {
+    histogram.record(value, attributes);
   }
 }

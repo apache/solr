@@ -14,16 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus;
+package org.apache.solr.metrics.otel.instruments;
 
-public class SolrNoOpMetric extends SolrMetric {
-  public SolrNoOpMetric() {}
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongGauge;
+import org.apache.solr.metrics.otel.OtelLongMetric;
 
-  @Override
-  public SolrMetric parseLabels() {
-    return this;
+public class AttributedLongGauge implements OtelLongMetric {
+
+  private final LongGauge gauge;
+  private final Attributes attributes;
+
+  public AttributedLongGauge(LongGauge gauge, Attributes attributes) {
+    this.gauge = gauge;
+    this.attributes = attributes;
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusFormatter formatter) {}
+  public void record(Long value) {
+    gauge.set(value, attributes);
+  }
 }

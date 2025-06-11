@@ -18,6 +18,7 @@ package org.apache.solr.security;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -129,9 +130,11 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
-    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, scope));
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    super.initializeMetrics(parentContext, attributes, scope);
+    // TODO SOLR-17458: Add Otel
+    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, Attributes.empty(), scope));
   }
 
   @Override
