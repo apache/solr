@@ -30,10 +30,23 @@ public interface CursorMarkParams {
   String CURSOR_MARK_PARAM = "cursorMark";
 
   /**
+   * Param clients should specify indicating that they want a reverse cursor based search. The value
+   * specified must either be {@link #CURSOR_MARK_START} indicating the last page of results, or a
+   * value returned by a previous search via the {@link #CURSOR_MARK_PREVIOUS} key.
+   */
+  String CURSOR_MARK_REVERSE_PARAM = "cursorMarkReverse";
+
+  /**
    * Key used in Solr response to inform the client what the "next" {@link #CURSOR_MARK_PARAM} value
    * should be to continue pagination
    */
   String CURSOR_MARK_NEXT = "nextCursorMark";
+
+  /**
+   * Key used in Solr response to inform the client what the "previous" {@link #CURSOR_MARK_PARAM} value
+   * should be to go back in pagination
+   */
+  String CURSOR_MARK_PREVIOUS = "previousCursorMark";
 
   /**
    * Special value for {@link #CURSOR_MARK_PARAM} indicating that cursor functionality should be
@@ -41,4 +54,11 @@ public interface CursorMarkParams {
    * "first page" of results is being requested
    */
   String CURSOR_MARK_START = "*";
+
+  /**
+   * Special value for {@link #CURSOR_MARK_PARAM} indicating that cursor functionality should be
+   * used, and a new cursor value should be computed before the first result, but that currently the
+   * "last page" of results is being requested
+   */
+  String CURSOR_MARK_END = "<";
 }

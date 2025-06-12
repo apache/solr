@@ -16,8 +16,10 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_END;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PREVIOUS;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
 import java.io.ByteArrayInputStream;
@@ -25,11 +27,12 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -49,12 +52,20 @@ public final class CursorMark {
   private final SortSpec sortSpec;
 
   /**
-   * The raw, unmarshalled, sort values (that corrispond with the SortField's in the SortSpec) for
+   * The raw, unmarshalled, sort values (that correspond with the SortField's in the SortSpec) for
    * knowing which docs this cursor should "search after". If this list is null, then we have no
    * specific values to "search after" and we should start from the very beginning of the sorted
    * list of documents matching the query.
    */
   private List<Object> values = null;
+
+  /**
+   * The raw, unmarshalled, sort values (that correspond with the SortField's in the SortSpec) for
+   * knowing which docs this cursor should "search after". If this list is null, then we have no
+   * specific values to "search after" and we should start from the very beginning of the sorted
+   * list of documents matching the query.
+   */
+  private boolean isReverse = false;
 
   /**
    * Generates an empty CursorMark bound for use with the specified schema and {@link SortSpec}.
@@ -117,8 +128,9 @@ public final class CursorMark {
    * @param previous Existing CursorMark whose SortSpec will be reused in the new CursorMark.
    * @see #createNext
    */
-  private CursorMark(CursorMark previous) {
+  private CursorMark(CursorMark previous, boolean isReverse) {
     this.sortSpec = previous.sortSpec;
+    this.isReverse = isReverse;
     this.values = null;
   }
 
@@ -126,10 +138,28 @@ public final class CursorMark {
    * Generates an new CursorMark bound for use with the same {@link SortSpec} as the current
    * CursorMark but using the new SortValues.
    */
-  public CursorMark createNext(List<Object> nextSortValues) {
-    final CursorMark next = new CursorMark(this);
-    next.setSortValues(nextSortValues);
+  public CursorMark createNext(List<Object> lastSortValues) {
+    final CursorMark next = new CursorMark(this, false);
+    next.setSortValues(lastSortValues);
     return next;
+  }
+
+  /**
+   * Generates an new CursorMark bound for use with the same {@link SortSpec} as the current
+   * CursorMark but using the new SortValues. This will reverse the SortValues and SortSpec to create a reverse-direction cursorMark
+   */
+  public CursorMark createPrevious(List<Object> firstSortValues) {
+    final CursorMark next = new CursorMark(this, true);
+    next.setSortValues(firstSortValues);
+    return next;
+  }
+
+  /**
+   * Generates an new CursorMark bound for use with the same {@link SortSpec} and {@link #isReverse} as the current
+   * CursorMark but no SortValues, because there are no initial values.
+   */
+  public CursorMark initial(boolean isReverse) {
+    return new CursorMark(this, isReverse);
   }
 
   /**
@@ -169,6 +199,11 @@ public final class CursorMark {
     return this.sortSpec;
   }
 
+  /** Returns whether the cursorMark should be used in reverse order. */
+  public boolean isReverse() {
+    return this.isReverse;
+  }
+
   /**
    * Parses the serialized version of a CursorMark from a client (which must conform to the existing
    * sortSpec) and populates this object.
@@ -179,27 +214,33 @@ public final class CursorMark {
   public void parseSerializedTotem(final String serialized) {
     if (CURSOR_MARK_START.equals(serialized)) {
       values = null;
+      isReverse = false;
+      return;
+    }
+    if (CURSOR_MARK_END.equals(serialized)) {
+      values = null;
+      isReverse = true;
       return;
     }
     final SortField[] sortFields = sortSpec.getSort().getSort();
     final List<SchemaField> schemaFields = sortSpec.getSchemaFields();
+    isReverse = false;
 
     List<Object> pieces = null;
     try {
       final byte[] rawData = Base64.getDecoder().decode(serialized);
       try (JavaBinCodec jbc = new JavaBinCodec();
           ByteArrayInputStream in = new ByteArrayInputStream(rawData)) {
-        pieces = (List<Object>) jbc.unmarshal(in);
-        boolean b = false;
-        for (Object o : pieces) {
-          if (o instanceof BytesRefBuilder || o instanceof BytesRef || o instanceof String) {
-            b = true;
-            break;
-          }
-        }
-        if (b) {
-          in.reset();
-          pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
+        Object rawUnmarshal = jbc.unmarshal(in);
+        if (rawUnmarshal instanceof List) {
+          // TODO: Remove in future version, as all serialized cursorMarks will be Maps
+          pieces = (List<Object>) rawUnmarshal;
+        } else if (rawUnmarshal instanceof Map) {
+          Map<String, Object> cursorMap = (Map<String, Object>) rawUnmarshal;
+          isReverse = (Boolean) cursorMap.getOrDefault("isReverse", Boolean.FALSE);
+          pieces = (List<Object>) cursorMap.get("values");
+        } else {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "CursorMark could not be unmarshalled into a list or map, instead type was " + (rawUnmarshal == null ? "null" : rawUnmarshal.getClass().getName()));
         }
       }
     } catch (Exception ex) {
@@ -208,11 +249,15 @@ public final class CursorMark {
           "Unable to parse '"
               + CURSOR_MARK_PARAM
               + "' after totem: "
-              + "value must either be '"
+              + "value must be '"
               + CURSOR_MARK_START
-              + "' or the "
+              + "', '"
+              + CURSOR_MARK_END
+              + "' or either of the "
               + "'"
               + CURSOR_MARK_NEXT
+              + "'/'"
+              + CURSOR_MARK_PREVIOUS
               + "' returned by a previous search: "
               + serialized,
           ex);
@@ -251,7 +296,11 @@ public final class CursorMark {
    */
   public String getSerializedTotem() {
     if (null == this.values) {
-      return CURSOR_MARK_START;
+      if (isReverse) {
+        return CURSOR_MARK_END;
+      } else {
+        return CURSOR_MARK_START;
+      }
     }
 
     final List<SchemaField> schemaFields = sortSpec.getSchemaFields();
@@ -272,7 +321,8 @@ public final class CursorMark {
 
     try (JavaBinCodec jbc = new JavaBinCodec();
         ByteArrayOutputStream out = new ByteArrayOutputStream(256)) {
-      jbc.marshal(marshalledValues, out);
+      Map<String, Object> toSerialize = Map.of("values", marshalledValues, "isReverse", isReverse);
+      jbc.marshal(toSerialize, out);
       byte[] rawData = out.toByteArray();
       return Base64.getEncoder().encodeToString(rawData);
     } catch (Exception ex) {

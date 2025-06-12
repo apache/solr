@@ -50,6 +50,22 @@ public class SortSpec {
     setSortAndFields(sort, Arrays.asList(fields));
   }
 
+  public SortSpec reverse() {
+    return new SortSpec(sort.reverse, fields, num, offset);
+  }
+
+  private static Sort reverseSort(Sort sort) {
+    SortField[] originalSortFields = sort.getSort();
+    if (originalSortFields.length == 0) {
+      return new Sort(new SortField(null, SortField.Type.SCORE, true));
+    } else {
+      SortField[] sortFields = new SortField[originalSortFields.length];
+      for (int i = 0; i < originalSortFields.length; i++) {
+        SortField sortField = originalSortFields[i].rewrite()
+      }
+    }
+    new Sort()
+  }
   /**
    * the specified SchemaFields must correspond one to one with the Sort's SortFields, using null
    * where appropriate.
