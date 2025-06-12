@@ -92,9 +92,6 @@ public interface CommonParams {
   /** stylesheet to apply to XML results */
   String XSL = "xsl";
 
-  /** version parameter to check request-response compatibility */
-  String VERSION = "version";
-
   /** query and init param for field list */
   String FL = "fl";
 

@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -143,8 +142,6 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
 
   @Test
   public void testCSV() throws Exception {
-    lrf.args.put(CommonParams.VERSION, "2.2");
-
     makeFile("id,str_s\n100,\"quoted\"\n101,\n102,\"\"\n103,");
     loadLocal("commit", "true");
     assertQ(req("id:[100 TO 110]"), "//*[@numFound='4']");
