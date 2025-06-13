@@ -46,7 +46,7 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
     HashMap<String, Set<ShardDoc>> shardMap = new HashMap<>();
     for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
       for (GroupDocs<BytesRef> group : topGroups.groups) {
-        mapShardToDocs(shardMap, group.scoreDocs);
+        mapShardToDocs(shardMap, group.scoreDocs());
       }
     }
 

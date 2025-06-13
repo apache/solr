@@ -123,7 +123,7 @@ public class LTRRescorer extends Rescorer {
       return firstPassTopDocs;
     }
     final ScoreDoc[] firstPassResults = getFirstPassDocsRanked(firstPassTopDocs);
-    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
+    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value()));
 
     final ScoreDoc[] reranked = rerank(searcher, topN, firstPassResults);
 
@@ -148,7 +148,7 @@ public class LTRRescorer extends Rescorer {
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
     Arrays.sort(hits, docComparator);
 
-    assert firstPassTopDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+    assert firstPassTopDocs.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
     return hits;
   }
 
@@ -180,7 +180,7 @@ public class LTRRescorer extends Rescorer {
       // We advanced to another segment
       if (readerContext != null) {
         docBase = readerContext.docBase;
-        scorer = modelWeight.scorer(readerContext);
+        scorer = modelWeight.modelScorer(readerContext);
       }
       if (scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked)) {
         logSingleHit(indexSearcher, modelWeight, hit.doc, scoringQuery);
@@ -299,7 +299,7 @@ public class LTRRescorer extends Rescorer {
     final int n = ReaderUtil.subIndex(docid, leafContexts);
     final LeafReaderContext atomicContext = leafContexts.get(n);
     final int deBasedDoc = docid - atomicContext.docBase;
-    final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.scorer(atomicContext);
+    final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.modelScorer(atomicContext);
     if ((r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc)) {
       return new LTRScoringQuery.FeatureInfo[0];
     } else {

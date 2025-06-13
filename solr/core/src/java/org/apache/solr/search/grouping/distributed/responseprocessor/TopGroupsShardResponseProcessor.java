@@ -233,7 +233,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     int i = 0;
     for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
       for (GroupDocs<BytesRef> group : topGroups.groups) {
-        for (ScoreDoc scoreDoc : group.scoreDocs) {
+        for (ScoreDoc scoreDoc : group.scoreDocs()) {
           ShardDoc solrDoc = (ShardDoc) scoreDoc;
           // Include the first if there are duplicate IDs
           if (!resultIds.containsKey(solrDoc.id)) {

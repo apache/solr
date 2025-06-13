@@ -138,7 +138,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         fromCore.close();
         fromHolder.decref();
       }
-      return joinQuery.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
+      return joinQuery.rewrite(searcher).createWeight(searcher, scoreMode, boost);
     }
 
     @Override
@@ -192,7 +192,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       final Query jq =
           JoinUtil.createJoinQuery(
               fromField, true, toField, fromQuery, info.getReq().getSearcher(), this.scoreMode);
-      return jq.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
+      return jq.rewrite(searcher).createWeight(searcher, scoreMode, boost);
     }
 
     @Override
