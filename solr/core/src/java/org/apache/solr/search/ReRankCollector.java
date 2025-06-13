@@ -276,11 +276,11 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
   }
 
   static class RescoreDoc extends ScoreDoc {
-    public float matchScore;
+    public float originalScore;
 
-    public RescoreDoc(ScoreDoc scoreDoc, float matchScore) {
+    public RescoreDoc(ScoreDoc scoreDoc, float originalScore) {
       super(scoreDoc.doc, scoreDoc.score, scoreDoc.shardIndex);
-      this.matchScore = matchScore;
+      this.originalScore = originalScore;
     }
   }
 }

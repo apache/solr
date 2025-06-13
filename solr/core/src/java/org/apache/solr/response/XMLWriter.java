@@ -27,7 +27,6 @@ import java.util.Map;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
@@ -42,8 +41,6 @@ import org.slf4j.LoggerFactory;
  */
 public class XMLWriter extends TextResponseWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static float CURRENT_VERSION = 2.2f;
 
   private static final char[] XML_START1 =
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".toCharArray();
@@ -61,8 +58,6 @@ public class XMLWriter extends TextResponseWriter {
 
   private static final char[] XML_START2_NOSCHEMA = ("<response>\n").toCharArray();
 
-  final int version;
-
   public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException {
     XMLWriter xmlWriter = null;
@@ -76,14 +71,6 @@ public class XMLWriter extends TextResponseWriter {
 
   public XMLWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
-
-    String version = req.getParams().get(CommonParams.VERSION);
-    float ver = version == null ? CURRENT_VERSION : Float.parseFloat(version);
-    this.version = (int) (ver * 1000);
-    if (this.version < 2200) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "XMLWriter does not support version: " + version);
-    }
   }
 
   public void writeResponse() throws IOException {

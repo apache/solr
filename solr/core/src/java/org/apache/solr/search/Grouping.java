@@ -28,9 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -180,24 +178,16 @@ public class Grouping {
   }
 
   public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
-    QParser parser = QParser.getParser(groupByStr, FunctionQParserPlugin.NAME, request);
-    Query q = parser.getQuery();
+    ValueSource valueSource = FunctionQParser.parseAsValueSource(groupByStr, request);
     final Grouping.Command<?> gc;
-    if (q instanceof FunctionQuery) {
-      ValueSource valueSource = ((FunctionQuery) q).getValueSource();
-      if (valueSource instanceof StrFieldSource) {
-        String field = ((StrFieldSource) valueSource).getField();
-        CommandField commandField = new CommandField();
-        commandField.groupBy = field;
-        gc = commandField;
-      } else {
-        CommandFunc commandFunc = new CommandFunc();
-        commandFunc.groupBy = valueSource;
-        gc = commandFunc;
-      }
+    if (valueSource instanceof StrFieldSource) {
+      String field = ((StrFieldSource) valueSource).getField();
+      CommandField commandField = new CommandField();
+      commandField.groupBy = field;
+      gc = commandField;
     } else {
       CommandFunc commandFunc = new CommandFunc();
-      commandFunc.groupBy = new QueryValueSource(q, 0.0f);
+      commandFunc.groupBy = valueSource;
       gc = commandFunc;
     }
     gc.withinGroupSort = withinGroupSort;
