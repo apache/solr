@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.internal.hppc.IntFloatHashMap;
 import org.apache.lucene.internal.hppc.IntObjectHashMap;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -69,20 +70,44 @@ public class ValueSourceAugmenter extends DocTransformer {
       fcontext = ValueSource.newContext(searcher);
       this.valueSource.createWeight(fcontext, searcher);
       final var docList = context.getDocList();
-      if (docList == null) {
+      final int prefetchSize = docList == null ? 0 : Math.min(docList.size(), maxPrefetchSize);
+      if (prefetchSize == 0) {
         return;
       }
 
-      final int prefetchSize = Math.min(docList.size(), maxPrefetchSize);
+      // Check if scores are wanted and initialize the Scorable if so
+      final MutableScorable scorable; // stored in fcontext (when not null)
+      final IntFloatHashMap docToScoreMap;
+      if (context.wantsScores()) { // TODO switch to ValueSource.needsScores once it exists
+        docToScoreMap = new IntFloatHashMap(prefetchSize);
+        scorable =
+            new MutableScorable() {
+              @Override
+              public float score() throws IOException {
+                return docToScoreMap.get(docBase + localDocId);
+              }
+            };
+        fcontext.put("scorer", scorable);
+      } else {
+        scorable = null;
+        docToScoreMap = null;
+      }
+
+      // Get the IDs and scores
       final int[] ids = new int[prefetchSize];
       int i = 0;
       var iter = docList.iterator();
       while (iter.hasNext() && i < prefetchSize) {
-        ids[i++] = iter.nextDoc();
+        ids[i] = iter.nextDoc();
+        if (docToScoreMap != null) {
+          docToScoreMap.put(ids[i], iter.score());
+        }
+        i++;
       }
       Arrays.sort(ids);
-      cachedValuesById = new IntObjectHashMap<>(ids.length);
 
+      // Get the values in docId order.  Store in cachedValuesById
+      cachedValuesById = new IntObjectHashMap<>(ids.length);
       FunctionValues values = null;
       int docBase = -1;
       int currentIdx = -1;
@@ -95,9 +120,16 @@ public class ValueSourceAugmenter extends DocTransformer {
           values = valueSource.getValues(fcontext, rcontext);
         }
         int localId = docid - docBase;
-        var value = values.objectVal(localId);
+
+        if (scorable != null) {
+          scorable.docBase = docBase;
+          scorable.localDocId = localId;
+        }
+        var value = values.objectVal(localId); // note: might use the Scorable
+
         cachedValuesById.put(docid, value != null ? value : NULL_SENTINEL);
       }
+      fcontext.remove("scorer"); // remove ours; it was there only for prefetching
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "exception for valuesource " + valueSource, e);
@@ -136,6 +168,17 @@ public class ValueSourceAugmenter extends DocTransformer {
     }
   }
 
+  private abstract static class MutableScorable extends Scorable {
+
+    int docBase;
+    int localDocId;
+
+    @Override
+    public int docID() {
+      return localDocId;
+    }
+  }
+
   /** Always returns true */
   @Override
   public boolean needsSolrIndexSearcher() {
@@ -148,12 +191,7 @@ public class ValueSourceAugmenter extends DocTransformer {
     }
   }
 
-  /**
-   * Fake scorer for a single document
-   *
-   * <p>TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values
-   * here from the comparator
-   */
+  /** Fake scorer for a single document */
   protected static class ScoreAndDoc extends Scorable {
     final int docid;
     final float score;
