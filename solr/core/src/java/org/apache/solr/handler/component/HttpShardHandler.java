@@ -204,7 +204,6 @@ public class HttpShardHandler extends ShardHandler {
   private LBSolrClient.Req prepareLBRequest(
       ShardRequest sreq, String shard, ModifiableSolrParams params, List<String> urls) {
     params.remove(CommonParams.WT); // use default (currently javabin)
-    params.remove(CommonParams.VERSION);
     QueryRequest req = createQueryRequest(sreq, params, shard);
     req.setMethod(SolrRequest.METHOD.POST);
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();

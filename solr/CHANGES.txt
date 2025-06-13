@@ -47,6 +47,8 @@ Improvements
 
 * SOLR-17043: "LB" and "Cloud" clients no longer use brittle URL pattern-matching when routing requests. (Jude Muriithi via David Smiley, Jason Gerlowski)
 
+* SOLR-17739: Uploading a config sets with forbidden file types will produces a Exception. Previously it was just ignoring those files and logging a WARN. (Abhishek Umarjikar via Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
@@ -123,9 +125,15 @@ Deprecation Removals
 
 * SOLR-17683: Removed deprecated CurrencyField field type. (Eric Pugh)
 
+* SOLR-17738: Removed deprecated `transform()` from `DocTransformer`. (Abhishek Umarjikar, Houston Putman)
+
+* SOLR-17634: Removed the "version" parameter that the SolrJ client would add to almost all Solr
+ requests in relation to the version of the response format parsing ("wt" param). (David Smiley)
+
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* SOLR-16984: Upgraded Jetty to 12 (Jakarta EE 10 namespace). Updated related dependencies including amazon-awssdk to 2.28.11. (Sanjay Dutt, David Smiley, Kevin Risden)
 
 Other Changes
 ---------------------
@@ -158,11 +166,9 @@ Other Changes
 
 * SOLR-17321: Minimum Java version for Apache Solr is now 21, and for SolrJ, it is 17. (Sanjay Dutt, David Smiley)
 
-* SOLR-16903: Update CLI tools and Solr Core to use java.nio.file.Path instead of java.io.File (Andrey Bozhko, Matthew Biscocho)
+* SOLR-16903: Replace all java.io.File usages to java.nio.file.Path (NIO) (Andrey Bozhko, Matthew Biscocho)
 
 * SOLR-17568: SolrCloud no longer reroutes/proxies a core request to another node if not found locally. (David Smiley)
-
-* SOLR-17548: Switch all public Java APIs from File to Path. (Matthew Biscocho via Eric Pugh)
 
 * SOLR-17675: Remove DirContext param from DirectoryFactory.create method. (Bruno Roustant, David Smiley)
 
@@ -203,7 +209,9 @@ New Features
 
 * SOLR-17678: ReRank queries can now return the matchScore (original score) in addition to the re-ranked score. (Siju Varghese, Houston Putman)
 
-* SSOLR-17447 : Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
+* SOLR-17447: Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
+
+* SOLR-17749: Added linear function support for RankField via RankQParserPlugin. (Christine Poerschke)
 
 Improvements
 ---------------------
@@ -229,11 +237,18 @@ Improvements
 
 * SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
 
+* SOLR-17744: Solr now enables Jetty's Graceful Shutdown features to prevent client connections from being abruptly terminated on orderly shutdown (hossman)
+
+* SOLR-17187: The polling interval for PULL and TLOG replicas can now be overridden using the `commitPollInterval` setting, which takes a String
+  formatted as "HH:mm:ss" (Torsten Koster via Christine Poerschke, Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
 * SOLR-17669: Reduced memory usage in SolrJ getBeans() method when handling dynamic fields with wildcards. (Martin Anzinger)
+
+* SOLR-17756: Parallelize index fingerprint computation across segments via a dedicated thread pool (Matthew Biscocho, Luke Kot-Zaniewski)
 
 Bug Fixes
 ---------------------
@@ -266,6 +281,20 @@ Bug Fixes
 * SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
 
 * SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
+
+* SOLR-17720: Fix rare deadlock in CollectionProperties internals.  (Aparna Suresh, Houston Putman)
+
+* SOLR-17638: Some CLI errors not logged when starting prometheus exporter (Alex Deparvu)
+
+* SOLR-17745: Cancel leader election was being skipped on core container shutdown due to incorrect zkClient check (Matthew Biscocho, Luke Kot-Zaniewski)
+
+* SOLR-17761: Global circuit breakers can no longer trigger ConcurrentModificationException's on Solr startup (Jason Gerlowski)
+
+* SOLR-17758: The NumFieldLimitingUpdateRequestProcessor's "warnOnly" mode has been fixed, and now processes documents even
+  when the limit has been exceeded. (Jason Gerlowski, Rahul Goswami)
+
+* SOLR-7962: Passing additional arguments to solr.cmd using "--jvm-opts" (formerly "-a") in conjunction with "-e" (examples like 'techproducts') 
+  wouldn't reflect on Windows (Rahul Goswami via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
