@@ -96,7 +96,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
       df.release(a);
       assertTrue(
           "The path " + pathA + " should exist because it has subdirs that prevent removal",
-          pathA.toFile().exists()); // we know there are subdirs that should prevent removal
+          Files.exists(pathA)); // we know there are subdirs that should prevent removal
       Collections.shuffle(Arrays.asList(subdirs), r);
       for (Map.Entry<String, Directory> e : subdirs) {
         boolean after = removeAfter.getAsBoolean();
@@ -126,7 +126,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
       } else {
         assertTrue(
             "There are subdirs to wait on, so the parent directory should still exist",
-            pathA.toFile().exists()); // parent must still be present
+            Files.exists(pathA)); // parent must still be present
         for (Map.Entry<String, Directory> e : subdirs) {
           Path path = Path.of(e.getKey());
           boolean exists = Files.exists(path);

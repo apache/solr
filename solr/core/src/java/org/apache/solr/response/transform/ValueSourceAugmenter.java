@@ -17,15 +17,18 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.internal.hppc.IntObjectHashMap;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.ResultContext;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -37,14 +40,18 @@ import org.apache.solr.search.SolrIndexSearcher;
  * @since solr 4.0
  */
 public class ValueSourceAugmenter extends DocTransformer {
+  private static final Object NULL_SENTINEL = new Object();
   public final String name;
   public final QParser qparser;
   public final ValueSource valueSource;
+  private final int maxPrefetchSize;
 
   public ValueSourceAugmenter(String name, QParser qparser, ValueSource valueSource) {
     this.name = name;
     this.qparser = qparser;
     this.valueSource = valueSource;
+    String maxPrefetchSizeRaw = qparser.getParam("preFetchDocs");
+    this.maxPrefetchSize = maxPrefetchSizeRaw != null ? Integer.parseInt(maxPrefetchSizeRaw) : 1000;
   }
 
   @Override
@@ -60,32 +67,66 @@ public class ValueSourceAugmenter extends DocTransformer {
       readerContexts = searcher.getIndexReader().leaves();
       fcontext = ValueSource.newContext(searcher);
       this.valueSource.createWeight(fcontext, searcher);
+      final var docList = context.getDocList();
+      if (docList == null) {
+        return;
+      }
+
+      final int prefetchSize = Math.min(docList.size(), maxPrefetchSize);
+      final int[] ids = new int[prefetchSize];
+      int i = 0;
+      var iter = docList.iterator();
+      while (iter.hasNext() && i < prefetchSize) {
+        ids[i++] = iter.nextDoc();
+      }
+      Arrays.sort(ids);
+      cachedValuesById = new IntObjectHashMap<>(ids.length);
+
+      FunctionValues values = null;
+      int docBase = -1;
+      int currentIdx = -1;
+      for (int docid : ids) {
+        int idx = ReaderUtil.subIndex(docid, readerContexts);
+        if (currentIdx != idx) {
+          currentIdx = idx;
+          LeafReaderContext rcontext = readerContexts.get(idx);
+          docBase = rcontext.docBase;
+          values = valueSource.getValues(fcontext, rcontext);
+        }
+        int localId = docid - docBase;
+        var value = values.objectVal(localId);
+        cachedValuesById.put(docid, value != null ? value : NULL_SENTINEL);
+      }
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "exception for valuesource " + valueSource, e);
     }
   }
 
   Map<Object, Object> fcontext;
   SolrIndexSearcher searcher;
   List<LeafReaderContext> readerContexts;
+  IntObjectHashMap<Object> cachedValuesById;
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
-    // This is only good for random-access functions
-
-    try {
-
-      // TODO: calculate this stuff just once across diff functions
-      int idx = ReaderUtil.subIndex(docid, readerContexts);
-      LeafReaderContext rcontext = readerContexts.get(idx);
-      FunctionValues values = valueSource.getValues(fcontext, rcontext);
-      int localId = docid - rcontext.docBase;
-      setValue(doc, values.objectVal(localId));
-    } catch (IOException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "exception at docid " + docid + " for valuesource " + valueSource,
-          e);
+  public void transform(SolrDocument doc, int docid, DocIterationInfo docIterationInfo) {
+    Object cacheValue = (cachedValuesById != null) ? cachedValuesById.get(docid) : null;
+    if (cacheValue != null) {
+      setValue(doc, cacheValue != NULL_SENTINEL ? cacheValue : null);
+    } else {
+      // Fallback to on-demand calculation for documents not in the pre-calculated set, RTG use case
+      try {
+        int idx = ReaderUtil.subIndex(docid, readerContexts);
+        LeafReaderContext rcontext = readerContexts.get(idx);
+        FunctionValues values = valueSource.getValues(fcontext, rcontext);
+        int localId = docid - rcontext.docBase;
+        setValue(doc, values.objectVal(localId));
+      } catch (IOException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "exception at docid " + docid + " for valuesource " + valueSource,
+            e);
+      }
     }
   }
 
