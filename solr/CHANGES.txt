@@ -131,6 +131,8 @@ Deprecation Removals
 * SOLR-17634: Removed the "version" parameter that the SolrJ client would add to almost all Solr
  requests in relation to the version of the response format parsing ("wt" param). (David Smiley)
 
+* SOLR-17698: Removed deprecated EnumField field type. (Eric Pugh, David Smiley)
+
 Dependency Upgrades
 ---------------------
 
