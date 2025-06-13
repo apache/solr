@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -400,7 +399,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
 
   @Override
   public void inform(final SolrCore core) {
-    this.solrHome = Paths.get(core.getCoreContainer().getSolrHome());
+    this.solrHome = core.getCoreContainer().getSolrHome();
     srcSelector =
         FieldMutatingUpdateProcessor.createFieldNameSelector(
             core.getResourceLoader(),
