@@ -17,6 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -25,10 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.common.util.SuppressForbidden;
 
 public class DebugServlet extends HttpServlet {
@@ -50,7 +51,7 @@ public class DebugServlet extends HttpServlet {
   public static HashMap<String, String> headers = null;
   public static Map<String, String[]> parameters = null;
   public static String queryString = null;
-  public static javax.servlet.http.Cookie[] cookies = null;
+  public static Cookie[] cookies = null;
   public static List<String[]> responseHeaders = null;
   public static Map<String, Object> responseBodyByQueryFragment = new ConcurrentHashMap<>();
   public static byte[] requestBody = null;
@@ -106,7 +107,7 @@ public class DebugServlet extends HttpServlet {
   }
 
   private void setCookies(HttpServletRequest req) {
-    javax.servlet.http.Cookie[] ck = req.getCookies();
+    Cookie[] ck = req.getCookies();
     cookies = req.getCookies();
   }
 

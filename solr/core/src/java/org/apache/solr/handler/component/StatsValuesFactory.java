@@ -239,29 +239,21 @@ public class StatsValuesFactory {
 
       updateTypeSpecificStats(stv);
 
-      NamedList<?> f = (NamedList<?>) stv.get(FACETS);
+      var f = (NamedList<NamedList<NamedList<?>>>) stv.get(FACETS);
       if (f == null) {
         return;
       }
 
-      for (int i = 0; i < f.size(); i++) {
-        String field = f.getName(i);
-        NamedList<?> vals = (NamedList<?>) f.getVal(i);
-        Map<String, StatsValues> addTo = facets.get(field);
-        if (addTo == null) {
-          addTo = new HashMap<>();
-          facets.put(field, addTo);
-        }
-        for (int j = 0; j < vals.size(); j++) {
-          String val = vals.getName(j);
-          StatsValues vvals = addTo.get(val);
-          if (vvals == null) {
-            vvals = createStatsValues(statsField);
-            addTo.put(val, vvals);
-          }
-          vvals.accumulate((NamedList<?>) vals.getVal(j));
-        }
-      }
+      f.forEach(
+          (field, vals) -> {
+            Map<String, StatsValues> addTo = facets.computeIfAbsent(field, k -> new HashMap<>());
+            vals.forEach(
+                (val, vval) -> {
+                  StatsValues vvals =
+                      addTo.computeIfAbsent(val, k -> createStatsValues(statsField));
+                  vvals.accumulate(vval);
+                });
+          });
     }
 
     @Override

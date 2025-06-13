@@ -403,6 +403,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
         String name = otherKey.toString();
         Integer shardValue = (Integer) rangeFromShard.get(name);
         if (shardValue != null && shardValue > 0) {
+          // TODO: rangeFacet.merge(name, shardValue, (a, b) -> ((Integer)a) + ((Integer)b));
           Integer existingValue = (Integer) rangeFacet.get(name);
           // shouldn't be null
           int idx = rangeFacet.indexOf(name, 0);

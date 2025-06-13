@@ -75,16 +75,9 @@ public class ReplicateFromLeader {
               "SolrCore not found:" + coreName + " in " + CloudUtil.getLoadedCoreNamesAsString(cc));
         }
       }
-      SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
-      String pollIntervalStr = "00:00:03";
-      if (System.getProperty("jetty.testMode") != null) {
-        pollIntervalStr = "00:00:01";
-      }
 
-      String calculatedPollIntervalString = determinePollInterval(uinfo);
-      if (calculatedPollIntervalString != null) {
-        pollIntervalStr = calculatedPollIntervalString;
-      }
+      final SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
+      final String pollIntervalStr = determinePollInterval(uinfo);
       log.info("Will start replication from leader with poll interval: {}", pollIntervalStr);
 
       NamedList<Object> followerConfig = new NamedList<>();
@@ -134,18 +127,25 @@ public class ReplicateFromLeader {
   }
 
   /**
-   * Determine the poll interval for replicas based on the auto soft/hard commit schedule
+   * Determine the poll interval for replicas based on the auto soft/hard commit schedule or
+   * configured commit poll interval
    *
    * @param uinfo the update handler info containing soft/hard commit configuration
    * @return a poll interval string representing a cadence of polling frequency in the form of
-   *     hh:mm:ss
+   *     hh:mm:ss, never <code>null</code>
    */
   public static String determinePollInterval(SolrConfig.UpdateHandlerInfo uinfo) {
     int hardCommitMaxTime = uinfo.autoCommmitMaxTime;
     int softCommitMaxTime = uinfo.autoSoftCommmitMaxTime;
     boolean hardCommitNewSearcher = uinfo.openSearcher;
-    String pollIntervalStr = null;
-    if (hardCommitMaxTime != -1) {
+    String customCommitPollInterval = uinfo.commitPollInterval;
+    String pollIntervalStr = "00:00:03";
+
+    if (System.getProperty("jetty.testMode") != null) {
+      pollIntervalStr = "00:00:01";
+    } else if (customCommitPollInterval != null) {
+      pollIntervalStr = customCommitPollInterval;
+    } else if (hardCommitMaxTime != -1) {
       // configured hardCommit places a ceiling on the interval at which new segments will be
       // available to replicate
       if (softCommitMaxTime != -1
@@ -168,6 +168,9 @@ public class ReplicateFromLeader {
       pollIntervalStr = toPollIntervalStr(softCommitMaxTime / 2);
     }
 
+    // validate poll interval and fail early
+    ReplicationHandler.readIntervalNs(pollIntervalStr);
+    assert pollIntervalStr != null;
     return pollIntervalStr;
   }
 

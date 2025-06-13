@@ -16,6 +16,8 @@
  */
 package org.apache.solr.prometheus.scraper;
 
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.prometheus.client.Collector;
@@ -35,10 +37,12 @@ import java.util.stream.Collectors;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsQuery;
@@ -130,29 +134,38 @@ public abstract class SolrScraper implements Closeable {
       zkHostLabelValue = ((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts();
     }
 
-    QueryRequest queryRequest = new QueryRequest(query.getParameters());
-    queryRequest.setPath(query.getPath());
+    GenericSolrRequest request = null;
+    if (ADMIN_PATHS.contains(query.getPath())) {
+      request =
+          new GenericSolrRequest(
+              METHOD.GET, query.getPath(), SolrRequestType.ADMIN, query.getParameters());
+    } else {
+      request =
+          new GenericSolrRequest(
+              METHOD.GET, query.getPath(), SolrRequestType.ADMIN, query.getParameters());
+      request.setRequiresCollection(true);
+    }
 
-    NamedList<Object> queryResponse;
+    NamedList<Object> response;
     try {
       if (query.getCollection().isEmpty() && query.getCore().isEmpty()) {
-        queryResponse = client.request(queryRequest);
+        response = client.request(request);
       } else if (query.getCore().isPresent()) {
-        queryResponse = client.request(queryRequest, query.getCore().get());
+        response = client.request(request, query.getCore().get());
       } else if (query.getCollection().isPresent()) {
-        queryResponse = client.request(queryRequest, query.getCollection().get());
+        response = client.request(request, query.getCollection().get());
       } else {
         throw new AssertionError("Invalid configuration");
       }
-      if (queryResponse == null) { // ideally we'd make this impossible
+      if (response == null) { // ideally we'd make this impossible
         throw new RuntimeException("no response from server");
       }
     } catch (SolrServerException | IOException e) {
-      log.error("failed to request: {}", queryRequest.getPath(), e);
+      log.error("failed to request: {}", request.getPath(), e);
       return samples;
     }
 
-    JsonNode jsonNode = OBJECT_MAPPER.readTree((String) queryResponse.get("response"));
+    JsonNode jsonNode = OBJECT_MAPPER.readTree((String) response.get("response"));
 
     for (JsonQuery jsonQuery : query.getJsonQueries()) {
       try {

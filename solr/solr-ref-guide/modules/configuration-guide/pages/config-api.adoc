@@ -222,7 +222,6 @@ See xref:requestdispatcher.adoc[] for defaults and acceptable values for these s
 * `requestDispatcher.handleSelect`
 * `requestDispatcher.requestParsers.multipartUploadLimitInKB`
 * `requestDispatcher.requestParsers.formdataUploadLimitInKB`
-* `requestDispatcher.requestParsers.addHttpRequestToContext`
 
 ==== Examples of Common Properties
 

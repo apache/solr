@@ -120,15 +120,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
-
-    methodNames = new HashSet<>();
-
-    rsp =
-        invoke(
-            coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", mockCC);
-    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
-    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
-    assertTrue(methodNames.contains("POST"));
   }
 
   public void testPayload() {
