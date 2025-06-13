@@ -48,6 +48,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -323,7 +324,7 @@ public class TestSort extends SolrTestCaseJ4 {
                 : "zzz";
 
         final TopFieldCollector topCollector =
-            TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
+            new TopFieldCollectorManager(sort, top, null, Integer.MAX_VALUE, false).newCollector();
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves
