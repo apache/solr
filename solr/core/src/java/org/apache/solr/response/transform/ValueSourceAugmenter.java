@@ -110,15 +110,16 @@ public class ValueSourceAugmenter extends DocTransformer {
       cachedValuesById = new IntObjectHashMap<>(ids.length);
       FunctionValues values = null;
       int docBase = -1;
-      int currentIdx = -1;
+      int nextDocBase = 0; // i.e. this segment's maxDoc
       for (int docid : ids) {
-        int idx = ReaderUtil.subIndex(docid, readerContexts);
-        if (currentIdx != idx) {
-          currentIdx = idx;
+        if (docid >= nextDocBase) {
+          int idx = ReaderUtil.subIndex(docid, readerContexts);
           LeafReaderContext rcontext = readerContexts.get(idx);
           docBase = rcontext.docBase;
+          nextDocBase = docBase + rcontext.reader().maxDoc();
           values = valueSource.getValues(fcontext, rcontext);
         }
+
         int localId = docid - docBase;
 
         if (scorable != null) {
