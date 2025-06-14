@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.BugReport
@@ -49,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.community
 import org.apache.solr.ui.generated.resources.documentation
-import org.apache.solr.ui.generated.resources.irc
 import org.apache.solr.ui.generated.resources.issue_tracker
 import org.apache.solr.ui.generated.resources.slack
 import org.apache.solr.ui.generated.resources.solr_query_syntax
@@ -79,46 +80,47 @@ fun Footer(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
         ) {
+            val uriHandler = LocalUriHandler.current
             FooterAction(
                 imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                 stringRes = Res.string.documentation,
                 iconOnly = showIconsOnly,
+                onClick = { uriHandler.openUri("https://solr.apache.org/guide/solr/latest/index.html") }
             )
 
             FooterAction(
                 imageVector = Icons.Rounded.Code,
                 stringRes = Res.string.solr_query_syntax,
                 iconOnly = showIconsOnly,
+                onClick = { uriHandler.openUri("https://solr.apache.org/guide/solr/latest/query-guide/query-syntax-and-parsers.html") }
             )
 
             FooterAction(
                 imageVector = Icons.Rounded.BugReport,
                 stringRes = Res.string.issue_tracker,
                 iconOnly = showIconsOnly,
+                onClick = { uriHandler.openUri("https://issues.apache.org/jira/projects/SOLR") }
             )
 
             FooterAction(
                 imageVector = Icons.Rounded.Groups,
                 stringRes = Res.string.community,
                 iconOnly = showIconsOnly,
+                onClick = { uriHandler.openUri("https://solr.apache.org/community.html") }
             )
 
             FooterAction(
                 imageVector = Icons.Rounded.ImageNotSupported, // TODO Add Slack Logo
                 stringRes = Res.string.slack,
                 iconOnly = showIconsOnly,
-            )
-
-            FooterAction(
-                imageVector = Icons.Rounded.Dashboard,
-                stringRes = Res.string.irc,
-                iconOnly = showIconsOnly,
+                onClick = { uriHandler.openUri("https://the-asf.slack.com/messages/CE70MDPMF") }
             )
 
             FooterAction(
                 imageVector = Icons.Rounded.Support,
                 stringRes = Res.string.support,
                 iconOnly = showIconsOnly,
+                onClick = { uriHandler.openUri("https://solr.apache.org/community.html#support") }
             )
         }
     }
