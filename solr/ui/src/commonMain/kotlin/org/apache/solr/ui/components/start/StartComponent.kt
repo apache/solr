@@ -44,6 +44,7 @@ interface StartComponent {
      */
     data class Model(
         val url: String = "",
+        val isConnecting: Boolean = false,
         val error: StringResource? = null,
     )
 
