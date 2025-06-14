@@ -40,6 +40,7 @@ import org.apache.solr.ui.components.environment.store.EnvironmentStore.State
 internal class EnvironmentStoreProvider(
     private val storeFactory: StoreFactory,
     private val client: Client,
+    private val mainContext: CoroutineContext,
     private val ioContext: CoroutineContext,
 ) {
 
@@ -58,7 +59,7 @@ internal class EnvironmentStoreProvider(
         /**
          * Action used for initiating the initial fetch of environment data.
          */
-        data object FetchInitialSystemData: Action
+        data object FetchInitialSystemData : Action
     }
 
     private sealed interface Message {
@@ -78,9 +79,10 @@ internal class EnvironmentStoreProvider(
         data class JavaPropertiesUpdated(val properties: List<JavaProperty>) : Message
     }
 
-    private inner class ExecutorImpl : CoroutineExecutor<Intent, Action, State, Message, Nothing>() {
+    private inner class ExecutorImpl :
+        CoroutineExecutor<Intent, Action, State, Message, Nothing>(mainContext) {
 
-        override fun executeAction(action: Action) = when(action) {
+        override fun executeAction(action: Action) = when (action) {
             Action.FetchInitialSystemData -> {
                 fetchSystemData()
                 fetchJavaProperties()
@@ -145,6 +147,7 @@ internal class EnvironmentStoreProvider(
                 system = msg.data.system,
                 node = msg.data.node,
             )
+
             is Message.JavaPropertiesUpdated -> copy(
                 javaProperties = msg.properties,
             )
