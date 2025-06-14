@@ -133,6 +133,7 @@ public class UpdateShardHandler implements SolrInfoBean {
       recoveryOnlyClientBuilder
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
+          .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
 
