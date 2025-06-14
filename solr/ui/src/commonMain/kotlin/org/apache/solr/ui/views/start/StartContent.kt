@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.generated.resources.Res
@@ -83,16 +84,18 @@ fun StartContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
+                modifier = Modifier.testTag("start_title"),
                 text = stringResource(Res.string.title_welcome_to_solr),
                 style = MaterialTheme.typography.headlineMedium,
             )
             Text(
+                modifier = Modifier.testTag("start_description"),
                 text = stringResource(Res.string.desc_to_get_started),
                 style = MaterialTheme.typography.bodyLarge,
             )
 
             OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("solr_url_input"),
                 value = model.url,
                 singleLine = true,
                 onValueChange = component::onSolrUrlChange,
@@ -100,6 +103,7 @@ fun StartContent(
                 supportingText = {
                     model.error?.let {
                         Text(
+                            modifier = Modifier.testTag("input_error"),
                             text = stringResource(it),
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -109,7 +113,7 @@ fun StartContent(
             )
 
             SolrButton(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("connect_button"),
                 onClick = component::onConnect,
             ) {
                 Text(text = stringResource(Res.string.action_connect))
