@@ -62,10 +62,10 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       handler.init(args);
       handler.inform(core);
 
-      assertEquals(1, handler.getComponents().size());
+      assertEquals(1, handler.getComponents(false).size());
       assertEquals(
           core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
-          handler.getComponents().get(0));
+          handler.getComponents(false).get(0));
     } catch (IOException e) {
       fail("IOException closing SearchHandler");
     }
@@ -83,14 +83,16 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       handler.init(args);
       handler.inform(core);
 
-      assertEquals(3, handler.getComponents().size());
+      assertEquals(3, handler.getComponents(false).size());
       assertEquals(
-          core.getSearchComponent(FacetComponent.COMPONENT_NAME), handler.getComponents().get(0));
+          core.getSearchComponent(FacetComponent.COMPONENT_NAME), handler.getComponents(false).get(0));
       assertEquals(
-          core.getSearchComponent(DebugComponent.COMPONENT_NAME), handler.getComponents().get(1));
+              core.getSearchComponent(CombinedQueryComponent.COMPONENT_NAME), handler.getComponents(true).get(0));
+      assertEquals(
+          core.getSearchComponent(DebugComponent.COMPONENT_NAME), handler.getComponents(false).get(1));
       assertEquals(
           core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
-          handler.getComponents().get(2));
+          handler.getComponents(false).get(2));
     } catch (IOException e) {
       fail("Exception when closing SearchHandler");
     }
@@ -110,7 +112,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       handler.init(args);
       handler.inform(core);
 
-      List<SearchComponent> comps = handler.getComponents();
+      List<SearchComponent> comps = handler.getComponents(false);
       assertEquals(2 + handler.getDefaultComponents().size(), comps.size());
       assertEquals(core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME), comps.get(0));
       assertEquals(

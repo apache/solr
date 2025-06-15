@@ -100,6 +100,7 @@ import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.combine.QueryAndResponseCombiner;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
@@ -963,6 +964,7 @@ public class QueryComponent extends SearchComponent {
     boolean maxHitsTerminatedEarly = false;
     long approximateTotalHits = 0;
     int failedShardCount = 0;
+    Map<String, List<ShardDoc>> shardDocMap = new HashMap<>();
     for (ShardResponse srsp : sreq.responses) {
       SolrDocumentList docs = null;
       NamedList<?> responseHeader = null;
@@ -1152,7 +1154,7 @@ public class QueryComponent extends SearchComponent {
         }
 
         shardDoc.sortFieldValues = unmarshalledSortFieldValues;
-
+        shardDocMap.computeIfAbsent(srsp.getShard(), list -> new ArrayList<>()).add(shardDoc);
         queue.insertWithOverflow(shardDoc);
       } // end for-each-doc-in-response
     } // end for-each-response
@@ -1162,14 +1164,28 @@ public class QueryComponent extends SearchComponent {
     // the docs offset -> queuesize
     int resultSize = queue.size() - ss.getOffset();
     resultSize = Math.max(0, resultSize); // there may not be any docs in range
-
     Map<Object, ShardDoc> resultIds = new HashMap<>();
-    for (int i = resultSize - 1; i >= 0; i--) {
-      ShardDoc shardDoc = queue.pop();
-      shardDoc.positionInResponse = i;
-      // Need the toString() for correlation with other lists that must
-      // be strings (like keys in highlighting, explain, etc)
-      resultIds.put(shardDoc.id.toString(), shardDoc);
+
+    if (rb instanceof CombinedQueryResponseBuilder) {
+      QueryAndResponseCombiner combinerStrategy = QueryAndResponseCombiner.getImplementation(rb.req.getParams());
+      List<ShardDoc> combinedShardDocs = combinerStrategy.combine(shardDocMap);
+      maxScore = 0.0f;
+      for (int i = 0; i < resultSize; i++) {
+        ShardDoc shardDoc = combinedShardDocs.get(i);
+        shardDoc.positionInResponse = i;
+        maxScore = Math.max(maxScore, shardDoc.score);
+        // Need the toString() for correlation with other lists that must
+        // be strings (like keys in highlighting, explain, etc)
+        resultIds.put(shardDoc.id.toString(), shardDoc);
+      }
+    } else {
+      for (int i = resultSize - 1; i >= 0; i--) {
+        ShardDoc shardDoc = queue.pop();
+        shardDoc.positionInResponse = i;
+        // Need the toString() for correlation with other lists that must
+        // be strings (like keys in highlighting, explain, etc)
+        resultIds.put(shardDoc.id.toString(), shardDoc);
+      }
     }
 
     // Add hits for distributed requests

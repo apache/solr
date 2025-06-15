@@ -49,10 +49,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CursorMarkParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -240,7 +237,7 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings({"unchecked"})
-  private void initComponents() {
+  private void initComponents(boolean isCombinedQuery) {
     Object declaredComponents = initArgs.get(INIT_COMPONENTS);
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
     List<String> last = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
@@ -250,6 +247,11 @@ public class SearchHandler extends RequestHandlerBase
     if (declaredComponents == null) {
       // Use the default component list
       list = getDefaultComponents();
+
+      if (isCombinedQuery) {
+        list.removeFirst();
+        list.addFirst(CombinedQueryComponent.COMPONENT_NAME);
+      }
 
       if (first != null) {
         List<String> clist = first;
@@ -289,12 +291,12 @@ public class SearchHandler extends RequestHandlerBase
     this.components = components;
   }
 
-  public List<SearchComponent> getComponents() {
+  public List<SearchComponent> getComponents(boolean isCombinedQuery) {
     List<SearchComponent> result = components; // volatile read
     if (result == null) {
       synchronized (this) {
         if (components == null) {
-          initComponents();
+          initComponents(isCombinedQuery);
         }
         result = components;
       }
@@ -354,6 +356,9 @@ public class SearchHandler extends RequestHandlerBase
    */
   protected ResponseBuilder newResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
+    if (req.getParams().getBool(CombinerParams.COMBINER, false)) {
+      return new CombinedQueryResponseBuilder(req, rsp, components);
+    }
     return new ResponseBuilder(req, rsp, components);
   }
 
@@ -401,7 +406,7 @@ public class SearchHandler extends RequestHandlerBase
           purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
     }
 
-    List<SearchComponent> components = getComponents();
+    List<SearchComponent> components = getComponents(req.getParams().getBool(CombinerParams.COMBINER, false));
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
