@@ -113,7 +113,7 @@ fun Footer(
                 imageVector = Icons.Rounded.ImageNotSupported, // TODO Add Slack Logo
                 stringRes = Res.string.slack,
                 iconOnly = showIconsOnly,
-                onClick = { uriHandler.openUri("https://the-asf.slack.com/messages/CE70MDPMF") }
+                onClick = { uriHandler.openUri("https://the-asf.slack.com/messages/CEKUCUNE9") }
             )
 
             FooterAction(
