@@ -16,15 +16,17 @@
  */
 package org.apache.solr.response.transform;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-/** New instance for each request */
+/** Factory for {@link DocTransformer}. */
 public abstract class TransformerFactory implements NamedListInitializedPlugin {
   protected String defaultUserArgs = null;
 
@@ -105,18 +107,17 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin {
     }
   }
 
-  public static final Map<String, TransformerFactory> defaultFactories = new HashMap<>(9, 1.0f);
+  // loaded once, based on the node
+  private static Map<String, TransformerFactory> builtIns;
 
-  static {
-    defaultFactories.put("explain", new ExplainAugmenterFactory());
-    defaultFactories.put("value", new ValueAugmenterFactory());
-    defaultFactories.put("docid", new DocIdAugmenterFactory());
-    defaultFactories.put("shard", new ShardAugmenterFactory());
-    defaultFactories.put("child", new ChildDocTransformerFactory());
-    defaultFactories.put("subquery", new SubQueryAugmenterFactory());
-    defaultFactories.put("json", new RawValueTransformerFactory("json"));
-    defaultFactories.put("xml", new RawValueTransformerFactory("xml"));
-    defaultFactories.put("geo", new GeoTransformerFactory());
-    defaultFactories.put("core", new CoreAugmenterFactory());
+  /** (for internal use) */
+  public static synchronized Map<String, TransformerFactory> builtIns(NodeConfig nodeConfig) {
+    if (builtIns == null) {
+      builtIns =
+          Collections.unmodifiableMap(
+              SolrPluginUtils.loadPlugins(
+                  TransformerFactory.class, nodeConfig.getSolrResourceLoader().getClassLoader()));
+    }
+    return builtIns;
   }
 }
