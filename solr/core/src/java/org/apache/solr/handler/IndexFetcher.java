@@ -1716,19 +1716,26 @@ public class IndexFetcher {
               return;
             }
             // if there is an error continue. But continue from the point where it got broken
+          } catch (SolrException e) {
+            log.warn("Aborting Replication, Max number of retries reached for file: {}. Core: {}", fileName,
+                solrCore.getName(), e);
+            aborted = true;
+            throw e;
           }
         }
       } finally {
         cleanup();
         // if cleanup succeeds, and the file is downloaded fully, then do a fsync.
-        fsyncService.execute(
-            () -> {
-              try {
-                file.sync();
-              } catch (IOException | AlreadyClosedException e) {
-                fsyncException = e;
-              }
-            });
+        if (!aborted && bytesDownloaded == size) {
+          fsyncService.execute(
+              () -> {
+                try {
+                  file.sync();
+                } catch (IOException | AlreadyClosedException e) {
+                  fsyncException = e;
+                }
+              });
+        }
       }
     }
 
