@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -468,7 +469,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing success");
                         future.complete(body);
-                      } catch (SolrClient.RemoteSolrException | SolrServerException e) {
+                      } catch (CancellationException e) {
+                        mdcCopyHelper.onBegin(null);
+                        log.debug("response processing cancelled", e);
+                        if (!future.isCancelled()) {
+                          future.cancel(true);
+                        }
+                      } catch (Throwable e) {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing failed", e);
                         future.completeExceptionally(e);
