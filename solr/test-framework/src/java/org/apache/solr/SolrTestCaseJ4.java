@@ -25,6 +25,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -249,6 +250,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
+    GlobalOpenTelemetry.resetForTest();
     resetExceptionIgnores();
 
     testExecutor =

@@ -17,6 +17,7 @@
 package org.apache.solr.metrics;
 
 import com.codahale.metrics.Counter;
+import io.opentelemetry.api.common.Attributes;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -88,7 +89,8 @@ public final class SolrMetricTestUtils {
       SolrMetricsContext solrMetricsContext;
 
       @Override
-      public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+      public void initializeMetrics(
+          SolrMetricsContext parentContext, Attributes attributes, String scope) {
         this.solrMetricsContext = parentContext.getChildContext(this);
         if (category == null) {
           throw new IllegalArgumentException("null category");
