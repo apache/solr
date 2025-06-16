@@ -93,8 +93,7 @@ public class RequestMetricHandling {
       // TODO SOLR-17458: Recording both Otel and dropwizard for now. Will remove Dropwizard after
       // removal
       metrics.requests.inc();
-      metrics.otelRequestTimes.start();
-      requestContext.setProperty(TIMER, metrics.otelRequestTimes);
+      requestContext.setProperty(TIMER, metrics.otelRequestTimes.start());
       requestContext.setProperty("dropwizardTimer", metrics.requestTimes.time());
       requestContext.setProperty(HANDLER_METRICS, metrics);
     }
@@ -127,11 +126,10 @@ public class RequestMetricHandling {
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
-      final Timer.Context dropwizardTimer =
-          (Timer.Context) requestContext.getProperty("dropwizardTimer");
+      final var dropwizardTimer = (Timer.Context) requestContext.getProperty("dropwizardTimer");
       metrics.totalTime.inc(dropwizardTimer.stop());
 
-      final AttributedLongTimer timer = (AttributedLongTimer) requestContext.getProperty(TIMER);
+      final var timer = (AttributedLongTimer.MetricTimer) requestContext.getProperty(TIMER);
       timer.stop();
     }
   }

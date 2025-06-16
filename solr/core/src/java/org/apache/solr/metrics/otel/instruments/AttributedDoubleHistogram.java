@@ -18,9 +18,8 @@ package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.DoubleHistogram;
-import org.apache.solr.metrics.otel.OtelDoubleMetric;
 
-public class AttributedDoubleHistogram implements OtelDoubleMetric {
+public class AttributedDoubleHistogram {
 
   private final DoubleHistogram histogram;
   private final Attributes attributes;
@@ -30,7 +29,6 @@ public class AttributedDoubleHistogram implements OtelDoubleMetric {
     this.attributes = attributes;
   }
 
-  @Override
   public void record(Double value) {
     histogram.record(value, attributes);
   }

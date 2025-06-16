@@ -18,9 +18,8 @@ package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongGauge;
-import org.apache.solr.metrics.otel.OtelLongMetric;
 
-public class AttributedLongGauge implements OtelLongMetric {
+public class AttributedLongGauge {
 
   private final LongGauge gauge;
   private final Attributes attributes;
@@ -30,8 +29,7 @@ public class AttributedLongGauge implements OtelLongMetric {
     this.attributes = attributes;
   }
 
-  @Override
-  public void record(Long value) {
+  public void set(Long value) {
     gauge.set(value, attributes);
   }
 }

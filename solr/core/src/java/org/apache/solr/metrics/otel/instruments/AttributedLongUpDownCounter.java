@@ -18,9 +18,8 @@ package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
-import org.apache.solr.metrics.otel.OtelLongMetric;
 
-public class AttributedLongUpDownCounter implements OtelLongMetric {
+public class AttributedLongUpDownCounter {
 
   private final LongUpDownCounter upDownCounter;
   private final Attributes attributes;
@@ -31,15 +30,14 @@ public class AttributedLongUpDownCounter implements OtelLongMetric {
   }
 
   public void inc() {
-    record(1L);
+    add(1L);
   }
 
   public void dec() {
-    record(-1L);
+    add(-1L);
   }
 
-  @Override
-  public void record(Long value) {
+  public void add(Long value) {
     upDownCounter.add(value, attributes);
   }
 }

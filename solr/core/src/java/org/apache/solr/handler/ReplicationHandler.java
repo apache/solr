@@ -837,8 +837,7 @@ public class ReplicationHandler extends RequestHandlerBase
     }
   }
 
-  // TODO: Handle compatibility in 8.x
-  // TODO SOLR-17458: Update with OTEL
+  // NOCOMMIT SOLR-17458: Update with OTEL
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {

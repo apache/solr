@@ -18,9 +18,8 @@ package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.DoubleUpDownCounter;
-import org.apache.solr.metrics.otel.OtelDoubleMetric;
 
-public class AttributedDoubleUpDownCounter implements OtelDoubleMetric {
+public class AttributedDoubleUpDownCounter {
 
   private final DoubleUpDownCounter upDownCounter;
   private final Attributes attributes;
@@ -31,15 +30,14 @@ public class AttributedDoubleUpDownCounter implements OtelDoubleMetric {
   }
 
   public void inc() {
-    record(1.0);
+    add(1.0);
   }
 
   public void dec() {
-    record(-1.0);
+    add(-1.0);
   }
 
-  @Override
-  public void record(Double value) {
+  public void add(Double value) {
     upDownCounter.add(value, attributes);
   }
 }

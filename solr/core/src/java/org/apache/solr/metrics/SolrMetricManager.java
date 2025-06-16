@@ -717,7 +717,7 @@ public class SolrMetricManager {
    *     exist, so the swap operation will only rename the existing registry without creating an
    *     empty one under the previous name.
    */
-  // TODO SOLR-17458: Don't think we need
+  // NOCOMMIT SOLR-17458: Don't think we need
   public void swapRegistries(String registry1, String registry2) {
     registry1 = enforcePrefix(registry1);
     registry2 = enforcePrefix(registry2);

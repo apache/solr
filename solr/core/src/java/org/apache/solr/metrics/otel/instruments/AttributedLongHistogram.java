@@ -18,9 +18,8 @@ package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongHistogram;
-import org.apache.solr.metrics.otel.OtelLongMetric;
 
-public class AttributedLongHistogram implements OtelLongMetric {
+public class AttributedLongHistogram {
 
   protected final LongHistogram histogram;
   protected final Attributes attributes;
@@ -31,7 +30,6 @@ public class AttributedLongHistogram implements OtelLongMetric {
     this.attributes = attributes;
   }
 
-  @Override
   public void record(Long value) {
     histogram.record(value, attributes);
   }

@@ -16,9 +16,7 @@
  */
 
 /**
- * {@link org.apache.solr.metrics.otel.OtelLongMetric} and {@link
- * org.apache.solr.metrics.otel.OtelDoubleMetric} are interfaces for creating wrappers around Open
- * Telemetry instruments created from {@link io.opentelemetry.api.metrics.MeterProvider} to record
- * and measure metrics
+ * Interfaces for creating wrappers around Open Telemetry instruments created from {@link
+ * io.opentelemetry.api.metrics.MeterProvider} to record and measure metrics
  */
 package org.apache.solr.metrics.otel;

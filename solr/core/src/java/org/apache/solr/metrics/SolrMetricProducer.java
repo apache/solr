@@ -16,11 +16,14 @@
  */
 package org.apache.solr.metrics;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 
 /** Used by objects that expose metrics through {@link SolrMetricManager}. */
 public interface SolrMetricProducer extends AutoCloseable {
+
+  public static final AttributeKey<String> TYPE_ATTR = AttributeKey.stringKey("type");
 
   /**
    * Unique metric tag identifies components with the same life-cycle, which should be registered /
@@ -41,8 +44,10 @@ public interface SolrMetricProducer extends AutoCloseable {
   }
 
   /**
-   * Deprecated entry point for initializing metrics. TODO SOLR-17458: This will be removed Change
-   * to only take attributes completely removing Dropwizard
+   * NOCOMMIT SOLR-17458: The Scope parameter will be removed with Dropwizard
+   *
+   * <p>{@link Attributes} passed is the base or common set of attributes that should be attached to
+   * every metric that will be initialized
    */
   void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes, String scope);
 

@@ -176,10 +176,9 @@ public abstract class RequestHandlerBase
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
 
-    var attr = Attributes.builder();
-    if (scope != null) attr.put(AttributeKey.stringKey("scope"), scope);
+    metrics = new HandlerMetrics(solrMetricsContext, attributes, getCategory().toString(), scope);
 
-    metrics = new HandlerMetrics(solrMetricsContext, attr.build(), getCategory().toString(), scope);
+    // NOCOMMIT: I don't see value in this metric
     solrMetricsContext.gauge(
         () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
@@ -204,7 +203,6 @@ public abstract class RequestHandlerBase
     public final Counter totalTime;
 
     public AttributedLongCounter otelRequests;
-    public AttributedLongCounter otelNumErrors;
     public AttributedLongCounter otelNumServerErrors;
     public AttributedLongCounter otelNumClientErrors;
     public AttributedLongCounter otelNumTimeouts;
@@ -213,7 +211,7 @@ public abstract class RequestHandlerBase
     public HandlerMetrics(
         SolrMetricsContext solrMetricsContext, Attributes attributes, String... metricPath) {
 
-      // TODO SOLR-17458: To be removed
+      // NOCOMMIT SOLR-17458: To be removed
       numErrors = solrMetricsContext.meter("errors", metricPath);
       numServerErrors = solrMetricsContext.meter("serverErrors", metricPath);
       numClientErrors = solrMetricsContext.meter("clientErrors", metricPath);
@@ -232,25 +230,15 @@ public abstract class RequestHandlerBase
       otelRequests =
           new AttributedLongCounter(
               baseRequestMetric,
-              Attributes.builder()
-                  .putAll(attributes)
-                  .put(AttributeKey.stringKey("type"), "requests")
-                  .build());
-
-      otelNumErrors =
-          new AttributedLongCounter(
-              baseRequestMetric,
-              Attributes.builder()
-                  .putAll(attributes)
-                  .put(AttributeKey.stringKey("type"), "errors")
-                  .build());
+              Attributes.builder().putAll(attributes).put(TYPE_ATTR, "requests").build());
 
       otelNumServerErrors =
           new AttributedLongCounter(
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
-                  .put(AttributeKey.stringKey("type"), "serverErrors")
+                  .put(AttributeKey.stringKey("source"), "server")
+                  .put(TYPE_ATTR, "errors")
                   .build());
 
       otelNumClientErrors =
@@ -258,24 +246,16 @@ public abstract class RequestHandlerBase
               baseRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
-                  .put(AttributeKey.stringKey("type"), "clientErrors")
+                  .put(AttributeKey.stringKey("source"), "client")
+                  .put(TYPE_ATTR, "errors")
                   .build());
 
       otelNumTimeouts =
           new AttributedLongCounter(
               baseRequestMetric,
-              Attributes.builder()
-                  .putAll(attributes)
-                  .put(AttributeKey.stringKey("type"), "timeouts")
-                  .build());
+              Attributes.builder().putAll(attributes).put(TYPE_ATTR, "timeouts").build());
 
       otelRequestTimes = new AttributedLongTimer(baseRequestTimeMetric, attributes);
-
-      otelRequests.record(0L);
-      otelNumErrors.record(0L);
-      otelNumServerErrors.record(0L);
-      otelNumClientErrors.record(0L);
-      otelNumTimeouts.record(0L);
     }
   }
 
@@ -305,7 +285,7 @@ public abstract class RequestHandlerBase
     metrics.otelRequests.inc();
 
     Timer.Context timer = metrics.requestTimes.time();
-    metrics.otelRequestTimes.start();
+    AttributedLongTimer.MetricTimer otelTimer = metrics.otelRequestTimes.start();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
@@ -331,7 +311,7 @@ public abstract class RequestHandlerBase
       try {
         long elapsed = timer.stop();
         metrics.totalTime.inc(elapsed);
-        metrics.otelRequestTimes.stop();
+        otelTimer.stop();
 
         if (publishCpuTime) {
           Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);
@@ -374,7 +354,6 @@ public abstract class RequestHandlerBase
     }
 
     metrics.numErrors.mark();
-    metrics.otelNumErrors.inc();
     if (isClientError) {
       log.error("Client exception", e);
       metrics.numClientErrors.mark();

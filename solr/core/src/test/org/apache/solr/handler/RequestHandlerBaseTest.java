@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -76,16 +77,13 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-    verify(mockLongCounter, times(1))
-        .add(eq(1L), argThat(attrs -> "errors".equals(attrs.get(AttributeKey.stringKey("type")))));
-    verify(mockLongCounter, times(1))
-        .add(
-            eq(1L),
-            argThat(attrs -> "serverErrors".equals(attrs.get(AttributeKey.stringKey("type")))));
     verify(mockLongCounter, never())
         .add(
             eq(1L),
-            argThat(attrs -> "clientErrors".equals(attrs.get(AttributeKey.stringKey("type")))));
+            argThat(
+                attrs ->
+                    "errors".equals(attrs.get(TYPE_ATTR))
+                        && "source".equals(attrs.get(AttributeKey.stringKey("client")))));
   }
 
   @Test
@@ -96,17 +94,19 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
     verify(mockLongCounter, never())
-        .add(eq(1L), argThat(attrs -> "errors".equals(attrs.get(AttributeKey.stringKey("type")))));
-
+        .add(
+            eq(1L),
+            argThat(
+                attrs ->
+                    "errors".equals(attrs.get(TYPE_ATTR))
+                        && "source".equals(attrs.get(AttributeKey.stringKey("client")))));
     verify(mockLongCounter, never())
         .add(
             eq(1L),
-            argThat(attrs -> "serverErrors".equals(attrs.get(AttributeKey.stringKey("type")))));
-
-    verify(mockLongCounter, never())
-        .add(
-            eq(1L),
-            argThat(attrs -> "clientErrors".equals(attrs.get(AttributeKey.stringKey("type")))));
+            argThat(
+                attrs ->
+                    "errors".equals(attrs.get(TYPE_ATTR))
+                        && "source".equals(attrs.get(AttributeKey.stringKey("server")))));
   }
 
   @Test
@@ -117,15 +117,19 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
     verify(mockLongCounter, times(1))
-        .add(eq(1L), argThat(attrs -> "errors".equals(attrs.get(AttributeKey.stringKey("type")))));
-    verify(mockLongCounter, times(1))
         .add(
             eq(1L),
-            argThat(attrs -> "clientErrors".equals(attrs.get(AttributeKey.stringKey("type")))));
+            argThat(
+                attrs ->
+                    "errors".equals(attrs.get(TYPE_ATTR))
+                        && "source".equals(attrs.get(AttributeKey.stringKey("client")))));
     verify(mockLongCounter, never())
         .add(
             eq(1L),
-            argThat(attrs -> "serverErrors".equals(attrs.get(AttributeKey.stringKey("type")))));
+            argThat(
+                attrs ->
+                    "errors".equals(attrs.get(TYPE_ATTR))
+                        && "source".equals(attrs.get(AttributeKey.stringKey("server")))));
   }
 
   @Test

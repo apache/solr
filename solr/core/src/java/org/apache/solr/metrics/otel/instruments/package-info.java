@@ -18,9 +18,6 @@
 /**
  * A collection of bound OTEL instruments which are reusable wrappers around OpenTelemetry metric
  * instruments that are pre-bound to a fixed set of Attributes. This avoids repeated attribute
- * allocation on every metric recording. These classes implement Solr’s internal OtelMetric
- * interfaces {@link org.apache.solr.metrics.otel.OtelDoubleMetric} and {@link
- * org.apache.solr.metrics.otel.OtelLongMetric} which allow Solr’s metric producers to abstract over
- * the OTEL API.
+ * allocation on every metric recording.
  */
 package org.apache.solr.metrics.otel.instruments;

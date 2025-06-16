@@ -18,39 +18,38 @@ package org.apache.solr.metrics.otel.instruments;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongHistogram;
-import java.util.concurrent.TimeUnit;
+import org.apache.solr.util.RTimer;
 
 /**
- * This class records the elapsed time (in milliseconds) to a {@link LongHistogram}. Each thread
- * measures its own timer allowing concurrent timing operations on separate threads..
+ * This class records the elapsed time (in milliseconds) to a {@link LongHistogram} with the use of
+ * a {@link MetricTimer}
  */
 public class AttributedLongTimer extends AttributedLongHistogram {
-
-  private final ThreadLocal<Long> startTimeNanos = new ThreadLocal<>();
 
   public AttributedLongTimer(LongHistogram histogram, Attributes attributes) {
     super(histogram, attributes);
   }
 
-  public void start() {
-    if (startTimeNanos.get() != null) {
-      throw new IllegalStateException("Timer already started on this thread");
-    }
-    startTimeNanos.set(System.nanoTime());
+  /**
+   * Return a {@link MetricTimer} and starts the timer. When the timer calls {@link
+   * MetricTimer#stop()}, the elapsed time is recorded
+   */
+  public MetricTimer start() {
+    return new MetricTimer(this);
   }
 
-  public void stop() {
-    Long start = startTimeNanos.get();
-    if (start == null) {
-      throw new IllegalStateException("Must call start() before stop()");
+  public static class MetricTimer extends RTimer {
+    private final AttributedLongTimer bound;
+
+    private MetricTimer(AttributedLongTimer bound) {
+      this.bound = bound;
     }
 
-    try {
-      long elapsedNanos = System.nanoTime() - start;
-      long elapsedMs = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
-      histogram.record(elapsedMs, attributes);
-    } finally {
-      startTimeNanos.remove();
+    @Override
+    public double stop() {
+      double elapsedTime = super.stop();
+      bound.record(Double.valueOf(elapsedTime).longValue());
+      return elapsedTime;
     }
   }
 }
