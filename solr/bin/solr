@@ -841,7 +841,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -j|--jettyconfig|-jettyconfig)
-            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" ]]; then
               print_usage "$SCRIPT_CMD" "Jetty config is required when using the $1 option!"
               exit 1
             fi

@@ -118,6 +118,8 @@ Bug Fixes
 
 * SOLR-17769: Use S3 RetryStrategy instead of RetryPolicy. This fixes the error caused by using the "Adaptive" retry mode. (Houston Putman)
 
+* SOLR-17790: Allow the -j or --jettyconfig option to start with a dash (-). (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
