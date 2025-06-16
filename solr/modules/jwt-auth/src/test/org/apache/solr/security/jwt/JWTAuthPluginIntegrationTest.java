@@ -334,8 +334,13 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    */
   private MiniSolrCloudCluster configureClusterStaticKeys(String securityJsonFilename)
       throws Exception {
+        return configureClusterStaticKeys(securityJsonFilename, 2);
+  }
+
+  private MiniSolrCloudCluster configureClusterStaticKeys(String securityJsonFilename, int numberOfNodes)
+      throws Exception {
     MiniSolrCloudCluster myCluster =
-        configureCluster(2) // nodes
+        configureCluster(numberOfNodes)
             .withSecurityJson(JWT_TEST_PATH().resolve("security").resolve(securityJsonFilename))
             .addConfig(
                 "conf1",
