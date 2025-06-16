@@ -52,6 +52,7 @@ import org.junit.Test;
 /** Unit tests for the metric and exception handling in {@link RequestHandlerBase} */
 public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
+  public static final AttributeKey<String> SOURCE_ATTR = AttributeKey.stringKey("source");
   private SolrCore solrCore;
   private CoreContainer coreContainer;
   private LongCounter mockLongCounter;
@@ -99,14 +100,14 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
             argThat(
                 attrs ->
                     "errors".equals(attrs.get(TYPE_ATTR))
-                        && "source".equals(attrs.get(AttributeKey.stringKey("client")))));
+                        && "client".equals(attrs.get(SOURCE_ATTR))));
     verify(mockLongCounter, never())
         .add(
             eq(1L),
             argThat(
                 attrs ->
                     "errors".equals(attrs.get(TYPE_ATTR))
-                        && "source".equals(attrs.get(AttributeKey.stringKey("server")))));
+                        && "server".equals(attrs.get(SOURCE_ATTR))));
   }
 
   @Test
@@ -122,14 +123,15 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
             argThat(
                 attrs ->
                     "errors".equals(attrs.get(TYPE_ATTR))
-                        && "source".equals(attrs.get(AttributeKey.stringKey("client")))));
+                        && "client".equals(attrs.get(SOURCE_ATTR))));
+
     verify(mockLongCounter, never())
         .add(
             eq(1L),
             argThat(
                 attrs ->
                     "errors".equals(attrs.get(TYPE_ATTR))
-                        && "source".equals(attrs.get(AttributeKey.stringKey("server")))));
+                        && "server".equals(attrs.get(SOURCE_ATTR))));
   }
 
   @Test
