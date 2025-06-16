@@ -791,8 +791,13 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--jvm-opts" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
+<<<<<<< Updated upstream
         -j|--jettyconfig)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+=======
+        -j|--jettyconfig|-jettyconfig)
+            if [[ -z "$2" ]]; then
+>>>>>>> Stashed changes
               print_usage "$SCRIPT_CMD" "Jetty config is required when using the $1 option!"
               exit 1
             fi
