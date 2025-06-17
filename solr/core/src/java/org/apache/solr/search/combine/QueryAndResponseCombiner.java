@@ -24,7 +24,7 @@ public abstract class QueryAndResponseCombiner {
         this.upTo = requestParams.getInt(CombinerParams.COMBINER_UP_TO, CombinerParams.COMBINER_UP_TO_DEFAULT);
     }
 
-    public abstract QueryResult combine(QueryResult[] rankedLists);
+    public abstract QueryResult combine(List<QueryResult> rankedLists);
 
     public abstract List<ShardDoc> combine(Map<String, List<ShardDoc>> shardDocMap);
     public abstract NamedList<Explanation> getExplanations(

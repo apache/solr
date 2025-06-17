@@ -24,8 +24,8 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     }
 
     @Override
-    public QueryResult combine(QueryResult[] rankedLists) {
-        List<DocList> docLists = new ArrayList<>(rankedLists.length);
+    public QueryResult combine(List<QueryResult> rankedLists) {
+        List<DocList> docLists = new ArrayList<>(rankedLists.size());
         for (QueryResult rankedList : rankedLists) {
             docLists.add(rankedList.getDocList());
         }
@@ -50,6 +50,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
                 ranking++;
             }
         }
+        //TODO: Add the remaining items out of upTo limit to the docIdToScore
         List<Map.Entry<String, Float>> sortedByScoreDescending = docIdToScore.entrySet().stream()
                 .sorted(Collections.reverseOrder(Map.Entry.comparingByValue())).toList();
         for (Map.Entry<String, Float> scoredDoc : sortedByScoreDescending) {
@@ -68,8 +69,10 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
             boolean saveRankPositionsForExplain) {
         Map<Integer, Integer[]> docIdToRanks = null;
         HashMap<Integer, Float> docIdToScore = new HashMap<>();
+        long totalMatches = 0;
         for (DocList rankedList : rankedLists) {
             DocIterator docs = rankedList.iterator();
+            totalMatches = Math.max(totalMatches, rankedList.matches());
             int ranking = 1;
             while (docs.hasNext() && ranking <= upTo) {
                 int docId = docs.nextDoc();
@@ -102,7 +105,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
                         combinedResultsLength,
                         combinedResultsDocIds,
                         combinedResultScores,
-                        combinedResultsLength,
+                        Math.max(combinedResultsLength, totalMatches),
                         combinedResultScores.length > 0 ? combinedResultScores[0] : 0,
                         TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO);
         combinedRankedList.setDocList(combinedResultSlice);

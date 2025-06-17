@@ -56,7 +56,7 @@ public class CombinedQueryComponent extends QueryComponent {
                 }
             }
             QueryAndResponseCombiner combinerStrategy = QueryAndResponseCombiner.getImplementation(rb.req.getParams());
-            QueryResult combinedQueryResult = combinerStrategy.combine(queryResults.toArray(new QueryResult[0]));
+            QueryResult combinedQueryResult = combinerStrategy.combine(queryResults);
             combinedQueryResult.setPartialResults(partialResults);
             combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
             crb.setResult(combinedQueryResult);
