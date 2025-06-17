@@ -41,11 +41,6 @@ public interface NavigableObject {
     return v;
   }
 
-  default Object _get(String path, Object def) {
-    Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : v;
-  }
-
   /**
    * get the value as a String. useful in tests
    *
