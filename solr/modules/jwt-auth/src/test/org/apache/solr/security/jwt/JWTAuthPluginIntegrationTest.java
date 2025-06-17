@@ -63,6 +63,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
@@ -290,6 +291,53 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     HttpClientUtil.close(cl);
   }
 
+  /**
+   * Test if JWTPrincipal is passed correctly on internode communication. Setup a cluster with more
+   * nodes using jwtAuth for both authentication and authorization.Add a private collection with
+   * less replicas and shards then the number of nodes. Test if we can query the collection on every
+   * node.
+   */
+  @Test
+  public void testInternodeAuthorization() throws Exception {
+    // Start cluster with security.json that contains permissions for a private collection
+    cluster = configureClusterStaticKeys("jwt_plugin_jwk_security_with_authorization.json", 3);
+    // Get a random url to use for general requests to the cluster
+    String randomBaseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+
+    // Add our private collection to the cluster with only one shard and replica
+    String COLLECTION = "jwtColl";
+    createCollection(cluster, COLLECTION);
+
+    // Now update three documents
+    Pair<String, Integer> result =
+        post(
+            randomBaseUrl + "/" + COLLECTION + "/update?commit=true",
+            "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]",
+            jwtStaticTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+
+    // Run query on every node.
+    // This will force the nodes to transfer the query to another node when they do not have the
+    // collection themselves.
+    for (JettySolrRunner node : cluster.getJettySolrRunners()) {
+      // Get the base url for this node
+      String nodeBaseUrl = node.getBaseUrl().toString();
+
+      // Do a query, using JWTAuth for inter-node
+      result = get(nodeBaseUrl + "/" + COLLECTION + "/query?q=*:*", jwtStaticTestToken);
+      assertEquals(Integer.valueOf(200), result.second());
+    }
+
+    // Delete
+    assertEquals(
+        200,
+        get(
+                randomBaseUrl + "/admin/collections?action=DELETE&name=" + COLLECTION,
+                jwtStaticTestToken)
+            .second()
+            .intValue());
+  }
+
   static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
     return "Bearer " + jws.getCompactSerialization();
   }
@@ -334,11 +382,11 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    */
   private MiniSolrCloudCluster configureClusterStaticKeys(String securityJsonFilename)
       throws Exception {
-        return configureClusterStaticKeys(securityJsonFilename, 2);
+    return configureClusterStaticKeys(securityJsonFilename, 2);
   }
 
-  private MiniSolrCloudCluster configureClusterStaticKeys(String securityJsonFilename, int numberOfNodes)
-      throws Exception {
+  private MiniSolrCloudCluster configureClusterStaticKeys(
+      String securityJsonFilename, int numberOfNodes) throws Exception {
     MiniSolrCloudCluster myCluster =
         configureCluster(numberOfNodes)
             .withSecurityJson(JWT_TEST_PATH().resolve("security").resolve(securityJsonFilename))
