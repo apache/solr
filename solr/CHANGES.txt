@@ -250,6 +250,13 @@ Improvements
 * SOLR-16951: Add PKI Auth Caching for both generation of the PKI Auth Tokens and validation of received tokens.
   The default PKI Auth validity TTL has been increased from 5 seconds to 10 seconds. (Houston Putman)
 
+* SOLR-17776: SolrJ: If Http2SolrClient.Builder.withHttpClient is used, (and it's used more in 9.8, shifted from deprecated Apache HttpClient
+  based clients), settings affecting HttpClient construction cannot be customized; an IllegalStateException will now be thrown if you try.
+  The connection timeout cannot be customized, but idle & request timeouts can be.  Callers (various places in Solr) no longer customize the connection timeout.
+  (David Smiley, Luke Kot-Zaniewski)
+
+* SOLR-17776: The HttpJdkSolrClient wasn't setting the connection timeout as per the builder configuration. (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)

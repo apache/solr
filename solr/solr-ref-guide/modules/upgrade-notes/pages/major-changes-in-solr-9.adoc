@@ -67,6 +67,14 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.9
+
+=== SolrJ
+
+If Http2SolrClient.Builder.withHttpClient is used, (and it's used more in 9.8, shifted from deprecated Apache HttpClient based clients), settings affecting HttpClient construction cannot be customized; an IllegalStateException will now be thrown if you try.
+The connection timeout cannot be customized, but idle & request timeouts can be.
+Callers (various places in Solr) no longer customize the connection timeout.
+
 == Solr 9.8.1
 === Configuration
 

@@ -118,8 +118,7 @@ public abstract class HttpSolrClientBuilderBase<
 
   /**
    * The max time a connection can be idle (that is, without traffic of bytes in either direction).
-   * Sometimes called a "socket timeout". Zero means infinite. Note: not applicable to the JDK
-   * HttpClient.
+   * Sometimes called a "socket timeout". Note: not applicable to the JDK HttpClient.
    */
   @SuppressWarnings("unchecked")
   public B withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
@@ -133,7 +132,7 @@ public abstract class HttpSolrClientBuilderBase<
         : HttpClientUtil.DEFAULT_SO_TIMEOUT;
   }
 
-  /** The max time a connection can take to connect to destinations. Zero means infinite. */
+  /** The max time a connection can take to connect to destinations. */
   @SuppressWarnings("unchecked")
   public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
     this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
@@ -146,7 +145,7 @@ public abstract class HttpSolrClientBuilderBase<
         : HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
   }
 
-  /** Set a timeout for requests to receive a response. Zero means infinite. */
+  /** Set a timeout for requests to receive a response. */
   @SuppressWarnings("unchecked")
   public B withRequestTimeout(long requestTimeout, TimeUnit unit) {
     this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
