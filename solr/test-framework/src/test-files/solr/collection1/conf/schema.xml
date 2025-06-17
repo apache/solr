@@ -520,8 +520,7 @@
   </fieldType>
   <copyField source="*_commongrams" dest="*_commongrams_stop" />
   
-  <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
-  
+  <fieldType name="severityType" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity"/>
   <fieldType name="binary" class="solr.BinaryField" />
   <fieldType name="collation" class="solr.CollationField" language="en" />
   <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />

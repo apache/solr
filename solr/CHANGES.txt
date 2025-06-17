@@ -131,6 +131,8 @@ Deprecation Removals
 * SOLR-17634: Removed the "version" parameter that the SolrJ client would add to almost all Solr
  requests in relation to the version of the response format parsing ("wt" param). (David Smiley)
 
+* SOLR-17698: Removed deprecated EnumField field type. (Eric Pugh, David Smiley)
+
 Dependency Upgrades
 ---------------------
 
@@ -308,6 +310,8 @@ Bug Fixes
   server restart. (Pierre Salagnac)
 
 * SOLR-17769: Use S3 RetryStrategy instead of RetryPolicy. This fixes the error caused by using the "Adaptive" retry mode. (Houston Putman)
+
+* SOLR-17790: Allow the -j or --jettyconfig option to start with a dash (-). (Houston Putman)
 
 Dependency Upgrades
 ---------------------
