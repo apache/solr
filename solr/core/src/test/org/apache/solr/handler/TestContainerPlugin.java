@@ -183,7 +183,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // verify it is removed
     rsp = readPluginState.call();
-    assertNull(rsp._get("/plugin/testplugin/class", null));
+    assertNull(rsp._get("/plugin/testplugin/class"));
 
     try (ErrorLogMuter errors = ErrorLogMuter.substring("TestContainerPlugin$C4")) {
       // test with a class  @EndPoint methods. This also uses a template in the path name

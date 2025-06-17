@@ -1866,7 +1866,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           if (o instanceof String) {
             assertEquals(o, rsp.getResponse()._getStr(s, null));
           } else {
-            assertEquals(o, rsp.getResponse()._get(s, null));
+            assertEquals(o, rsp.getResponse()._get(s));
           }
         });
   }

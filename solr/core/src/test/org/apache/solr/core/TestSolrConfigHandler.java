@@ -169,9 +169,9 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
 
     m = getRespMap("/config/updateHandler", harness);
-    assertNotNull(m._get("config/updateHandler/commitWithin/softCommit", null));
-    assertNotNull(m._get("config/updateHandler/autoCommit/maxDocs", null));
-    assertNotNull(m._get("config/updateHandler/autoCommit/maxTime", null));
+    assertNotNull(m._get("config/updateHandler/commitWithin/softCommit"));
+    assertNotNull(m._get("config/updateHandler/autoCommit/maxDocs"));
+    assertNotNull(m._get("config/updateHandler/autoCommit/maxTime"));
 
     m = getRespMap("/config", harness);
     assertNotNull(m);
@@ -183,7 +183,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     m = getRespMap("/config/overlay", harness);
-    assertNull(m._get("overlay/props/updateHandler/autoCommit/maxDocs", null));
+    assertNull(m._get("overlay/props/updateHandler/autoCommit/maxDocs"));
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
   }
 
@@ -197,13 +197,13 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness); // .get("overlay");
-    assertEquals(m._get("overlay/userProps/my.custom.variable.a", null), "MODIFIEDA");
-    assertEquals(m._get("overlay/userProps/my.custom.variable.b", null), "MODIFIEDB");
+    assertEquals(m._get("overlay/userProps/my.custom.variable.a"), "MODIFIEDA");
+    assertEquals(m._get("overlay/userProps/my.custom.variable.b"), "MODIFIEDB");
 
     m = getRespMap("/dump?json.nl=map&initArgs=true", harness); // .get("initArgs");
 
-    assertEquals("MODIFIEDA", m._get("initArgs/defaults/a", null));
-    assertEquals("MODIFIEDB", m._get("initArgs/defaults/b", null));
+    assertEquals("MODIFIEDA", m._get("initArgs/defaults/a"));
+    assertEquals("MODIFIEDB", m._get("initArgs/defaults/b"));
   }
 
   public void testReqHandlerAPIs() throws Exception {

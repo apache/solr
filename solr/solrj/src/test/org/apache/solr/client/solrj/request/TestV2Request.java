@@ -54,7 +54,7 @@ public class TestV2Request extends SolrCloudTestCase {
             .withMethod(SolrRequest.METHOD.GET)
             .build()
             .process(cluster.getSolrClient());
-    List<?> l = (List<?>) rsp._get("nodes", null);
+    List<?> l = (List<?>) rsp._get("nodes");
     assertNotNull(l);
     assertFalse(l.isEmpty());
   }

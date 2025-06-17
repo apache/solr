@@ -1373,7 +1373,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
 
     NamedList<?> colStatus = (NamedList<?>) response.getResponse().get(collectionName);
-    Long creationTimeMillis = (Long) colStatus._get("creationTimeMillis", null);
+    Long creationTimeMillis = (Long) colStatus._get("creationTimeMillis");
     assertNotNull("creationTimeMillis was not included in COLSTATUS response", creationTimeMillis);
 
     Instant creationTime = Instant.ofEpochMilli(creationTimeMillis);

@@ -313,8 +313,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
   }
 
   private NamedList<?> getThreadInfo(NamedList<?> rsp, String threadName) {
-    for (Map.Entry<String, ?> threadInfoEntry :
-        (NamedList<?>) rsp._get("system/threadDump", null)) {
+    for (Map.Entry<String, ?> threadInfoEntry : (NamedList<?>) rsp._get("system/threadDump")) {
       NamedList<?> thread = (NamedList<?>) threadInfoEntry.getValue();
       if (thread._getStr("name", "").contains(threadName)) {
         return thread;
