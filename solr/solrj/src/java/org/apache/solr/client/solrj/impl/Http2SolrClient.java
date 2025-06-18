@@ -128,6 +128,20 @@ public class Http2SolrClient extends HttpSolrClientBase {
     super(serverBaseUrl, builder);
 
     if (builder.httpClient != null) {
+      // Validate that no conflicting options are provided when using an existing HttpClient
+      if (builder.followRedirects != null
+          || builder.connectionTimeoutMillis != null
+          || builder.maxConnectionsPerHost != null
+          || builder.useHttp1_1
+              != builder.httpClient.getTransport() instanceof HttpClientTransportOverHTTP
+          || builder.proxyHost != null
+          || builder.sslConfig != null
+          || builder.cookieStore != null
+          || builder.keyStoreReloadIntervalSecs != null) {
+        throw new IllegalArgumentException(
+            "You cannot provide the HttpClient and also specify options that are used to build a new client");
+      }
+
       this.httpClient = builder.httpClient;
       if (this.executor == null) {
         this.executor = builder.executor;
@@ -146,6 +160,17 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
+    try {
+      applyHttpClientBuilderFactory();
+    } catch (RuntimeException e) {
+      try {
+        this.close();
+      } catch (Exception exceptionOnClose) {
+        e.addSuppressed(exceptionOnClose);
+      }
+      throw e;
+    }
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -155,6 +180,29 @@ public class Http2SolrClient extends HttpSolrClientBase {
     // Verify this assumption and copy the existing instance to avoid unnecessary wrapping.
     assert httpClient.getAuthenticationStore() instanceof AuthenticationStoreHolder;
     this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
+  }
+
+  private void applyHttpClientBuilderFactory() {
+    String factoryClassName =
+        System.getProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+    if (factoryClassName != null) {
+      log.debug("Using Http Builder Factory: {}", factoryClassName);
+      HttpClientBuilderFactory factory;
+      try {
+        factory =
+            Class.forName(factoryClassName)
+                .asSubclass(HttpClientBuilderFactory.class)
+                .getDeclaredConstructor()
+                .newInstance();
+      } catch (InstantiationException
+          | IllegalAccessException
+          | ClassNotFoundException
+          | InvocationTargetException
+          | NoSuchMethodException e) {
+        throw new RuntimeException("Unable to instantiate " + Http2SolrClient.class.getName(), e);
+      }
+      factory.setup(this);
+    }
   }
 
   @Deprecated(since = "9.7")
@@ -173,8 +221,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   private HttpClient createHttpClient(Builder builder) {
-    HttpClient httpClient;
-
     executor = builder.executor;
     if (executor == null) {
       BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
@@ -186,21 +232,24 @@ public class Http2SolrClient extends HttpSolrClientBase {
       shutdownExecutor = false;
     }
 
-    SslContextFactory.Client sslContextFactory;
-    if (builder.sslConfig == null) {
-      sslContextFactory = getDefaultSslContextFactory();
-    } else {
-      sslContextFactory = builder.sslConfig.createClientContextFactory();
-    }
+    SSLConfig sslConfig =
+        builder.sslConfig != null ? builder.sslConfig : Http2SolrClient.defaultSSLConfig;
+    SslContextFactory.Client sslContextFactory =
+        (sslConfig == null)
+            ? getDefaultSslContextFactory()
+            : sslConfig.createClientContextFactory();
 
+    Long keyStoreReloadIntervalSecs = builder.keyStoreReloadIntervalSecs;
+    if (keyStoreReloadIntervalSecs == null && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
+      keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
+    }
     if (sslContextFactory != null
         && sslContextFactory.getKeyStoreResource() != null
-        && builder.keyStoreReloadIntervalSecs != null
-        && builder.keyStoreReloadIntervalSecs > 0) {
+        && keyStoreReloadIntervalSecs != null
+        && keyStoreReloadIntervalSecs > 0) {
       scanner = new KeyStoreScanner(sslContextFactory);
       try {
-        scanner.setScanInterval(
-            (int) Math.min(builder.keyStoreReloadIntervalSecs, Integer.MAX_VALUE));
+        scanner.setScanInterval((int) Math.min(keyStoreReloadIntervalSecs, Integer.MAX_VALUE));
         scanner.start();
         if (log.isDebugEnabled()) {
           log.debug("Key Store Scanner started");
@@ -222,6 +271,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     clientConnector.setSslContextFactory(sslContextFactory);
     clientConnector.setSelectors(2);
 
+    HttpClient httpClient;
     HttpClientTransport transport;
     if (builder.useHttp1_1) {
       if (log.isDebugEnabled()) {
@@ -254,8 +304,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
     // note: idle & request timeouts are set per request
 
-    if (builder.cookieStore != null) {
-      httpClient.setHttpCookieStore(builder.cookieStore);
+    var cookieStore = builder.getCookieStore();
+    if (cookieStore != null) {
+      httpClient.setHttpCookieStore(cookieStore);
     }
 
     this.authenticationStore = new AuthenticationStoreHolder();
@@ -283,15 +334,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
     if (builder.proxyIsSocks4) {
       proxy = new Socks4Proxy(address, builder.proxyIsSecure);
     } else {
-      final Protocol protocol;
-      if (builder.useHttp1_1) {
-        protocol = HttpClientTransportOverHTTP.HTTP11;
-      } else {
-        // see HttpClientTransportOverHTTP2#newOrigin
-        String protocolName = builder.proxyIsSecure ? "h2" : "h2c";
-        protocol = new Protocol(List.of(protocolName), false);
-      }
-      proxy = new HttpProxy(address, builder.proxyIsSecure, protocol);
+      // Move protocol initialization closer to where it's used
+      proxy =
+          new HttpProxy(
+              address,
+              builder.proxyIsSecure,
+              builder.useHttp1_1
+                  ? HttpClientTransportOverHTTP.HTTP11
+                  : new Protocol(List.of(builder.proxyIsSecure ? "h2" : "h2c"), false));
     }
     httpClient.getProxyConfiguration().addProxy(proxy);
   }
@@ -593,13 +643,18 @@ public class Http2SolrClient extends HttpSolrClientBase {
     ResponseParser parser =
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
     String contentType = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
+
+    // Move variable initializations closer to where they are used
+    String responseMethod = response.getRequest() == null ? "" : response.getRequest().getMethod();
+
+    // Initialize mimeType and encoding only when needed
     String mimeType = null;
     String encoding = null;
     if (contentType != null) {
       mimeType = MimeTypes.getContentTypeWithoutCharset(contentType);
       encoding = MimeTypes.getCharsetFromContentType(contentType);
     }
-    String responseMethod = response.getRequest() == null ? "" : response.getRequest().getMethod();
+
     return processErrorsAndResponse(
         response.getStatus(),
         response.getReason(),
@@ -692,22 +747,26 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     if (SolrRequest.METHOD.POST == solrRequest.getMethod()
         || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
-      RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-      Collection<ContentStream> streams =
-          contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
-
-      boolean isMultipart = isMultipart(streams);
-
+      // Move method initialization closer to where it's used
       HttpMethod method =
           SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
+
+      RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
 
       if (contentWriter != null) {
         var content = new OutputStreamRequestContent(contentWriter.getContentType());
         var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
         decorateRequest(r, solrRequest, isAsync);
         return new MakeRequestReturnValue(r, contentWriter, content);
+      }
 
-      } else if (streams == null || isMultipart) {
+      // Only get streams if contentWriter is null
+      Collection<ContentStream> streams = requestWriter.getContentStreams(solrRequest);
+
+      // Move isMultipart initialization closer to where it's used
+      boolean isMultipart = isMultipart(streams);
+
+      if (streams == null || isMultipart) {
         // send server list and request list as query string params
         ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), wparams));
@@ -765,14 +824,18 @@ public class Http2SolrClient extends HttpSolrClientBase {
         }
         if (streams != null) {
           for (ContentStream contentStream : streams) {
+            // Move contentType initialization closer to where it's used
             String contentType = contentStream.getContentType();
             if (contentType == null) {
               contentType = "multipart/form-data"; // default
             }
+
+            // Move name initialization closer to where it's used
             String name = contentStream.getName();
             if (name == null) {
               name = "";
             }
+
             HttpFields.Mutable fields = HttpFields.build(1);
             fields.add(HttpHeader.CONTENT_TYPE, contentType);
             content.addPart(
@@ -787,6 +850,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
     } else {
       // application/x-www-form-urlencoded
+      // Move queryString initialization into the else block where it's used
       String queryString = wparams.toQueryString();
       // remove the leading "?" if there is any
       queryString = queryString.startsWith("?") ? queryString.substring(1) : queryString;
@@ -1000,7 +1064,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return this;
     }
 
-    private HttpCookieStore getDefaultCookieStore() {
+    private HttpCookieStore getCookieStore() {
+      if (cookieStore == null) {
+        return cookieStore;
+      }
       if (Boolean.getBoolean("solr.http.disableCookies")) {
         return new HttpCookieStore.Empty();
       }
@@ -1017,68 +1084,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     @Override
     public Http2SolrClient build() {
-      if (httpClient == null) {
-        // set defaults for building an httpClient...
-        if (sslConfig == null) {
-          sslConfig = Http2SolrClient.defaultSSLConfig;
-        }
-        if (cookieStore == null) {
-          cookieStore = getDefaultCookieStore();
-        }
-        if (keyStoreReloadIntervalSecs == null
-            && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
-          keyStoreReloadIntervalSecs =
-              Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
-        }
-      } else {
-        if (followRedirects != null
-            || connectionTimeoutMillis != null
-            || maxConnectionsPerHost != null
-            || useHttp1_1 != httpClient.getTransport() instanceof HttpClientTransportOverHTTP
-            || proxyHost != null
-            || sslConfig != null
-            || cookieStore != null
-            || keyStoreReloadIntervalSecs != null) {
-          throw new IllegalArgumentException(
-              "You cannot provide the HttpClient and also specify options that are used to build a new client");
-        }
-      }
-
-      Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
-      try {
-        httpClientBuilderSetup(client);
-      } catch (RuntimeException e) {
-        try {
-          client.close();
-        } catch (Exception exceptionOnClose) {
-          e.addSuppressed(exceptionOnClose);
-        }
-        throw e;
-      }
-      return client;
-    }
-
-    private void httpClientBuilderSetup(Http2SolrClient client) {
-      String factoryClassName =
-          System.getProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-      if (factoryClassName != null) {
-        log.debug("Using Http Builder Factory: {}", factoryClassName);
-        HttpClientBuilderFactory factory;
-        try {
-          factory =
-              Class.forName(factoryClassName)
-                  .asSubclass(HttpClientBuilderFactory.class)
-                  .getDeclaredConstructor()
-                  .newInstance();
-        } catch (InstantiationException
-            | IllegalAccessException
-            | ClassNotFoundException
-            | InvocationTargetException
-            | NoSuchMethodException e) {
-          throw new RuntimeException("Unable to instantiate " + Http2SolrClient.class.getName(), e);
-        }
-        factory.setup(client);
-      }
+      return new Http2SolrClient(baseSolrUrl, this);
     }
 
     /**
