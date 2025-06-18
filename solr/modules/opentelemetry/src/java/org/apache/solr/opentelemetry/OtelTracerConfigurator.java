@@ -16,7 +16,7 @@
  */
 package org.apache.solr.opentelemetry;
 
-import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.TracerConfigurator;
-import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,14 +48,13 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   }
 
   @Override
-  public Tracer getTracer() {
-    return TraceUtils.getGlobalTracer();
+  public void init(NamedList<?> args) {
+    prepareConfiguration(args);
   }
 
   @Override
-  public void init(NamedList<?> args) {
-    prepareConfiguration(args);
-    AutoConfiguredOpenTelemetrySdk.initialize();
+  public OpenTelemetry createOtel() {
+    return AutoConfiguredOpenTelemetrySdk.builder().build().getOpenTelemetrySdk();
   }
 
   void prepareConfiguration(NamedList<?> args) {
