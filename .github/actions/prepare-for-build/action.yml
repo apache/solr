@@ -1,13 +1,13 @@
 # This composite action is included in other workflows to have a shared setup
 # for java, gradle, caches, etc.
 
-name: Prepare Lucene build
+name: Prepare build
 description: Creates a shared setup for other workflows
 
 inputs:
   java-version:
     required: false
-    default: "24"
+    default: "21"
     description: "The default JDK version to set up."
 
   java-distribution:
