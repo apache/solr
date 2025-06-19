@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 
 public abstract class HttpSolrClientBuilderBase<
     B extends HttpSolrClientBuilderBase<?, ?>, C extends HttpSolrClientBase> {
+
   protected Long idleTimeoutMillis;
   protected Long connectionTimeoutMillis;
   protected Long requestTimeoutMillis;
@@ -115,36 +116,46 @@ public abstract class HttpSolrClientBuilderBase<
     return (B) this;
   }
 
+  /**
+   * The max time a connection can be idle (that is, without traffic of bytes in either direction).
+   * Sometimes called a "socket timeout". Note: not applicable to the JDK HttpClient.
+   */
   @SuppressWarnings("unchecked")
   public B withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
     this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
     return (B) this;
   }
 
-  public Long getIdleTimeoutMillis() {
-    return idleTimeoutMillis;
+  public long getIdleTimeoutMillis() {
+    return idleTimeoutMillis != null && idleTimeoutMillis > 0
+        ? idleTimeoutMillis
+        : HttpClientUtil.DEFAULT_SO_TIMEOUT;
   }
 
+  /** The max time a connection can take to connect to destinations. */
   @SuppressWarnings("unchecked")
   public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
     this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
     return (B) this;
   }
 
-  public Long getConnectionTimeout() {
-    return connectionTimeoutMillis;
+  public long getConnectionTimeoutMillis() {
+    return connectionTimeoutMillis != null && connectionTimeoutMillis > 0
+        ? connectionTimeoutMillis
+        : HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
   }
 
-  /**
-   * Set a timeout in milliseconds for requests issued by this client.
-   *
-   * @param requestTimeout The timeout in milliseconds
-   * @return this Builder.
-   */
+  /** Set a timeout for requests to receive a response. */
   @SuppressWarnings("unchecked")
   public B withRequestTimeout(long requestTimeout, TimeUnit unit) {
     this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
     return (B) this;
+  }
+
+  public long getRequestTimeoutMillis() {
+    return requestTimeoutMillis != null && requestTimeoutMillis > 0
+        ? requestTimeoutMillis
+        : getIdleTimeoutMillis();
   }
 
   /**
