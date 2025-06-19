@@ -800,7 +800,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     // just test that we see "900" in the flags attribute here
     @SuppressWarnings({"unchecked", "rawtypes"})
     List<NamedList> tokenInfoList =
-        (List<NamedList>) result.findRecursive("index", CustomTokenFilter.class.getName());
+        (List<NamedList>) result._get(List.of("index", CustomTokenFilter.class.getName()), null);
     // '1' from CustomTokenFilter plus 900 from CustomFlagsAttributeImpl.
     assertEquals(
         901,

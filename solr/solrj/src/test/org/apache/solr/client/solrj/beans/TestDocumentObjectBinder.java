@@ -38,7 +38,7 @@ public class TestDocumentObjectBinder extends SolrTestCase {
     DocumentObjectBinder binder = new DocumentObjectBinder();
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> nl = parser.processResponse(new StringReader(xml));
-    QueryResponse res = new QueryResponse(nl, null);
+    QueryResponse res = new QueryResponse(nl);
 
     SolrDocumentList solDocList = res.getResults();
     List<Item> l = binder.getBeans(Item.class, res.getResults());
@@ -83,7 +83,7 @@ public class TestDocumentObjectBinder extends SolrTestCase {
     DocumentObjectBinder binder = new DocumentObjectBinder();
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> nl = parser.processResponse(new StringReader(xml));
-    QueryResponse res = new QueryResponse(nl, null);
+    QueryResponse res = new QueryResponse(nl);
     List<Item> l = binder.getBeans(Item.class, res.getResults());
 
     assertArrayEquals(

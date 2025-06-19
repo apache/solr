@@ -37,10 +37,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore(
-        "solrconfig-languageidentifier.xml",
-        "schema.xml",
-        getFile("langid/solr").toAbsolutePath().toString());
+    initCore("solrconfig-languageidentifier.xml", "schema.xml", getFile("langid/solr"));
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id_tika");
     assertNotNull(chained);

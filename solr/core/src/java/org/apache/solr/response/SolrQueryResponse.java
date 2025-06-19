@@ -18,12 +18,12 @@ package org.apache.solr.response;
 
 import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -68,6 +68,18 @@ public class SolrQueryResponse {
   public static final String RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY = "partialResultsDetails";
   public static final String RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY =
       "segmentTerminatedEarly";
+
+  /**
+   * Header to indicate that the search was terminated early because of hits exceeding the query
+   * configured limit (<code>maxHitsAllowed</code>). Presence of this flag also indicates the
+   * partialResults, however in the absence of <i>maxHitsTerminatedEarly</i>, <i>partialResults</i>
+   * would be due to other limits like time/cpu.
+   */
+  public static final String RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY =
+      "maxHitsTerminatedEarly";
+
+  public static final String RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY = "approximateTotalHits";
+
   public static final String RESPONSE_HEADER_KEY = "responseHeader";
   private static final String RESPONSE_KEY = "response";
 
@@ -298,12 +310,12 @@ public class SolrQueryResponse {
   /** Returns a string of the form "prefix name1=value1 name2=value2 ..." */
   public String getToLogAsString(String prefix) {
     StringBuilder sb = new StringBuilder(prefix);
-    for (int i = 0; i < toLog.size(); i++) {
-      if (sb.length() > 0) {
+    for (Map.Entry<String, Object> entry : toLog) {
+      if (!sb.isEmpty()) {
         sb.append(' ');
       }
-      String name = toLog.getName(i);
-      Object val = toLog.getVal(i);
+      String name = entry.getKey();
+      Object val = entry.getValue();
       if (name != null) {
         sb.append(name).append('=');
       }

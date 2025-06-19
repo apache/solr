@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.FastStreamingDocsCallback;
-import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
+import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
@@ -153,8 +153,8 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       @SuppressWarnings({"rawtypes"})
       List<NamedList> children;
     }
-    StreamingBinaryResponseParser parser =
-        new StreamingBinaryResponseParser(
+    StreamingJavaBinResponseParser parser =
+        new StreamingJavaBinResponseParser(
             new FastStreamingDocsCallback() {
 
               @Override
@@ -253,8 +253,8 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       }
     }
     List<Pojo> l = new ArrayList<>();
-    StreamingBinaryResponseParser binaryResponseParser =
-        new StreamingBinaryResponseParser(
+    StreamingJavaBinResponseParser binaryResponseParser =
+        new StreamingJavaBinResponseParser(
             new FastStreamingDocsCallback() {
 
               @Override

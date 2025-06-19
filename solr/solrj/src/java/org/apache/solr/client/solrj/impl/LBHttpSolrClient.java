@@ -219,7 +219,7 @@ public class LBHttpSolrClient extends LBSolrClient {
 
     public Builder() {
       this.solrEndpoints = new ArrayList<>();
-      this.responseParser = new BinaryResponseParser();
+      this.responseParser = new JavaBinResponseParser();
     }
 
     public HttpSolrClient.Builder getHttpSolrClientBuilder() {

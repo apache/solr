@@ -19,7 +19,18 @@ package org.apache.solr.embedded;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import java.io.File;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -43,18 +54,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -71,25 +70,27 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.Source;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.Source;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
@@ -346,7 +347,7 @@ public class JettySolrRunner {
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
 
       server.setConnectors(new Connector[] {connector});
-      server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
+      server.addBean(new DefaultSessionIdManager(server, new Random()), true);
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector =
@@ -361,13 +362,13 @@ public class JettySolrRunner {
       server.setConnectors(new Connector[] {connector});
     }
 
-    HandlerWrapper chain;
+    Handler.Wrapper chain;
     {
       // Initialize the servlets
       final ServletContextHandler root =
-          new ServletContextHandler(server, "/solr", ServletContextHandler.SESSIONS);
-      root.setResourceBase(".");
-
+          new ServletContextHandler("/solr", ServletContextHandler.SESSIONS);
+      root.setServer(server);
+      root.setBaseResource(ResourceFactory.of(server).newResource("."));
       root.addEventListener(
           // Install CCP first.  Subclass CCP to do some pre-initialization
           new CoreContainerProvider() {
@@ -418,8 +419,6 @@ public class JettySolrRunner {
     if (config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);
-      rwh.setRewriteRequestURI(true);
-      rwh.setRewritePathInfo(false);
       rwh.setOriginalPathAttribute("requestedPath");
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
       chain = rwh;
@@ -432,13 +431,18 @@ public class JettySolrRunner {
     gzipHandler.setIncludedMethods("GET");
 
     server.setHandler(gzipHandler);
+
+    // Mimic "graceful.mod"
+    GracefulHandler graceful = new GracefulHandler();
+    server.insertHandler(graceful);
+    server.setStopTimeout(15 * 1000);
   }
 
   /**
    * descendants may inject own handler chaining it to the given root and then returning that own
    * one
    */
-  protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
+  protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
     return chain;
   }
 
@@ -673,11 +677,11 @@ public class JettySolrRunner {
     }
   }
 
-  public void outputMetrics(File outputDirectory, String fileName) throws IOException {
+  public void outputMetrics(Path outputDirectory, String fileName) throws IOException {
     if (getCoreContainer() != null) {
 
       if (outputDirectory != null) {
-        Path outDir = outputDirectory.toPath();
+        Path outDir = outputDirectory;
         Files.createDirectories(outDir);
       }
 
@@ -690,7 +694,7 @@ public class JettySolrRunner {
             outputDirectory == null
                 ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)
                 : new PrintStream(
-                    new File(outputDirectory, registryName + "_" + fileName),
+                    outputDirectory.resolve(registryName + "_" + fileName).toString(),
                     StandardCharsets.UTF_8)) {
           ConsoleReporter reporter =
               ConsoleReporter.forRegistry(metricsRegisty)
@@ -713,7 +717,7 @@ public class JettySolrRunner {
       final var coreStatusReq = new CoresApi.GetAllCoreStatus();
       coreStatusReq.setIndexInfo(true);
       try (final var client = newClient()) {
-        final var coreStatusRsp = coreStatusReq.process(client).getParsed();
+        final var coreStatusRsp = coreStatusReq.process(client);
         Utils.writeJson(coreStatusRsp, pw, true);
       } catch (SolrServerException | IOException e) {
         // Worth logging but not re-throwing

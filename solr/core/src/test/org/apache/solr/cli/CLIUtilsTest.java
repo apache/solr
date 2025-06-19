@@ -28,7 +28,7 @@ public class CLIUtilsTest extends SolrCloudTestCase {
   @Test
   public void testDefaultSolrUrlWithNoProperties() {
     System.clearProperty("solr.url.scheme");
-    System.clearProperty("solr.tool.host");
+    System.clearProperty("solr.host");
     System.clearProperty("jetty.port");
     assertEquals(
         "Default Solr URL should match with no properties set.",
@@ -39,7 +39,7 @@ public class CLIUtilsTest extends SolrCloudTestCase {
   @Test
   public void testDefaultSolrUrlWithProperties() {
     System.setProperty("solr.url.scheme", "https");
-    System.setProperty("solr.tool.host", "other.local");
+    System.setProperty("solr.host", "other.local");
     System.setProperty("jetty.port", "1234");
     assertEquals(
         "Default Solr URL should match with custom properties set.",

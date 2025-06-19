@@ -40,8 +40,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
@@ -357,7 +355,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     GetZkSchemaVersionCallable(
         String baseUrl, String coreName, int expectedZkVersion, ZkController zkController) {
-      super(METHOD.GET, "/schema/zkversion");
+      super(METHOD.GET, "/schema/zkversion", SolrRequestType.ADMIN);
       this.zkController = zkController;
       this.baseUrl = baseUrl;
       this.coreName = coreName;
@@ -410,13 +408,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    protected SolrResponse createResponse(NamedList<Object> namedList) {
       return null;
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequest.SolrRequestType.ADMIN.toString();
     }
   }
 
