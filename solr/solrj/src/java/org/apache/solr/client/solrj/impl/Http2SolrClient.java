@@ -339,14 +339,15 @@ public class Http2SolrClient extends HttpSolrClientBase {
     if (builder.proxyIsSocks4) {
       proxy = new Socks4Proxy(address, builder.proxyIsSecure);
     } else {
-      // Move protocol initialization closer to where it's used
-      proxy =
-          new HttpProxy(
-              address,
-              builder.proxyIsSecure,
-              builder.useHttp1_1
-                  ? HttpClientTransportOverHTTP.HTTP11
-                  : new Protocol(List.of(builder.proxyIsSecure ? "h2" : "h2c"), false));
+      final Protocol protocol;
+      if (builder.useHttp1_1) {
+        protocol = HttpClientTransportOverHTTP.HTTP11;
+      } else {
+        // see HttpClientTransportOverHTTP2#newOrigin
+        String protocolName = builder.proxyIsSecure ? "h2" : "h2c";
+        protocol = new Protocol(List.of(protocolName), false);
+      }
+      proxy = new HttpProxy(address, builder.proxyIsSecure, protocol);
     }
     httpClient.getProxyConfiguration().addProxy(proxy);
   }
@@ -667,10 +668,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
     String contentType = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
 
-    // Move variable initializations closer to where they are used
-    String responseMethod = response.getRequest() == null ? "" : response.getRequest().getMethod();
-
-    // Initialize mimeType and encoding only when needed
     String mimeType = null;
     String encoding = null;
     if (contentType != null) {
@@ -678,6 +675,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       encoding = MimeTypes.getCharsetFromContentType(contentType);
     }
 
+    String responseMethod = response.getRequest() == null ? "" : response.getRequest().getMethod();
     return processErrorsAndResponse(
         response.getStatus(),
         response.getReason(),
@@ -781,26 +779,22 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     if (SolrRequest.METHOD.POST == solrRequest.getMethod()
         || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
-      // Move method initialization closer to where it's used
+      RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
+      Collection<ContentStream> streams =
+          contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
+
+      boolean isMultipart = isMultipart(streams);
+
       HttpMethod method =
           SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
-
-      RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
 
       if (contentWriter != null) {
         var content = new OutputStreamRequestContent(contentWriter.getContentType());
         var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
         decorateRequest(r, solrRequest, isAsync);
         return new MakeRequestReturnValue(r, contentWriter, content);
-      }
 
-      // Only get streams if contentWriter is null
-      Collection<ContentStream> streams = requestWriter.getContentStreams(solrRequest);
-
-      // Move isMultipart initialization closer to where it's used
-      boolean isMultipart = isMultipart(streams);
-
-      if (streams == null || isMultipart) {
+      } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
         ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), wparams));
@@ -857,18 +851,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
         }
         if (streams != null) {
           for (ContentStream contentStream : streams) {
-            // Move contentType initialization closer to where it's used
             String contentType = contentStream.getContentType();
             if (contentType == null) {
               contentType = "multipart/form-data"; // default
             }
-
-            // Move name initialization closer to where it's used
             String name = contentStream.getName();
             if (name == null) {
               name = "";
             }
-
             HttpFields.Mutable fields = HttpFields.build(1);
             fields.add(HttpHeader.CONTENT_TYPE, contentType);
             content.addFilePart(
@@ -882,7 +872,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
     } else {
       // application/x-www-form-urlencoded
-      // Move queryString initialization into the else block where it's used
       String queryString = wparams.toQueryString();
       // remove the leading "?" if there is any
       queryString = queryString.startsWith("?") ? queryString.substring(1) : queryString;
