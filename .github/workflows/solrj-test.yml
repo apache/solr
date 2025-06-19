@@ -22,15 +22,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup JDK
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: 21
-        java-package: jdk
-
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+    - uses: ./.github/actions/prepare-for-build
 
     - name: Test the SolrJ Package
       run: ./gradlew solr:solrj:test
