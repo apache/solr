@@ -246,7 +246,6 @@ public class PeerSync implements SolrMetricProducer {
           if (log.isInfoEnabled()) {
             log.info("{} DONE. sync failed", msg());
           }
-          shardHandler.cancelAll();
           syncErrors.inc();
           return PeerSyncResult.failure();
         }

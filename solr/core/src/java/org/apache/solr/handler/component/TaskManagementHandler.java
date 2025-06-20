@@ -93,7 +93,6 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
       ShardResponse srsp = shardHandler.takeCompletedOrError();
 
       if (srsp.getException() != null) {
-        shardHandler.cancelAll();
         if (srsp.getException() instanceof SolrException) {
           throw (SolrException) srsp.getException();
         } else {

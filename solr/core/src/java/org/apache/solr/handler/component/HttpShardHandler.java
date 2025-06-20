@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,6 +42,7 @@ import org.apache.solr.client.solrj.routing.NoOpReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cluster.Shard;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -318,14 +320,21 @@ public class HttpShardHandler extends ShardHandler {
       while (responsesPending()) {
         // in the parallel case we need to recheck responsesPending()
         // in case all attempts to submit failed.
-        ShardResponse rsp = responses.poll(10, TimeUnit.MILLISECONDS);
-        if (rsp == null) {
-          continue;
-        }
+        ShardResponse rsp = responses.take();
         responseFutureMap.remove(rsp);
 
-        if (bailOnError && rsp.getException() != null)
-          return rsp; // if exception, return immediately
+        if (rsp.getException() != null && (bailOnError || disallowPartialResults(rsp.getShardRequest().params))) {
+          // if exception, return immediately, cancelling all running requests
+          for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
+            if (!future.isDone()) {
+              future.cancel(true);
+            }
+          }
+          responseFutureMap.clear();
+
+          return rsp;
+        }
+
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
         // for a request was received.  Otherwise we might return the same
@@ -347,12 +356,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   @Override
-  public void cancelAll() {
-    for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
-      future.cancel(true);
-    }
-    responseFutureMap.clear();
-  }
+  public void cancelAll() {}
 
   @Override
   public void prepDistributed(ResponseBuilder rb) {
@@ -529,9 +533,6 @@ public class HttpShardHandler extends ShardHandler {
           srsp.setResponseCode(((SolrException) throwable).code());
         }
         responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
-        if (disallowPartialResults(params)) {
-          HttpShardHandler.this.cancelAll();
-        }
       }
     }
   }
