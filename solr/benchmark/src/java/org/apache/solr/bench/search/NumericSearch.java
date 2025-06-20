@@ -72,7 +72,7 @@ public class NumericSearch {
         throws Exception {
       miniClusterState.setUseHttp1(true);
       miniClusterState.startMiniCluster(1);
-      miniClusterState.createCollection(COLLECTION, 1, 1);
+      miniClusterState.createCollection(COLLECTION, 5, 1);
       int maxCardinality = 10000;
       int numDocs = 2000000;
       setValues = integers().allWithMaxCardinality(maxCardinality);

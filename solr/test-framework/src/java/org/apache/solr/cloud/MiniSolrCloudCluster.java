@@ -114,7 +114,7 @@ public class MiniSolrCloudCluster {
           + TEST_URL_ALLOW_LIST
           + ":}</str>\n"
           + "\n"
-          + "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">\n"
+          + "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"ParallelHttpShardHandlerFactory\">\n"
           + "    <str name=\"urlScheme\">${urlScheme:}</str>\n"
           + "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n"
           + "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n"
