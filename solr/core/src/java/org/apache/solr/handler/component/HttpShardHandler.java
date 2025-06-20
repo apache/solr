@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -101,8 +103,8 @@ public class HttpShardHandler extends ShardHandler {
    */
   protected final Object FUTURE_MAP_LOCK = new Object();
 
-  protected Map<ShardResponse, CompletableFuture<LBSolrClient.Rsp>> responseFutureMap;
-  protected BlockingQueue<ShardResponse> responses;
+  protected volatile ConcurrentMap<ShardResponse, CompletableFuture<LBSolrClient.Rsp>> responseFutureMap;
+  protected volatile BlockingQueue<ShardResponse> responses;
 
   /**
    * The number of pending requests. This must be incremented before a {@link ShardResponse} is
@@ -121,7 +123,7 @@ public class HttpShardHandler extends ShardHandler {
     this.lbClient = httpShardHandlerFactory.loadbalancer;
     this.pending = new AtomicInteger(0);
     this.responses = new LinkedBlockingQueue<>();
-    this.responseFutureMap = new HashMap<>();
+    this.responseFutureMap = new ConcurrentHashMap<>();
 
     // maps "localhost:8983|localhost:7574" to a shuffled
     // List("http://localhost:8983","http://localhost:7574")
@@ -235,9 +237,6 @@ public class HttpShardHandler extends ShardHandler {
     srsp.setException(exception);
     srsp.setResponseCode(exception.code());
 
-    // order of next two statements is important. Both are synchronized objects so
-    // synchronization is needed so long as the order is correct.
-    pending.incrementAndGet();
     responses.add(srsp);
   }
 
@@ -282,14 +281,11 @@ public class HttpShardHandler extends ShardHandler {
       long startTimeNS) {
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
     future.whenComplete(new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
-    synchronized (FUTURE_MAP_LOCK) {
-      // we want to ensure that there is a future in flight before incrementing
-      // pending. If anything fails such that a request/future is not created there is
-      // potential for the request to hang forever waiting on a responses.take()
-      // and so if anything failed during future creation we would get stuck.
-      pending.incrementAndGet();
-      responseFutureMap.put(srsp, future);
-    }
+    // we want to ensure that there is a future in flight before incrementing
+    // pending. If anything fails such that a request/future is not created there is
+    // potential for the request to hang forever waiting on a responses.take()
+    // and so if anything failed during future creation we would get stuck.
+    responseFutureMap.put(srsp, future);
   }
 
   /** Subclasses could modify the request based on the shard */
@@ -320,17 +316,13 @@ public class HttpShardHandler extends ShardHandler {
   private ShardResponse take(boolean bailOnError) {
     try {
       while (responsesPending()) {
-        ShardResponse rsp;
-        synchronized (FUTURE_MAP_LOCK) {
-          // in the parallel case we need to recheck responsesPending()
-          // in case all attempts to submit failed.
-          rsp = responses.poll(50, TimeUnit.MILLISECONDS);
-          if (rsp == null) {
-            continue;
-          }
-          responseFutureMap.remove(rsp);
-          pending.decrementAndGet();
+        // in the parallel case we need to recheck responsesPending()
+        // in case all attempts to submit failed.
+        ShardResponse rsp = responses.poll(10, TimeUnit.MILLISECONDS);
+        if (rsp == null) {
+          continue;
         }
+        responseFutureMap.remove(rsp);
 
         if (bailOnError && rsp.getException() != null)
           return rsp; // if exception, return immediately
@@ -351,18 +343,15 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   protected boolean responsesPending() {
-    return pending.get() > 0;
+    return !responseFutureMap.isEmpty() || !responses.isEmpty();
   }
 
   @Override
   public void cancelAll() {
-    synchronized (FUTURE_MAP_LOCK) {
-      for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
-        future.cancel(true);
-        pending.decrementAndGet();
-      }
-      responseFutureMap.clear();
+    for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
+      future.cancel(true);
     }
+    responseFutureMap.clear();
   }
 
   @Override
@@ -541,8 +530,7 @@ public class HttpShardHandler extends ShardHandler {
         }
         responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
         if (disallowPartialResults(params)) {
-          HttpShardHandler.this
-              .cancelAll(); // Note: method synchronizes RESPONSE_CANCELABLE_LOCK on entry
+          HttpShardHandler.this.cancelAll();
         }
       }
     }

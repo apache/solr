@@ -91,17 +91,14 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
             CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
             future.whenComplete(
                 new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
-            synchronized (FUTURE_MAP_LOCK) {
-              // we want to ensure that there is a future in flight before incrementing
-              // pending, because there is a risk that the  request will hang forever waiting
-              // on a responses.take() in HttpShardHandler.take(boolean) if anything failed
-              // during future creation. It is not a problem if the response shows up before
-              // we increment pending. The attemptingSubmit flag guards us against inadvertently
-              // skipping the while loop in HttpShardHandler.take(boolean) until at least
-              // one runnable has been executed.
-              pending.incrementAndGet();
-              responseFutureMap.put(srsp, future);
-            }
+            // we want to ensure that there is a future in flight before incrementing
+            // pending, because there is a risk that the  request will hang forever waiting
+            // on a responses.take() in HttpShardHandler.take(boolean) if anything failed
+            // during future creation. It is not a problem if the response shows up before
+            // we increment pending. The attemptingSubmit flag guards us against inadvertently
+            // skipping the while loop in HttpShardHandler.take(boolean) until at least
+            // one runnable has been executed.
+            responseFutureMap.put(srsp, future);
           } finally {
             // it must not be possible to exit the runnable in any way without calling this.
             attemptCount.incrementAndGet();
