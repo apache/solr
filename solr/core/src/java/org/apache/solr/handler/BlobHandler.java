@@ -140,7 +140,7 @@ public class BlobHandler extends RequestHandlerBase
                     new Sort(new SortField("version", SortField.Type.LONG, true)));
 
         long version = 0;
-        if (docs.totalHits.value > 0) {
+        if (docs.totalHits.value() > 0) {
           Document doc = req.getSearcher().getDocFetcher().doc(docs.scoreDocs[0].doc);
           Number n = doc.getField("version").numericValue();
           version = n.longValue();
@@ -208,7 +208,7 @@ public class BlobHandler extends RequestHandlerBase
                       qparser.parse(),
                       1,
                       new Sort(new SortField("version", SortField.Type.LONG, true)));
-          if (docs.totalHits.value > 0) {
+          if (docs.totalHits.value() > 0) {
             rsp.add(
                 ReplicationAPIBase.FILE_STREAM,
                 new SolrCore.RawWriter() {
