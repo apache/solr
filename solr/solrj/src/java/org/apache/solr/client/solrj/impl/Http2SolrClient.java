@@ -472,7 +472,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
                       } catch (CancellationException e) {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing cancelled", e);
-                        if (!future.isCancelled()) {
+                        if (!future.isDone()) {
                           future.cancel(true);
                         }
                       } catch (Throwable e) {
