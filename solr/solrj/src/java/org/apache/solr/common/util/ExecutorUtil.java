@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -378,6 +379,7 @@ public class ExecutorUtil {
             }
             try {
               command.run();
+            } catch (CancellationException ignored) {
             } catch (Throwable t) {
               if (t instanceof OutOfMemoryError) {
                 throw t;
