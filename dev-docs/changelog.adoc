@@ -91,7 +91,7 @@ Invoke the task with:
   ** `deprecated` for deprecations
   ** `removed` for code removed in major releases
   ** `dependency_update` for updates to dependencies
-  ** `other` for anything else
+  ** `other` for anything else, like the build or documentation
 * Reference issues as `SOLR-12345` or GitHub `#123`.
 
 == 5. Example YAML Fragment
