@@ -27,10 +27,10 @@ task generateChangeYaml {
   description = 'Generates a change/log description file (YAML)'
   doLast {
     def gitUserName = 'git config user.name'.execute().text.trim()
-    def configuredName = providers.gradleProperty("logchange.name").getOrElse(gitUserName)
-    def githubId = providers.gradleProperty("logchange.githubid").getOrElse(null)
+    def configuredName = providers.gradleProperty("user.name").getOrElse(gitUserName)
+    def githubId = providers.gradleProperty("user.githubid").getOrElse(null)
     def nick = githubId ? "\n    nick: ${githubId}" : ""
-    def asfId = providers.gradleProperty("logchange.asfid").getOrElse(null)
+    def asfId = providers.gradleProperty("user.asfid").getOrElse(null)
     def asfIdUrl = asfId ? "\n    url: https://home.apache.org/phonebook.html?uid=${asfId}" : ""
     def gitBranch = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
     def jiraMatcher = gitBranch =~ /SOLR-\d+/

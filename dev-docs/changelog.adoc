@@ -50,9 +50,9 @@ use that information. Example:
 [source, properties]
 ----
 # Changelog generator settings (./gradlew generateChangeYaml)
-logchange.name=John Doe
-logchange.nick=johngithub
-logchange.asfid=johnapache
+user.name=John Doe
+user.githubid=johngithub
+user.asfid=johnapache
 ----
 
 Invoke the task with:
