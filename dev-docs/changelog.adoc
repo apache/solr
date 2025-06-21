@@ -1,0 +1,116 @@
+= Adding a Changelog Entry to Apache Solr
+:toc:
+:toclevels: 2
+:icons: font
+
+Since Solr 10.0 we no longer edit the monolithic *CHANGES.txt* file directly.
+Instead we create a small YAML fragment **per bug-fix or feature**, checked into
+`solr/changelog/unreleased-x.y.z/`. At build or release time these fragments are
+automatically collated into a human-readable *CHANGES.md*.
+
+This document walks you through the workflow, explains the Gradle helpers
+available, and finishes with a concrete example fragment.
+
+== 1. Workflow Overview
+
+. Make a feature branch with a descriptive name like 'SOLR-12345-fix-memory-leak'.
+. Implement your change
+. Run `./gradlew generateChangeYaml [-Pver=10.1.0]`
+. Edit the generated YAML file to add a clear, user-focused description.
+. Commit the YAML fragment along with the code change.
+. Open your PR as usual.
+
+== 2. Directory Layout
+
+[source]
+----
+solr/
+└── changelog/
+    ├── unreleased/         ← new fragments live here
+    |   └── SOLR-12345-fix-memory-leak.yml
+    ├── unreleased-10.1.0/  ← or in versioned folders
+    ├── v10.0.0/            ← generated at release time
+    └── v10.0.1/
+----
+
+== 3. Gradle Tasks
+
+=== 3.1 Our Custom Task: `generateChangeYaml`
+
+Bootstraps a YAML file, by default in the `unreleased-x.y.z/` directory for
+the current branch, or in a versioned sub-directory if `-Pver=10.1.0` is
+specified. The task will use branch name as file name and title, and will
+parse JIRA id from the branch name if it exists.
+
+It will use your git `user.name` as display name by default, but if you
+add your name, github username, and optionally Apache ID to the
+`gradle.properties` file at the root of the Solr git checkout, this task will
+use that information. Example:
+
+[source, properties]
+----
+# Changelog generator settings (./gradlew generateChangeYaml)
+logchange.name=John Doe
+logchange.nick=johngithub
+logchange.asfid=johnapache
+----
+
+Invoke the task with:
+
+[source, bash]
+----
+./gradlew generateChangeYaml [-Pver=10.1.0]`
+----
+
+=== .2 Plugin Tasks
+
+[cols="1,2,3", options="header"]
+|===
+| Task | Purpose | Typical Usage
+
+| `logchangeGenerate`
+| Generates changelog file (<outputFile>) based on .yml entries and archives (does not moves any files)
+| Doc generation, CI/CD
+
+| `logchangeRelease`
+| Creates new changelog release by moving files from <unreleasedVersionDir> directory to vX.X.X directory
+| Run by the RM during the release procedure.
+|===
+
+
+== 4. Writing Good Entries
+
+* **Audience** is end-users and administrators, not committers.
+* Keep the entry short and focused on the user impact.
+* Choose the correct *type*:
+  ** `added` for new features
+  ** `fixed` for bug fixes
+  ** `deprecated` for deprecated features
+  ** `security` for security-related changes
+  ** `changed` for improvements
+  ** `deprecated` for deprecations
+  ** `removed` for code removed in major releases
+  ** `dependency_update` for updates to dependencies
+  ** `other` for anything else
+* Reference issues as `SOLR-12345` or GitHub `#123`.
+
+== 5. Example YAML Fragment
+
+[source, yaml]
+----
+title: Fix nasty bug in CoreContainer shutdown
+# added/changed/deprecated/removed/fixed/security/dependency_update/other
+type: fixed
+authors:
+  - name: John Contributor
+    nick: johngithub
+    url: https://home.apache.org/phonebook.html?uid=johnasfid
+links:
+  - name: SOLR-3333
+    url: https://issues.apache.org/jira/browse/SOLR-3333
+----
+
+== 6. Further Reading
+
+* <<_releasing_solr,Releasing Solr>>
+* <<https://github.com/logchange/logchange,Logchange web page>>
