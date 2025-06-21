@@ -28,12 +28,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 
 public class V2Request extends SolrRequest<V2Response> implements MapWriter {
@@ -50,7 +50,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   private ResponseParser parser;
 
   private V2Request(METHOD m, String resource, boolean useBinary) {
-    super(m, resource);
+    super(m, resource, SolrRequestType.ADMIN);
     Matcher matcher = COLL_REQ_PATTERN.matcher(getPath());
     if (matcher.find()) {
       this.collection = matcher.group(2);
@@ -65,7 +65,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
   @Override
   public SolrParams getParams() {
-    return solrParams;
+    return solrParams != null ? solrParams : SolrParams.of();
   }
 
   @Override
@@ -106,6 +106,11 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   }
 
   @Override
+  public boolean requiresCollection() {
+    return isPerCollectionRequest;
+  }
+
+  @Override
   public String getCollection() {
     return collection;
   }
@@ -116,7 +121,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   }
 
   @Override
-  protected V2Response createResponse(SolrClient client) {
+  protected V2Response createResponse(NamedList<Object> namedList) {
     return new V2Response();
   }
 
@@ -132,11 +137,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   public ResponseParser getResponseParser() {
     if (parser != null) return parser;
     return super.getResponseParser();
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
   }
 
   public static class Builder {

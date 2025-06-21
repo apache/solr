@@ -124,7 +124,7 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
 
   private void uploadPluginJar(String version, Path jarPath) throws Exception {
     var pluginRequest =
-        new V2Request.Builder("/cluster/files/my-plugin/plugin-" + version + ".jar")
+        new V2Request.Builder("/cluster/filestore/files/my-plugin/plugin-" + version + ".jar")
             .PUT()
             .withParams(params("sig", signature(Files.readAllBytes(jarPath))))
             .withPayload(Files.newInputStream(jarPath))

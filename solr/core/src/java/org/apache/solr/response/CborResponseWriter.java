@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -30,7 +30,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * A response writer impl that can write results in CBOR (cbor.io) format when wt=cbor. It uses the
  * jackson library to write the stream out
  */
-public class CborResponseWriter extends BinaryResponseWriter {
+public class CborResponseWriter implements QueryResponseWriter {
   final CBORFactory cborFactory;
   final CBORFactory cborFactoryCompact;
 
@@ -40,7 +40,8 @@ public class CborResponseWriter extends BinaryResponseWriter {
   }
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+  public void write(
+      OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
       throws IOException {
     boolean useStringRef = req.getParams().getBool("string_ref", true);
     WriterImpl writer =
@@ -51,7 +52,7 @@ public class CborResponseWriter extends BinaryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return BinaryResponseParser.BINARY_CONTENT_TYPE;
+    return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
   }
 
   static class WriterImpl extends JSONWriter {

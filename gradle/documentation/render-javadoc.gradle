@@ -175,6 +175,7 @@ configure(project(":solr:test-framework")) {
 // Disable Javadoc rendering for these projects.
 configure(subprojects.findAll {
   it.path in [
+      ':platform',
       ':solr:solr-ref-guide',
       ':solr:server',
       ':solr:webapp']
@@ -193,6 +194,10 @@ configure(subprojects) {
       task.project.configurations.implementation.allDependencies.withType(ProjectDependency).collect { dep ->
         def otherProject = dep.dependencyProject
         return otherProject.tasks.findByName(task.name)
+      }.findAll {
+        // Do not depend on disabled tasks or tasks that do not exist
+        // :platform module does not have a renderJavaDoc and therefore task is null
+        it?.enabled == true
       }
     }
   }

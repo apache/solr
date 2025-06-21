@@ -36,12 +36,12 @@ jobs:
       with:
         path: |
           ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('versions.lock') }}
+        key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('**/*.lockfile') }}
         restore-keys: |
           ${{ runner.os }}-gradle-precommit-
           ${{ runner.os }}-gradle-
 
     - name: Run gradle check (without tests)
-      run: ./gradlew check -x test -Ptask.times=true
+      run: ./gradlew check -x test -Ptask.times=true --continue
 
     - uses: gradle/wrapper-validation-action@v3

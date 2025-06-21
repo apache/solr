@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.request;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -30,6 +31,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * This class is experimental and subject to change.
@@ -42,11 +44,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   protected String other = null;
   protected boolean isIndexInfoNeeded = true;
   protected CoreAdminParams.CoreAdminAction action = null;
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
-  }
 
   // a create core request
   public static class Create extends CoreAdminRequest {
@@ -589,11 +586,11 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   }
 
   public CoreAdminRequest() {
-    super(METHOD.GET, "/admin/cores");
+    super(METHOD.GET, "/admin/cores", SolrRequestType.ADMIN);
   }
 
   public CoreAdminRequest(String path) {
-    super(METHOD.GET, path);
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
   }
 
   public void setCoreName(String coreName) {
@@ -640,7 +637,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   // ---------------------------------------------------------------------------------------
 
   @Override
-  protected CoreAdminResponse createResponse(SolrClient client) {
+  protected CoreAdminResponse createResponse(NamedList<Object> namedList) {
     return new CoreAdminResponse();
   }
 
@@ -708,17 +705,18 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     return req.process(client);
   }
 
-  public static CoreStatus getCoreStatus(String coreName, SolrClient client)
+  public static CoreStatusResponse.SingleCoreData getCoreStatus(String coreName, SolrClient client)
       throws SolrServerException, IOException {
     return getCoreStatus(coreName, true, client);
   }
 
-  public static CoreStatus getCoreStatus(String coreName, boolean getIndexInfo, SolrClient client)
+  public static CoreStatusResponse.SingleCoreData getCoreStatus(
+      String coreName, boolean getIndexInfo, SolrClient client)
       throws SolrServerException, IOException {
     CoreAdminRequest req = new CoreAdminRequest();
     req.setAction(CoreAdminAction.STATUS);
     req.setIndexInfoNeeded(getIndexInfo);
-    return new CoreStatus(req.process(client).getCoreStatus(coreName));
+    return req.process(client).getCoreStatus(coreName);
   }
 
   public static CoreAdminResponse getStatus(String name, SolrClient client)

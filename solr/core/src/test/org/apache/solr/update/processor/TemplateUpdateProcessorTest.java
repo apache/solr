@@ -47,13 +47,15 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
 
   public void testSimple() throws Exception {
 
-    ModifiableSolrParams params =
-        new ModifiableSolrParams()
-            .add("processor", "template")
-            .add("template.field", "id:{firstName}_{lastName}")
-            .add("template.field", "another:{lastName}_{firstName}")
-            .add("template.field", "missing:{lastName}_{unKnown}");
-    AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(null, params));
+    var cmd =
+        new AddUpdateCommand(
+            new LocalSolrQueryRequest(
+                null,
+                new ModifiableSolrParams()
+                    .add("processor", "template")
+                    .add("template.field", "id:{firstName}_{lastName}")
+                    .add("template.field", "another:{lastName}_{firstName}")
+                    .add("template.field", "missing:{lastName}_{unKnown}")));
 
     cmd.solrDoc = new SolrInputDocument();
     cmd.solrDoc.addField("firstName", "Tom");
@@ -69,14 +71,11 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     SolrInputDocument solrDoc = new SolrInputDocument();
     solrDoc.addField("id", "1");
 
-    params =
-        new ModifiableSolrParams()
-            .add("processor", "template")
-            .add("commit", "true")
-            .add("template.field", "x_s:key_{id}");
-    params.add("commit", "true");
     UpdateRequest add = new UpdateRequest().add(solrDoc);
-    add.setParams(params);
+    add.getParams()
+        .add("processor", "template")
+        .add("template.field", "x_s:key_{id}")
+        .add("commit", "true");
     NamedList<Object> result =
         cluster
             .getSolrClient()

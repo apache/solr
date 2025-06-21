@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Console;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -75,8 +74,10 @@ public class AuthTool extends ToolBase {
           .longOpt("solr-include-file")
           .hasArg()
           .argName("FILE")
+          .required()
           .desc(
-              "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
+              "The Solr include file which contains overridable environment variables for configuring Solr configurations.  Defaults to solr.in."
+                  + (CLIUtils.isWindows() ? ".cmd" : ".sh"))
           .build();
 
   private static final Option UPDATE_INCLUDE_FILE_OPTION =
@@ -96,15 +97,11 @@ public class AuthTool extends ToolBase {
           .argName("FILE")
           .required()
           .desc(
-              "This is where any authentication related configuration files, if any, would be placed.")
+              "This is where any authentication related configuration files, if any, would be placed.  Defaults to $SOLR_HOME.")
           .build();
 
-  public AuthTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public AuthTool(PrintStream stdout) {
-    super(stdout);
+  public AuthTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -153,7 +150,7 @@ public class AuthTool extends ToolBase {
                 + "] must be either true or false, but was ["
                 + value
                 + "]");
-        SolrCLI.exit(1);
+        runtime.exit(1);
       }
     }
   }
@@ -167,12 +164,12 @@ public class AuthTool extends ToolBase {
       case "enable":
         if (!prompt && !cli.hasOption(CommonCLIOptions.CREDENTIALS_OPTION)) {
           CLIO.out("Option --credentials or --prompt is required with enable.");
-          SolrCLI.exit(1);
+          runtime.exit(1);
         } else if (!prompt
             && (cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION) == null
                 || !cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION).contains(":"))) {
           CLIO.out("Option --credentials is not in correct format.");
-          SolrCLI.exit(1);
+          runtime.exit(1);
         }
 
         String zkHost = null;
@@ -188,7 +185,7 @@ public class AuthTool extends ToolBase {
               CLIO.out(
                   "Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zk-host has been passed in.");
             }
-            SolrCLI.exit(1);
+            runtime.exit(1);
           }
           if (zkHost == null) {
             if (cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION)) {
@@ -198,7 +195,7 @@ public class AuthTool extends ToolBase {
               CLIO.out(
                   "Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zk-host has been passed in.");
             }
-            SolrCLI.exit(1);
+            runtime.exit(1);
           }
 
           // check if security is already enabled or not
@@ -262,7 +259,7 @@ public class AuthTool extends ToolBase {
           CLIO.out(
               "Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
           printAuthEnablingInstructions(username, password);
-          System.exit(0);
+          runtime.exit(0);
         }
         String authConfDir = cli.getOptionValue(AUTH_CONF_DIR_OPTION);
         Path basicAuthConfFile = Path.of(authConfDir, "basicAuth.conf");
@@ -270,7 +267,7 @@ public class AuthTool extends ToolBase {
         if (!Files.isWritable(basicAuthConfFile.getParent())) {
           CLIO.out("Cannot write to file: " + basicAuthConfFile.toAbsolutePath());
           printAuthEnablingInstructions(username, password);
-          System.exit(0);
+          runtime.exit(0);
         }
 
         Files.writeString(
@@ -295,7 +292,7 @@ public class AuthTool extends ToolBase {
               "Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
           CLIO.out(
               "Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
-          System.exit(0);
+          runtime.exit(0);
         }
 
         // update the solr.in.sh file to comment out the necessary authentication lines
@@ -303,11 +300,11 @@ public class AuthTool extends ToolBase {
         return;
       default:
         CLIO.out("Valid auth commands are: enable, disable.");
-        SolrCLI.exit(1);
+        runtime.exit(1);
     }
 
     CLIO.out("Options not understood.");
-    SolrCLI.exit(1);
+    runtime.exit(1);
   }
 
   private void checkSecurityJsonExists(SolrZkClient zkClient)
@@ -318,7 +315,7 @@ public class AuthTool extends ToolBase {
         CLIO.out(
             "Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
                 + new String(oldSecurityBytes, StandardCharsets.UTF_8));
-        SolrCLI.exit(1);
+        runtime.exit(1);
       }
     }
   }
@@ -328,8 +325,8 @@ public class AuthTool extends ToolBase {
     if (!updateIncludeFileOnly) {
       zkHost = CLIUtils.getZkHost(cli);
       if (zkHost == null) {
-        stdout.print("ZK Host not found. Solr should be running in cloud mode.");
-        SolrCLI.exit(1);
+        runtime.print("ZK Host not found. Solr should be running in cloud mode.");
+        runtime.exit(1);
       }
 
       echoIfVerbose("Uploading following security.json: {}");

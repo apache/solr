@@ -396,7 +396,7 @@ At this point, if you run a query on a node having e.g., `rack=rack1`, Solr will
 
 === List Cluster Properties
 
-[tabs#setobjproperty-request]
+[tabs#listclusterproperties-request]
 ======
 V1 API::
 +
@@ -440,7 +440,7 @@ curl -X GET http://localhost:8983/api/cluster/properties
 
 === Fetch Cluster Property
 
-[tabs#setobjproperty-request]
+[tabs#fetchclusterproperty-request]
 ======
 V1 API::
 +

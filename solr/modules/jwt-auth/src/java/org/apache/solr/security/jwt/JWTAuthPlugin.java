@@ -16,13 +16,15 @@
  */
 package org.apache.solr.security.jwt;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -42,9 +44,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -65,7 +64,7 @@ import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.Auth
 import org.apache.solr.security.jwt.api.ModifyJWTAuthPluginConfigAPI;
 import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.util.CryptoKeys;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwt.JwtClaims;
@@ -336,7 +335,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
    * @return list of certificates found in file
    */
   Collection<? extends X509Certificate> parseCertsFromFile(String certFileName) throws IOException {
-    Path certFilePath = Paths.get(certFileName);
+    Path certFilePath = Path.of(certFileName);
     if (coreContainer != null) {
       coreContainer.assertPathAllowed(certFilePath);
     }

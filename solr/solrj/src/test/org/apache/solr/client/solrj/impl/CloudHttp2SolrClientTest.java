@@ -39,9 +39,12 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -260,6 +263,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
         CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
+      solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
 
       assertEquals(1, adminLogs.getCount());
       assertTrue(
@@ -676,7 +680,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> map =
-        (Map<String, Object>) resp.findRecursive("solr-mbeans", category, key, "stats");
+        (Map<String, Object>) resp._get(List.of("solr-mbeans", category, key, "stats"), null);
     if (map == null) {
       return null;
     }
@@ -729,11 +733,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           }
 
           ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set("qt", adminPath);
           params.set("action", "foobar"); // this should cause an error
-          QueryRequest req = new QueryRequest(params);
+          params.set("qt", adminPath);
+
+          var request =
+              new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params);
           try {
-            NamedList<Object> resp = client.request(req);
+            NamedList<Object> resp = client.request(request);
             fail("call to foo for admin path " + adminPath + " should have failed");
           } catch (Exception e) {
             // expected

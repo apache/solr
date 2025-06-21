@@ -58,22 +58,24 @@ teardown() {
 }
 
 # This test is useful if you are debugging/working with packages.
-# We have commented it out for now since it depends on a live internet
+# We have disabled it for now since it depends on a live internet
 # connection to run.  This could be updated with a local Repo server if we had
 # a package that is part of the Solr project to use.
-# @test "deploying and undeploying a cluster level package" {
-#  run solr start -Denable.packages=true
-  
-#  run solr package add-repo splainer "https://raw.githubusercontent.com/o19s/splainer/main/solr-splainer-package/repo"
-#  assert_output --partial "Added repository: splainer"
-  
-#  run solr package list-available
-#  assert_output --partial "solr-splainer 		Splainer for Solr"
-#  run solr package install solr-splainer
-#  assert_output --partial "solr-splainer installed."
+@test "deploying and undeploying a cluster level package" {
+  skip "For developing package infra; requires a connection to github"
 
-#  run solr package deploy solr-splainer -y --cluster
-#  assert_output --partial "Deployment successful"
+  run solr start -Denable.packages=true
   
-#  run -0 curl --fail http://localhost:${SOLR_PORT}/v2/splainer/index.html
-# }
+  run solr package add-repo splainer "https://raw.githubusercontent.com/o19s/splainer/refs/heads/main/solr-splainer-package/repo/"
+  assert_output --partial "Added repository: splainer"
+  
+  run solr package list-available
+  assert_output --partial "solr-splainer 		Splainer for Solr"
+  run solr package install solr-splainer
+  assert_output --partial "solr-splainer installed."
+
+  run solr package deploy solr-splainer -y --cluster
+  assert_output --partial "Deployment successful"
+  
+  run -0 curl --fail http://localhost:${SOLR_PORT}/v2/splainer/index.html
+}

@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocumentBase;
@@ -350,8 +351,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public static Path ulogToTlogDir(
       String coreName, Path ulogDirPath, Path instancePath, String coreDataDir) {
+    final Path coreDataPath = ulogDirPath.getFileSystem().getPath(coreDataDir);
     boolean unscopedDataDir =
-        !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataDir);
+        !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataPath);
 
     // if the ulog dataDir is unscoped (neither under core instanceDir, nor core dataDir),
     // then we must scope it to the core; otherwise, scope to purpose (TLOG_NAME).
@@ -2438,7 +2440,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     if (!success) {
       try {
-        file.toFile().deleteOnExit();
+        PathUtils.deleteOnExit(file);
       } catch (Exception e) {
         log.error("Error deleting file on exit: {}", file, e);
       }

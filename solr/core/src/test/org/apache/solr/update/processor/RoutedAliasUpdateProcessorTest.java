@@ -284,7 +284,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     waitForState(
         "waiting for collections to be created",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           if (collectionState == null) {
             // per predicate javadoc, this is what we get if the collection doesn't exist at all.
             return false;

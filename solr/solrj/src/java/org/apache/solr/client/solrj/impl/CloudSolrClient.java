@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
@@ -51,9 +50,8 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -69,7 +67,6 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -174,6 +171,7 @@ public abstract class CloudSolrClient extends SolrClient {
      * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
      *     java.util.Optional.empty()} if no ZK chroot is used.
      */
+    @Deprecated(since = "10.0")
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
     }
@@ -274,7 +272,15 @@ public abstract class CloudSolrClient extends SolrClient {
 
   public abstract ClusterStateProvider getClusterStateProvider();
 
+  /**
+   * @deprecated problematic as a 'get' method, since one implementation will do a remote request
+   *     each time this is called, potentially return lots of data that isn't even needed.
+   */
+  @Deprecated
   public ClusterState getClusterState() {
+    // The future of "ClusterState" isn't clear.  Could make it more of a cache instead of a
+    // snapshot, so we un-deprecate. Or we avoid it and maybe make the ClusterStateProvider as that
+    // cache.  SOLR-17604 is related.
     return getClusterStateProvider().getClusterState();
   }
 
@@ -304,7 +310,10 @@ public abstract class CloudSolrClient extends SolrClient {
   /**
    * Connect to the zookeeper ensemble. This is an optional method that may be used to force a
    * connection before any other requests are sent.
+   *
+   * @deprecated Call {@link ClusterStateProvider#getLiveNodes()} instead.
    */
+  @Deprecated
   public void connect() {
     getClusterStateProvider().connect();
   }
@@ -317,6 +326,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * @throws TimeoutException if the cluster is not ready after the timeout
    * @throws InterruptedException if the wait is interrupted
    */
+  @Deprecated
   public void connect(long duration, TimeUnit timeUnit)
       throws TimeoutException, InterruptedException {
     if (log.isInfoEnabled()) {
@@ -343,9 +353,8 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   @SuppressWarnings({"unchecked"})
-  private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection)
+  private NamedList<Object> directUpdate(UpdateRequest request, String collection)
       throws SolrServerException {
-    UpdateRequest updateRequest = (UpdateRequest) request;
     SolrParams params = request.getParams();
     ModifiableSolrParams routableParams = new ModifiableSolrParams();
     ModifiableSolrParams nonRoutableParams = new ModifiableSolrParams();
@@ -399,9 +408,9 @@ public abstract class CloudSolrClient extends SolrClient {
     String routeField =
         (col.getRouter().getRouteField(col) == null) ? ID : col.getRouter().getRouteField(col);
     final Map<String, ? extends LBSolrClient.Req> routes =
-        createRoutes(updateRequest, routableParams, col, router, urlMap, routeField);
+        createRoutes(request, routableParams, col, router, urlMap, routeField);
     if (routes == null) {
-      if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, routeField)) {
+      if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(request, routeField)) {
         // we have info (documents with ids and/or ids to delete) with
         // which to find the leaders, but we could not find (all of) them
         throw new SolrException(
@@ -478,7 +487,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     UpdateRequest nonRoutableRequest = null;
-    List<String> deleteQuery = updateRequest.getDeleteQuery();
+    List<String> deleteQuery = request.getDeleteQuery();
     if (deleteQuery != null && deleteQuery.size() > 0) {
       UpdateRequest deleteQueryRequest = new UpdateRequest();
       deleteQueryRequest.setDeleteQuery(deleteQuery);
@@ -787,7 +796,8 @@ public abstract class CloudSolrClient extends SolrClient {
     if (request instanceof V2Request) {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
-    boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
+    boolean isAdmin =
+        request.getRequestType() == SolrRequestType.ADMIN && !request.requiresCollection();
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
@@ -988,33 +998,35 @@ public abstract class CloudSolrClient extends SolrClient {
 
     boolean sendToLeaders = false;
 
-    if (request instanceof IsUpdateRequest) {
-      sendToLeaders = ((IsUpdateRequest) request).isSendToLeaders() && this.isUpdatesToLeaders();
+    if (request.getRequestType() == SolrRequestType.UPDATE) {
+      sendToLeaders = this.isUpdatesToLeaders();
 
-      // Check if we can do a "directUpdate" ...
-      if (sendToLeaders && request instanceof UpdateRequest) {
-        if (inputCollections.size() > 1) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Update request must be sent to a single collection "
-                  + "or an alias: "
-                  + inputCollections);
-        }
-        String collection =
-            inputCollections.isEmpty()
-                ? null
-                : inputCollections.get(0); // getting first mimics HttpSolrCall
-        NamedList<Object> response = directUpdate((AbstractUpdateRequest) request, collection);
-        if (response != null) {
-          return response;
+      if (sendToLeaders && request instanceof UpdateRequest updateRequest) {
+        sendToLeaders = sendToLeaders && updateRequest.isSendToLeaders();
+
+        // Check if we can do a "directUpdate" ...
+        if (sendToLeaders) {
+          if (inputCollections.size() > 1) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Update request must be sent to a single collection "
+                    + "or an alias: "
+                    + inputCollections);
+          }
+          String collection =
+              inputCollections.isEmpty()
+                  ? null
+                  : inputCollections.get(0); // getting first mimics HttpSolrCall
+          NamedList<Object> response = directUpdate(updateRequest, collection);
+          if (response != null) {
+            return response;
+          }
         }
       }
     }
 
     SolrParams reqParams = request.getParams();
-    if (reqParams == null) { // TODO fix getParams to never return null!
-      reqParams = new ModifiableSolrParams();
-    }
+    assert reqParams != null;
 
     ReplicaListTransformer replicaListTransformer =
         requestRLTGenerator.getReplicaListTransformer(reqParams);
@@ -1034,13 +1046,13 @@ public abstract class CloudSolrClient extends SolrClient {
         requestEndpoints.add(new LBSolrClient.Endpoint(chosenNodeUrl));
       }
 
-    } else if (ADMIN_PATHS.contains(request.getPath())) {
+    } else if (!request.requiresCollection()) {
       for (String liveNode : liveNodes) {
         final var nodeBaseUrl = Utils.getBaseUrlForNodeName(liveNode, urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl));
       }
-
-    } else { // Typical...
+    } else { // API call to a particular collection / core / alias (i.e.
+      // request.requiresCollection() == true)
       Set<String> collectionNames = resolveAliases(inputCollections);
       if (collectionNames.isEmpty()) {
         throw new SolrException(
@@ -1162,9 +1174,9 @@ public abstract class CloudSolrClient extends SolrClient {
 
   /**
    * If true, this client has been configured such that it will generally prefer to send {@link
-   * IsUpdateRequest} requests to a shard leader, if and only if {@link
-   * IsUpdateRequest#isSendToLeaders} is also true. If false, then this client has been configured
-   * to obey normal routing preferences when dealing with {@link IsUpdateRequest} requests.
+   * SolrRequestType#UPDATE} requests to a shard leader, if and only if {@link
+   * UpdateRequest#isSendToLeaders} is also true. If false, then this client has been configured to
+   * obey normal routing preferences when dealing with {@link SolrRequestType#UPDATE} requests.
    *
    * @see #isDirectUpdatesToLeadersOnly
    */
@@ -1176,7 +1188,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * If true, this client has been configured such that "direct updates" will <em>only</em> be sent
    * to the current leader of the corresponding shard, and will not be retried with other replicas.
    * This method has no effect if {@link #isUpdatesToLeaders()} or {@link
-   * IsUpdateRequest#isSendToLeaders} returns false.
+   * UpdateRequest#isSendToLeaders} returns false.
    *
    * <p>A "direct update" is any update that can be sent directly to a single shard, and does not
    * need to be broadcast to every shard. (Example: document updates or "delete by id" when using
@@ -1279,10 +1291,9 @@ public abstract class CloudSolrClient extends SolrClient {
       for (Slice slice : coll.getActiveSlicesArr()) {
         Replica leader = slice.getLeader();
         if (leader != null) {
-          ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
-          String leaderUrl = zkProps.getBaseUrl() + "/" + zkProps.getCoreName();
+          String leaderUrl = leader.getBaseUrl() + "/" + leader.getCoreName();
           leaders.put(leaderUrl, slice.getName());
-          String altLeaderUrl = zkProps.getBaseUrl() + "/" + collection;
+          String altLeaderUrl = leader.getBaseUrl() + "/" + collection;
           leaders.put(altLeaderUrl, slice.getName());
         }
       }

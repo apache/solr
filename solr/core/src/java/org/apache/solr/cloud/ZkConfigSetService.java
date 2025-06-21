@@ -167,7 +167,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected void uploadConfig(String configName, Path dir) throws IOException {
+  public void uploadConfig(String configName, Path dir) throws IOException {
     zkClient.uploadToZK(
         dir, CONFIGS_ZKNODE + "/" + configName, ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
@@ -179,7 +179,11 @@ public class ZkConfigSetService extends ConfigSetService {
     String filePath = CONFIGS_ZKNODE + "/" + configName + "/" + fileName;
     try {
       if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
-        log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "The file type provided for upload, '"
+                + fileName
+                + "', is forbidden for use in uploading configsets.");
       } else if (FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
         String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
         throw new SolrException(

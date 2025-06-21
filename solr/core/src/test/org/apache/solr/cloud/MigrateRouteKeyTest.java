@@ -171,7 +171,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       waitForState(
           "Expected to find routing rule for split key " + splitKey,
           sourceCollection,
-          (n, c) -> {
+          c -> {
             if (c == null) return false;
             Slice shard = c.getSlice("shard2");
             if (shard == null) return false;

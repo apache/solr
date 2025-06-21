@@ -16,12 +16,8 @@
  */
 package org.apache.solr.util;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +45,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryQueryResponseWriter;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -144,7 +138,7 @@ public class TestHarness extends BaseTestHarness {
               + SOLR_HOME
               + " sys prop to be set by test first");
     }
-    return Paths.get(home).toAbsolutePath().normalize();
+    return Path.of(home).toAbsolutePath().normalize();
   }
 
   /**
@@ -354,17 +348,7 @@ public class TestHarness extends BaseTestHarness {
       if (rsp.getException() != null) {
         throw rsp.getException();
       }
-      QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-      if (responseWriter instanceof BinaryQueryResponseWriter writer) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(32000);
-        writer.write(byteArrayOutputStream, req, rsp);
-        return new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
-      } else {
-        StringWriter sw = new StringWriter(32000);
-        responseWriter.write(sw, req, rsp);
-        return sw.toString();
-      }
-
+      return req.getResponseWriter().writeToString(req, rsp);
     } finally {
       req.close();
       SolrRequestInfo.clearRequestInfo();

@@ -119,11 +119,6 @@ public final class LogListener implements Closeable, AutoCloseable {
         + ID_GEN.incrementAndGet();
   }
 
-  /** Listens for ERROR log messages at the ROOT logger */
-  public static LogListener error() {
-    return error("");
-  }
-
   /** Listens for ERROR log messages for the specified logger */
   public static LogListener error(final Class<?> logger) {
     return error(logger.getName());
@@ -132,11 +127,6 @@ public final class LogListener implements Closeable, AutoCloseable {
   /** Listens for ERROR log messages for the specified logger */
   public static LogListener error(final String logger) {
     return create(Level.ERROR, logger);
-  }
-
-  /** Listens for WARN log messages at the ROOT logger */
-  public static LogListener warn() {
-    return warn("");
   }
 
   /** Listens for WARN log messages for the specified logger */
@@ -149,11 +139,6 @@ public final class LogListener implements Closeable, AutoCloseable {
     return create(Level.WARN, logger);
   }
 
-  /** Listens for INFO log messages at the ROOT logger */
-  public static LogListener info() {
-    return info("");
-  }
-
   /** Listens for INFO log messages for the specified logger */
   public static LogListener info(final Class<?> logger) {
     return info(logger.getName());
@@ -162,11 +147,6 @@ public final class LogListener implements Closeable, AutoCloseable {
   /** Listens for INFO log messages for the specified logger */
   public static LogListener info(final String logger) {
     return create(Level.INFO, logger);
-  }
-
-  /** Listens for DEBUG log messages at the ROOT logger */
-  public static LogListener debug() {
-    return debug("");
   }
 
   /** Listens for DEBUG log messages for the specified logger */
@@ -180,7 +160,6 @@ public final class LogListener implements Closeable, AutoCloseable {
   }
 
   // TODO: more factories for other levels?
-  // TODO: no-arg factory variants that use "" -- simpler syntax for ROOT logger?
 
   private static LogListener create(final Level level, final String logger) {
     final String name = createName(level);
@@ -283,6 +262,11 @@ public final class LogListener implements Closeable, AutoCloseable {
   public LogListener setQueue(BlockingQueue<LogEvent> queue) {
     loggerAppender.setQueue(queue);
     return this;
+  }
+
+  /** Clear the queue of any recorded events */
+  public void clearQueue() {
+    loggerAppender.getQueue().clear();
   }
 
   /**

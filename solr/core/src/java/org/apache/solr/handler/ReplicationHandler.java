@@ -40,7 +40,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -450,7 +449,7 @@ public class ReplicationHandler extends RequestHandlerBase
   private volatile IndexFetcher currentIndexFetcher;
 
   public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
-    String leaderUrl = solrParams == null ? null : solrParams.get(LEADER_URL, null);
+    String leaderUrl = solrParams.get(LEADER_URL, null);
     if (!indexFetchLock.tryLock()) return IndexFetchResult.LOCK_OBTAIN_FAILED;
     if (core.getCoreContainer().isShutDown()) {
       log.warn("I was asked to replicate but CoreContainer is shutting down");
@@ -461,7 +460,7 @@ public class ReplicationHandler extends RequestHandlerBase
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
           currentIndexFetcher.destroy();
         }
-        currentIndexFetcher = new IndexFetcher(solrParams.toNamedList(), this, core);
+        currentIndexFetcher = new IndexFetcher(new SimpleOrderedMap<>(solrParams), this, core);
       } else {
         currentIndexFetcher = pollingIndexFetcher;
       }
@@ -514,7 +513,7 @@ public class ReplicationHandler extends RequestHandlerBase
       }
     }
     if ("file".equals(repo.createURI("x").getScheme())) {
-      core.getCoreContainer().assertPathAllowed(Paths.get(location));
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
     }
 
     URI locationUri = repo.createDirectoryURI(location);
@@ -664,7 +663,7 @@ public class ReplicationHandler extends RequestHandlerBase
       }
     }
     if ("file".equals(repo.createURI("x").getScheme())) {
-      core.getCoreContainer().assertPathAllowed(Paths.get(location));
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
     }
 
     // small race here before the commit point is saved
@@ -718,10 +717,14 @@ public class ReplicationHandler extends RequestHandlerBase
     List<FileMetaData> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
       Checksum checksum = null;
-      for (int i = 0; i < nameAndAlias.size(); i++) {
-        String cf = nameAndAlias.getName(i);
+
+      for (Map.Entry<String, String> aliasEntry : nameAndAlias) {
+        String cf = aliasEntry.getKey();
+        String aliasValue = aliasEntry.getValue();
+
         Path f = core.getResourceLoader().getConfigPath().resolve(cf);
         if (!Files.exists(f) || Files.isDirectory(f)) continue; // must not happen
+
         FileInfo info = confFileInfoCache.get(cf);
         long lastModified = 0;
         long size = 0;
@@ -731,13 +734,15 @@ public class ReplicationHandler extends RequestHandlerBase
         } catch (IOException e) {
           // proceed with zeroes for now, will probably error on checksum anyway
         }
+
         if (info == null || info.lastmodified != lastModified || info.fileMetaData.size != size) {
           if (checksum == null) checksum = new Adler32();
           info = new FileInfo(lastModified, cf, size, getCheckSum(checksum, f));
           confFileInfoCache.put(cf, info);
         }
+
         FileMetaData m = info.fileMetaData;
-        if (nameAndAlias.getVal(i) != null) m.alias = nameAndAlias.getVal(i);
+        if (aliasValue != null) m.alias = aliasValue;
         confFiles.add(m);
       }
     }
@@ -1196,7 +1201,7 @@ public class ReplicationHandler extends RequestHandlerBase
           try {
             log.debug("Polling for index modifications");
             markScheduledExecutionStart();
-            IndexFetchResult fetchResult = doFetch(null, false);
+            IndexFetchResult fetchResult = doFetch(SolrParams.of(), false);
             if (pollListener != null) pollListener.onComplete(core, fetchResult);
           } catch (Exception e) {
             log.error("Exception in fetching index", e);
@@ -1485,7 +1490,7 @@ public class ReplicationHandler extends RequestHandlerBase
     return TimeUnit.MILLISECONDS.convert(readIntervalNs(interval), TimeUnit.NANOSECONDS);
   }
 
-  private Long readIntervalNs(String interval) {
+  public static Long readIntervalNs(String interval) {
     if (interval == null) return null;
     int result = 0;
     Matcher m = INTERVAL_PATTERN.matcher(interval.trim());

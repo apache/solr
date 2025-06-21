@@ -30,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +43,7 @@ import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -51,7 +51,6 @@ import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
@@ -150,9 +149,15 @@ public class RepositoryManager {
 
     // put the public key into package store's trusted key store and request a sync.
     String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Paths.get(solrHome));
-    PackageUtils.getJsonStringFromNonCollectionApi(
-        solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
+    PackageUtils.uploadKey(key, path, Path.of(solrHome));
+    final var syncRequest = new FileStoreApi.SyncFile(path);
+    final var syncResponse = syncRequest.process(solrClient);
+    final var status = syncResponse.responseHeader.status;
+    if (status != 0) {
+      throw new SolrException(
+          ErrorCode.getErrorCode(status),
+          "Unexpected status " + status + " while syncing filestore upload.");
+    }
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient)

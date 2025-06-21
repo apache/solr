@@ -22,7 +22,6 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,9 +32,9 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +79,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -122,12 +121,12 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
@@ -1354,14 +1353,32 @@ public class SolrCore implements SolrInfoBean, Closeable {
           Category.CORE.toString());
     }
 
-    // TODO SOLR-8282 move to PATH
     // initialize disk total / free metrics
-    Path dataDirPath = Paths.get(dataDir);
-    File dataDirFile = dataDirPath.toFile();
+    Path dataDirPath = Path.of(dataDir);
     parentContext.gauge(
-        () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+        () -> {
+          try {
+            return Files.getFileStore(dataDirPath).getTotalSpace();
+          } catch (IOException e) {
+            return 0L;
+          }
+        },
+        true,
+        "totalSpace",
+        Category.CORE.toString(),
+        "fs");
     parentContext.gauge(
-        () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
+        () -> {
+          try {
+            return Files.getFileStore(dataDirPath).getUsableSpace();
+          } catch (IOException e) {
+            return 0L;
+          }
+        },
+        true,
+        "usableSpace",
+        Category.CORE.toString(),
+        "fs");
     parentContext.gauge(
         () -> dataDirPath.toAbsolutePath().toString(),
         true,
@@ -3013,7 +3030,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
     m.put("raw", new RawResponseWriter());
-    m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
+    m.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
     m.put("cbor", new CborResponseWriter());
     m.put("csv", new CSVResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
@@ -3033,10 +3050,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private static BinaryResponseWriter getFileStreamWriter() {
-    return new BinaryResponseWriter() {
+  private static JavaBinResponseWriter getFileStreamWriter() {
+    return new JavaBinResponseWriter() {
       @Override
-      public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+      public void write(
+          OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
           throws IOException {
         RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {
@@ -3051,7 +3069,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         if (rawWriter != null) {
           return rawWriter.getContentType();
         } else {
-          return BinaryResponseParser.BINARY_CONTENT_TYPE;
+          return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
         }
       }
     };
@@ -3064,7 +3082,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public interface RawWriter {
     default String getContentType() {
-      return BinaryResponseParser.BINARY_CONTENT_TYPE;
+      return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     }
 
     void write(OutputStream os) throws IOException;
