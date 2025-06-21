@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -90,7 +91,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
             .build()
             .process(cluster.getSolrClient());
     assertFalse(
-        ((Collection) rsp._get("node-roles/overseer/" + overseerModeOnDataNode, null))
+        ((Collection) rsp._get("node-roles/overseer/" + overseerModeOnDataNode))
             .contains(j1.getNodeName()));
   }
 
@@ -104,7 +105,8 @@ public class NodeRolesTest extends SolrCloudTestCase {
       String path = nodenamePaths[i + 1];
       assertTrue(
           "Didn't find " + nodename + " at " + path + ". Full response: " + rsp.jsonStr(),
-          ((Collection) rsp._get(path, Collections.emptyList())).contains(nodename));
+          ((Collection) Objects.requireNonNullElse(rsp._get(path), Collections.emptyList()))
+              .contains(nodename));
     }
   }
 
@@ -115,8 +117,11 @@ public class NodeRolesTest extends SolrCloudTestCase {
             .GET()
             .build()
             .process(cluster.getSolrClient());
+
     Map<String, Object> l =
-        (Map<String, Object>) rsp._get("supported-roles", Collections.emptyMap());
+        (Map<String, Object>)
+            Objects.requireNonNullElse(rsp._get("supported-roles"), Collections.emptyMap());
+
     assertTrue(l.containsKey("data"));
     assertTrue(l.containsKey("overseer"));
   }

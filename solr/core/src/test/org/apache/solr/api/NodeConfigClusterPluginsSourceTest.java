@@ -106,11 +106,11 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     assertEquals(
         SingletonNoConfig.class.getName(),
-        rsp._getStr("/plugin/" + SingletonNoConfig.NAME + "/class", null));
+        rsp._getStr("/plugin/" + SingletonNoConfig.NAME + "/class"));
 
     assertEquals(
         SingletonWithConfig.class.getName(),
-        rsp._getStr("/plugin/" + SingletonWithConfig.NAME + "/class", null));
+        rsp._getStr("/plugin/" + SingletonWithConfig.NAME + "/class"));
   }
 
   /** Verify that the Edit Apis are not available for plugins declared in solr.xml */

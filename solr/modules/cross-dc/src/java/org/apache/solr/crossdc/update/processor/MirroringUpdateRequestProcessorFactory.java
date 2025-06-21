@@ -106,7 +106,7 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
       this.enabled = false;
     }
     for (ConfigProperty configKey : KafkaCrossDcConf.CONFIG_PROPERTIES) {
-      String val = args._getStr(configKey.getKey(), null);
+      String val = args._getStr(configKey.getKey());
       if (val != null && !val.isBlank()) {
         properties.put(configKey.getKey(), val);
       }

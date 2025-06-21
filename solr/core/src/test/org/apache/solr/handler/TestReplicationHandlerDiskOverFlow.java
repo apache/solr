@@ -210,7 +210,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                 .add("command", CMD_FETCH_INDEX)
                 .add("wait", "true"));
 
-    assertEquals("Replication command status", "OK", response._getStr("status", null));
+    assertEquals("Replication command status", "OK", response._getStr("status"));
 
     assertEquals(
         "threads encountered failures (see logs for when)",
@@ -231,7 +231,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     assertEquals(
         "follower's clearedLocalIndexFirst (from rep details)",
         "true",
-        response._getStr("details/follower/clearedLocalIndexFirst", null));
+        response._getStr("details/follower/clearedLocalIndexFirst"));
   }
 
   @SuppressWarnings("unchecked")

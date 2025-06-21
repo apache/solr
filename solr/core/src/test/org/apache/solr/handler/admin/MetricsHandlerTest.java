@@ -121,15 +121,15 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(o); // counter type
     assertTrue(o instanceof MapWriter);
     // response wasn't serialized, so we get here whatever MetricUtils produced instead of NamedList
-    assertNotNull(((MapWriter) o)._get("count", null));
-    assertEquals(0L, ((MapWriter) nl.get("SEARCHER.new.errors"))._get("count", null));
+    assertNotNull(((MapWriter) o)._get("count"));
+    assertEquals(0L, ((MapWriter) nl.get("SEARCHER.new.errors"))._get("count"));
     assertNotNull(nl.get("INDEX.segments")); // int gauge
-    assertTrue((int) ((MapWriter) nl.get("INDEX.segments"))._get("value", null) >= 0);
+    assertTrue((int) ((MapWriter) nl.get("INDEX.segments"))._get("value") >= 0);
     assertNotNull(nl.get("INDEX.sizeInBytes")); // long gauge
-    assertTrue((long) ((MapWriter) nl.get("INDEX.sizeInBytes"))._get("value", null) >= 0);
+    assertTrue((long) ((MapWriter) nl.get("INDEX.sizeInBytes"))._get("value") >= 0);
     nl = (NamedList<?>) values.get("solr.node");
     assertNotNull(nl.get("CONTAINER.cores.loaded")); // int gauge
-    assertEquals(1, ((MapWriter) nl.get("CONTAINER.cores.loaded"))._get("value", null));
+    assertEquals(1, ((MapWriter) nl.get("CONTAINER.cores.loaded"))._get("value"));
     assertNotNull(nl.get("ADMIN./admin/authorization.clientErrors")); // timer type
     Map<String, Object> map = new HashMap<>();
     ((MapWriter) nl.get("ADMIN./admin/authorization.clientErrors")).toMap(map);
@@ -326,7 +326,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, values.size());
     MapWriter writer = (MapWriter) values.get("CACHE.core.fieldCache");
     assertNotNull(writer);
-    assertNotNull(writer._get("entries_count", null));
+    assertNotNull(writer._get("entries_count"));
 
     resp = new SolrQueryResponse();
     handler.handleRequestBody(
@@ -496,7 +496,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             MetricsHandler.KEY_PARAM,
             key2),
         resp);
-    val = resp.getValues()._get("metrics/" + key2, null);
+    val = resp.getValues()._get("metrics/" + key2);
     assertNotNull(val);
     assertTrue(val instanceof Number);
 
@@ -512,7 +512,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key3),
         resp);
 
-    val = resp.getValues()._get("metrics/" + key3, null);
+    val = resp.getValues()._get("metrics/" + key3);
     assertNotNull(val);
     assertTrue(val instanceof Number);
     assertEquals(3, ((Number) val).intValue());
@@ -533,11 +533,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key3),
         resp);
 
-    val = resp.getValues()._get("metrics/" + key1, null);
+    val = resp.getValues()._get("metrics/" + key1);
     assertNotNull(val);
-    val = resp.getValues()._get("metrics/" + key2, null);
+    val = resp.getValues()._get("metrics/" + key2);
     assertNotNull(val);
-    val = resp.getValues()._get("metrics/" + key3, null);
+    val = resp.getValues()._get("metrics/" + key3);
     assertNotNull(val);
 
     String key4 = "solr.core.collection1:QUERY./select.requestTimes:1minRate";

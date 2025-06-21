@@ -198,20 +198,16 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/leader",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/leader"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/state",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/state"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/leader",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/leader"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/state",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/state"));
 
         jsr.start();
         cluster.waitForActiveCollection(testCollection, 1, 2);

@@ -150,7 +150,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         Thread.sleep(100);
         errmessages.clear();
         MapWriter respMap = getAsMap(url + "/config/overlay", cloudClient);
-        MapWriter m = (MapWriter) respMap._get("overlay/props", null);
+        MapWriter m = (MapWriter) respMap._get("overlay/props");
         if (m == null) {
           errmessages.add(
               StrUtils.formatString(

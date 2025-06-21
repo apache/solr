@@ -98,7 +98,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
     url = baseUrl + "/.system/blob/test/1";
     map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
-    assertEquals("" + bytarr.length, map._getStr("response/docs[0]/size", null));
+    assertEquals("" + bytarr.length, map._getStr("response/docs[0]/size"));
 
     compareInputAndOutput(
         baseUrl + "/.system/blob/test?wt=filestream", bytarr2, (CloudLegacySolrClient) cloudClient);
@@ -121,7 +121,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     MapWriter map =
         TestSolrConfigHandlerConcurrent.getAsMap(
             baseUrl + "/.system/blob/" + blobName, cloudClient);
-    assertEquals(stringValueMd5, map._getStr("response/docs[0]/md5", null));
+    assertEquals(stringValueMd5, map._getStr("response/docs[0]/md5"));
   }
 
   public static void createSystemCollection(SolrClient client)
@@ -152,7 +152,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
         continue;
       }
 
-      assertEquals("" + bytes.limit(), map._getStr("response/docs[0]/size", null));
+      assertEquals("" + bytes.limit(), map._getStr("response/docs[0]/size"));
       return;
     }
     fail(

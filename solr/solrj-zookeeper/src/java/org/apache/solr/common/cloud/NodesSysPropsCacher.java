@@ -91,8 +91,8 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
           solrClient
               .requestWithBaseUrl(zkStateReader.getBaseUrlForNodeName(nodeName), null, req)
               .getResponse();
-      var metrics = NavigableObject.wrap(response._get("metrics", null));
-      keys.forEach((tag, key) -> result.put(tag, metrics._get(key, null)));
+      var metrics = NavigableObject.wrap(response._get("metrics"));
+      keys.forEach((tag, key) -> result.put(tag, metrics._get(key)));
       return result;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
