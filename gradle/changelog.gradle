@@ -16,33 +16,45 @@
  */
 
 logchange {
-  taskPrefix = "logchange"
   rootPath = "."
   inputDir = "changelog"
   unreleasedVersionDir = "unreleased"
   outputFile = "CHANGELOG.md"
-  configFile = "logchange-config.yml"
   generateChangesXml = false
-  xmlOutputFile = "changes.xml"
 }
 
 task generateChangeYaml {
   description = 'Generates a change/log description file (YAML)'
   doLast {
     def gitUserName = 'git config user.name'.execute().text.trim()
+    def configuredName = providers.gradleProperty("logchange.name").getOrElse(gitUserName)
+    def githubId = providers.gradleProperty("logchange.githubid").getOrElse(null)
+    def nick = githubId ? "\n    nick: ${githubId}" : ""
+    def asfId = providers.gradleProperty("logchange.asfid").getOrElse(null)
+    def asfIdUrl = asfId ? "\n    url: https://home.apache.org/phonebook.html?uid=${asfId}" : ""
     def gitBranch = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
     def jiraMatcher = gitBranch =~ /SOLR-\d+/
     def jiraRef = jiraMatcher ? jiraMatcher[0] : "SOLR-XXXX"
-    def fileName = "changelog/unreleased/${gitBranch}.yml"
+    def jiraUrl = "https://issues.apache.org/jira/browse/${jiraRef}"
+    def jiraLinks = jiraMatcher ? "links:\n  - name: ${jiraRef}\n    url: ${jiraUrl}" : ""
+    def githubMatcher = gitBranch =~ /(PR|GH|GITHUB|#)?(\d+)/
+    def githubRef = githubMatcher ? githubMatcher.group(2) : ""
+    def githubLink = githubMatcher ? "issues:\n  - ${githubRef}" : ""
+    def branchWithoutJira = gitBranch.replaceFirst(/SOLR-\d+-/, "").replaceFirst(/(PR|GH|GITHUB|#)?(\d+)/, "").replace("-", " ").capitalize()
+    def targetVer = providers.gradleProperty("ver").getOrElse(project.baseVersion)
+    if (!targetVer.matches("(9|1\\d)\\.\\d+\\.\\d+")) {
+      throw new GradleException("Invalid target version format: ${targetVer}. Expected format is x.y.z")
+    }
+    def fileName = "changelog/unreleased-${targetVer}/${gitBranch}.yml"
     def file = new File(fileName)
     file.parentFile.mkdirs()
     file.text = """# logchange format: https://github.com/logchange/logchange#yaml-format
+title: ${branchWithoutJira}
 type: other # added/changed/deprecated/removed/fixed/security/dependency_update/other
-links:
-  - name: ${jiraRef}
-title: TITLE HERE
 authors:
-  - name: ${gitUserName}
+  - name: ${configuredName}${nick}${asfIdUrl}
+${jiraLinks}
+${githubLink}
 """
 
     println "Generated file: ${fileName} -- open it"
