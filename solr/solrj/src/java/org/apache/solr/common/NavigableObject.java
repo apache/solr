@@ -45,11 +45,12 @@ public interface NavigableObject {
    * get the value as a String. useful in tests
    *
    * @param path the full path
-   * @param def default value
    */
-  default String _getStr(String path, String def) {
+  default String _getStr(String path) {
     Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : String.valueOf(v);
+    if(v==null)
+      return null;
+    return String.valueOf(v);
   }
 
   /**

@@ -165,8 +165,8 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness);
-    assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs", null));
-    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
+    assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs"));
+    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime"));
 
     m = getRespMap("/config/updateHandler", harness);
     assertNotNull(m._get("config/updateHandler/commitWithin/softCommit"));
@@ -176,15 +176,15 @@ public class TestSolrConfigHandler extends RestTestBase {
     m = getRespMap("/config", harness);
     assertNotNull(m);
 
-    assertEquals("100", m._getStr("config/updateHandler/autoCommit/maxDocs", null));
-    assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime", null));
+    assertEquals("100", m._getStr("config/updateHandler/autoCommit/maxDocs"));
+    assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime"));
 
     payload = "{\n" + " 'unset-property' :  'updateHandler.autoCommit.maxDocs' \n" + " }";
     runConfigCommand(harness, "/config", payload);
 
     m = getRespMap("/config/overlay", harness);
     assertNull(m._get("overlay/props/updateHandler/autoCommit/maxDocs"));
-    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
+    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime"));
   }
 
   public void testUserProp() throws Exception {
@@ -1029,7 +1029,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     String payload = "{'set-property' : { 'query.documentCache.size': 399} }";
     runConfigCommand(restTestHarness, "/config", payload);
     MapWriter overlay = getRespMap("/config/overlay", restTestHarness);
-    assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size", null));
+    assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size"));
     // Setting size only will not enable the cache
     restTestHarness.setServerProvider(() -> getBaseUrl());
     MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);

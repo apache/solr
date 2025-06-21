@@ -1864,7 +1864,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     values.forEach(
         (s, o) -> {
           if (o instanceof String) {
-            assertEquals(o, rsp.getResponse()._getStr(s, null));
+            assertEquals(o, rsp.getResponse()._getStr(s));
           } else {
             assertEquals(o, rsp.getResponse()._get(s));
           }

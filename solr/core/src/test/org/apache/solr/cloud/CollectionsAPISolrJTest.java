@@ -287,7 +287,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
-    String nodeName = response._getStr("success[0]/key", null);
+    String nodeName = response._getStr("success[0]/key");
     String corename = response._getStr(asList("success", nodeName, "core"), null);
 
     try (SolrClient coreClient =
