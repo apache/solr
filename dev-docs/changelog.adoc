@@ -88,7 +88,6 @@ Invoke the task with:
   ** `deprecated` for deprecated features
   ** `security` for security-related changes
   ** `changed` for improvements
-  ** `deprecated` for deprecations
   ** `removed` for code removed in major releases
   ** `dependency_update` for updates to dependencies
   ** `other` for anything else
