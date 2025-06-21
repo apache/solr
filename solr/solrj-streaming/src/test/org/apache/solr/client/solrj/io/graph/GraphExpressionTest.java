@@ -1250,7 +1250,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     NamedList<Object> genericResponse = client.request(query);
 
-    InputStream stream = (InputStream) genericResponse.get("stream");
+    InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
     InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     String xml = readString(reader);
     // Validate the nodes

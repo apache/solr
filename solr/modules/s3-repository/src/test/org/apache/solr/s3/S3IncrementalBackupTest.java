@@ -37,12 +37,9 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder()
-          .silent()
-          .withInitialBuckets(BUCKET_NAME)
-          .withSecureConnection(false)
-          .build();
+      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
 
   public static final String SOLR_XML =
       "<solr>\n"
@@ -91,6 +88,19 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   public static void setupClass() throws Exception {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
+    String retryMode;
+    switch (random().nextInt(3)) {
+      case 0:
+        retryMode = "legacy";
+        break;
+      case 1:
+        retryMode = "standard";
+        break;
+      default:
+        retryMode = "adaptive";
+        break;
+    }
+    System.setProperty("aws.retryMode", retryMode);
 
     AbstractS3ClientTest.setS3ConfFile();
 

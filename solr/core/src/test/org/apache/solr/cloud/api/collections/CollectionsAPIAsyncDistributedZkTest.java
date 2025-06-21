@@ -164,25 +164,22 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     // cloudClient watch might take a couple of seconds to reflect it
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            collection,
-            20,
-            TimeUnit.SECONDS,
-            (n, c) -> {
-              if (c == null) return false;
-              Slice slice = c.getSlice("shard1");
-              if (slice == null) {
-                return false;
-              }
+    waitForState(
+        "Wait for replica in cluster state",
+        collection,
+        c -> {
+          if (c == null) return false;
+          Slice slice = c.getSlice("shard1");
+          if (slice == null) {
+            return false;
+          }
 
-              if (slice.getReplicas().size() == 2) {
-                return true;
-              }
+          if (slice.getReplicas().size() == 2) {
+            return true;
+          }
 
-              return false;
-            });
+          return false;
+        });
 
     state =
         CollectionAdminRequest.createAlias("myalias", collection)

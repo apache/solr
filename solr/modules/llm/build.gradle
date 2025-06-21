@@ -21,6 +21,7 @@ description = 'Indexing/Query time integration with LLM'
 
 dependencies {
   compileOnly libs.stephenc.jcip.annotations
+  implementation platform(project(':platform'))
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 

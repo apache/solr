@@ -26,16 +26,14 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.solr.client.api.model.GetSegmentDataResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -51,9 +49,9 @@ import org.slf4j.LoggerFactory;
 public class ColStatus {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private final Http2SolrClient solrClient;
   private final ClusterState clusterState;
   private final ZkNodeProps props;
-  private final SolrClientCache solrClientCache;
 
   public static final String CORE_INFO_PROP = SegmentsInfoRequestHandler.CORE_INFO_PARAM;
   public static final String FIELD_INFO_PROP = SegmentsInfoRequestHandler.FIELD_INFO_PARAM;
@@ -67,10 +65,10 @@ public class ColStatus {
       SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
-  public ColStatus(SolrClientCache solrClientCache, ClusterState clusterState, ZkNodeProps props) {
-    this.props = props;
-    this.solrClientCache = solrClientCache;
+  public ColStatus(Http2SolrClient solrClient, ClusterState clusterState, ZkNodeProps props) {
+    this.solrClient = solrClient;
     this.clusterState = clusterState;
+    this.props = props;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -185,12 +183,12 @@ public class ColStatus {
         if (!leader.isActive(clusterState.getLiveNodes())) {
           continue;
         }
-        String url = ZkCoreNodeProps.getCoreUrl(leader);
+        String url = leader.getCoreUrl();
         if (url == null) {
           continue;
         }
         if (getSegments) {
-          try (SolrClient client = solrClientCache.getHttpSolrClient(url)) {
+          try {
             ModifiableSolrParams params = new ModifiableSolrParams();
             params.add(CommonParams.QT, "/admin/segments");
             params.add(FIELD_INFO_PROP, "true");
@@ -203,7 +201,7 @@ public class ColStatus {
               params.add(RAW_SIZE_SAMPLING_PERCENT_PROP, String.valueOf(samplingPercent));
             }
             QueryRequest req = new QueryRequest(params);
-            NamedList<Object> rsp = client.request(req);
+            NamedList<Object> rsp = solrClient.requestWithBaseUrl(url, null, req).getResponse();
             final var segmentResponse =
                 SolrJacksonMapper.getObjectMapper().convertValue(rsp, GetSegmentDataResponse.class);
             segmentResponse.responseHeader = null;
@@ -236,13 +234,13 @@ public class ColStatus {
           } catch (SolrServerException | IOException e) {
             log.warn("Error getting details of replica segments from {}", url, e);
           }
-        }
-      }
+        } // if getSegments
+      } // for slice
       if (nonCompliant.isEmpty()) {
         nonCompliant.add("(NONE)");
       }
       colMap.add("schemaNonCompliant", nonCompliant);
       colMap.add("shards", shards);
-    }
+    } // for collection
   }
 }

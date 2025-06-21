@@ -65,6 +65,143 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testRerankReturnOriginalScore() throws Exception {
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    String[] doc = {
+      "id", "1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf",
+      "2000"
+    };
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {
+      "id", "2", "term_s", "YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100",
+      "test_tf", "200"
+    };
+    assertU(adoc(doc1));
+
+    String[] doc2 = {
+      "id", "3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"
+    };
+    assertU(adoc(doc2));
+    assertU(commit());
+    String[] doc3 = {
+      "id", "4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"
+    };
+    assertU(adoc(doc3));
+
+    String[] doc4 = {
+      "id", "5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf",
+      "2000"
+    };
+    assertU(adoc(doc4));
+    assertU(commit());
+    String[] doc5 = {
+      "id", "6", "term_s", "YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100",
+      "test_tf", "200"
+    };
+    assertU(adoc(doc5));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=200}");
+    params.add("q", "term_s:YYYY");
+    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "6");
+    params.add("df", "text");
+    params.add("fl", "id,test_ti,score,originalScore()");
+
+    assertQ(
+        req(params),
+        "*[count(//doc)=6]",
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[1]/float[@name='score'][.>'10000.03']",
+        "//result/doc[1]/float[@name='originalScore()'][.>'0.03']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[2]/float[@name='score'][.>'1000.03']",
+        "//result/doc[2]/float[@name='originalScore()'][.>'0.03']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[4]/str[@name='id'][.='6']",
+        "//result/doc[5]/str[@name='id'][.='1']",
+        "//result/doc[6]/str[@name='id'][.='5']");
+  }
+
+  @Test
+  public void testRerankReturnOriginalScoreNotRequested() throws Exception {
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    String[] doc = {
+      "id", "1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf",
+      "2000"
+    };
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {
+      "id", "2", "term_s", "YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100",
+      "test_tf", "200"
+    };
+    assertU(adoc(doc1));
+
+    String[] doc2 = {
+      "id", "3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"
+    };
+    assertU(adoc(doc2));
+    assertU(commit());
+    String[] doc3 = {
+      "id", "4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"
+    };
+    assertU(adoc(doc3));
+
+    String[] doc4 = {
+      "id", "5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf",
+      "2000"
+    };
+    assertU(adoc(doc4));
+    assertU(commit());
+    String[] doc5 = {
+      "id", "6", "term_s", "YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100",
+      "test_tf", "200"
+    };
+    assertU(adoc(doc5));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=200}");
+    params.add("q", "term_s:YYYY");
+    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "6");
+    params.add("df", "text");
+    params.add("fl", "id,test_ti,score");
+
+    String response = JQ(req(params));
+    assertFalse(response.contains("originalScore()"));
+  }
+
+  @Test
   public void testReRankQueries() {
 
     assertU(delQ("*:*"));

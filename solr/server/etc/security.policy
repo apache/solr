@@ -104,19 +104,12 @@ grant {
   permission java.lang.RuntimePermission "closeClassLoader";
   // needed by HttpSolrClient
   permission java.lang.RuntimePermission "getFileSystemAttributes";
-  // needed by hadoop hdfs (TODO: there is a cleaner way to handle this)
-  permission java.lang.RuntimePermission "loadLibrary.jaas";
-  permission java.lang.RuntimePermission "loadLibrary.jaas_unix";
-  permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
-  // needed by hadoop common RawLocalFileSystem for java nio getOwner
-  permission java.lang.RuntimePermission "accessUserInformation";
-  // needed by hadoop hdfs
-  permission java.lang.RuntimePermission "readFileDescriptor";
-  permission java.lang.RuntimePermission "writeFileDescriptor";
-  // needed by hadoop http
+  // need to lookup remote JMX
   permission java.lang.RuntimePermission "getProtectionDomain";
   // needed by aws s3 sdk (Apache HTTP Client)
   permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
+  permission java.lang.RuntimePermission "accessSystemModules";
+
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
@@ -139,21 +132,10 @@ grant {
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
 
-  // needed by hadoop hdfs
-  permission javax.security.auth.AuthPermission "getSubject";
-  permission javax.security.auth.AuthPermission "modifyPrincipals";
-  permission javax.security.auth.AuthPermission "doAs";
-  permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
-  permission javax.security.auth.AuthPermission "modifyPublicCredentials";
-  permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
-
+  
   // needed by crossdc
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
-  
-  // needed by hadoop security
-  permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
-  permission java.security.SecurityPermission "insertProvider";
 
   // Needed by JWT integration tests & S3 clients
   permission java.lang.RuntimePermission "setFactory";
@@ -189,9 +171,6 @@ grant {
 // additional permissions based on system properties set by /bin/solr
 // NOTE: if the property is not set, the permission entry is ignored.
 grant {
-  permission java.io.FilePermission "${hadoop.security.credential.provider.path}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${hadoop.security.credential.provider.path}${/}-", "read,write,delete,readlink";
-
   permission java.io.FilePermission "${solr.jetty.keystore}", "read,readlink";
 
   permission java.io.FilePermission "${solr.jetty.truststore}", "read,readlink";

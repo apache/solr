@@ -24,7 +24,8 @@ import static org.apache.solr.response.RawResponseWriter.CONTENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -68,7 +70,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
-        .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
+        .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();
     // SchemaDesignerAPI depends on the blob store ".system" collection existing.
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
@@ -132,16 +134,23 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   @Test
   @SuppressWarnings("unchecked")
   public void testAddTechproductsProgressively() throws Exception {
-    File docsDir = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs");
-    assertTrue(docsDir.getAbsolutePath() + " not found!", docsDir.isDirectory());
-    File[] toAdd =
-        docsDir.listFiles(
-            (dir, name) ->
-                name.endsWith(".xml")
-                    || name.endsWith(".json")
-                    || name.endsWith(".csv")
-                    || name.endsWith(".jsonl"));
-    assertNotNull("No test data files found in " + docsDir.getAbsolutePath(), toAdd);
+    Path docsDir = ExternalPaths.SOURCE_HOME.resolve("example/exampledocs");
+    assertTrue(docsDir + " not found!", Files.isDirectory(docsDir));
+    List<Path> toAdd;
+    try (Stream<Path> files = Files.list(docsDir)) {
+      toAdd =
+          files
+              .filter(
+                  (dir) -> {
+                    String name = dir.getFileName().toString();
+                    return name.endsWith(".xml")
+                        || name.endsWith(".json")
+                        || name.endsWith(".csv")
+                        || name.endsWith(".jsonl");
+                  })
+              .toList();
+      assertNotNull("No test data files found in " + docsDir, toAdd);
+    }
 
     String configSet = "techproducts";
 
@@ -177,7 +186,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     rspData = rsp.getValues().toSolrParams();
     schemaVersion = rspData.getInt(SCHEMA_VERSION_PARAM);
 
-    for (File next : toAdd) {
+    for (Path next : toAdd) {
       // Analyze some sample documents to refine the schema
       reqParams.clear();
       reqParams.set(CONFIG_SET_PARAM, configSet);
@@ -188,8 +197,9 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
       when(req.getParams()).thenReturn(reqParams);
 
       // POST some sample JSON docs
-      ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next.toPath());
-      stream.setContentType(TestSampleDocumentsLoader.guessContentTypeFromFilename(next.getName()));
+      ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next);
+      stream.setContentType(
+          TestSampleDocumentsLoader.guessContentTypeFromFilename(next.getFileName().toString()));
       when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
       rsp = new SolrQueryResponse();
@@ -288,10 +298,10 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     ModifiableSolrParams reqParams = new ModifiableSolrParams();
 
-    File filmsDir = new File(ExternalPaths.SOURCE_HOME, "example/films");
-    assertTrue(filmsDir.getAbsolutePath() + " not found!", filmsDir.isDirectory());
-    File filmsXml = new File(filmsDir, "films.xml");
-    assertTrue("example/films/films.xml not found", filmsXml.isFile());
+    Path filmsDir = ExternalPaths.SOURCE_HOME.resolve("example/films");
+    assertTrue(filmsDir + " not found!", Files.isDirectory(filmsDir));
+    Path filmsXml = filmsDir.resolve("films.xml");
+    assertTrue("example/films/films.xml not found", Files.isRegularFile(filmsXml));
 
     reqParams.set(CONFIG_SET_PARAM, configSet);
     reqParams.set(ENABLE_DYNAMIC_FIELDS_PARAM, "true");
@@ -300,7 +310,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
 
     // POST some sample XML docs
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml.toPath());
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml);
     stream.setContentType("application/xml");
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -353,8 +363,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
 
     // POST some sample JSON docs
-    File booksJson = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs/books.json");
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson.toPath());
+    Path booksJson = ExternalPaths.SOURCE_HOME.resolve("example/exampledocs/books.json");
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson);
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 

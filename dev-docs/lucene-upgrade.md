@@ -34,10 +34,10 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 + org.apache.lucene:*=9.4.0
 ```
 
-### `versions.lock` update
+### lockfiles update
 
 ```
-gradlew :writeLocks
+gradlew :resolveAndLockAll
 ```
 
 ### `solr/licenses` update

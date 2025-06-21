@@ -2,10 +2,11 @@
 dependencies:
   - changed-files:
       - any-glob-to-any-file:
-        - gradle/libs.versions.toml # Solr 10+
-        - versions.props # Solr < v10
-        - versions.lock
-        - solr/licenses/**
+        - "gradle/libs.versions.toml" # Solr 10+
+        - "**/*.lockfile"
+        - "versions.props" # Solr < v10
+        - "versions.lock"
+        - "solr/licenses/**"
 
 # Add 'documentation' label to any changes within ref-guide or dev-docs
 documentation:
@@ -95,6 +96,7 @@ admin-ui:
   - changed-files:
       - any-glob-to-any-file:
           - solr/webapp/**
+          - solr/ui/**
 
 # Add 'prometheus-exporter' label
 prometheus-exporter:
@@ -122,11 +124,6 @@ module:gcs-repository:
   - changed-files:
       - any-glob-to-any-file:
           - solr/modules/gcs-repository/**
-
-module:hdfs:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/modules/hdfs/**
 
 module:jwt-auth:
   - changed-files:
@@ -195,9 +192,7 @@ cat:index:
   - changed-files:
       - any-glob-to-any-file:
           - '**/org/apache/solr/index/**'
-          - '**/org/apache/solr/hdfs/index/**'
           - '**/org/apache/solr/update/**'
-          - '**/org/apache/solr/hdfs/update/**'
           - '**/org/apache/solr/scripting/update/**'
           - '**/org/apache/solr/handler/loader/**'
 

@@ -507,13 +507,23 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
         writer.writePendingUpdates();
 
-        byte[] data =
+        byte[] dataCompressed =
+            zkClient
+                .getCuratorFramework()
+                .getData()
+                .undecompressed()
+                .forPath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json");
+        assertTrue(compressor.isCompressedBytes(dataCompressed));
+        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(compressor.decompressBytes(dataCompressed));
+        assertNotNull(map.get("c2"));
+
+        byte[] dataDecompressed =
             zkClient
                 .getCuratorFramework()
                 .getData()
                 .forPath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json");
-        assertTrue(compressor.isCompressedBytes(data));
-        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(compressor.decompressBytes(data));
+        assertFalse(compressor.isCompressedBytes(dataDecompressed));
+        map = (Map<?, ?>) Utils.fromJSON(dataDecompressed);
         assertNotNull(map.get("c2"));
       }
 

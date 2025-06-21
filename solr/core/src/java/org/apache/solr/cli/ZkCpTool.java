@@ -18,11 +18,9 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -52,12 +50,8 @@ public class ZkCpTool extends ToolBase {
           .desc("Required to look up configuration for compressing state.json.")
           .build();
 
-  public ZkCpTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ZkCpTool(PrintStream stdout) {
-    super(stdout);
+  public ZkCpTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -170,7 +164,7 @@ public class ZkCpTool extends ToolBase {
           // solr start -DminStateByteLenForCompression=0 -c, this logic will not
           // know about the -DminStateByteLenForCompression and only return the
           // version set in the solr.xml.  So you must edit solr.xml directly.
-          Path solrHomePath = Paths.get(solrHome);
+          Path solrHomePath = Path.of(solrHome);
           Properties props = new Properties();
           props.put(SolrXmlConfig.ZK_HOST, zkHost);
           NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);

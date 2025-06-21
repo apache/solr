@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Random;
 
 /**
@@ -609,7 +609,7 @@ public class IntegrationTestGenerator {
     }
 
     final Writer output =
-        Files.newBufferedWriter(Paths.get(OUTPUT_DIRECTORY, filename), StandardCharsets.UTF_8);
+        Files.newBufferedWriter(Path.of(OUTPUT_DIRECTORY, filename), StandardCharsets.UTF_8);
     output.write(header);
     output.flush();
     return output;

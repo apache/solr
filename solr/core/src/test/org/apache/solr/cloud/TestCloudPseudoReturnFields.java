@@ -912,7 +912,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   public void testAugmentersAndScore() throws Exception {
-    SolrParams params = params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],score");
+    SolrParams params =
+        params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],s_alias:score");
     SolrDocumentList docs = assertSearch(params);
     assertEquals(params + " => " + docs, 5, docs.getNumFound());
     // shouldn't matter what doc we pick...
@@ -922,7 +923,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
       assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
       assertEquals(msg, 10, doc.getFieldValue("x_alias"));
-      assertTrue(msg, doc.getFieldValue("score") instanceof Float);
+      assertTrue(msg, doc.getFieldValue("s_alias") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("s_alias") > 0);
     }
     for (SolrParams p :
         Arrays.asList(
@@ -960,6 +962,22 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("[explain]") instanceof String);
         assertTrue(msg, doc.getFieldValue("score") instanceof Float);
       }
+    }
+    params = params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],s_alias:score,score");
+    docs = assertSearch(params);
+    assertEquals(params + " => " + docs, 5, docs.getNumFound());
+    // shouldn't matter what doc we pick...
+    for (SolrDocument doc : docs) {
+      String msg = params + " => " + doc;
+      assertEquals(msg, 4, doc.size());
+      assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
+      assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
+      assertEquals(msg, 10, doc.getFieldValue("x_alias"));
+      assertTrue(msg, doc.getFieldValue("s_alias") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("s_alias") > 0);
+      assertTrue(msg, doc.getFieldValue("score") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("score") > 0);
+      assertEquals(msg, doc.getFieldValue("score"), doc.getFieldValue("s_alias"));
     }
   }
 

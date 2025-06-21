@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -45,12 +44,8 @@ public class SnapshotCreateTool extends ToolBase {
           .desc("Name of the snapshot to produce")
           .build();
 
-  public SnapshotCreateTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public SnapshotCreateTool(PrintStream stdout) {
-    super(stdout);
+  public SnapshotCreateTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
