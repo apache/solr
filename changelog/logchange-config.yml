@@ -1,0 +1,90 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# More info about configuration you can find https://github.com/logchange/logchange#configuration
+changelog:
+  heading: Some information that will be display in the top of CHANGELOG.md
+  unreleasedVersionDir: unreleased
+  #  You can define custom entry types, which overriders default ones
+  #  [added/changed/deprecated/removed/fixed/security/dependency_update/other]
+  #  Remember to adjust labels below, to match new entry types f.e. add: New features
+  #  entryTypes: # you can define custom entry types
+  #    - key: add
+  #      order: 1
+  #    - key: fix
+  #      order: 2
+  #    - key: change
+  #      order: 3
+  #    - key: other
+  #      order: 4
+  labels:
+    unreleased: unreleased
+    important_notes: Important notes
+    types:
+      entryTypesLabels:
+        security: Security
+        other: Other
+        removed: Removed
+        added: Added
+        deprecated: Deprecated
+        fixed: Fixed
+        dependency_update: Dependency updates
+        changed: Changed
+      number_of_changes:
+        singular: change
+        plural: changes
+      security: Security
+      other: Other
+      removed: Removed
+      added: Added
+      deprecated: Deprecated
+      fixed: Fixed
+      dependency_update: Dependency updates
+      changed: Changed
+    configuration:
+      heading: Configuration changes
+      type: Type
+      actions:
+        add: Added
+        update: Updated
+        delete: Deleted
+      with_default_value: with default value
+      description: Description
+  templates:
+    entry: "${prefix}${title} ${merge_requests} ${issues} ${links} ${authors}"
+    author: "([${name}](${url}) @${nick})"
+    # see examples of templates at examples/templates
+    # if you are missing some function, which will simplify your template (f.e getNumberOfEntries())
+    # feel free to create issue or pull request with change
+#    version_summary_templates:
+      # Relative path to the changelog/.templates directory.
+      # Following definition will require from you existence of template at
+      # changelog/.templates/my-version-summary.html
+      # It will create my-version-summary.html in every version directory
+      # changelog/vX.X.X/my-version-summary.html
+      # HOW TO CREATE VERSION SUMMARY TEMPLATE?
+      # Main object is version and its type of https://github.com/logchange/logchange/blob/main/logchange-core/src/main/java/dev/logchange/core/domain/changelog/model/version/ChangelogVersion.java
+#      - path: my-version-summary.html
+#    changelog_templates:
+      # Relative path to the changelog/.templates directory.
+      # Following definition will require from you existence of template at
+      # changelog/.templates/my-changelog.html
+      # It will create my-changelog.html in every version directory
+      # changelog/vX.X.X/my-version-summary.html
+      # HOW TO CREATE CHANGELOG TEMPLATE?
+      # Main object is changelog and its type of https://github.com/logchange/logchange/blob/main/logchange-core/src/main/java/dev/logchange/core/domain/changelog/model/Changelog.java
+#      - path: my-changelog.html
