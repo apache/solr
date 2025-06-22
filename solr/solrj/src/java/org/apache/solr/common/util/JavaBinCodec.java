@@ -124,8 +124,8 @@ public class JavaBinCodec implements PushWriter {
   private boolean alreadyUnmarshalled;
   protected boolean readStringAsCharSeq = false;
 
-  private boolean mapAsNamedList =
-      EnvUtils.getPropertyAsBool("solr.solrj.javabin.mapAsNamedList", true);
+  private boolean readMapAsNamedList =
+      EnvUtils.getPropertyAsBool("solr.solrj.javabin.readMapAsNamedList", false);
 
   public JavaBinCodec() {
     resolver = null;
@@ -854,7 +854,7 @@ public class JavaBinCodec implements PushWriter {
   public Map<?, Object> readMap(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
 
-    if (mapAsNamedList) {
+    if (readMapAsNamedList) {
       return readMapAsSimpleOrderedMapForStringKeys(dis, sz);
     } else {
       return readMap(dis, sz);
@@ -871,15 +871,11 @@ public class JavaBinCodec implements PushWriter {
     return m;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
   protected Map<?, Object> readMapAsSimpleOrderedMapForStringKeys(DataInputInputStream dis, int sz)
       throws IOException {
-
     SimpleOrderedMap<Object> entries = new SimpleOrderedMap<>(sz);
-
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
-      assert key instanceof String : String.valueOf(key);
       Object val = readVal(dis);
       entries.add((String) key, val); // using NL.add() since key won't repeat
     }
@@ -1464,6 +1460,6 @@ public class JavaBinCodec implements PushWriter {
    * If set, Maps will be deserialized as {@link SimpleOrderedMap} instead of {@link LinkedHashMap}
    */
   public void readMapAsNamedList(boolean readMapAsNamedList) {
-    this.mapAsNamedList = readMapAsNamedList;
+    this.readMapAsNamedList = readMapAsNamedList;
   }
 }
