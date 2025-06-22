@@ -3,6 +3,7 @@
 /gradle.properties
 .gradle/
 build/
+CHANGELOG.md
 
 # IntelliJ IDEA
 /.idea/
