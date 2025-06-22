@@ -18,7 +18,6 @@
 # More info about configuration you can find https://github.com/logchange/logchange#configuration
 changelog:
   heading: Some information that will be display in the top of CHANGELOG.md
-  unreleasedVersionDir: unreleased
   #  You can define custom entry types, which overriders default ones
   #  [added/changed/deprecated/removed/fixed/security/dependency_update/other]
   #  Remember to adjust labels below, to match new entry types f.e. add: New features
