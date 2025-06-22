@@ -18,42 +18,42 @@
 # More info about configuration you can find https://github.com/logchange/logchange#configuration
 changelog:
   heading: Some information that will be display in the top of CHANGELOG.md
-  #  You can define custom entry types, which overriders default ones
-  #  [added/changed/deprecated/removed/fixed/security/dependency_update/other]
-  #  Remember to adjust labels below, to match new entry types f.e. add: New features
-  #  entryTypes: # you can define custom entry types
-  #    - key: add
-  #      order: 1
-  #    - key: fix
-  #      order: 2
-  #    - key: change
-  #      order: 3
-  #    - key: other
-  #      order: 4
+  entryTypes: # you can define custom entry types
+    - key: added
+      order: 1
+    - key: changed
+      order: 2
+    - key: optimized
+      order: 3
+    - key: fixed
+      order: 4
+    - key: deprecated
+      order: 5
+    - key: removed
+      order: 6
+    - key: dependency_update
+      order: 7
+    - key: security
+      order: 8
+    - key: other
+      order: 9
   labels:
     unreleased: unreleased
     important_notes: Important notes
     types:
       entryTypesLabels:
+        added: New Features
+        changed: Improvements
+        optimized: Optimizations
+        fixed: Bug Fixes
+        deprecated: Deprecations
+        removed: Removed
+        dependency_update: Dependency Upgrades
         security: Security
         other: Other
-        removed: Removed
-        added: Added
-        deprecated: Deprecated
-        fixed: Fixed
-        dependency_update: Dependency updates
-        changed: Changed
       number_of_changes:
         singular: change
         plural: changes
-      security: Security
-      other: Other
-      removed: Removed
-      added: Added
-      deprecated: Deprecated
-      fixed: Fixed
-      dependency_update: Dependency updates
-      changed: Changed
     configuration:
       heading: Configuration changes
       type: Type

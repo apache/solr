@@ -84,12 +84,13 @@ Invoke the task with:
 * Keep the entry short and focused on the user impact.
 * Choose the correct *type*:
   ** `added` for new features
+  ** `changed` for improvements
+  ** `optimized` for optimizations (performance, memory, etc.)
   ** `fixed` for bug fixes
   ** `deprecated` for deprecated features
-  ** `security` for security-related changes
-  ** `changed` for improvements
   ** `removed` for code removed in major releases
   ** `dependency_update` for updates to dependencies
+  ** `security` for security-related changes
   ** `other` for anything else, like the build or documentation
 * Reference issues as `SOLR-12345` or GitHub `#123`.
 
@@ -98,7 +99,7 @@ Invoke the task with:
 [source, yaml]
 ----
 title: Fix nasty bug in CoreContainer shutdown
-# added/changed/deprecated/removed/fixed/security/dependency_update/other
+# added, changed, optimized, fixed, deprecated, removed, dependency_update, security, other
 type: fixed
 authors:
   - name: John Contributor

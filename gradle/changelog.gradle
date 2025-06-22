@@ -49,7 +49,7 @@ task generateChangeYaml {
     file.parentFile.mkdirs()
     file.text = """# logchange format: https://github.com/logchange/logchange#yaml-format
 title: ${branchWithoutJira}
-type: other # added/changed/deprecated/removed/fixed/security/dependency_update/other
+type: other # added, changed, optimized, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: ${configuredName}${nick}${asfIdUrl}
 ${jiraLinks}
