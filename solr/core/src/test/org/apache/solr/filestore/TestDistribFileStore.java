@@ -110,7 +110,9 @@ public class TestDistribFileStore extends SolrCloudTestCase {
               "/package/mypkg/v1.0/runtimelibs.jar",
               "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
-      assertTrue(Objects.requireNonNullElse(rsp._getStr("message"),"").contains("File with same metadata exists "));
+      assertTrue(
+          Objects.requireNonNullElse(rsp._getStr("message"), "")
+              .contains("File with same metadata exists "));
 
       assertResponseValues(
           10,

@@ -48,8 +48,7 @@ public interface NavigableObject {
    */
   default String _getStr(String path) {
     Object v = Utils.getObjectByPath(this, false, path);
-    if(v==null)
-      return null;
+    if (v == null) return null;
     return String.valueOf(v);
   }
 

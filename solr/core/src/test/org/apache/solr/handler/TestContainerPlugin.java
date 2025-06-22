@@ -588,7 +588,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       V2Request req, SolrClient client, String errPath, String expectErrorMsg) {
     RemoteExecutionException e =
         expectThrows(RemoteExecutionException.class, () -> req.process(client));
-    String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath),"") ;
+    String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
     assertTrue(expectErrorMsg, msg.contains(expectErrorMsg));
   }
 }

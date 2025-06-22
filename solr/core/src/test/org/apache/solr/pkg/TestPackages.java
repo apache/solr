@@ -28,12 +28,12 @@ import static org.apache.solr.filestore.TestDistribFileStore.uploadKey;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -880,7 +880,7 @@ public class TestPackages extends SolrCloudTestCase {
       req.process(client);
       fail("should have failed with message : " + expectErrorMsg);
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-      String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath),"");
+      String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
       assertTrue(
           "should have failed with message: " + expectErrorMsg + "actual message : " + msg,
           msg.contains(expectErrorMsg));
