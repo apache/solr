@@ -67,8 +67,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
    * Merge a collection of individual {@link MetricSnapshot} instances into one {@link
    * MetricSnapshots}. This is necessary because we create a {@link SdkMeterProvider} per Solr core
    * resulting in duplicate metric names across cores which is an illegal format if not under the
-   * same prometheus grouping. Merging metrics of the same name from multiple {@link
-   * PrometheusMetricReader}s avoids this illegal exposition format
+   * same prometheus grouping.
    */
   private MetricSnapshots mergeSnapshots(List<MetricSnapshot> snapshots) {
     Map<String, CounterSnapshot.Builder> counterSnapshotMap = new HashMap<>();

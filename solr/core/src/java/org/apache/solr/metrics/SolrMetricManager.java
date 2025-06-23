@@ -714,9 +714,9 @@ public class SolrMetricManager {
   }
 
   /**
-   * Get (or create if not present) a named {@link SdkMeterProvider} and {@link
-   * PrometheusMetricReader} under {@link MeterProviderAndReaders}. Dropwizards's {@link
-   * SolrMetricManager#registry(String)} equivalent
+   * Get (or create if not present) a named {@link SdkMeterProvider} under {@link
+   * MeterProviderAndReaders}. This also registers a corresponding {@link PrometheusMetricReader}
+   * Dropwizards's {@link SolrMetricManager#registry(String)} equivalent
    *
    * @param providerName name of the meter provider and prometheus metric reader
    * @return existing or newly created meter provider
@@ -777,8 +777,8 @@ public class SolrMetricManager {
   }
 
   /**
-   * Remove and close a named {@link SdkMeterProvider}. Upon closing of Meter Provider, all metric
-   * readers registered are close.
+   * Remove and close an existing {@link SdkMeterProvider}. Upon closing of provider, all metric
+   * readers registered to it are closed.
    *
    * @param providerName name of the Meter Provider to remove
    */

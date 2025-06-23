@@ -33,6 +33,7 @@ import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,10 +49,22 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
+import org.junit.Before;
 import org.junit.Test;
 
 public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   final String METER_PROVIDER_NAME = "test_provider_name";
+  private SolrMetricManager metricManager;
+  private PrometheusMetricReader reader;
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    this.metricManager = new SolrMetricManager();
+    // Initialize a metric reader for tests
+    metricManager.meterProvider(METER_PROVIDER_NAME);
+    this.reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
+  }
 
   // NOCOMMIT: We might not be supported core swapping in 10. Maybe remove this test
   @Test
@@ -296,198 +309,106 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLongCounter() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     LongCounter counter =
         metricManager.longCounter(METER_PROVIDER_NAME, "my_counter", "desc", null);
     counter.add(5);
     counter.add(3);
-
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-    CounterSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("my_counter"))
-            .map(CounterSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long counter metric not found"));
-    assertEquals(8, actual.getDataPoints().getFirst().getValue(), 0.0);
+    CounterSnapshot actual = snapshot("my_counter", CounterSnapshot.class);
+    assertEquals(8.0, actual.getDataPoints().getFirst().getValue(), 0.0);
   }
 
   @Test
   public void testLongUpDownCounter() {
-    SolrMetricManager metricManager = new SolrMetricManager();
-    LongUpDownCounter c =
+    LongUpDownCounter counter =
         metricManager.longUpDownCounter(METER_PROVIDER_NAME, "long_updown_counter", "desc", null);
-    c.add(10);
-    c.add(-4);
-
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    GaugeSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("long_updown_counter"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long up down counter metric not found"));
-    assertEquals(6, actual.getDataPoints().getFirst().getValue(), 0.0);
+    counter.add(10);
+    counter.add(-4);
+    GaugeSnapshot actual = snapshot("long_updown_counter", GaugeSnapshot.class);
+    assertEquals(6.0, actual.getDataPoints().getFirst().getValue(), 0.0);
   }
 
   @Test
   public void testDoubleUpDownCounter() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     DoubleUpDownCounter counter =
         metricManager.doubleUpDownCounter(
             METER_PROVIDER_NAME, "double_updown_counter", "desc", null);
     counter.add(10.0);
     counter.add(-5.5);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    GaugeSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("double_updown_counter"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double up down counter metric not found"));
+    GaugeSnapshot actual = snapshot("double_updown_counter", GaugeSnapshot.class);
     assertEquals(4.5, actual.getDataPoints().getFirst().getValue(), 0.0);
   }
 
   @Test
   public void testDoubleCounter() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     DoubleCounter counter =
         metricManager.doubleCounter(METER_PROVIDER_NAME, "double_counter", "desc", null);
     counter.add(10.0);
     counter.add(5.5);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    CounterSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("double_counter"))
-            .map(CounterSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double counter metric not found"));
+    CounterSnapshot actual = snapshot("double_counter", CounterSnapshot.class);
     assertEquals(15.5, actual.getDataPoints().getFirst().getValue(), 0.0);
   }
 
   @Test
   public void testDoubleHistogram() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     DoubleHistogram histogram =
         metricManager.doubleHistogram(METER_PROVIDER_NAME, "double_histogram", "desc", null);
     histogram.record(1.1);
     histogram.record(2.2);
     histogram.record(3.3);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    HistogramSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("double_histogram"))
-            .map(HistogramSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double histogram metric not found"));
-
+    HistogramSnapshot actual = snapshot("double_histogram", HistogramSnapshot.class);
     assertEquals(3, actual.getDataPoints().getFirst().getCount());
     assertEquals(6.6, actual.getDataPoints().getFirst().getSum(), 0.0);
   }
 
   @Test
   public void testLongHistogram() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     LongHistogram histogram =
         metricManager.longHistogram(METER_PROVIDER_NAME, "long_histogram", "desc", null);
     histogram.record(1);
     histogram.record(2);
     histogram.record(3);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    HistogramSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("long_histogram"))
-            .map(HistogramSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long histogram metric not found"));
-
+    HistogramSnapshot actual = snapshot("long_histogram", HistogramSnapshot.class);
     assertEquals(3, actual.getDataPoints().getFirst().getCount());
     assertEquals(6.0, actual.getDataPoints().getFirst().getSum(), 0.0);
   }
 
   @Test
   public void testDoubleGauge() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     DoubleGauge gauge =
         metricManager.doubleGauge(METER_PROVIDER_NAME, "double_gauge", "desc", null);
     gauge.set(10.0);
     gauge.set(5.5);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    GaugeSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("double_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double gauge metric not found"));
+    GaugeSnapshot actual = snapshot("double_gauge", GaugeSnapshot.class);
     assertEquals(5.5, actual.getDataPoints().getFirst().getValue(), 0.0);
   }
 
   @Test
   public void testLongGauge() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     LongGauge gauge = metricManager.longGauge(METER_PROVIDER_NAME, "long_gauge", "desc", null);
     gauge.set(10);
     gauge.set(5);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    GaugeSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("long_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long gauge metric not found"));
-
+    GaugeSnapshot actual = snapshot("long_gauge", GaugeSnapshot.class);
     assertEquals(5.0, actual.getDataPoints().getFirst().getValue(), 0.0);
   }
 
   @Test
   public void testObservableLongCounter() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     LongAdder val = new LongAdder();
     metricManager.observableLongCounter(
         METER_PROVIDER_NAME, "obs_long_counter", "desc", m -> m.record(val.longValue()), null);
     val.add(10);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    CounterSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_long_counter"))
-            .map(CounterSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long counter metric not found"));
-
+    CounterSnapshot actual = snapshot("obs_long_counter", CounterSnapshot.class);
     assertEquals(10.0, actual.getDataPoints().getFirst().getValue(), 0.0);
 
     val.add(20);
-    metrics = reader.collect();
-    actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_long_counter"))
-            .map(CounterSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long counter metric not found"));
+    actual = snapshot("obs_long_counter", CounterSnapshot.class);
 
     // Observable metrics value changes anytime metricReader collects() to trigger callback
     assertEquals(30.0, actual.getDataPoints().getFirst().getValue(), 0.0);
@@ -495,32 +416,16 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testObservableDoubleCounter() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     DoubleAdder val = new DoubleAdder();
     metricManager.observableDoubleCounter(
         METER_PROVIDER_NAME, "obs_double_counter", "desc", m -> m.record(val.doubleValue()), null);
     val.add(10.0);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    CounterSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_double_counter"))
-            .map(CounterSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double gauge metric not found"));
-
+    CounterSnapshot actual = snapshot("obs_double_counter", CounterSnapshot.class);
     assertEquals(10.0, actual.getDataPoints().getFirst().getValue(), 0.0);
 
     val.add(0.1);
-    metrics = reader.collect();
-    actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_double_counter"))
-            .map(CounterSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double gauge metric not found"));
+    actual = snapshot("obs_double_counter", CounterSnapshot.class);
 
     // Observable metrics value changes anytime metricReader collects() to trigger callback
     assertEquals(10.1, actual.getDataPoints().getFirst().getValue(), 1e-6);
@@ -528,32 +433,16 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testObservableLongGauge() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     AtomicLong val = new AtomicLong();
     metricManager.observableLongGauge(
         METER_PROVIDER_NAME, "obs_long_gauge", "desc", m -> m.record(val.get()), null);
     val.set(10L);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    GaugeSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_long_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long gauge metric not found"));
-
+    GaugeSnapshot actual = snapshot("obs_long_gauge", GaugeSnapshot.class);
     assertEquals(10.0, actual.getDataPoints().getFirst().getValue(), 0.0);
 
     val.set(20L);
-    metrics = reader.collect();
-    actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_long_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long gauge metric not found"));
+    actual = snapshot("obs_long_gauge", GaugeSnapshot.class);
 
     // Observable metrics value changes anytime metricReader collects() to trigger callback
     assertEquals(20.0, actual.getDataPoints().getFirst().getValue(), 0.0);
@@ -561,32 +450,16 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testObservableDoubleGauge() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     AtomicDouble val = new AtomicDouble();
     metricManager.observableDoubleGauge(
         METER_PROVIDER_NAME, "obs_double_gauge", "desc", m -> m.record(val.get()), null);
     val.set(10.0);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    GaugeSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_double_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double gauge metric not found"));
-
+    GaugeSnapshot actual = snapshot("obs_double_gauge", GaugeSnapshot.class);
     assertEquals(10.0, actual.getDataPoints().getFirst().getValue(), 0.0);
 
     val.set(10.1);
-    metrics = reader.collect();
-    actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_double_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double gauge metric not found"));
+    actual = snapshot("obs_double_gauge", GaugeSnapshot.class);
 
     // Observable metrics value changes anytime metricReader collects() to trigger callback
     assertEquals(10.1, actual.getDataPoints().getFirst().getValue(), 0.0);
@@ -594,32 +467,16 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testObservableLongUpDownCounter() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     LongAdder val = new LongAdder();
     metricManager.observableLongUpDownCounter(
         METER_PROVIDER_NAME, "obs_long_updown_gauge", "desc", m -> m.record(val.longValue()), null);
     val.add(10L);
 
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    GaugeSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_long_updown_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long up down metric not found"));
-
+    GaugeSnapshot actual = snapshot("obs_long_updown_gauge", GaugeSnapshot.class);
     assertEquals(10.0, actual.getDataPoints().getFirst().getValue(), 0.0);
 
     val.add(-20L);
-    metrics = reader.collect();
-    actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_long_updown_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Long up down metric not found"));
+    actual = snapshot("obs_long_updown_gauge", GaugeSnapshot.class);
 
     // Observable metrics value changes anytime metricReader collects() to trigger callback
     assertEquals(-10.0, actual.getDataPoints().getFirst().getValue(), 0.0);
@@ -627,7 +484,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testObservableDoubleUpDownCounter() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     DoubleAdder val = new DoubleAdder();
     metricManager.observableDoubleUpDownCounter(
         METER_PROVIDER_NAME,
@@ -636,27 +492,11 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
         m -> m.record(val.doubleValue()),
         null);
     val.add(10.0);
-
-    PrometheusMetricReader reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
-    MetricSnapshots metrics = reader.collect();
-
-    GaugeSnapshot actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_double_updown_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double up down gauge metric not found"));
-
+    GaugeSnapshot actual = snapshot("obs_double_updown_gauge", GaugeSnapshot.class);
     assertEquals(10.0, actual.getDataPoints().getFirst().getValue(), 0.0);
 
     val.add(-20.1);
-    metrics = reader.collect();
-    actual =
-        metrics.stream()
-            .filter(m -> m.getMetadata().getPrometheusName().equals("obs_double_updown_gauge"))
-            .map(GaugeSnapshot.class::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Double up down gauge metric not found"));
+    actual = snapshot("obs_double_updown_gauge", GaugeSnapshot.class);
 
     // Observable metrics value changes anytime metricReader collects() to trigger callback
     assertEquals(-10.1, actual.getDataPoints().getFirst().getValue(), 1e-6);
@@ -664,7 +504,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCloseMeterProviders() {
-    SolrMetricManager metricManager = new SolrMetricManager();
     LongCounter counter =
         metricManager.longCounter(METER_PROVIDER_NAME, "my_counter", "desc", null);
     counter.add(5);
@@ -682,5 +521,15 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     metricManager.closeMeterProvider(METER_PROVIDER_NAME);
 
     assertNull(metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME));
+  }
+
+  // Helper to grab any snapshot by name and type
+  private <T extends MetricSnapshot> T snapshot(String name, Class<T> cls) {
+    return reader.collect().stream()
+        .filter(m -> m.getMetadata().getPrometheusName().equals(name))
+        .filter(cls::isInstance)
+        .map(cls::cast)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("MetricSnapshot not found: " + name));
   }
 }
