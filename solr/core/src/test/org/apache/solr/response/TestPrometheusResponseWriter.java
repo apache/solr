@@ -66,7 +66,6 @@ public class TestPrometheusResponseWriter extends SolrCloudTestCase {
   @Before
   public void ensureCollectionsExist() throws Exception {
     SolrClient client = cluster.getSolrClient();
-
     // Tear down any previous run
     try {
       CollectionAdminRequest.deleteCollection("collection1").process(client);
@@ -77,11 +76,8 @@ public class TestPrometheusResponseWriter extends SolrCloudTestCase {
     } catch (Exception ignored) {
     }
 
-    // Recreate both
     CollectionAdminRequest.createCollection("collection1", "config", 1, 1).process(client);
     CollectionAdminRequest.createCollection("collection2", "config", 1, 1).process(client);
-
-    // Wait for both to come up
     cluster.waitForActiveCollection("collection1", 1, 1);
     cluster.waitForActiveCollection("collection2", 1, 1);
   }
