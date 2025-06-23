@@ -57,14 +57,14 @@ public class SimpleSearch {
     AtomicLong total = new AtomicLong();
     AtomicLong err = new AtomicLong();
 
-    QueryRequest q = new QueryRequest(new SolrQuery("q", "{!cache=false}*:*")); // no match is OK
+    QueryRequest q = new QueryRequest(new SolrQuery("q", "id:0")); // no match is OK
 
     @Setup(Level.Trial)
     public void setupTrial(MiniClusterState.MiniClusterBenchState miniClusterState)
         throws Exception {
       miniClusterState.setUseHttp1(useHttp1);
       miniClusterState.startMiniCluster(1);
-      miniClusterState.createCollection(COLLECTION, 5, 1);
+      miniClusterState.createCollection(COLLECTION, 1, 1);
     }
 
     @Setup(Level.Iteration)
