@@ -39,7 +39,7 @@ public abstract class HttpSolrClientBuilderBase<
   protected Integer maxConnectionsPerHost;
   protected ExecutorService executor;
   protected final boolean defaultUseHttp1_1 = Boolean.getBoolean("solr.http1");
-  protected Boolean providedUseHttp1_1;
+  protected Boolean useHttp1_1;
   protected String proxyHost;
   protected int proxyPort;
   protected boolean proxyIsSocks4;
@@ -168,24 +168,17 @@ public abstract class HttpSolrClientBuilderBase<
    */
   @SuppressWarnings("unchecked")
   public B useHttp1_1(boolean useHttp1_1) {
-    this.providedUseHttp1_1 = useHttp1_1;
+    this.useHttp1_1 = useHttp1_1;
     return (B) this;
   }
 
   /**
-   * Return whether the HttpSolrClient built will prefer http1.1 over http2. This will be determined
-   * first if {@link #useHttp1_1(boolean)} is called, then by checking the "solr.http1" System
-   * Property, and otherwise will default to false.
+   * Return whether the HttpSolrClient built will prefer http1.1 over http2.
    *
-   * @return whether the build HttpSolrClient will prefer http1.1
+   * @return whether to prefer http1.1
    */
-  @SuppressWarnings("unchecked")
   public boolean shouldUseHttp1_1() {
-    if (providedUseHttp1_1 != null) {
-      return providedUseHttp1_1;
-    } else {
-      return defaultUseHttp1_1;
-    }
+    return useHttp1_1 != null ? useHttp1_1 : defaultUseHttp1_1;
   }
 
   /**

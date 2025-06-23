@@ -132,9 +132,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (builder.followRedirects != null
           || builder.connectionTimeoutMillis != null
           || builder.maxConnectionsPerHost != null
-          || (builder.providedUseHttp1_1 != null
-              && builder.providedUseHttp1_1
-                  != builder.httpClient.getTransport() instanceof HttpClientTransportOverHTTP)
+          || builder.useHttp1_1 != null
           || builder.proxyHost != null
           || builder.sslConfig != null
           || builder.cookieStore != null
