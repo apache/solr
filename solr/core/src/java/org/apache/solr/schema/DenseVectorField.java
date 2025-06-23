@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.codecs.KnnVectorsFormat;
+import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnFloatVectorField;
@@ -345,6 +346,10 @@ public class DenseVectorField extends FloatPointField {
             SolrException.ErrorCode.SERVER_ERROR,
             "Unexpected state. Vector Encoding: " + vectorEncoding);
     }
+  }
+
+  public KnnVectorsFormat buildKnnVectorsFormat() {
+    return new Lucene99HnswVectorsFormat(hnswMaxConn, hnswBeamWidth);
   }
 
   @Override

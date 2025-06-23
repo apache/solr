@@ -131,44 +131,13 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
           public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
             FieldType fieldType = (schemaField == null ? null : schemaField.getType());
-            KnnVectorsFormat delegate;
-            if (fieldType instanceof ScalarQuantizedDenseVectorField scalarQuantizedVectorType) {
-              final String knnAlgorithm = scalarQuantizedVectorType.getKnnAlgorithm();
-              switch (knnAlgorithm) {
-                case DenseVectorField.FLAT_ALGORITHM:
-                  delegate = new Lucene99ScalarQuantizedVectorsFormat(
-                          scalarQuantizedVectorType.getConfidenceInterval(),
-                          scalarQuantizedVectorType.getBits(),
-                          scalarQuantizedVectorType.useCompression());
-                  break;
-                case DenseVectorField.HNSW_ALGORITHM:
-                  int maxConn = scalarQuantizedVectorType.getHnswMaxConn();
-                  int beamWidth = scalarQuantizedVectorType.getHnswBeamWidth();
-                  delegate = new Lucene99HnswScalarQuantizedVectorsFormat(maxConn,
-                          beamWidth,
-                          DEFAULT_NUM_MERGE_WORKER,
-                          scalarQuantizedVectorType.getBits(),
-                          scalarQuantizedVectorType.useCompression(),
-                          scalarQuantizedVectorType.getConfidenceInterval(),
-                          null);
-                  break;
-                default:
-                  throw new SolrException(ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
-              }
-              return new SolrDelegatingKnnVectorsFormat(delegate, scalarQuantizedVectorType.getDimension());
-            } else if (fieldType instanceof DenseVectorField vectorType) {
-              String knnAlgorithm = vectorType.getKnnAlgorithm();
-              if (DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)) {
-                int maxConn = vectorType.getHnswMaxConn();
-                int beamWidth = vectorType.getHnswBeamWidth();
-                delegate = new Lucene99HnswVectorsFormat(maxConn, beamWidth);
-                return new SolrDelegatingKnnVectorsFormat(delegate, vectorType.getDimension());
-              } else {
-                throw new SolrException(
-                        ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
-              }
+            if (fieldType instanceof DenseVectorField) {
+              final DenseVectorField vectorField = (DenseVectorField) fieldType;
+              return new SolrDelegatingKnnVectorsFormat(vectorField.buildKnnVectorsFormat(),
+                      vectorField.getDimension());
+            } else {
+              throw new SolrException(ErrorCode.SERVER_ERROR, "field is not a support KNN vector type");
             }
-            return super.getKnnVectorsFormatForField(field);
           }
         };
   }
