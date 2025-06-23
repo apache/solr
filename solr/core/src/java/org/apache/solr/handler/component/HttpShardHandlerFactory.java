@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
@@ -437,10 +438,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
+    // TODO SOLR-17458: Add Otel
+    httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty(), expandedScope);
     commExecutor =
         MetricUtils.instrumentedExecutorService(
             commExecutor,

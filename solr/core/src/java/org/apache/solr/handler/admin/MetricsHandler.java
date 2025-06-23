@@ -51,7 +51,6 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -127,11 +126,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
+    // TODO SOLR-17458: Make this the default option after dropwizard removal
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      response = handlePrometheusExport(params);
-      consumer.accept("metrics", response);
+      consumer.accept("metrics", metricManager.getPrometheusMetricReaders());
       return;
     }
+
     String[] keys = params.getParams(KEY_PARAM);
     if (keys != null && keys.length > 0) {
       handleKeyRequest(keys, consumer);
@@ -176,59 +176,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
         response.add(registryName, result);
       }
     }
-    return response;
-  }
-
-  private NamedList<Object> handlePrometheusExport(SolrParams params) {
-    NamedList<Object> response = new SimpleOrderedMap<>();
-    MetricFilter mustMatchFilter = parseMustMatchFilter(params);
-    Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
-    List<MetricType> metricTypes = parseMetricTypes(params);
-    List<MetricFilter> metricFilters =
-        metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
-
-    Set<String> requestedRegistries = parseRegistries(params);
-    MetricRegistry mergedCoreRegistries = new MetricRegistry();
-
-    for (String registryName : requestedRegistries) {
-      MetricRegistry dropwizardRegistry = metricManager.registry(registryName);
-
-      // Merge all core registries into a single registry and
-      // append the core name to the metric to avoid duplicate metrics name
-      if (registryName.startsWith("solr.core")) {
-        mergedCoreRegistries.registerAll(getCoreNameFromRegistry(registryName), dropwizardRegistry);
-        continue;
-      }
-
-      PrometheusResponseWriter.toPrometheus(
-          dropwizardRegistry,
-          registryName,
-          metricFilters,
-          mustMatchFilter,
-          propertyFilter,
-          false,
-          false,
-          true,
-          (registry) -> {
-            response.add(registryName, registry);
-          });
-    }
-
-    if (!mergedCoreRegistries.getMetrics().isEmpty()) {
-      PrometheusResponseWriter.toPrometheus(
-          mergedCoreRegistries,
-          "solr.core",
-          metricFilters,
-          mustMatchFilter,
-          propertyFilter,
-          false,
-          false,
-          true,
-          (registry) -> {
-            response.add("solr.core", registry);
-          });
-    }
-
     return response;
   }
 

@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import com.codahale.metrics.Meter;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
@@ -205,8 +206,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
     }
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     if (core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
           new SolrDelegateRegistryMetricsContext(

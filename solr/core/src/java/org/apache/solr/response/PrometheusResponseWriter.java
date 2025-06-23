@@ -16,36 +16,27 @@
  */
 package org.apache.solr.response;
 
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
+import io.prometheus.metrics.model.snapshots.InfoSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.metrics.AggregateMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
-import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreFormatter;
-import org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyFormatter;
-import org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmFormatter;
-import org.apache.solr.metrics.prometheus.node.SolrPrometheusNodeFormatter;
+import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Response writer for Prometheus metrics. This is used only by the {@link
- * org.apache.solr.handler.admin.MetricsHandler}
- */
+/** Response writer for Prometheus metrics. This is used only by the {@link MetricsHandler} */
 @SuppressWarnings(value = "unchecked")
 public class PrometheusResponseWriter implements QueryResponseWriter {
   // not TextQueryResponseWriter because Prometheus libs work with an OutputStream
@@ -57,13 +48,14 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
   public void write(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
-    NamedList<Object> prometheusRegistries =
-        (NamedList<Object>) response.getValues().get("metrics");
-    var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
-    for (Map.Entry<String, Object> prometheusRegistry : prometheusRegistries) {
-      var prometheusFormatter = (SolrPrometheusFormatter) prometheusRegistry.getValue();
-      prometheusTextFormatWriter.write(out, prometheusFormatter.collect());
-    }
+
+    Map<String, PrometheusMetricReader> readers =
+        (Map<String, PrometheusMetricReader>) response.getValues().get("metrics");
+
+    List<MetricSnapshot> snapshots =
+        readers.values().stream().flatMap(r -> r.collect().stream()).toList();
+
+    new PrometheusTextFormatWriter(false).write(out, mergeSnapshots(snapshots));
   }
 
   @Override
@@ -72,75 +64,92 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
   }
 
   /**
-   * Provides a representation of the given Dropwizard metric registry as {@link
-   * SolrPrometheusCoreFormatter}-s. Only those metrics are converted which match at least one of
-   * the given MetricFilter instances.
-   *
-   * @param registry the {@link MetricRegistry} to be converted
-   * @param shouldMatchFilters a list of {@link MetricFilter} instances. A metric must match <em>any
-   *     one</em> of the filters from this list to be included in the output
-   * @param mustMatchFilter a {@link MetricFilter}. A metric <em>must</em> match this filter to be
-   *     included in the output.
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreFormatter}-s
+   * Merge a collection of individual {@link MetricSnapshot} instances into one {@link
+   * MetricSnapshots}. This is necessary because we create a {@link SdkMeterProvider} per Solr core
+   * resulting in duplicate metric names across cores which is an illegal format if not under the
+   * same prometheus grouping. Merging metrics of the same name from multiple {@link
+   * PrometheusMetricReader}s avoids this illegal exposition format
    */
-  public static void toPrometheus(
-      MetricRegistry registry,
-      String registryName,
-      List<MetricFilter> shouldMatchFilters,
-      MetricFilter mustMatchFilter,
-      Predicate<CharSequence> propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      Consumer<SolrPrometheusFormatter> consumer) {
-    Map<String, Metric> dropwizardMetrics = registry.getMetrics();
-    var formatter = getFormatterType(registryName);
-    if (formatter == null) {
-      return;
-    }
+  private MetricSnapshots mergeSnapshots(List<MetricSnapshot> snapshots) {
+    Map<String, CounterSnapshot.Builder> counterSnapshotMap = new HashMap<>();
+    Map<String, GaugeSnapshot.Builder> gaugeSnapshotMap = new HashMap<>();
+    Map<String, HistogramSnapshot.Builder> histogramSnapshotMap = new HashMap<>();
+    InfoSnapshot otelInfoSnapshots = null;
 
-    MetricUtils.toMaps(
-        registry,
-        shouldMatchFilters,
-        mustMatchFilter,
-        propertyFilter,
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        false,
-        (metricName, metric) -> {
-          try {
-            Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            formatter.exportDropwizardMetric(dropwizardMetric, metricName);
-          } catch (Exception e) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error occurred exporting Dropwizard Metric to Prometheus",
-                e);
+    for (MetricSnapshot snapshot : snapshots) {
+      String metricName = snapshot.getMetadata().getPrometheusName();
+
+      switch (snapshot) {
+        case CounterSnapshot counterSnapshot -> {
+          counterSnapshotMap.computeIfAbsent(
+              metricName,
+              k -> {
+                var base =
+                    CounterSnapshot.builder()
+                        .name(counterSnapshot.getMetadata().getName())
+                        .help(counterSnapshot.getMetadata().getHelp());
+
+                return counterSnapshot.getMetadata().hasUnit()
+                    ? base.unit(counterSnapshot.getMetadata().getUnit())
+                    : base;
+              });
+          counterSnapshot.getDataPoints().forEach(counterSnapshotMap.get(metricName)::dataPoint);
+        }
+        case GaugeSnapshot gaugeSnapshot -> {
+          gaugeSnapshotMap.computeIfAbsent(
+              metricName,
+              k -> {
+                var base =
+                    GaugeSnapshot.builder()
+                        .name(gaugeSnapshot.getMetadata().getName())
+                        .help(gaugeSnapshot.getMetadata().getHelp());
+
+                return gaugeSnapshot.getMetadata().hasUnit()
+                    ? base.unit(gaugeSnapshot.getMetadata().getUnit())
+                    : base;
+              });
+          gaugeSnapshot.getDataPoints().forEach(gaugeSnapshotMap.get(metricName)::dataPoint);
+        }
+        case HistogramSnapshot histogramSnapshot -> {
+          histogramSnapshotMap.computeIfAbsent(
+              metricName,
+              k -> {
+                var base =
+                    HistogramSnapshot.builder()
+                        .name(histogramSnapshot.getMetadata().getName())
+                        .help(histogramSnapshot.getMetadata().getHelp());
+
+                return histogramSnapshot.getMetadata().hasUnit()
+                    ? base.unit(histogramSnapshot.getMetadata().getUnit())
+                    : base;
+              });
+          histogramSnapshot
+              .getDataPoints()
+              .forEach(histogramSnapshotMap.get(metricName)::dataPoint);
+        }
+        case InfoSnapshot infoSnapshot -> {
+          // InfoSnapshot is a special case in that each SdkMeterProvider will create a duplicate
+          // metric called target_info containing OTEL SDK metadata. Only one of these need to be
+          // kept
+          if (otelInfoSnapshots == null) {
+            otelInfoSnapshots =
+                new InfoSnapshot(infoSnapshot.getMetadata(), infoSnapshot.getDataPoints());
           }
-        });
-
-    consumer.accept(formatter);
-  }
-
-  public static SolrPrometheusFormatter getFormatterType(String registryName) {
-    String[] parsedRegistry = registryName.split("\\.");
-
-    switch (parsedRegistry[1]) {
-      case "core":
-        return new SolrPrometheusCoreFormatter();
-      case "jvm":
-        return new SolrPrometheusJvmFormatter();
-      case "jetty":
-        return new SolrPrometheusJettyFormatter();
-      case "node":
-        return new SolrPrometheusNodeFormatter();
-      default:
-        return null;
+        }
+        default -> {
+          log.warn(
+              "Unexpected snapshot type: {} for metric {}",
+              snapshot.getClass().getName(),
+              snapshot.getMetadata().getName());
+        }
+      }
     }
+
+    MetricSnapshots.Builder snapshotsBuilder = MetricSnapshots.builder();
+    counterSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
+    gaugeSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
+    histogramSnapshotMap.values().forEach(b -> snapshotsBuilder.metricSnapshot(b.build()));
+    if (otelInfoSnapshots != null) snapshotsBuilder.metricSnapshot(otelInfoSnapshots);
+    return snapshotsBuilder.build();
   }
 }

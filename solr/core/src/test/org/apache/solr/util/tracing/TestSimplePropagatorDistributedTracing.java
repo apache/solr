@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.CreateCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -49,6 +50,8 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    OpenTelemetryConfigurator.resetForTest();
+
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
 
     // tracer should be disabled

@@ -117,7 +117,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     // collection API strategy to use (distributed or Overseer based) and which cluster update
     // strategy to use (distributed if collection API is distributed, but Overseer based or
     // distributed randomly chosen if Collection API is Overseer based), and whether to use PRS
-
     configurePrsDefault();
 
     boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;

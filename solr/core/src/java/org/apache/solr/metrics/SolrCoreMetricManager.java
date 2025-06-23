@@ -17,6 +17,8 @@
 package org.apache.solr.metrics;
 
 import com.codahale.metrics.MetricRegistry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -32,6 +34,13 @@ import org.apache.solr.core.SolrInfoBean;
  * SolrMetricReporter}'s specific to a {@link SolrCore} instance.
  */
 public class SolrCoreMetricManager implements Closeable {
+
+  public static final AttributeKey<String> COLLECTION_ATTR = AttributeKey.stringKey("collection");
+  public static final AttributeKey<String> CORE_ATTR = AttributeKey.stringKey("core");
+  public static final AttributeKey<String> SHARD_ATTR = AttributeKey.stringKey("shard");
+  public static final AttributeKey<String> REPLICA_ATTR = AttributeKey.stringKey("replica");
+  public static final AttributeKey<String> HANDLER_ATTR = AttributeKey.stringKey("handler");
+  public static final AttributeKey<String> SCOPE_ATTR = AttributeKey.stringKey("scope");
 
   private final SolrCore core;
   private SolrMetricsContext solrMetricsContext;
@@ -99,6 +108,7 @@ public class SolrCoreMetricManager implements Closeable {
    * and will be used under the new core name. This method also reloads reporters so that they use
    * the new core name.
    */
+  // NOCOMMIT SOLR-17458: Update for core renaming
   public void afterCoreRename() {
     assert core.getCoreDescriptor().getCloudDescriptor() == null;
     String oldRegistryName = solrMetricsContext.getRegistryName();
@@ -135,8 +145,19 @@ public class SolrCoreMetricManager implements Closeable {
               + ", producer = "
               + producer);
     }
+
+    // NOCOMMIT SOLR-17458: These attributes may not work for standalone mode
     // use deprecated method for back-compat, remove in 9.0
-    producer.initializeMetrics(solrMetricsContext, scope);
+    producer.initializeMetrics(
+        solrMetricsContext,
+        Attributes.builder()
+            .put(CORE_ATTR, core.getCoreDescriptor().getName())
+            .put(COLLECTION_ATTR, collectionName)
+            .put(SHARD_ATTR, shardName)
+            .put(REPLICA_ATTR, replicaName)
+            .put((scope.startsWith("/")) ? HANDLER_ATTR : SCOPE_ATTR, scope)
+            .build(),
+        scope);
   }
 
   /** Return the registry used by this SolrCore. */

@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -1104,7 +1105,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       setLatestSchema(schema);
 
       // initialize core metrics
-      initializeMetrics(solrMetricsContext, null);
+      // TODO SOLR-17458: Add Otel
+      initializeMetrics(solrMetricsContext, Attributes.empty(), "");
 
       // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
       initPlugins(null, CircuitBreaker.class);
@@ -1112,7 +1114,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
+      // TODO SOLR-17458: Add Otel
+      solrFieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "core");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1189,7 +1192,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
         ((SolrMetricProducer) directoryFactory)
-            .initializeMetrics(solrMetricsContext, "directoryFactory");
+            // TODO SOLR-17458: Add Otel
+            .initializeMetrics(solrMetricsContext, Attributes.empty(), "directoryFactory");
       }
 
       bufferUpdatesIfConstructing(coreDescriptor);
@@ -1301,8 +1305,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return coreMetricManager;
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
     newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
     newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");

@@ -23,9 +23,21 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.metrics.DoubleCounter;
+import io.opentelemetry.api.metrics.DoubleGauge;
+import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongGauge;
+import io.opentelemetry.api.metrics.LongHistogram;
+import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableDoubleGauge;
+import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -48,31 +60,37 @@ public class SolrMetricsContext {
   }
 
   /** See {@link SolrMetricManager#nullNumber()}. */
+  // TODO Remove
   public Object nullNumber() {
     return metricManager.nullNumber();
   }
 
   /** See {@link SolrMetricManager#notANumber()}. */
+  // TODO Remove
   public Object notANumber() {
     return metricManager.notANumber();
   }
 
   /** See {@link SolrMetricManager#nullString()}. */
+  // TODO Remove
   public Object nullString() {
     return metricManager.nullString();
   }
 
   /** See {@link SolrMetricManager#nullObject()}. */
+  // TODO Remove
   public Object nullObject() {
     return metricManager.nullObject();
   }
 
   /** Metrics tag that represents objects with the same life-cycle. */
+  // TODO Remove
   public String getTag() {
     return tag;
   }
 
   /** Return metric registry name used in this context. */
+  // TODO Change this to OTEL Scope
   public String getRegistryName() {
     return registryName;
   }
@@ -94,6 +112,7 @@ public class SolrMetricsContext {
    * </code>) of components that register gauge metrics with references to the current object's
    * instance. Failure to do so may result in hard-to-debug memory leaks.</b>
    */
+  // TODO don't need this
   public void unregister() {
     metricManager.unregisterGauges(registryName, tag);
   }
@@ -105,6 +124,7 @@ public class SolrMetricsContext {
    *
    * @param child child object that produces metrics with a different life-cycle than the parent.
    */
+  // TODO We shouldn't need child context anymore
   public SolrMetricsContext getChildContext(Object child) {
     SolrMetricsContext childContext =
         new SolrMetricsContext(
@@ -116,21 +136,108 @@ public class SolrMetricsContext {
    * Register a metric name that this component reports. This method is called by various metric
    * registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order to capture
    * what metric names are reported from this component (which in turn is called from {@link
-   * org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricsContext, String)}).
+   * SolrMetricProducer#initializeMetrics(SolrMetricsContext,
+   * io.opentelemetry.api.common.Attributes, String)}).
    */
+  // TODO We can continue to register metric names
   public void registerMetricName(String name) {
     metricNames.add(name);
   }
 
   /** Return a snapshot of metric values that this component reports. */
+  // TODO Don't think this is needed anymore
   public Map<String, Object> getMetricsSnapshot() {
     return MetricUtils.convertMetrics(getMetricRegistry(), metricNames);
+  }
+
+  public LongCounter longCounter(String metricName, String description) {
+    return longCounter(metricName, description, null);
+  }
+
+  public LongCounter longCounter(String metricName, String description, String unit) {
+    return metricManager.longCounter(registryName, metricName, description, unit);
+  }
+
+  public LongUpDownCounter longUpDownCounter(String metricName, String description) {
+    return longUpDownCounter(metricName, description, null);
+  }
+
+  public LongUpDownCounter longUpDownCounter(String metricName, String description, String unit) {
+    return metricManager.longUpDownCounter(registryName, metricName, description, unit);
+  }
+
+  public DoubleCounter doubleCounter(String metricName, String description) {
+    return doubleCounter(metricName, description, null);
+  }
+
+  public DoubleCounter doubleCounter(String metricName, String description, String unit) {
+    return metricManager.doubleCounter(registryName, metricName, description, unit);
+  }
+
+  public DoubleHistogram doubleHistogram(String metricName, String description) {
+    return metricManager.doubleHistogram(registryName, metricName, description, null);
+  }
+
+  public DoubleHistogram doubleHistogram(String metricName, String description, String unit) {
+    return metricManager.doubleHistogram(registryName, metricName, description, unit);
+  }
+
+  public LongHistogram longHistogram(String metricName, String description) {
+    return metricManager.longHistogram(registryName, metricName, description, null);
+  }
+
+  public LongHistogram longHistogram(String metricName, String description, String unit) {
+    return metricManager.longHistogram(registryName, metricName, description, unit);
+  }
+
+  public LongGauge longGauge(String metricName, String description) {
+    return metricManager.longGauge(registryName, metricName, description, null);
+  }
+
+  public LongGauge longGauge(String metricName, String description, String unit) {
+    return metricManager.longGauge(registryName, metricName, description, unit);
+  }
+
+  public DoubleGauge doubleGauge(String metricName, String description) {
+    return metricManager.doubleGauge(registryName, metricName, description, null);
+  }
+
+  public DoubleGauge doubleGauge(String metricName, String description, String unit) {
+    return metricManager.doubleGauge(registryName, metricName, description, unit);
+  }
+
+  public ObservableLongGauge observableLongGauge(
+      String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
+    return observableLongGauge(metricName, description, callback, null);
+  }
+
+  public ObservableLongGauge observableLongGauge(
+      String metricName,
+      String description,
+      Consumer<ObservableLongMeasurement> callback,
+      String unit) {
+    return metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableDoubleGauge observableDoubleGauge(
+      String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
+    return observableDoubleGauge(metricName, description, callback, null);
+  }
+
+  public ObservableDoubleGauge observableDoubleGauge(
+      String metricName,
+      String description,
+      Consumer<ObservableDoubleMeasurement> callback,
+      String unit) {
+    return metricManager.observableDoubleGauge(
+        registryName, metricName, description, callback, unit);
   }
 
   /**
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String,
    * String...)}.
    */
+  // TODO Remove
   public Meter meter(String metricName, String... metricPath) {
     return metricManager.meter(this, registryName, metricName, metricPath);
   }
@@ -139,6 +246,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#counter(SolrMetricsContext, String, String,
    * String...)}.
    */
+  // TODO Remove
   public Counter counter(String metricName, String... metricPath) {
     return metricManager.counter(this, registryName, metricName, metricPath);
   }
@@ -147,6 +255,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String,
    * Gauge, String, SolrMetricManager.ResolutionStrategy, String, String...)}.
    */
+  // TODO Remove
   public void gauge(Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
     metricManager.registerGauge(
         this,
@@ -164,6 +273,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String,
    * String...)}.
    */
+  // TODO Remove
   public Timer timer(String metricName, String... metricPath) {
     return metricManager.timer(this, registryName, metricName, metricPath);
   }
@@ -172,6 +282,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#histogram(SolrMetricsContext, String, String,
    * String...)}.
    */
+  // TODO Remove
   public Histogram histogram(String metricName, String... metricPath) {
     return metricManager.histogram(this, registryName, metricName, metricPath);
   }
@@ -179,6 +290,7 @@ public class SolrMetricsContext {
   /**
    * Get the {@link MetricRegistry} instance that is used for registering metrics in this context.
    */
+  // TODO Change this to OTEL Scope?
   public MetricRegistry getMetricRegistry() {
     return metricManager.registry(registryName);
   }

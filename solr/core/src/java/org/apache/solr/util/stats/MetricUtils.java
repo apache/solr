@@ -26,6 +26,10 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -51,6 +55,7 @@ import java.util.function.Predicate;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
@@ -851,5 +856,9 @@ public class MetricUtils {
         // ignore
       }
     }
+  }
+
+  public static SdkMeterProvider getMeterProvider() {
+    return (SdkMeterProvider) GlobalOpenTelemetry.getMeterProvider();
   }
 }
