@@ -132,8 +132,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (builder.followRedirects != null
           || builder.connectionTimeoutMillis != null
           || builder.maxConnectionsPerHost != null
-          || builder.useHttp1_1
-              != builder.httpClient.getTransport() instanceof HttpClientTransportOverHTTP
+          || builder.useHttp1_1 != null
           || builder.proxyHost != null
           || builder.sslConfig != null
           || builder.cookieStore != null
@@ -273,7 +272,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     HttpClient httpClient;
     HttpClientTransport transport;
-    if (builder.useHttp1_1) {
+    if (builder.shouldUseHttp1_1()) {
       if (log.isDebugEnabled()) {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
@@ -335,7 +334,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       proxy = new Socks4Proxy(address, builder.proxyIsSecure);
     } else {
       final Protocol protocol;
-      if (builder.useHttp1_1) {
+      if (builder.shouldUseHttp1_1()) {
         protocol = HttpClientTransportOverHTTP.HTTP11;
       } else {
         // see HttpClientTransportOverHTTP2#newOrigin
