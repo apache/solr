@@ -26,8 +26,6 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -853,9 +851,5 @@ public class MetricUtils {
         // ignore
       }
     }
-  }
-
-  public static SdkMeterProvider getMeterProvider() {
-    return (SdkMeterProvider) GlobalOpenTelemetry.getMeterProvider();
   }
 }

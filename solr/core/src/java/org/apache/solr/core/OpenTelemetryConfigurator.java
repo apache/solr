@@ -74,7 +74,10 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   private static void configureOpenTelemetrySdk() {
     if (loaded) return;
 
-    if (TRACE_ID_GEN_ENABLED) ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
+    if (TRACE_ID_GEN_ENABLED) {
+      log.info("OpenTelemetry tracer enabled with simple propagation only.");
+      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
+    }
 
     OpenTelemetry otel =
         OpenTelemetry.propagating(ContextPropagators.create(SimplePropagator.getInstance()));
