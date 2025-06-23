@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security;
 
+import io.opentelemetry.api.common.Attributes;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -195,10 +196,13 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     for (AuthenticationPlugin plugin : pluginMap.values()) {
-      plugin.initializeMetrics(parentContext, scope);
+      // TODO SOLR-17458: Add Otel
+      plugin.initializeMetrics(parentContext, Attributes.empty(), scope);
     }
   }
 

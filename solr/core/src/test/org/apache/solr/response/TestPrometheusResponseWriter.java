@@ -114,6 +114,10 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
             } else {
               actualValue = actualMetric.split(" ")[1];
             }
+            if (actualMetric.startsWith("target_info")) {
+              // Skip standard OTEL metric
+              return;
+            }
             assertTrue(
                 "All metrics should start with 'solr_metrics_'",
                 actualMetric.startsWith("solr_metrics_"));
@@ -124,54 +128,6 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
               assertTrue(VALID_PROMETHEUS_VALUES.contains(actualValue));
             }
           });
-    }
-  }
-
-  public void testPrometheusDummyOutput() throws Exception {
-    String expectedCore =
-        "solr_metrics_core_requests_total{category=\"QUERY\",core=\"collection1\",handler=\"/dummy/metrics\",type=\"requests\"} 10.0";
-    String expectedNode =
-        "solr_metrics_node_requests_total{category=\"ADMIN\",handler=\"/dummy/metrics\",type=\"requests\"} 20.0";
-    String expectedJetty = "solr_metrics_jetty_response_total{status=\"2xx\"} 30.0";
-    String expectedJvm = "solr_metrics_jvm_gc{item=\"dummyMetrics\"} 0.0";
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("wt", "prometheus");
-    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
-    req.setResponseParser(new NoOpResponseParser("prometheus"));
-
-    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
-      NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-      String output = (String) res.get("response");
-      assertEquals(
-          expectedCore,
-          output
-              .lines()
-              .filter(line -> line.contains(expectedCore))
-              .collect(Collectors.toList())
-              .get(0));
-      assertEquals(
-          expectedNode,
-          output
-              .lines()
-              .filter(line -> line.contains(expectedNode))
-              .collect(Collectors.toList())
-              .get(0));
-      assertEquals(
-          expectedJetty,
-          output
-              .lines()
-              .filter(line -> line.contains(expectedJetty))
-              .collect(Collectors.toList())
-              .get(0));
-      assertEquals(
-          expectedJvm,
-          output
-              .lines()
-              .filter(line -> line.contains(expectedJvm))
-              .collect(Collectors.toList())
-              .get(0));
     }
   }
 

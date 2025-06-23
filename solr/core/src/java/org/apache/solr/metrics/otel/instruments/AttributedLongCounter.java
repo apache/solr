@@ -14,14 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.node;
+package org.apache.solr.metrics.otel.instruments;
 
-public interface PrometheusNodeFormatterInfo {
-  /** Category of prefix Solr Node dropwizard handler metric names */
-  enum NodeCategory {
-    ADMIN,
-    UPDATE,
-    CONTAINER,
-    CACHE
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+
+public class AttributedLongCounter {
+
+  private final LongCounter baseCounter;
+  private final io.opentelemetry.api.common.Attributes attributes;
+
+  public AttributedLongCounter(LongCounter baseCounter, Attributes attributes) {
+    this.baseCounter = baseCounter;
+    this.attributes = attributes;
+  }
+
+  public void inc() {
+    add(1L);
+  }
+
+  public void add(Long value) {
+    baseCounter.add(value, attributes);
   }
 }

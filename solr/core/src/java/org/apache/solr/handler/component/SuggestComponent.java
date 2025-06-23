@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -380,9 +381,11 @@ public class SuggestComponent extends SearchComponent
     return "Suggester component";
   }
 
+  // TODO SOLR-17458: Migrate to OTEL
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    super.initializeMetrics(parentContext, attributes, scope);
 
     this.solrMetricsContext.gauge(
         () -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());

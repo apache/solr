@@ -14,9 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.otel.instruments;
 
-/**
- * The {@link org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmFormatter} is responsible for
- * exporting solr.jvm registry metrics to Prometheus.
- */
-package org.apache.solr.metrics.prometheus.jvm;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongGauge;
+
+public class AttributedLongGauge {
+
+  private final LongGauge gauge;
+  private final Attributes attributes;
+
+  public AttributedLongGauge(LongGauge gauge, Attributes attributes) {
+    this.gauge = gauge;
+    this.attributes = attributes;
+  }
+
+  public void set(Long value) {
+    gauge.set(value, attributes);
+  }
+}

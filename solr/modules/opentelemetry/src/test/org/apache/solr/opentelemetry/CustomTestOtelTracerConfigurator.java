@@ -16,7 +16,6 @@
  */
 package org.apache.solr.opentelemetry;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
@@ -99,7 +98,6 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
         exporter = null;
       }
       System.clearProperty("otel.traces.exporter");
-      GlobalOpenTelemetry.resetForTest();
     }
   }
 }

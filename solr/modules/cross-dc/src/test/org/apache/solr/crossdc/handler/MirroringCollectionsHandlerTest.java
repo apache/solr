@@ -31,6 +31,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
@@ -160,6 +161,8 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreContainerInit() throws Exception {
+    OpenTelemetryConfigurator.resetForTest();
+
     Path home = createTempDir();
     String solrXml = IOUtils.resourceToString("/mirroring-solr.xml", StandardCharsets.UTF_8);
     CoreContainer cores = new CoreContainer(SolrXmlConfig.fromString(home, solrXml));

@@ -16,7 +16,8 @@
  */
 
 /**
- * The {@link org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreFormatter} is responsible
- * for exporting solr.core registry metrics to Prometheus.
+ * A collection of bound OTEL instruments which are reusable wrappers around OpenTelemetry metric
+ * instruments that are pre-bound to a fixed set of Attributes. This avoids repeated attribute
+ * allocation on every metric recording.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.otel.instruments;

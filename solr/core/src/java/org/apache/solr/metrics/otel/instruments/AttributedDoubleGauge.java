@@ -14,14 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.jetty;
+package org.apache.solr.metrics.otel.instruments;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrMetric;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleGauge;
 
-/** Base class is a wrapper to export a solr.jetty {@link com.codahale.metrics.Metric} */
-public abstract class SolrJettyMetric extends SolrMetric {
-  public SolrJettyMetric(Metric dropwizardMetric, String metricName) {
-    super(dropwizardMetric, metricName);
+public class AttributedDoubleGauge {
+  private final DoubleGauge gauge;
+  private final Attributes attributes;
+
+  public AttributedDoubleGauge(DoubleGauge gauge, Attributes attributes) {
+    this.gauge = gauge;
+    this.attributes = attributes;
+  }
+
+  public void set(Double value) {
+    gauge.set(value, attributes);
   }
 }

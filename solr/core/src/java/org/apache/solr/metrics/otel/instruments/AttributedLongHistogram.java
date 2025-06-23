@@ -14,9 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.otel.instruments;
 
-/**
- * The {@link org.apache.solr.metrics.prometheus.node.SolrPrometheusNodeFormatter} is responsible
- * for exporting solr.node registry metrics to Prometheus.
- */
-package org.apache.solr.metrics.prometheus.node;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongHistogram;
+
+public class AttributedLongHistogram {
+
+  protected final LongHistogram histogram;
+  protected final Attributes attributes;
+
+  public AttributedLongHistogram(
+      LongHistogram histogram, io.opentelemetry.api.common.Attributes attributes) {
+    this.histogram = histogram;
+    this.attributes = attributes;
+  }
+
+  public void record(Long value) {
+    histogram.record(value, attributes);
+  }
+}

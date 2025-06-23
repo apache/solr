@@ -20,6 +20,7 @@ package org.apache.solr.util.stats;
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Locale;
@@ -152,7 +153,8 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     this.scope = scope;
   }

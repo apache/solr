@@ -22,6 +22,7 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -260,8 +261,10 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     this.formatter = formatter;
   }
 
+  // TODO SOLR-17458: Migrate to Otel
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, final String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, final String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String className = this.getClass().getSimpleName();
     log.debug("Initializing metrics for {}", className);

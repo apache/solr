@@ -14,16 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.node;
+package org.apache.solr.metrics.otel.instruments;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrMetric;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleUpDownCounter;
 
-/** Base class is a wrapper to export a solr.node {@link com.codahale.metrics.Metric} */
-public abstract class SolrNodeMetric extends SolrMetric {
-  public static final String NODE_THREAD_POOL = "solr_metrics_node_thread_pool";
+public class AttributedDoubleUpDownCounter {
 
-  public SolrNodeMetric(Metric dropwizardMetric, String metricName) {
-    super(dropwizardMetric, metricName);
+  private final DoubleUpDownCounter upDownCounter;
+  private final Attributes attributes;
+
+  public AttributedDoubleUpDownCounter(DoubleUpDownCounter upDownCounter, Attributes attributes) {
+    this.upDownCounter = upDownCounter;
+    this.attributes = attributes;
+  }
+
+  public void inc() {
+    add(1.0);
+  }
+
+  public void dec() {
+    add(-1.0);
+  }
+
+  public void add(Double value) {
+    upDownCounter.add(value, attributes);
   }
 }
