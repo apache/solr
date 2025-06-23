@@ -16,13 +16,17 @@
  */
 package org.apache.solr.schema;
 
+import org.apache.lucene.codecs.KnnVectorsFormat;
+import org.apache.lucene.codecs.lucene99.Lucene99HnswScalarQuantizedVectorsFormat;
 import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.solr.common.SolrException;
 
 import java.util.Map;
 
 import static java.util.Optional.ofNullable;
+import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_NUM_MERGE_WORKER;
 
 public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     public static final String BITS = "bits"; //
@@ -83,6 +87,29 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
                 .map(Boolean::parseBoolean)
                 .orElse(false)) {
             this.confidenceInterval = Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL;
+        }
+    }
+
+    @Override
+    public KnnVectorsFormat buildKnnVectorsFormat() {
+        final String knnAlgorithm = getKnnAlgorithm();
+        if (KNN_ALGORITHM.equals(knnAlgorithm)) {
+            return new Lucene99HnswScalarQuantizedVectorsFormat(
+                    getHnswMaxConn(),
+                    getHnswBeamWidth(),
+                    DEFAULT_NUM_MERGE_WORKER,
+                    getBits(),
+                    useCompression(),
+                    getConfidenceInterval(),
+                    null
+            );
+        } else if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
+            return new Lucene99ScalarQuantizedVectorsFormat(
+                    getConfidenceInterval(),
+                    getBits(),
+                    useCompression());
+        } else {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, String.format("Unrecognized KNN algorithm: %s", knnAlgorithm));
         }
     }
 
