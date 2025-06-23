@@ -82,6 +82,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -160,10 +161,15 @@ public class SolrMetricManager {
     meterSupplier = MetricSuppliers.meterSupplier(null, null);
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
     histogramSupplier = MetricSuppliers.histogramSupplier(null, null);
+    meterProvider = MetricUtils.getMeterProvider();
+    metricReader = null;
   }
 
-  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
+  public SolrMetricManager(
+      SolrResourceLoader loader, MetricsConfig metricsConfig, PrometheusMetricReader metricReader) {
     this.metricsConfig = metricsConfig;
+    this.metricReader = metricReader;
+    this.meterProvider = MetricUtils.getMeterProvider();
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());

@@ -33,6 +33,7 @@ import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;

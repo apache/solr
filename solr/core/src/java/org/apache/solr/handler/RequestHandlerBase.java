@@ -189,7 +189,7 @@ public abstract class RequestHandlerBase
         new HandlerMetrics(
             new SolrMetricsContext(
                 new SolrMetricManager(
-                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
+                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build(), null),
                 "NO_OP",
                 "NO_OP"),
             Attributes.empty());
