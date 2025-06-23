@@ -20,6 +20,7 @@ package org.apache.solr.util.stats;
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import java.util.Locale;
 import java.util.Map;
@@ -124,8 +125,10 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
     return solrMetricsContext.timer(nameStrategy.getNameFor(scope, request));
   }
 
+  // TODO SOLR-17458: Add Otel
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext;
     this.scope = scope;
   }

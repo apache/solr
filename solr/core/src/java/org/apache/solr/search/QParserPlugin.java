@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import io.opentelemetry.api.common.Attributes;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,7 +123,8 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     // by default do nothing
   }
 

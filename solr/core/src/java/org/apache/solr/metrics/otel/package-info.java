@@ -14,14 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.jvm;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrMetric;
-
-/** Base class is a wrapper to export a solr.jvm {@link com.codahale.metrics.Metric} */
-public abstract class SolrJvmMetric extends SolrMetric {
-  public SolrJvmMetric(Metric dropwizardMetric, String metricName) {
-    super(dropwizardMetric, metricName);
-  }
-}
+/**
+ * Interfaces for creating wrappers around Open Telemetry instruments created from {@link
+ * io.opentelemetry.api.metrics.MeterProvider} to record and measure metrics
+ */
+package org.apache.solr.metrics.otel;

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import io.opentelemetry.api.common.Attributes;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -68,7 +69,8 @@ final class HttpSolrClientProvider implements AutoCloseable {
     var solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope =
         SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
+    // TODO SOLR-17458: Add Otel
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty(), expandedScope);
   }
 
   Http2SolrClient getSolrClient() {

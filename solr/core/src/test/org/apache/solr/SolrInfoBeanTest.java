@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import io.opentelemetry.api.common.Attributes;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -64,7 +65,8 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4 {
       if (SolrInfoBean.class.isAssignableFrom(clazz)) {
         try {
           SolrInfoBean info = clazz.asSubclass(SolrInfoBean.class).getConstructor().newInstance();
-          info.initializeMetrics(solrMetricsContext, scope);
+          // TODO SOLR-17458: Fix test later
+          info.initializeMetrics(solrMetricsContext, Attributes.empty(), scope);
 
           // System.out.println( info.getClass() );
           assertNotNull(info.getClass().getCanonicalName(), info.getName());

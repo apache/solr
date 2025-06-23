@@ -14,16 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus;
+package org.apache.solr.metrics.otel.instruments;
 
-public class SolrNoOpMetric extends SolrMetric {
-  public SolrNoOpMetric() {}
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleCounter;
 
-  @Override
-  public SolrMetric parseLabels() {
-    return this;
+public class AttributedDoubleCounter {
+
+  private final DoubleCounter counter;
+  private final Attributes attributes;
+
+  public AttributedDoubleCounter(DoubleCounter counter, Attributes attributes) {
+    this.counter = counter;
+    this.attributes = attributes;
   }
 
-  @Override
-  public void toPrometheus(SolrPrometheusFormatter formatter) {}
+  public void inc() {
+    add(1.0);
+  }
+
+  public void add(Double value) {
+    counter.add(value, attributes);
+  }
 }

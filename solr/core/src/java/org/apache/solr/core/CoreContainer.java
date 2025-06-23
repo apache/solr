@@ -31,6 +31,7 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import jakarta.inject.Singleton;
@@ -516,7 +517,9 @@ public class CoreContainer {
               newVersion, getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
       newAuditloggerPlugin.plugin.init(auditConf);
-      newAuditloggerPlugin.plugin.initializeMetrics(solrMetricsContext, "/auditlogging");
+      // TODO SOLR-17458: Add Otel
+      newAuditloggerPlugin.plugin.initializeMetrics(
+          solrMetricsContext, Attributes.empty(), "/auditlogging");
     } else {
       log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
     }
@@ -581,7 +584,9 @@ public class CoreContainer {
     if (authenticationPlugin != null) {
       authenticationPlugin.plugin.init(authenticationConfig);
       setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
-      authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication");
+      // TODO SOLR-17458: Add Otel
+      authenticationPlugin.plugin.initializeMetrics(
+          solrMetricsContext, Attributes.empty(), "/authentication");
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -776,13 +781,16 @@ public class CoreContainer {
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
-      metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
+      // TODO SOLR-17458: Add Otel
+      metricProducer.initializeMetrics(solrMetricsContext, Attributes.empty(), "httpShardHandler");
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
-    updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
+    // TODO SOLR-17458: Add Otel
+    updateShardHandler.initializeMetrics(
+        solrMetricsContext, Attributes.empty(), "updateShardHandler");
     solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
@@ -793,7 +801,8 @@ public class CoreContainer {
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
         SolrCache<?, ?> c = e.getValue().newInstance();
         String cacheName = e.getKey();
-        c.initializeMetrics(solrMetricsContext, "nodeLevelCache/" + cacheName);
+        // TODO SOLR-17458: Add Otel
+        c.initializeMetrics(solrMetricsContext, Attributes.empty(), "nodeLevelCache/" + cacheName);
         m.put(cacheName, c);
       }
       this.caches = Collections.unmodifiableMap(m);
@@ -807,13 +816,18 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
-      zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient");
+      // TODO SOLR-17458: Add Otel
+      zkSys
+          .getZkMetricsProducer()
+          .initializeMetrics(solrMetricsContext, Attributes.empty(), "zkClient");
       pkiAuthenticationSecurityBuilder =
           new PKIAuthenticationPlugin(
               this,
               zkSys.getZkController().getNodeName(),
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
-      pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
+      // TODO SOLR-17458: Add Otel
+      pkiAuthenticationSecurityBuilder.initializeMetrics(
+          solrMetricsContext, Attributes.empty(), "/authentication/pki");
 
       fileStore = new DistribFileStore(this);
       registerV2ApiIfEnabled(ClusterFileStore.class);
@@ -877,10 +891,12 @@ public class CoreContainer {
 
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
-    metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
+    // TODO SOLR-17458: Add Otel
+    metricsHandler.initializeMetrics(solrMetricsContext, Attributes.empty(), METRICS_PATH);
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
-    securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH);
+    // TODO SOLR-17458: Add Otel
+    securityConfHandler.initializeMetrics(solrMetricsContext, Attributes.empty(), AUTHZ_PATH);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
 
     PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
@@ -1002,7 +1018,8 @@ public class CoreContainer {
         "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    fieldCacheBean.initializeMetrics(solrMetricsContext, null);
+    // TODO SOLR-17458: Otel migration
+    fieldCacheBean.initializeMetrics(solrMetricsContext, Attributes.empty(), "");
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
@@ -2328,7 +2345,9 @@ public class CoreContainer {
       containerHandlers.put(path, (SolrRequestHandler) handler);
     }
     if (handler instanceof SolrMetricProducer) {
-      ((SolrMetricProducer) handler).initializeMetrics(solrMetricsContext, path);
+      ((SolrMetricProducer) handler)
+          // TODO SOLR-17458: Add Otel
+          .initializeMetrics(solrMetricsContext, Attributes.empty(), path);
     }
     return handler;
   }

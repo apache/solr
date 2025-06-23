@@ -17,6 +17,7 @@
 package org.apache.solr.highlight;
 
 import com.codahale.metrics.Counter;
+import io.opentelemetry.api.common.Attributes;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.common.params.SolrParams;
@@ -62,8 +63,10 @@ public abstract class HighlightingPluginBase implements SolrInfoBean {
     return solrMetricsContext;
   }
 
+  // TODO SOLR-17458: Migrate to OTEL
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     numRequests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
   }

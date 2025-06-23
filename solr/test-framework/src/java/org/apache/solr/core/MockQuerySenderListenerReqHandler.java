@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import io.opentelemetry.api.common.Attributes;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -38,8 +39,9 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(
+      SolrMetricsContext parentContext, Attributes attributes, String scope) {
+    super.initializeMetrics(parentContext, attributes, scope);
     solrMetricsContext.gauge(
         () -> initCounter.intValue(), true, "initCount", getCategory().toString(), scope);
   }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.blockcache;
 
+import io.opentelemetry.api.common.Attributes;
 import java.math.BigDecimal;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
@@ -42,7 +43,8 @@ public class BufferStoreTest extends SolrTestCase {
     String registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
-    metrics.initializeMetrics(solrMetricsContext, scope);
+    // TODO SOLR-17458: Fix test later
+    metrics.initializeMetrics(solrMetricsContext, Attributes.empty(), scope);
     metricsMap =
         (MetricsMap)
             ((SolrMetricManager.GaugeWrapper)
