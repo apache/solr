@@ -43,8 +43,6 @@ import org.apache.solr.schema.SchemaField;
  */
 public class ExpressionValueSourceParser extends ValueSourceParser {
 
-  // TODO: more docs, example configs, example usage
-
   public static final String SCORE_KEY = "score-name";
   public static final String EXPRESSIONS_KEY = "expressions";
 
