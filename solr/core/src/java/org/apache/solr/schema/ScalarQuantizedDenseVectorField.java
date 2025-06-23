@@ -67,29 +67,23 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     public void init(IndexSchema schema, Map<String, String> args) {
         super.init(schema, args);
 
-        this.bits = ofNullable(args.get(BITS))
+        this.bits = ofNullable(args.remove(BITS))
                 .map(Integer::parseInt)
                 .orElse(DEFAULT_BITS);
-        args.remove(BITS);
 
-        this.compress = ofNullable(args.get(COMPRESS))
+        this.compress = ofNullable(args.remove(COMPRESS))
                 .map(Boolean::parseBoolean)
                 .orElse(false);
-        args.remove(COMPRESS);
 
-        boolean useDynamicConfidenceInterval = ofNullable(args.get(DYNAMIC_CONFIDENCE_INTERVAL))
-                .map(Boolean::parseBoolean)
-                .orElse(false);
-        args.remove(DYNAMIC_CONFIDENCE_INTERVAL);
-
-        if (useDynamicConfidenceInterval) {
-            this.confidenceInterval = Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL;
-        }
-
-        this.confidenceInterval = ofNullable(args.get(CONFIDENCE_INTERVAL))
+        this.confidenceInterval = ofNullable(args.remove(CONFIDENCE_INTERVAL))
                 .map(Float::parseFloat)
                 .orElse(DEFAULT_CONFIDENCE_INTERVAL);
-        args.remove(CONFIDENCE_INTERVAL);
+
+        if (ofNullable(args.remove(DYNAMIC_CONFIDENCE_INTERVAL))
+                .map(Boolean::parseBoolean)
+                .orElse(false)) {
+            this.confidenceInterval = Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL;
+        }
     }
 
     public int getBits() {
