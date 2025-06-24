@@ -62,14 +62,13 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     public void testSingleLexicalQuery() throws Exception {
         prepareIndexDocs();
         QueryResponse rsp;
-        //query("q", "*:*", "sort", "id desc", "fl", "id,score,title,text,vector");
         rsp = queryServer(createParams(CommonParams.JSON, "{\"queries\":" +
                 "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}}," +
                 "\"limit\":5," +
                 "\"fields\":[\"id\",\"score\",\"title\"]," +
                 "\"params\":{\"combiner\":true,\"combiner.upTo\":10,\"combiner.query\":[\"lexical1\"]}}",
                 "shards", getShardsString()));
-        //assert numfound = 10
+        assertEquals(1, rsp.getResults().size());
         assertFieldValues(rsp.getResults(), id, "2");
     }
 
@@ -83,6 +82,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                         "\"fields\":[\"id\",\"score\",\"title\"]," +
                         "\"params\":{\"combiner\":true,\"combiner.upTo\":100,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
                         "shards", getShardsString()));
+        assertEquals(5, rsp.getResults().size());
         assertFieldValues(rsp.getResults(), id, "1", "2", "3", "4", "5");
     }
 
@@ -98,6 +98,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                         "\"fields\":[\"id\",\"score\",\"title\"]," +
                         "\"params\":{\"combiner\":true,\"combiner.upTo\":10,\"combiner.query\":[\"lexical\",\"vector\"]}}",
                         "shards", getShardsString()));
+        assertEquals(4, rsp.getResults().size());
         assertFieldValues(rsp.getResults(), id, "2", "3", "1", "4");
     }
 
