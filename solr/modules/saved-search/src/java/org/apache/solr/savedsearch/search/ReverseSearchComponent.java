@@ -39,7 +39,6 @@ import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.lucene.monitor.Visitors.DocumentBatchVisitor;
-import org.apache.lucene.monitor.Visitors.MonitorFields;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
@@ -52,6 +51,7 @@ import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.savedsearch.AliasingPresearcher;
+import org.apache.solr.savedsearch.SavedSearchDataValues;
 import org.apache.solr.savedsearch.SavedSearchDecoder;
 import org.apache.solr.savedsearch.cache.DefaultSavedSearchCache;
 import org.apache.solr.savedsearch.cache.SavedSearchCache;
@@ -86,12 +86,14 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   }
 
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
-    super.prepare(rb);
+  public void process(ResponseBuilder rb) throws IOException {
     try (final DocumentBatchVisitor documentBatchVisitor =
         documentBatchVisitor(rb.req.getJSON(), rb.req.getSchema())) {
+      if (documentBatchVisitor == null) {
+        super.process(rb);
+        return;
+      }
       final LeafReader documentBatch = documentBatchVisitor.get();
-
       final SavedSearchCache savedSearchCache =
           (DefaultSavedSearchCache) rb.req.getSearcher().getCache(this.savedSearchCacheName);
 
@@ -103,6 +105,23 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       }
       final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
       rb.setQuery(reverseSearchQuery(preFilterQuery, rb, documentBatch, savedSearchCache));
+      super.process(rb);
+      SolrMatcherSink solrMatcherSink =
+          (SolrMatcherSink) rb.req.getContext().get(SolrMatcherSink.class.getSimpleName());
+      if (rb.isDebug() && solrMatcherSink != null) {
+        ReverseSearchQuery.Metadata metadata = solrMatcherSink.getMetadata();
+        DebugComponent.CustomDebugInfoSources debugInfoSources =
+            (DebugComponent.CustomDebugInfoSources)
+                rb.req
+                    .getContext()
+                    .computeIfAbsent(
+                        DebugComponent.CustomDebugInfoSources.KEY,
+                        key -> new DebugComponent.CustomDebugInfoSources());
+        SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
+        info.add("queriesRun", metadata.getQueriesRun());
+        debugInfoSources.add(
+            new DebugComponent.CustomDebugInfoSource("reverse-search-debug", info));
+      }
     }
   }
 
@@ -125,29 +144,12 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     return new ReverseSearchQuery(context, preFilterQuery);
   }
 
-  @Override
-  public void process(ResponseBuilder rb) throws IOException {
-    super.process(rb);
-    SolrMatcherSink solrMatcherSink =
-        (SolrMatcherSink) rb.req.getContext().get(SolrMatcherSink.class.getSimpleName());
-    if (rb.isDebug() && solrMatcherSink != null) {
-      ReverseSearchQuery.Metadata metadata = solrMatcherSink.getMetadata();
-      DebugComponent.CustomDebugInfoSources debugInfoSources =
-          (DebugComponent.CustomDebugInfoSources)
-              rb.req
-                  .getContext()
-                  .computeIfAbsent(
-                      DebugComponent.CustomDebugInfoSources.KEY,
-                      key -> new DebugComponent.CustomDebugInfoSources());
-      SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-      info.add("queriesRun", metadata.getQueriesRun());
-      debugInfoSources.add(new DebugComponent.CustomDebugInfoSource("reverse-search-debug", info));
-    }
-  }
-
   @SuppressWarnings({"unchecked"})
   private static DocumentBatchVisitor documentBatchVisitor(
       Map<String, Object> json, IndexSchema indexSchema) {
+    if (json == null || !json.containsKey("params")) {
+      return null;
+    }
     Object jsonParams = json.get("params");
     if (!(jsonParams instanceof Map)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need params");
@@ -155,7 +157,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     Map<?, ?> paramMap = (Map<?, ?>) jsonParams;
     Object documents = paramMap.get(REVERSE_SEARCH_DOCUMENTS_KEY);
     if (!(documents instanceof List)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need documents list");
+      return null;
     }
     List<Document> luceneDocs = new ArrayList<>();
     for (Object document : (List<?>) documents) {
@@ -215,7 +217,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       }
     }
 
-    for (String fieldName : MonitorFields.REQUIRED_MONITOR_SCHEMA_FIELDS) {
+    for (String fieldName : SavedSearchDataValues.REQUIRED_MONITOR_SCHEMA_FIELDS) {
       var field = schema.getFieldOrNull(fieldName);
       if (field == null) {
         throw new IllegalStateException(

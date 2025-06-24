@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -37,15 +36,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 public class Visitors {
-
-  public static class MonitorFields {
-    public static final String QUERY_ID = QueryIndex.FIELDS.query_id + "_";
-    public static final String CACHE_ID = QueryIndex.FIELDS.cache_id + "_";
-    public static final String MONITOR_QUERY = QueryIndex.FIELDS.mq + "_";
-
-    public static final Set<String> REQUIRED_MONITOR_SCHEMA_FIELDS =
-        Set.of(QUERY_ID, CACHE_ID, MONITOR_QUERY);
-  }
 
   public static class DocumentBatchVisitor implements AutoCloseable, Supplier<LeafReader> {
 

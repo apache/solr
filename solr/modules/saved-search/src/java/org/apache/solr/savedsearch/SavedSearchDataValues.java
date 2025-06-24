@@ -20,15 +20,22 @@
 package org.apache.solr.savedsearch;
 
 import java.io.IOException;
+import java.util.Set;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.monitor.Visitors.MonitorFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.params.CommonParams;
 
 public class SavedSearchDataValues {
+
+  public static final String QUERY_ID = "_query_id_";
+  public static final String CACHE_ID = "_cache_id_";
+  public static final String MONITOR_QUERY = "_mq_";
+
+  public static final Set<String> REQUIRED_MONITOR_SCHEMA_FIELDS =
+      Set.of(QUERY_ID, CACHE_ID, MONITOR_QUERY);
 
   private final SortedDocValues queryIdIt;
   private final SortedDocValues cacheIdIt;
@@ -39,9 +46,9 @@ public class SavedSearchDataValues {
 
   public SavedSearchDataValues(LeafReaderContext context) throws IOException {
     reader = context.reader();
-    cacheIdIt = reader.getSortedDocValues(MonitorFields.CACHE_ID);
-    queryIdIt = reader.getSortedDocValues(MonitorFields.QUERY_ID);
-    mqIt = reader.getSortedDocValues(MonitorFields.MONITOR_QUERY);
+    cacheIdIt = reader.getSortedDocValues(CACHE_ID);
+    queryIdIt = reader.getSortedDocValues(QUERY_ID);
+    mqIt = reader.getSortedDocValues(MONITOR_QUERY);
     versionIt = reader.getNumericDocValues(CommonParams.VERSION_FIELD);
     currentDoc = DocIdSetIterator.NO_MORE_DOCS;
   }
@@ -64,7 +71,7 @@ public class SavedSearchDataValues {
     if (mqIt != null && mqIt.advanceExact(currentDoc)) {
       return mqIt.lookupOrd(mqIt.ordValue()).utf8ToString();
     }
-    return reader.document(currentDoc).get(MonitorFields.MONITOR_QUERY);
+    return reader.document(currentDoc).get(MONITOR_QUERY);
   }
 
   public long getVersion() throws IOException {

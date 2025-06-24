@@ -19,7 +19,6 @@
 
 package org.apache.solr.savedsearch;
 
-import org.apache.lucene.monitor.Visitors.MonitorFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,7 +34,7 @@ public class StoredSavedSearchTest extends SavedSearchTest {
     index(
         id,
         Integer.toString(0),
-        MonitorFields.MONITOR_QUERY,
+        SavedSearchDataValues.MONITOR_QUERY,
         "{!xmlparser}" + read("/monitor/BigDisjunctionQuery.xml"));
     commit();
   }

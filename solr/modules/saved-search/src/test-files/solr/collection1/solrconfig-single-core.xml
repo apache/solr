@@ -94,6 +94,16 @@
       <str name="indent">true</str>
       <str name="df">id</str>
     </lst>
+    <arr name="components">
+      <str>reverseSearch</str>
+      <str>facet</str>
+      <str>facet_module</str>
+      <str>highlight</str>
+      <str>stats</str>
+      <str>debug</str>
+      <str>expand</str>
+      <str>terms</str>
+    </arr>
   </requestHandler>
   <requestHandler name="/query" class="solr.SearchHandler">
     <lst name="defaults">

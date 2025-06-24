@@ -19,7 +19,6 @@
 
 package org.apache.solr.savedsearch;
 
-import org.apache.lucene.monitor.Visitors.MonitorFields;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
@@ -30,9 +29,9 @@ public class SavedSearchSchemaFields {
   private final SchemaField monitorQuery;
 
   public SavedSearchSchemaFields(IndexSchema indexSchema) {
-    this.cacheId = indexSchema.getField(MonitorFields.CACHE_ID);
-    this.queryId = indexSchema.getField(MonitorFields.QUERY_ID);
-    this.monitorQuery = indexSchema.getField(MonitorFields.MONITOR_QUERY);
+    this.cacheId = indexSchema.getField(SavedSearchDataValues.CACHE_ID);
+    this.queryId = indexSchema.getField(SavedSearchDataValues.QUERY_ID);
+    this.monitorQuery = indexSchema.getField(SavedSearchDataValues.MONITOR_QUERY);
   }
 
   public SchemaField getCacheId() {

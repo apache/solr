@@ -40,7 +40,6 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.Presearcher;
 import org.apache.lucene.monitor.QueryDecomposer;
-import org.apache.lucene.monitor.Visitors.MonitorFields;
 import org.apache.lucene.monitor.Visitors.QCEVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -50,6 +49,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.savedsearch.SavedSearchDataValues;
 import org.apache.solr.savedsearch.SavedSearchSchemaFields;
 import org.apache.solr.savedsearch.SimpleQueryParser;
 import org.apache.solr.savedsearch.search.ReverseSearchComponent;
@@ -103,7 +103,7 @@ public class SavedSearchUpdateProcessorFactory extends UpdateRequestProcessorFac
       this.savedSearchSchemaFields = new SavedSearchSchemaFields(indexSchema);
       this.allowedFieldNames =
           Set.of(
-              MonitorFields.MONITOR_QUERY,
+              SavedSearchDataValues.MONITOR_QUERY,
               indexSchema.getUniqueKeyField().getName(),
               CommonParams.VERSION_FIELD);
     }
@@ -113,12 +113,12 @@ public class SavedSearchUpdateProcessorFactory extends UpdateRequestProcessorFac
       var solrInputDocument = cmd.getSolrInputDocument();
       String idFieldName = indexSchema.getUniqueKeyField().getName();
       var queryId = (String) solrInputDocument.getFieldValue(idFieldName);
-      var queryFieldValue = solrInputDocument.getFieldValue(MonitorFields.MONITOR_QUERY);
+      var queryFieldValue = solrInputDocument.getFieldValue(SavedSearchDataValues.MONITOR_QUERY);
       if (queryFieldValue == null) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Document is missing mandatory "
-                + MonitorFields.MONITOR_QUERY
+                + SavedSearchDataValues.MONITOR_QUERY
                 + " field which is required by "
                 + getClass().getSimpleName()
                 + ".");
@@ -160,7 +160,9 @@ public class SavedSearchUpdateProcessorFactory extends UpdateRequestProcessorFac
         solrInputDocument
             .getChildDocuments()
             .forEach(
-                child -> child.setField(idFieldName, child.getFieldValue(MonitorFields.CACHE_ID)));
+                child ->
+                    child.setField(
+                        idFieldName, child.getFieldValue(SavedSearchDataValues.CACHE_ID)));
       }
       copyFirstChildToParent(solrInputDocument, firstChild);
       super.processAdd(cmd);
@@ -169,7 +171,7 @@ public class SavedSearchUpdateProcessorFactory extends UpdateRequestProcessorFac
     private void copyFirstChildToParent(SolrInputDocument parent, SolrInputDocument firstChild) {
       parent.setField(
           indexSchema.getUniqueKeyField().getName(),
-          firstChild.getFieldValue(MonitorFields.CACHE_ID));
+          firstChild.getFieldValue(SavedSearchDataValues.CACHE_ID));
       for (var firstChildField : firstChild) {
         parent.setField(firstChildField.getName(), firstChildField.getValue());
       }
