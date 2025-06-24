@@ -357,14 +357,12 @@ public class SplitShardTest extends SolrCloudTestCase {
     NamedList<Object> response = splitShard.process(cluster.getSolrClient()).getResponse();
     assertNotNull(response.get("success"));
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            COLL,
-            10,
-            TimeUnit.SECONDS,
-            (liveNodes, collectionState) ->
-                testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")));
+    waitForState(
+        "Waiting for sub-shards",
+        COLL,
+        10,
+        TimeUnit.SECONDS,
+        collectionState -> testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")));
 
     JettySolrRunner randomJetty = cluster.getRandomJetty(random());
     splitShard =
@@ -374,14 +372,12 @@ public class SplitShardTest extends SolrCloudTestCase {
     response = splitShard.process(cluster.getSolrClient()).getResponse();
     assertNotNull(response.get("success"));
 
-    cluster
-        .getZkStateReader()
-        .waitForState(
-            COLL,
-            10,
-            TimeUnit.SECONDS,
-            (liveNodes, collectionState) ->
-                testColl(randomJetty, collectionState, List.of("shard2_0", "shard2_1")));
+    waitForState(
+        "Waiting for sub-shards",
+        COLL,
+        10,
+        TimeUnit.SECONDS,
+        collectionState -> testColl(randomJetty, collectionState, List.of("shard2_0", "shard2_1")));
   }
 
   private boolean testColl(
@@ -391,6 +387,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         (s, replica) -> {
           if (replica.getNodeName().equals(jetty.getNodeName())
               && !replica.isLeader()
+              && replica.getState().equals(Replica.State.ACTIVE)
               && set.contains(replica.shard)) {
             set.remove(replica.shard);
           }

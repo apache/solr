@@ -107,6 +107,14 @@ q=greetings&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=3}&rqq=(hi
 ----
 
 If a document matches the original query, but does not match the re-ranking query, the document's original score will remain.
+For reranked documents, an additional `originalScore()` function in the response will indicate the original score for a reranked doc. This
+is the score for the document prior to rerank being applied. For documents that were not reranked, the `originalScore()` and `score` fields
+will have the same value. For the example above, you would use the following to return the original score:
+
+[source,text]
+----
+q=greetings&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=3}&rqq=(hi+hello+hey+hiya)&fl=id,originalScore()
+----
 
 Setting `reRankOperator` to `multiply` will multiply the three numbers instead. This means that other multiplying operations such as xref:edismax-query-parser.adoc#extended-dismax-parameters[eDisMax `boost` functions] can be converted to Re-Rank operations.
 

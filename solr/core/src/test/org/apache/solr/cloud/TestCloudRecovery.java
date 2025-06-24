@@ -20,16 +20,15 @@ package org.apache.solr.cloud;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -188,13 +187,14 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     Map<String, byte[]> contentFiles = new HashMap<>();
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        File tlogFolder = new File(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
-        String[] tLogFiles = tlogFolder.list();
-        Arrays.sort(tLogFiles);
-        String lastTLogFile = tlogFolder.getAbsolutePath() + "/" + tLogFiles[tLogFiles.length - 1];
-        byte[] tlogBytes = Files.readAllBytes(Path.of(lastTLogFile));
-        contentFiles.put(lastTLogFile, tlogBytes);
-        logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
+        Path tlogFolder = Path.of(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
+        try (Stream<Path> tLogFiles = Files.list(tlogFolder)) {
+          Path lastTLogFile =
+              tlogFolder.resolve(tLogFiles.sorted().toList().getLast().getFileName());
+          byte[] tlogBytes = Files.readAllBytes(lastTLogFile);
+          contentFiles.put(lastTLogFile.toString(), tlogBytes);
+          logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
+        }
       }
     }
 

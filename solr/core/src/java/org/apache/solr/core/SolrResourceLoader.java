@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +30,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -107,10 +107,8 @@ public class SolrResourceLoader
     "security.",
     "handler.admin.",
     "security.jwt.",
-    "security.hadoop.",
+    "security.cert.",
     "handler.sql.",
-    "hdfs.",
-    "hdfs.update.",
     "crossdc.handler.",
     "crossdc.update.processor."
   };
@@ -373,12 +371,16 @@ public class SolrResourceLoader
 
     // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
     // We need a ClassLoader-compatible (forward-slashes) path here!
-    InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+    InputStream is =
+        classLoader.getResourceAsStream(
+            resource.replace(FileSystems.getDefault().getSeparator(), "/"));
 
     // This is a hack just for tests (it is not done in ZKResourceLoader)!
     // TODO can we nuke this?
     if (is == null && System.getProperty("jetty.testMode") != null) {
-      is = classLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
+      is =
+          classLoader.getResourceAsStream(
+              ("conf/" + resource.replace(FileSystems.getDefault().getSeparator(), "/")));
     }
 
     if (is == null) {
@@ -405,7 +407,8 @@ public class SolrResourceLoader
     }
 
     try (InputStream is =
-        classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+        classLoader.getResourceAsStream(
+            resource.replace(FileSystems.getDefault().getSeparator(), "/"))) {
       if (is != null) return "classpath:" + resource;
     } catch (IOException e) {
       // ignore

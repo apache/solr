@@ -19,16 +19,12 @@ package org.apache.solr.core;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
-import java.util.List;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
@@ -90,16 +86,16 @@ public class ZkContainer {
     // TODO: remove after updating to an slf4j based zookeeper
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
-    String solrHome = cc.getSolrHome();
+    Path solrHome = cc.getSolrHome();
     if (zkRun != null) {
       String zkDataHome =
-          System.getProperty("zkServerDataDir", Paths.get(solrHome).resolve("zoo_data").toString());
-      String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
+          System.getProperty("zkServerDataDir", solrHome.resolve("zoo_data").toString());
+      String zkConfHome = System.getProperty("zkServerConfDir", solrHome.toString());
       zkServer =
           new SolrZkServer(
               stripChroot(zkRun),
               stripChroot(config.getZkHost()),
-              new File(zkDataHome),
+              Path.of(zkDataHome),
               zkConfHome,
               config.getSolrHostPort());
       zkServer.parseConfig();
@@ -132,15 +128,8 @@ public class ZkContainer {
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
 
-        Supplier<List<CoreDescriptor>> descriptorsSupplier =
-            () ->
-                cc.getCores().stream()
-                    .map(SolrCore::getCoreDescriptor)
-                    .collect(Collectors.toList());
-
         ZkController zkController =
-            new ZkController(
-                cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
+            new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
         if (zkRun != null) {
           if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
@@ -184,7 +173,7 @@ public class ZkContainer {
   }
 
   private String stripChroot(String zkRun) {
-    if (zkRun == null || zkRun.trim().length() == 0 || zkRun.lastIndexOf('/') < 0) return zkRun;
+    if (zkRun == null || zkRun.trim().isEmpty() || zkRun.lastIndexOf('/') < 0) return zkRun;
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
@@ -248,16 +237,16 @@ public class ZkContainer {
   public void close() {
 
     try {
-      if (zkController != null) {
-        zkController.close();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
     } finally {
       try {
+        if (zkController != null) {
+          zkController.close();
+        }
+      } finally {
         if (zkServer != null) {
           zkServer.stop();
         }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
       }
     }
   }

@@ -16,12 +16,11 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -44,7 +43,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   protected int REPLICATION_FACTOR = 2;
 
   private final String fileName = this.getClass().getName() + ".server-enabled";
-  private File healthcheckFile = null;
+  private Path healthcheckFile = null;
   private PingRequestHandler handler = null;
 
   @BeforeClass
@@ -55,15 +54,15 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   @Before
   public void before() throws IOException {
     // by default, use relative file in dataDir
-    healthcheckFile = new File(initAndGetDataDir(), fileName);
+    healthcheckFile = initAndGetDataDir().resolve(fileName);
     String fileNameParam = fileName;
 
     // sometimes randomly use an absolute File path instead
     if (random().nextBoolean()) {
-      fileNameParam = healthcheckFile.getAbsolutePath();
+      fileNameParam = healthcheckFile.toString();
     }
 
-    if (healthcheckFile.exists()) FileUtils.forceDelete(healthcheckFile);
+    if (Files.exists(healthcheckFile)) Files.delete(healthcheckFile);
 
     handler = new PingRequestHandler();
     NamedList<String> initParams = new NamedList<>();
@@ -90,7 +89,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   public void testEnablingServer() throws Exception {
 
-    assertFalse(healthcheckFile.exists());
+    assertFalse(Files.exists(healthcheckFile));
 
     // first make sure that ping responds back that the service is disabled
     SolrQueryResponse sqr = makeRequest(handler, req());
@@ -104,8 +103,8 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
     makeRequest(handler, req("action", "enable"));
 
-    assertTrue(healthcheckFile.exists());
-    assertNotNull(Files.readString(healthcheckFile.toPath(), StandardCharsets.UTF_8));
+    assertTrue(Files.exists(healthcheckFile));
+    assertNotNull(Files.readString(healthcheckFile, StandardCharsets.UTF_8));
 
     // now verify that the handler response with success
 
@@ -114,14 +113,14 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
     // enable when already enabled shouldn't cause any problems
     makeRequest(handler, req("action", "enable"));
-    assertTrue(healthcheckFile.exists());
+    assertTrue(Files.exists(healthcheckFile));
   }
 
   public void testDisablingServer() throws Exception {
 
-    assertFalse(healthcheckFile.exists());
+    assertFalse(Files.exists(healthcheckFile));
 
-    healthcheckFile.createNewFile();
+    Files.createFile(healthcheckFile);
 
     // first make sure that ping responds back that the service is enabled
 
@@ -132,7 +131,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
     makeRequest(handler, req("action", "disable"));
 
-    assertFalse(healthcheckFile.exists());
+    assertFalse(Files.exists(healthcheckFile));
 
     // now make sure that ping responds back that the service is disabled
     SolrQueryResponse sqr = makeRequest(handler, req());
@@ -144,7 +143,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
     // disable when already disabled shouldn't cause any problems
     makeRequest(handler, req("action", "disable"));
-    assertFalse(healthcheckFile.exists());
+    assertFalse(Files.exists(healthcheckFile));
   }
 
   public void testGettingStatus() throws Exception {

@@ -328,6 +328,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Co
   {
     "async": "someAsyncId"
   }
+'
 ----
 ====
 ======
@@ -1050,11 +1051,9 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=techpro
 V2 API::
 +
 ====
-The closest V2 API is this one, but doesn't support all the features of the V1 equivalent.
-
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts_v2
+curl -X GET "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
 ----
 ====
 ======
@@ -1072,7 +1071,8 @@ Such incompatibilities may result from incompatible schema changes or after migr
 |===
 +
 Collection name.
-If missing then it means all collections.
+Provided as a query-parameter in v1 requests, and as a path-parameter in v2.
+If missing then information is returned about all collections (supported by v1 requests only).
 
 `coreInfo`::
 +
@@ -2257,7 +2257,7 @@ In this example:
 This is considered successful.
 * In the "successes" section, core_node23 was _not_ the leader for shard3, so leadership was assigned to that replica.
 
-The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as requried.
+The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as required.
 If a replica cannot be made leader due to not being healthy (for example, it is on a Solr instance that is not running), it's also considered success.
 
 [source,json]

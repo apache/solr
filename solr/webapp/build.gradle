@@ -94,6 +94,26 @@ task downloadBrowserify(type: NpmTask) {
   outputs.dir("${nodeProjectDir}/node_modules/browserify")
 }
 
+if (gradle.ext.withUiModule) {
+  tasks.register("generateUiDevFiles") {
+    description = "Generate new UI for development and add files to outputs for later referencing."
+    group = "build"
+    dependsOn project(":solr:ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
+    outputs.dir(project(":solr:ui").file("build/dist/wasmJs/developmentExecutable/"))
+  }
+}
+
+if (gradle.ext.withUiModule) {
+  tasks.register("generateUiProdFiles") {
+    description = "Generate new UI for production and add files to outputs for later referencing"
+    group = "build"
+
+    // Production files are smaller in size but have longer compile times.
+    dependsOn project(":solr:ui").tasks.wasmJsBrowserDistribution
+    outputs.dir(project(":solr:ui").file("build/dist/wasmJs/productionExecutable/"))
+  }
+}
+
 task generateJsClientBundle(type: NpxTask) {
   group = 'Solr JS Client'
   dependsOn tasks.downloadBrowserify
@@ -125,17 +145,25 @@ task finalizeJsBundleDir(type: Sync) {
 }
 
 war {
-  // Why are they in the source code at all if they're excluded from the distribution?
-  exclude "libs/angular-cookies.js"
-  exclude "libs/angular-route.js"
-  exclude "libs/angular-sanitize.js"
-  exclude "libs/angular-utf8-base.js"
-  exclude "libs/angular.js"
-  exclude "libs/chosen.jquery.js"
+  webAppDirName = "web"
 
   from (configurations.generatedJSClientBundle, {
     into "libs/solr"
   })
+
+  // Include new Admin UI files in webapp
+  // By default, we always build dev that does not optimize generated files for release to reduce build times.
+  if (gradle.ext.withUiModule) {
+    if (rootProject.ext.development) {
+      from (tasks.generateUiDevFiles) {
+        into "ui"
+      }
+    } else {
+      from (tasks.generateUiProdFiles) {
+        into "ui"
+      }
+    }
+  }
 }
 
 // Expose 'war' archive as an artifact so that it can be packaged in the distribution.

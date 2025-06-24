@@ -30,12 +30,11 @@ import org.apache.solr.search.QueryParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** */
 public class SolrParamTest extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testLocalParamRoundTripParsing() throws Exception {
-    final SolrParams in =
+    final ModifiableSolrParams in =
         params(
             "simple", "xxx",
             "blank", "",
@@ -49,28 +48,40 @@ public class SolrParamTest extends SolrTestCase {
             "dollar", "x$y",
             "multi", "x",
             "multi", "y y",
-            "v", "$ref");
+            "v", ""); // we'll replace this in a moment
+    SolrParams out = QueryParsing.getLocalParams(in.toLocalParamsString(), null);
+    assertEquals(in, out);
+
+    // test resolve dollar in 'v'
+    in.set("v", "$ref");
+    assertNotEquals(in, out);
     final String toStr = in.toLocalParamsString();
-    final SolrParams out = QueryParsing.getLocalParams(toStr, params("ref", "ref value"));
+    out = QueryParsing.getLocalParams(toStr, params("ref", "ref value"));
+    assertEquals("ref value", out.get("v"));
 
-    assertEquals("xxx", out.get("simple"));
-    assertEquals("", out.get("blank"));
-    assertEquals("x y z", out.get("space"));
-    assertEquals(" x", out.get("lead_space"));
-    assertEquals("x}y", out.get("curly"));
-    assertEquals("x'y", out.get("quote"));
-    assertEquals("'x y'", out.get("quoted"));
-    assertEquals("x\"y", out.get("d_quote"));
-    assertEquals("\"x y\"", out.get("d_quoted"));
-    assertEquals("x$y", out.get("dollar"));
-
-    assertArrayEquals(new String[] {"x", "y y"}, out.getParams("multi"));
     // first one should win...
     assertEquals("x", out.get("multi"));
 
-    assertEquals("ref value", out.get("v"));
-
     assertIterSize(toStr, 12, out);
+  }
+
+  public void testTrivialEquals() {
+    assertEquals(params(), params());
+    assertFalse(params().equals(null));
+
+    var pFoo = params("foo", "val");
+    assertNotEquals(params(), pFoo);
+    assertNotEquals(pFoo, params()); // reflexive
+
+    assertNotEquals(pFoo, params("foo", "something-else")); // diff vals
+
+    // order
+    var pAB = params("a", "1", "b", "2");
+    var pBA = params("b", "2", "a", "1");
+    assertEquals("order", pAB, pBA);
+    assertEquals("order", pBA, pAB); // reflexive
+
+    // some other tests also test equality
   }
 
   public void testParamIterators() {

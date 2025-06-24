@@ -27,6 +27,7 @@ import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
@@ -479,7 +480,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key1),
         resp);
     NamedList<?> values = resp.getValues();
-    Object val = values.findRecursive("metrics", key1);
+    Object val = values._get(List.of("metrics", key1), null);
     assertNotNull(val);
     assertTrue(val instanceof MapWriter);
     assertTrue(((MapWriter) val)._size() >= 2);
@@ -573,8 +574,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     NamedList<?> metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "foo"));
-    assertNotNull(values.findRecursive("errors", "foo:bar:baz:xyz"));
+    assertNotNull(values._get(List.of("errors", "foo"), null));
+    assertNotNull(values._get(List.of("errors", "foo:bar:baz:xyz"), null));
 
     // unknown registry
     resp = new SolrQueryResponse();
@@ -590,7 +591,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "foo:bar:baz"));
+    assertNotNull(values._get(List.of("errors", "foo:bar:baz"), null));
 
     // unknown metric
     resp = new SolrQueryResponse();
@@ -606,7 +607,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     metrics = (NamedList<?>) values.get("metrics");
     assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "solr.jetty:unknown:baz"));
+    assertNotNull(values._get(List.of("errors", "solr.jetty:unknown:baz"), null));
 
     handler.close();
   }
@@ -630,7 +631,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     // response structure is like in the case of non-key params
     Object val =
         resp.getValues()
-            .findRecursive("metrics", "solr.core.collection1", "QUERY./select.requestTimes");
+            ._get(List.of("metrics", "solr.core.collection1", "QUERY./select.requestTimes"), null);
     assertNotNull(val);
     assertTrue(val instanceof MapWriter);
     Map<String, Object> map = new HashMap<>();
@@ -655,7 +656,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             key2),
         resp);
     // response structure is like in the case of non-key params
-    val = resp.getValues().findRecursive("metrics", "solr.core.collection1");
+    val = resp.getValues()._get(List.of("metrics", "solr.core.collection1"), null);
     assertNotNull(val);
     Object v = ((SimpleOrderedMap<Object>) val).get("QUERY./select.requestTimes");
     assertNotNull(v);
@@ -689,7 +690,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             MetricsHandler.EXPR_PARAM,
             key3),
         resp);
-    val = resp.getValues().findRecursive("metrics", "solr.core.collection1");
+    val = resp.getValues()._get(List.of("metrics", "solr.core.collection1"), null);
     assertNotNull(val);
     // for requestTimes only the full set of values from the first expr should be present
     assertNotNull(val);
@@ -725,8 +726,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusFormatter formatter =
-        (SolrPrometheusFormatter) values.get("solr.core.collection1");
+    SolrPrometheusFormatter formatter = (SolrPrometheusFormatter) values.get("solr.core");
     assertNotNull(formatter);
     MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);
@@ -1009,8 +1009,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusFormatter formatter =
-        (SolrPrometheusFormatter) values.get("solr.core.collection1");
+    SolrPrometheusFormatter formatter = (SolrPrometheusFormatter) values.get("solr.core");
     assertNotNull(formatter);
     MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);

@@ -19,9 +19,9 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.cloud.Replica.State.DOWN;
 import static org.apache.solr.common.cloud.Replica.State.RECOVERING;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,7 +46,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -95,7 +94,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   /** Overrides the parent implementation to install a SocketProxy in-front of the Jetty server. */
   @Override
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -241,8 +240,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     // SOLR-7625)
     JettySolrRunner replicaJetty = getJettyOnPort(getReplicaPort(notLeader));
     CoreContainer coreContainer = replicaJetty.getCoreContainer();
-    ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
-    String coreName = replicaCoreNodeProps.getCoreName();
+    String coreName = notLeader.getCoreName();
     try (SolrCore core = coreContainer.getCore(coreName)) {
       assertNotNull("Core '" + coreName + "' not found for replica: " + notLeader.getName(), core);
     }
@@ -517,8 +515,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected SolrClient getHttpSolrClient(Replica replica, String collection) {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    return getHttpSolrClient(zkProps.getBaseUrl(), collection);
+    return getHttpSolrClient(replica.getBaseUrl(), collection);
   }
 
   // Send doc directly to a server (without going through proxy)

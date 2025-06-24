@@ -44,6 +44,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -125,11 +126,10 @@ class ChildDocTransformer extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument rootDoc, int rootDocId) {
+  public void transform(SolrDocument rootDoc, int rootDocId, DocIterationInfo docInfo) {
     // note: this algorithm works if both if we have have _nest_path_  and also if we don't!
 
     try {
-
       // lookup what the *previous* rootDocId is, and figure which segment this is
       final SolrIndexSearcher searcher = context.getSearcher();
       final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
@@ -214,7 +214,7 @@ class ChildDocTransformer extends DocTransformer {
             if (childReturnFields.getTransformer().context == null) {
               childReturnFields.getTransformer().setContext(context);
             }
-            childReturnFields.getTransformer().transform(doc, docId);
+            childReturnFields.getTransformer().transform(doc, docId, docInfo);
           }
 
           if (isAncestor) {

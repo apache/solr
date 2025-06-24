@@ -17,14 +17,14 @@
 
 package org.apache.solr.cli;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,12 +41,12 @@ import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.exec.Executor;
-import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -115,6 +115,16 @@ public class RunExampleTool extends ToolBase {
               "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
           .build();
 
+  private static final Option SOLR_HOME_OPTION =
+      Option.builder()
+          .longOpt("solr-home")
+          .hasArg()
+          .argName("SOLR_HOME_DIR")
+          .required(false)
+          .desc(
+              "Path to the Solr home directory; if not provided, ${serverDir}/solr is expected to exist.")
+          .build();
+
   private static final Option URL_SCHEME_OPTION =
       Option.builder()
           .longOpt("url-scheme")
@@ -162,17 +172,18 @@ public class RunExampleTool extends ToolBase {
   protected InputStream userInput;
   protected Executor executor;
   protected String script;
-  protected File serverDir;
-  protected File exampleDir;
+  protected Path serverDir;
+  protected Path exampleDir;
+  protected Path solrHomeDir;
   protected String urlScheme;
 
   /** Default constructor used by the framework when running as a command-line application. */
-  public RunExampleTool() {
-    this(null, System.in, CLIO.getOutStream());
+  public RunExampleTool(ToolRuntime runtime) {
+    this(null, System.in, runtime);
   }
 
-  public RunExampleTool(Executor executor, InputStream userInput, PrintStream stdout) {
-    super(stdout);
+  public RunExampleTool(Executor executor, InputStream userInput, ToolRuntime runtime) {
+    super(runtime);
     this.executor = (executor != null) ? executor : new DefaultExecutor();
     this.userInput = userInput;
   }
@@ -189,6 +200,7 @@ public class RunExampleTool extends ToolBase {
         .addOption(EXAMPLE_OPTION)
         .addOption(SCRIPT_OPTION)
         .addOption(SERVER_DIR_OPTION)
+        .addOption(SOLR_HOME_OPTION)
         .addOption(FORCE_OPTION)
         .addOption(EXAMPLE_DIR_OPTION)
         .addOption(URL_SCHEME_OPTION)
@@ -203,53 +215,72 @@ public class RunExampleTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     this.urlScheme = cli.getOptionValue(URL_SCHEME_OPTION, "http");
+    String exampleType = cli.getOptionValue(EXAMPLE_OPTION);
 
-    serverDir = new File(cli.getOptionValue(SERVER_DIR_OPTION));
-    if (!serverDir.isDirectory())
+    serverDir = Path.of(cli.getOptionValue(SERVER_DIR_OPTION));
+    if (!Files.isDirectory(serverDir))
       throw new IllegalArgumentException(
           "Value of --server-dir option is invalid! "
-              + serverDir.getAbsolutePath()
+              + serverDir.toAbsolutePath()
               + " is not a directory!");
 
     script = cli.getOptionValue(SCRIPT_OPTION);
     if (script != null) {
-      if (!(new File(script)).isFile())
+      if (!Files.isRegularFile(Path.of(script)))
         throw new IllegalArgumentException(
             "Value of --script option is invalid! " + script + " not found");
     } else {
-      File scriptFile = new File(serverDir.getParentFile(), "bin/solr");
-      if (scriptFile.isFile()) {
-        script = scriptFile.getAbsolutePath();
+      Path scriptFile =
+          serverDir.getParent().resolve("bin").resolve(CLIUtils.isWindows() ? "solr.cmd" : "solr");
+      if (Files.isRegularFile(scriptFile)) {
+        script = scriptFile.toAbsolutePath().toString();
       } else {
-        scriptFile = new File(serverDir.getParentFile(), "bin/solr.cmd");
-        if (scriptFile.isFile()) {
-          script = scriptFile.getAbsolutePath();
-        } else {
-          throw new IllegalArgumentException(
-              "Cannot locate the bin/solr script! Please pass --script to this application.");
-        }
+        throw new IllegalArgumentException(
+            "Cannot locate the bin/"
+                + scriptFile.getFileName().toString()
+                + " script! Please pass --script to this application.");
       }
     }
 
     exampleDir =
         (cli.hasOption(EXAMPLE_DIR_OPTION))
-            ? new File(cli.getOptionValue(EXAMPLE_DIR_OPTION))
-            : new File(serverDir.getParent(), "example");
-    if (!exampleDir.isDirectory())
+            ? Path.of(cli.getOptionValue(EXAMPLE_DIR_OPTION))
+            : serverDir.getParent().resolve("example");
+    if (!Files.isDirectory(exampleDir))
       throw new IllegalArgumentException(
           "Value of --example-dir option is invalid! "
-              + exampleDir.getAbsolutePath()
+              + exampleDir.toAbsolutePath()
+              + " is not a directory!");
+
+    if (cli.hasOption(SOLR_HOME_OPTION)) {
+      solrHomeDir = Path.of(cli.getOptionValue(SOLR_HOME_OPTION));
+    } else {
+      String solrHomeProp = EnvUtils.getProperty("solr.home");
+      if (solrHomeProp != null && !solrHomeProp.isEmpty()) {
+        solrHomeDir = Path.of(solrHomeProp);
+      } else if ("cloud".equals(exampleType)) {
+        solrHomeDir = exampleDir.resolve("cloud");
+        if (!Files.isDirectory(solrHomeDir)) Files.createDirectory(solrHomeDir);
+      } else {
+        solrHomeDir = serverDir.resolve("solr");
+      }
+    }
+    if (!Files.isDirectory(solrHomeDir))
+      throw new IllegalArgumentException(
+          "Value of --solr-home option is invalid! "
+              + solrHomeDir.toAbsolutePath()
               + " is not a directory!");
 
     echoIfVerbose(
         "Running with\nserverDir="
-            + serverDir.getAbsolutePath()
+            + serverDir.toAbsolutePath()
             + ",\nexampleDir="
-            + exampleDir.getAbsolutePath()
+            + exampleDir.toAbsolutePath()
+            + ",\nsolrHomeDir="
+            + solrHomeDir.toAbsolutePath()
             + "\nscript="
             + script);
 
-    String exampleType = cli.getOptionValue(EXAMPLE_OPTION);
     if ("cloud".equals(exampleType)) {
       runCloudExample(cli);
     } else if ("techproducts".equals(exampleType)
@@ -274,10 +305,9 @@ public class RunExampleTool extends ToolBase {
     int port =
         Integer.parseInt(
             cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
-    Map<String, Object> nodeStatus =
-        startSolr(new File(serverDir, "solr"), isCloudMode, cli, port, zkHost, 30);
+    Map<String, Object> nodeStatus = startSolr(solrHomeDir, isCloudMode, cli, port, zkHost, 30);
 
-    String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"));
+    String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
     // If the example already exists then let the user know they should delete it, or
     // they may get unusual behaviors.
@@ -322,7 +352,7 @@ public class RunExampleTool extends ToolBase {
             "--conf-dir", configSet,
             "--solr-url", solrUrl
           };
-      CreateTool createTool = new CreateTool(stdout);
+      CreateTool createTool = new CreateTool(runtime);
       int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
       if (createCode != 0)
         throw new Exception(
@@ -331,16 +361,16 @@ public class RunExampleTool extends ToolBase {
 
     if ("techproducts".equals(exampleName) && !alreadyExists) {
 
-      File exampledocsDir = new File(this.exampleDir, "exampledocs");
-      if (!exampledocsDir.isDirectory()) {
-        File readOnlyExampleDir = new File(serverDir.getParentFile(), "example");
-        if (readOnlyExampleDir.isDirectory()) {
-          exampledocsDir = new File(readOnlyExampleDir, "exampledocs");
+      Path exampledocsDir = this.exampleDir.resolve("exampledocs");
+      if (!Files.isDirectory(exampledocsDir)) {
+        Path readOnlyExampleDir = serverDir.resolveSibling("example");
+        if (Files.isDirectory(readOnlyExampleDir)) {
+          exampledocsDir = readOnlyExampleDir.resolve("exampledocs");
         }
       }
 
-      if (exampledocsDir.isDirectory()) {
-        echo("Indexing tech product example docs from " + exampledocsDir.getAbsolutePath());
+      if (Files.isDirectory(exampledocsDir)) {
+        echo("Indexing tech product example docs from " + exampledocsDir.toAbsolutePath());
 
         String[] args =
             new String[] {
@@ -351,9 +381,11 @@ public class RunExampleTool extends ToolBase {
               collectionName,
               "--type",
               "application/xml",
-              exampledocsDir.getAbsolutePath() + "/*.xml"
+              "--filetypes",
+              "xml",
+              exampledocsDir.toAbsolutePath().toString()
             };
-        PostTool postTool = new PostTool();
+        PostTool postTool = new PostTool(runtime);
         CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
         postTool.runTool(postToolCli);
 
@@ -379,7 +411,8 @@ public class RunExampleTool extends ToolBase {
                 + "        }\n"
                 + "      }");
 
-        echo("Adding name, initial_release_date, and film_vector fields to films schema");
+        echo(
+            "Adding name, genre, directed_by, initial_release_date, and film_vector fields to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
@@ -388,6 +421,18 @@ public class RunExampleTool extends ToolBase {
                 + "          \"name\":\"name\",\n"
                 + "          \"type\":\"text_general\",\n"
                 + "          \"multiValued\":false,\n"
+                + "          \"stored\":true\n"
+                + "        },\n"
+                + "        \"add-field\" : {\n"
+                + "          \"name\":\"genre\",\n"
+                + "          \"type\":\"text_general\",\n"
+                + "          \"multiValued\":true,\n"
+                + "          \"stored\":true\n"
+                + "        },\n"
+                + "        \"add-field\" : {\n"
+                + "          \"name\":\"directed_by\",\n"
+                + "          \"type\":\"text_general\",\n"
+                + "          \"multiValued\":true,\n"
                 + "          \"stored\":true\n"
                 + "        },\n"
                 + "        \"add-field\" : {\n"
@@ -400,6 +445,18 @@ public class RunExampleTool extends ToolBase {
                 + "          \"type\":\"knn_vector_10\",\n"
                 + "          \"indexed\":true\n"
                 + "          \"stored\":true\n"
+                + "        },\n"
+                + "        \"add-copy-field\" : {\n"
+                + "          \"source\":\"genre\",\n"
+                + "          \"dest\":\"_text_\"\n"
+                + "        },\n"
+                + "        \"add-copy-field\" : {\n"
+                + "          \"source\":\"name\",\n"
+                + "          \"dest\":\"_text_\"\n"
+                + "        },\n"
+                + "        \"add-copy-field\" : {\n"
+                + "          \"source\":\"directed_by\",\n"
+                + "          \"dest\":\"_text_\"\n"
                 + "        }\n"
                 + "      }");
 
@@ -424,8 +481,8 @@ public class RunExampleTool extends ToolBase {
                 + "            }\n"
                 + "        }\n");
 
-        File filmsJsonFile = new File(this.exampleDir, "films/films.json");
-        echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
+        Path filmsJsonFile = this.exampleDir.resolve("films").resolve("films.json");
+        echo("Indexing films example docs from " + filmsJsonFile.toAbsolutePath());
         String[] args =
             new String[] {
               "post",
@@ -435,9 +492,9 @@ public class RunExampleTool extends ToolBase {
               collectionName,
               "--type",
               "application/json",
-              filmsJsonFile.getAbsolutePath()
+              filmsJsonFile.toAbsolutePath().toString()
             };
-        PostTool postTool = new PostTool();
+        PostTool postTool = new PostTool(runtime);
         CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
         postTool.runTool(postToolCli);
 
@@ -466,12 +523,10 @@ public class RunExampleTool extends ToolBase {
       // Override the old default port numbers if user has started the example overriding SOLR_PORT
       cloudPorts = new int[] {defaultPort, defaultPort + 1, defaultPort + 2, defaultPort + 3};
     }
-    File cloudDir = new File(exampleDir, "cloud");
-    if (!cloudDir.isDirectory()) cloudDir.mkdir();
 
     echo("\nWelcome to the SolrCloud example!\n");
 
-    Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8.name()) : null;
+    Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8) : null;
     if (prompt) {
       echo(
           "This interactive session will help you launch a SolrCloud cluster on your local workstation.");
@@ -513,14 +568,14 @@ public class RunExampleTool extends ToolBase {
     }
 
     // setup a unique solr.solr.home directory for each node
-    File node1Dir = setupExampleDir(serverDir, cloudDir, "node1");
+    Path node1Dir = setupSolrHomeDir(serverDir, solrHomeDir, "node1");
     for (int n = 2; n <= numNodes; n++) {
-      File nodeNDir = new File(cloudDir, "node" + n);
-      if (!nodeNDir.isDirectory()) {
-        echo("Cloning " + node1Dir.getAbsolutePath() + " into\n   " + nodeNDir.getAbsolutePath());
-        FileUtils.copyDirectory(node1Dir, nodeNDir);
+      Path nodeNDir = solrHomeDir.resolve("node" + n);
+      if (!Files.isDirectory(nodeNDir)) {
+        echo("Cloning " + node1Dir.toAbsolutePath() + " into\n   " + nodeNDir.toAbsolutePath());
+        PathUtils.copyDirectory(node1Dir, nodeNDir, StandardCopyOption.REPLACE_EXISTING);
       } else {
-        echo(nodeNDir.getAbsolutePath() + " already exists.");
+        echo(nodeNDir.toAbsolutePath() + " already exists.");
       }
     }
 
@@ -529,7 +584,7 @@ public class RunExampleTool extends ToolBase {
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =
-        startSolr(new File(node1Dir, "solr"), true, cli, cloudPorts[0], zkHost, 30);
+        startSolr(node1Dir.resolve("solr"), true, cli, cloudPorts[0], zkHost, 30);
 
     if (zkHost == null) {
       @SuppressWarnings("unchecked")
@@ -546,7 +601,12 @@ public class RunExampleTool extends ToolBase {
       // start the other nodes
       for (int n = 1; n < numNodes; n++)
         startSolr(
-            new File(cloudDir, "node" + (n + 1) + "/solr"), true, cli, cloudPorts[n], zkHost, 30);
+            solrHomeDir.resolve("node" + (n + 1)).resolve("solr"),
+            true,
+            cli,
+            cloudPorts[n],
+            zkHost,
+            30);
     }
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
@@ -605,7 +665,7 @@ public class RunExampleTool extends ToolBase {
   }
 
   protected Map<String, Object> startSolr(
-      File solrHomeDir,
+      Path solrHomeDir,
       boolean cloudMode,
       CommandLine cli,
       int port,
@@ -626,40 +686,47 @@ public class RunExampleTool extends ToolBase {
     String verboseArg = isVerbose() ? "--verbose" : "";
 
     String jvmOpts = cli.getOptionValue(JVM_OPTS_OPTION);
-    String jvmOptsArg = (jvmOpts != null) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
+    String jvmOptsArg =
+        (jvmOpts != null && !jvmOpts.isEmpty()) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
 
-    File cwd = new File(System.getProperty("user.dir"));
-    File binDir = (new File(script)).getParentFile();
+    Path cwd = Path.of(System.getProperty("user.dir"));
+    Path binDir = Path.of(script).getParent();
 
-    boolean isWindows = (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
-    String callScript = (!isWindows && cwd.equals(binDir.getParentFile())) ? "bin/solr" : script;
+    boolean isWindows = CLIUtils.isWindows();
+    String callScript = (!isWindows && cwd.equals(binDir.getParent())) ? "bin/solr" : script;
 
-    String cwdPath = cwd.getAbsolutePath();
-    String solrHome = solrHomeDir.getAbsolutePath();
+    String cwdPath = cwd.toAbsolutePath().toString();
+    String solrHome = solrHomeDir.toAbsolutePath().toRealPath().toString();
 
     // don't display a huge path for solr home if it is relative to the cwd
     if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
-    String startCmd =
+    final var syspropArg =
+        ("techproducts".equals(cli.getOptionValue(EXAMPLE_OPTION)))
+            ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
+            : "";
+
+    String startCmdStr =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d --solr-home \"%s\" --server-dir \"%s\" %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
             solrHome,
+            serverDir.toAbsolutePath(),
             hostArg,
             zkHostArg,
             memArg,
             forceArg,
             verboseArg,
             extraArgs,
-            jvmOptsArg);
-    startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
+            syspropArg);
+    startCmdStr = startCmdStr.replaceAll("\\s+", " ").trim(); // for pretty printing
 
     echo("\nStarting up Solr on port " + port + " using command:");
-    echo(startCmd + "\n");
+    echo(startCmdStr + jvmOptsArg + "\n");
 
     String solrUrl =
         String.format(
@@ -688,8 +755,21 @@ public class RunExampleTool extends ToolBase {
         }
       }
       DefaultExecuteResultHandler handler = new DefaultExecuteResultHandler();
-      executor.execute(org.apache.commons.exec.CommandLine.parse(startCmd), startEnv, handler);
+      org.apache.commons.exec.CommandLine startCmd =
+          org.apache.commons.exec.CommandLine.parse(startCmdStr);
 
+      if (!jvmOptsArg.isEmpty()) {
+        startCmd.addArgument("--jvm-opts");
+
+        /* CommandLine.parse() tends to strip off the quotes by default before sending to cmd.exe.
+        This may cause cmd to break up the argument value on certain characters in unintended ways
+        thereby passing incorrect value to start.cmd
+        (eg: for "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:18983", it
+        breaks apart the value at "-agentlib:jdwp" passing incorrect args to start.cmd ).
+        The 'false' here tells Exec: “don’t touch my quotes—this is one atomic argument” */
+        startCmd.addArgument("\"" + jvmOpts + "\"", false);
+      }
+      executor.execute(startCmd, startEnv, handler);
       // wait for execution.
       try {
         handler.waitFor(3000);
@@ -698,34 +778,38 @@ public class RunExampleTool extends ToolBase {
         Thread.interrupted();
       }
       if (handler.hasResult() && handler.getExitValue() != 0) {
+        startCmdStr += jvmOptsArg;
         throw new Exception(
             "Failed to start Solr using command: "
-                + startCmd
+                + startCmdStr
                 + " Exception : "
                 + handler.getException());
       }
     } else {
+      // Unlike Windows, special handling of jvmOpts is not required on linux. We can simply
+      // concatenate to form the complete command
+      startCmdStr += jvmOptsArg;
       try {
-        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmd));
+        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmdStr));
       } catch (ExecuteException e) {
         throw new Exception(
-            "Failed to start Solr using command: " + startCmd + " Exception : " + e);
+            "Failed to start Solr using command: " + startCmdStr + " Exception : " + e);
       }
+      if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmdStr);
     }
-    if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
     return getNodeStatus(
         solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION), maxWaitSecs);
   }
 
   protected Map<String, Object> checkPortConflict(
-      String solrUrl, String credentials, File solrHomeDir, int port) {
+      String solrUrl, String credentials, Path solrHomeDir, int port) {
     // quickly check if the port is in use
     if (isPortAvailable(port)) return null; // not in use ... try to start
 
     Map<String, Object> nodeStatus = null;
     try {
-      nodeStatus = (new StatusTool()).getStatus(solrUrl, credentials);
+      nodeStatus = (new StatusTool(runtime)).getStatus(solrUrl, credentials);
     } catch (Exception ignore) {
       /* just trying to determine if this example is already running. */
     }
@@ -733,7 +817,7 @@ public class RunExampleTool extends ToolBase {
     if (nodeStatus != null) {
       String solr_home = (String) nodeStatus.get("solr_home");
       if (solr_home != null) {
-        String solrHomePath = solrHomeDir.getAbsolutePath();
+        String solrHomePath = solrHomeDir.toAbsolutePath().toString();
         if (!solrHomePath.endsWith("/")) solrHomePath += "/";
         if (!solr_home.endsWith("/")) solr_home += "/";
 
@@ -782,7 +866,7 @@ public class RunExampleTool extends ToolBase {
     String cloudConfig = "_default";
     String collectionName = "gettingstarted";
 
-    File configsetsDir = new File(serverDir, "solr/configsets");
+    Path configsetsDir = serverDir.resolve("solr").resolve("configsets");
 
     if (prompt) {
       echo(
@@ -875,7 +959,7 @@ public class RunExampleTool extends ToolBase {
           "--solr-url", solrUrl
         };
 
-    CreateTool createTool = new CreateTool(stdout);
+    CreateTool createTool = new CreateTool(runtime);
     int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
 
     if (createCode != 0)
@@ -885,18 +969,18 @@ public class RunExampleTool extends ToolBase {
     return collectionName;
   }
 
-  protected boolean isValidConfig(File configsetsDir, String config) {
-    File configDir = new File(configsetsDir, config);
-    if (configDir.isDirectory()) return true;
+  protected boolean isValidConfig(Path configsetsDir, String config) {
+    Path configDir = configsetsDir.resolve(config);
+    if (Files.isDirectory(configDir)) return true;
 
     // not a built-in configset ... maybe it's a custom directory?
-    configDir = new File(config);
-    return configDir.isDirectory();
+    configDir = Path.of(config);
+    return Files.isDirectory(configDir);
   }
 
   protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
       throws Exception {
-    StatusTool statusTool = new StatusTool();
+    StatusTool statusTool = new StatusTool(runtime);
     echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...");
 
     URI solrURI = new URI(solrUrl);
@@ -913,37 +997,37 @@ public class RunExampleTool extends ToolBase {
     return nodeStatus;
   }
 
-  protected File setupExampleDir(File serverDir, File exampleParentDir, String dirName)
+  protected Path setupSolrHomeDir(Path serverDir, Path solrHomeParentDir, String dirName)
       throws IOException {
-    File solrXml = new File(serverDir, "solr/solr.xml");
-    if (!solrXml.isFile())
+    Path solrXml = serverDir.resolve("solr").resolve("solr.xml");
+    if (!Files.isRegularFile(solrXml))
       throw new IllegalArgumentException(
-          "Value of --server-dir option is invalid! " + solrXml.getAbsolutePath() + " not found!");
+          "Value of --server-dir option is invalid! " + solrXml.toAbsolutePath() + " not found!");
 
-    File zooCfg = new File(serverDir, "solr/zoo.cfg");
-    if (!zooCfg.isFile())
+    Path zooCfg = serverDir.resolve("solr").resolve("zoo.cfg");
+    if (!Files.isRegularFile(zooCfg))
       throw new IllegalArgumentException(
-          "Value of --server-dir option is invalid! " + zooCfg.getAbsolutePath() + " not found!");
+          "Value of --server-dir option is invalid! " + zooCfg.toAbsolutePath() + " not found!");
 
-    File solrHomeDir = new File(exampleParentDir, dirName + "/solr");
-    if (!solrHomeDir.isDirectory()) {
+    Path solrHomeDir = solrHomeParentDir.resolve(dirName).resolve("solr");
+    if (!Files.isDirectory(solrHomeDir)) {
       echo("Creating Solr home directory " + solrHomeDir);
-      solrHomeDir.mkdirs();
+      Files.createDirectories(solrHomeDir);
     } else {
-      echo("Solr home directory " + solrHomeDir.getAbsolutePath() + " already exists.");
+      echo("Solr home directory " + solrHomeDir.toAbsolutePath() + " already exists.");
     }
 
-    copyIfNeeded(solrXml, new File(solrHomeDir, "solr.xml"));
-    copyIfNeeded(zooCfg, new File(solrHomeDir, "zoo.cfg"));
+    copyIfNeeded(solrXml, solrHomeDir.resolve("solr.xml"));
+    copyIfNeeded(zooCfg, solrHomeDir.resolve("zoo.cfg"));
 
-    return solrHomeDir.getParentFile();
+    return solrHomeDir.getParent();
   }
 
-  protected void copyIfNeeded(File src, File dest) throws IOException {
-    if (!dest.isFile()) Files.copy(src.toPath(), dest.toPath());
+  protected void copyIfNeeded(Path src, Path dest) throws IOException {
+    if (!Files.isRegularFile(dest)) Files.copy(src, dest);
 
-    if (!dest.isFile())
-      throw new IllegalStateException("Required file " + dest.getAbsolutePath() + " not found!");
+    if (!Files.isRegularFile(dest))
+      throw new IllegalStateException("Required file " + dest.toAbsolutePath() + " not found!");
   }
 
   protected boolean isPortAvailable(int port) {

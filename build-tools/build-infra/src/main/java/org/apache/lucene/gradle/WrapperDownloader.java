@@ -26,7 +26,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
@@ -46,7 +45,7 @@ public class WrapperDownloader {
 
     try {
       checkVersion();
-      new WrapperDownloader().run(Paths.get(args[0]));
+      new WrapperDownloader().run(Path.of(args[0]));
     } catch (Exception e) {
       System.err.println("ERROR: " + e.getMessage());
       System.exit(3);

@@ -617,15 +617,18 @@ public class SearchHandler extends RequestHandlerBase
                           if (resp == null) {
                             return false;
                           }
-                          Object recursive = resp.findRecursive("responseHeader", "partialResults");
+                          Object recursive =
+                              resp._get(List.of("responseHeader", "partialResults"), null);
                           if (recursive != null) {
                             Object message =
                                 "[Shard:"
                                     + response.getShardAddress()
                                     + "]"
-                                    + resp.findRecursive(
-                                        "responseHeader",
-                                        RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY);
+                                    + resp._get(
+                                        List.of(
+                                            "responseHeader",
+                                            RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY),
+                                        null);
                             detailMesg.compareAndSet(null, message); // first one, ingore rest
                           }
                           return recursive != null;
@@ -670,7 +673,7 @@ public class SearchHandler extends RequestHandlerBase
             for (SearchComponent c : components) {
               if (checkLimitsBefore(
                   c,
-                  "handleResponses next stage:" + stageInEnglish(nextStage),
+                  "handleResponses next stage:" + stageToString(nextStage),
                   rb.req,
                   rb.rsp,
                   components)) {
@@ -689,7 +692,7 @@ public class SearchHandler extends RequestHandlerBase
 
         for (SearchComponent c : components) {
           if (checkLimitsBefore(
-              c, "finishStage stage:" + stageInEnglish(nextStage), rb.req, rb.rsp, components)) {
+              c, "finishStage stage:" + stageToString(nextStage), rb.req, rb.rsp, components)) {
             return;
           }
           c.finishStage(rb);
@@ -734,9 +737,9 @@ public class SearchHandler extends RequestHandlerBase
     return true;
   }
 
-  private static String stageInEnglish(int nextStage) {
+  protected String stageToString(int stage) {
     // This should probably be a enum, but that change should be its own ticket.
-    switch (nextStage) {
+    switch (stage) {
       case STAGE_START:
         return "START";
       case STAGE_PARSE_QUERY:
@@ -751,8 +754,7 @@ public class SearchHandler extends RequestHandlerBase
       case STAGE_DONE:
         return "FINISHING";
       default:
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Unrecognized stage:" + nextStage);
+        return "CUSTOM_STAGE_" + String.valueOf(stage);
     }
   }
 

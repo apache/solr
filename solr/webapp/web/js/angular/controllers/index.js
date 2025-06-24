@@ -23,12 +23,6 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
       const releaseDate = parse_release_date($scope.system.lucene['solr-impl-version'])
       $scope.releaseDaysOld = (new Date() - releaseDate)/1000/60/60/24;
 
-      if ("username" in data.security) {
-        // Needed for Kerberos, since this is the only place from where
-        // Kerberos username can be obtained.
-        sessionStorage.setItem("auth.username", data.security.username);
-      }
-
       if (data.security.authenticationPlugin) {
         $scope.isSecurityEnabled = true
       }

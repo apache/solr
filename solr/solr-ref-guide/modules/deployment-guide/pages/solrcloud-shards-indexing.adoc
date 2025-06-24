@@ -25,7 +25,7 @@ For example, you might have a collection where the "country" field of each docum
 A different collection might simply use a "hash" on the uniqueKey of each document to determine its Shard.
 
 There is support for distributing both the index process and the queries automatically, and ZooKeeper provides failover and load balancing.
-As well as supporting replication, automatic index spliting to shards, there is support for automatic routing of documents to specific shards by a sharding strategy.
+As well as supporting replication, automatic index splitting into shards, there is support for automatic routing of documents to specific shards by a sharding strategy.
 Additionally, every shard can have multiple replicas for additional robustness.
 
 == Leaders and Replicas
@@ -95,16 +95,28 @@ If more than one replica in the shard is writing its own index instead of replic
 
 === Recovery with PULL Replicas
 
-If a PULL replica goes down or leaves the cluster, there are a few scenarios to consider.
 
-If the PULL replica cannot sync to the leader because the leader is down, replication would not occur.
-However, it would continue to serve queries.
-Once it can connect to the leader again, replication would resume.
+There are a few xref:solrcloud-recoveries-and-write-tolerance.adoc#recovery[Recovery] related scenarios to consider when using PULL replicas:
 
-If the PULL replica cannot connect to ZooKeeper, it would be removed from the cluster and queries would not be routed to it from the cluster.
+* If a PULL replica cannot sync to the leader because the leader is down, or due to network paritioning, replication will not occur.
+However, the PULL replica will continue to serve queries.  Once it can connect to the leader again, replication will resume.
 
-If the PULL replica dies or is unreachable for any other reason, it won't be query-able.
-When it rejoins the cluster, it would replicate from the leader and when that is complete, it would be ready to serve queries again.
+* If a PULL replica cannot connect to ZooKeeper, it will stop replicating because it will no longer be able to confidently know which replica to treat as the Leader.  The PULL replica will also be removed from the cluster status and distributed queries will not be routed to it from other replias the cluster (or from SolrJ).
+
+* If a PULL replica dies or is unreachable for any other reason, it will no longer be query-able.
+When it rejoins the cluster, it will first attempt to recover from the current leader, and only when that is complete, will it be ready to serve queries again.
+
+[NOTE]
+====
+It is important to realize that when PULL replicas join (or re-join) a cluster, they will not be query-able until they do an initial recovery from the current leader.
+
+This means that if a Solr node hosting an existing PULL replica is started (or restarted) at a moment in time where there is no active leader for that shard -- either because all leader eligible replicas are currently offline, or because of the leader eligible replicas are not yet active due to replaying their own transaction logs -- then that PULL replica will not be query-able until the leader election is complete.
+
+This behavior will differ from other existing PULL replicas if they were already active & serving queries before the current leader election.  These PULL replicas will continue to be query-able using the last index fetched by these PULL replicas from the last known leader.
+
+This behavior can be customized with an expert level xref:replica-management.adoc#addreplicaprop[replica property] named `skipLeaderRecovery`.  If this property is set to `true` on a PULL replica, then this replica will skip it's initial `RECOVERING` phase on node start (or restart), and immediately begin serving queries using it's local index (which it will update through normal periodic replication from the leader -- if & when a leader is available)
+====
+
 
 === Queries with Preferred Replica Types
 

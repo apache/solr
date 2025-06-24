@@ -25,7 +25,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -41,12 +40,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -75,10 +73,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.http.client.HttpClient;
-import org.apache.logging.log4j.Level;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
@@ -109,7 +107,6 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -138,18 +135,15 @@ import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SSLTestConfig;
-import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
+import org.hamcrest.Matcher;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -164,7 +158,7 @@ import org.xml.sax.SAXException;
 /**
  * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase. To change
  * which core is used when loading the schema and solrconfig.xml, simply invoke the {@link
- * #initCore(String, String, String, String)} method.
+ * #initCore(String, String, Path, String)} method.
  */
 // ExtrasFS might be ok, the failures with e.g. nightly runs might be "normal"
 @SuppressFileSystems("ExtrasFS")
@@ -186,8 +180,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000; // default socket connection timeout in ms
-
-  private static String initialRootLogLevel;
 
   protected static volatile ExecutorService testExecutor;
 
@@ -257,8 +249,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
-    initialRootLogLevel = StartupLoggingUtils.getLogLevelString();
-    initClassLogLevels();
     resetExceptionIgnores();
 
     testExecutor =
@@ -348,10 +338,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       testSolrHome = null;
 
       IpTables.unblockAllPorts();
-
-      LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
-      savedClassLogLevels.clear();
-      StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
     }
   }
 
@@ -389,38 +375,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (ReflectiveOperationException e) {
       fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
     }
-  }
-
-  @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
-  private static Map<String, Level> savedClassLogLevels = new HashMap<>();
-
-  public static void initClassLogLevels() {
-    Class<?> currentClass = RandomizedContext.current().getTargetClass();
-    LogLevel annotation = currentClass.getAnnotation(LogLevel.class);
-    if (annotation == null) {
-      return;
-    }
-    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-    savedClassLogLevels.putAll(previousLevels);
-  }
-
-  private Map<String, Level> savedMethodLogLevels = new HashMap<>();
-
-  @Before
-  public void initMethodLogLevels() {
-    Method method = RandomizedContext.current().getTargetMethod();
-    LogLevel annotation = method.getAnnotation(LogLevel.class);
-    if (annotation == null) {
-      return;
-    }
-    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-    savedMethodLogLevels.putAll(previousLevels);
-  }
-
-  @After
-  public void restoreMethodLogLevels() {
-    LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
-    savedMethodLogLevels.clear();
   }
 
   protected static boolean isSSLMode() {
@@ -513,7 +467,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.write(
         solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE), xmlStr.getBytes(StandardCharsets.UTF_8));
     h = new TestHarness(SolrXmlConfig.fromSolrHome(solrHome, new Properties()));
-    lrf = h.getRequestFactory("/select", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("/select", 0, 20);
   }
 
   /**
@@ -578,14 +532,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #initCoreDataDir
    */
-  protected static File initAndGetDataDir() {
-    File dataDir = initCoreDataDir;
+  protected static Path initAndGetDataDir() {
+    Path dataDir = initCoreDataDir;
     if (null == dataDir) {
       final int id = dataDirCount.incrementAndGet();
-      dataDir = initCoreDataDir = createTempDir("data-dir-" + id).toFile();
+      dataDir = initCoreDataDir = createTempDir("data-dir-" + id);
       assertNotNull(dataDir);
       if (log.isInfoEnabled()) {
-        log.info("Created dataDir: {}", dataDir.getAbsolutePath());
+        log.info("Created dataDir: {}", dataDir.toAbsolutePath());
       }
     }
     return dataDir;
@@ -613,12 +567,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Call initCore in @BeforeClass to instantiate a solr core in your test class. deleteCore will be
    * called for you via SolrTestCaseJ4 @AfterClass
    */
-  public static void initCore(String config, String schema, String solrHome) throws Exception {
+  public static void initCore(String config, String schema, Path solrHome) throws Exception {
     assertNotNull(solrHome);
     configString = config;
     schemaString = schema;
-    testSolrHome = Paths.get(solrHome);
-    System.setProperty("solr.solr.home", solrHome);
+    testSolrHome = solrHome;
+    System.setProperty("solr.solr.home", solrHome.toString());
     initCore();
   }
 
@@ -626,7 +580,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Call initCore in @BeforeClass to instantiate a solr core in your test class. deleteCore will be
    * called for you via SolrTestCaseJ4 @AfterClass
    */
-  public static void initCore(String config, String schema, String solrHome, String pCoreName)
+  public static void initCore(String config, String schema, Path solrHome, String pCoreName)
       throws Exception {
     coreName = pCoreName;
     initCore(config, schema, solrHome);
@@ -732,8 +686,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * The directory used as the <code>dataDir</code> for the TestHarness unless {@link #hdfsDataDir}
-   * is non null.
+   * The directory used as the <code>dataDir</code> for the TestHarness.
    *
    * <p>Will be set to null by {@link #deleteCore} and re-initialized as needed by {@link
    * #createCore}. In the event of a test failure, the contents will be left on disk.
@@ -742,10 +695,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @see #initAndGetDataDir()
    * @deprecated use initAndGetDataDir instead of directly accessing this variable
    */
-  @Deprecated protected static volatile File initCoreDataDir;
-
-  // hack due to File dataDir
-  protected static String hdfsDataDir;
+  @Deprecated protected static volatile Path initCoreDataDir;
 
   /**
    * Initializes things your test might need
@@ -779,25 +729,22 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
     h =
         new TestHarness(
-            coreName,
-            hdfsDataDir == null ? initAndGetDataDir().getAbsolutePath() : hdfsDataDir,
-            solrConfig,
-            getSchemaFile());
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+            coreName, initAndGetDataDir().toAbsolutePath().toString(), solrConfig, getSchemaFile());
+    lrf = h.getRequestFactory("", 0, 20);
   }
 
   public static CoreContainer createCoreContainer(Path solrHome, String solrXML) {
     testSolrHome = requireNonNull(solrHome);
     System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h = new TestHarness(solrHome, solrXML);
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 
   public static CoreContainer createCoreContainer(NodeConfig config, CoresLocator locator) {
     testSolrHome = config.getSolrHome();
     h = new TestHarness(config, locator);
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 
@@ -815,8 +762,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h =
         new TestHarness(
-            "collection1", initAndGetDataDir().getAbsolutePath(), "solrconfig.xml", "schema.xml");
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+            "collection1",
+            initAndGetDataDir().toAbsolutePath().toString(),
+            "solrconfig.xml",
+            "schema.xml");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 
@@ -891,7 +841,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     lrf = null;
     configString = schemaString = null;
     initCoreDataDir = null;
-    hdfsDataDir = null;
   }
 
   /** Validates an update XML String is successful */
@@ -1078,8 +1027,64 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       }
       return response;
     } finally {
-      // restore the params
-      if (params != null && params != req.getParams()) req.setParams(params);
+      req.setParams(params); // restore in case we changed it
+    }
+  }
+
+  public static <T> String assertThatJQ(SolrQueryRequest req, Matcher<T> test) throws Exception {
+    return assertThatJQ(req, "", test);
+  }
+
+  /**
+   * Validates a query completes and, using JSON deserialization, returns an object that passes the
+   * given Matcher test.
+   *
+   * <p>Please use this with care: this makes it easy to match complete structures, but doing so can
+   * result in fragile tests if you are matching more than what you want to test.
+   *
+   * @param req Solr request to execute
+   * @param message Failure message for test
+   * @param test Matcher for the given object returned from deserializing the response
+   * @return The request response as a JSON String if the test matcher passes
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> String assertThatJQ(SolrQueryRequest req, String message, Matcher<T> test)
+      throws Exception {
+    final SolrParams params = req.getParams();
+    try {
+      if (!"json".equals(params.get("wt", "xml")) || params.get("indent") == null) {
+        ModifiableSolrParams newParams = new ModifiableSolrParams(params);
+        newParams.set("wt", "json");
+        if (params.get("indent") == null) newParams.set("indent", "true");
+        req.setParams(newParams);
+      }
+
+      String response;
+      boolean failed = true;
+      try {
+        response = h.query(req);
+        failed = false;
+      } finally {
+        if (failed) {
+          fail("REQUEST FAILED: " + req.getParamString());
+        }
+      }
+      Object responseObj;
+      failed = true;
+      try {
+        responseObj = Utils.fromJSONString(response);
+        failed = false;
+      } finally {
+        if (failed) {
+          fail("Couldn't deserialize json: " + response);
+        }
+      }
+
+      assertThat(message, (T) responseObj, test);
+
+      return response;
+    } finally {
+      req.setParams(params); // restore in case we changed it
     }
   }
 
@@ -2127,16 +2132,18 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Gets a resource from the context classloader as {@link File}. This method should only be used,
+   * Gets a resource from the context classloader as {@link Path}. This method should only be used,
    * if a real file is needed. To get a stream, code should prefer {@link Class#getResourceAsStream}
    * using {@code this.getClass()}.
    */
-  public static File getFile(String name) {
+  public static Path getFile(String name) {
     final URL url =
-        SolrTestCaseJ4.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
+        SolrTestCaseJ4.class
+            .getClassLoader()
+            .getResource(name.replace(FileSystems.getDefault().getSeparator(), "/"));
     if (url != null) {
       try {
-        return new File(url.toURI());
+        return Path.of(url.toURI());
       } catch (Exception e) {
         throw new RuntimeException(
             "Resource was found on classpath, but cannot be resolved to a "
@@ -2144,21 +2151,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
                 + name);
       }
     }
-    final File file = new File(name);
-    if (file.exists()) {
+    final Path file = Path.of(name);
+    if (Files.exists(file)) {
       return file;
     }
     throw new RuntimeException(
         "Cannot find resource in classpath or in file-system (relative to CWD): "
-            + new File(name).getAbsolutePath());
+            + Path.of(name).toAbsolutePath());
   }
 
-  public static String TEST_HOME() {
+  public static Path TEST_HOME() {
     return getFile("solr/collection1").getParent();
   }
 
   public static Path TEST_PATH() {
-    return getFile("solr/collection1").getParentFile().toPath();
+    return getFile("solr/collection1").getParent();
   }
 
   public static Path TEST_COLL1_CONF() {
@@ -2177,20 +2184,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
-  public static void assertXmlFile(final File file, String... xpath)
+  public static void assertXmlFile(final Path file, String... xpath)
       throws IOException, SAXException {
 
     try {
-      String xml = Files.readString(file.toPath());
+      String xml = Files.readString(file);
       String results = TestHarness.validateXPath(xml, xpath);
       if (null != results) {
         String msg =
-            "File XPath failure: file="
-                + file.getPath()
-                + " xpath="
-                + results
-                + "\n\nxml was: "
-                + xml;
+            "File XPath failure: file=" + file + " xpath=" + results + "\n\nxml was: " + xml;
         fail(msg);
       }
     } catch (XPathExpressionException e2) {
@@ -2233,7 +2235,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  public static void copyMinConf(File dstRoot) throws IOException {
+  public static void copyMinConf(Path dstRoot) throws IOException {
     copyMinConf(dstRoot, null);
   }
 
@@ -2241,18 +2243,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // the string to write to the core.properties file may be null in which case nothing is done with
   // it.
   // propertiesContent may be an empty string, which will actually work.
-  public static void copyMinConf(File dstRoot, String propertiesContent) throws IOException {
+  public static void copyMinConf(Path dstRoot, String propertiesContent) throws IOException {
     copyMinConf(dstRoot, propertiesContent, "solrconfig-minimal.xml");
   }
 
-  public static void copyMinConf(File dstRoot, String propertiesContent, String solrconfigXmlName)
+  public static void copyMinConf(Path dstRoot, String propertiesContent, String solrconfigXmlName)
       throws IOException {
-    Path dstPath = dstRoot.toPath();
-    Path subHome = dstPath.resolve("conf");
+    Path subHome = dstRoot.resolve("conf");
     Files.createDirectories(subHome);
 
     if (propertiesContent != null) {
-      Files.writeString(dstRoot.toPath().resolve(CORE_PROPERTIES_FILENAME), propertiesContent);
+      Files.writeString(dstRoot.resolve(CORE_PROPERTIES_FILENAME), propertiesContent);
     }
     Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
     Files.copy(top.resolve("schema-tiny.xml"), subHome.resolve("schema.xml"));
@@ -2263,17 +2264,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   // Creates minimal full setup, including solr.xml
-  public static void copyMinFullSetup(File dstRoot) throws IOException {
-    Files.createDirectories(dstRoot.toPath());
-    Files.copy(
-        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.toPath().resolve("solr.xml"));
+  public static void copyMinFullSetup(Path dstRoot) throws IOException {
+    Files.createDirectories(dstRoot);
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.resolve("solr.xml"));
     copyMinConf(dstRoot);
   }
 
   // Just copies the file indicated to the tmp home directory naming it "solr.xml"
-  public static void copyXmlToHome(File dstRoot, String fromFile) throws IOException {
-    Files.createDirectories(dstRoot.toPath());
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.toPath().resolve("solr.xml"));
+  public static void copyXmlToHome(Path dstRoot, String fromFile) throws IOException {
+    Files.createDirectories(dstRoot);
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.resolve("solr.xml"));
   }
 
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
@@ -2281,13 +2281,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
   @Deprecated // Instead use a basic config + whatever is needed or default config
-  public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
-    Path subHome = dstRoot.toPath().resolve(collection).resolve("conf");
+  public static void copySolrHomeToTemp(Path dstRoot, String collection) throws IOException {
+    Path subHome = dstRoot.resolve(collection).resolve("conf");
     Files.createDirectories(subHome);
 
     Files.copy(
         SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
-        dstRoot.toPath().resolve("solr.xml"),
+        dstRoot.resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 
     Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
@@ -2310,15 +2310,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /** Creates a temp solr home using sample_techproducts_configs. Returns the home path. */
   @Deprecated // Instead use a basic config + whatever is needed or default config
-  public static String legacyExampleCollection1SolrHome() {
-    String sourceHome = ExternalPaths.SOURCE_HOME;
+  public static Path legacyExampleCollection1SolrHome() {
+    Path sourceHome = ExternalPaths.SOURCE_HOME;
     if (sourceHome == null)
       throw new IllegalStateException(
           "No source home! Cannot create the legacy example solr home directory.");
 
     try {
-      Path tempSolrHome = LuceneTestCase.createTempDir();
-      Path serverSolr = tempSolrHome.getFileSystem().getPath(sourceHome, "server", "solr");
+      Path tempSolrHome = FilterPath.unwrap(LuceneTestCase.createTempDir());
+      Path serverSolr = tempSolrHome.resolve(sourceHome).resolve("server").resolve("solr");
       Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
 
       Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
@@ -2335,7 +2335,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
               StandardCharsets.UTF_8)) {
         props.store(writer, null);
       }
-      return tempSolrHome.toString();
+      return tempSolrHome;
     } catch (RuntimeException e) {
       throw e;
     } catch (IOException e) {
@@ -2872,7 +2872,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.TrieLongField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.TrieDoubleField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.TrieDateField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumField");
 
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else {
@@ -2885,7 +2884,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.LongPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.DoublePointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.DatePointField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumFieldType");
 
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Locale;
@@ -68,12 +67,8 @@ public class DeleteTool extends ToolBase {
               "Skip safety checks when deleting the configuration directory used by a collection.")
           .build();
 
-  public DeleteTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public DeleteTool(PrintStream stdout) {
-    super(stdout);
+  public DeleteTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -211,7 +206,7 @@ public class DeleteTool extends ToolBase {
     if (isVerbose() && response != null) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       echo(arr.toString());
       echo("\n");
     }

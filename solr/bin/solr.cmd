@@ -78,10 +78,6 @@ set SOLR_URL_SCHEME=http
 set "SOLR_JETTY_CONFIG=--module=http"
 set "SOLR_SSL_OPTS= "
 
-IF DEFINED SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH (
-  set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dhadoop.security.credential.provider.path=%SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH%"
-)
-
 IF NOT DEFINED SOLR_SSL_ENABLED (
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_ENABLED=true"
@@ -197,13 +193,23 @@ IF "%SOLR_GZIP_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=gzip"
 )
 
+REM Jetty configuration for new Admin UI
+IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
+  REM Do not load jetty-configuration if Admin UI explicitly disabled
+) ELSE IF "%SOLR_ADMIN_UI_EXPERIMENTAL_DISABLED%"=="true" (
+  REM Do not load jetty-configuration if new Admin UI explicitly disabled
+) ELSE (
+  REM Enable new Admin UI by loading jetty-configuration
+  set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=new-ui"
+)
+
 REM Authentication options
 
 IF NOT DEFINED SOLR_AUTH_TYPE (
   IF DEFINED SOLR_AUTHENTICATION_OPTS (
     echo WARNING: SOLR_AUTHENTICATION_OPTS variable configured without associated SOLR_AUTH_TYPE variable
     echo          Please configure SOLR_AUTH_TYPE variable with the authentication type to be used.
-    echo          Currently supported authentication types are [kerberos, basic]
+    echo          Currently supported authentication types are [basic]
   )
 )
 
@@ -211,7 +217,7 @@ IF DEFINED SOLR_AUTH_TYPE (
   IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
     echo WARNING: SOLR_AUTHENTICATION_CLIENT_BUILDER and SOLR_AUTH_TYPE variables are configured together
     echo          Use SOLR_AUTH_TYPE variable to configure authentication type to be used
-    echo          Currently supported authentication types are [kerberos, basic]
+    echo          Currently supported authentication types are [basic]
     echo          The value of SOLR_AUTHENTICATION_CLIENT_BUILDER configuration variable will be ignored
   )
 )
@@ -220,12 +226,8 @@ IF DEFINED SOLR_AUTH_TYPE (
   IF /I "%SOLR_AUTH_TYPE%" == "basic" (
     set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
   ) ELSE (
-    IF /I "%SOLR_AUTH_TYPE%" == "kerberos" (
-      set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
-    ) ELSE (
-      echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
-      goto err
-    )
+    echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
+    goto err
   )
 )
 
@@ -238,12 +240,6 @@ IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
 )
 set "AUTHC_OPTS=%AUTHC_CLIENT_BUILDER_ARG% %SOLR_AUTHENTICATION_OPTS%"
 
-REM Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
-IF NOT "%SOLR_HOST%"=="" (
-  set "SOLR_TOOL_HOST=%SOLR_HOST%"
-) ELSE (
-  set "SOLR_TOOL_HOST=localhost"
-)
 IF "%SOLR_JETTY_HOST%"=="" (
   set "SOLR_JETTY_HOST=127.0.0.1"
 )
@@ -647,15 +643,36 @@ SHIFT
 goto parse_args
 
 :set_passthru
-set "PASSTHRU=%~1=%~2"
+set "PASSTHRU_KEY=%~1"
+set "PASSTHRU_VALUES="
+
+SHIFT
+:repeat_passthru
+set "arg=%~1"
+if "%arg%"=="" goto end_passthru
+set firstChar=%arg:~0,1%
+IF "%firstChar%"=="-" (
+  goto end_passthru
+)
+
+if defined PASSTHRU_VALUES (
+    set "PASSTHRU_VALUES=%PASSTHRU_VALUES%,%arg%"
+) else (
+    set "PASSTHRU_VALUES=%arg%"
+)
+SHIFT
+goto repeat_passthru
+
+:end_passthru
+set "PASSTHRU=%PASSTHRU_KEY%=%PASSTHRU_VALUES%"
+
 IF NOT "%SOLR_OPTS%"=="" (
   set "SOLR_OPTS=%SOLR_OPTS% %PASSTHRU%"
 ) ELSE (
   set "SOLR_OPTS=%PASSTHRU%"
 )
 set "PASS_TO_RUN_EXAMPLE=%PASSTHRU% !PASS_TO_RUN_EXAMPLE!"
-SHIFT
-SHIFT
+
 goto parse_args
 
 :set_noprompt
@@ -735,7 +752,7 @@ IF NOT "%EXAMPLE%"=="" (
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -Dsolr.install.symDir="%SOLR_TIP%" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" ^
+    org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" --jvm-opts "%SOLR_ADDL_ARGS%" ^
     --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
 
   REM End of run_example
@@ -843,8 +860,7 @@ IF NOT EXIST "%SOLR_HOME%\" (
   )
 )
 
-@REM This is quite hacky, but examples rely on a different log4j2.xml
-@REM so that we can write logs for examples to %SOLR_HOME%\..\logs
+@REM Handle overriding where logs are written to
 IF [%SOLR_LOGS_DIR%] == [] (
   set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
 ) ELSE (
@@ -1153,7 +1169,7 @@ IF "%FG%"=="1" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT! --solr-url !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%
+    org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT!
   IF NOT "!ERRORLEVEL!"=="0" (
       set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
       goto err
@@ -1174,11 +1190,9 @@ for %%a in (%*) do (
       if "!arg:~0,1!" equ "-" set "option=!arg!"
    ) else (
       set "option!option!=%%a"
-      if "!option!" equ "-s" set "SOLR_HOME=%%a"
       if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"
-      if "!option!" equ "-d" set "SOLR_SERVER_DIR=%%a"
-      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
-      if not "!option!" equ "-s" if not "!option!" equ "--solr-home" if not "!option!" equ "-d" if not "!option!" equ "--server-dir" (
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"    
+      if not "!option!" equ "--solr-home" if not "!option!" equ "--server-dir" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )
       set "option="
@@ -1200,22 +1214,10 @@ IF NOT EXIST "%SOLR_HOME%\" (
   )
 )
 
-if "!AUTH_PORT!"=="" (
-  for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
-    set SOME_SOLR_PORT=
-    For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
-    if NOT "!SOME_SOLR_PORT!"=="" (
-      for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
-        IF NOT "%%k"=="0" set AUTH_PORT=!SOME_SOLR_PORT!
-      )
-    )
-  )
-)
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% --solr-include-file "%SOLR_INCLUDE%" --auth-conf-dir "%SOLR_HOME%" ^
-    --solr-url !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!
+    org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% --solr-include-file "%SOLR_INCLUDE%" --auth-conf-dir "%SOLR_HOME%"
 goto done
 
 :err

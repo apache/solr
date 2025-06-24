@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,13 +34,13 @@ import org.junit.Test;
 
 public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
   // tmp dir, cleaned up automatically.
-  private static File solrHome = null;
+  private static Path solrHome = null;
   private static SolrResourceLoader loader = null;
 
   @BeforeClass
   public static void setupLoader() {
-    solrHome = createTempDir().toFile();
-    loader = new SolrResourceLoader(solrHome.toPath());
+    solrHome = createTempDir();
+    loader = new SolrResourceLoader(solrHome);
   }
 
   @AfterClass
