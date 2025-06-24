@@ -47,16 +47,11 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
 
   /*
    * Unlike the basic HttpShardHandler, this class allows us to exit submit before
-   * pending is incremented and the responseFutureMap is updated. If the runnables that
+   * the responseFutureMap is updated. If the runnables that
    * do that are slow to execute the calling code could attempt to takeCompleted(),
    * while pending is still zero. In this condition, the code would assume that all
    * requests are processed (despite the runnables created by this class still
    * waiting). Thus, we need to track that there are attempts still in flight.
-   *
-   * This tracking is complicated by the fact that there could be a failure in the
-   * runnable that causes the request to never be created and pending to never be
-   * incremented. Thus, we need to know that we have attempted something AND that that
-   * attempt has also been processed by the executor.
    *
    * This condition is added to the check that controls the loop in take via the
    * override for #responsesPending(). We rely on calling code call submit for all
@@ -74,7 +69,6 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
   protected boolean responsesPending() {
     // ensure we can't exit while loop in HttpShardHandler.take(boolean) until we've completed
     // as many Runnable actions as we created.
-    log.info("responsesPending, attemptStart: {}, attemptCount: {}", attemptStart, attemptCount);
     return super.responsesPending() || attemptStart.get() > attemptCount.get();
   }
 
@@ -90,11 +84,7 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
     final Runnable executeRequestRunnable =
         () -> {
           try {
-            CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-            log.info("responseFutureMap, adding: {}", shard);
-            responseFutureMap.put(srsp, future);
-            future.whenComplete(
-                new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
+            super.makeShardRequest(sreq, shard, params, lbReq, ssr, srsp, startTimeNS);
           } catch (Throwable t) {
             SolrException exception =
                 new SolrException(

@@ -19,12 +19,10 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.PARTIAL_RESULTS;
 import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -43,7 +41,6 @@ import org.apache.solr.client.solrj.routing.NoOpReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cluster.Shard;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -57,8 +54,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Solr's default {@link ShardHandler} implementation; uses Jetty's async HTTP Client APIs for
@@ -74,9 +69,6 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
 
-  @SuppressWarnings("unused")
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
    * #prepDistributed(ResponseBuilder)} will only include {@link
@@ -88,28 +80,6 @@ public class HttpShardHandler extends ShardHandler {
   public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
 
   private final HttpShardHandlerFactory httpShardHandlerFactory;
-
-  /*
-   * Three critical fields:
-   *  - pending: keeps track of how many things we started
-   *  - responseFutureMap: holds futures for anything not yet complete
-   *  - responses: the result of things we started, when responses.size()
-   *
-   * All of this must be kept consistent and is therefore synchronized on RESPONSES_LOCK
-   * The exception is when a response is added so long as pending is incremented first
-   * because responses is a LinkedBlockingQueue and that is synchronized. The response
-   * future map is not synchronized however, and so we need to guard it for both order
-   * and memory consistency (happens before) reasons.
-   *
-   * The code works by looping/decrementing pending until responses.size() matches the
-   * size of the shard list. Thus, there is a tricky, hidden assumption of one response
-   * for every shard, even if the shard is down (so we add a fake response with a shard
-   * down exception). Note that down shards have a shard url of empty string in this case.
-   *
-   * This seems overcomplicated. Perhaps this can someday be changed to simply
-   * test responses.size == pending.size?
-   */
-  protected final Object FUTURE_MAP_LOCK = new Object();
 
   protected volatile ConcurrentMap<ShardResponse, CompletableFuture<LBSolrClient.Rsp>> responseFutureMap;
   protected volatile BlockingQueue<ShardResponse> responses;
@@ -288,12 +258,9 @@ public class HttpShardHandler extends ShardHandler {
       ShardResponse srsp,
       long startTimeNS) {
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-    future = future.whenComplete(new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
-    // we want to ensure that there is a future in flight before incrementing
-    // pending. If anything fails such that a request/future is not created there is
-    // potential for the request to hang forever waiting on a responses.take()
-    // and so if anything failed during future creation we would get stuck.
     responseFutureMap.put(srsp, future);
+    // Do the callback explicitly after adding it to the map, because the callback relies on the map already having the future.
+    future.whenComplete(new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
   }
 
   /** Subclasses could modify the request based on the shard */
@@ -358,7 +325,6 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   protected boolean responsesPending() {
-    log.info("responsesPending, responseFutureMap: {}, responses: {}", responseFutureMap.size(), responses.size());
     return !responseFutureMap.isEmpty() || !responses.isEmpty();
   }
 
@@ -526,7 +492,6 @@ public class HttpShardHandler extends ShardHandler {
 
     @Override
     public void accept(LBSolrClient.Rsp rsp, Throwable throwable) {
-      log.info("responses, adding: {}, rsp: {}, throwable: {}", shard, rsp, throwable);
       if (rsp != null) {
         ssr.nl = rsp.getResponse();
         srsp.setShardAddress(rsp.getServer());
