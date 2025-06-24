@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,7 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
   protected boolean responsesPending() {
     // ensure we can't exit while loop in HttpShardHandler.take(boolean) until we've completed
     // as many Runnable actions as we created.
+    log.info("responsesPending, attemptStart: {}, attemptCount: {}", attemptStart, attemptCount);
     return super.responsesPending() || attemptStart.get() > attemptCount.get();
   }
 
@@ -89,16 +91,18 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
         () -> {
           try {
             CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
+            log.info("responseFutureMap, adding: {}", shard);
+            responseFutureMap.put(srsp, future);
             future.whenComplete(
                 new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
-            // we want to ensure that there is a future in flight before incrementing
-            // pending, because there is a risk that the  request will hang forever waiting
-            // on a responses.take() in HttpShardHandler.take(boolean) if anything failed
-            // during future creation. It is not a problem if the response shows up before
-            // we increment pending. The attemptingSubmit flag guards us against inadvertently
-            // skipping the while loop in HttpShardHandler.take(boolean) until at least
-            // one runnable has been executed.
-            responseFutureMap.put(srsp, future);
+          } catch (Throwable t) {
+            SolrException exception =
+                new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR, "Exception occurred while trying to send a request to shard: " + shard, t);
+            srsp.setException(exception);
+            srsp.setResponseCode(exception.code());
+
+            responses.add(srsp);
           } finally {
             // it must not be possible to exit the runnable in any way without calling this.
             attemptCount.incrementAndGet();
@@ -108,6 +112,11 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
     // not clear how errors emanating from requestAsync or the whenComplete() callback
     // are to propagated out of the runnable?
     attemptStart.incrementAndGet();
-    CompletableFuture.runAsync(executeRequestRunnable, commExecutor);
+    try {
+      CompletableFuture.runAsync(executeRequestRunnable, commExecutor);
+    } catch (Throwable t) {
+      // Send we incremented the attemptStart, we need to increment attemptCount on a failure to submit
+      attemptCount.incrementAndGet();
+    }
   }
 }
