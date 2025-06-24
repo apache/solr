@@ -52,6 +52,8 @@ import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -77,6 +79,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -151,6 +154,9 @@ public class SolrMetricManager {
 
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
+
+  // Get default still pulls the standard OTLP exporter variables
+  private final MetricExporter otlpExporter = OpenTelemetryConfigurator.getExporter();
 
   public SolrMetricManager() {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
@@ -728,15 +734,17 @@ public class SolrMetricManager {
             providerName,
             key -> {
               var reader = new PrometheusMetricReader(true, null);
-              // NOCOMMIT: We need to add a Periodic Metric Reader here if we want to push with OTLP
-              // with an exporter
-              var provider = SdkMeterProvider.builder().registerMetricReader(reader).build();
-              return new MeterProviderAndReaders(provider, reader);
+              var builder = SdkMeterProvider.builder().registerMetricReader(reader);
+              builder.registerMetricReader(
+                  PeriodicMetricReader.builder(otlpExporter)
+                      .setInterval(5, TimeUnit.SECONDS)
+                      .build());
+              return new MeterProviderAndReaders(builder.build(), reader);
             })
         .sdkMeterProvider();
   }
 
-  // TODO SOLR-17458: We may not need
+  // NOCOMMIT: Remove
   private static MetricRegistry getOrCreateRegistry(
       ConcurrentMap<String, MetricRegistry> map, String registry) {
     final MetricRegistry existing = map.get(registry);
@@ -758,7 +766,7 @@ public class SolrMetricManager {
    *
    * @param registry name of the registry to remove
    */
-  // TODO SOLR-17458: You can't delete OTEL meters
+  // NOCOMMIT: Remove this
   public void removeRegistry(String registry) {
     // close any reporters for this registry first
     closeReporters(registry, null);

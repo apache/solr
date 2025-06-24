@@ -24,7 +24,10 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
+import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -33,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.slf4j.Logger;
@@ -47,6 +51,12 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   private static final String DEFAULT_CLASS_NAME =
       EnvUtils.getProperty(
           "solr.otelDefaultConfigurator", "org.apache.solr.opentelemetry.OtelTracerConfigurator");
+
+  public static final Boolean OTLP_EXPORTER_ENABLED =
+      Boolean.parseBoolean(EnvUtils.getProperty("solr.otlpExporterEnabled", "true"));
+
+  public static final String EXPORTER_TYPE =
+      EnvUtils.getProperty("solr.otlpExporterProtocol", "grpc");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -98,6 +108,25 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
           "Unable to auto-config OpenTelemetry with class {}. Make sure you have enabled the 'opentelemetry' module",
           DEFAULT_CLASS_NAME,
           e);
+    }
+  }
+
+  public static MetricExporter getExporter() {
+    if (!OTLP_EXPORTER_ENABLED) {
+      log.info("OTLP metric exporter is disabled.");
+      return new NoopMetricExporter();
+    }
+
+    switch (EXPORTER_TYPE) {
+      case "grpc":
+        return OtlpGrpcMetricExporter.getDefault();
+      case "http":
+        return OtlpHttpMetricExporter.getDefault();
+      case "none":
+        return new NoopMetricExporter();
+      default:
+        log.warn("Unknown OTLP exporter type: {}. Defaulting to gRPC exporter.", EXPORTER_TYPE);
+        return OtlpGrpcMetricExporter.getDefault();
     }
   }
 
