@@ -67,8 +67,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.response.DocsStreamer;
 import org.apache.solr.response.ResultContext;
-import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
@@ -716,8 +716,8 @@ public class SolrDocumentFetcher {
     switch (schemaField.getType().getNumberType()) {
       case INTEGER:
         final int raw = (int) value;
-        if (schemaField.getType() instanceof AbstractEnumField) {
-          return ((AbstractEnumField) schemaField.getType())
+        if (schemaField.getType() instanceof EnumFieldType) {
+          return ((EnumFieldType) schemaField.getType())
               .getEnumMapping()
               .intValueToStringValue(raw);
         } else {

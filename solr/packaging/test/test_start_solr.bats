@@ -81,11 +81,10 @@ teardown() {
   refute_output --partial 'Exception'
 }
 
-@test "solr starts with --jettyconfig" { 
-  run solr start --jettyconfig 
-  assert_output --partial 'ERROR: Jetty config is required when using the --jettyconfig option'  
+@test "start with custom jetty options" {
+  export ENABLE_REMOTE_JMX_OPTS=true
+  export RMI_PORT=65535 # need to make sure we don't exceed port range so hard code it
 
-  # Test that parsing works.  Note, Solr doesn't actually start as we are not referencing a real jetty configuration directory.
-  run solr start --jettyconfig "--include-jetty-dir=/etc/jetty/custom/server/"
-  refute_output --partial 'ERROR: Jetty config is required when using the --jettyconfig option'  
+  solr start --jettyconfig "--module=server"
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 }

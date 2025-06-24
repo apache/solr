@@ -301,7 +301,7 @@ fi
 export SOLR_URL_SCHEME
 
 # Gracefully wait for existing requests on shutdown
-if [ "${SOLR_JETTY_GRACEFUL:-true}" == "true" ]; then
+if [ "${SOLR_JETTY_GRACEFUL:-false}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=graceful")
 fi
 
