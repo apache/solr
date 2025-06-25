@@ -123,6 +123,7 @@ public class JavaBinUpdateRequestCodec {
     List<String> delByQ;
     final NamedList<?>[] namedList = new NamedList<?>[1];
     try (JavaBinCodec codec = new StreamingCodec(namedList, updateRequest, handler)) {
+      codec.readMapAsNamedList(false);
       codec.unmarshal(is);
     }
 
