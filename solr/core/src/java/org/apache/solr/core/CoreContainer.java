@@ -245,9 +245,7 @@ public class CoreContainer {
 
   private volatile HttpSolrClientProvider solrClientProvider;
 
-  private volatile ExecutorService coreContainerWorkExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(
-          new SolrNamedThreadFactory("coreContainerWorkExecutor"));
+  private volatile ExecutorService coreLoadExecutor;
 
   private final OrderedExecutor<BytesRef> replayUpdatesExecutor;
 
@@ -839,16 +837,6 @@ public class CoreContainer {
 
     tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
 
-    coreContainerWorkExecutor =
-        MetricUtils.instrumentedExecutorService(
-            coreContainerWorkExecutor,
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreContainerWorkExecutor",
-                SolrInfoBean.Category.CONTAINER.toString(),
-                "threadPool"));
-
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
@@ -1098,15 +1086,14 @@ public class CoreContainer {
     }
 
     // setup executor to load cores in parallel
-    ExecutorService coreLoadExecutor =
-        MetricUtils.instrumentedExecutorService(
-            ExecutorUtil.newMDCAwareFixedThreadPool(
-                cfg.getCoreLoadThreadCount(isZooKeeperAware()),
-                new SolrNamedThreadFactory("coreLoadExecutor")),
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
+    coreLoadExecutor = MetricUtils.instrumentedExecutorService(
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            cfg.getCoreLoadThreadCount(isZooKeeperAware()),
+            new SolrNamedThreadFactory("coreLoadExecutor")),
+        null,
+        metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
+        SolrMetricManager.mkName(
+            "coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
 
     coreSorter =
         loader.newInstance(
@@ -1168,11 +1155,9 @@ public class CoreContainer {
       backgroundCloser.start();
 
     } finally {
-      if (asyncSolrCoreLoad) {
-        coreContainerWorkExecutor.execute(
-            () -> ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor));
-      } else {
-        ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor);
+      coreLoadExecutor.shutdown(); // doesn't block
+      if (!asyncSolrCoreLoad) {
+        ExecutorUtil.awaitTerminationForever(coreLoadExecutor);
       }
     }
 
@@ -1362,7 +1347,7 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
-      ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
 
       // First wake up the closer thread, it'll terminate almost immediately since it checks
       // isShutDown.
