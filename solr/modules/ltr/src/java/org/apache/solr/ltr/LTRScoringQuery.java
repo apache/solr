@@ -18,12 +18,7 @@ package org.apache.solr.ltr;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -133,13 +128,13 @@ public class LTRScoringQuery extends Query implements Accountable {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = classHash();
-    result = (prime * result) + ((ltrScoringModel == null) ? 0 : ltrScoringModel.hashCode());
-    result = (prime * result) + ((originalQuery == null) ? 0 : originalQuery.hashCode());
-    if (efi == null) {
-      result = (prime * result) + 0;
-    } else {
-      for (final Map.Entry<String, String[]> entry : efi.entrySet()) {
+    int result = ltrScoringModel.getFeatureStoreName().hashCode();
+    result = (prime * result) + (ltrScoringModel.getName().hashCode());
+    result = (prime * result) + (this.getFeatureLogger().logAll.hashCode());
+    result = (prime * result) + (this.getFeatureLogger().featureFormat.hashCode());
+    if (efi != null) {
+      TreeMap<String, String[]> sorted = new TreeMap<>(efi);
+      for (final Map.Entry<String, String[]> entry : sorted.entrySet()) {
         final String key = entry.getKey();
         final String[] values = entry.getValue();
         result = (prime * result) + key.hashCode();

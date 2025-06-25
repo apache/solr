@@ -423,7 +423,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         }
       }
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
-        Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);
+        // WHEN COULD WE HAVE MULTIPLE MODEL WEIGHTS?
+        Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher, modelWeights[0]);
         if (featureVector == null) { // FV for this document was not in the cache
           featureVector =
               featureLogger.makeFeatureVector(

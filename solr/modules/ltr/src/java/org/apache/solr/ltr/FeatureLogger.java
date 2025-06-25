@@ -80,7 +80,12 @@ public abstract class FeatureLogger {
    * @return String representation of the list of features calculated for docid
    */
   public String getFeatureVector(
-      int docid, LTRScoringQuery scoringQuery, SolrIndexSearcher searcher) {
+          int docid, LTRScoringQuery scoringQuery, SolrIndexSearcher searcher, LTRScoringQuery.ModelWeight modelWeights) {
+    // CHANGE CACHE KEY
+    if (searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid)) == null) {
+      final String featureVector = makeFeatureVector(modelWeights.getFeaturesInfo());
+      searcher.cacheInsert(fvCacheName, fvCacheKey(scoringQuery, docid), featureVector);
+    }
     return (String) searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid));
   }
 
