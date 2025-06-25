@@ -37,7 +37,7 @@ import org.apache.solr.schema.SchemaField;
 
 /**
  * A ValueSource parser configured with a pre-compiled expression that can then be evaluated at
- * request time. It's powered by the Lucene Expressions module, which is a subset of JavaScript
+ * request time. It's powered by the Lucene Expressions module, which is a subset of JavaScript.
  */
 public class ExpressionValueSourceParser extends ValueSourceParser {
 
