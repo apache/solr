@@ -20,13 +20,11 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.lucene.expressions.Bindings;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -38,16 +36,17 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * A ValueSource parser that can be configured with (named) pre-complied Expressions that can then
- * be evaluated at request time.
+ * A ValueSource parser configured with a pre-compiled expression that can then be evaluated at
+ * request time. It's powered by the Lucene Expressions module, which is a subset of JavaScript
  */
 public class ExpressionValueSourceParser extends ValueSourceParser {
 
-  public static final String SCORE_KEY = "score-name";
-  public static final String EXPRESSIONS_KEY = "expressions";
+  public static final String SCORE_KEY = "score-name"; // TODO get rid of this?  Why have it?
+  public static final String EXPRESSION_KEY = "expression";
 
-  private Map<String, Expression> expressions;
-  private String scoreKey = SolrReturnFields.SCORE;
+  private Expression expression;
+  private String scoreKey;
+  private int numPositionalArgs = 0; // Number of positional arguments in the expression
 
   @Override
   public void init(NamedList<?> args) {
@@ -58,158 +57,73 @@ public class ExpressionValueSourceParser extends ValueSourceParser {
 
   /** Checks for optional scoreKey override */
   private void initScoreKey(NamedList<?> args) {
-    final int scoreIdx = args.indexOf(SCORE_KEY, 0);
-    if (scoreIdx < 0) {
-      // if it's not in the list at all, use the existing default...
-      return;
-    }
-
-    Object arg = args.remove(scoreIdx);
-    // null is valid if they want to prevent default binding
-    scoreKey = (null == arg) ? null : arg.toString();
+    scoreKey = Optional.ofNullable((String) args.remove(SCORE_KEY)).orElse(SolrReturnFields.SCORE);
   }
 
-  /** Parses the pre-configured expressions */
+  /** Parses the pre-configured expression */
   private void initConfiguredExpression(NamedList<?> args) {
-    Object arg = args.remove(EXPRESSIONS_KEY);
-    if (!(arg instanceof NamedList)) {
-      // :TODO: null arg may be ok if we want to later support dynamic expressions
+    String expressionStr =
+        Optional.ofNullable((String) args.remove(EXPRESSION_KEY))
+            .orElseThrow(
+                () ->
+                    new SolrException(
+                        SERVER_ERROR, EXPRESSION_KEY + " must be configured with an expression"));
+
+    // Find the highest positional argument in the expression
+    Pattern pattern = Pattern.compile("\\$(\\d+)");
+    Matcher matcher = pattern.matcher(expressionStr);
+    while (matcher.find()) {
+      int argNum = Integer.parseInt(matcher.group(1));
+      numPositionalArgs = Math.max(numPositionalArgs, argNum);
+    }
+
+    // TODO add way to register additional functions
+    try {
+      this.expression = JavascriptCompiler.compile(expressionStr);
+    } catch (ParseException e) {
       throw new SolrException(
-          SERVER_ERROR, EXPRESSIONS_KEY + " must be configured as a list of named expressions");
+          SERVER_ERROR, "Unable to parse javascript expression: " + expressionStr, e);
     }
-    @SuppressWarnings("unchecked")
-    NamedList<String> input = (NamedList<String>) arg;
-    Map<String, Expression> expr = new HashMap<>();
-    for (Map.Entry<String, String> item : input) {
-      String key = item.getKey();
-      try {
-        Expression val = JavascriptCompiler.compile(item.getValue());
-        expr.put(key, val);
-      } catch (ParseException e) {
-        throw new SolrException(
-            SERVER_ERROR, "Unable to parse javascript expression: " + item.getValue(), e);
-      }
-    }
-
-    // TODO: should we support mapping positional func args to names in bindings?
-    //
-    // ie: ...
-    // <lst name="expressions">
-    //   <lst name="my_expr">
-    //     <str name="expression">foo * bar / baz</str>
-    //     <arr name="positional-bindings">
-    //       <str>baz</str>
-    //       <str>bar</str>
-    //     </arr>
-    //   </lst>
-    //   <str name="foo">32</foo>
-    //   ...
-    // </lst>
-    //  and then:  "expr(my_expr,42,56)" == "32 * 56 / 42"
-
-    exceptionIfCycles(expr);
-    this.expressions = Collections.unmodifiableMap(expr);
   }
+
+  // TODO: support dynamic expressions:  expr("foo * bar / 32")  ??
 
   @Override
   public ValueSource parse(FunctionQParser fp) throws SyntaxError {
     assert null != fp;
 
-    String key = fp.parseArg();
-    // TODO: allow function params for overriding bindings?
-    // TODO: support dynamic expressions:  expr("foo * bar / 32")  ??
+    // Parse positional arguments if any
+    List<DoubleValuesSource> positionalArgs = new ArrayList<>();
+    for (int i = 0; i < numPositionalArgs; i++) {
+      ValueSource vs = fp.parseValueSource();
+      positionalArgs.add(vs.asDoubleValuesSource());
+    }
 
     IndexSchema schema = fp.getReq().getSchema();
-
-    SolrBindings b = new SolrBindings(scoreKey, expressions, schema);
-    return ValueSource.fromDoubleValuesSource(b.getDoubleValuesSource(key));
-  }
-
-  /** Validates that a Map of named expressions does not contain any cycles. */
-  public static void exceptionIfCycles(Map<String, Expression> expressions) {
-
-    // TODO: there's probably a more efficient way to do this
-    // TODO: be nice to just return the shortest cycles (ie: b->a->b instead of x->a->b->a)
-
-    List<String> cycles = new ArrayList<>(expressions.size());
-    Set<String> checkedKeys = new LinkedHashSet<>();
-
-    for (String key : expressions.keySet()) {
-      Set<String> visitedKeys = new LinkedHashSet<>();
-      String cycle = makeCycleErrString(key, expressions, visitedKeys, checkedKeys);
-      if (null != cycle) {
-        cycles.add(cycle);
-      }
-    }
-    if (0 < cycles.size()) {
-      throw new SolrException(
-          SERVER_ERROR,
-          "At least "
-              + cycles.size()
-              + " cycles detected in configured expressions: ["
-              + String.join("], [", cycles)
-              + "]");
-    }
+    SolrBindings b = new SolrBindings(scoreKey, schema, positionalArgs);
+    return ValueSource.fromDoubleValuesSource(expression.getDoubleValuesSource(b));
   }
 
   /**
-   * Recursively checks for cycles, returning null if none found - otherwise the string is a
-   * representation of the cycle found (may not be the shortest cycle) This method recursively adds
-   * to visitedKeys and checkedKeys
-   */
-  private static String makeCycleErrString(
-      String key,
-      Map<String, Expression> expressions,
-      Set<String> visitedKeys,
-      Set<String> checkedKeys) {
-    if (checkedKeys.contains(key)) {
-      return null;
-    }
-    if (visitedKeys.contains(key)) {
-      checkedKeys.add(key);
-      return String.join("=>", visitedKeys) + "=>" + key;
-    }
-    visitedKeys.add(key);
-
-    Expression expr = expressions.get(key);
-    if (null != expr) {
-      for (String var : expr.variables) {
-        assert null != var;
-
-        String err = makeCycleErrString(var, expressions, visitedKeys, checkedKeys);
-        if (null != err) {
-          return err;
-        }
-      }
-    }
-
-    checkedKeys.add(key);
-    return null;
-  }
-
-  /**
-   * A bindings class that recognizes pre-configured named expression and uses schema fields to
-   * resolve variables that have not been configured as expressions.
+   * A bindings class that uses schema fields to resolve variables.
    *
    * @lucene.internal
    */
   public static class SolrBindings extends Bindings {
     private final String scoreKey;
-    private final Map<String, Expression> expressions;
     private final IndexSchema schema;
+    private final List<DoubleValuesSource> positionalArgs;
 
     /**
      * @param scoreKey The binding name that should be used to represent the score, may be null
-     * @param expressions Mapping of expression names that will be consulted as the primary
-     *     bindings, get() should return null if key is not bound to an expression (will be used
-     *     read only, will *not* be defensively copied, must not contain cycles)
      * @param schema IndexSchema for field bindings
+     * @param positionalArgs List of positional arguments
      */
-    public SolrBindings(String scoreKey, Map<String, Expression> expressions, IndexSchema schema) {
+    public SolrBindings(
+        String scoreKey, IndexSchema schema, List<DoubleValuesSource> positionalArgs) {
       this.scoreKey = scoreKey;
-      this.expressions = expressions;
       this.schema = schema;
-      // :TODO: add support for request time bindings (function args)
+      this.positionalArgs = positionalArgs != null ? positionalArgs : new ArrayList<>();
     }
 
     @Override
@@ -220,14 +134,13 @@ public class ExpressionValueSourceParser extends ValueSourceParser {
         return DoubleValuesSource.SCORES;
       }
 
-      Expression expr = expressions.get(key);
-      if (null != expr) {
+      // Check for positional arguments like $1, $2, etc.
+      if (key.startsWith("$")) {
         try {
-          return expr.getDoubleValuesSource(this);
-        } catch (IllegalArgumentException e) {
-          throw new IllegalArgumentException(
-              "Invalid binding for key '" + key + "' transative binding problem: " + e.getMessage(),
-              e);
+          int position = Integer.parseInt(key.substring(1));
+          return positionalArgs.get(position - 1); // Convert to 0-based index
+        } catch (RuntimeException e) {
+          throw new IllegalArgumentException("Not a valid positional argument: " + key, e);
         }
       }
 

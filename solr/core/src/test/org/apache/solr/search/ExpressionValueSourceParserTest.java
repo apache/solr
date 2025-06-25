@@ -17,13 +17,11 @@
 package org.apache.solr.search;
 
 import java.text.ParseException;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.lucene.expressions.Expression;
-import org.apache.lucene.expressions.js.JavascriptCompiler;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.ExpressionValueSourceParser.SolrBindings;
 import org.apache.solr.util.DateMathParser;
@@ -31,6 +29,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
+
+  private final List<DoubleValuesSource> positionalArgs = new ArrayList<>();
 
   // TODO need "bad-solrconfig..." level test of cycle expressions, using score w/null score
   // binding, etc...
@@ -54,10 +54,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
 
   public void testValidBindings() throws ParseException {
     IndexSchema schema = h.getCore().getLatestSchema();
-    Map<String, Expression> exprs = new HashMap<>();
-    exprs.put("foo", JavascriptCompiler.compile("((0.3*popularity)/10.0)+(0.7*ScOrE)"));
-    exprs.put("popularity", JavascriptCompiler.compile("foo_i"));
-    SolrBindings bindings = new SolrBindings("ScOrE", exprs, schema);
+    SolrBindings bindings = new SolrBindings("ScOrE", schema, this.positionalArgs);
 
     assertEquals(
         "foo_i from bindings is wrong",
@@ -66,8 +63,6 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
             .getValueSource(schema.getField("foo_i"), null)
             .asDoubleValuesSource(),
         bindings.getDoubleValuesSource("foo_i"));
-    assertNotNull("pop bindings failed", bindings.getDoubleValuesSource("popularity"));
-    assertNotNull("foo bindings failed", bindings.getDoubleValuesSource("foo"));
     ValueSource scoreBind =
         ValueSource.fromDoubleValuesSource(bindings.getDoubleValuesSource("ScOrE"));
     assertNotNull("ScOrE bindings failed", scoreBind);
@@ -82,19 +77,18 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
     }
 
     // change things up a bit
-
-    exprs.put("ScOrE", JavascriptCompiler.compile("42"));
-
-    bindings = new SolrBindings(null, exprs, schema);
-    assertNotNull("foo bindings failed", bindings.getDoubleValuesSource("foo"));
+    bindings = new SolrBindings(null, schema, this.positionalArgs);
+    try {
+      bindings.getDoubleValuesSource("ScOrE");
+      fail("ScOrE should not have bindings");
+    } catch (IllegalArgumentException e) {
+      // NOOP
+    }
   }
 
   public void testBogusBindings() throws ParseException {
     IndexSchema schema = h.getCore().getLatestSchema();
-    Map<String, Expression> exprs = new HashMap<>();
-    exprs.put("foo", JavascriptCompiler.compile("((0.3*popularity)/10.0)+(0.7*ScOrE)"));
-    exprs.put("popularity", JavascriptCompiler.compile("yak"));
-    SolrBindings bindings = new SolrBindings("ScOrE", exprs, schema);
+    SolrBindings bindings = new SolrBindings("ScOrE", schema, this.positionalArgs);
 
     try {
       bindings.getDoubleValuesSource("yak");
@@ -103,19 +97,8 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
       // NOOP
     }
 
-    try {
-      bindings.getDoubleValuesSource("foo");
-      fail("foo should be an invalid transative binding");
-    } catch (IllegalArgumentException e) {
-      String err = e.getMessage();
-      assertTrue(
-          "wrong exception message: " + err,
-          (err.contains("foo") && err.contains("popularity") && err.contains("yak")));
-    }
-
     // change things up a bit
-
-    bindings = new SolrBindings(null, exprs, schema);
+    bindings = new SolrBindings(null, schema, this.positionalArgs);
     try {
       bindings.getDoubleValuesSource("ScOrE");
       fail("ScOrE should not have bindings");
@@ -128,70 +111,6 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
     } catch (IllegalArgumentException e) {
       // NOOP
     }
-  }
-
-  /**
-   * @see ExpressionValueSourceParser#exceptionIfCycles(Map)
-   */
-  public void testCycleChecker() throws Exception {
-    Map<String, Expression> exprs = new HashMap<>();
-
-    exprs.put("foo", JavascriptCompiler.compile("bar * ack"));
-    ExpressionValueSourceParser.exceptionIfCycles(exprs);
-
-    exprs.put("bar", JavascriptCompiler.compile("ack * ack"));
-    ExpressionValueSourceParser.exceptionIfCycles(exprs);
-
-    exprs.put("baz", JavascriptCompiler.compile("bar * foo"));
-    ExpressionValueSourceParser.exceptionIfCycles(exprs);
-
-    // now we start to get some errors
-    exprs.put("ack", JavascriptCompiler.compile("ack * ack"));
-
-    try {
-      ExpressionValueSourceParser.exceptionIfCycles(exprs);
-      fail("no error about ack depending on ack");
-    } catch (SolrException e) {
-      assertTrue(e.getMessage(), e.getMessage().contains("ack=>ack"));
-    }
-
-    // different, deeper error
-    exprs.put("ack", JavascriptCompiler.compile("foo * 2"));
-
-    try {
-      ExpressionValueSourceParser.exceptionIfCycles(exprs);
-      fail("no error about ack/foo/bar");
-    } catch (SolrException e) {
-      String msg = e.getMessage();
-      // the thing about cycles: they might be found in either order
-      assertTrue(msg, msg.contains("foo=>ack") || msg.contains("ack=>foo"));
-      assertTrue(msg, msg.contains("bar=>ack"));
-    }
-
-    exprs.remove("bar");
-    exprs.put("wack", JavascriptCompiler.compile("sqrt(wack)"));
-
-    try {
-      ExpressionValueSourceParser.exceptionIfCycles(exprs);
-      fail("no error about ack depending on ack");
-    } catch (SolrException e) {
-      String msg = e.getMessage();
-      // the thing about cycles: they might be found in either order
-      assertTrue(msg, msg.contains("foo=>ack") || msg.contains("ack=>foo"));
-      assertTrue(msg, msg.contains("wack=>wack"));
-      assertTrue(msg, msg.contains("At least 2 cycles"));
-    }
-  }
-
-  /** tests clean error when no such binding */
-  public void testNoSuchBinding() {
-    assertQEx(
-        "should have gotten user error for invalid binding",
-        req(
-            "fl", "id",
-            "q", "{!func}field(int1_i)",
-            "sort", "expr(this_expression_is_not_bound) desc"),
-        400);
   }
 
   /** tests an expression referring to a score field using an overridden score binding */
@@ -215,7 +134,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testSortConstant() {
     assertQ(
         "sort",
-        req("fl", "id", "q", "*:*", "sort", "expr(sin1) desc,id asc"),
+        req("fl", "id", "q", "*:*", "sort", "sin1() desc,id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -224,24 +143,13 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
         "//result/doc[5]/str[@name='id'][.='5']");
   }
 
-  /** tests an expression referring to another expression */
-  public void testSortExpression() {
-    assertQ(
-        "sort",
-        req("fl", "id", "q", "*:*", "sort", "expr(cos_sin1) desc,id asc"),
-        "//*[@numFound='5']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='2']",
-        "//result/doc[3]/str[@name='id'][.='3']",
-        "//result/doc[4]/str[@name='id'][.='4']",
-        "//result/doc[5]/str[@name='id'][.='5']");
-  }
+  // Removed testSortExpression as expressions can no longer reference other expressions
 
   /** tests an expression referring to an int field */
   public void testSortInt() {
     assertQ(
         "sort",
-        req("fl", "id", "q", "*:*", "sort", "expr(sqrt_int1_i) desc,id asc"),
+        req("fl", "id", "q", "*:*", "sort", "sqrt_int1_i() desc,id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='2']", // NaN
         "//result/doc[2]/str[@name='id'][.='1']",
@@ -254,7 +162,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testSortDouble() {
     assertQ(
         "sort",
-        req("fl", "id", "q", "*:*", "sort", "expr(sqrt_double1_d) desc,id asc"),
+        req("fl", "id", "q", "*:*", "sort", "sqrt_double1_d() desc,id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='1']", // NaN
         "//result/doc[2]/str[@name='id'][.='4']", // NaN
@@ -267,7 +175,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testSortDate() {
     assertQ(
         "sort",
-        req("fl", "id", "q", "*:*", "sort", "expr(date1_dt_minus_1990) desc,id asc"),
+        req("fl", "id", "q", "*:*", "sort", "date1_dt_minus_1990() desc,id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='5']",
@@ -281,61 +189,13 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testSortScore() {
     assertQ(
         "sort",
-        req("fl", "id", "q", "{!func}field(int1_i)", "sort", "expr(one_plus_score) desc,id asc"),
+        req("fl", "id", "q", "{!func}field(int1_i)", "sort", "one_plus_score() desc,id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='4']",
         "//result/doc[3]/str[@name='id'][.='5']",
         "//result/doc[4]/str[@name='id'][.='3']",
         "//result/doc[5]/str[@name='id'][.='2']");
-  }
-
-  /** tests an expression referring to another expression with externals */
-  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
-  public void testSortScore2() {
-    assertQ(
-        "sort",
-        req("fl", "id", "q", "{!func}field(int1_i)", "sort", "expr(two_plus_score) desc,id asc"),
-        "//*[@numFound='5']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='4']",
-        "//result/doc[3]/str[@name='id'][.='5']",
-        "//result/doc[4]/str[@name='id'][.='3']",
-        "//result/doc[5]/str[@name='id'][.='2']");
-  }
-
-  /** tests an expression referring to two expressions with externals */
-  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
-  public void testSortScore3() {
-    assertQ(
-        "sort",
-        req(
-            "fl",
-            "id",
-            "q",
-            "{!func}field(int1_i)",
-            "sort",
-            "expr(sqrt_int1_i_plus_one_plus_score) desc,id asc"),
-        "//*[@numFound='5']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[2]/str[@name='id'][.='1']",
-        "//result/doc[3]/str[@name='id'][.='4']",
-        "//result/doc[4]/str[@name='id'][.='5']",
-        "//result/doc[5]/str[@name='id'][.='3']");
-  }
-
-  /** tests an expression referring to another expression and a function */
-  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
-  public void testSortMixed() {
-    assertQ(
-        "sort",
-        req("fl", "id", "q", "{!func}field(int1_i)", "sort", "expr(mixed_expr) desc,id asc"),
-        "//*[@numFound='5']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[2]/str[@name='id'][.='3']",
-        "//result/doc[3]/str[@name='id'][.='5']",
-        "//result/doc[4]/str[@name='id'][.='4']",
-        "//result/doc[5]/str[@name='id'][.='1']");
   }
 
   /** tests a constant expression */
@@ -343,7 +203,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
     final float expected = (float) Math.sin(1);
     assertQ(
         "return",
-        req("fl", "sin1:expr(sin1)", "q", "*:*", "sort", "id asc"),
+        req("fl", "sin1:sin1()", "q", "*:*", "sort", "id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/float[@name='sin1'][.='" + expected + "']",
         "//result/doc[2]/float[@name='sin1'][.='" + expected + "']",
@@ -352,25 +212,13 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
         "//result/doc[5]/float[@name='sin1'][.='" + expected + "']");
   }
 
-  /** tests an expression referring to another expression */
-  public void testReturnExpression() {
-    final float expected = (float) Math.cos(Math.sin(1));
-    assertQ(
-        "sort",
-        req("fl", "expr(cos_sin1)", "q", "*:*", "sort", "id asc"),
-        "//*[@numFound='5']",
-        "//result/doc[1]/float[@name='expr(cos_sin1)'][.=" + expected + "]",
-        "//result/doc[2]/float[@name='expr(cos_sin1)'][.=" + expected + "]",
-        "//result/doc[3]/float[@name='expr(cos_sin1)'][.=" + expected + "]",
-        "//result/doc[4]/float[@name='expr(cos_sin1)'][.=" + expected + "]",
-        "//result/doc[5]/float[@name='expr(cos_sin1)'][.=" + expected + "]");
-  }
+  // Removed testReturnExpression as expressions can no longer reference other expressions
 
   /** tests an expression referring to an int field */
   public void testReturnInt() {
     assertQ(
         "return",
-        req("fl", "foo:expr(sqrt_int1_i)", "q", "*:*", "sort", "id asc"),
+        req("fl", "foo:sqrt_int1_i()", "q", "*:*", "sort", "id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/float[@name='foo'][.=" + (float) Math.sqrt(50) + "]",
         "//result/doc[2]/float[@name='foo'][.='NaN']",
@@ -383,7 +231,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testReturnDouble() {
     assertQ(
         "return",
-        req("fl", "bar:expr(sqrt_double1_d)", "q", "*:*", "sort", "id asc"),
+        req("fl", "bar:sqrt_double1_d()", "q", "*:*", "sort", "id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/float[@name='bar'][.='NaN']",
         "//result/doc[2]/float[@name='bar'][.=" + (float) Math.sqrt(10.3d) + "]",
@@ -396,7 +244,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testReturnDate() {
     assertQ(
         "return",
-        req("fl", "date1_dt_minus_1990:expr(date1_dt_minus_1990)", "q", "*:*", "sort", "id asc"),
+        req("fl", "date1_dt_minus_1990:date1_dt_minus_1990()", "q", "*:*", "sort", "id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/float[@name='date1_dt_minus_1990'][.='"
             + (float)
@@ -426,15 +274,15 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
         "return",
         // :nocommit: see ValueSourceAugmenter's nocommit for why fl needs "score"
         req(
-            "fl", "expr(one_plus_score),score",
+            "fl", "one_plus_score(),score",
             "q", "{!func}field(int1_i)",
             "sort", "id asc"),
         "//*[@numFound='5']",
-        "//result/doc[1]/float[@name='expr(one_plus_score)'][.='51.0']",
-        "//result/doc[2]/float[@name='expr(one_plus_score)'][.='1.0']",
-        "//result/doc[3]/float[@name='expr(one_plus_score)'][.='11.0']",
-        "//result/doc[4]/float[@name='expr(one_plus_score)'][.='41.0']",
-        "//result/doc[5]/float[@name='expr(one_plus_score)'][.='21.0']");
+        "//result/doc[1]/float[@name='one_plus_score()'][.='51.0']",
+        "//result/doc[2]/float[@name='one_plus_score()'][.='1.0']",
+        "//result/doc[3]/float[@name='one_plus_score()'][.='11.0']",
+        "//result/doc[4]/float[@name='one_plus_score()'][.='41.0']",
+        "//result/doc[5]/float[@name='one_plus_score()'][.='21.0']");
   }
 
   public void testReturnScores2() {
@@ -442,7 +290,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
         "return",
         // :nocommit: see ValueSourceAugmenter's nocommit for why fl needs "score"
         req(
-            "fl", "two_plus_score:expr(two_plus_score),score",
+            "fl", "two_plus_score:two_plus_score(),score",
             "q", "{!func}field(int1_i)",
             "sort", "id asc"),
         "//*[@numFound='5']",
@@ -458,7 +306,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
         "return",
         // :nocommit: see ValueSourceAugmenter's nocommit for why fl needs "score"
         req(
-            "fl", "foo:expr(sqrt_int1_i_plus_one_plus_score),score",
+            "fl", "foo:sqrt_int1_i_plus_one_plus_score(),score",
             "q", "{!func}field(int1_i)",
             "sort", "id asc"),
         "//*[@numFound='5']",
@@ -467,5 +315,38 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
         "//result/doc[3]/float[@name='foo'][.='" + (float) (Math.sqrt(10) + 1 + 10) + "']",
         "//result/doc[4]/float[@name='foo'][.='" + (float) (Math.sqrt(40) + 1 + 40) + "']",
         "//result/doc[5]/float[@name='foo'][.='" + (float) (Math.sqrt(20) + 1 + 20) + "']");
+  }
+
+  /** tests an expression with positional arguments */
+  public void testPositionalArgs() {
+    assertQ(
+        "return",
+        req(
+            "fl", "sum:positional_args(10,20,30)",
+            "q", "*:*",
+            "sort", "id asc"),
+        "//*[@numFound='5']",
+        "//result/doc[1]/float[@name='sum'][.='60.0']",
+        "//result/doc[2]/float[@name='sum'][.='60.0']",
+        "//result/doc[3]/float[@name='sum'][.='60.0']",
+        "//result/doc[4]/float[@name='sum'][.='60.0']",
+        "//result/doc[5]/float[@name='sum'][.='60.0']");
+  }
+
+  /** tests embedding an expression in another value source */
+  public void testEmbeddedExpression() {
+    final float expected = (float) Math.sin(1);
+    assertQ(
+        "return",
+        req(
+            "fl", "embedded:sum(sin1(),5)",
+            "q", "*:*",
+            "sort", "id asc"),
+        "//*[@numFound='5']",
+        "//result/doc[1]/float[@name='embedded'][.='" + (expected + 5.0f) + "']",
+        "//result/doc[2]/float[@name='embedded'][.='" + (expected + 5.0f) + "']",
+        "//result/doc[3]/float[@name='embedded'][.='" + (expected + 5.0f) + "']",
+        "//result/doc[4]/float[@name='embedded'][.='" + (expected + 5.0f) + "']",
+        "//result/doc[5]/float[@name='embedded'][.='" + (expected + 5.0f) + "']");
   }
 }

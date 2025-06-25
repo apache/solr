@@ -16,97 +16,41 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The `ExpressionValueSourceParser` allows you to configure named JavaScript expressions in your `solrconfig.xml` that can be referenced in function queries.
-This provides a powerful way to define reusable expressions that can be combined and referenced in queries.
-The expressions are based on the Lucene Expressions module, which you can learn more about in the {lucene-javadocs}/expressions/org/apache/lucene/expressions/js/package-summary.html[Lucene Expressions documentation].
+The `ExpressionValueSourceParser` allows you to implement a custom valueSource merely by adding a concise JavaScript expression to your `solrconfig.xml`.
+The expression is precompiled, and offers competitive performance to those written in Java.
+The syntax is a limited subset of JavaScript that is purely numerical oriented, and only certain built-in fuctions can be called.
+The implementation is based on the Lucene Expressions module, which you can learn more about in the {lucene-javadocs}/expressions/org/apache/lucene/expressions/js/package-summary.html[Lucene Expressions documentation].
 
-== Configuration
+== Examples
 
-To use the `ExpressionValueSourceParser`, you need to configure it in your `solrconfig.xml` file:
+Expressions can reference field values directly by field name, the document's score using the special name `score`, and positional arguments as `$1`, `$2`, etc.
+The arguments might be constants, fields, or other functions supplying a result.
 
-[source,xml]
-----
-<valueSourceParser name="expr" class="solr.ExpressionValueSourceParser">
-  <lst name="expressions">
-    <str name="sin1">sin(1)</str>
-    <str name="cos_sin1">cos(sin1)</str>
-    <str name="sqrt_int1_i">sqrt(int1_i)</str>
-    <str name="one_plus_score">1 + score</str>
-  </lst>
-</valueSourceParser>
-----
-
-The configuration consists of:
-
-* A `name` attribute that defines the parser name to be used in queries (e.g., `expr`)
-* A `class` attribute that specifies the implementation class (`solr.ExpressionValueSourceParser`)
-* A list of named expressions in the `expressions` element, where each expression is defined with a name and a JavaScript expression
-
-The parser binds the special name `score` to the document's score.
-
-== Using Expressions
-
-Once configured, you can use the named expressions in xref:function-queries.adoc[function queries] in any place that function queries are supported.
-This first example shows it used for sorting:
-
-[source,text]
-----
-q=*:*&sort=expr(sqrt_int1_i) desc
-----
-
-This example shows it in the field list to return calculated values:
-
-[source,text]
-----
-fl=id,expr(one_plus_score),score
-----
-
-
-
-== Score Manipulation with Expressions
-
-A particularly powerful feature of the Expression Value Source Parser is the ability to reference the document score in expressions.
-This allows for convenient score manipulation and boosting in a more natural way.
-For example, you can create expressions that combine the score with other factors:
+Here are some example definitions designed to illustrate these features:
 
 [source,xml]
 ----
-<valueSourceParser name="expr" class="solr.ExpressionValueSourceParser">
-  <lst name="expressions">
-    <str name="popularity_and_score">sqrt(popularity) * score</str>
-  </lst>
+<valueSourceParser name="sqrt_popularity" class="solr.ExpressionValueSourceParser">
+  <str name="expression">sqrt(popularity)</str>
+</valueSourceParser>
+
+<valueSourceParser name="weighted_sum" class="solr.ExpressionValueSourceParser">
+  <str name="expression">$1 * 0.8 + $2 * 0.2</str>
+</valueSourceParser>
+
+<valueSourceParser name="complex_score" class="solr.ExpressionValueSourceParser">
+  <str name="expression">log(sum(popularity,recency)) * max(score,0.1)</str>
 </valueSourceParser>
 ----
 
-Using expressions to manipulate scores is more efficient than using the "query" function query when you need to reference the score.
-The "query" function effectively executes the score calculation twice internally, whereas expressions can reference the score directly.
-
-== Expression Features
-
-* Expressions can reference other expressions defined in the same parser
-* Expressions can reference field values directly by field name
-* Expressions can use the document's score
-* Expressions support standard JavaScript math operations and functions
-* The parser automatically detects and prevents circular references in expressions
-
-== Example
-
-This example shows how to configure expressions that build on each other:
-
-[source,xml]
-----
-<valueSourceParser name="expr" class="solr.ExpressionValueSourceParser">
-  <lst name="expressions">
-    <str name="sqrt_popularity">sqrt(popularity)</str>
-    <str name="log_price">log(price)</str>
-    <str name="boost_formula">sqrt_popularity / log_price</str>
-  </lst>
-</valueSourceParser>
-----
-
-You can then use these expressions in queries:
+Here is one unrealistic query using multiple function queries to illustrate its features:
 
 [source,text]
 ----
-q=title:solr&sort=expr(boost_formula) desc
+&q=my query
+&fq={!frange l=1000}sqrt_popularity()
+&sort=complex_score() desc
+&fl=id,weighted_sum(field1,field2)
 ----
+
+Using this VSP to boost/manipulate scores is more efficient than using the `query()` function query, since the latter would execute the underlying `q` an additional time.

@@ -27,26 +27,50 @@
 
   <requestHandler name="standard" class="solr.StandardRequestHandler"/>
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-  
-  <valueSourceParser name="expr" class="solr.ExpressionValueSourceParser">
+
+  <valueSourceParser name="sin1" class="solr.ExpressionValueSourceParser">
     <!-- Note: uses default score binding of 'score' -->
-    <lst name="expressions">
-      <str name="sin1">sin(1)</str>
-      <str name="cos_sin1">cos(sin1)</str>
-      <str name="sqrt_int1_i">sqrt(int1_i)</str>
-      <str name="sqrt_double1_d">sqrt(double1_d)</str>
-      <str name="date1_dt_minus_1990">date1_dt - 631036800000</str>
-      <str name="one_plus_score">1 + score</str>
-      <str name="two_plus_score">1 + one_plus_score</str>
-      <str name="sqrt_int1_i_plus_one_plus_score">sqrt_int1_i + one_plus_score</str>
-      <str name="mixed_expr">one_plus_score*ln(cos_sin1)</str>
-    </lst>
+    <str name="expression">sin(1)</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="cos_sin1" class="solr.ExpressionValueSourceParser">
+    <str name="expression">cos(sin(1))</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="sqrt_int1_i" class="solr.ExpressionValueSourceParser">
+    <str name="expression">sqrt(int1_i)</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="sqrt_double1_d" class="solr.ExpressionValueSourceParser">
+    <str name="expression">sqrt(double1_d)</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="date1_dt_minus_1990" class="solr.ExpressionValueSourceParser">
+    <str name="expression">date1_dt - 631036800000</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="one_plus_score" class="solr.ExpressionValueSourceParser">
+    <str name="expression">1 + score</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="two_plus_score" class="solr.ExpressionValueSourceParser">
+    <str name="expression">1 + score + 1</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="sqrt_int1_i_plus_one_plus_score" class="solr.ExpressionValueSourceParser">
+    <str name="expression">sqrt(int1_i) + 1 + score</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="mixed_expr" class="solr.ExpressionValueSourceParser">
+    <str name="expression">(1 + score)*ln(cos(sin(1)))</str>
   </valueSourceParser>
 
   <valueSourceParser name="expr_ssccoorree" class="solr.ExpressionValueSourceParser">
     <str name="score-name">ssccoorree</str>
-    <lst name="expressions">
-      <str name="one_plus_score">1 + ssccoorree</str>
-    </lst>
+    <str name="expression">1 + ssccoorree</str>
+  </valueSourceParser>
+
+  <valueSourceParser name="positional_args" class="solr.ExpressionValueSourceParser">
+    <str name="expression">$1 + $2 + $3</str>
   </valueSourceParser>
 </config>
