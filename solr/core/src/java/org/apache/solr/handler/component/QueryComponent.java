@@ -1167,7 +1167,8 @@ public class QueryComponent extends SearchComponent {
     Map<Object, ShardDoc> resultIds = new HashMap<>();
 
     if (rb instanceof CombinedQueryResponseBuilder) {
-      QueryAndResponseCombiner combinerStrategy = QueryAndResponseCombiner.getImplementation(rb.req.getParams());
+      QueryAndResponseCombiner combinerStrategy =
+          QueryAndResponseCombiner.getImplementation(rb.req.getParams());
       List<ShardDoc> combinedShardDocs = combinerStrategy.combine(shardDocMap);
       maxScore = 0.0f;
       for (int i = 0; i < resultSize; i++) {

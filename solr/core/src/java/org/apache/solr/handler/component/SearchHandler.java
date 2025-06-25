@@ -49,7 +49,11 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.*;
+import org.apache.solr.common.params.CombinerParams;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -406,7 +410,8 @@ public class SearchHandler extends RequestHandlerBase
           purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
     }
 
-    List<SearchComponent> components = getComponents(req.getParams().getBool(CombinerParams.COMBINER, false));
+    List<SearchComponent> components =
+        getComponents(req.getParams().getBool(CombinerParams.COMBINER, false));
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);

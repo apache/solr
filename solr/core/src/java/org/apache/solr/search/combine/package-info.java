@@ -14,22 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.params;
 
 /**
- * The CombinerParams class provides constants for configuration parameters related to the combiner.
- * It defines keys for various properties used in the combiner configuration.
+ * This contains the classes to combine the scores from search index results as well as from across
+ * shards. Multiple implementation of algorithms can be added to support them.
  */
-public class CombinerParams {
-
-  private CombinerParams() {}
-
-  public static final String COMBINER = "combiner";
-  public static final String COMBINER_ALGORITHM = COMBINER + ".algorithm";
-  public static final String COMBINER_QUERY = COMBINER + ".query";
-  public static final String RECIPROCAl_RANK_FUSION = "rrf";
-  public static final String COMBINER_UP_TO = COMBINER + ".upTo";
-  public static final String COMBINER_RRF_K = COMBINER + "." + RECIPROCAl_RANK_FUSION + ".k";
-  public static final int COMBINER_UP_TO_DEFAULT = 100;
-  public static final int COMBINER_RRF_K_DEFAULT = 60;
-}
+package org.apache.solr.search.combine;
