@@ -32,6 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -49,7 +50,6 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -543,7 +543,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing success");
                         future.complete(body);
-                      } catch (RemoteSolrException | SolrServerException e) {
+                      } catch (CancellationException e) {
+                        mdcCopyHelper.onBegin(null);
+                        log.debug("response processing cancelled", e);
+                        if (!future.isDone()) {
+                          future.cancel(true);
+                        }
+                      } catch (Throwable e) {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing failed", e);
                         future.completeExceptionally(e);
