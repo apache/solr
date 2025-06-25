@@ -18,9 +18,10 @@ package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.FutureTask;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.common.SolrException;
@@ -45,7 +46,6 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ExecutorService commExecutor;
-  private final AtomicBoolean canceled = new AtomicBoolean(false);
 
   /*
    * Unlike the basic HttpShardHandler, this class allows us to exit submit before
@@ -54,24 +54,20 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
    * while pending is still zero. In this condition, the code would assume that all
    * requests are processed (despite the runnables created by this class still
    * waiting). Thus, we need to track that there are attempts still in flight.
-   *
-   * This condition is added to the check that controls the loop in take via the
-   * override for #responsesPending(). We rely on calling code call submit for all
-   * requests desired before the call to takeCompleted()
    */
-  AtomicInteger attemptStart = new AtomicInteger(0);
-  AtomicInteger attemptCount = new AtomicInteger(0);
+  private final ConcurrentMap<ShardResponse, FutureTask<Void>> submitFutures;
 
   public ParallelHttpShardHandler(ParallelHttpShardHandlerFactory httpShardHandlerFactory) {
     super(httpShardHandlerFactory);
     this.commExecutor = httpShardHandlerFactory.commExecutor;
+    this.submitFutures = new ConcurrentHashMap<>();
   }
 
   @Override
   protected boolean responsesPending() {
     // ensure we can't exit while loop in HttpShardHandler.take(boolean) until we've completed
-    // as many Runnable actions as we created.
-    return super.responsesPending() || attemptStart.get() > attemptCount.get();
+    // submitting all of the shard requests
+    return super.responsesPending() || !submitFutures.isEmpty();
   }
 
   @Override
@@ -83,54 +79,41 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
       SimpleSolrResponse ssr,
       ShardResponse srsp,
       long startTimeNS) {
-    final Runnable executeRequestRunnable =
-        () -> {
+    FutureTask<Void> futureTask =
+        new FutureTask<>(
+            () -> super.makeShardRequest(sreq, shard, params, lbReq, ssr, srsp, startTimeNS), null);
+    CompletableFuture<Void> completableFuture =
+        CompletableFuture.runAsync(futureTask, commExecutor);
+    submitFutures.put(srsp, futureTask);
+    completableFuture.whenComplete(
+        (r, t) -> {
           try {
-            if (!canceled.get()) {
-              log.info("Sending request for shard {}", shard);
-              super.makeShardRequest(sreq, shard, params, lbReq, ssr, srsp, startTimeNS);
+            if (t != null) {
+              recordShardSubmitError(
+                  srsp,
+                  new SolrException(
+                      SolrException.ErrorCode.SERVER_ERROR,
+                      "Exception occurred while trying to send a request to shard: " + shard,
+                      t));
             }
-          } catch (Throwable t) {
-            SolrException exception =
-                new SolrException(
-                    SolrException.ErrorCode.SERVER_ERROR,
-                    "Exception occurred while trying to send a request to shard: " + shard,
-                    t);
-            srsp.setException(exception);
-            srsp.setResponseCode(exception.code());
-
-            // Add a response, so that take() will have something to listen for
-            responses.add(srsp);
           } finally {
-            // it must not be possible to exit the runnable in any way without calling this, even if
-            // the request has been canceled
-            attemptCount.incrementAndGet();
+            // Remove so that we keep track of in-flight submits only
+            submitFutures.remove(srsp);
           }
-        };
-
-    // not clear how errors emanating from requestAsync or the whenComplete() callback
-    // are to propagated out of the runnable?
-    attemptStart.incrementAndGet();
-    // Since we are submitting new shard requests, the request is not canceled
-    canceled.set(false);
-    try {
-      CompletableFuture.runAsync(executeRequestRunnable, commExecutor);
-    } catch (Throwable t) {
-      // We incremented the attemptStart already, therefore we should increment attemptCount on a
-      // failure to submit, since the async code to increment it will not be run.
-      attemptCount.incrementAndGet();
-      throw t;
-    }
+        });
   }
 
   @Override
   public void cancelAll() {
-    // Canceled must be set to true before calling the cancellation code, to ensure that new tasks
-    // are not enqueued after the outstanding requests have been canceled.
-    // This code isn't perfectly threadsafe, and there can be a race-condition, but for our purposes
-    // it should be fine. Failing to cancel a request, a very small percentage of the time, will
-    // have very little noticeable effect.
-    canceled.set(true);
     super.cancelAll();
+    submitFutures
+        .values()
+        .forEach(
+            future -> {
+              if (!future.isDone()) {
+                future.cancel(true);
+              }
+            });
+    submitFutures.clear();
   }
 }

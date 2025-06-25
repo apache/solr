@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -91,9 +92,10 @@ public class HttpShardHandler extends ShardHandler {
 
   private final HttpShardHandlerFactory httpShardHandlerFactory;
 
-  protected volatile ConcurrentMap<ShardResponse, CompletableFuture<LBSolrClient.Rsp>>
+  protected final ConcurrentMap<ShardResponse, CompletableFuture<LBSolrClient.Rsp>>
       responseFutureMap;
-  protected volatile BlockingQueue<ShardResponse> responses;
+  protected final BlockingQueue<ShardResponse> responses;
+  private final AtomicBoolean canceled = new AtomicBoolean(false);
 
   private final Map<String, List<String>> shardToURLs;
   protected LBHttp2SolrClient<Http2SolrClient> lbClient;
@@ -206,21 +208,21 @@ public class HttpShardHandler extends ShardHandler {
     return srsp;
   }
 
-  private void recordNoUrlShardResponse(ShardResponse srsp, String shard) {
-    // TODO: what's the right error code here? We should use the same thing when
-    // all of the servers for a shard are down.
-    // TODO: shard is a blank string in this case, which is somewhat less than helpful
-    SolrException exception =
-        new SolrException(
-            SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
+  protected void recordShardSubmitError(ShardResponse srsp, SolrException exception) {
     srsp.setException(exception);
     srsp.setResponseCode(exception.code());
 
-    responses.add(srsp);
+    synchronized (canceled) {
+      if (!canceled.get()) {
+        responses.add(srsp);
+      }
+    }
   }
 
   @Override
   public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
+    // Since we are submitting new shard requests, the request is not canceled
+    canceled.set(false);
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard);
     final var lbReq = prepareLBRequest(sreq, shard, params, urls);
@@ -228,7 +230,10 @@ public class HttpShardHandler extends ShardHandler {
     final var ssr = new SimpleSolrResponse();
     srsp.setSolrResponse(ssr);
     if (urls.isEmpty()) {
-      recordNoUrlShardResponse(srsp, shard);
+      recordShardSubmitError(
+          srsp,
+          new SolrException(
+              SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard));
       return;
     }
     long startTimeNS = System.nanoTime();
@@ -259,28 +264,37 @@ public class HttpShardHandler extends ShardHandler {
       ShardResponse srsp,
       long startTimeNS) {
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-    responseFutureMap.put(srsp, future);
+    // Synchronize on canceled, so that we know precisely whether to add it to the responseFutureMap
+    // or not.
+    synchronized (canceled) {
+      if (canceled.get()) {
+        future.cancel(true);
+        return;
+      } else {
+        responseFutureMap.put(srsp, future);
+      }
+    }
     // Add the callback explicitly after adding the future to the map, because the callback relies
     // on the map already having the future.
     future.whenComplete(
         (LBSolrClient.Rsp rsp, Throwable throwable) -> {
-          log.info("Response received for shard {}", shard);
           if (rsp != null) {
             ssr.nl = rsp.getResponse();
             srsp.setShardAddress(rsp.getServer());
-            ssr.elapsedTime =
-                TimeUnit.MILLISECONDS.convert(
-                    System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
-            responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
           } else if (throwable != null) {
-            ssr.elapsedTime =
-                TimeUnit.MILLISECONDS.convert(
-                    System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
             srsp.setException(throwable);
             if (throwable instanceof SolrException) {
               srsp.setResponseCode(((SolrException) throwable).code());
             }
-            responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+          }
+          ssr.elapsedTime =
+              TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
+          // Synchronize on cancelled so this code and cancelAll() cannot happen at the same time
+          synchronized (canceled) {
+            // We don't want to add responses after the requests have been canceled
+            if (responseFutureMap.containsKey(srsp)) {
+              responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+            }
           }
         });
   }
@@ -318,7 +332,6 @@ public class HttpShardHandler extends ShardHandler {
         if (rsp == CANCELLATION_NOTIFICATION) {
           // This is only queued in cancelAll(), so all outstanding futures have already been
           // canceled.
-          responseFutureMap.clear();
           responses.clear();
 
           // We want to return the last response we received, if possible
@@ -355,14 +368,24 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void cancelAll() {
+    // Canceled must be set to true before calling the cancellation code, to ensure that new tasks
+    // are not enqueued after the outstanding requests have been canceled.
+    // This code isn't perfectly threadsafe, and there can be a race-condition, but for our purposes
+    // it should be fine. Failing to cancel a request, a very small percentage of the time, will
+    // have very little noticeable effect. And even if the request is sent after cancellation, the
+    // responses will not be recorded.
     // Queue a fake response to notify take() that it should no longer wait on responses as the
     // outstanding requests have been canceled
-    responses.add(CANCELLATION_NOTIFICATION);
-    // Cancel all outstanding requests
-    for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
-      if (!future.isDone()) {
-        future.cancel(true);
+    synchronized (canceled) {
+      canceled.set(true);
+      responses.add(CANCELLATION_NOTIFICATION);
+      // Cancel all outstanding requests
+      for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
+        if (!future.isDone()) {
+          future.cancel(true);
+        }
       }
+      responseFutureMap.clear();
     }
   }
 
