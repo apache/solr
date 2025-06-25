@@ -163,7 +163,8 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
               if (!apiFuture.isCancelled()) {
                 try {
                   CompletableFuture<NamedList<Object>> future =
-                      doAsyncRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
+                      doAsyncRequest(
+                          url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
                   currentFuture.set(future);
                 } catch (Throwable ex) {
                   apiFuture.completeExceptionally(ex);

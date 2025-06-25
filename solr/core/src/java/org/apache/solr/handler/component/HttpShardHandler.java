@@ -81,7 +81,8 @@ public class HttpShardHandler extends ShardHandler {
 
   private final HttpShardHandlerFactory httpShardHandlerFactory;
 
-  protected volatile ConcurrentMap<ShardResponse, CompletableFuture<LBSolrClient.Rsp>> responseFutureMap;
+  protected volatile ConcurrentMap<ShardResponse, CompletableFuture<LBSolrClient.Rsp>>
+      responseFutureMap;
   protected volatile BlockingQueue<ShardResponse> responses;
 
   /**
@@ -259,7 +260,8 @@ public class HttpShardHandler extends ShardHandler {
       long startTimeNS) {
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
     responseFutureMap.put(srsp, future);
-    // Do the callback explicitly after adding it to the map, because the callback relies on the map already having the future.
+    // Do the callback explicitly after adding it to the map, because the callback relies on the map
+    // already having the future.
     future.whenComplete(new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
   }
 
@@ -302,7 +304,8 @@ public class HttpShardHandler extends ShardHandler {
         // request more than once.
         rsp.getShardRequest().responses.add(rsp);
 
-        if (rsp.getException() != null && (bailOnError || disallowPartialResults(rsp.getShardRequest().params))) {
+        if (rsp.getException() != null
+            && (bailOnError || disallowPartialResults(rsp.getShardRequest().params))) {
           // if exception, return immediately, cancelling all running requests
           for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
             if (!future.isDone()) {

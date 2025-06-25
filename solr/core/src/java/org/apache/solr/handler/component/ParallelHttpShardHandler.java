@@ -88,7 +88,9 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
           } catch (Throwable t) {
             SolrException exception =
                 new SolrException(
-                    SolrException.ErrorCode.SERVER_ERROR, "Exception occurred while trying to send a request to shard: " + shard, t);
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "Exception occurred while trying to send a request to shard: " + shard,
+                    t);
             srsp.setException(exception);
             srsp.setResponseCode(exception.code());
 
@@ -105,7 +107,8 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
     try {
       CompletableFuture.runAsync(executeRequestRunnable, commExecutor);
     } catch (Throwable t) {
-      // Send we incremented the attemptStart, we need to increment attemptCount on a failure to submit
+      // Send we incremented the attemptStart, we need to increment attemptCount on a failure to
+      // submit
       attemptCount.incrementAndGet();
     }
   }
