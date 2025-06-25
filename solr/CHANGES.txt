@@ -240,7 +240,8 @@ Improvements
 
 * SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
 
-* SOLR-17744: Solr now enables Jetty's Graceful Shutdown features to prevent client connections from being abruptly terminated on orderly shutdown (hossman)
+* SOLR-17744: Solr now supports Jetty's Graceful Shutdown module (via SOLR_JETTY_GRACEFUL=true) to prevent client connections from being
+  abruptly terminated on orderly shutdown (hossman)
 
 * SOLR-17187: The polling interval for PULL and TLOG replicas can now be overridden using the `commitPollInterval` setting, which takes a String
   formatted as "HH:mm:ss" (Torsten Koster via Christine Poerschke, Jason Gerlowski)
@@ -249,6 +250,15 @@ Improvements
 
 * SOLR-16951: Add PKI Auth Caching for both generation of the PKI Auth Tokens and validation of received tokens.
   The default PKI Auth validity TTL has been increased from 5 seconds to 10 seconds. (Houston Putman)
+
+* SOLR-17776: SolrJ: If Http2SolrClient.Builder.withHttpClient is used, (and it's used more in 9.8, shifted from deprecated Apache HttpClient
+  based clients), settings affecting HttpClient construction cannot be customized; an IllegalStateException will now be thrown if you try.
+  The connection timeout cannot be customized, but idle & request timeouts can be.  Callers (various places in Solr) no longer customize the connection timeout.
+  (David Smiley, Luke Kot-Zaniewski)
+
+* SOLR-17776: The HttpJdkSolrClient wasn't setting the connection timeout as per the builder configuration. (David Smiley)
+
+* SOLR-17746: Provide long form --jettyconfig option to go with -j in bin/solr scripts. (Eric Pugh, Rahul Goswami)
 
 Optimizations
 ---------------------
@@ -311,6 +321,8 @@ Bug Fixes
 
 * SOLR-17769: Use S3 RetryStrategy instead of RetryPolicy. This fixes the error caused by using the "Adaptive" retry mode. (Houston Putman)
 
+* SOLR-17790: Allow the -j or --jettyconfig option to start with a dash (-). (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
@@ -358,6 +370,10 @@ Other Changes
 
 * SOLR-17625: Replaced NamedList.findRecursive usages with _get, which can do Map traversal, and
   thus makes it easier to transition intermediate NamedLists to Maps. (Gaurav Tuli)
+
+* SOLR-17635: javabin format: provide option to decode maps as SimpleOrderedMap (a NamedList & Map)
+  instead of LinkedHashMap.  Intended to aid in 10.x compatibility.  Enable via sys prop: solr.solrj.javabin.readMapAsNamedList=true
+  (Renato Haeberli, David Smiley)
 
 ==================  9.8.1 ==================
 Bug Fixes
