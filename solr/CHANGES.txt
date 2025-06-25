@@ -369,6 +369,10 @@ Other Changes
 * SOLR-17625: Replaced NamedList.findRecursive usages with _get, which can do Map traversal, and
   thus makes it easier to transition intermediate NamedLists to Maps. (Gaurav Tuli)
 
+* SOLR-17635: javabin format: provide option to decode maps as SimpleOrderedMap (a NamedList & Map)
+  instead of LinkedHashMap.  Intended to aid in 10.x compatibility.  Enable via sys prop: solr.solrj.javabin.readMapAsNamedList=true
+  (Renato Haeberli, David Smiley)
+
 ==================  9.8.1 ==================
 Bug Fixes
 ---------------------
