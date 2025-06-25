@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.PARTIAL_RESULTS;
 import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -54,6 +53,8 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Solr's default {@link ShardHandler} implementation; uses Jetty's async HTTP Client APIs for
@@ -69,6 +70,9 @@ import org.apache.solr.security.AllowListUrlChecker;
 @NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
 
+  @SuppressWarnings("unused")
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
    * #prepDistributed(ResponseBuilder)} will only include {@link
@@ -77,7 +81,13 @@ public class HttpShardHandler extends ShardHandler {
    * org.apache.solr.common.cloud.Replica.Type#TLOG}). This is used by the RealtimeGet handler,
    * since other types of replicas shouldn't respond to RTG requests
    */
-  public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
+  public static final String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
+
+  /**
+   * This is a fake ShardResponse used internally to trigger the {@link #take(boolean)} method to
+   * stop waiting and cancel outstanding shard requests.
+   */
+  private static final ShardResponse CANCELLATION_NOTIFICATION = new ShardResponse();
 
   private final HttpShardHandlerFactory httpShardHandlerFactory;
 
@@ -85,22 +95,12 @@ public class HttpShardHandler extends ShardHandler {
       responseFutureMap;
   protected volatile BlockingQueue<ShardResponse> responses;
 
-  /**
-   * The number of pending requests. This must be incremented before a {@link ShardResponse} is
-   * added to {@link #responses}, and decremented after a ShardResponse is removed from {@code
-   * responses}. We can't rely on responseFutureMap.size() because it is an unsynchronized
-   * collection updated by multiple threads, and it's internal state including the size field is not
-   * volatile/synchronized.
-   */
-  protected AtomicInteger pending;
-
   private final Map<String, List<String>> shardToURLs;
   protected LBHttp2SolrClient<Http2SolrClient> lbClient;
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     this.lbClient = httpShardHandlerFactory.loadbalancer;
-    this.pending = new AtomicInteger(0);
     this.responses = new LinkedBlockingQueue<>();
     this.responseFutureMap = new ConcurrentHashMap<>();
 
@@ -260,9 +260,29 @@ public class HttpShardHandler extends ShardHandler {
       long startTimeNS) {
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
     responseFutureMap.put(srsp, future);
-    // Do the callback explicitly after adding it to the map, because the callback relies on the map
-    // already having the future.
-    future.whenComplete(new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
+    // Add the callback explicitly after adding the future to the map, because the callback relies
+    // on the map already having the future.
+    future.whenComplete(
+        (LBSolrClient.Rsp rsp, Throwable throwable) -> {
+          log.info("Response received for shard {}", shard);
+          if (rsp != null) {
+            ssr.nl = rsp.getResponse();
+            srsp.setShardAddress(rsp.getServer());
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(
+                    System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
+            responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+          } else if (throwable != null) {
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(
+                    System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
+            srsp.setException(throwable);
+            if (throwable instanceof SolrException) {
+              srsp.setResponseCode(((SolrException) throwable).code());
+            }
+            responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+          }
+        });
   }
 
   /** Subclasses could modify the request based on the shard */
@@ -291,35 +311,37 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   private ShardResponse take(boolean bailOnError) {
+    ShardResponse previousResponse = null;
     try {
       while (responsesPending()) {
-        // in the parallel case we need to recheck responsesPending()
-        // in case all attempts to submit failed.
         ShardResponse rsp = responses.take();
-        responseFutureMap.remove(rsp);
-
-        // add response to the response list... we do this after the take() and
-        // not after the completion of "call" so we know when the last response
-        // for a request was received.  Otherwise we might return the same
-        // request more than once.
-        rsp.getShardRequest().responses.add(rsp);
-
-        if (rsp.getException() != null
-            && (bailOnError || disallowPartialResults(rsp.getShardRequest().params))) {
-          // if exception, return immediately, cancelling all running requests
-          for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
-            if (!future.isDone()) {
-              future.cancel(true);
-            }
-          }
+        if (rsp == CANCELLATION_NOTIFICATION) {
+          // This is only queued in cancelAll(), so all outstanding futures have already been
+          // canceled.
           responseFutureMap.clear();
+          responses.clear();
 
-          return rsp;
+          // We want to return the last response we received, if possible
+          return previousResponse;
+        } else {
+          responseFutureMap.remove(rsp);
+
+          // add response to the response list... we do this after the take() and
+          // not after the completion of "call" so we know when the last response
+          // for a request was received.  Otherwise, we might return the same
+          // request more than once.
+          rsp.getShardRequest().responses.add(rsp);
+
+          if (rsp.getException() != null
+              && (bailOnError || disallowPartialResults(rsp.getShardRequest().params))) {
+            cancelAll();
+          }
         }
 
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
         }
+        previousResponse = rsp;
       }
     } catch (InterruptedException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -332,7 +354,17 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   @Override
-  public void cancelAll() {}
+  public void cancelAll() {
+    // Queue a fake response to notify take() that it should no longer wait on responses as the
+    // outstanding requests have been canceled
+    responses.add(CANCELLATION_NOTIFICATION);
+    // Cancel all outstanding requests
+    for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
+      if (!future.isDone()) {
+        future.cancel(true);
+      }
+    }
+  }
 
   @Override
   public void prepDistributed(ResponseBuilder rb) {
@@ -468,48 +500,5 @@ public class HttpShardHandler extends ShardHandler {
   @Override
   public ShardHandlerFactory getShardHandlerFactory() {
     return httpShardHandlerFactory;
-  }
-
-  class ShardRequestCallback implements BiConsumer<LBSolrClient.Rsp, Throwable> {
-    private final SimpleSolrResponse ssr;
-    private final ShardResponse srsp;
-    private final long startTimeNS;
-    private final ShardRequest sreq;
-    private final String shard;
-    private final ModifiableSolrParams params;
-
-    public ShardRequestCallback(
-        SimpleSolrResponse ssr,
-        ShardResponse srsp,
-        long startTimeNS,
-        ShardRequest sreq,
-        String shard,
-        ModifiableSolrParams params) {
-      this.ssr = ssr;
-      this.srsp = srsp;
-      this.startTimeNS = startTimeNS;
-      this.sreq = sreq;
-      this.shard = shard;
-      this.params = params;
-    }
-
-    @Override
-    public void accept(LBSolrClient.Rsp rsp, Throwable throwable) {
-      if (rsp != null) {
-        ssr.nl = rsp.getResponse();
-        srsp.setShardAddress(rsp.getServer());
-        ssr.elapsedTime =
-            TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
-        responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
-      } else if (throwable != null) {
-        ssr.elapsedTime =
-            TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
-        srsp.setException(throwable);
-        if (throwable instanceof SolrException) {
-          srsp.setResponseCode(((SolrException) throwable).code());
-        }
-        responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
-      }
-    }
   }
 }
