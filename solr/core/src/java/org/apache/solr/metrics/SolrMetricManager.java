@@ -1678,9 +1678,8 @@ public class SolrMetricManager {
   }
 
   public PrometheusMetricReader getPrometheusMetricReader(String providerName) {
-    var name = enforcePrefix(providerName);
-    if (!meterProviderAndReaders.containsKey(name)) return null;
-    return meterProviderAndReaders.get(name).prometheusMetricReader();
+    MeterProviderAndReaders mpr = meterProviderAndReaders.get(enforcePrefix(providerName));
+    return (mpr != null) ? mpr.prometheusMetricReader() : null;
   }
 
   private record MeterProviderAndReaders(
