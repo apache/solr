@@ -16,16 +16,12 @@
  */
 package org.apache.solr.cli;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
-
-import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,28 +32,29 @@ public class AssertToolTest extends SolrCloudTestCase {
     configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
-//  @Test
-//  public void raisesExitCode100OnError() throws Exception {
-//    // Create a mock AssertTool that throws an exception for a specific test case
-//    class TestExceptionAssertTool extends AssertTool {
-//      public TestExceptionAssertTool(ToolRuntime runtime) {
-//        super(runtime);
-//      }
-//
-//      @Override
-//      protected int runAssert(CommandLine cli) throws Exception {
-//        // Force an exception for our test
-//        throw new IOException("Test exception to verify error code 100");
-//      }
-//    }
-//
-//    final String[] args = new String[] {"assert", "--exitcode", "--exists", "/tmp"};
-//
-//    // Use our custom AssertTool implementation that throws an exception
-//    final int numAssertionsFailed = CLITestHelper.runTool(args, TestExceptionAssertTool.class);
-//
-//    assertEquals("Expected AssertTool to raise an error code 100 on exception", 100, numAssertionsFailed);
-//  }
+  //  @Test
+  //  public void raisesExitCode100OnError() throws Exception {
+  //    // Create a mock AssertTool that throws an exception for a specific test case
+  //    class TestExceptionAssertTool extends AssertTool {
+  //      public TestExceptionAssertTool(ToolRuntime runtime) {
+  //        super(runtime);
+  //      }
+  //
+  //      @Override
+  //      protected int runAssert(CommandLine cli) throws Exception {
+  //        // Force an exception for our test
+  //        throw new IOException("Test exception to verify error code 100");
+  //      }
+  //    }
+  //
+  //    final String[] args = new String[] {"assert", "--exitcode", "--exists", "/tmp"};
+  //
+  //    // Use our custom AssertTool implementation that throws an exception
+  //    final int numAssertionsFailed = CLITestHelper.runTool(args, TestExceptionAssertTool.class);
+  //
+  //    assertEquals("Expected AssertTool to raise an error code 100 on exception", 100,
+  // numAssertionsFailed);
+  //  }
 
   @Test
   public void checksForTheExistenceOfDirectoryThatExists() throws Exception {
