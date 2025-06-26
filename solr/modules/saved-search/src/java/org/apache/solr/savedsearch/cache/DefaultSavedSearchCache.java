@@ -258,6 +258,11 @@ public class DefaultSavedSearchCache extends SolrCacheBase
     solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 
+  @Override
+  public void initialSearcher(SolrIndexSearcher initialSearcher) {
+    warm(initialSearcher, this);
+  }
+
   public int getInitialSize() {
     return initialSize;
   }
