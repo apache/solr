@@ -160,8 +160,6 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreContainerInit() throws Exception {
-    OpenTelemetryConfigurator.resetForTest();
-
     Path home = createTempDir();
     String solrXml = IOUtils.resourceToString("/mirroring-solr.xml", StandardCharsets.UTF_8);
     CoreContainer cores = new CoreContainer(SolrXmlConfig.fromString(home, solrXml));
