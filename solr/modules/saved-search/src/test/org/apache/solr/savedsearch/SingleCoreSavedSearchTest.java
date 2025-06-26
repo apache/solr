@@ -227,4 +227,24 @@ public class SingleCoreSavedSearchTest extends SolrTestCaseJ4 {
             + count / 2
             + "'");
   }
+
+  @Test
+  public void fieldExistsQuery() throws Exception {
+    // FieldExistsQuery checks if the ephemeral single-doc index is open.
+    // This was a bug that flew under the radar because not a lot of places in
+    // Lucene check if the LeafReader is still open.
+    addDoc(
+        adoc("id", String.valueOf(1), SavedSearchDataValues.MONITOR_QUERY, "id:[* TO *]"),
+        monitorChain);
+    addDoc(commit(), monitorChain);
+    URL url = getClass().getResource("/monitor/multi-value-doc.json");
+    String json = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
+
+    String[] params =
+        new String[] {
+          CommonParams.SORT, "id desc", CommonParams.JSON, json, CommonParams.QT, "/reverseSearch"
+        };
+
+    assertQ(req(params), "//*[@numFound='1']");
+  }
 }
