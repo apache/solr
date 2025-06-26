@@ -24,10 +24,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
-import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -36,7 +33,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.slf4j.Logger;
@@ -51,15 +47,6 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   private static final String DEFAULT_CLASS_NAME =
       EnvUtils.getProperty(
           "solr.otelDefaultConfigurator", "org.apache.solr.opentelemetry.OtelTracerConfigurator");
-
-  public static final Boolean OTLP_EXPORTER_ENABLED =
-      Boolean.parseBoolean(EnvUtils.getProperty("solr.otlpMetricExporterEnabled", "true"));
-
-  public static final String OTLP_EXPORTER_PROTOCOL =
-      EnvUtils.getProperty("solr.otlpMetricExporterProtocol", "grpc");
-
-  public static final int OTLP_EXPORTER_INTERVAL =
-      Integer.parseInt(EnvUtils.getProperty("solr.otlpMetricExporterInterval", "10000"));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -112,25 +99,6 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
           DEFAULT_CLASS_NAME,
           e);
     }
-  }
-
-  public static MetricExporter getExporter() {
-    if (!OTLP_EXPORTER_ENABLED) {
-      log.info("OTLP metric exporter is disabled.");
-      return new NoopMetricExporter();
-    }
-
-    return switch (OTLP_EXPORTER_PROTOCOL) {
-      case "grpc" -> OtlpGrpcMetricExporter.getDefault();
-      case "http" -> OtlpHttpMetricExporter.getDefault();
-      case "none" -> new NoopMetricExporter();
-      default -> {
-        log.warn(
-            "Unknown OTLP exporter type: {}. Defaulting to NO-OP exporter.",
-            OTLP_EXPORTER_PROTOCOL);
-        yield new NoopMetricExporter();
-      }
-    };
   }
 
   private static void configureCustomOpenTelemetrySdk(SolrResourceLoader loader, PluginInfo info) {

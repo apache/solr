@@ -16,7 +16,7 @@
  */
 package org.apache.solr.metrics;
 
-import static org.apache.solr.core.OpenTelemetryConfigurator.OTLP_EXPORTER_INTERVAL;
+import static org.apache.solr.metrics.otel.OtlpExporterFactory.OTLP_EXPORTER_INTERVAL;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -81,12 +81,12 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
-import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.otel.OtlpExporterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -171,7 +171,7 @@ public class SolrMetricManager {
 
   public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
     this.metricsConfig = metricsConfig;
-    this.metricExporter = OpenTelemetryConfigurator.getExporter();
+    this.metricExporter = OtlpExporterFactory.getExporter();
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
