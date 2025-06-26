@@ -133,6 +133,8 @@ Deprecation Removals
 
 * SOLR-17698: Removed deprecated EnumField field type. (Eric Pugh, David Smiley)
 
+* SOLR-17778: Removed no-op core admin operation FORCEPREPAREFORLEADERSHIP and its SolrJ peer OverrideLastPublished. (Pierre Salagnac)
+
 Dependency Upgrades
 ---------------------
 
