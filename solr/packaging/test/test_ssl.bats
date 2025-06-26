@@ -166,13 +166,12 @@ teardown() {
   assert_output --partial 'Error 401 Authentication'
 }
 
-@test "start solr with client truststore and security manager" {
+@test "start solr with client truststore" {
   # Make a test tmp dir, as the security policy includes TMP, so that might already contain the BATS_TEST_TMPDIR
   test_tmp_dir="${BATS_TEST_TMPDIR}/tmp"
   mkdir -p "${test_tmp_dir}"
   test_tmp_dir="$(cd -P "${test_tmp_dir}" && pwd)"
 
-  export SOLR_SECURITY_MANAGER_ENABLED=true
   export SOLR_OPTS="-Djava.io.tmpdir=${test_tmp_dir}"
   export SOLR_TOOL_OPTS="-Djava.io.tmpdir=${test_tmp_dir}"
 
@@ -206,7 +205,6 @@ teardown() {
   export SOLR_SSL_WANT_CLIENT_AUTH=true
   export SOLR_SSL_CHECK_PEER_NAME=true
   export SOLR_HOST=localhost
-  export SOLR_SECURITY_MANAGER_ENABLED=true
 
   run solr start
 
@@ -230,7 +228,6 @@ teardown() {
   mkdir -p "${test_tmp_dir}"
   test_tmp_dir="$(cd -P "${test_tmp_dir}" && pwd)"
 
-  export SOLR_SECURITY_MANAGER_ENABLED=true
   export SOLR_OPTS="-Djava.io.tmpdir=${test_tmp_dir}"
   export SOLR_LOG_LEVEL="DEBUG"
   export SOLR_TOOL_OPTS="-Djava.io.tmpdir=${test_tmp_dir}" # To debug further use: -Djavax.net.debug=SSL,keymanager,trustmanager,ssl:handshake
@@ -372,7 +369,6 @@ teardown() {
   mkdir -p "${test_tmp_dir}"
   test_tmp_dir="$(cd -P "${test_tmp_dir}" && pwd)"
 
-  export SOLR_SECURITY_MANAGER_ENABLED=true
   export SOLR_OPTS="-Djava.io.tmpdir=${test_tmp_dir}"
   export SOLR_TOOL_OPTS="-Djava.io.tmpdir=${test_tmp_dir}" # To debug further use: -Djavax.net.debug=SSL,keymanager,trustmanager,ssl:handshake
 

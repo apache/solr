@@ -31,12 +31,7 @@ teardown() {
 }
 
 @test "using curl to extract a single pdf file" {
-
-  # Disable security manager to allow extraction
-  # This appears to be a bug.
-  export SOLR_SECURITY_MANAGER_ENABLED=false
   solr start -Dsolr.modules=extraction
-  
   
   solr create -c gettingstarted -d _default
 
@@ -56,10 +51,6 @@ teardown() {
 }
 
 @test "using the bin/solr post tool to extract content from pdf" {
-
-  # Disable security manager to allow extraction
-  # This appears to be a bug.
-  export SOLR_SECURITY_MANAGER_ENABLED=false
   solr start -Dsolr.modules=extraction
   
   solr create -c content_extraction -d _default
@@ -83,10 +74,6 @@ teardown() {
 }
 
 @test "using the bin/solr post tool to crawl web site" {
-
-  # Disable security manager to allow extraction
-  # This appears to be a bug.
-  export SOLR_SECURITY_MANAGER_ENABLED=false
   solr start -Dsolr.modules=extraction
   
   solr create -c website_extraction -d _default
