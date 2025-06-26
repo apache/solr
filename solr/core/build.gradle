@@ -218,4 +218,6 @@ dependencies {
   testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+
+  testImplementation libs.opentelemetry.sdktesting
 }

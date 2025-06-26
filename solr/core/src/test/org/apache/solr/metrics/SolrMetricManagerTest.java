@@ -30,6 +30,8 @@ import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.opentelemetry.sdk.metrics.data.MetricData;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
@@ -49,10 +51,14 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SolrMetricManagerTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(SolrMetricManagerTest.class);
   final String METER_PROVIDER_NAME = "test_provider_name";
   private SolrMetricManager metricManager;
   private PrometheusMetricReader reader;
@@ -60,18 +66,23 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    this.metricManager = new SolrMetricManager();
+    System.setProperty("solr.otlpMetricExporterInterval", "1000");
+    this.metricManager = new SolrMetricManager(InMemoryMetricExporter.create());
     // Initialize a metric reader for tests
     metricManager.meterProvider(METER_PROVIDER_NAME);
     this.reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    metricManager.closeMeterProvider(METER_PROVIDER_NAME);
   }
 
   // NOCOMMIT: We might not be supported core swapping in 10. Maybe remove this test
   @Test
   public void testSwapRegistries() {
     Random r = random();
-
-    SolrMetricManager metricManager = new SolrMetricManager();
 
     Map<String, Counter> metrics1 = SolrMetricTestUtils.getRandomMetrics(r, true);
     Map<String, Counter> metrics2 = SolrMetricTestUtils.getRandomMetrics(r, true);
@@ -114,8 +125,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   public void testRegisterAll() throws Exception {
     Random r = random();
 
-    SolrMetricManager metricManager = new SolrMetricManager();
-
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(r, true);
     MetricRegistry mr = new MetricRegistry();
     for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
@@ -143,8 +152,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Test
   public void testClearMetrics() {
     Random r = random();
-
-    SolrMetricManager metricManager = new SolrMetricManager();
 
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(r, true);
     String registryName = TestUtil.randomSimpleString(r, 1, 10);
@@ -187,8 +194,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   public void testSimpleMetrics() {
     Random r = random();
 
-    SolrMetricManager metricManager = new SolrMetricManager();
-
     String registryName = TestUtil.randomSimpleString(r, 1, 10);
 
     metricManager.counter(null, registryName, "simple_counter", "foo", "bar");
@@ -223,8 +228,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   public void testReporters() throws Exception {
 
     try (SolrResourceLoader loader = new SolrResourceLoader(createTempDir())) {
-      SolrMetricManager metricManager = new SolrMetricManager();
-
       PluginInfo[] plugins =
           new PluginInfo[] {
             createPluginInfo("universal_foo", null, null),
@@ -500,6 +503,32 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
     // Observable metrics value changes anytime metricReader collects() to trigger callback
     assertEquals(-10.1, actual.getDataPoints().getFirst().getValue(), 1e-6);
+  }
+
+  @Test
+  public void testMetricExporter() throws Exception {
+    LongCounter counter =
+        metricManager.longCounter(METER_PROVIDER_NAME, "my_counter", "desc", null);
+    counter.add(5);
+    counter.add(3);
+    InMemoryMetricExporter exporter = (InMemoryMetricExporter) metricManager.getMetricExporter();
+
+    // Wait 3 seconds for the exporter to push metrics
+    Thread.sleep(3000);
+
+    var metrics = exporter.getFinishedMetricItems();
+
+    MetricData actual =
+        metrics.stream()
+            .filter(m -> "my_counter".equals(m.getName()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("my_counter metric not found from exporter"));
+
+    // Exporter pushes metrics every 1 second, so we only need to find at least 1 metric point with
+    // the correct value
+    assertTrue(
+        "Exported counter had different recorded value than expected",
+        actual.getLongSumData().getPoints().stream().anyMatch(p -> p.getValue() == 8L));
   }
 
   @Test

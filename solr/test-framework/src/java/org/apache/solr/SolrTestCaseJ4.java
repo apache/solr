@@ -250,7 +250,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
-    OpenTelemetryConfigurator.resetForTest();
     resetExceptionIgnores();
 
     testExecutor =
@@ -340,6 +339,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       testSolrHome = null;
 
       IpTables.unblockAllPorts();
+      OpenTelemetryConfigurator.resetForTest();
     }
   }
 

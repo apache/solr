@@ -27,6 +27,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.stats.MetricUtils;
@@ -84,7 +85,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     lrf = h.getRequestFactory("/select", 0, 20);
   }
 
-  SolrMetricManager metricManager = new SolrMetricManager();
+  SolrMetricManager metricManager = new SolrMetricManager(new NoopMetricExporter());
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 

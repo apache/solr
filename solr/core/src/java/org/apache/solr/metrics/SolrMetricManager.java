@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import static org.apache.solr.core.OpenTelemetryConfigurator.OTLP_EXPORTER_INTERVAL;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -156,10 +158,11 @@ public class SolrMetricManager {
       new ConcurrentHashMap<>();
 
   // Get default still pulls the standard OTLP exporter variables
-  private final MetricExporter otlpExporter = OpenTelemetryConfigurator.getExporter();
+  private final MetricExporter metricExporter;
 
-  public SolrMetricManager() {
+  public SolrMetricManager(MetricExporter exporter) {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
+    metricExporter = exporter;
     counterSupplier = MetricSuppliers.counterSupplier(null, null);
     meterSupplier = MetricSuppliers.meterSupplier(null, null);
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
@@ -168,6 +171,7 @@ public class SolrMetricManager {
 
   public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
     this.metricsConfig = metricsConfig;
+    this.metricExporter = OpenTelemetryConfigurator.getExporter();
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
@@ -736,8 +740,8 @@ public class SolrMetricManager {
               var reader = new PrometheusMetricReader(true, null);
               var builder = SdkMeterProvider.builder().registerMetricReader(reader);
               builder.registerMetricReader(
-                  PeriodicMetricReader.builder(otlpExporter)
-                      .setInterval(5, TimeUnit.SECONDS)
+                  PeriodicMetricReader.builder(metricExporter)
+                      .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
                       .build());
               return new MeterProviderAndReaders(builder.build(), reader);
             })
@@ -1689,6 +1693,10 @@ public class SolrMetricManager {
     var name = enforcePrefix(providerName);
     if (!meterProviderAndReaders.containsKey(name)) return null;
     return meterProviderAndReaders.get(name).prometheusMetricReader();
+  }
+
+  public MetricExporter getMetricExporter() {
+    return metricExporter;
   }
 
   private record MeterProviderAndReaders(

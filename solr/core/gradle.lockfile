@@ -77,6 +77,7 @@ io.opentelemetry:opentelemetry-sdk-common:1.51.0=compileClasspath,jarValidation,
 io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:1.51.0=jarValidation,runtimeClasspath,runtimeLibs,testRuntimeClasspath
 io.opentelemetry:opentelemetry-sdk-logs:1.51.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 io.opentelemetry:opentelemetry-sdk-metrics:1.51.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
+io.opentelemetry:opentelemetry-sdk-testing:1.51.0=jarValidation,testCompileClasspath,testRuntimeClasspath
 io.opentelemetry:opentelemetry-sdk-trace:1.51.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 io.opentelemetry:opentelemetry-sdk:1.51.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 io.prometheus:prometheus-metrics-exposition-formats:1.1.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
