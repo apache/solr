@@ -23,6 +23,8 @@ def isCIBuild = System.getenv().keySet().any { it ==~ /(?i)((JENKINS|HUDSON)(_\w
 develocity {
     server = "https://develocity.apache.org"
     projectId = "solr"
+    println "GE key from GRADLE_ENTERPRISE_ACCESS_KEY? " + (System.getenv("GRADLE_ENTERPRISE_ACCESS_KEY") != null)
+    println "GE key from DEVELOCITY_ACCESS_KEY? " + (System.getenv("DEVELOCITY_ACCESS_KEY") != null)
 
     buildScan {
         // uploadInBackground = !isCIBuild
