@@ -28,7 +28,7 @@ develocity {
         // uploadInBackground = !isCIBuild
 
         publishing.onlyIf {
-            def isAuth = publication.authenticated
+            def isAuth = it.authenticated
             println "Develocity: Authenticated? $isAuth"
             return isAuth
         }
