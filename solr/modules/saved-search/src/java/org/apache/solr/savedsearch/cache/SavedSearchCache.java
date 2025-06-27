@@ -30,4 +30,15 @@ public interface SavedSearchCache {
       SavedSearchDataValues dataValues, SavedSearchDecoder decoder) throws IOException;
 
   boolean acceptTerm(String field, BytesRef value);
+
+  class VersionedQueryCacheEntry {
+
+    public final SavedSearchDataValues.QueryDisjunct entry;
+    public final long version;
+
+    VersionedQueryCacheEntry(SavedSearchDataValues.QueryDisjunct entry, long version) {
+      this.entry = entry;
+      this.version = version;
+    }
+  }
 }

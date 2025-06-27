@@ -45,6 +45,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrCacheBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.IOFunction;
+import org.apache.solr.savedsearch.cache.SavedSearchCache.VersionedQueryCacheEntry;
 
 public class DefaultSavedSearchCache extends SolrCacheBase
     implements SolrCache<String, VersionedQueryCacheEntry>,
