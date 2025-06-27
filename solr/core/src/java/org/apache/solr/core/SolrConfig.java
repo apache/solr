@@ -128,7 +128,7 @@ public class SolrConfig implements MapSerializable {
 
   private int formUploadLimitKB;
 
-  private boolean handleSelect;
+  // private boolean handleSelect;
 
   private final SolrRequestParsers solrRequestParsers;
 
@@ -363,7 +363,7 @@ public class SolrConfig implements MapSerializable {
         log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
       }
 
-      handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
+      // handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -959,10 +959,7 @@ public class SolrConfig implements MapSerializable {
     return formUploadLimitKB;
   }
 
-  public boolean isHandleSelect() {
-    return handleSelect;
-  }
-
+  /** public boolean isHandleSelect() { return handleSelect; } */
   @Override
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (znodeVersion > -1) result.put(ZNODEVER, znodeVersion);
@@ -1010,7 +1007,7 @@ public class SolrConfig implements MapSerializable {
         m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
     m = new LinkedHashMap<>();
     result.put("requestDispatcher", m);
-    m.put("handleSelect", handleSelect);
+    // m.put("handleSelect", handleSelect);
     if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
     m.put(
         "requestParsers",

@@ -87,7 +87,8 @@ public class SolrRequestParsers {
   private final boolean enableRemoteStreams;
   private final boolean enableStreamBody;
   private StandardRequestParser standard;
-  private boolean handleSelect = true;
+
+  // private boolean handleSelect = true;
 
   /**
    * Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote
@@ -104,7 +105,7 @@ public class SolrRequestParsers {
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE;
       enableRemoteStreams = false;
       enableStreamBody = false;
-      handleSelect = false;
+      // handleSelect = false;
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
 
@@ -115,7 +116,7 @@ public class SolrRequestParsers {
       enableStreamBody = Boolean.getBoolean("solr.enableStreamBody");
 
       // Let this filter take care of /select?xxx format
-      handleSelect = globalConfig.isHandleSelect();
+      // handleSelect = globalConfig.isHandleSelect();
     }
     init(multipartUploadLimitKB, formUploadLimitKB);
   }
@@ -123,7 +124,7 @@ public class SolrRequestParsers {
   private SolrRequestParsers() {
     enableRemoteStreams = false;
     enableStreamBody = false;
-    handleSelect = false;
+    // handleSelect = false;
     init(Integer.MAX_VALUE, Integer.MAX_VALUE);
   }
 
@@ -516,14 +517,11 @@ public class SolrRequestParsers {
         "URLDecoder: Invalid digit (" + ((char) b) + ") in escape (%) pattern");
   }
 
-  public boolean isHandleSelect() {
-    return handleSelect;
-  }
-
-  public void setHandleSelect(boolean handleSelect) {
-    this.handleSelect = handleSelect;
-  }
-
+  /**
+   * public boolean isHandleSelect() { return handleSelect; }
+   *
+   * <p>public void setHandleSelect(boolean handleSelect) { this.handleSelect = handleSelect; }
+   */
   public boolean isEnableRemoteStreams() {
     return enableRemoteStreams;
   }
