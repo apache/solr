@@ -25,6 +25,8 @@ The functions can be a constant (numeric or string literal), a field, another fu
 You can use these functions to modify the ranking of results for users.
 These could be used to change the ranking of results based on a user's location, or some other calculation.
 
+
+
 == Using Function Query
 
 Functions must be expressed as function calls (for example, `sum(a,b)` instead of simply `a+b`).
@@ -85,6 +87,8 @@ Only functions with fast random access are recommended.
 == Available Functions
 
 The table below summarizes the functions available for function queries.
+
+Additionally, you can write a custom one using a tiny bit of JavaScript with the xref:expression-value-source-parser.adoc[Expression Value Source Parser].
 
 === abs Function
 Returns the absolute value of the specified value or function.
