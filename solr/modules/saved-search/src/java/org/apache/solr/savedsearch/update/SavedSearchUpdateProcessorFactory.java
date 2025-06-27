@@ -40,7 +40,6 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.Presearcher;
 import org.apache.lucene.monitor.QueryDecomposer;
-import org.apache.lucene.monitor.Visitors.QCEVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -50,7 +49,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.savedsearch.SavedSearchDataValues;
-import org.apache.solr.savedsearch.SavedSearchSchemaFields;
+import org.apache.solr.savedsearch.SavedSearchDataValues.QueryDisjunct;
 import org.apache.solr.savedsearch.SimpleQueryParser;
 import org.apache.solr.savedsearch.search.ReverseSearchComponent;
 import org.apache.solr.schema.IndexSchema;
@@ -87,8 +86,9 @@ public class SavedSearchUpdateProcessorFactory extends UpdateRequestProcessorFac
     private final IndexSchema indexSchema;
     private final QueryDecomposer queryDecomposer;
     private final Presearcher presearcher;
-    private final SavedSearchSchemaFields savedSearchSchemaFields;
     private final Set<String> allowedFieldNames;
+    private final SchemaField queryIdField;
+    private final SchemaField monitorQueryField;
 
     public SavedSearchUpdateRequestProcessor(
         UpdateRequestProcessor next,
@@ -100,7 +100,8 @@ public class SavedSearchUpdateProcessorFactory extends UpdateRequestProcessorFac
       this.indexSchema = core.getLatestSchema();
       this.queryDecomposer = queryDecomposer;
       this.presearcher = presearcher;
-      this.savedSearchSchemaFields = new SavedSearchSchemaFields(indexSchema);
+      this.queryIdField = indexSchema.getField(SavedSearchDataValues.QUERY_ID);
+      this.monitorQueryField = indexSchema.getField(SavedSearchDataValues.MONITOR_QUERY);
       this.allowedFieldNames =
           Set.of(
               SavedSearchDataValues.MONITOR_QUERY,
@@ -156,39 +157,21 @@ public class SavedSearchUpdateProcessorFactory extends UpdateRequestProcessorFac
         solrInputDocument.getChildDocuments().clear();
       }
       solrInputDocument.addChildDocuments(children.stream().skip(1).collect(Collectors.toList()));
-      if (solrInputDocument.hasChildDocuments()) {
-        solrInputDocument
-            .getChildDocuments()
-            .forEach(
-                child ->
-                    child.setField(
-                        idFieldName, child.getFieldValue(SavedSearchDataValues.CACHE_ID)));
+      for (var firstChildField : firstChild) {
+        solrInputDocument.setField(firstChildField.getName(), firstChildField.getValue());
       }
-      copyFirstChildToParent(solrInputDocument, firstChild);
       super.processAdd(cmd);
     }
 
-    private void copyFirstChildToParent(SolrInputDocument parent, SolrInputDocument firstChild) {
-      parent.setField(
-          indexSchema.getUniqueKeyField().getName(),
-          firstChild.getFieldValue(SavedSearchDataValues.CACHE_ID));
-      for (var firstChildField : firstChild) {
-        parent.setField(firstChildField.getName(), firstChildField.getValue());
-      }
-    }
-
     private Stream<Document> decompose(MonitorQuery monitorQuery) {
-      return QCEVisitor.decompose(monitorQuery, queryDecomposer).stream()
+      return QueryDisjunct.decompose(monitorQuery, queryDecomposer).stream()
           .map(
-              qce -> {
+              disjunct -> {
                 Document doc =
-                    presearcher.indexQuery(qce.getMatchQuery(), monitorQuery.getMetadata());
-                doc.add(savedSearchSchemaFields.getQueryId().createField(qce.getQueryId()));
-                doc.add(savedSearchSchemaFields.getCacheId().createField(qce.getCacheId()));
-                doc.add(
-                    savedSearchSchemaFields
-                        .getMonitorQuery()
-                        .createField(monitorQuery.getQueryString()));
+                    presearcher.indexQuery(disjunct.getMatchQuery(), monitorQuery.getMetadata());
+                doc.add(indexSchema.getUniqueKeyField().createField(disjunct.getId()));
+                doc.add(queryIdField.createField(disjunct.getQueryId()));
+                doc.add(monitorQueryField.createField(monitorQuery.getQueryString()));
                 return doc;
               });
     }

@@ -25,6 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.savedsearch.SavedSearchDataValues;
 import org.apache.solr.savedsearch.SavedSearchDecoder;
 import org.apache.solr.search.CacheRegenerator;
@@ -57,11 +58,13 @@ public class SavedSearchLatestRegenerator implements CacheRegenerator {
             .search(versionRangeQuery(cache), batchSize)
             .scoreDocs;
     int batchesRemaining = cache.getInitialSize() / batchSize - 1;
-    SavedSearchDecoder decoder = new SavedSearchDecoder(searcher.getCore());
+    SolrCore core = searcher.getCore();
+    SavedSearchDecoder decoder = new SavedSearchDecoder(core);
     while (topDocs.length > 0 && batchesRemaining > 0) {
       int docIndex = 0;
       for (LeafReaderContext ctx : reader.leaves()) {
-        SavedSearchDataValues dataValues = new SavedSearchDataValues(ctx);
+        SavedSearchDataValues dataValues =
+            new SavedSearchDataValues(ctx, core.getLatestSchema().getUniqueKeyField().getName());
         int shiftedMax = ctx.reader().maxDoc() + ctx.docBase;
         while (docIndex < topDocs.length
             && topDocs[docIndex].doc >= ctx.docBase

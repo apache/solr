@@ -19,14 +19,14 @@
 
 package org.apache.solr.savedsearch.cache;
 
-import org.apache.lucene.monitor.Visitors.QCEVisitor;
+import org.apache.solr.savedsearch.SavedSearchDataValues.QueryDisjunct;
 
 public class VersionedQueryCacheEntry {
 
-  public final QCEVisitor entry;
+  public final QueryDisjunct entry;
   public final long version;
 
-  public VersionedQueryCacheEntry(QCEVisitor entry, long version) {
+  public VersionedQueryCacheEntry(QueryDisjunct entry, long version) {
     this.entry = entry;
     this.version = version;
   }

@@ -30,7 +30,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
-import org.apache.lucene.monitor.Visitors.QCEVisitor;
 import org.apache.lucene.monitor.Visitors.QueryTermFilterVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -39,6 +38,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.savedsearch.SavedSearchDataValues;
+import org.apache.solr.savedsearch.SavedSearchDataValues.QueryDisjunct;
 import org.apache.solr.savedsearch.SavedSearchDecoder;
 import org.apache.solr.search.CacheRegenerator;
 import org.apache.solr.search.SolrCache;
@@ -284,7 +284,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
     try {
       var version = dataValues.getVersion();
       if (prevEntry == null || version > prevEntry.version) {
-        QCEVisitor component = decoder.getComponent(dataValues, cacheId);
+        QueryDisjunct component = decoder.getComponent(dataValues, cacheId);
         currentStats.updateAndGet(CurrentStats::miss);
         return new VersionedQueryCacheEntry(component, version);
       }

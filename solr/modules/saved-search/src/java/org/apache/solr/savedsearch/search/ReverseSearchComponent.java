@@ -139,7 +139,10 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
     final ReverseSearchQuery.ReverseSearchContext context =
         new ReverseSearchQuery.ReverseSearchContext(
-            savedSearchCache, savedSearchDecoder, solrMatcherSink);
+            savedSearchCache,
+            savedSearchDecoder,
+            solrMatcherSink,
+            rb.req.getSchema().getUniqueKeyField().getName());
 
     return new ReverseSearchQuery(context, preFilterQuery);
   }

@@ -22,7 +22,6 @@ package org.apache.solr.savedsearch.search;
 import java.io.IOException;
 import java.util.Collection;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.monitor.Visitors.QCEVisitor;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -37,6 +36,7 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.savedsearch.SavedSearchDataValues;
+import org.apache.solr.savedsearch.SavedSearchDataValues.QueryDisjunct;
 import org.apache.solr.savedsearch.SavedSearchDecoder;
 import org.apache.solr.savedsearch.cache.SavedSearchCache;
 
@@ -178,7 +178,8 @@ class ReverseSearchQuery extends Query {
       this.matcherSink = reverseSearchContext.solrMatcherSink;
       this.metadata = new Metadata();
       matcherSink.captureMetadata(metadata);
-      this.dataValues = new SavedSearchDataValues(leafReaderContext);
+      this.dataValues =
+          new SavedSearchDataValues(leafReaderContext, reverseSearchContext.idFieldName);
     }
 
     @Override
@@ -252,7 +253,7 @@ class ReverseSearchQuery extends Query {
           return false;
         }
 
-        private QCEVisitor getEntry(SavedSearchDataValues dataValues) throws IOException {
+        private QueryDisjunct getEntry(SavedSearchDataValues dataValues) throws IOException {
           var versionedEntry =
               savedSearchCache == null
                   ? null
@@ -275,14 +276,17 @@ class ReverseSearchQuery extends Query {
     private final SavedSearchCache queryCache;
     private final SavedSearchDecoder queryDecoder;
     private final SolrMatcherSink solrMatcherSink;
+    private final String idFieldName;
 
     ReverseSearchContext(
         SavedSearchCache queryCache,
         SavedSearchDecoder queryDecoder,
-        SolrMatcherSink solrMatcherSink) {
+        SolrMatcherSink solrMatcherSink,
+        String idFieldName) {
       this.queryCache = queryCache;
       this.queryDecoder = queryDecoder;
       this.solrMatcherSink = solrMatcherSink;
+      this.idFieldName = idFieldName;
     }
   }
 

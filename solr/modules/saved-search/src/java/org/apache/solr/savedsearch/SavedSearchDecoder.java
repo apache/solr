@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.QueryDecomposer;
-import org.apache.lucene.monitor.Visitors.QCEVisitor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.savedsearch.SavedSearchDataValues.QueryDisjunct;
 import org.apache.solr.savedsearch.search.ReverseSearchComponent;
 
 public class SavedSearchDecoder {
@@ -47,10 +47,10 @@ public class SavedSearchDecoder {
     return new MonitorQuery(id, query, queryStr, Map.of());
   }
 
-  public QCEVisitor getComponent(SavedSearchDataValues dataValues, String cacheId)
+  public QueryDisjunct getComponent(SavedSearchDataValues dataValues, String cacheId)
       throws IOException {
-    for (QCEVisitor qce : QCEVisitor.decompose(decode(dataValues), queryDecomposer)) {
-      if (qce.getCacheId().equals(cacheId)) {
+    for (QueryDisjunct qce : QueryDisjunct.decompose(decode(dataValues), queryDecomposer)) {
+      if (qce.getId().equals(cacheId)) {
         return qce;
       }
     }

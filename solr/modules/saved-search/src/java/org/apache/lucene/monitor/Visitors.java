@@ -22,9 +22,7 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -32,7 +30,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 public class Visitors {
@@ -83,44 +80,6 @@ public class Visitors {
     @Override
     public boolean test(String field, BytesRef bytesRef) {
       return queryTermFilter.test(field, bytesRef);
-    }
-  }
-
-  public static class QCEVisitor {
-
-    private final QueryCacheEntry qce;
-
-    private QCEVisitor(QueryCacheEntry qce) {
-      this.qce = qce;
-    }
-
-    public static List<QCEVisitor> decompose(MonitorQuery mq, QueryDecomposer decomposer) {
-      List<QCEVisitor> cacheEntries = new ArrayList<>();
-      for (var queryCacheEntry : QueryCacheEntry.decompose(mq, decomposer)) {
-        cacheEntries.add(new QCEVisitor(queryCacheEntry));
-      }
-      return cacheEntries;
-    }
-
-    public Query getMatchQuery() {
-      return qce.matchQuery;
-    }
-
-    public String getCacheId() {
-      return qce.cacheId;
-    }
-
-    public String getQueryId() {
-      return qce.queryId;
-    }
-
-    public Map<String, String> getMetadata() {
-      return qce.metadata;
-    }
-
-    @Override
-    public String toString() {
-      return qce.toString();
     }
   }
 }
