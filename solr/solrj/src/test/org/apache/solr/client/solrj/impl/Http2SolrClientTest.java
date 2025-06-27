@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
+import static org.hamcrest.core.StringContains.containsStringIgnoringCase;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -74,7 +74,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
-      assertTrue(isTimeout(e));
+      assertIsTimeout(e);
     }
   }
 
@@ -105,7 +105,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
-      assertTrue(isTimeout(e));
+      assertIsTimeout(e);
     }
   }
 
@@ -709,10 +709,9 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       // too little time to succeed
       QueryRequest req = new QueryRequest();
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-      assertExceptionThrownWithMessageContaining(
-          SolrServerException.class, List.of("Timeout"), () -> oldClient.request(req));
+      assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));
 
-      int newIdleTimeoutMs = 5 * 1000; // enough time to succeed
+      int newIdleTimeoutMs = 10 * 1000; // enough time to succeed
       try (Http2SolrClient idleTimeoutChangedClient =
           new Http2SolrClient.Builder(url)
               .withHttpClient(oldClient)
@@ -733,12 +732,22 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
     try (Http2SolrClient oldClient =
         new Http2SolrClient.Builder(url)
-            .withIdleTimeout(1000, TimeUnit.MILLISECONDS)
-            .withRequestTimeout(10, TimeUnit.SECONDS)
+            .withIdleTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
+            .withRequestTimeout(100, TimeUnit.MILLISECONDS)
             .build()) {
+
+      try (Http2SolrClient onlyBaseUrlChangedClient =
+          new Http2SolrClient.Builder(url).withHttpClient(oldClient).build()) {
+        // Client created with the same HTTP client should have the same behavior
+        assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
+      }
+
+      // too little time to succeed
       QueryRequest req = new QueryRequest();
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-      int newRequestTimeoutMs = 2000;
+      assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));
+
+      int newRequestTimeoutMs = 10 * 1000; // enough time to succeed
       try (Http2SolrClient requestTimeoutChangedClient =
           new Http2SolrClient.Builder(url)
               .withHttpClient(oldClient)
@@ -746,19 +755,15 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
               .build()) {
         NamedList<Object> response = requestTimeoutChangedClient.request(req);
         try (InputStream is = (InputStream) response.get("stream")) {
-          assertExceptionThrownWithMessageContaining(
-              IOException.class, List.of("Total timeout"), is::readAllBytes);
+          assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
         }
-      }
-      NamedList<Object> response = oldClient.request(req);
-      try (InputStream is = (InputStream) response.get("stream")) {
-        assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
       }
     }
   }
 
-  private static boolean isTimeout(SolrServerException e) {
-    return e.getMessage().contains("timeout") || e.getMessage().contains("Timeout");
+  private static void assertIsTimeout(Throwable t) {
+    assertThat(t.getMessage(), containsStringIgnoringCase("Timeout"));
   }
+
   /* Missed tests : - set cookies via interceptor - invariant params - compression */
 }
