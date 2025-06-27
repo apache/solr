@@ -91,8 +91,6 @@
 
   <field name="_query_id_" type="string" indexed="true" stored="false" docValues="true"
     useDocValuesAsStored="true"/>
-  <field name="_cache_id_" type="string" indexed="true" stored="false" docValues="true"
-    useDocValuesAsStored="true"/>
   <field name="_mq_" type="string" indexed="true" stored="false" docValues="true"
     useDocValuesAsStored="true"/>
   <field name="__anytokenfield" type="text" indexed="true" stored="false" docValues="false" multiValued="true"/>
