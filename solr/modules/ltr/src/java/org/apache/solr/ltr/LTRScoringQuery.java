@@ -408,7 +408,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         String featName = extractedFeatureWeights[i].getName();
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
-        featuresInfo[featId] = new FeatureInfo(featName, value, false);
+        featuresInfo[featId] = new FeatureInfo(featName, value, true);
       }
     }
 
