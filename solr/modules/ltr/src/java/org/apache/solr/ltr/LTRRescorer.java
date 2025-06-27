@@ -181,7 +181,7 @@ public class LTRRescorer extends Rescorer {
         docBase = readerContext.docBase;
         scorer = modelWeight.modelScorer(readerContext);
       }
-      scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked);
+      scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked, scoringQuery);
       hitUpto++;
     }
   }
@@ -194,7 +194,8 @@ public class LTRRescorer extends Rescorer {
       ScoreDoc hit,
       int docID,
       LTRScoringQuery.ModelWeight.ModelScorer scorer,
-      ScoreDoc[] reranked)
+      ScoreDoc[] reranked,
+      LTRScoringQuery scoringQuery)
       throws IOException {
     /*
      * Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to call
@@ -209,6 +210,7 @@ public class LTRRescorer extends Rescorer {
     scorer.iterator().advance(targetDoc);
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
+    scorer.setCache(scoringQuery.getRequest().getSearcher().getRerankingFeatureVectorCache());
     hit.score = scorer.score();
     if (QueryLimits.getCurrentLimits()
         .maybeExitWithPartialResults(

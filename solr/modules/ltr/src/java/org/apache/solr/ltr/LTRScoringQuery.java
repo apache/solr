@@ -130,11 +130,10 @@ public class LTRScoringQuery extends Query implements Accountable {
   public int hashCode() {
     final int prime = 31;
     int result = ltrScoringModel.getFeatureStoreName().hashCode();
-    if (!this.getFeatureLogger().logAll) {
-      result = (prime * result) + (ltrScoringModel.getName().hashCode());
+    result = (prime * result) + addEfisHash(result, prime);
+    if (logger != null) {
+      result = (prime * result) + logger.featureFormat.hashCode();
     }
-    result = (prime * result) + (this.getFeatureLogger().featureFormat.hashCode());
-    result = addEfisHash(result, prime);
     result = (prime * result) + this.toString().hashCode();
     return result;
   }
@@ -580,7 +579,6 @@ public class LTRScoringQuery extends Query implements Accountable {
 
         private void fillFeaturesInfo() throws IOException {
           if (activeDoc == targetDoc) {
-            SolrCache<Integer, float[]> featureVectorCache = null;
             float[] featureVector;
 
             if (featureVectorCache != null) {

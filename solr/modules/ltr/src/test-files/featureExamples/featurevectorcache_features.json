@@ -1,0 +1,39 @@
+[
+  {
+    "name": "value_feature_2",
+    "class": "org.apache.solr.ltr.feature.ValueFeature",
+    "params": {
+      "value": 1
+    }
+  },
+  {
+    "name": "value_feature_1",
+    "class": "org.apache.solr.ltr.feature.ValueFeature",
+    "params": {
+      "value": 1
+    }
+  },
+  {
+    "name" : "efi_feature",
+    "class":"org.apache.solr.ltr.feature.ValueFeature",
+    "params" : {
+      "value": "${efi_feature}"
+    }
+  },
+  {
+    "name" : "match_w1_title",
+    "class":"org.apache.solr.ltr.feature.SolrFeature",
+    "params" : {
+      "fq": [
+        "{!terms f=title}w1"
+      ]
+    }
+  },
+  {
+    "name": "popularity_value",
+    "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+    "params": {
+      "field": "popularity"
+    }
+  }
+]
