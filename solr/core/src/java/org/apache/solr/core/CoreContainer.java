@@ -1347,7 +1347,7 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
-      ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // First wake up the closer thread, it'll terminate almost immediately since it checks
       // isShutDown.
