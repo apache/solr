@@ -293,7 +293,7 @@ Bug Fixes
 * SOLR-17758: The NumFieldLimitingUpdateRequestProcessor's "warnOnly" mode has been fixed, and now processes documents even
   when the limit has been exceeded. (Jason Gerlowski, Rahul Goswami)
 
-* SOLR-17711: Remove total request timeout from Recovery Client inadvertently added during Jetty Http2 client migration. Recovery requests can take a long time. (Luke Kot-Zaniewski)
+* SOLR-17711: Remove the unintentional recovery total request timeout. Idle connection timeout will still be respected. (Luke Kot-Zaniewski)
 
 Dependency Upgrades
 ---------------------
