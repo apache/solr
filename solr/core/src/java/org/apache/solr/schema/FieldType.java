@@ -47,10 +47,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -944,12 +943,12 @@ public abstract class FieldType extends FieldProperties {
    * @param parser the {@link org.apache.solr.search.QParser} calling the method
    * @param field the schema field
    * @param part1 the lower boundary of the range, nulls are allowed.
-   * @param part2 the upper boundary of the range, nulls are allowe
+   * @param part2 the upper boundary of the range, nulls are allowed.
    * @param minInclusive whether the minimum of the range is inclusive or not
    * @param maxInclusive whether the maximum of the range is inclusive or not
    * @return a Query instance to perform range search according to given parameters
    */
-  public Query getRangeQuery(
+  public final Query getRangeQuery(
       QParser parser,
       SchemaField field,
       String part1,
@@ -1022,8 +1021,7 @@ public abstract class FieldType extends FieldProperties {
    * to an unbounded rangeQuery.
    *
    * <p>This method should only be overridden whenever a fieldType does not support {@link
-   * org.apache.lucene.search.DocValuesFieldExistsQuery} or {@link
-   * org.apache.lucene.search.NormsFieldExistsQuery}. If a fieldType does not support an unbounded
+   * org.apache.lucene.search.FieldExistsQuery}. If a fieldType does not support an unbounded
    * rangeQuery as an existenceQuery (such as <code>double</code> or <code>float</code> fields),
    * {@link #getSpecializedExistenceQuery} should be overridden.
    *
@@ -1032,11 +1030,9 @@ public abstract class FieldType extends FieldProperties {
    * @return The {@link org.apache.lucene.search.Query} instance.
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
-    if (field.hasDocValues()) {
-      return new DocValuesFieldExistsQuery(field.getName());
-    } else if (!field.omitNorms()
-        && !isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
-      return new NormsFieldExistsQuery(field.getName());
+    // TODO: Remove !isPointField() for SOLR-14199
+    if (field.hasDocValues() || (!field.omitNorms() && !isPointField())) {
+      return new FieldExistsQuery(field.getName());
     } else {
       // Default to an unbounded range query
       return getSpecializedExistenceQuery(parser, field);
