@@ -69,7 +69,7 @@
       class="solr.DefaultSavedSearchCache"
       async="false"
       maxRamMB="1"
-      regenerator="solr.SavedSearchLatestRegenerator"/>
+      regenerator="solr.DefaultSavedSearchCache$SavedSearchLatestRegenerator"/>
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
     <queryResultWindowSize>20</queryResultWindowSize>
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
