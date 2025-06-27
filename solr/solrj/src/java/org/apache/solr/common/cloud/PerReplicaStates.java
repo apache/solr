@@ -18,7 +18,6 @@
 package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.VERSION;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -231,7 +230,7 @@ public class PerReplicaStates implements ReflectMapWriter {
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(NAME, replica);
-      ew.put(VERSION, version);
+      ew.put("version", version);
       ew.put(ReplicaStateProps.STATE, state.toString());
       if (isLeader) ew.put(ReplicaStateProps.LEADER, isLeader);
       ew.putIfNotNull("duplicate", duplicate);

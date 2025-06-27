@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +31,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
@@ -95,14 +95,26 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       Files.createDirectory(tempConfig.resolve(".ignoreddir"));
       Files.createFile(tempConfig.resolve(".ignoreddir").resolve("ignored"));
 
-      configSetService.uploadConfig("testconfig", tempConfig, true);
+      configSetService.uploadConfig("testconfig", tempConfig);
 
       // uploading a directory creates a new config
       List<String> configs = configSetService.listConfigs();
       assertEquals(1, configs.size());
       assertEquals("testconfig", configs.get(0));
       assertTrue(configSetService.checkConfigExists("testconfig"));
-      assertTrue(configSetService.isConfigSetTrusted("testconfig"));
+
+      Path tempConfigForbidden = createTempDir("config");
+      Files.createFile(tempConfigForbidden.resolve("Test.java"));
+      Files.createFile(tempConfigForbidden.resolve("file1"));
+      Files.createDirectory(tempConfigForbidden.resolve("dir"));
+
+      Exception ex =
+          assertThrows(
+              SolrException.class,
+              () -> {
+                configSetService.uploadConfig("_testconf", tempConfigForbidden);
+              });
+      assertTrue(ex.getMessage().contains("is forbidden for use in uploading configsets."));
 
       // check downloading
       Path downloadPath = createTempDir("download");
@@ -120,18 +132,17 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       // uploading to the same config overwrites
       byte[] overwritten = "new test data".getBytes(StandardCharsets.UTF_8);
       Files.write(tempConfig.resolve("file1"), overwritten);
-      configSetService.uploadConfig("testconfig", tempConfig, false);
+      configSetService.uploadConfig("testconfig", tempConfig);
 
-      assertEquals(1, configSetService.listConfigs().size());
+      assertEquals(2, configSetService.listConfigs().size());
       Path download2 = createTempDir("download2");
       configSetService.downloadConfig("testconfig", download2);
       byte[] checkdata2 = Files.readAllBytes(download2.resolve("file1"));
       assertArrayEquals(overwritten, checkdata2);
-      assertFalse(configSetService.isConfigSetTrusted("testconfig"));
 
       // uploading same files to a new name creates a new config
-      configSetService.uploadConfig("config2", tempConfig, true);
-      assertEquals(2, configSetService.listConfigs().size());
+      configSetService.uploadConfig("config2", tempConfig);
+      assertEquals(3, configSetService.listConfigs().size());
 
       // Test copying a config works in both flavors
       configSetService.copyConfig("config2", "config2copy");
@@ -139,7 +150,6 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       configs = configSetService.listConfigs();
       assertTrue("config2copy should exist", configs.contains("config2copy"));
       assertTrue("config2copy2 should exist", configs.contains("config2copy2"));
-      assertTrue(configSetService.isConfigSetTrusted("config2"));
     }
   }
 
@@ -191,7 +201,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     try (SolrZkClient client =
         buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
-      configSetService.uploadConfig("acltest", configPath, false);
+      configSetService.uploadConfig("acltest", configPath);
       assertEquals(1, configSetService.listConfigs().size());
     }
 
@@ -202,8 +212,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       assertEquals(1, configSetService.listConfigs().size());
       IOException ioException =
           assertThrows(
-              IOException.class,
-              () -> configSetService.uploadConfig("acltest2", configPath, false));
+              IOException.class, () -> configSetService.uploadConfig("acltest2", configPath));
       assertEquals(KeeperException.NoAuthException.class, ioException.getCause().getClass());
     }
 
@@ -222,9 +231,9 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
   @Test
   public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
 
-    String solrHome = legacyExampleCollection1SolrHome();
+    Path solrHome = legacyExampleCollection1SolrHome();
 
-    CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+    CoreContainer cc = new CoreContainer(solrHome, new Properties());
     System.setProperty("zkHost", zkServer.getZkAddress());
 
     SolrZkClient zkClient =

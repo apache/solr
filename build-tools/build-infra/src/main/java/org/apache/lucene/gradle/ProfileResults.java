@@ -18,7 +18,7 @@
 package org.apache.lucene.gradle;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -168,7 +168,7 @@ public class ProfileResults {
     long sumValues = 0;
     String framePadding = " ".repeat(COLUMN_SIZE * 2);
     for (String file : files) {
-      try (RecordingFile recording = new RecordingFile(Paths.get(file))) {
+      try (RecordingFile recording = new RecordingFile(Path.of(file))) {
         while (recording.hasMoreEvents()) {
           RecordedEvent event = recording.readEvent();
           if (!isInteresting(mode, event)) {

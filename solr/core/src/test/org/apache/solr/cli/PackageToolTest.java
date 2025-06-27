@@ -35,8 +35,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.resource.PathResourceFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -94,7 +94,8 @@ public class PackageToolTest extends SolrCloudTestCase {
 
   @Test
   public void testPackageTool() throws Exception {
-    PackageTool tool = new PackageTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    PackageTool tool = new PackageTool(runtime);
 
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
@@ -355,7 +356,8 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     boolean success = false;
 
-    ApiTool apiTool = new ApiTool();
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    ApiTool apiTool = new ApiTool(runtime);
     String response = apiTool.callGet(testServerBaseUrl + uri, credentials);
 
     LinkedHashMapWriter m =
@@ -402,13 +404,13 @@ public class PackageToolTest extends SolrCloudTestCase {
       server.setStopAtShutdown(true);
 
       ResourceHandler resourceHandler = new ResourceHandler();
-      resourceHandler.setResourceBase(resourceDir);
-      resourceHandler.setDirectoriesListed(true);
+      resourceHandler.setBaseResource(new PathResourceFactory().newResource(resourceDir));
 
-      HandlerList handlers = new HandlerList();
-      handlers.setHandlers(new Handler[] {resourceHandler, new DefaultHandler()});
-      server.setHandler(handlers);
+      Handler.Sequence sequence = new Handler.Sequence();
+      sequence.addHandler(resourceHandler);
+      sequence.addHandler(new DefaultHandler());
 
+      server.setHandler(sequence);
       server.start();
     }
 

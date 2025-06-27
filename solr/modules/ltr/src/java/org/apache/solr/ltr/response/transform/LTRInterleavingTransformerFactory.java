@@ -27,6 +27,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.util.SolrPluginUtils;
 
 public class LTRInterleavingTransformerFactory extends TransformerFactory {
@@ -88,12 +89,8 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid, float score) throws IOException {
-      implTransform(doc, docid);
-    }
-
-    @Override
-    public void transform(SolrDocument doc, int docid) throws IOException {
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo)
+        throws IOException {
       implTransform(doc, docid);
     }
 

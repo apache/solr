@@ -21,33 +21,36 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.util.Collection;
+import java.util.Set;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 /**
  * A special parser that puts the entire response into a string "response" field in the NamedList.
+ *
+ * @deprecated see {@link InputStreamResponseParser instead}; more efficient
  */
+@Deprecated
 public class NoOpResponseParser extends ResponseParser {
 
-  private String writerType = "xml";
-
-  public NoOpResponseParser() {}
+  private final String writerType;
 
   public NoOpResponseParser(String writerType) {
     this.writerType = writerType;
   }
 
   @Override
-  public String getWriterType() {
+  public final String getWriterType() {
     return writerType;
   }
 
-  public void setWriterType(String writerType) {
-    this.writerType = writerType;
+  @Override
+  public Collection<String> getContentTypes() {
+    return Set.of();
   }
 
-  @Override
   public NamedList<Object> processResponse(Reader reader) {
     try {
       StringWriter writer = new StringWriter();
@@ -62,16 +65,12 @@ public class NoOpResponseParser extends ResponseParser {
   }
 
   @Override
-  public NamedList<Object> processResponse(InputStream body, String encoding) {
-    try {
-      StringWriter writer = new StringWriter();
-      new InputStreamReader(body, encoding == null ? "UTF-8" : encoding).transferTo(writer);
-      String output = writer.toString();
-      NamedList<Object> list = new NamedList<>();
-      list.add("response", output);
-      return list;
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-    }
+  public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
+    StringWriter writer = new StringWriter();
+    new InputStreamReader(body, encoding == null ? "UTF-8" : encoding).transferTo(writer);
+    String output = writer.toString();
+    NamedList<Object> list = new NamedList<>();
+    list.add("response", output);
+    return list;
   }
 }

@@ -51,7 +51,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     public static volatile boolean openCalled = false;
 
     @Override
-    public Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
+    public Directory create(String path, LockFactory lockFactory) {
       openCalled = true;
 
       return newFSDirectory(Path.of(path), lockFactory);
