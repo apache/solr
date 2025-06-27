@@ -79,7 +79,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private static final boolean DEFAULT_NO_RERANKING_LOGGING_ALL = true;
 
-  private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
   private FeatureLogger.FeatureFormat defaultFormat = FeatureLogger.FeatureFormat.DENSE;
@@ -87,10 +86,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private char csvFeatureSeparator = CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
 
   private LTRThreadModule threadManager = null;
-
-  public void setFvCacheName(String fvCacheName) {
-    this.fvCacheName = fvCacheName;
-  }
 
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
@@ -161,11 +156,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     } else {
       format = this.defaultFormat;
     }
-    if (fvCacheName == null) {
-      throw new IllegalArgumentException("a fvCacheName must be configured");
-    }
-    return new CSVFeatureLogger(
-        fvCacheName, format, logAll, csvKeyValueDelimiter, csvFeatureSeparator);
+    return new CSVFeatureLogger(format, logAll, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {
@@ -423,17 +414,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         }
       }
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
-        // WHEN COULD WE HAVE MULTIPLE MODEL WEIGHTS?
-        Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher, modelWeights[0]);
-        if (featureVector == null) { // FV for this document was not in the cache
-          featureVector =
-              featureLogger.makeFeatureVector(
-                  LTRRescorer.extractFeaturesInfo(
-                      rerankingModelWeight,
-                      docid,
-                      (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
-                      leafContexts));
-        }
+        String featureVector =
+                featureLogger.printFeatureVector(
+                        LTRRescorer.extractFeaturesInfo(
+                                req.getSearcher().getLoggingFeatureVectorCache(),
+                                rerankingModelWeight,
+                                docid,
+                                (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,
+                                leafContexts));
         doc.addField(name, featureVector);
       }
     }

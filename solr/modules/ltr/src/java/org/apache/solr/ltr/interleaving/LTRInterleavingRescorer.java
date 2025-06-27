@@ -103,7 +103,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
                 searcher.createWeight(searcher.rewrite(rerankingQueries[i]), ScoreMode.COMPLETE, 1);
       }
     }
-    scoreFeatures(searcher, topN, modelWeights, firstPassResults, leaves, reRankedPerModel);
+    scoreFeatures(topN, modelWeights, firstPassResults, leaves, reRankedPerModel);
 
     for (int i = 0; i < rerankingQueries.length; i++) {
       if (originalRankingIndex == null || originalRankingIndex != i) {
@@ -115,7 +115,6 @@ public class LTRInterleavingRescorer extends LTRRescorer {
   }
 
   public void scoreFeatures(
-      IndexSearcher indexSearcher,
       int topN,
       LTRScoringQuery.ModelWeight[] modelWeights,
       ScoreDoc[] hits,
@@ -151,10 +150,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       for (int i = 0; i < rerankingQueries.length; i++) {
         if (modelWeights[i] != null) {
           final ScoreDoc hit_i = new ScoreDoc(hit.doc, hit.score, hit.shardIndex);
-          if (scoreSingleHit(
-              topN, docBase, hitUpto, hit_i, docID, scorers[i], rerankedPerModel[i])) {
-            logSingleHit(indexSearcher, modelWeights[i], hit_i.doc, rerankingQueries[i]);
-          }
+          scoreSingleHit(topN, docBase, hitUpto, hit_i, docID, scorers[i], rerankedPerModel[i]);
         }
       }
       hitUpto++;
