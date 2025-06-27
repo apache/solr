@@ -255,7 +255,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       assertEquals(2, clusterStateZk.size());
       assertEquals(clusterStateZk.size(), clusterStateHttp.size());
       assertThat(
-          clusterStateHttp.collectionStream().collect(Collectors.toList()),
+          clusterStateHttp.collectionStream().toList(),
           containsInAnyOrder(clusterStateHttp.collectionStream().toArray()));
 
       assertThat(
