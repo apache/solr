@@ -621,10 +621,6 @@ public class SolrMetricManager {
     return set;
   }
 
-  public Set<String> providerNames() {
-    return meterProviderAndReaders.keySet();
-  }
-
   /**
    * Check whether a registry with a given name already exists.
    *
@@ -753,12 +749,14 @@ public class SolrMetricManager {
   }
 
   /**
-   * Remove a named registry.
+   * Remove a named registry and close an existing {@link SdkMeterProvider}. Upon closing of
+   * provider, all metric readers registered to it are closed.
    *
    * @param registry name of the registry to remove
    */
   // TODO SOLR-17458: You can't delete OTEL meters
   public void removeRegistry(String registry) {
+    // NOCOMMIT Remove all closing Dropwizard registries
     // close any reporters for this registry first
     closeReporters(registry, null);
     // make sure we use a name with prefix
@@ -773,17 +771,8 @@ public class SolrMetricManager {
         swapLock.unlock();
       }
     }
-  }
-
-  /**
-   * Remove and close an existing {@link SdkMeterProvider}. Upon closing of provider, all metric
-   * readers registered to it are closed.
-   *
-   * @param providerName name of the Meter Provider to remove
-   */
-  public void closeMeterProvider(String providerName) {
     meterProviderAndReaders.computeIfPresent(
-        enforcePrefix(providerName),
+        registry,
         (key, meterAndReader) -> {
           meterAndReader.sdkMeterProvider().close();
           return null;

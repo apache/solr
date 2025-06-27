@@ -78,7 +78,6 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
       String output = (String) res.get("response");
 
       Set<String> seenTypeInfo = new HashSet<>();

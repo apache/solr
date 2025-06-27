@@ -28,14 +28,11 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -80,28 +77,23 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
             new ModifiableSolrParams().set("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
-    NamedList<Object> prometheusResponse = solrClient.request(req);
-    assertNotNull("null response from server", prometheusResponse);
-    NamedList<Object> res = solrClient.request(req);
-    InputStream in = (InputStream) prometheusResponse.get("stream");
-
-    assertNotNull("null response from server", res);
-    String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-
-    output
-        .lines()
-        .forEach(
-            line -> {
-              if (line.startsWith("solr_metrics_core_requests_total")
-                  && line.contains("handler=\"/select\""))
-                assertTrue(
-                    "Missing expected Solr cloud mode prometheus labels in metric: " + line,
-                    line.contains("collection=\"collection1\"")
-                        && line.contains("core=\"collection1_shard1_replica_n1\"")
-                        && line.contains("replica=\"replica_n1\"")
-                        && line.contains("shard=\"shard1\"")
-                        && line.contains("type=\"requests\""));
-            });
+    NamedList<Object> resp = solrClient.request(req);
+    try (InputStream in = (InputStream) resp.get("stream")) {
+      String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      assertTrue(
+          "Missing expected Solr cloud mode prometheus metric with cloud labels",
+          output
+              .lines()
+              .anyMatch(
+                  line ->
+                      line.startsWith("solr_metrics_core_requests_total")
+                          && line.contains("handler=\"/select\"")
+                          && line.contains("collection=\"collection1\"")
+                          && line.contains("core=\"collection1_shard1_replica_n1\"")
+                          && line.contains("replica=\"replica_n1\"")
+                          && line.contains("shard=\"shard1\"")
+                          && line.contains("type=\"requests\"")));
+    }
   }
 
   @Test
@@ -113,58 +105,60 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
     solrClient.query("collection1", query);
     solrClient.query("collection2", query);
 
-    var promReq =
+    var req =
         new GenericSolrRequest(
             METHOD.GET,
             "/admin/metrics",
             SolrRequestType.ADMIN,
             new ModifiableSolrParams().set("wt", "prometheus"));
-    promReq.setResponseParser(new InputStreamResponseParser("prometheus"));
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
-    NamedList<Object> prometheusResponse = solrClient.request(promReq);
-    assertNotNull("null response from server", prometheusResponse);
+    NamedList<Object> resp = solrClient.request(req);
 
-    InputStream in = (InputStream) prometheusResponse.get("stream");
-    String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+    try (InputStream in = (InputStream) resp.get("stream")) {
+      String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
 
-    assertTrue(
-        "Prometheus output should contains solr_metrics_core_requests for collection1",
-        output
-            .lines()
-            .anyMatch(
-                line ->
-                    line.startsWith("solr_metrics_core_requests") && line.contains("collection1")));
-    assertTrue(
-        "Prometheus output should contains solr_metrics_core_requests for collection2",
-        output
-            .lines()
-            .anyMatch(
-                line ->
-                    line.startsWith("solr_metrics_core_requests") && line.contains("collection2")));
+      assertTrue(
+          "Prometheus output should contains solr_metrics_core_requests for collection1",
+          output
+              .lines()
+              .anyMatch(
+                  line ->
+                      line.startsWith("solr_metrics_core_requests")
+                          && line.contains("collection1")));
+      assertTrue(
+          "Prometheus output should contains solr_metrics_core_requests for collection2",
+          output
+              .lines()
+              .anyMatch(
+                  line ->
+                      line.startsWith("solr_metrics_core_requests")
+                          && line.contains("collection2")));
+    }
 
     // Delete collection and assert metrics have been removed
     var deleteRequest = CollectionAdminRequest.deleteCollection("collection1");
     deleteRequest.process(solrClient);
 
-    prometheusResponse = solrClient.request(promReq);
-    assertNotNull("null response from server", prometheusResponse);
-
-    in = (InputStream) prometheusResponse.get("stream");
-    output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-
-    assertFalse(
-        "Prometheus output should not contain solr_metrics_core_requests after collection was deleted",
-        output
-            .lines()
-            .anyMatch(
-                line ->
-                    line.startsWith("solr_metrics_core_requests") && line.contains("collection1")));
-    assertTrue(
-        "Prometheus output should contains solr_metrics_core_requests for collection2",
-        output
-            .lines()
-            .anyMatch(
-                line ->
-                    line.startsWith("solr_metrics_core_requests") && line.contains("collection2")));
+    resp = solrClient.request(req);
+    try (InputStream in = (InputStream) resp.get("stream")) {
+      String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      assertFalse(
+          "Prometheus output should not contain solr_metrics_core_requests after collection was deleted",
+          output
+              .lines()
+              .anyMatch(
+                  line ->
+                      line.startsWith("solr_metrics_core_requests")
+                          && line.contains("collection1")));
+      assertTrue(
+          "Prometheus output should contains solr_metrics_core_requests for collection2",
+          output
+              .lines()
+              .anyMatch(
+                  line ->
+                      line.startsWith("solr_metrics_core_requests")
+                          && line.contains("collection2")));
+    }
   }
 }
