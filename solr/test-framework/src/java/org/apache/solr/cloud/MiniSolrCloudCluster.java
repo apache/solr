@@ -1224,6 +1224,7 @@ public class MiniSolrCloudCluster {
           Boolean.toString(useDistributedClusterStateUpdate));
 
       if (!disableTraceIdGeneration && OpenTelemetryConfigurator.TRACE_ID_GEN_ENABLED) {
+        OpenTelemetryConfigurator.initializeOpenTelemetrySdk(null, null);
         injectRandomRecordingFlag();
       }
 

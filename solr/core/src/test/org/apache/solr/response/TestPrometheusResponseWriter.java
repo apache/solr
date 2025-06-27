@@ -16,10 +16,6 @@
  */
 package org.apache.solr.response;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.SettableGauge;
 import com.codahale.metrics.SharedMetricRegistries;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -36,10 +32,8 @@ import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -57,25 +51,22 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
     solrClientTestRule
-        .newCollection()
+        .newCollection("core1")
+        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET.toString())
+        .create();
+    solrClientTestRule
+        .newCollection("core2")
         .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET.toString())
         .create();
     var cc = solrClientTestRule.getCoreContainer();
     cc.waitForLoadingCoresToFinish(30000);
 
-    SolrMetricManager manager = cc.getMetricManager();
-    Counter c = manager.counter(null, "solr.core.collection1", "QUERY./dummy/metrics.requests");
-    c.inc(10);
-    c = manager.counter(null, "solr.node", "ADMIN./dummy/metrics.requests");
-    c.inc(20);
-    Meter m = manager.meter(null, "solr.jetty", "dummyMetrics.2xx-responses");
-    m.mark(30);
-    registerGauge(manager, "solr.jvm", "gc.dummyMetrics.count");
-  }
+    // Populate request metrics on both cores
+    ModifiableSolrParams queryParams = new ModifiableSolrParams();
+    queryParams.set("q", "*:*");
 
-  @AfterClass
-  public static void clearMetricsRegistries() {
-    SharedMetricRegistries.clear();
+    solrClientTestRule.getSolrClient("core1").query(queryParams);
+    solrClientTestRule.getSolrClient("core2").query(queryParams);
   }
 
   @Test
@@ -87,7 +78,6 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
       String output = (String) res.get("response");
 
       Set<String> seenTypeInfo = new HashSet<>();
@@ -129,21 +119,5 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
             }
           });
     }
-  }
-
-  private static void registerGauge(
-      SolrMetricManager metricManager, String registry, String metricName) {
-    Gauge<Number> metric =
-        new SettableGauge<>() {
-          @Override
-          public void setValue(Number value) {}
-
-          @Override
-          public Number getValue() {
-            return 0;
-          }
-        };
-    metricManager.registerGauge(
-        null, registry, metric, "", SolrMetricManager.ResolutionStrategy.IGNORE, metricName, "");
   }
 }

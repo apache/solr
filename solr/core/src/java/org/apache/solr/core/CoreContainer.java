@@ -33,7 +33,6 @@ import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -426,9 +425,8 @@ public class CoreContainer {
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
-    PrometheusMetricReader metricReader = new PrometheusMetricReader(true, null);
-    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader, metricReader);
-    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig(), metricReader);
+    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
+    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
@@ -849,6 +847,7 @@ public class CoreContainer {
         new SolrMetricsContext(
             metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
 
+    // NOCOMMIT: Do we need this for OTEL or is this specific for reporters?
     coreContainerWorkExecutor =
         MetricUtils.instrumentedExecutorService(
             coreContainerWorkExecutor,

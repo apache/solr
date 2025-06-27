@@ -46,6 +46,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Test for {@link MetricsHandler} */
+// NOCOMMIT SOLR-17785: Lets move this to SolrCloudTestCase
 public class MetricsHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
