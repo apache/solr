@@ -1,13 +1,16 @@
 # EditorConfig: https://editorconfig.org
 # for consistent code style configuration across editors/IDEs
 
+# try running this way:
+# %> docker run --rm -v $(pwd):/app/code:ro -w /app/code greut/eclint
+
 # top-most EditorConfig file
 root = true
 
 [*]
 charset = utf-8
 # matches spotless.gradle insistence on this
-end_of_line = lf
+# end_of_line = lf
 indent_size = 2
 indent_style = space
 insert_final_newline = true
