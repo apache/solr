@@ -293,7 +293,8 @@ Bug Fixes
 * SOLR-17758: The NumFieldLimitingUpdateRequestProcessor's "warnOnly" mode has been fixed, and now processes documents even
   when the limit has been exceeded. (Jason Gerlowski, Rahul Goswami)
 
-* SOLR-17711: Remove the unintentional recovery total request timeout. Idle connection timeout will still be respected. (Luke Kot-Zaniewski)
+* SOLR-17711: Remove total request timeout during recovery that was inadvertently added. This bug-fix does not affect idle timeout during recovery,
+  which will still be configurable as before. (Luke Kot-Zaniewski)
 
 Dependency Upgrades
 ---------------------
