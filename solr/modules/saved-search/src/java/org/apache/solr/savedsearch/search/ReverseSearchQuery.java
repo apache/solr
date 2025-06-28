@@ -259,7 +259,7 @@ class ReverseSearchQuery extends Query {
                   ? null
                   : savedSearchCache.computeIfStale(dataValues, queryDecoder);
           return (versionedEntry == null || versionedEntry.version != dataValues.getVersion())
-              ? queryDecoder.getComponent(dataValues, dataValues.getCacheId())
+              ? queryDecoder.getDisjunct(dataValues, dataValues.getCacheId())
               : versionedEntry.entry;
         }
 

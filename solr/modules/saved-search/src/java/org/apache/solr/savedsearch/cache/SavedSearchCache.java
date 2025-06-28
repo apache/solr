@@ -20,6 +20,7 @@
 package org.apache.solr.savedsearch.cache;
 
 import java.io.IOException;
+import java.util.function.BiPredicate;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.savedsearch.SavedSearchDataValues;
 import org.apache.solr.savedsearch.SavedSearchDecoder;
@@ -29,7 +30,7 @@ public interface SavedSearchCache {
   VersionedQueryCacheEntry computeIfStale(
       SavedSearchDataValues dataValues, SavedSearchDecoder decoder) throws IOException;
 
-  boolean acceptTerm(String field, BytesRef value);
+  BiPredicate<String, BytesRef> termFilter();
 
   class VersionedQueryCacheEntry {
 

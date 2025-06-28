@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
@@ -97,12 +98,10 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       final SavedSearchCache savedSearchCache =
           (DefaultSavedSearchCache) rb.req.getSearcher().getCache(this.savedSearchCacheName);
 
-      final BiPredicate<String, BytesRef> termAcceptor;
-      if (savedSearchCache == null) {
-        termAcceptor = (__, ___) -> true;
-      } else {
-        termAcceptor = savedSearchCache::acceptTerm;
-      }
+      final BiPredicate<String, BytesRef> termAcceptor =
+          Optional.ofNullable(savedSearchCache)
+              .map(SavedSearchCache::termFilter)
+              .orElse((__, ___) -> true);
       final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
       rb.setQuery(reverseSearchQuery(preFilterQuery, rb, documentBatch, savedSearchCache));
       super.process(rb);

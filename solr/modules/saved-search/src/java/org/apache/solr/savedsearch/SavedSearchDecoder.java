@@ -47,7 +47,7 @@ public class SavedSearchDecoder {
     return new MonitorQuery(id, query, queryStr, Map.of());
   }
 
-  public QueryDisjunct getComponent(SavedSearchDataValues dataValues, String cacheId)
+  public QueryDisjunct getDisjunct(SavedSearchDataValues dataValues, String cacheId)
       throws IOException {
     for (QueryDisjunct qce : QueryDisjunct.decompose(decode(dataValues), queryDecomposer)) {
       if (qce.getId().equals(cacheId)) {

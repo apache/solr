@@ -68,7 +68,7 @@
     <cache name="savedSearchCache"
       class="solr.DefaultSavedSearchCache"
       async="false"
-      regenerator="solr.DefaultSavedSearchCache$SavedSearchLatestRegenerator"
+      regenerator="solr.DefaultSavedSearchCache$LatestRegenerator"
       maxSize="2"
       maxIdleTime="100000"/>
     <enableLazyFieldLoading>true</enableLazyFieldLoading>

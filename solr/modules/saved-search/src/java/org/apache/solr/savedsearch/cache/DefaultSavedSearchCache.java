@@ -64,7 +64,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
       new AtomicReference<>(CurrentStats.init());
 
   private Cache<String, VersionedQueryCacheEntry> mqCache;
-  BiPredicate<String, BytesRef> termAcceptor = (__, ___) -> true;
+  private volatile BiPredicate<String, BytesRef> termFilter = (__, ___) -> true;
 
   private SolrMetricsContext solrMetricsContext;
   private long generationTimeMs;
@@ -73,9 +73,9 @@ public class DefaultSavedSearchCache extends SolrCacheBase
   private long cumulativeGenerationTimeMs;
   private long cumulativeDocVisits;
 
-  long docVisits;
+  private long docVisits;
   // only needs to be an approximation
-  long versionHighWaterMark = START_HIGH_WATER_MARK;
+  private long versionHighWaterMark = START_HIGH_WATER_MARK;
   private int initialSize;
   private int maxSize;
   private int maxRamMB;
@@ -90,8 +90,8 @@ public class DefaultSavedSearchCache extends SolrCacheBase
   }
 
   @Override
-  public boolean acceptTerm(String field, BytesRef value) {
-    return termAcceptor.test(field, value);
+  public BiPredicate<String, BytesRef> termFilter() {
+    return termFilter;
   }
 
   private Map<String, VersionedQueryCacheEntry> mqCacheMap() {
@@ -191,7 +191,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
         regenerator.regenerateItem(searcher, this, old, null, null);
         generationTimeMs = NANOSECONDS.toMillis(System.nanoTime() - nanoStart);
       }
-      termAcceptor = new QueryTermFilterVisitor(searcher.getIndexReader());
+      termFilter = new QueryTermFilterVisitor(searcher.getIndexReader());
       if (oldDefaultSavedSearchCache != null) {
         var oldStats = oldDefaultSavedSearchCache.currentStats.get();
         priorHits = oldDefaultSavedSearchCache.priorHits + oldStats.hits;
@@ -291,7 +291,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
     try {
       var version = dataValues.getVersion();
       if (prevEntry == null || version > prevEntry.version) {
-        QueryDisjunct component = decoder.getComponent(dataValues, cacheId);
+        QueryDisjunct component = decoder.getDisjunct(dataValues, cacheId);
         currentStats.updateAndGet(CurrentStats::miss);
         return new VersionedQueryCacheEntry(component, version);
       }
@@ -334,7 +334,7 @@ public class DefaultSavedSearchCache extends SolrCacheBase
     }
   }
 
-  public static class SavedSearchLatestRegenerator implements CacheRegenerator {
+  public static class LatestRegenerator implements CacheRegenerator {
 
     private static final int MAX_BATCH_SIZE = 1 << 10;
 
