@@ -103,11 +103,12 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
               .map(SavedSearchCache::termFilter)
               .orElse((__, ___) -> true);
       final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
-      rb.setQuery(reverseSearchQuery(preFilterQuery, rb, documentBatch, savedSearchCache));
+      final SolrMatcherSink solrMatcherSink =
+          new DefaultSolrMatcherSink<>(
+              QueryMatch.SIMPLE_MATCHER::createMatcher, new IndexSearcher(documentBatch));
+      rb.setQuery(reverseSearchQuery(preFilterQuery, rb, solrMatcherSink, savedSearchCache));
       super.process(rb);
-      SolrMatcherSink solrMatcherSink =
-          (SolrMatcherSink) rb.req.getContext().get(SolrMatcherSink.class.getSimpleName());
-      if (rb.isDebug() && solrMatcherSink != null) {
+      if (rb.isDebug()) {
         ReverseSearchQuery.Metadata metadata = solrMatcherSink.getMetadata();
         DebugComponent.CustomDebugInfoSources debugInfoSources =
             (DebugComponent.CustomDebugInfoSources)
@@ -127,15 +128,9 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   private static ReverseSearchQuery reverseSearchQuery(
       Query preFilterQuery,
       ResponseBuilder rb,
-      LeafReader documentBatch,
+      SolrMatcherSink solrMatcherSink,
       SavedSearchCache savedSearchCache) {
     final SavedSearchDecoder savedSearchDecoder = new SavedSearchDecoder(rb.req.getCore());
-
-    final SolrMatcherSink solrMatcherSink =
-        new DefaultSolrMatcherSink<>(
-            QueryMatch.SIMPLE_MATCHER::createMatcher, new IndexSearcher(documentBatch));
-    rb.req.getContext().put(SolrMatcherSink.class.getSimpleName(), solrMatcherSink);
-
     final ReverseSearchQuery.ReverseSearchContext context =
         new ReverseSearchQuery.ReverseSearchContext(
             savedSearchCache,
