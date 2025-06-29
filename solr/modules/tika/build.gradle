@@ -14,19 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
+plugins {
+  id 'java-library'
+}
 
-public class RenameCoreRequestBody {
-  @Schema(
-      description = "The new name for the Solr core.",
-      requiredMode = Schema.RequiredMode.REQUIRED)
-  @JsonProperty
-  public String to;
+dependencies {
+  api project(':solr:core')
+  api project(':solr:solrj')
 
-  @Schema(description = "Request ID to track this action which will be processed asynchronously.")
-  @JsonProperty
-  public String async;
+  implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.http
+
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.mockito.core
+  testImplementation libs.junit.junit
 }
