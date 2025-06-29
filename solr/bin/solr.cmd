@@ -90,11 +90,6 @@ IF NOT DEFINED SOLR_SSL_RELOAD_ENABLED (
   set "SOLR_SSL_RELOAD_ENABLED=true"
 )
 
-REM Enable java security manager by default (limiting filesystem access and other things)
-IF NOT DEFINED SOLR_SECURITY_MANAGER_ENABLED (
-  set SOLR_SECURITY_MANAGER_ENABLED=true
-)
-
 IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=--module=https --lib="%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*""
   set SOLR_URL_SCHEME=https
@@ -105,9 +100,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
     IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
-      IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
-        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystoreParentPath=%SOLR_SSL_KEY_STORE%/.."
-      )
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystoreParentPath=%SOLR_SSL_KEY_STORE%/.."
     )
   )
 
@@ -143,9 +136,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
       set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreType=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%"
     )
     IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
-      IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
-        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreParentPath=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%/.."
-      )
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreParentPath=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%/.."
     )
   ) ELSE (
     IF DEFINED SOLR_SSL_KEY_STORE (
@@ -999,13 +990,6 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   set REMOTE_JMX_OPTS=
 )
 
-IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
-  set SECURITY_MANAGER_OPTS=-Djava.security.manager ^
--Djava.security.policy="%SOLR_SERVER_DIR%\etc\security.policy" ^
--Djava.security.properties="%SOLR_SERVER_DIR%\etc\security.properties" ^
--Dsolr.internal.network.permission=*
-)
-
 REM Enable ADMIN UI by default, and give the option for users to disable it
 IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
   set DISABLE_ADMIN_UI="true"
@@ -1102,7 +1086,6 @@ IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
 IF NOT "%SCRIPT_SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SCRIPT_SOLR_OPTS%"
 IF NOT "%SOLR_OPTS_INTERNAL%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS_INTERNAL%"
-IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
 IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"

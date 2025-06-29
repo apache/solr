@@ -218,7 +218,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
-    if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ] && [ "${SOLR_SECURITY_MANAGER_ENABLED:-true}" == "true"  ]; then
+    if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ]; then
       # In this case we need to allow reads from the parent directory of the keystore
       SOLR_SSL_OPTS+=" -Dsolr.jetty.keystoreParentPath=$SOLR_SSL_KEY_STORE/.."
     fi
@@ -260,7 +260,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
     fi
-    if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ] && [ "${SOLR_SECURITY_MANAGER_ENABLED:-true}" == "true"  ]; then
+    if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ]; then
       # In this case we need to allow reads from the parent directory of the keystore
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreParentPath=$SOLR_SSL_CLIENT_KEY_STORE/.."
     fi
@@ -1151,16 +1151,6 @@ else
   REMOTE_JMX_OPTS=()
 fi
 
-# Enable java security manager (allowing filesystem access and other things)
-if [ "${SOLR_SECURITY_MANAGER_ENABLED:-true}" == "true" ]; then
-  SECURITY_MANAGER_OPTS=('-Djava.security.manager' \
-      "-Djava.security.policy=${SOLR_SERVER_DIR}/etc/security.policy" \
-      "-Djava.security.properties=${SOLR_SERVER_DIR}/etc/security.properties" \
-      '-Dsolr.internal.network.permission=*')
-else
-  SECURITY_MANAGER_OPTS=()
-fi
-
 # Enable Admin UI by default, and give the option for users to disable it
 if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ]; then
   SOLR_ADMIN_UI="-DdisableAdminUI=true"
@@ -1321,7 +1311,7 @@ function start_solr() {
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" "-Dsolr.install.symDir=$SOLR_TIP_SYM" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SCRIPT_SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}" "${SOLR_OPTS[@]}")
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SCRIPT_SOLR_OPTS[@]}" "${SOLR_ADMIN_UI}" "${SOLR_OPTS[@]}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
   if [[ -n "${SOLR_HEAP_DUMP_DIR:-}" ]]; then

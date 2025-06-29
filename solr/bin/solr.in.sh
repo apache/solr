@@ -241,12 +241,6 @@
 # If the specified path is not absolute, it will be relative to `$SOLR_HOME`.
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.sharedLib=/path/to/lib"
 
-# Runs solr in java security manager sandbox. This can protect against some attacks.
-# Runtime properties are passed to the security policy file (server/etc/security.policy)
-# You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
-# This is experimental!
-#SOLR_SECURITY_MANAGER_ENABLED=true
-
 # This variable provides you with the option to disable the Admin UI. If you uncomment the variable below and
 # change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.

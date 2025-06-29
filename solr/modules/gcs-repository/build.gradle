@@ -23,7 +23,7 @@ description = 'GCS Backup Repository'
 
 ext {
     // Use of the security manager is not supported on windows.
-    useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+    useSecurityManager = false
 }
 
 dependencies {
