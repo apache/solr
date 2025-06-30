@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -61,7 +62,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.params.GroupParams;
@@ -79,6 +79,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -143,9 +144,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if (filters != null) {
         int cost = Integer.MAX_VALUE;
         for (Query q : filters) {
-          if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
-            CollapsingQParserPlugin.CollapsingPostFilter cp =
-                (CollapsingQParserPlugin.CollapsingPostFilter) q;
+          if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter cp) {
             // if there are multiple collapse pick the low cost one
             // if cost are equal then first one is picked
             if (cp.getCost() < cost) {
@@ -251,6 +250,10 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     if (contexts.size() == 0) {
       // When no context is available we can skip the expanding
+      return;
+    }
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    if (queryLimits.maybeExitWithPartialResults("Expand process")) {
       return;
     }
 
@@ -441,6 +444,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
+    if (queryLimits.maybeExitWithPartialResults("Expand expand")) {
+      return;
+    }
 
     rb.rsp.add("expanded", groupExpandCollector.getGroups(searcher, rb.rsp.getReturnFields()));
   }
@@ -486,10 +492,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         if (ex == null) {
           continue;
         }
-        for (int i = 0; i < ex.size(); i++) {
-          String name = ex.getName(i);
-          SolrDocumentList val = (SolrDocumentList) ex.getVal(i);
-          expanded.add(name, val);
+        for (Map.Entry<String, ?> entry : ex) {
+          expanded.add(entry.getKey(), entry.getValue());
         }
       }
     }

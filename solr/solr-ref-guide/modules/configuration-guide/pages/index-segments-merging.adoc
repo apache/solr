@@ -104,6 +104,7 @@ For more information on these policies, please see {lucene-javadocs}/core/org/ap
 <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
   <int name="maxMergeAtOnce">10</int>
   <int name="segmentsPerTier">10</int>
+  <int name="targetSearchConcurrency">1</int>
   <double name="forceMergeDeletesPctAllowed">10.0</double>
   <double name="deletesPctAllowed">33.0</double>
 </mergePolicyFactory>
@@ -303,9 +304,6 @@ WARNING: If multiple Solr instances in different JVMs modify an index, this type
 +
 See also the {lucene-javadocs}/core/org/apache/lucene/store/SingleInstanceLockFactory.html[SingleInstanceLockFactory javadocs].
 
-* `hdfs` uses `HdfsLockFactory` to support reading and writing index and transaction log files to a HDFS filesystem.
-See the section xref:deployment-guide:solr-on-hdfs.adoc[] for more details on using this feature.
-
 [source,xml]
 ----
 <lockType>native</lockType>
@@ -329,7 +327,7 @@ These settings affect how or when updates are made to an index.
 === deletionPolicy
 
 Controls how commits are retained in case of rollback.
-The default is `SolrDeletionPolicy`, which take ths following parameters:
+The default is `SolrDeletionPolicy`, which takes the following parameters:
 
 `maxCommitsToKeep`::
 +

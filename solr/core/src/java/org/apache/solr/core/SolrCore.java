@@ -17,11 +17,11 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,9 +32,9 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,7 +79,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -89,7 +89,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
@@ -106,9 +105,9 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.IndexFetcher;
-import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
@@ -122,18 +121,15 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
+import org.apache.solr.response.JavaBinResponseWriter;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -159,6 +155,7 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
@@ -168,9 +165,9 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.IOFunction;
+import org.apache.solr.util.IndexOutputOutputStream;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
-import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
@@ -222,7 +219,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private volatile IndexSchema schema;
   private final NamedList<?> configSetProperties;
   private final String dataDir;
-  private final String ulogDir;
   private final UpdateHandler updateHandler;
   private final SolrCoreState solrCoreState;
 
@@ -295,9 +291,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return packageListeners;
   }
 
-  static int boolean_query_max_clause_count = Integer.MIN_VALUE;
-
-  private ExecutorService coreAsyncTaskExecutor =
+  private final ExecutorService coreAsyncTaskExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
 
   public final SolrCore.Provider coreProvider;
@@ -390,10 +384,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public String getDataDir() {
     return dataDir;
-  }
-
-  public String getUlogDir() {
-    return ulogDir;
   }
 
   public String getIndexDir() {
@@ -769,29 +759,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
     // only one reload at a time
     synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
       solrCoreState.increfSolrCoreState();
-      final SolrCore currentCore;
-      if (!getNewIndexDir().equals(getIndexDir())) {
-        // the directory is changing, don't pass on state
-        currentCore = null;
-      } else {
-        currentCore = this;
-      }
+
+      // if directory is changing, then don't pass on state
+      boolean cloneCoreState = getNewIndexDir().equals(getIndexDir());
 
       boolean success = false;
       SolrCore core = null;
       try {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); // Reload the extra properties
-        core =
-            new SolrCore(
-                coreContainer,
-                cd,
-                coreConfig,
-                getDataDir(),
-                updateHandler,
-                solrDelPolicy,
-                currentCore,
-                true);
+        core = cloneForReloadCore(cd, coreConfig, cloneCoreState);
 
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
@@ -806,6 +783,24 @@ public class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     }
+  }
+
+  /**
+   * Clones the current core for core reload, with the provided CoreDescriptor and ConfigSet.
+   *
+   * @return the cloned core to be used for {@link SolrCore#reload}
+   */
+  protected SolrCore cloneForReloadCore(
+      CoreDescriptor newCoreDescriptor, ConfigSet newCoreConfig, boolean cloneCoreState) {
+    return new SolrCore(
+        coreContainer,
+        newCoreDescriptor,
+        newCoreConfig,
+        getDataDir(),
+        updateHandler,
+        solrDelPolicy,
+        cloneCoreState ? this : null,
+        true);
   }
 
   private DirectoryFactory initDirectoryFactory() {
@@ -953,8 +948,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -999,8 +993,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -1057,7 +1050,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     this(coreContainer, cd, configSet, null, null, null, null, false);
   }
 
-  private SolrCore(
+  protected SolrCore(
       CoreContainer coreContainer,
       CoreDescriptor coreDescriptor,
       ConfigSet configSet,
@@ -1077,17 +1070,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       this.name = Objects.requireNonNull(coreDescriptor.getName());
-      coreProvider = new Provider(coreContainer, getName(), uniqueId);
+      this.coreProvider = new Provider(coreContainer, getName(), uniqueId);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
-      this.resourceLoader.initCore(this);
+      this.resourceLoader.setSolrCore(this);
       IndexSchema schema = configSet.getIndexSchema();
 
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
-      solrMetricsContext = coreMetricManager.getSolrMetricsContext();
+      this.solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
       if (updateHandler == null) {
@@ -1102,7 +1095,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       }
 
       this.dataDir = initDataDir(dataDir, solrConfig, coreDescriptor);
-      this.ulogDir = initUpdateLogDir(coreDescriptor);
 
       if (log.isInfoEnabled()) {
         log.info("Opening new SolrCore at [{}], dataDir=[{}]", getInstancePath(), this.dataDir);
@@ -1236,7 +1228,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /** Set UpdateLog to buffer updates if the slice is in construction. */
-  private void bufferUpdatesIfConstructing(CoreDescriptor coreDescriptor) {
+  protected void bufferUpdatesIfConstructing(CoreDescriptor coreDescriptor) {
 
     if (coreContainer != null && coreContainer.isZooKeeperAware()) {
       if (reqHandlers.get("/get") == null) {
@@ -1362,12 +1354,31 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // initialize disk total / free metrics
-    Path dataDirPath = Paths.get(dataDir);
-    File dataDirFile = dataDirPath.toFile();
+    Path dataDirPath = Path.of(dataDir);
     parentContext.gauge(
-        () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+        () -> {
+          try {
+            return Files.getFileStore(dataDirPath).getTotalSpace();
+          } catch (IOException e) {
+            return 0L;
+          }
+        },
+        true,
+        "totalSpace",
+        Category.CORE.toString(),
+        "fs");
     parentContext.gauge(
-        () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
+        () -> {
+          try {
+            return Files.getFileStore(dataDirPath).getUsableSpace();
+          } catch (IOException e) {
+            return 0L;
+          }
+        },
+        true,
+        "usableSpace",
+        Category.CORE.toString(),
+        "fs");
     parentContext.gauge(
         () -> dataDirPath.toAbsolutePath().toString(),
         true,
@@ -1514,7 +1525,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     Writer os = null;
     try {
       IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
+      os = new OutputStreamWriter(new IndexOutputOutputStream(out), StandardCharsets.UTF_8);
       p.store(os, IndexFetcher.INDEX_PROPERTIES);
       dir.sync(Collections.singleton(tmpFileName));
     } catch (Exception e) {
@@ -1523,14 +1534,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } finally {
       IOUtils.closeQuietly(os);
     }
-  }
-
-  private String initUpdateLogDir(CoreDescriptor coreDescriptor) {
-    String updateLogDir = coreDescriptor.getUlogDir();
-    if (updateLogDir == null) {
-      updateLogDir = coreDescriptor.getInstanceDir().resolve(dataDir).toString();
-    }
-    return updateLogDir;
   }
 
   /**
@@ -1853,13 +1856,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // Close the snapshots meta-data directory.
-    Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
-    try {
-      this.directoryFactory.release(snapshotsDir);
-    } catch (Throwable e) {
-      log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
-      if (e instanceof Error) {
-        throw (Error) e;
+    if (snapshotMgr != null) {
+      Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+      try {
+        this.directoryFactory.release(snapshotsDir);
+      } catch (Throwable e) {
+        log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
+        if (e instanceof Error) {
+          throw (Error) e;
+        }
       }
     }
 
@@ -2056,8 +2061,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final ArrayDeque<RefCounted<SolrIndexSearcher>> _searchers = new ArrayDeque<>();
   private final ArrayDeque<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new ArrayDeque<>();
 
+  // Single threaded pool, with a time-to-keep of 60 seconds
   final ExecutorService searcherExecutor =
-      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("searcherExecutor"));
+      ExecutorUtil.newMDCAwareSingleLazyThreadExecutor(
+          new SolrNamedThreadFactory("searcherExecutor"), 60L, TimeUnit.SECONDS);
   private int onDeckSearchers; // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not
   // vice-versa.
@@ -2233,6 +2240,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * reference count will be incremented.
    */
   public RefCounted<SolrIndexSearcher> getRealtimeSearcher() {
+    // In practice, this is nearly always the same as the non-realtime searcher because that one
+    //   nearly always exists and it installs itself as the realtime searcher.
     synchronized (searcherLock) {
       if (realtimeSearcher != null) {
         realtimeSearcher.incref();
@@ -3020,17 +3029,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
-    m.put("python", new PythonResponseWriter());
-    m.put("php", new PHPResponseWriter());
-    m.put("phps", new PHPSerializedResponseWriter());
-    m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
-    m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
+    m.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
     m.put("cbor", new CborResponseWriter());
     m.put("csv", new CSVResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
-    m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
+    m.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
+    m.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
     try {
       m.put(
@@ -3044,12 +3050,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private static BinaryResponseWriter getFileStreamWriter() {
-    return new BinaryResponseWriter() {
+  private static JavaBinResponseWriter getFileStreamWriter() {
+    return new JavaBinResponseWriter() {
       @Override
-      public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+      public void write(
+          OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
           throws IOException {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {
           rawWriter.write(out);
           if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
@@ -3058,11 +3065,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       @Override
       public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {
           return rawWriter.getContentType();
         } else {
-          return BinaryResponseParser.BINARY_CONTENT_TYPE;
+          return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
         }
       }
     };
@@ -3075,7 +3082,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public interface RawWriter {
     default String getContentType() {
-      return BinaryResponseParser.BINARY_CONTENT_TYPE;
+      return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
     }
 
     void write(OutputStream os) throws IOException;
@@ -3300,6 +3307,22 @@ public class SolrCore implements SolrInfoBean, Closeable {
         log.error(
             "Failed to flag data dir for removal for core: {} dir: {}", name, getDataDir(), e);
       }
+      // ulogDir may be outside dataDir and instanceDir, so we have to explicitly ensure it's
+      // removed; ulog is most closely associated with data, so we bundle it with logic under
+      // `deleteDataDir`
+      UpdateHandler uh = getUpdateHandler();
+      UpdateLog ulog;
+      if (uh != null && (ulog = uh.getUpdateLog()) != null) {
+        try {
+          directoryFactory.remove(ulog.getTlogDir(), true);
+        } catch (Exception e) {
+          log.error(
+              "Failed to flag tlog dir for removal for core: {} dir: {}",
+              name,
+              ulog.getTlogDir(),
+              e);
+        }
+      }
     }
     if (deleteInstanceDir) {
       addCloseHook(
@@ -3325,7 +3348,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public static void deleteUnloadedCore(
       CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
     if (deleteDataDir) {
-      Path dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
+      Path instanceDir = cd.getInstanceDir();
+      Path dataDir = instanceDir.resolve(cd.getDataDir());
       try {
         PathUtils.deleteDirectory(dataDir);
       } catch (IOException e) {
@@ -3334,6 +3358,25 @@ public class SolrCore implements SolrInfoBean, Closeable {
             cd.getName(),
             dataDir.toAbsolutePath(),
             e);
+      }
+      String ulogDir = cd.getUlogDir();
+      if (ulogDir != null) {
+        Path ulogDirPath = instanceDir.resolve(ulogDir);
+        if (!ulogDirPath.startsWith(dataDir)
+            && (!deleteInstanceDir || !ulogDirPath.startsWith(instanceDir))) {
+          // external ulogDir, we have to remove it explicitly
+          try {
+            Path tlogPath =
+                UpdateLog.ulogToTlogDir(cd.getName(), ulogDirPath, instanceDir, dataDir.toString());
+            PathUtils.deleteDirectory(tlogPath);
+          } catch (IOException e) {
+            log.error(
+                "Failed to delete external ulog dir for core: {} ulogDir: {}",
+                cd.getName(),
+                ulogDirPath,
+                e);
+          }
+        }
       }
     }
     if (deleteInstanceDir) {
@@ -3368,8 +3411,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * some data so that events are triggered.
    */
   private void registerConfListener() {
-    if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
-    final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
+    if (!(resourceLoader instanceof ZkSolrResourceLoader zkSolrResourceLoader)) return;
     if (zkSolrResourceLoader != null)
       zkSolrResourceLoader
           .getZkController()
@@ -3389,8 +3431,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
     String schemaRes = null;
     if (core.getLatestSchema().isMutable()
-        && core.getLatestSchema() instanceof ManagedIndexSchema) {
-      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
+        && core.getLatestSchema() instanceof ManagedIndexSchema mis) {
       schemaRes = mis.getResourceName();
     }
     final String managedSchemaResourcePath =
@@ -3538,40 +3579,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return ImplicitHolder.INSTANCE;
   }
 
-  /**
-   * Convenience method to load a blob. This method minimizes the degree to which component and
-   * other code needs to depend on the structure of solr's object graph and ensures that a proper
-   * close hook is registered. This method should normally be called in {@link
-   * SolrCoreAware#inform(SolrCore)}, and should never be called during request processing. The
-   * Decoder will only run on the first invocations, subsequent invocations will return the cached
-   * object.
-   *
-   * @param key A key in the format of name/version for a blob stored in the {@link
-   *     CollectionAdminParams#SYSTEM_COLL} blob store via the Blob Store API
-   * @param decoder a decoder with which to convert the blob into a Java Object representation
-   *     (first time only)
-   * @return a reference to the blob that has already cached the decoded version.
-   */
-  public <T> BlobRepository.BlobContentRef<T> loadDecodeAndCacheBlob(
-      String key, BlobRepository.Decoder<T> decoder) {
-    // make sure component authors don't give us oddball keys with no version...
-    if (!BlobRepository.BLOB_KEY_PATTERN_CHECKER.matcher(key).matches()) {
-      throw new IllegalArgumentException(
-          "invalid key format, must end in /N where N is the version number");
-    }
-    // define the blob
-    BlobRepository.BlobContentRef<T> blobRef =
-        coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
-    addCloseHook(
-        new CloseHook() {
-          @Override
-          public void postClose(SolrCore core) {
-            coreContainer.getBlobRepository().decrementBlobRefCount(blobRef);
-          }
-        });
-    return blobRef;
-  }
-
   public CancellableQueryTracker getCancellableQueryTracker() {
     return cancellableQueryTracker;
   }
@@ -3595,7 +3602,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @param r the task to run
    */
   public void runAsync(Runnable r) {
-    coreAsyncTaskExecutor.submit(r);
+    coreAsyncTaskExecutor.execute(r);
   }
 
   /**

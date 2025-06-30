@@ -134,7 +134,6 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
@@ -143,7 +142,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
     }
 
     final int numDocs = atLeast(100);
@@ -532,7 +531,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
       @SuppressWarnings({"unchecked"})
       final List<NamedList<Object>> facetDebug =
-          (List<NamedList<Object>>) topNamedList.findRecursive("debug", "facet-trace", "sub-facet");
+          (List<NamedList<Object>>)
+              topNamedList._get(List.of("debug", "facet-trace", "sub-facet"), null);
       assertNotNull(topNamedList + " ... null facet debug?", facetDebug);
       assertFalse(topNamedList + " ... not even one facet debug?", facetDebug.isEmpty());
       return facetDebug.get(0);

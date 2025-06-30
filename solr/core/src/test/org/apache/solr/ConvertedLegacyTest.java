@@ -18,7 +18,6 @@ package org.apache.solr;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.ErrorLogMuter;
@@ -42,7 +41,6 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     // these may be reused by things that need a special query
     SolrQueryRequest req = null;
     Map<String, String> args = new HashMap<>();
-    lrf.args.put(CommonParams.VERSION, "2.2");
 
     // compact the index, keep things from getting out of hand
 
@@ -637,8 +635,8 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
         "<add><doc><field name=\"id\">107</field><field name=\"val_s\">port</field></doc></add>");
     assertU("<commit/>");
 
-    assertQ(req("val_s:a*"), "//*[@numFound='3']");
-    assertQ(req("val_s:p*"), "//*[@numFound='4']");
+    assertQ(req("val_s:ap*"), "//*[@numFound='3']");
+    assertQ(req("val_s:pe*"), "//*[@numFound='3']");
     // val_s:* %//*[@numFound="8"]
 
     // test wildcard query

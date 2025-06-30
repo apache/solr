@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
 
   <!--
    Resolve analysis factories by name. See: SOLR-13593

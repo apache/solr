@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core.snapshots;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -92,7 +92,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
     create.process(solrClient);
 
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = createTempDir().toString();
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
 
     DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
@@ -109,7 +109,10 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
+        SolrClient leaderClient =
+            new Http2SolrClient.Builder(replica.getBaseUrl())
+                .withDefaultCollection(replica.getCoreName())
+                .build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
       // Create another snapshot referring to the same index commit to verify the
@@ -200,7 +203,10 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
+        SolrClient leaderClient =
+            new Http2SolrClient.Builder(replica.getBaseUrl())
+                .withDefaultCollection(replica.getCoreName())
+                .build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
 
@@ -332,7 +338,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   }
 
   private List<IndexCommit> listCommits(String directory) throws Exception {
-    Directory dir = new NIOFSDirectory(Paths.get(directory));
+    Directory dir = new NIOFSDirectory(Path.of(directory));
     try {
       return DirectoryReader.listCommits(dir);
     } catch (IndexNotFoundException ex) {

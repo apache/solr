@@ -19,10 +19,12 @@ package org.apache.solr.common.util;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -38,10 +40,13 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigInteger;
 import java.net.URL;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,8 +57,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -74,7 +81,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -89,6 +95,31 @@ import org.slf4j.LoggerFactory;
 public class Utils {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final Random RANDOM;
+
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random
+    // instance based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
+  }
+
+  public static String sha512Digest(ByteBuffer byteBuffer) {
+    MessageDigest digest;
+    try {
+      digest = MessageDigest.getInstance("SHA-512");
+    } catch (NoSuchAlgorithmException e) {
+      // unlikely
+      throw new SolrException(SERVER_ERROR, e);
+    }
+    digest.update(byteBuffer);
+    return String.format(Locale.ROOT, "%0128x", new BigInteger(1, digest.digest()));
+  }
 
   @SuppressWarnings({"rawtypes"})
   public static Map getDeepCopy(Map<?, ?> map, int maxDepth) {
@@ -134,8 +165,7 @@ public class Utils {
 
   @SuppressWarnings({"unchecked"})
   public static void forEachMapEntry(Object o, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
-    if (o instanceof MapWriter) {
-      MapWriter m = (MapWriter) o;
+    if (o instanceof MapWriter m) {
       try {
         m.writeMap(
             new MapWriter.EntryWriter() {
@@ -499,17 +529,12 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return null;
         if (idx > -1) {
-          if (o instanceof List) {
-            List<?> l = (List<?>) o;
+          if (o instanceof List<?> l) {
             o = idx < l.size() ? l.get(idx) : null;
           } else if (o instanceof IteratorWriter) {
             o = getValueAt((IteratorWriter) o, idx);
-          } else if (o instanceof MapWriter) {
+          } else if (o instanceof MapWriter || o instanceof Map<?, ?>) {
             o = getVal(o, null, idx);
-          } else if (o instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = (Map<String, Object>) o;
-            o = getVal(new MapWriterMap(map), null, idx);
           } else {
             return null;
           }
@@ -575,32 +600,41 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
-  private static Object getVal(Object obj, String key, int idx) {
-    if (obj instanceof MapWriter) {
+  /** Extract either the key or index from mapLike. */
+  private static Object getVal(Object mapLike, String key, int idx) {
+    assert (key == null && idx >= 0) || (key != null && idx == -1);
+    if (mapLike instanceof Map<?, ?> m) {
+      if (key != null) {
+        return m.get(key);
+      } else {
+        var optEntry = m.entrySet().stream().skip(idx).findFirst();
+        return optEntry
+            .map(entry -> new MapWriterEntry<>(entry.getKey().toString(), entry.getValue()))
+            .orElse(null);
+      }
+    } else if (mapLike instanceof MapWriter mapWriter) {
       Object[] result = new Object[1];
       try {
-        ((MapWriter) obj)
-            .writeMap(
-                new MapWriter.EntryWriter() {
-                  int count = -1;
+        mapWriter.writeMap(
+            new MapWriter.EntryWriter() {
+              int count = -1;
 
-                  @Override
-                  public MapWriter.EntryWriter put(CharSequence k, Object v) {
-                    if (result[0] != null) return this;
-                    if (idx < 0) {
-                      if (key.contentEquals(k)) result[0] = v;
-                    } else {
-                      if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
-                    }
-                    return this;
-                  }
-                });
+              @Override
+              public MapWriter.EntryWriter put(CharSequence k, Object v) {
+                if (result[0] != null) return this;
+                if (idx < 0) {
+                  if (key.contentEquals(k)) result[0] = v;
+                } else {
+                  if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
+                }
+                return this;
+              }
+            });
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
       return result[0];
-    } else if (obj instanceof Map) return ((Map<?, ?>) obj).get(key);
-    else throw new RuntimeException("must be a NamedList or Map");
+    } else throw new RuntimeException("must be a NamedList or Map");
   }
 
   /**
@@ -631,8 +665,13 @@ public class Utils {
    * @throws IOException on problem with IO
    */
   public static void readFully(InputStream is) throws IOException {
-    is.skip(is.available());
-    while (is.read() != -1) {}
+    if (is.read() != -1) { // not needed but avoids skipNBytes's internal buffer allocation
+      try {
+        is.skipNBytes(Long.MAX_VALUE); // throws EOF
+      } catch (EOFException e) {
+        // ignore / expected for skipNBytes
+      }
+    }
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern.compile("(\\S*?)\\[([-]?\\d+)\\]");
@@ -664,8 +703,8 @@ public class Utils {
   }
 
   /**
-   * Applies one json over other. The 'input' is applied over the sink The values in input isapplied
-   * over the values in 'sink' . If a value is 'null' that value is removed from sink
+   * Applies one json over another. The 'input' is applied over the sink The values in input is
+   * applied over the values in 'sink' . If a value is 'null' that value is removed from sink
    *
    * @param sink the original json object to start with. Ensure that this Map is mutable
    * @param input the json with new values
@@ -716,25 +755,37 @@ public class Utils {
     return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);
   }
 
+  /**
+   * Construct a V1 base url for the Solr node, given its name (e.g., 'app-node-1:8983_solr') and a
+   * URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @return url that looks like {@code https://app-node-1:8983/solr}
+   * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String)}
+   */
+  @Deprecated
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
-    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
+  /**
+   * Construct a V1 or a V2 base url for the Solr node, given its name (e.g.,
+   * 'app-node-1:8983_solr') and a URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @param isV2 whether a V2 url should be constructed
+   * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
+   *     https://app-node-1:8983/solr} (V1)
+   * @throws IllegalArgumentException if the provided node name is malformed
+   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String, boolean)}
+   */
+  @Deprecated
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
-    final int colonAt = nodeName.indexOf(':');
-    if (colonAt == -1) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected ':' separator: " + nodeName);
-    }
-
-    final int _offset = nodeName.indexOf('_', colonAt);
-    if (_offset < 0) {
-      throw new IllegalArgumentException(
-          "nodeName does not contain expected '_' separator: " + nodeName);
-    }
-    final String hostAndPort = nodeName.substring(0, _offset);
-    return urlScheme + "://" + hostAndPort + "/" + (isV2 ? "api" : "solr");
+    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, isV2);
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -1124,29 +1175,10 @@ public class Utils {
     }
   }
 
+  /** Reads an input stream into a byte array. Does not close the input. */
   public static ByteBuffer toByteArray(InputStream is) throws IOException {
-    return toByteArray(is, Integer.MAX_VALUE);
-  }
-
-  /**
-   * Reads an input stream into a byte array
-   *
-   * @param is the input stream
-   * @return the byte array
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public static ByteBuffer toByteArray(InputStream is, long maxSize) throws IOException {
     try (BAOS bos = new BAOS()) {
-      long sz = 0;
-      int next = is.read();
-      while (next > -1) {
-        if (++sz > maxSize) {
-          throw new BufferOverflowException();
-        }
-        bos.write(next);
-        next = is.read();
-      }
-      bos.flush();
+      is.transferTo(bos);
       return bos.getByteBuffer();
     }
   }

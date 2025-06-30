@@ -29,7 +29,6 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +42,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonRecordReader;
 import org.apache.solr.common.util.StrUtils;
@@ -50,6 +50,7 @@ import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -91,8 +92,7 @@ public class JsonLoader extends ContentStreamLoader {
     SolrInputDocument result = new SolrInputDocument();
     for (Map.Entry<String, Object> e : m.entrySet()) {
       if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
-        if (e.getValue() instanceof List) {
-          List<?> value = (List<?>) e.getValue();
+        if (e.getValue() instanceof List<?> value) {
           for (Object o : value) {
             if (o instanceof Map) {
               // retain the value as a list, even if the list contains a single value.
@@ -113,8 +113,7 @@ public class JsonLoader extends ContentStreamLoader {
   }
 
   private static boolean mapEntryIsChildDoc(Object val) {
-    if (val instanceof List) {
-      List<?> listVal = (List<?>) val;
+    if (val instanceof List<?> listVal) {
       if (listVal.size() == 0) return false;
       return listVal.get(0) instanceof Map;
     }
@@ -296,9 +295,8 @@ public class JsonLoader extends ContentStreamLoader {
     private Map<String, Object> getDocMap(
         Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
       Map<String, Object> result = mapUniqueKeyOnly ? record : new LinkedHashMap<>(record);
-      if (srcField != null && parser instanceof RecordingJSONParser) {
+      if (srcField != null && parser instanceof RecordingJSONParser rjp) {
         // if srcFIeld specified extract it out first
-        RecordingJSONParser rjp = (RecordingJSONParser) parser;
         result.put(srcField, rjp.getBuf());
         rjp.resetBuf();
       }
@@ -657,21 +655,31 @@ public class JsonLoader extends ContentStreamLoader {
       // Is this a child doc (true) or a partial update (false)
       if (isChildDoc(extendedSolrDocument)) {
         return extendedSolrDocument;
-      } else { // partial update
-        assert extendedSolrDocument.size() == 1;
-        final SolrInputField pair = extendedSolrDocument.iterator().next();
-        return Collections.singletonMap(pair.getName(), pair.getValue());
+      } else { // partial update: can include multiple modifiers (e.g. 'add', 'remove')
+        Map<String, Object> map = CollectionUtil.newLinkedHashMap(extendedSolrDocument.size());
+        for (SolrInputField inputField : extendedSolrDocument) {
+          map.put(inputField.getName(), inputField.getValue());
+        }
+        return map;
       }
     }
 
     /** Is this a child doc (true) or a partial update (false)? */
     private boolean isChildDoc(SolrInputDocument extendedFieldValue) {
-      if (extendedFieldValue.size() != 1) {
+      IndexSchema schema = req.getSchema();
+      // If schema doesn't support child docs, return false immediately, which
+      // allows people to do atomic updates with multiple modifiers (like 'add'
+      // and 'remove' for a single doc) and to do single-modifier updates for a
+      // field with a name like 'set' that is defined in the schema, both of
+      // which would otherwise fail.
+      if (!schema.isUsableForChildDocs()) {
+        return false;
+      } else if (extendedFieldValue.size() != 1) {
         return true;
       }
       // if the only key is a field in the schema, assume it's a child doc
       final String fieldName = extendedFieldValue.iterator().next().getName();
-      return req.getSchema().getFieldOrNull(fieldName) != null;
+      return schema.getFieldOrNull(fieldName) != null;
       // otherwise, assume it's "set" or some other verb for a partial update.
       // NOTE: it's fundamentally ambiguous with JSON; this is a best effort try.
     }

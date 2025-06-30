@@ -52,6 +52,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +83,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   final int threadCount;
   boolean shutdownExecutor = false;
   int pollQueueTimeMillis = 250;
-  int stallTimeMillis;
   private final boolean streamDeletes;
   private boolean internalHttpClient;
   private final int connectionTimeout;
@@ -94,14 +94,21 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   AtomicInteger blockLoops;
   AtomicInteger emptyQueueLoops;
 
+  protected StallDetection stallDetection;
+
   /**
    * Use builder to construct this class. Uses the supplied HttpClient to send documents to the Solr
    * server.
    */
   protected ConcurrentUpdateSolrClient(Builder builder) {
     this.internalHttpClient = (builder.httpClient == null);
+    final var httpSolrClientBuilder =
+        (URLUtil.isBaseUrl(builder.baseSolrUrl))
+            ? new HttpSolrClient.Builder(builder.baseSolrUrl)
+            : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
+                .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(builder.baseSolrUrl));
     this.client =
-        new HttpSolrClient.Builder(builder.baseSolrUrl)
+        httpSolrClientBuilder
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
@@ -115,15 +122,19 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
     this.pollQueueTimeMillis = builder.pollQueueTime;
-    this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
     this.defaultCollection = builder.defaultCollection;
+
+    // Initialize stall detection
+    int stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
     int minimalStallTime = pollQueueTimeMillis * 2;
-    if (minimalStallTime > this.stallTimeMillis) {
-      this.stallTimeMillis = minimalStallTime;
+    if (minimalStallTime > stallTimeMillis) {
+      stallTimeMillis = minimalStallTime;
     }
+
+    this.stallDetection = new StallDetection(stallTimeMillis, () -> queue.size());
 
     if (builder.executorService != null) {
       this.scheduler = builder.executorService;
@@ -141,6 +152,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       this.blockLoops = new AtomicInteger();
       this.emptyQueueLoops = new AtomicInteger();
     }
+
+    // processedCount is now managed by StallDetection
   }
 
   public Set<String> getUrlParamNames() {
@@ -247,8 +260,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                       Update upd = update;
                       while (upd != null) {
                         UpdateRequest req = upd.getRequest();
-                        SolrParams currentParams = new ModifiableSolrParams(req.getParams());
-                        if (!origParams.toNamedList().equals(currentParams.toNamedList())
+                        if (!origParams.equals(req.getParams())
                             || !Objects.equals(origTargetCollection, upd.getCollection())) {
                           // Request has different params or destination core/collection, return to
                           // queue
@@ -310,14 +322,16 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                     }
                   });
 
-          // The parser 'wt=' and 'version=' params are used instead of the
-          // original params
-          ModifiableSolrParams requestParams = new ModifiableSolrParams(origParams);
-          requestParams.set(CommonParams.WT, client.parser.getWriterType());
-          requestParams.set(CommonParams.VERSION, client.parser.getVersion());
+          // The parser 'wt=' param is used instead of the original params
+          var addParams = SolrParams.of(CommonParams.WT, client.parser.getWriterType());
+          var requestParams = SolrParams.wrapDefaults(addParams, origParams);
 
           String basePath = client.getBaseURL();
-          if (update.getCollection() != null) basePath += "/" + update.getCollection();
+          if (update.getCollection() != null) {
+            basePath += "/" + update.getCollection();
+          } else if (client.getDefaultCollection() != null) {
+            basePath += "/" + client.getDefaultCollection();
+          }
 
           method = new HttpPost(basePath + "/update" + requestParams.toQueryString());
 
@@ -329,7 +343,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           method.setConfig(requestConfigBuilder.build());
 
           method.setEntity(template);
-          method.addHeader("User-Agent", HttpSolrClient.AGENT);
+          method.addHeader("User-Agent", HttpSolrClient.USER_AGENT);
           method.addHeader("Content-Type", contentType);
 
           response =
@@ -377,7 +391,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               log.warn("Failed to parse error response from {} due to: ", client.getBaseURL(), exc);
             } finally {
               solrExc =
-                  new BaseHttpSolrClient.RemoteSolrException(
+                  new SolrClient.RemoteSolrException(
                       client.getBaseURL(), statusCode, msg.toString(), null);
               if (metadata != null) {
                 solrExc.setMetadata(metadata);
@@ -388,6 +402,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           } else {
             onSuccess(response);
           }
+          stallDetection.incrementProcessedCount();
 
         } finally {
           try {
@@ -478,10 +493,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
-    if (!(request instanceof UpdateRequest)) {
+    if (!(request instanceof UpdateRequest req)) {
       return client.request(request, collection);
     }
-    UpdateRequest req = (UpdateRequest) request;
 
     // this happens for commit...
     if (streamDeletes) {
@@ -519,13 +533,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       Update update = new Update(req, collection);
       boolean success = queue.offer(update);
 
-      long lastStallTime = -1;
-      int lastQueueSize = -1;
       for (; ; ) {
         synchronized (runners) {
-          // see if queue is half full and we can add more runners
+          // see if queue is half full, and we can add more runners
           // special case: if only using a threadCount of 1 and the queue
-          // is filling up, allow 1 add'l runner to help process the queue
+          // is filling up, allow 1 additional runner to help process the queue
           if (runners.isEmpty()
               || (queue.remainingCapacity() < queue.size() && runners.size() < threadCount)) {
             // We need more runners, so start a new one.
@@ -554,29 +566,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           success = queue.offer(update, 100, TimeUnit.MILLISECONDS);
         }
         if (!success) {
-          // stall prevention
-          int currentQueueSize = queue.size();
-          if (currentQueueSize != lastQueueSize) {
-            // there's still some progress in processing the queue - not stalled
-            lastQueueSize = currentQueueSize;
-            lastStallTime = -1;
-          } else {
-            if (lastStallTime == -1) {
-              // mark a stall but keep trying
-              lastStallTime = System.nanoTime();
-            } else {
-              long currentStallTime =
-                  TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-              if (currentStallTime > stallTimeMillis) {
-                throw new IOException(
-                    "Request processing has stalled for "
-                        + currentStallTime
-                        + "ms with "
-                        + queue.size()
-                        + " remaining elements in the queue.");
-              }
-            }
-          }
+          stallCheck();
         }
       }
     } catch (InterruptedException e) {
@@ -590,6 +580,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     return dummy;
   }
 
+  void stallCheck() throws IOException {
+    stallDetection.stallCheck();
+  }
+
   public synchronized void blockUntilFinished() throws IOException {
     lock = new CountDownLatch(1);
     try {
@@ -597,12 +591,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       waitForEmptyQueue();
       interruptRunnerThreadsPolling();
 
-      long lastStallTime = -1;
-      int lastQueueSize = -1;
-
       synchronized (runners) {
 
-        // NOTE: if the executor is shut down, runners may never become empty (a scheduled task may
+        // NOTE: if the executor is shut down, runners may never become empty. A scheduled task may
         // never be run, which means it would never remove itself from the runners list. This is why
         // we don't wait forever and periodically check if the scheduler is shutting down.
         int loopCount = 0;
@@ -617,29 +608,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           // Need to check if the queue is empty before really considering this is finished
           // (SOLR-4260)
           int queueSize = queue.size();
-          // stall prevention
-          if (lastQueueSize != queueSize) {
-            // init, or no stall
-            lastQueueSize = queueSize;
-            lastStallTime = -1;
-          } else {
-            if (lastStallTime == -1) {
-              lastStallTime = System.nanoTime();
-            } else {
-              long currentStallTime =
-                  TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-              if (currentStallTime > stallTimeMillis) {
-                throw new IOException(
-                    "Task queue processing has stalled for "
-                        + currentStallTime
-                        + " ms with "
-                        + queueSize
-                        + " remaining elements to process.");
-                //                Thread.currentThread().interrupt();
-                //                break;
-              }
-            }
+          // stall prevention - only if queue is not empty
+          if (queueSize > 0) {
+            stallCheck();
           }
+
           if (queueSize > 0 && runners.isEmpty()) {
             // TODO: can this still happen?
             log.warn(
@@ -677,8 +650,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   private void waitForEmptyQueue() throws IOException {
     boolean threadInterrupted = Thread.currentThread().isInterrupted();
 
-    long lastStallTime = -1;
-    int lastQueueSize = -1;
     while (!queue.isEmpty()) {
       if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
       if (ExecutorUtil.isTerminated(scheduler)) {
@@ -712,28 +683,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               queue.size());
         }
       }
-      int currentQueueSize = queue.size();
-      // stall prevention
-      if (currentQueueSize != lastQueueSize) {
-        lastQueueSize = currentQueueSize;
-        lastStallTime = -1;
-      } else {
-        lastQueueSize = currentQueueSize;
-        if (lastStallTime == -1) {
-          lastStallTime = System.nanoTime();
-        } else {
-          long currentStallTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-          if (currentStallTime > stallTimeMillis) {
-            throw new IOException(
-                "Task queue processing has stalled for "
-                    + currentStallTime
-                    + " ms with "
-                    + currentQueueSize
-                    + " remaining elements to process.");
-            //            threadInterrupted = true;
-            //            break;
-          }
-        }
+
+      // Only check for stalls if the queue is not empty
+      if (!queue.isEmpty()) {
+        stallCheck();
       }
     }
     if (threadInterrupted) {
@@ -746,7 +699,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   /**
-   * Intended to be used as an extension point for doing post processing after a request completes.
+   * Intended to be used as an extension point for doing post-processing after a request completes.
    */
   public void onSuccess(HttpResponse resp) {
     // no-op by design, override to add functionality
@@ -781,7 +734,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       if (internalHttpClient) IOUtils.closeQuietly(client);
       if (log.isDebugEnabled()) {
         log.debug(
-            "STATS pollInteruppts={} pollExists={} blockLoops={} emptyQueueLoops={}",
+            "STATS pollInterrupts={} pollExists={} blockLoops={} emptyQueueLoops={}",
             pollInterrupts.get(),
             pollExits.get(),
             blockLoops.get(),
@@ -834,30 +787,16 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     protected boolean streamDeletes;
 
     /**
-     * Create a Builder object, based on the provided Solr URL.
+     * Initialize a Builder object, based on the provided Solr URL.
      *
-     * <p>Two different paths can be specified as a part of this URL:
-     *
-     * <p>1) A path pointing directly at a particular core
+     * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr")
+     *       .withDefaultCollection("core1")
+     *       .build();
      *   QueryResponse resp = client.query(new SolrQuery("*:*"));
      * </pre>
-     *
-     * Note that when a core is provided in the base URL, queries and other requests can be made
-     * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
-     *
-     * <p>2) The path of the root Solr path ("/solr")
-     *
-     * <pre>
-     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr").build();
-     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
-     * </pre>
-     *
-     * In this case the client is more flexible and can be used to send requests to any cores. This
-     * flexibility though requires that the core be specified on all requests.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
@@ -932,7 +871,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     /**
      * Configures created clients to not stream delete requests.
      *
-     * <p>With this option set when the created ConcurrentUpdateSolrClient sents a delete request it
+     * <p>With this option set when the created ConcurrentUpdateSolrClient sends a delete request it
      * will first will lock the queue and block until all queued updates have been sent, and then
      * send the delete request.
      */

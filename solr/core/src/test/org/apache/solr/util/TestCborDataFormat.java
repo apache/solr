@@ -24,7 +24,6 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -70,9 +69,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(testCollection, "conf", 1, 1).process(client);
       modifySchema(testCollection, client);
 
-      byte[] b =
-          Files.readAllBytes(
-              new File(ExternalPaths.SOURCE_HOME, "example/films/films.json").toPath());
+      byte[] b = Files.readAllBytes(ExternalPaths.SOURCE_HOME.resolve("example/films/films.json"));
       // every operation is performed twice. We should only take the second number
       // so that we give JVM a chance to optimize that code
       index(testCollection, client, createJsonReq(b), true);
@@ -139,26 +136,18 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       request.setResponseParser(new InputStreamResponseParser(wt));
     }
     result = client.request(request, testCollection);
-    byte[] b = copyStream((InputStream) result.get("stream"));
+    InputStream inputStream = (InputStream) result.get("stream");
+    byte[] b = inputStream.readAllBytes();
     System.out.println(wt + "_time : " + timer.getTime());
     System.out.println(wt + "_size : " + b.length);
     return b;
-  }
-
-  private static byte[] copyStream(InputStream inputStream) throws IOException {
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    byte[] buffer = new byte[4096];
-    int bytesRead;
-    while ((bytesRead = inputStream.read(buffer)) != -1) {
-      outputStream.write(buffer, 0, bytesRead);
-    }
-    return outputStream.toByteArray();
   }
 
   private void modifySchema(String testCollection, CloudSolrClient client)
       throws SolrServerException, IOException {
     GenericSolrRequest req =
         new GenericSolrRequest(SolrRequest.METHOD.POST, "/schema")
+            .setRequiresCollection(true)
             .setContentWriter(
                 new RequestWriter.StringPayloadContentWriter(
                     "{\n"
@@ -180,6 +169,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
             SolrRequest.METHOD.POST,
             "/update/json/docs",
             new MapSolrParams(Map.of("commit", "true")))
+        .setRequiresCollection(true)
         .withContent(b, "application/json");
   }
 
@@ -191,18 +181,20 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
     return new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update", new MapSolrParams(Map.of("commit", "true")))
-        .withContent(baos.toByteArray(), "application/javabin");
+        .withContent(baos.toByteArray(), "application/javabin")
+        .setRequiresCollection(true);
   }
 
   private GenericSolrRequest createCborReq(byte[] b) throws IOException {
     return new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update/cbor", new MapSolrParams(Map.of("commit", "true")))
-        .withContent(serializeToCbor(b), "application/cbor");
+        .withContent(serializeToCbor(b), "application/cbor")
+        .setRequiresCollection(true);
   }
 
   @SuppressWarnings("unchecked")
   public void test() throws Exception {
-    Path filmsJson = new File(ExternalPaths.SOURCE_HOME, "example/films/films.json").toPath();
+    Path filmsJson = ExternalPaths.SOURCE_HOME.resolve("example/films/films.json");
 
     List<Object> films = null;
     try (InputStream is = Files.newInputStream(filmsJson)) {

@@ -303,6 +303,7 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
+      @Deprecated
       public Fields getTermVectors(int docID) {
         return null;
       }
@@ -394,6 +395,7 @@ public class TestDocSet extends SolrTestCase {
       protected void doClose() {}
 
       @Override
+      @Deprecated
       public void document(int doc, StoredFieldVisitor visitor) {}
 
       @Override
@@ -401,7 +403,7 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       public LeafMetaData getMetaData() {
-        return new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+        return new LeafMetaData(Version.LATEST.major, Version.LATEST, null, true);
       }
 
       @Override

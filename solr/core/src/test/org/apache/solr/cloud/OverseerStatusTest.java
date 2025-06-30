@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
@@ -62,7 +62,9 @@ public class OverseerStatusTest extends SolrCloudTestCase {
         createcollection.get("requests"));
     // When cluster state updates are distributed, Overseer doesn't see them and doesn't report
     // stats on them.
-    if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+    // PRS collection creates do not go through overseer Queue
+    if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()
+        && !SolrCloudTestCase.isPRS()) {
       // Note the "create" key here is in a different map from the "create" key above. Above it's
       // from the
       // Collection creation in the Collection API, here it's the collection creation from the
@@ -87,9 +89,9 @@ public class OverseerStatusTest extends SolrCloudTestCase {
             collection_operations.get(CollectionParams.CollectionAction.RELOAD.toLower());
     assertEquals("No stats for reload in OverseerCollectionProcessor", 1, reload.get("requests"));
 
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             "Split shard for non existent collection should have failed",
             () ->
                 CollectionAdminRequest.splitShard("non_existent_collection")

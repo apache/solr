@@ -220,31 +220,6 @@ public abstract class ConfigSetService {
   }
 
   /**
-   * Return whether the given configSet is trusted.
-   *
-   * @param name name of the configSet
-   */
-  public boolean isConfigSetTrusted(String name) throws IOException {
-    Map<String, Object> contentMap = getConfigMetadata(name);
-    return (boolean) contentMap.getOrDefault("trusted", true);
-  }
-
-  /**
-   * Return whether the configSet used for the given resourceLoader is trusted.
-   *
-   * @param coreLoader resourceLoader for a core
-   */
-  public boolean isConfigSetTrusted(SolrResourceLoader coreLoader) throws IOException {
-    // ConfigSet flags are loaded from the metadata of the ZK node of the configset. (For the
-    // ZKConfigSetService)
-    NamedList<?> flags = loadConfigSetFlags(coreLoader);
-
-    // Trust if there is no trusted flag (i.e. the ConfigSetApi was not used for this configSet)
-    // or if the trusted flag is set to "true".
-    return (flags == null || flags.get("trusted") == null || flags.getBooleanArg("trusted"));
-  }
-
-  /**
    * Load the ConfigSet for a core
    *
    * @param dcore the core's CoreDescriptor
@@ -257,9 +232,8 @@ public abstract class ConfigSetService {
     try {
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
       NamedList<?> properties = loadConfigSetProperties(dcore, coreLoader);
-      boolean trusted = isConfigSetTrusted(coreLoader);
 
-      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
+      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader);
       return new ConfigSet(
           configSetName(dcore),
           solrConfig,
@@ -270,8 +244,7 @@ public abstract class ConfigSetService {
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
             }
           },
-          properties,
-          trusted);
+          properties);
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -301,13 +274,12 @@ public abstract class ConfigSetService {
    *
    * @param cd the core's CoreDescriptor
    * @param loader the core's resource loader
-   * @param isTrusted is the configset trusted?
    * @return a SolrConfig object
    */
-  protected SolrConfig createSolrConfig(
-      CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) throws IOException {
+  protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader)
+      throws IOException {
     return SolrConfig.readFromResourceLoader(
-        loader, cd.getConfigName(), isTrusted, cd.getSubstitutableProperties());
+        loader, cd.getConfigName(), cd.getSubstitutableProperties());
   }
 
   /**
@@ -479,7 +451,7 @@ public abstract class ConfigSetService {
    * @param configName the config name
    * @param data the metadata to be set on config
    */
-  public abstract void setConfigMetadata(String configName, Map<String, Object> data)
+  protected abstract void setConfigMetadata(String configName, Map<String, Object> data)
       throws IOException;
 
   /**

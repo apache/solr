@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.junit.BeforeClass;
 
 /**
@@ -39,9 +39,10 @@ public class SolrExampleXMLHttp2Test extends SolrExampleTests {
   public SolrClient createNewSolrClient() {
 
     Http2SolrClient client =
-        new Http2SolrClient.Builder(getCoreUrl())
+        new Http2SolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-            .withRequestWriter(new RequestWriter())
+            .withRequestWriter(new XMLRequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build();
     return client;

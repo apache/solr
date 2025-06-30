@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -95,10 +95,9 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   public static void createMiniSolrCloudCluster() throws Exception {
 
     final String configName = "solrCloudCollectionConfig";
-    final File configDir =
-        new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+    final Path configDir = TEST_HOME().resolve("collection1").resolve("conf");
 
-    configureCluster(NUM_SERVERS).addConfig(configName, configDir.toPath()).configure();
+    configureCluster(NUM_SERVERS).addConfig(configName, configDir).configure();
 
     COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
@@ -146,18 +145,17 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertNotNull("could not find URL for " + shardName + " replica", passiveUrl);
 
       if (shardName.equals("shard1")) {
-        S_ONE_LEADER_CLIENT = getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
-        S_ONE_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
+        S_ONE_LEADER_CLIENT = getHttpSolrClient(leaderUrl, COLLECTION_NAME);
+        S_ONE_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl, COLLECTION_NAME);
       } else if (shardName.equals("shard2")) {
-        S_TWO_LEADER_CLIENT = getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
-        S_TWO_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
+        S_TWO_LEADER_CLIENT = getHttpSolrClient(leaderUrl, COLLECTION_NAME);
+        S_TWO_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl, COLLECTION_NAME);
       } else {
         fail("unexpected shard: " + shardName);
       }
     }
     assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
-    NO_COLLECTION_CLIENT =
-        getHttpSolrClient(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/");
+    NO_COLLECTION_CLIENT = getHttpSolrClient(urlMap.values().iterator().next(), COLLECTION_NAME);
 
     assertNotNull(S_ONE_LEADER_CLIENT);
     assertNotNull(S_TWO_LEADER_CLIENT);
@@ -707,10 +705,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       Set<ToleratedUpdateError> actualKnownErrs =
           new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
-      for (int i = 0; i < remoteErrMetadata.size(); i++) {
+      for (var entry : remoteErrMetadata) {
         ToleratedUpdateError err =
             ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
-                remoteErrMetadata.getName(i), remoteErrMetadata.getVal(i));
+                entry.getKey(), entry.getValue());
         if (null == err) {
           // some metadata unrelated to this update processor
           continue;
@@ -914,10 +912,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       NamedList<String> remoteErrMetadata = e.getMetadata();
       assertNotNull("no metadata in: " + e, remoteErrMetadata);
       int actualKnownErrsCount = 0;
-      for (int i = 0; i < remoteErrMetadata.size(); i++) {
+      for (var entry : remoteErrMetadata) {
         ToleratedUpdateError err =
             ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
-                remoteErrMetadata.getName(i), remoteErrMetadata.getVal(i));
+                entry.getKey(), entry.getValue());
         if (null == err) {
           // some metadata unrelated to this update processor
           continue;
@@ -1107,10 +1105,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       Set<ToleratedUpdateError> actualKnownErrs =
           new LinkedHashSet<ToleratedUpdateError>(remoteErrMetadata.size());
       int actualKnownErrsCount = 0;
-      for (int i = 0; i < remoteErrMetadata.size(); i++) {
+      for (var entry : remoteErrMetadata) {
         ToleratedUpdateError err =
             ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
-                remoteErrMetadata.getName(i), remoteErrMetadata.getVal(i));
+                entry.getKey(), entry.getValue());
         if (null == err) {
           // some metadata unrelated to this update processor
           continue;

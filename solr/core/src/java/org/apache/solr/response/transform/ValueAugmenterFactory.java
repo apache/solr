@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.util.DateMathParser;
 
 /**
@@ -72,9 +73,9 @@ public class ValueAugmenterFactory extends TransformerFactory {
     return new ValueAugmenter(field, val);
   }
 
-  static class ValueAugmenter extends DocTransformer {
-    final String name;
-    final Object value;
+  public static class ValueAugmenter extends DocTransformer {
+    private final String name;
+    protected final Object value;
 
     public ValueAugmenter(String name, Object value) {
       this.name = name;
@@ -87,7 +88,7 @@ public class ValueAugmenterFactory extends TransformerFactory {
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid) {
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
       doc.setField(name, value);
     }
   }

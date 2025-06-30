@@ -1,4 +1,5 @@
 = Task Management
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -40,28 +41,26 @@ Task management interface supports the following types of operations:
 == Listing All Active Cancellable Tasks
 To list all the active cancellable tasks currently running, please use the following syntax:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listalltasks]
+[tabs#listalltasks]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/collectionName/tasks/list"
 ----
 ====
 
-[example.tab-pane#v2listalltasks]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list"
 ----
 ====
---
+======
 
 === Sample Response
 
@@ -79,28 +78,25 @@ curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list"
 == Cancelling An Active Cancellable Task
 To cancel an active task, please use the following syntax:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1cancelalltasks]
+[tabs#cancelalltasks]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/collectionName/tasks/cancel?queryUUID=5"
 ----
 ====
-
-[example.tab-pane#v2cancelalltasks]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/cancel?queryUUID=5"
 ----
 ====
---
+======
 
 === Sample Response
 ==== If the task UUID was found and successfully cancelled:
@@ -128,28 +124,26 @@ curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/cancel?qu
 == Check Status of a Specific Task
 To check the status of a specific task, please use the following syntax:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1checksingletask]
+[tabs#checksingletask]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/collectionName/tasks/list?taskUUID=5"
 ----
 ====
 
-[example.tab-pane#v2checksingletask]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list?taskUUID=5"
 ----
 ====
---
+======
 
 === taskUUID Parameter
 `taskUUID` parameter can be used to specify a task UUID whose status can be checked.

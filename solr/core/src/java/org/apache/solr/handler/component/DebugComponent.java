@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.FQ;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -181,16 +182,28 @@ public class DebugComponent extends SearchComponent {
     }
   }
 
+  @VisibleForTesting
+  protected String getDistributedStageName(int stage) {
+    String stageName = stages.get(stage);
+
+    if (stageName == null) {
+      stageName = "STAGE_" + Integer.toString(stage);
+    }
+
+    return stageName;
+  }
+
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (rb.isDebugTrack() && rb.isDistrib && !rb.finished.isEmpty()) {
       @SuppressWarnings("unchecked")
       NamedList<Object> stageList =
           (NamedList<Object>)
-              ((NamedList<Object>) rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
+              ((NamedList<Object>) rb.getDebugInfo().get("track"))
+                  .get(getDistributedStageName(rb.stage));
       if (stageList == null) {
         stageList = new SimpleOrderedMap<>();
-        rb.addDebug(stageList, "track", stages.get(rb.stage));
+        rb.addDebug(stageList, "track", getDistributedStageName(rb.stage));
       }
       for (ShardResponse response : sreq.responses) {
         stageList.add(response.getShard(), getTrackResponse(response));
@@ -251,6 +264,7 @@ public class DebugComponent extends SearchComponent {
         }
       }
       if (rb.isDebugResults()) {
+        // put()
         int idx = info.indexOf("explain", 0);
         if (idx >= 0) {
           info.setVal(idx, explain);
@@ -325,11 +339,11 @@ public class DebugComponent extends SearchComponent {
       }
     }
 
-    if (source instanceof NamedList && dest instanceof NamedList) {
+    if (source instanceof NamedList<?> sl && dest instanceof NamedList) {
       NamedList<Object> tmp = new NamedList<>();
-      NamedList<?> sl = (NamedList<?>) source;
       @SuppressWarnings("unchecked")
       NamedList<Object> dl = (NamedList<Object>) dest;
+      // TODO simplify; drop the same-index optimization and use a Map.compute()
       for (int i = 0; i < sl.size(); i++) {
         String skey = sl.getName(i);
         if (exclude.contains(skey)) continue;

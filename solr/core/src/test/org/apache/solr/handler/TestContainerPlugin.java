@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
@@ -47,12 +48,13 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.TestDistribFileStore;
 import org.apache.solr.filestore.TestDistribFileStore.Fetcher;
 import org.apache.solr.pkg.PackageAPI;
@@ -63,7 +65,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.ErrorLogMuter;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -170,7 +171,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     // just check if the plugin is indeed registered
     Callable<V2Response> readPluginState = getPlugin("/cluster/plugin");
     V2Response rsp = readPluginState.call();
-    assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
+    assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class"));
 
     // let's test the plugin
     TestDistribFileStore.assertResponseValues(
@@ -183,7 +184,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // verify it is removed
     rsp = readPluginState.call();
-    assertNull(rsp._get("/plugin/testplugin/class", null));
+    assertNull(rsp._get("/plugin/testplugin/class"));
 
     try (ErrorLogMuter errors = ErrorLogMuter.substring("TestContainerPlugin$C4")) {
       // test with a class  @EndPoint methods. This also uses a template in the path name
@@ -217,7 +218,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             () -> getPlugin("/my-random-prefix/their/plugin").call());
     assertEquals(404, e.code());
     final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
-    MatcherAssert.assertThat(msg, containsString("Cannot find API for the path"));
+    assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
     CConfig c6Cfg = new CConfig();
@@ -230,7 +231,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // just check if the plugin is indeed registered
     rsp = readPluginState.call();
-    assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class", null));
+    assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class"));
 
     assertTrue("ccProvided", C6.ccProvided);
     assertTrue("startCalled", C6.startCalled);
@@ -294,7 +295,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     int version = phaser.getPhase();
 
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
     TestPackages.postFileAndWait(
         cluster,
         "runtimecode/containerplugin.v.1.jar.bin",
@@ -375,6 +376,37 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     assertNotNull(C5.classData);
     assertEquals(1452, C5.classData.limit());
+  }
+
+  @Test
+  public void testPluginConfigValidation() throws Exception {
+    final Callable<V2Response> readPluginState = getPlugin("/cluster/plugin");
+
+    // Register a plugin with an invalid configuration
+    final ValidatableConfig config = new ValidatableConfig();
+    config.willPassValidation = false;
+
+    final PluginMeta plugin = new PluginMeta();
+    plugin.name = "validatableplugin";
+    plugin.klass = ConfigurablePluginWithValidation.class.getName();
+    plugin.config = config;
+
+    final V2Request addPlugin = postPlugin(singletonMap("add", plugin));
+
+    // Verify that the expected error is thrown and the plugin is not registered
+    expectError(addPlugin, "invalid config");
+    V2Response response = readPluginState.call();
+    assertNull(response._getStr("/plugin/validatableplugin/class"));
+
+    // Now register it with a valid configuration
+    config.willPassValidation = true;
+    addPlugin.process(cluster.getSolrClient());
+
+    // Verify that the plugin is properly registered
+    response = readPluginState.call();
+    assertEquals(
+        ConfigurablePluginWithValidation.class.getName(),
+        response._getStr("/plugin/validatableplugin/class"));
   }
 
   public static class CC1 extends CC {}
@@ -509,6 +541,20 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
   }
 
+  public static class ConfigurablePluginWithValidation
+      implements ConfigurablePlugin<ValidatableConfig> {
+    @Override
+    public void configure(ValidatableConfig cfg) {
+      if (!cfg.willPassValidation) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid config");
+      }
+    }
+  }
+
+  public static class ValidatableConfig implements ReflectMapWriter {
+    @JsonProperty public boolean willPassValidation;
+  }
+
   private Callable<V2Response> getPlugin(String path) {
     V2Request req = new V2Request.Builder(path).forceV2(forceV2).GET().build();
     return () -> {
@@ -527,7 +573,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   public void waitForAllNodesToSync(String path, Map<String, Object> expected) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+      String baseUrl = jettySolrRunner.getBaseURLV2().toString();
       String url = baseUrl + path + "?wt=javabin";
       TestDistribFileStore.assertResponseValues(1, new Fetcher(url, jettySolrRunner), expected);
     }
@@ -542,7 +588,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       V2Request req, SolrClient client, String errPath, String expectErrorMsg) {
     RemoteExecutionException e =
         expectThrows(RemoteExecutionException.class, () -> req.process(client));
-    String msg = e.getMetaData()._getStr(errPath, "");
+    String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
     assertTrue(expectErrorMsg, msg.contains(expectErrorMsg));
   }
 }

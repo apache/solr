@@ -23,16 +23,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.auth.BasicUserPrincipal;
@@ -64,7 +64,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     }
 
     @Override
-    PublicKey getRemotePublicKey(String ignored) {
+    PublicKey fetchPublicKeyFromRemote(String ignored) {
       return myKey;
     }
 
@@ -153,7 +153,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
           boolean firstCall = true;
 
           @Override
-          PublicKey getRemotePublicKey(String ignored) {
+          PublicKey fetchPublicKeyFromRemote(String ignored) {
             try {
               return firstCall ? myKey : mock.myKey;
             } finally {

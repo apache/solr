@@ -34,10 +34,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.hamcrest.MatcherAssert;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
@@ -101,6 +103,9 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
           + "        }\n"
           + "    }\n"
           + "}";
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -265,7 +270,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     final String errMsg =
         "contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP";
     SolrException thrown = assertThrows(SolrException.class, () -> indexSampleData(errDoc));
-    MatcherAssert.assertThat(thrown.getMessage(), containsString(errMsg));
+    assertThat(thrown.getMessage(), containsString(errMsg));
   }
 
   private void indexSampleData(String cmd) throws Exception {

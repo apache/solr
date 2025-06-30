@@ -17,15 +17,12 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.ContainerPluginsRegistry;
@@ -130,28 +127,24 @@ public class ContainerPluginsApi {
   }
 
   private void validateConfig(PayloadObj<PluginMeta> payload, PluginMeta info) throws IOException {
-    if (info.klass.indexOf(':') > 0) {
-      if (info.version == null) {
-        payload.addError("Using package. must provide a packageVersion");
-        return;
+    if (info.klass.indexOf(':') > 0 && info.version == null) {
+      payload.addError("Using package. must provide a packageVersion");
+      return;
+    }
+
+    final List<String> errs = new ArrayList<>();
+    final ContainerPluginsRegistry.ApiInfo apiInfo =
+        coreContainer.getContainerPluginsRegistry().createInfo(payload.getDataMap(), errs);
+
+    if (errs.isEmpty()) {
+      try {
+        apiInfo.init();
+      } catch (Exception e) {
+        log.error("Error instantiating plugin ", e);
+        errs.add(e.getMessage());
       }
     }
-    List<String> errs = new ArrayList<>();
-    ContainerPluginsRegistry.ApiInfo apiInfo =
-        coreContainer.getContainerPluginsRegistry().createInfo(payload.getDataMap(), errs);
-    if (!errs.isEmpty()) {
-      for (String err : errs) payload.addError(err);
-      return;
-    }
-    AnnotatedApi api = null;
-    try {
-      apiInfo.init();
-    } catch (Exception e) {
-      log.error("Error instantiating plugin ", e);
-      errs.add(e.getMessage());
-      return;
-    } finally {
-      closeWhileHandlingException(api);
-    }
+
+    errs.forEach(payload::addError);
   }
 }

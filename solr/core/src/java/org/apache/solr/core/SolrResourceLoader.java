@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
-import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +30,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -107,10 +107,10 @@ public class SolrResourceLoader
     "security.",
     "handler.admin.",
     "security.jwt.",
-    "security.hadoop.",
+    "security.cert.",
     "handler.sql.",
-    "hdfs.",
-    "hdfs.update."
+    "crossdc.handler.",
+    "crossdc.update.processor."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final String SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM =
@@ -371,12 +371,16 @@ public class SolrResourceLoader
 
     // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
     // We need a ClassLoader-compatible (forward-slashes) path here!
-    InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+    InputStream is =
+        classLoader.getResourceAsStream(
+            resource.replace(FileSystems.getDefault().getSeparator(), "/"));
 
     // This is a hack just for tests (it is not done in ZKResourceLoader)!
     // TODO can we nuke this?
     if (is == null && System.getProperty("jetty.testMode") != null) {
-      is = classLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
+      is =
+          classLoader.getResourceAsStream(
+              ("conf/" + resource.replace(FileSystems.getDefault().getSeparator(), "/")));
     }
 
     if (is == null) {
@@ -403,7 +407,8 @@ public class SolrResourceLoader
     }
 
     try (InputStream is =
-        classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+        classLoader.getResourceAsStream(
+            resource.replace(FileSystems.getDefault().getSeparator(), "/"))) {
       if (is != null) return "classpath:" + resource;
     } catch (IOException e) {
       // ignore
@@ -585,7 +590,7 @@ public class SolrResourceLoader
       Class<?> type = assertAwareCompatibility(ResourceLoaderAware.class, aware);
       if (schemaResourceLoaderComponents.contains(type)) {
         // this is a schema component
-        // lets use schema classloader
+        // let's use package-aware schema classloader
         return getSchemaLoader().findClass(cname, expectedType);
       }
     }
@@ -694,16 +699,32 @@ public class SolrResourceLoader
     }
   }
 
-  void initCore(SolrCore core) {
+  protected final void setSolrConfig(SolrConfig config) {
+    if (this.config != null && this.config != config) {
+      throw new IllegalStateException("SolrConfig instance is already associated with this loader");
+    }
+    this.config = config;
+  }
+
+  protected final void setCoreContainer(CoreContainer coreContainer) {
+    if (this.coreContainer != null && this.coreContainer != coreContainer) {
+      throw new IllegalStateException(
+          "CoreContainer instance is already associated with this loader");
+    }
+    this.coreContainer = coreContainer;
+  }
+
+  protected final void setSolrCore(SolrCore core) {
+    setCoreContainer(core.getCoreContainer());
+    setSolrConfig(core.getSolrConfig());
+
     this.coreName = core.getName();
-    this.config = core.getSolrConfig();
     this.coreId = core.uniqueId;
-    this.coreContainer = core.getCoreContainer();
     SolrCore.Provider coreProvider = core.coreProvider;
 
     this.coreReloadingClassLoader =
         new PackageListeningClassLoader(
-            core.getCoreContainer(), this, s -> config.maxPackageVersion(s), null) {
+            core.getCoreContainer(), this, pkg -> config.maxPackageVersion(pkg), null) {
           @Override
           protected void doReloadAction(Ctx ctx) {
             log.info("Core reloading classloader issued reload for: {}/{} ", coreName, coreId);
@@ -716,7 +737,9 @@ public class SolrResourceLoader
   /** Tell all {@link SolrCoreAware} instances about the SolrCore */
   @Override
   public void inform(SolrCore core) {
-    if (getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
+    if (getSchemaLoader() != null) {
+      core.getPackageListeners().addListener(schemaLoader);
+    }
 
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
     // add something to waitingForCore.
@@ -941,24 +964,25 @@ public class SolrResourceLoader
   }
 
   private PackageListeningClassLoader createSchemaLoader() {
-    CoreContainer cc = getCoreContainer();
-    if (cc == null) {
-      // corecontainer not available . can't load from packages
+    if (coreContainer == null || coreContainer.getPackageLoader() == null) {
+      // can't load from packages if core container is not available,
+      // or if Solr is not in SolrCloud mode
       return null;
     }
+    if (config == null) {
+      throw new IllegalStateException(
+          "cannot create package-aware schema loader - no SolrConfig instance is associated with this loader");
+    }
     return new PackageListeningClassLoader(
-        cc,
+        coreContainer,
         this,
-        pkg -> {
-          if (getSolrConfig() == null) return null;
-          return getSolrConfig().maxPackageVersion(pkg);
-        },
+        pkg -> config.maxPackageVersion(pkg),
         () -> {
-          if (getCoreContainer() == null || config == null || coreName == null || coreId == null)
-            return;
-          try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
-            if (c != null) {
-              c.fetchLatestSchema();
+          if (coreContainer != null && coreName != null && coreId != null) {
+            try (SolrCore c = coreContainer.getCore(coreName, coreId)) {
+              if (c != null) {
+                c.fetchLatestSchema();
+              }
             }
           }
         });

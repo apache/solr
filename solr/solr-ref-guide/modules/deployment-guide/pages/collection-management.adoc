@@ -1,4 +1,5 @@
 = Collection Management Commands
+:tabs-sync-option:
 :toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -23,7 +24,7 @@ All of the examples in this section assume you are running the "techproducts" So
 
 [source,bash]
 ----
-bin/solr -c -e techproducts
+bin/solr start -e techproducts
 ----
 
 [[create]]
@@ -31,12 +32,11 @@ bin/solr -c -e techproducts
 
 The CREATE action is used to create new collection of data.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1createcollection]
+[tabs#createcollection]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&collection.configName=techproducts&numShards=1
@@ -44,10 +44,9 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&
 ----
 ====
 
-[example.tab-pane#v2createcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `create` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
@@ -61,7 +60,7 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 '
 ----
 ====
---
+======
 
 === CREATE Parameters
 
@@ -229,6 +228,7 @@ When such a collection is deleted, its autocreated configset will be deleted by 
 +
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field.
 If the field specified is null in the document, the document will be rejected.
+For nested documents, the route field must match among all the documents in the hierarchy.
 +
 Please note that xref:configuration-guide:realtime-get.adoc[] or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
@@ -305,12 +305,11 @@ Solr automatically reloads collections when certain files, monitored via a watch
 such as `security.json`.
 However, for changes to files in configsets, like uploading a new schema, you will need to manually trigger the RELOAD.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1reloadcollection]
+[tabs#reloadcollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
@@ -318,10 +317,9 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
 ----
 ====
 
-[example.tab-pane#v2reloadcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `reload` command is provided as a part of URL path. The request body is optional if the optional `async` parameter is omitted:
 
 [source,bash]
@@ -330,9 +328,10 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Co
   {
     "async": "someAsyncId"
   }
+'
 ----
 ====
---
+======
 
 === RELOAD Parameters
 
@@ -371,12 +370,11 @@ For instance, increasing `replicationFactor` will _not_ automatically add more r
 An attribute can be deleted by passing an empty value.
 For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1modifycollection]
+[tabs#modifycollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=techproducts_v2&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>&<yet_another_attribute_name>=
@@ -385,11 +383,9 @@ http://localhost:8983/solr/admin/collections?action=modifycollection&collection=
 
 ----
 ====
-
-[example.tab-pane#v2modifycollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `modify` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
@@ -403,9 +399,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 '
 ----
 ====
---
-
-
+======
 
 === MODIFYCOLLECTION Parameters
 
@@ -469,22 +463,20 @@ Removing the `readOnly` property or setting it to false enables the processing o
 
 Fetch the names of the collections in the cluster.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listcollection]
+[tabs#listcollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=LIST
 ----
 ====
 
-[example.tab-pane#v2listcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `list` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
@@ -492,7 +484,7 @@ With the v2 API, the `list` command is provided as part of the JSON data that co
 curl -X GET http://localhost:8983/api/collections
 ----
 ====
---
+======
 
 *Output*
 
@@ -522,22 +514,20 @@ Aliases that refer to more than 1 collection are not supported.
 * the existing name must not be a Routed Alias.
 * the target name must not be an existing alias.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1renamecollection]
+[tabs#renamecollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=newName
 ----
 ====
 
-[example.tab-pane#v2renamecollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
@@ -547,8 +537,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Conte
 '
 ----
 ====
---
-
+======
 
 === RENAME Command Parameters
 
@@ -603,23 +592,19 @@ an actual collection name) the following aliases will exist now:
 
 The DELETE action is used to delete a collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletecollection]
+[tabs#deletecollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETE&name=techproducts_v2
 ----
 ====
-
-[example.tab-pane#v2deletecollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-
 [source,bash]
 ----
 curl -X DELETE http://localhost:8983/api/collections/techproducts_v2
@@ -632,7 +617,7 @@ To run a DELETE asynchronously then append the `async` parameter:
 curl -X DELETE http://localhost:8983/api/collections/techproducts_v2?async=aaaa
 ----
 ====
---
+======
 
 === DELETE Parameters
 
@@ -690,22 +675,20 @@ If the status is anything other than "success", an error message will explain wh
 
 Add, edit or delete a collection property.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1collectionproperty]
+[tabs#collectionproperty-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techproducts_v2&propertyName=propertyName&propertyValue=propertyValue
 ----
 ====
 
-[example.tab-pane#v2collectionproperty]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 To create or update a collection property:
 [source,bash]
 ----
@@ -723,7 +706,7 @@ To delete an existing collection property:
 curl -X DELETE http://localhost:8983/api/collections/techproducts_v2/properties/foo 
 ----
 ====
---
+======
 
 === COLLECTIONPROP Parameters
 
@@ -769,23 +752,20 @@ The MIGRATE command is used to migrate all documents having a given routing key 
 The source collection will continue to have the same data as-is but it will start re-routing write requests to the target collection for the number of seconds specified by the `forward.timeout` parameter.
 It is the responsibility of the user to switch to the target collection for reads and writes after the MIGRATE action completes.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1migratecollection]
+[tabs#migratecollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=techproducts_v2&split.key=key1!&target.collection=postMigrationCollection&forward.timeout=60
 ----
 ====
 
-[example.tab-pane#v2migratecollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
@@ -798,7 +778,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 '
 ----
 ====
---
+======
 
 The routing key specified by the `split.key` parameter may span multiple shards on both the source and the target collections.
 The migration is performed shard-by-shard in a single thread.
@@ -882,26 +862,24 @@ The response will include the status of the request.
 The REINDEXCOLLECTION command reindexes a collection using existing data from the
 source collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1reindexcollection]
+[tabs#reindexcollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=techproducts_v2
 ----
 ====
 
-[example.tab-pane#v2reindexcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 We do not currently have a V2 equivalent.
 
 ====
---
+======
 
 NOTE: Reindexing is potentially a lossy operation.
 Some of the existing indexed data that is not available as stored fields may be lost, so users should use this command with caution, evaluating the potential impact by using different source and target collection names first, and preserving the source collection until the evaluation is complete.
@@ -1013,7 +991,7 @@ There are additionally a number of optional parameters that determine the target
 If they are not specified in the request then their values are copied from the source collection.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
-`shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
+`shards`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
 When the reindexing process has completed the target collection is marked using
 `property.rx: "finished"`, and the source collection state is updated to become read-write.
@@ -1059,30 +1037,26 @@ The status also shows that the source collection was already an alias to `.rx_te
 The COLSTATUS command provides a detailed description of the collection status, including low-level index information about segments and field data.
 There isn't a good equivalent V2 API that supports all the parameters below.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1collectionstatus]
+[tabs#collectionstatus-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=techproducts_v2&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true
 ----
 ====
 
-[example.tab-pane#v2collectionstatus]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
-The closest V2 API is this one, but doesn't support all the features of the V1 equivalent.
-
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts_v2
+curl -X GET "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
 ----
 ====
---
+======
 
 This command also checks the compliance of Lucene index field types with the current Solr collection schema and indicates the names of non-compliant fields, i.e., Lucene fields with field types incompatible (or different) from the corresponding Solr field types declared in the current schema.
 Such incompatibilities may result from incompatible schema changes or after migration of data to a different major Solr release.
@@ -1097,7 +1071,8 @@ Such incompatibilities may result from incompatible schema changes or after migr
 |===
 +
 Collection name.
-If missing then it means all collections.
+Provided as a query-parameter in v1 requests, and as a path-parameter in v2.
+If missing then information is returned about all collections (supported by v1 requests only).
 
 `coreInfo`::
 +
@@ -1253,6 +1228,7 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
     },
     "gettingstarted": {
         "znodeVersion": 16,
+        "creationTimeMillis": 1706228861003,
         "properties": {
             "nrtReplicas": "2",
             "pullReplicas": "0",
@@ -1547,12 +1523,11 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
 
 Backs up Solr collections and associated configurations to a "backup repository".
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1backupcollection]
+[tabs#backupcollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=BACKUP&name=techproducts_backup&collection=techproducts&location=file:///path/to/my/shared/drive
@@ -1560,10 +1535,9 @@ http://localhost:8983/solr/admin/collections?action=BACKUP&name=techproducts_bac
 ----
 ====
 
-[example.tab-pane#v2backupcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
@@ -1573,7 +1547,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts/backups/techprod
 '
 ----
 ====
---
+======
 
 The BACKUP API will backup Solr indexes and configurations for a specified collection.
 The BACKUP command xref:backup-restore.adoc[takes one copy from each shard for the indexes].
@@ -1615,7 +1589,8 @@ s|Required |Default: none
 +
 What to name the backup that is created.
 Provided as a query parameter for v1 requests, or as a path segment for v2 requests.
-This is checked to make sure it doesn't already exist, and otherwise an error message is raised.
++
+For incremental backups, the backup name should be reused to add new backup points to the existing backup. For non-incremental backups (deprecated), this name is checked to ensure it doesn't already exist, and an error message is raised if it does. 
 
 `location`::
 +
@@ -1675,6 +1650,7 @@ This parameter has no effect if `incremental=false` is specified.
 Indicates if configset files should be included with the index backup or not. Note that in order to restore a collection, the configset must either exist in ZooKeeper or be part of the backup. Only set this to `false` if you can restore configsets by other means external to Solr (i.e. you have it stored with your application source code, is part of your ZooKeeper backups, etc).
 
 `property.<propertyName>` (V1), `extraProperties` (V2)::
++
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
@@ -1713,10 +1689,11 @@ Valid options are `copy-files` (which backs up both the collection configset and
 The name of the collection "snapshot" to create a backup from.
 If not provided, Solr will create the backup from the current collection state (instead of a previous snapshotted state).
 
-[example.tab-pane#backup-response-incremental]
+[tabs#backup-response-incremental]
+======
+Incremental Backup Response::
++
 ====
-[.tab-label]*Incremental Backup Response*
-
 [source,json]
 ----
 {
@@ -1739,6 +1716,7 @@ If not provided, Solr will create the backup from the current collection state (
 }
 ----
 ====
+======
 
 [[listbackup]]
 == LISTBACKUP: List Backups
@@ -1807,28 +1785,25 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 
 *Input*
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listbackup]
+[tabs#listbackup-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=myBackupName&location=/path/to/my/shared/drive
 ----
 ====
-
-[example.tab-pane#v2listbackup]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
 ----
 ====
---
+======
 
 *Output*
 
@@ -1868,12 +1843,11 @@ curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/pat
 
 Restores Solr indexes and associated configurations to a specified collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1restorecollection]
+[tabs#restorecollection-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
@@ -1881,10 +1855,9 @@ curl -X GET http://localhost:8983/solr/admin/collections?action=RESTORE&name=tec
 ----
 ====
 
-[example.tab-pane#v2restorecollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
@@ -1902,7 +1875,7 @@ curl -X POST http://localhost:8983/api/backups/techproducts_backup/restore -H 'C
 '
 ----
 ====
---
+======
 
 The RESTORE operation will replace the content of a collection with files from the specified backup.
 
@@ -2017,28 +1990,26 @@ See the examples and parameter descriptions below for more information.
 
 *Input*
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletebackupsingle]
+[tabs#deletebackupsingle-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&backupId=0
 ----
 ====
 
-[example.tab-pane#v2deletebackupsingle]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions/0?location=/path/to/my/shared/drive"
 ----
 ====
---
+======
 
 *Output*
 
@@ -2058,48 +2029,44 @@ curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions/0?locati
 
 ==== Deleting all but N recent backups
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletebackupmulti]
+[tabs#deletebackupmulti-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&maxNumBackupsPoints=2
 ----
 ====
 
-[example.tab-pane#v2deletebackupmulti]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 
 curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions?retainLatest=2&location=/path/to/my/shared/drive"
 ----
 ====
---
+======
 
 ==== "Garbage collecting" unused files
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletebackupgc]
+[tabs#deletebackupgc-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&purgeUnused=true
 ----
 ====
 
-[example.tab-pane#v2deletebackupgc]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 
@@ -2110,7 +2077,7 @@ curl -X PUT -H "Content-type: application/json" "http://localhost:8983/api/backu
 '
 ----
 ====
---
+======
 
 === DELETEBACKUP Parameters
 
@@ -2197,12 +2164,11 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 
 Reassigns leaders in a collection according to the preferredLeader property across active nodes.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1rebalanceleaders]
+[tabs#rebalanceleaders-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=techproducts
@@ -2210,10 +2176,9 @@ http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=
 ----
 ====
 
-[example.tab-pane#v2rebalanceleaders]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the `rebalance-leaders` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
@@ -2227,7 +2192,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
 '
 ----
 ====
---
+======
 
 Leaders are assigned in a collection according to the `preferredLeader` property on active nodes.
 This command should be run after the preferredLeader property has been assigned via the BALANCESHARDUNIQUE or ADDREPLICAPROP commands.
@@ -2292,7 +2257,7 @@ In this example:
 This is considered successful.
 * In the "successes" section, core_node23 was _not_ the leader for shard3, so leadership was assigned to that replica.
 
-The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as requried.
+The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as required.
 If a replica cannot be made leader due to not being healthy (for example, it is on a Solr instance that is not running), it's also considered success.
 
 [source,json]
@@ -2340,22 +2305,20 @@ They provide less protection than backups, at a much cheaper cost.
 
 The following API command creates a snapshot of a specified collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1createsnapshot]
+[tabs#createsnapshot-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CREATESNAPSHOT&collection=techproducts&commitName=snapshot0&followAliases=true&async=someAsyncId
 ----
 ====
 
-[example.tab-pane#v2createsnapshot]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
@@ -2366,7 +2329,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapsh
 '
 ----
 ====
---
+======
 
 *Output*
 
@@ -2433,28 +2396,26 @@ Lists all the snapshots taken of a collection.
 
 The following API command lists all the snapshots taken of a collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listsnapshots]
+[tabs#listsnapshots-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=LISTSNAPSHOTS&collection=techproducts
 ----
 ====
 
-[example.tab-pane#v2listsnapshots]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/collections/techproducts/snapshots
 ----
 ====
---
+======
 
 *Output*
 
@@ -2566,28 +2527,26 @@ Deletes a snapshot taken of a specified collection.
 
 The following API command deletes a snapshot taken of a collection.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletesnapshot]
+[tabs#deletesnapshot-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETESNAPSHOT&collection=techproducts&commitName=snapshot0&followAliases=true&async=someAsyncId
 ----
 ====
 
-[example.tab-pane#v2deletesnapshot]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X DELETE http://localhost:8983/api/collections/techproducts/snapshots/snapshot0?followAliases=true&async=someAsyncId
 ----
 ====
---
+======
 
 *Output*
 

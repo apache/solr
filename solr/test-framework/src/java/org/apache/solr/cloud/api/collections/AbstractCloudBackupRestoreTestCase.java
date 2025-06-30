@@ -48,7 +48,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -219,7 +218,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
       restore.setConfigName("confFaulty");
       assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
-      MatcherAssert.assertThat(
+      assertThat(
           "Failed collection is still in the clusterstate: "
               + cluster
                   .getSolrClient()
@@ -497,7 +496,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();
       try (var leaderClient =
-          new HttpSolrClient.Builder(slice.getLeader().getCoreUrl())
+          new HttpSolrClient.Builder(slice.getLeader().getBaseUrl())
+              .withDefaultCollection(slice.getLeader().getCoreName())
               .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
               .build()) {
         long docsInShard =

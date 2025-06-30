@@ -22,8 +22,8 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -36,11 +36,12 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
   public SolrClient createNewSolrClient() {
 
     SolrClient client =
-        new ErrorTrackingConcurrentUpdateSolrClient.Builder(getCoreUrl())
+        new ErrorTrackingConcurrentUpdateSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(2)
             .withThreadCount(5)
-            .withResponseParser(new BinaryResponseParser())
-            .withRequestWriter(new BinaryRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
             .build();
 
     return client;

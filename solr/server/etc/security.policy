@@ -54,16 +54,21 @@ grant {
   permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
-  // "dead hosts", we try to keep it fast
-  permission java.net.SocketPermission "[::1]:4", "connect,resolve";
-  permission java.net.SocketPermission "[::1]:6", "connect,resolve";
-  permission java.net.SocketPermission "[::1]:8", "connect,resolve";
 
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
 
   // needed by randomizedtesting runner to identify test methods.
   permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.dev.langchain4j.model.cohere";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.dev.ai4j.openai4j";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.dev.langchain4j.model.huggingface";
+  permission java.net.SocketPermission "api.cohere.ai", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "api.openai.com", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "api.mistral.ai", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "api-inference.huggingface.co", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "langchain4j.dev", "accept,listen,connect,resolve";
+
   permission java.lang.RuntimePermission "accessDeclaredMembers";
   // needed by certain tests to redirect sysout/syserr:
   permission java.lang.RuntimePermission "setIO";
@@ -99,19 +104,11 @@ grant {
   permission java.lang.RuntimePermission "closeClassLoader";
   // needed by HttpSolrClient
   permission java.lang.RuntimePermission "getFileSystemAttributes";
-  // needed by hadoop auth (TODO: there is a cleaner way to handle this)
-  permission java.lang.RuntimePermission "loadLibrary.jaas";
-  permission java.lang.RuntimePermission "loadLibrary.jaas_unix";
-  permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
-  // needed by hadoop common RawLocalFileSystem for java nio getOwner
-  permission java.lang.RuntimePermission "accessUserInformation";
-  // needed by hadoop hdfs
-  permission java.lang.RuntimePermission "readFileDescriptor";
-  permission java.lang.RuntimePermission "writeFileDescriptor";
-  // needed by hadoop http
+  // need to lookup remote JMX
   permission java.lang.RuntimePermission "getProtectionDomain";
   // needed by aws s3 sdk (Apache HTTP Client)
   permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
+  permission java.lang.RuntimePermission "accessSystemModules";
 
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
@@ -135,22 +132,14 @@ grant {
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
 
-  // needed by hadoop auth
-  permission javax.security.auth.AuthPermission "getSubject";
-  permission javax.security.auth.AuthPermission "modifyPrincipals";
-  permission javax.security.auth.AuthPermission "doAs";
+  
+  // needed by crossdc
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
-  permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
-  permission javax.security.auth.AuthPermission "modifyPublicCredentials";
-  permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
-
-  // needed by hadoop security
-  permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
-  permission java.security.SecurityPermission "insertProvider";
 
   // Needed by JWT integration tests & S3 clients
   permission java.lang.RuntimePermission "setFactory";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs12.default";
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
@@ -182,9 +171,6 @@ grant {
 // additional permissions based on system properties set by /bin/solr
 // NOTE: if the property is not set, the permission entry is ignored.
 grant {
-  permission java.io.FilePermission "${hadoop.security.credential.provider.path}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${hadoop.security.credential.provider.path}${/}-", "read,write,delete,readlink";
-
   permission java.io.FilePermission "${solr.jetty.keystore}", "read,readlink";
 
   permission java.io.FilePermission "${solr.jetty.truststore}", "read,readlink";
@@ -218,6 +204,9 @@ grant {
 
   permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.sharedLib}", "read,readlink";
+  permission java.io.FilePermission "${solr.sharedLib}${/}-", "read,readlink";
 
   permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
 

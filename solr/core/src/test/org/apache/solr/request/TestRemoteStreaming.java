@@ -16,14 +16,14 @@
  */
 package org.apache.solr.request;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -47,9 +47,9 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     System.setProperty("solr.enableRemoteStreaming", "true");
     System.setProperty("solr.enableStreamBody", "true");
     // this one has handleSelect=true which a test here needs
-    File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
+    Path solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
+    createAndStartJetty(solrHomeDirectory.toAbsolutePath());
   }
 
   @Before
@@ -83,7 +83,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   }
 
   private String attemptHttpGet(String getUrl) throws IOException {
-    Object obj = new URL(getUrl).getContent();
+    Object obj = URI.create(getUrl).toURL().getContent();
     if (obj instanceof InputStream) {
       try (InputStream inputStream = (InputStream) obj) {
         StringWriter strWriter = new StringWriter();

@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -441,13 +440,13 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     private int port = 0;
     private String solrconfigFile;
     private String schemaFile;
-    private File baseDir;
+    private Path baseDir;
     private JettySolrRunner jetty;
     private SolrClient solrj;
 
     private boolean homeCreated = false;
 
-    public SolrInstance(File homeDir, String solrconfigFile, String schemaFile) {
+    public SolrInstance(Path homeDir, String solrconfigFile, String schemaFile) {
       this.baseDir = homeDir;
       this.solrconfigFile = solrconfigFile;
       this.schemaFile = schemaFile;
@@ -461,10 +460,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       return (SolrTestCaseJ4.isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + "/solr";
     }
 
-    public String getCollectionURL() {
-      return getBaseURL() + "/" + collection;
-    }
-
     /** string appropriate for passing in shards param (i.e. missing http://) */
     public String getShardURL() {
       return "127.0.0.1:" + port + "/solr" + "/" + collection;
@@ -472,7 +467,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
     public SolrClient getSolrJ() {
       if (solrj == null) {
-        solrj = getHttpSolrClient(getCollectionURL());
+        solrj = getHttpSolrClient(getBaseURL(), collection);
       }
       return solrj;
     }
@@ -488,11 +483,10 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       copyConfFile(baseDir, collection, solrconfigFile);
       copyConfFile(baseDir, collection, schemaFile);
 
-      File collDir = new File(baseDir, collection);
+      Path collDir = baseDir.resolve(collection);
       try (Writer w =
           new OutputStreamWriter(
-              Files.newOutputStream(collDir.toPath().resolve("core.properties")),
-              StandardCharsets.UTF_8)) {
+              Files.newOutputStream(collDir.resolve("core.properties")), StandardCharsets.UTF_8)) {
         Properties coreProps = new Properties();
         coreProps.put("name", "collection1");
         coreProps.put("config", solrconfigFile);
@@ -507,16 +501,12 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
 
       if (jetty == null) {
-        JettyConfig jettyConfig =
-            JettyConfig.builder()
-                .stopAtShutdown(true)
-                .setPort(port)
-                .withSSLConfig(sslConfig.buildServerSSLConfig())
-                .build();
+        JettyConfig jettyConfig = JettyConfig.builder().stopAtShutdown(true).setPort(port).build();
         Properties nodeProperties = new Properties();
         nodeProperties.setProperty("solrconfig", solrconfigFile);
         nodeProperties.setProperty(CoreDescriptor.CORE_SCHEMA, schemaFile);
-        jetty = new JettySolrRunner(baseDir.getAbsolutePath(), nodeProperties, jettyConfig);
+        jetty =
+            new JettySolrRunner(baseDir.toAbsolutePath().toString(), nodeProperties, jettyConfig);
       }
 
       // silly stuff included from solrconfig.snippet.randomindexconfig.xml
@@ -541,17 +531,17 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
 
     public void tearDown() throws Exception {
-      IOUtils.deleteFilesIfExist(baseDir.toPath());
+      IOUtils.deleteFilesIfExist(baseDir);
     }
 
-    private static void copyConfFile(File dstRoot, String destCollection, String file)
+    private static void copyConfFile(Path dstRoot, String destCollection, String file)
         throws Exception {
-      Path subHome = dstRoot.toPath().resolve(destCollection).resolve("conf");
+      Path subHome = dstRoot.resolve(destCollection).resolve("conf");
       Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
       Files.copy(top.resolve(file), subHome.resolve(file));
     }
 
-    public void copyConfigFile(File dstRoot, String destCollection, String file) throws Exception {
+    public void copyConfigFile(Path dstRoot, String destCollection, String file) throws Exception {
       if (!homeCreated) {
         createHome();
       }
@@ -577,8 +567,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     public SolrInstances(int numServers, String solrconfig, String schema) throws Exception {
       slist = new ArrayList<>(numServers);
       for (int i = 0; i < numServers; i++) {
-        SolrInstance instance =
-            new SolrInstance(createTempDir("s" + i).toFile(), solrconfig, schema);
+        SolrInstance instance = new SolrInstance(createTempDir("s" + i), solrconfig, schema);
         slist.add(instance);
         instance.start();
       }

@@ -38,6 +38,7 @@ configurations {
   modules
   example
   prometheusExporter
+  crossDcManager
   server
   docs
   docker
@@ -53,6 +54,8 @@ dependencies {
   }
 
   prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
+
+  crossDcManager project(path: ":solr:cross-dc-manager", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
@@ -121,10 +124,8 @@ distributions {
       // Manually correct posix permissions (matters when packaging on Windows).
       filesMatching([
           "**/*.sh",
-          "**/bin/post",
-          "**/bin/postlogs",
           "**/bin/solr",
-          "**/bin/init.d/solr",
+          "**/bin/systemd/solr.service",
       ]) { copy ->
         copy.setMode(0755)
       }
@@ -144,7 +145,16 @@ distributions {
       from(configurations.prometheusExporter, {
         into "prometheus-exporter"
         filesMatching([
-            "bin/*",
+                "bin/*",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
+      })
+
+      from(configurations.crossDcManager, {
+        into "cross-dc-manager"
+        filesMatching([
+                "bin/*",
         ]) { copy ->
           copy.setMode(0755)
         }
@@ -219,9 +229,9 @@ artifacts {
 
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "https://github.com/bats-core/bats-core#v1.8.2",
-                     "https://github.com/bats-core/bats-assert#v2.0.0",
-                     "https://github.com/bats-core/bats-file#v0.3.0",
+  args = ["install", "https://github.com/bats-core/bats-core#v${libs.versions.bats.core.get()}",
+                     "https://github.com/bats-core/bats-assert#v${libs.versions.bats.assert.get()}",
+                     "https://github.com/bats-core/bats-file#v${libs.versions.bats.file.get()}",
   ]
 
   inputs.files("${project.ext.nodeProjectDir}/package.json")
@@ -269,6 +279,7 @@ task integrationTests(type: BatsTask) {
   environment SOLR2_PORT: solrPort + 1
   environment SOLR3_PORT: solrPort + 2
   environment ZK_PORT: solrPort + 1000
+  environment SOLR_EXPORTER_PORT: solrPort + 100
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
@@ -295,7 +306,7 @@ class BatsTask extends Exec {
 
     // Note: tests to run must be listed after all other arguments
     // Additional debugging output: -x, --verbose-run
-    setArgs(['-T', '--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+    setArgs(['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"] + (testFiles.empty ? testDir : testFiles))
 
 
     super.exec()

@@ -17,12 +17,13 @@
 
 package org.apache.solr.cli;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +44,13 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
+import org.apache.solr.util.SecurityJson;
+import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
 
+  @Test
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4).addConfig("conf", configset("cloud-dynamic")).configure();
@@ -56,8 +60,7 @@ public class TestExportTool extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
-      String tmpFileLoc =
-          new File(cluster.getBaseDir().toFile().getAbsolutePath() + File.separator).getPath();
+      Path baseDir = cluster.getBaseDir();
 
       UpdateRequest ur = new UpdateRequest();
       ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -79,9 +82,11 @@ public class TestExportTool extends SolrCloudTestCase {
       assertEquals(docCount, qr.getResults().getNumFound());
 
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
+      ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
 
-      ExportTool.Info info = new ExportTool.MultiThreadedRunner(url, null);
-      String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
+      ExportTool.Info info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      String absolutePath =
+          baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".jsonl").toString();
       info.setOutFormat(absolutePath, "jsonl", false);
       info.setLimit("200");
       info.fields = "id,desc_s,a_dt";
@@ -89,8 +94,9 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
-      info = new ExportTool.MultiThreadedRunner(url, null);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
+      info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      absolutePath =
+          baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".jsonl").toString();
       info.setOutFormat(absolutePath, "jsonl", false);
       info.setLimit("-1");
       info.fields = "id,desc_s";
@@ -98,8 +104,9 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJsonDocsCount(info, 1000, null);
 
-      info = new ExportTool.MultiThreadedRunner(url, null);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
+      info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      absolutePath =
+          baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".javabin").toString();
       info.setOutFormat(absolutePath, "javabin", false);
       info.setLimit("200");
       info.fields = "id,desc_s";
@@ -107,16 +114,18 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJavabinDocsCount(info, 200);
 
-      info = new ExportTool.MultiThreadedRunner(url, null);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
+      info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      absolutePath =
+          baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".javabin").toString();
       info.setOutFormat(absolutePath, "javabin", false);
       info.setLimit("-1");
       info.fields = "id,desc_s";
       info.exportDocs();
       assertJavabinDocsCount(info, 1000);
 
-      info = new ExportTool.MultiThreadedRunner(url, null);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      absolutePath =
+          baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".json").toString();
       info.setOutFormat(absolutePath, "json", false);
       info.setLimit("200");
       info.fields = "id,desc_s";
@@ -124,8 +133,9 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJsonDocsCount2(info, 200);
 
-      info = new ExportTool.MultiThreadedRunner(url, null);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      absolutePath =
+          baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".json").toString();
       info.setOutFormat(absolutePath, "json", false);
       info.setLimit("-1");
       info.fields = "id,desc_s";
@@ -148,8 +158,7 @@ public class TestExportTool extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 8, 8);
 
-      String tmpFileLoc =
-          new File(cluster.getBaseDir().toFile().getAbsolutePath() + File.separator).getPath();
+      Path baseDir = cluster.getBaseDir();
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
 
       int docCount = 0;
@@ -187,12 +196,13 @@ public class TestExportTool extends SolrCloudTestCase {
       }
       assertEquals(docCount, totalDocsFromCores);
 
+      ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
       ExportTool.MultiThreadedRunner info;
       String absolutePath;
 
-      info = new ExportTool.MultiThreadedRunner(url, null);
-      info.output = System.out;
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
+      info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      absolutePath =
+          baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".javabin").toString();
       info.setOutFormat(absolutePath, "javabin", false);
       info.setLimit("-1");
       info.exportDocs();
@@ -201,9 +211,9 @@ public class TestExportTool extends SolrCloudTestCase {
         assertEquals(
             e.getValue().longValue(), info.corehandlers.get(e.getKey()).receivedDocs.get());
       }
-      info = new ExportTool.MultiThreadedRunner(url, null);
-      info.output = System.out;
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
+      info = new ExportTool.MultiThreadedRunner(runtime, url, null);
+      absolutePath =
+          baseDir.resolve(COLLECTION_NAME + random().nextInt(100000) + ".jsonl").toString();
       info.setOutFormat(absolutePath, "jsonl", false);
       info.fields = "id,desc_s";
       info.setLimit("-1");
@@ -213,6 +223,41 @@ public class TestExportTool extends SolrCloudTestCase {
           "docs written :" + actual + "docs produced : " + info.docsWritten.get(),
           actual >= docCount);
       assertJsonDocsCount(info, docCount, null);
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  @Test
+  public void testWithBasicAuth() throws Exception {
+    String COLLECTION_NAME = "secureCollection";
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-minimal"))
+        .withSecurityJson(SecurityJson.SIMPLE)
+        .configure();
+
+    try {
+      CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
+          .setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+
+      Path outFile = Files.createTempFile("output", ".json");
+
+      String[] args = {
+        "export",
+        "--solr-url",
+        cluster.getJettySolrRunner(0).getBaseUrl().toString(),
+        "--name",
+        COLLECTION_NAME,
+        "--credentials",
+        SecurityJson.USER_PASS,
+        "--output",
+        outFile.toString(),
+        "--verbose"
+      };
+
+      assertEquals(0, CLITestHelper.runTool(args, ExportTool.class));
     } finally {
       cluster.shutdown();
     }

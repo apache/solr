@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core.backup;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -24,6 +23,8 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -221,7 +222,10 @@ public class BackupManager {
         repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
-      ClusterState c_state = ClusterState.createFromJson(-1, arr, Collections.emptySet(), null);
+      // set a default created date, we don't aim at reading actual zookeeper state. The restored
+      // collection will have a new creation date when persisted in zookeeper.
+      ClusterState c_state =
+          ClusterState.createFromJson(-1, arr, Collections.emptySet(), Instant.EPOCH, null);
       return c_state.getCollection(collectionName);
     }
   }
@@ -335,7 +339,8 @@ public class BackupManager {
     // getAllConfigFiles always separates file paths with '/'
     for (String filePath : filePaths) {
       // Replace '/' to ensure that propre file is resolved for writing.
-      URI uri = repository.resolve(dir, filePath.replace('/', File.separatorChar));
+      URI uri =
+          repository.resolve(dir, filePath.replace("/", FileSystems.getDefault().getSeparator()));
       // checking for '/' is correct for a directory since ConfigSetService#getAllConfigFiles
       // always separates file paths with '/'
       if (!filePath.endsWith("/")) {

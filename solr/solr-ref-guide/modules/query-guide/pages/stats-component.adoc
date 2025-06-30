@@ -22,7 +22,7 @@ The sample queries in this section assume you are running the "techproducts" exa
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 == Stats Component Parameters

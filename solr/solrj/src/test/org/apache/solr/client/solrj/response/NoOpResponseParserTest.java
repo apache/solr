@@ -71,8 +71,9 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   public void testQueryParse() throws Exception {
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(getCoreUrl())
-            .withResponseParser(new NoOpResponseParser())
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withResponseParser(new NoOpResponseParser("xml"))
             .build()) {
       SolrQuery query = new SolrQuery("id:1234");
       QueryRequest req = new QueryRequest(query);
@@ -98,7 +99,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   /** Parse response from java.io.Reader. */
   @Test
   public void testReaderResponse() throws Exception {
-    NoOpResponseParser parser = new NoOpResponseParser();
+    NoOpResponseParser parser = new NoOpResponseParser("xml");
     try (final InputStream is = getResponse()) {
       assertNotNull(is);
       Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
@@ -112,7 +113,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   /** Parse response from java.io.InputStream. */
   @Test
   public void testInputStreamResponse() throws Exception {
-    NoOpResponseParser parser = new NoOpResponseParser();
+    NoOpResponseParser parser = new NoOpResponseParser("xml");
     try (final InputStream is = getResponse()) {
       assertNotNull(is);
       NamedList<Object> response = parser.processResponse(is, "UTF-8");
