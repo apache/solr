@@ -157,7 +157,6 @@ public class SolrMetricManager {
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
 
-  // Get default still pulls the standard OTLP exporter variables
   private final MetricExporter metricExporter;
 
   public SolrMetricManager(MetricExporter exporter) {
