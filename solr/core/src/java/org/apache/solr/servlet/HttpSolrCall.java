@@ -452,8 +452,6 @@ public class HttpSolrCall {
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
       handler = core.getRequestHandler(path);
-      // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
-
     }
   }
 
