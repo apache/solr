@@ -130,6 +130,8 @@ Bug Fixes
 
 * SOLR-17790: Allow the -j or --jettyconfig option to start with a dash (-). (Houston Putman)
 
+* SOLR-17726: MoreLikeThis to support copy-fields (Ilaria Petreti via Alessandro Benedetti)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
