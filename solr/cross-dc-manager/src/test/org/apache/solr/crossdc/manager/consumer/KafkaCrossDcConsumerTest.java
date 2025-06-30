@@ -44,7 +44,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -67,7 +66,6 @@ import org.apache.solr.crossdc.manager.messageprocessor.SolrMessageProcessor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
@@ -94,8 +92,7 @@ public class KafkaCrossDcConsumerTest {
   public void setUp() {
     kafkaConsumerMock = mock(KafkaConsumer.class);
     clusterStateProviderMock = mock(ClusterStateProvider.class);
-    doAnswer(inv -> clusterStateProviderIsClosed)
-        .when(clusterStateProviderMock).isClosed();
+    doAnswer(inv -> clusterStateProviderIsClosed).when(clusterStateProviderMock).isClosed();
     solrClientMock = mock(CloudSolrClient.class);
     doReturn(clusterStateProviderMock).when(solrClientMock).getClusterStateProvider();
     kafkaMirroringSinkMock = mock(KafkaMirroringSink.class);

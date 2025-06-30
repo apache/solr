@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -65,7 +64,8 @@ public class SolrMessageProcessor extends MessageProcessor
 
   private static final String VERSION_FIELD = "_version_";
 
-  public SolrMessageProcessor(Supplier<CloudSolrClient> clientSupplier, ResubmitBackoffPolicy resubmitBackoffPolicy) {
+  public SolrMessageProcessor(
+      Supplier<CloudSolrClient> clientSupplier, ResubmitBackoffPolicy resubmitBackoffPolicy) {
     super(resubmitBackoffPolicy);
     this.clientSupplier = clientSupplier;
   }

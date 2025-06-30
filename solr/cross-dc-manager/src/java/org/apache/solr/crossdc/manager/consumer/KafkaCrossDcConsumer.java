@@ -18,6 +18,7 @@ package org.apache.solr.crossdc.manager.consumer;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Arrays;
@@ -33,8 +34,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -162,33 +161,34 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             r -> new Thread(r, "KafkaCrossDcConsumerWorker"));
     executor.prestartAllCoreThreads();
 
-    solrClientSupplier = () -> {
-      CloudSolrClient existingClient = solrClientRef.get();
-      if (existingClient != null) {
-        if (existingClient.getClusterStateProvider().isClosed()) {
-          // re-open the client if it was closed
-          synchronized (solrClientRef) {
-            existingClient = solrClientRef.get();
-            if (existingClient != null && existingClient.getClusterStateProvider().isClosed()) {
-              log.info("- re-creating Solr client because the previous one was closed");
-              CloudSolrClient newClient = createSolrClient(conf);
-              solrClientRef.set(newClient);
-              return newClient;
+    solrClientSupplier =
+        () -> {
+          CloudSolrClient existingClient = solrClientRef.get();
+          if (existingClient != null) {
+            if (existingClient.getClusterStateProvider().isClosed()) {
+              // re-open the client if it was closed
+              synchronized (solrClientRef) {
+                existingClient = solrClientRef.get();
+                if (existingClient != null && existingClient.getClusterStateProvider().isClosed()) {
+                  log.info("- re-creating Solr client because the previous one was closed");
+                  CloudSolrClient newClient = createSolrClient(conf);
+                  solrClientRef.set(newClient);
+                  return newClient;
+                } else {
+                  return existingClient;
+                }
+              }
             } else {
               return existingClient;
             }
+          } else {
+            synchronized (solrClientRef) {
+              CloudSolrClient newClient = createSolrClient(conf);
+              solrClientRef.set(newClient);
+              return newClient;
+            }
           }
-        } else {
-          return existingClient;
-        }
-      } else {
-        synchronized (solrClientRef) {
-          CloudSolrClient newClient = createSolrClient(conf);
-          solrClientRef.set(newClient);
-          return newClient;
-        }
-      }
-    };
+        };
 
     messageProcessor = createSolrMessageProcessor();
 
