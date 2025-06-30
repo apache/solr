@@ -272,6 +272,8 @@ Optimizations
 
 * SOLR-17775: Speed up function queries in 'fl' param. (Yura Korolov)
 
+* SOLR-17801: Use TotalHitCountCollector to collect count when no rows needed (Kevin Risden)
+
 Bug Fixes
 ---------------------
 * SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
