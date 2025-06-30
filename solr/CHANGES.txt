@@ -327,6 +327,8 @@ Bug Fixes
 
 * SOLR-17726: MoreLikeThis to support copy-fields (Ilaria Petreti via Alessandro Benedetti)
 
+* SOLR-16667: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
