@@ -146,7 +146,8 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     verifyZkLocalPathsMatch(tmp.resolve("conf"), "/configs/downconfig2");
     // And insure the empty file is a text file
     Path destEmpty = tmp2.resolve("conf").resolve("stopwords").resolve("emptyfile");
-    assertTrue("Empty files should NOT be copied down as directories", destEmpty.toFile().isFile());
+    assertTrue(
+        "Empty files should NOT be copied down as directories", Files.isRegularFile(destEmpty));
   }
 
   @Test
@@ -326,7 +327,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // Next, copy cp7 down and verify that zknode.data exists for cp7
     Path zData = tmp.resolve("conf/stopwords/zknode.data");
-    assertTrue("znode.data should have been copied down", zData.toFile().exists());
+    assertTrue("znode.data should have been copied down", Files.exists(zData));
 
     // Finally, copy up to cp8 and verify that the data is up there.
     args = new String[] {"cp", "--recursive", "--zk-host", zkAddr, "file:" + tmp, "zk:/cp9"};
@@ -385,7 +386,8 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path locEmpty = tmp2.resolve("stopwords/emptyfile");
-    assertTrue("Empty files should NOT be copied down as directories", locEmpty.toFile().isFile());
+    assertTrue(
+        "Empty files should NOT be copied down as directories", Files.isRegularFile(locEmpty));
   }
 
   @Test

@@ -300,6 +300,11 @@ else
 fi
 export SOLR_URL_SCHEME
 
+# Gracefully wait for existing requests on shutdown
+if [ "${SOLR_JETTY_GRACEFUL:-false}" == "true" ]; then
+  SOLR_JETTY_CONFIG+=("--module=graceful")
+fi
+
 # Requestlog options
 if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
@@ -413,7 +418,7 @@ function print_usage() {
     echo "                          you could pass: --jvm-opts \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
     echo ""
-    echo "  -j <jettyParams>      Additional parameters to pass to Jetty when starting Solr."
+    echo "  -j/--jettyconfig <jettyParams> Additional parameters to pass to Jetty when starting Solr."
     echo "                          For example, to add configuration folder that jetty should read"
     echo "                          you could pass: -j \"--include-jetty-dir=/etc/jetty/custom/server/\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
@@ -787,7 +792,7 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -j|--jettyconfig)
-            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+            if [[ -z "$2" ]]; then
               print_usage "$SCRIPT_CMD" "Jetty config is required when using the $1 option!"
               exit 1
             fi

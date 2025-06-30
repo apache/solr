@@ -105,7 +105,7 @@ public class StallDetection {
 
       // Start the timer if it hasn't been started yet
       if (currentStartStallTime == -1) {
-        startStallTime.set(currentTime);
+        startStallTime.compareAndSet(-1, currentTime);
         return; // First detection, give it time before throwing exception
       }
 
