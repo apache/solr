@@ -383,6 +383,8 @@ Other Changes
   instead of LinkedHashMap.  Intended to aid in 10.x compatibility.  Enable via sys prop: solr.solrj.javabin.readMapAsNamedList=true
   (Renato Haeberli, David Smiley)
 
+* SOLR-17803: Fix native access warning when using MemorySegmentIndexInput (Kevin Risden)
+
 ==================  9.8.1 ==================
 Bug Fixes
 ---------------------
