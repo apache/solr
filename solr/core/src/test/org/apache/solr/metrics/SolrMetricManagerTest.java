@@ -54,11 +54,8 @@ import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SolrMetricManagerTest extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(SolrMetricManagerTest.class);
   final String METER_PROVIDER_NAME = "test_provider_name";
   private SolrMetricManager metricManager;
   private PrometheusMetricReader reader;

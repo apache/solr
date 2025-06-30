@@ -297,6 +297,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     ExecutorUtil.resetThreadLocalProviders();
+    OpenTelemetryConfigurator.resetForTest();
   }
 
   @AfterClass

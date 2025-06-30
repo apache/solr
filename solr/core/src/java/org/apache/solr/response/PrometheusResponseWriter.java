@@ -80,60 +80,57 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
 
       switch (snapshot) {
         case CounterSnapshot counterSnapshot -> {
-          counterSnapshotMap.computeIfAbsent(
-              metricName,
-              k -> {
-                var base =
-                    CounterSnapshot.builder()
-                        .name(counterSnapshot.getMetadata().getName())
-                        .help(counterSnapshot.getMetadata().getHelp());
-
-                return counterSnapshot.getMetadata().hasUnit()
-                    ? base.unit(counterSnapshot.getMetadata().getUnit())
-                    : base;
-              });
-          counterSnapshot.getDataPoints().forEach(counterSnapshotMap.get(metricName)::dataPoint);
+          CounterSnapshot.Builder builder =
+              counterSnapshotMap.computeIfAbsent(
+                  metricName,
+                  k -> {
+                    var base =
+                        CounterSnapshot.builder()
+                            .name(counterSnapshot.getMetadata().getName())
+                            .help(counterSnapshot.getMetadata().getHelp());
+                    return counterSnapshot.getMetadata().hasUnit()
+                        ? base.unit(counterSnapshot.getMetadata().getUnit())
+                        : base;
+                  });
+          counterSnapshot.getDataPoints().forEach(builder::dataPoint);
         }
         case GaugeSnapshot gaugeSnapshot -> {
-          gaugeSnapshotMap.computeIfAbsent(
-              metricName,
-              k -> {
-                var base =
-                    GaugeSnapshot.builder()
-                        .name(gaugeSnapshot.getMetadata().getName())
-                        .help(gaugeSnapshot.getMetadata().getHelp());
-
-                return gaugeSnapshot.getMetadata().hasUnit()
-                    ? base.unit(gaugeSnapshot.getMetadata().getUnit())
-                    : base;
-              });
-          gaugeSnapshot.getDataPoints().forEach(gaugeSnapshotMap.get(metricName)::dataPoint);
+          GaugeSnapshot.Builder builder =
+              gaugeSnapshotMap.computeIfAbsent(
+                  metricName,
+                  k -> {
+                    var base =
+                        GaugeSnapshot.builder()
+                            .name(gaugeSnapshot.getMetadata().getName())
+                            .help(gaugeSnapshot.getMetadata().getHelp());
+                    return gaugeSnapshot.getMetadata().hasUnit()
+                        ? base.unit(gaugeSnapshot.getMetadata().getUnit())
+                        : base;
+                  });
+          gaugeSnapshot.getDataPoints().forEach(builder::dataPoint);
         }
         case HistogramSnapshot histogramSnapshot -> {
-          histogramSnapshotMap.computeIfAbsent(
-              metricName,
-              k -> {
-                var base =
-                    HistogramSnapshot.builder()
-                        .name(histogramSnapshot.getMetadata().getName())
-                        .help(histogramSnapshot.getMetadata().getHelp());
-
-                return histogramSnapshot.getMetadata().hasUnit()
-                    ? base.unit(histogramSnapshot.getMetadata().getUnit())
-                    : base;
-              });
-          histogramSnapshot
-              .getDataPoints()
-              .forEach(histogramSnapshotMap.get(metricName)::dataPoint);
+          HistogramSnapshot.Builder builder =
+              histogramSnapshotMap.computeIfAbsent(
+                  metricName,
+                  k -> {
+                    var base =
+                        HistogramSnapshot.builder()
+                            .name(histogramSnapshot.getMetadata().getName())
+                            .help(histogramSnapshot.getMetadata().getHelp());
+                    return histogramSnapshot.getMetadata().hasUnit()
+                        ? base.unit(histogramSnapshot.getMetadata().getUnit())
+                        : base;
+                  });
+          histogramSnapshot.getDataPoints().forEach(builder::dataPoint);
         }
         case InfoSnapshot infoSnapshot -> {
           // InfoSnapshot is a special case in that each SdkMeterProvider will create a duplicate
           // metric called target_info containing OTEL SDK metadata. Only one of these need to be
           // kept
-          if (otelInfoSnapshots == null) {
+          if (otelInfoSnapshots == null)
             otelInfoSnapshots =
                 new InfoSnapshot(infoSnapshot.getMetadata(), infoSnapshot.getDataPoints());
-          }
         }
         default -> {
           log.warn(
