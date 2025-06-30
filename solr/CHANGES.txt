@@ -83,6 +83,8 @@ Optimizations
 
 * SOLR-17801: Use TotalHitCountCollector to collect count when no rows needed (Kevin Risden)
 
+* SOLR-17130: edismax MatchAllDocsQuery (*:*) Optimization (Kevin Risden)
+
 Bug Fixes
 ---------------------
 * SOLR-17629: If SQLHandler failed to open the underlying stream (e.g. Solr returns an error; could be user/syntax problem),
