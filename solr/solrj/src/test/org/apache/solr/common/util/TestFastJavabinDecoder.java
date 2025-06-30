@@ -91,8 +91,8 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
                 .withInputStream(new FastInputStream(null, baos.getbuf(), 0, baos.size()))
                 .decode(FastJavaBinDecoder.getEntryListener());
     assertEquals(
-        Utils.writeJson(m2, new StringWriter(), true).toString(),
-        Utils.writeJson(fastMap, new StringWriter(), true).toString());
+        Utils.writeJson(m2, new StringWriter(), false).toString(),
+        Utils.writeJson(fastMap, new StringWriter(), false).toString());
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     Object newMap =
@@ -125,8 +125,8 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
                 });
     ((Map) m2.get("mapk")).remove("k2");
     assertEquals(
-        Utils.writeJson(m2, new StringWriter(), true).toString(),
-        Utils.writeJson(newMap, new StringWriter(), true).toString());
+        Utils.writeJson(m2, new StringWriter(), false).toString(),
+        Utils.writeJson(newMap, new StringWriter(), false).toString());
   }
 
   public void testFastJavabinStreamingDecoder() throws IOException {

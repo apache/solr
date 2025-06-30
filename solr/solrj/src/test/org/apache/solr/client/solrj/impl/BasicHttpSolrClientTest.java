@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
@@ -97,6 +99,24 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         Thread.sleep(5000);
       } catch (InterruptedException ignored) {
       }
+    }
+  }
+
+  public static class SlowStreamServlet extends HttpServlet {
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+      IntStream.range(0, 10)
+          .forEach(
+              i -> {
+                try {
+                  Thread.sleep(500);
+                  resp.getOutputStream().write(String.valueOf(i).getBytes(StandardCharsets.UTF_8));
+                  resp.getOutputStream().flush();
+                } catch (IOException | InterruptedException e) {
+                  throw new RuntimeException(e);
+                }
+              });
     }
   }
 
@@ -201,6 +221,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
             .withServlet(new ServletHolder(RedirectServlet.class), "/redirect/*")
             .withServlet(new ServletHolder(SlowServlet.class), "/slow/*")
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
+            .withServlet(new ServletHolder(SlowStreamServlet.class), "/slowStream/*")
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
