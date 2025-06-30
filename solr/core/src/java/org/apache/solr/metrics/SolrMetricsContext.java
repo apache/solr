@@ -30,6 +30,8 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableDoubleGauge;
+import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.util.Map;
@@ -206,15 +208,29 @@ public class SolrMetricsContext {
 
   public ObservableLongGauge observableLongGauge(
       String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
-    return metricManager.observableLongGauge(registryName, metricName, description, callback, null);
+    return observableLongGauge(metricName, description, callback, null);
   }
 
   public ObservableLongGauge observableLongGauge(
       String metricName,
       String description,
-      String unit,
-      Consumer<ObservableLongMeasurement> callback) {
+      Consumer<ObservableLongMeasurement> callback,
+      String unit) {
     return metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableDoubleGauge observableDoubleGauge(
+      String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
+    return observableDoubleGauge(metricName, description, callback, null);
+  }
+
+  public ObservableDoubleGauge observableDoubleGauge(
+      String metricName,
+      String description,
+      Consumer<ObservableDoubleMeasurement> callback,
+      String unit) {
+    return metricManager.observableDoubleGauge(
+        registryName, metricName, description, callback, unit);
   }
 
   /**

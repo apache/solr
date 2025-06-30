@@ -19,16 +19,12 @@ package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
-import io.opentelemetry.sdk.metrics.SdkMeterProvider;
-import io.opentelemetry.sdk.metrics.export.MetricReader;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.opentelemetry.sdk.trace.samplers.Sampler;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -62,7 +58,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
    * SDK.
    */
   public static synchronized void initializeOpenTelemetrySdk(
-      NodeConfig cfg, SolrResourceLoader loader, MetricReader metricReader) {
+      NodeConfig cfg, SolrResourceLoader loader) {
     PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
 
     if (info != null && info.isEnabled()) {
@@ -71,28 +67,21 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     } else if (OpenTelemetryConfigurator.shouldAutoConfigOTEL()) {
       OpenTelemetryConfigurator.autoConfigureOpenTelemetrySdk(loader);
     } else {
-      // Initializing sampler as always off to replicate no-op Tracer provider
-      OpenTelemetryConfigurator.configureOpenTelemetrySdk(
-          SdkMeterProvider.builder().registerMetricReader(metricReader).build(),
-          SdkTracerProvider.builder().setSampler(Sampler.alwaysOff()).build());
+      OpenTelemetryConfigurator.configureOpenTelemetrySdk();
     }
   }
 
-  private static void configureOpenTelemetrySdk(
-      SdkMeterProvider sdkMeterProvider, SdkTracerProvider sdkTracerProvider) {
+  private static void configureOpenTelemetrySdk() {
     if (loaded) return;
 
-    OpenTelemetrySdkBuilder builder = OpenTelemetrySdk.builder();
     if (TRACE_ID_GEN_ENABLED) {
       log.info("OpenTelemetry tracer enabled with simple propagation only.");
       ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-      builder.setPropagators(ContextPropagators.create(SimplePropagator.getInstance()));
     }
 
-    if (sdkMeterProvider != null) builder.setMeterProvider(sdkMeterProvider);
-    if (sdkTracerProvider != null) builder.setTracerProvider(sdkTracerProvider);
-
-    GlobalOpenTelemetry.set(builder.build());
+    OpenTelemetry otel =
+        OpenTelemetry.propagating(ContextPropagators.create(SimplePropagator.getInstance()));
+    GlobalOpenTelemetry.set(otel);
     loaded = true;
   }
 
