@@ -115,7 +115,6 @@ public class CloudMLTQParser extends SimpleMLTQParser {
   private Collection<Object> getFieldValuesIncludingCopyField(SolrDocument doc, String field) {
     Collection<Object> fieldValues = doc.getFieldValues(field);
     if (fieldValues != null) return fieldValues;
-
     // Fields created using copyField are not included in documents returned by RealTime Get.
     // So if a copyField destination is used in the MLT query (qf), we need to get the values
     // from its source field instead. If there are multiple source fields, their values must be
