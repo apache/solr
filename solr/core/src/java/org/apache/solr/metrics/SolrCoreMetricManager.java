@@ -108,6 +108,7 @@ public class SolrCoreMetricManager implements Closeable {
    * and will be used under the new core name. This method also reloads reporters so that they use
    * the new core name.
    */
+  // NOCOMMIT SOLR-17458: Update for core renaming
   public void afterCoreRename() {
     assert core.getCoreDescriptor().getCloudDescriptor() == null;
     String oldRegistryName = solrMetricsContext.getRegistryName();

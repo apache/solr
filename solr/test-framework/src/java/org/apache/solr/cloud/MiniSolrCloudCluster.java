@@ -1169,6 +1169,7 @@ public class MiniSolrCloudCluster {
       System.setProperty("solr.cloud.overseer.enabled", Boolean.toString(overseerEnabled));
 
       if (!disableTraceIdGeneration && OpenTelemetryConfigurator.TRACE_ID_GEN_ENABLED) {
+        OpenTelemetryConfigurator.initializeOpenTelemetrySdk(null, null);
         injectRandomRecordingFlag();
       }
 
