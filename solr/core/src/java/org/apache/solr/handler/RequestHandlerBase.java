@@ -22,6 +22,7 @@ import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -307,6 +308,18 @@ public abstract class RequestHandlerBase
     if (req.getCore() != null) {
       assert req.getCoreContainer() != null;
       if (req.getCoreContainer().checkTragicException(req.getCore())) {
+        if (req.getCoreContainer().isZooKeeperAware()) {
+          try {
+            // If the error was something like a full file system disconnect, this probably won't
+            // help
+            // But if it is a transient disk failure then it's worth a try
+            req.getCore()
+                .getSolrCoreState()
+                .newIndexWriter(req.getCore(), false); // should we rollback?
+          } catch (IOException ioe) {
+            log.warn("Could not roll index writer after tragedy");
+          }
+        }
         return SolrException.wrapLuceneTragicExceptionIfNecessary(e);
       }
     }
