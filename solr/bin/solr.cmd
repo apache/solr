@@ -1102,6 +1102,8 @@ REM Vector optimizations are only supported for Java 20 and 21 for now.
 REM This will need to change as Lucene is upgraded and newer Java versions are released
 if !JAVA_MAJOR_VERSION! GEQ 20 if !JAVA_MAJOR_VERSION! LEQ 21 (
   set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
+  REM Support native madvise for MemorySegmentIndexInputProvider
+  set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --enable-native-access=ALL-UNNAMED
   echo Java %JAVA_MAJOR_VERSION% detected. Incubating Panama Vector APIs have been enabled
 )
 
