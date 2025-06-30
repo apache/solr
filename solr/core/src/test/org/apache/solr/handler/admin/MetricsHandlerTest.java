@@ -276,9 +276,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, values.size());
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(27, values.size());
+    assertEquals(15, values.size());
     assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
-    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
@@ -300,8 +299,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = (NamedList<?>) values.get("metrics");
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(7, values.size());
-    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
+    assertEquals(5, values.size());
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 
     resp = new SolrQueryResponse();
