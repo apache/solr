@@ -43,12 +43,15 @@ import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -64,6 +67,7 @@ import org.apache.solr.crossdc.manager.messageprocessor.SolrMessageProcessor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
@@ -73,6 +77,9 @@ public class KafkaCrossDcConsumerTest {
   private KafkaConsumer<String, MirroredSolrRequest<?>> kafkaConsumerMock;
   private CloudSolrClient solrClientMock;
   private KafkaMirroringSink kafkaMirroringSinkMock;
+  private ClusterStateProvider clusterStateProviderMock;
+  private AtomicInteger solrClientCounter = new AtomicInteger(0);
+  private boolean clusterStateProviderIsClosed = false;
 
   private SolrMessageProcessor messageProcessorMock;
 
@@ -86,7 +93,11 @@ public class KafkaCrossDcConsumerTest {
   @Before
   public void setUp() {
     kafkaConsumerMock = mock(KafkaConsumer.class);
+    clusterStateProviderMock = mock(ClusterStateProvider.class);
+    doAnswer(inv -> clusterStateProviderIsClosed)
+        .when(clusterStateProviderMock).isClosed();
     solrClientMock = mock(CloudSolrClient.class);
+    doReturn(clusterStateProviderMock).when(solrClientMock).getClusterStateProvider();
     kafkaMirroringSinkMock = mock(KafkaMirroringSink.class);
     messageProcessorMock = mock(SolrMessageProcessor.class);
     conf = testCrossDCConf();
@@ -107,6 +118,7 @@ public class KafkaCrossDcConsumerTest {
 
           @Override
           protected CloudSolrClient createSolrClient(KafkaCrossDcConf conf) {
+            solrClientCounter.incrementAndGet();
             return solrClientMock;
           }
 
@@ -187,6 +199,15 @@ public class KafkaCrossDcConsumerTest {
   }
 
   @Test
+  public void testSolrClientSupplier() throws Exception {
+    kafkaCrossDcConsumer.getSolrClientSupplier().get();
+    assertEquals(1, solrClientCounter.get());
+    clusterStateProviderIsClosed = true;
+    kafkaCrossDcConsumer.getSolrClientSupplier().get();
+    assertEquals(2, solrClientCounter.get());
+  }
+
+  @Test
   public void testRunAndShutdown() throws Exception {
     // Define the expected behavior of the mocks and set up the test scenario
 
@@ -219,7 +240,6 @@ public class KafkaCrossDcConsumerTest {
 
     // Verify that the appropriate methods were called on the mocks
     verify(kafkaConsumerMock).wakeup();
-    verify(solrClientMock).close();
 
     consumerThreadExecutor.shutdown();
     consumerThreadExecutor.awaitTermination(10, TimeUnit.SECONDS);

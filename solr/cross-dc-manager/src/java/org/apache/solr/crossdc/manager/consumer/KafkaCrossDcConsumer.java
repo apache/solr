@@ -31,6 +31,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -85,7 +89,8 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final int maxCollapseRecords;
   private final SolrMessageProcessor messageProcessor;
 
-  protected final CloudSolrClient solrClient;
+  protected final Supplier<CloudSolrClient> solrClientSupplier;
+  protected final AtomicReference<CloudSolrClient> solrClientRef = new AtomicReference<>();
 
   private final ThreadPoolExecutor executor;
 
@@ -157,7 +162,33 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             r -> new Thread(r, "KafkaCrossDcConsumerWorker"));
     executor.prestartAllCoreThreads();
 
-    solrClient = createSolrClient(conf);
+    solrClientSupplier = () -> {
+      CloudSolrClient existingClient = solrClientRef.get();
+      if (existingClient != null) {
+        if (existingClient.getClusterStateProvider().isClosed()) {
+          // re-open the client if it was closed
+          synchronized (solrClientRef) {
+            existingClient = solrClientRef.get();
+            if (existingClient != null && existingClient.getClusterStateProvider().isClosed()) {
+              log.info("- re-creating Solr client because the previous one was closed");
+              CloudSolrClient newClient = createSolrClient(conf);
+              solrClientRef.set(newClient);
+              return newClient;
+            } else {
+              return existingClient;
+            }
+          }
+        } else {
+          return existingClient;
+        }
+      } else {
+        synchronized (solrClientRef) {
+          CloudSolrClient newClient = createSolrClient(conf);
+          solrClientRef.set(newClient);
+          return newClient;
+        }
+      }
+    };
 
     messageProcessor = createSolrMessageProcessor();
 
@@ -171,7 +202,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   }
 
   protected SolrMessageProcessor createSolrMessageProcessor() {
-    return new SolrMessageProcessor(solrClient, resubmitRequest -> 0L);
+    return new SolrMessageProcessor(solrClientSupplier, resubmitRequest -> 0L);
   }
 
   public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(Properties properties) {
@@ -219,7 +250,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         log.warn("Failed to close kafka mirroring sink", e);
       }
     } finally {
-      IOUtils.closeQuietly(solrClient);
+      IOUtils.closeQuietly(solrClientRef.get());
     }
   }
 
@@ -506,7 +537,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         offsetCheckExecutor.shutdown();
         offsetCheckExecutor.awaitTermination(30, TimeUnit.SECONDS);
       }
-      solrClient.close();
+      IOUtils.closeQuietly(solrClientRef.get());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       log.warn("Interrupted while waiting for executor to shutdown");
@@ -515,6 +546,11 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     } finally {
       Util.logMetrics(metrics);
     }
+  }
+
+  @VisibleForTesting
+  public Supplier<CloudSolrClient> getSolrClientSupplier() {
+    return solrClientSupplier;
   }
 
   protected CloudSolrClient createSolrClient(KafkaCrossDcConf conf) {
