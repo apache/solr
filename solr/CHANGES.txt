@@ -134,6 +134,8 @@ Bug Fixes
 
 * SOLR-16667: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
 
+* SOLR-17800: Security Manager should handle symlink on /tmp (Kevin Risden)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
