@@ -630,10 +630,6 @@ public class SolrMetricManager {
     return set;
   }
 
-  public Set<String> providerNames() {
-    return meterProviderAndReaders.keySet();
-  }
-
   /**
    * Check whether a registry with a given name already exists.
    *
@@ -788,21 +784,6 @@ public class SolrMetricManager {
     }
     meterProviderAndReaders.computeIfPresent(
         registry,
-        (key, meterAndReader) -> {
-          meterAndReader.sdkMeterProvider().close();
-          return null;
-        });
-  }
-
-  /**
-   * Remove and close an existing {@link SdkMeterProvider}. Upon closing of provider, all metric
-   * readers registered to it are closed.
-   *
-   * @param providerName name of the Meter Provider to remove
-   */
-  public void closeMeterProvider(String providerName) {
-    meterProviderAndReaders.computeIfPresent(
-        enforcePrefix(providerName),
         (key, meterAndReader) -> {
           meterAndReader.sdkMeterProvider().close();
           return null;

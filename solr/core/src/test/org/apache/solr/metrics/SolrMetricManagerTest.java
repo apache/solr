@@ -73,7 +73,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    metricManager.closeMeterProvider(METER_PROVIDER_NAME);
+    metricManager.removeRegistry(METER_PROVIDER_NAME);
   }
 
   // NOCOMMIT: We might not be supported core swapping in 10. Maybe remove this test
@@ -544,7 +544,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
             .orElseThrow(() -> new AssertionError("LongCounter metric not found"));
     assertEquals(5, data.getDataPoints().getFirst().getValue(), 0.0);
 
-    metricManager.closeMeterProvider(METER_PROVIDER_NAME);
+    metricManager.removeRegistry(METER_PROVIDER_NAME);
 
     assertNull(metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME));
   }

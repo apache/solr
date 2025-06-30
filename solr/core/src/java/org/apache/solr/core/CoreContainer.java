@@ -2280,9 +2280,7 @@ public class CoreContainer {
     }
 
     // delete metrics specific to this core
-    // NOCOMMIT: Remove this
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
-    metricManager.closeMeterProvider(core.getCoreMetricManager().getRegistryName());
 
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
