@@ -732,11 +732,13 @@ public class SolrMetricManager {
             providerName,
             key -> {
               var reader = new PrometheusMetricReader(true, null);
-              var builder = SdkMeterProvider.builder().registerMetricReader(reader);
-              builder.registerMetricReader(
-                  PeriodicMetricReader.builder(metricExporter)
-                      .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
-                      .build());
+              var builder =
+                  SdkMeterProvider.builder()
+                      .registerMetricReader(reader)
+                      .registerMetricReader(
+                          PeriodicMetricReader.builder(metricExporter)
+                              .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
+                              .build());
               return new MeterProviderAndReaders(builder.build(), reader);
             })
         .sdkMeterProvider();
