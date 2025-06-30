@@ -18,17 +18,24 @@ package org.apache.solr.metrics.prometheus;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.Exemplars;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricMetadata;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import io.prometheus.metrics.model.snapshots.Quantile;
+import io.prometheus.metrics.model.snapshots.Quantiles;
+import io.prometheus.metrics.model.snapshots.SummarySnapshot;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.util.stats.MetricUtils;
 
 /**
  * Base class for all {@link SolrPrometheusFormatter} holding {@link MetricSnapshot}s. Can export
@@ -38,10 +45,12 @@ import java.util.Map;
 public abstract class SolrPrometheusFormatter {
   protected final Map<String, List<CounterSnapshot.CounterDataPointSnapshot>> metricCounters;
   protected final Map<String, List<GaugeSnapshot.GaugeDataPointSnapshot>> metricGauges;
+  protected final Map<String, List<SummarySnapshot.SummaryDataPointSnapshot>> metricSummaries;
 
   public SolrPrometheusFormatter() {
     this.metricCounters = new HashMap<>();
     this.metricGauges = new HashMap<>();
+    this.metricSummaries = new HashMap<>();
   }
 
   /**
@@ -93,8 +102,8 @@ public abstract class SolrPrometheusFormatter {
   }
 
   /**
-   * Export {@link Timer} ands its mean rate to {@link
-   * io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot} and collect
+   * Export {@link Timer} ands its quantile data to {@link
+   * io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot} and collect
    * datapoint
    *
    * @param metricName name of prometheus metric
@@ -102,9 +111,27 @@ public abstract class SolrPrometheusFormatter {
    * @param labels label names and values to record
    */
   public void exportTimer(String metricName, Timer dropwizardMetric, Labels labels) {
-    GaugeSnapshot.GaugeDataPointSnapshot dataPoint =
-        createGaugeDatapoint(dropwizardMetric.getSnapshot().getMean(), labels);
-    collectGaugeDatapoint(metricName, dataPoint);
+    Snapshot snapshot = dropwizardMetric.getSnapshot();
+
+    long count = snapshot.size();
+    double sum =
+        Arrays.stream(snapshot.getValues())
+            .asDoubleStream()
+            .map(num -> MetricUtils.nsToMs(num))
+            .sum();
+
+    Quantiles quantiles =
+        Quantiles.of(
+            List.of(
+                new Quantile(0.50, MetricUtils.nsToMs(snapshot.getMedian())),
+                new Quantile(0.75, MetricUtils.nsToMs(snapshot.get75thPercentile())),
+                new Quantile(0.99, MetricUtils.nsToMs(snapshot.get99thPercentile())),
+                new Quantile(0.999, MetricUtils.nsToMs(snapshot.get999thPercentile()))));
+
+    var summary =
+        new SummarySnapshot.SummaryDataPointSnapshot(
+            count, sum, quantiles, labels, Exemplars.EMPTY, 0L);
+    collectSummaryDatapoint(metricName, summary);
   }
 
   /**
@@ -207,19 +234,43 @@ public abstract class SolrPrometheusFormatter {
   }
 
   /**
+   * Collects {@link io.prometheus.metrics.model.snapshots.SummarySnapshot.SummaryDataPointSnapshot}
+   * and appends to existing metric or create new metric if name does not exist
+   *
+   * @param metricName Name of metric
+   * @param dataPoint Gauge datapoint to be collected
+   */
+  public void collectSummaryDatapoint(
+      String metricName, SummarySnapshot.SummaryDataPointSnapshot dataPoint) {
+    metricSummaries.computeIfAbsent(metricName, k -> new ArrayList<>()).add(dataPoint);
+  }
+
+  /**
    * Returns an immutable {@link MetricSnapshots} from the {@link
    * io.prometheus.metrics.model.snapshots.DataPointSnapshot}s collected from the registry
    */
   public MetricSnapshots collect() {
     ArrayList<MetricSnapshot> snapshots = new ArrayList<>();
-    for (String metricName : metricCounters.keySet()) {
-      snapshots.add(
-          new CounterSnapshot(new MetricMetadata(metricName), metricCounters.get(metricName)));
-    }
-    for (String metricName : metricGauges.keySet()) {
-      snapshots.add(
-          new GaugeSnapshot(new MetricMetadata(metricName), metricGauges.get(metricName)));
-    }
+
+    metricCounters
+        .entrySet()
+        .forEach(
+            entry ->
+                snapshots.add(
+                    new CounterSnapshot(new MetricMetadata(entry.getKey()), entry.getValue())));
+    metricGauges
+        .entrySet()
+        .forEach(
+            entry ->
+                snapshots.add(
+                    new GaugeSnapshot(new MetricMetadata(entry.getKey()), entry.getValue())));
+    metricSummaries
+        .entrySet()
+        .forEach(
+            entry ->
+                snapshots.add(
+                    new SummarySnapshot(new MetricMetadata(entry.getKey()), entry.getValue())));
+
     return new MetricSnapshots(snapshots);
   }
 }
