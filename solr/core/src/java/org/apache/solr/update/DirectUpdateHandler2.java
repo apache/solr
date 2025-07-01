@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -95,7 +96,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
   LongAdder deleteByIdCommands = new LongAdder();
   LongAdder deleteByQueryCommands = new LongAdder();
   LongAdder numDocsPending = new LongAdder();
-  LongAdder numErrors = new LongAdder();
 
   // Cumulative commands
   AttributedLongUpDownCounter deleteByQueryCommandsCumulative;
@@ -114,6 +114,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   AttributedLongCounter splitCommands;
   ObservableLongGauge commitStats;
   ObservableLongGauge updateStats;
+  ObservableLongCounter softAutoCommits;
 
   // tracks when auto-commit should occur
   protected final CommitTracker commitTracker;
@@ -249,7 +250,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     addCommandsCumulative =
         new AttributedLongUpDownCounter(
             baseCommandsMetric,
-            Attributes.builder().putAll(baseAttributes).put(OPERATION_ATTR, "add").build());
+            Attributes.builder().putAll(baseAttributes).put(OPERATION_ATTR, "adds").build());
 
     deleteByIdCommandsCumulative =
         new AttributedLongUpDownCounter(
@@ -313,18 +314,33 @@ public class DirectUpdateHandler2 extends UpdateHandler
         new AttributedLongCounter(
             baseErrorsMetric, Attributes.builder().putAll(baseAttributes).build());
 
-    commitStats =
-        solrMetricsContext.observableLongGauge(
-            "solr_metrics_core_update_commit_stats",
-            "Metrics around commits",
+    softAutoCommits =
+        solrMetricsContext.observableLongCounter(
+            "solr_metrics_core_update_auto_commits",
+            "Total number of auto commits",
             (observableLongMeasurement -> {
+              observableLongMeasurement.record(
+                  commitTracker.getCommitCount(),
+                  Attributes.builder()
+                      .putAll(baseAttributes)
+                      .put(TYPE_ATTR, "auto_commits")
+                      .build());
               observableLongMeasurement.record(
                   softCommitTracker.getCommitCount(),
                   Attributes.builder()
                       .putAll(baseAttributes)
                       .put(TYPE_ATTR, "soft_auto_commits")
                       .build());
+            }));
 
+    // NOCOMMIT: This might not need to be an obseravableLongGauge, but a simple long gauge. Seems
+    // like a waste to constantly call this callback to get the latest value if the upper bounds
+    // rarely change.
+    commitStats =
+        solrMetricsContext.observableLongGauge(
+            "solr_metrics_core_update_commit_stats",
+            "Metrics around commits",
+            (observableLongMeasurement -> {
               if (commitTracker.getDocsUpperBound() > 0) {
                 observableLongMeasurement.record(
                     commitTracker.getDocsUpperBound(),
@@ -370,46 +386,43 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     updateStats =
         solrMetricsContext.observableLongGauge(
-            "solr_metrics_core_update_document_stats",
-            "Metrics around commits",
+            "solr_metrics_core_update_pending_operations",
+            "Operations pending commit. Values get reset after commit",
             (observableLongMeasurement) -> {
+              observableLongMeasurement.record(
+                  addCommands.longValue(),
+                  Attributes.builder().putAll(baseAttributes).put(OPERATION_ATTR, "adds").build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
                   Attributes.builder()
                       .putAll(baseAttributes)
-                      .put(TYPE_ATTR, "docs_pending")
+                      .put(OPERATION_ATTR, "docs_pending")
                       .build());
-              observableLongMeasurement.record(
-                  addCommands.longValue(),
-                  Attributes.builder().putAll(baseAttributes).put(TYPE_ATTR, "adds").build());
               observableLongMeasurement.record(
                   deleteByIdCommands.longValue(),
                   Attributes.builder()
                       .putAll(baseAttributes)
-                      .put(TYPE_ATTR, "deletes_by_id")
+                      .put(OPERATION_ATTR, "deletes_by_id")
                       .build());
               observableLongMeasurement.record(
                   deleteByQueryCommands.longValue(),
                   Attributes.builder()
                       .putAll(baseAttributes)
-                      .put(TYPE_ATTR, "deletes_by_query")
+                      .put(OPERATION_ATTR, "deletes_by_query")
                       .build());
-              observableLongMeasurement.record(
-                  numErrors.longValue(),
-                  Attributes.builder().putAll(baseAttributes).put(TYPE_ATTR, "errors").build());
             });
 
     // NOCOMMIT: Temporary to see metrics
-    numErrorsCumulative.inc();
-    deleteByQueryCommandsCumulative.inc();
-    deleteByIdCommandsCumulative.inc();
-    addCommandsCumulative.inc();
-    expungeDeleteCommands.inc();
-    mergeIndexesCommands.inc();
-    commitCommands.inc();
-    splitCommands.inc();
-    optimizeCommands.inc();
-    rollbackCommands.inc();
+    numErrorsCumulative.add(0L);
+    deleteByQueryCommandsCumulative.add(0L);
+    deleteByIdCommandsCumulative.add(0L);
+    addCommandsCumulative.add(0L);
+    expungeDeleteCommands.add(0L);
+    mergeIndexesCommands.add(0L);
+    commitCommands.add(0L);
+    splitCommands.add(0L);
+    optimizeCommands.add(0L);
+    rollbackCommands.add(0L);
   }
 
   private void deleteAll() throws IOException {
@@ -513,7 +526,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
       rc = 1;
     } finally {
       if (rc != 1) {
-        numErrors.increment();
         numErrorsCumulative.inc();
       } else {
         numDocsPending.increment();
@@ -753,7 +765,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     } finally {
       if (!madeIt) {
-        numErrors.increment();
         numErrorsCumulative.inc();
       }
     }
@@ -816,7 +827,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
       error = false;
     } finally {
       if (error) {
-        numErrors.increment();
         numErrorsCumulative.inc();
       }
     }
@@ -948,7 +958,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
       deleteByIdCommands.reset();
       deleteByQueryCommands.reset();
       if (error) {
-        numErrors.increment();
         numErrorsCumulative.inc();
       }
     }
@@ -1012,7 +1021,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
       deleteByIdCommandsCumulative.add(-deleteByIdCommands.sumThenReset());
       deleteByQueryCommandsCumulative.add(-deleteByQueryCommands.sumThenReset());
       if (error) {
-        numErrors.increment();
         numErrorsCumulative.inc();
       }
     }
@@ -1150,7 +1158,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
       splitter.split(results);
       cmd.rsp.addResponse(results);
     } catch (IOException e) {
-      numErrors.increment();
       numErrorsCumulative.inc();
       throw e;
     }
