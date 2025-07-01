@@ -223,39 +223,45 @@ public abstract class RequestHandlerBase
       var baseRequestMetric =
           solrMetricsContext.longCounter("solr_metrics_core_requests", "HTTP Solr request counts");
 
+      var baseErrorRequestMetric =
+          solrMetricsContext.longCounter(
+              "solr_metrics_core_requests_errors", "HTTP Solr request error counts");
+
       var baseRequestTimeMetric =
           solrMetricsContext.longHistogram(
               "solr_metrics_core_requests_times", "HTTP Solr request times", "ms");
 
       otelRequests =
           new AttributedLongCounter(
-              baseRequestMetric,
-              Attributes.builder().putAll(attributes).put(TYPE_ATTR, "requests").build());
+              baseRequestMetric, Attributes.builder().putAll(attributes).build());
 
       otelNumServerErrors =
           new AttributedLongCounter(
-              baseRequestMetric,
+              baseErrorRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
                   .put(AttributeKey.stringKey("source"), "server")
-                  .put(TYPE_ATTR, "errors")
                   .build());
 
       otelNumClientErrors =
           new AttributedLongCounter(
-              baseRequestMetric,
+              baseErrorRequestMetric,
               Attributes.builder()
                   .putAll(attributes)
                   .put(AttributeKey.stringKey("source"), "client")
-                  .put(TYPE_ATTR, "errors")
                   .build());
 
       otelNumTimeouts =
           new AttributedLongCounter(
-              baseRequestMetric,
+              baseErrorRequestMetric,
               Attributes.builder().putAll(attributes).put(TYPE_ATTR, "timeouts").build());
 
       otelRequestTimes = new AttributedLongTimer(baseRequestTimeMetric, attributes);
+      // NOCOMMIT: Temporary to see metrics
+      otelRequests.add(0L);
+      otelNumTimeouts.add(0L);
+      otelNumClientErrors.add(0L);
+      otelNumServerErrors.add(0L);
     }
   }
 
