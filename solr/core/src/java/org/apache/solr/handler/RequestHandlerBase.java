@@ -305,11 +305,11 @@ public abstract class RequestHandlerBase
   }
 
   /**
-   * Processes and normalizes any exceptions that are received from the request handler. This method is called
-   * before any error metrics are recorded.
-   * <p>
-   * If a tragic exception occurred in the index writer, this method also replaces the index writer with a new
-   * one to attempt to get out of a transient failure (e.g. disk failure).
+   * Processes and normalizes any exceptions that are received from the request handler. This method
+   * is called before any error metrics are recorded.
+   *
+   * <p>If a tragic exception occurred in the index writer, this method also replaces the index
+   * writer with a new one to attempt to get out of a transient failure (e.g. disk failure).
    */
   public static Exception processReceivedException(SolrQueryRequest req, Exception e) {
     if (req.getCore() != null) {
