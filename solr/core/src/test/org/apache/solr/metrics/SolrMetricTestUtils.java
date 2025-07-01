@@ -18,6 +18,10 @@ package org.apache.solr.metrics;
 
 import com.codahale.metrics.Counter;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -120,5 +124,20 @@ public final class SolrMetricTestUtils {
             + "\n}";
       }
     };
+  }
+
+  public static MetricSnapshot getMetricSnapshot(PrometheusMetricReader reader, String metricName) {
+    return reader.collect().stream()
+        .filter((snapshot) -> snapshot.getMetadata().getPrometheusName().equals(metricName))
+        .toList()
+        .getFirst();
+  }
+
+  public static DataPointSnapshot getDataPointSnapshot(
+      MetricSnapshot metricSnapshot, Labels labels) {
+    return metricSnapshot.getDataPoints().stream()
+        .filter((dataPoint) -> dataPoint.getLabels().hasSameValues(labels))
+        .toList()
+        .getFirst();
   }
 }
