@@ -1626,7 +1626,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         } catch (IOException e) {
           log.error("New transaction log already exists {} size unknown, skipping it", newLogPath);
         }
-        if (++numAttempts >= 3) {
+        if (++numAttempts >= 2) {
           throw new SolrException(
               ErrorCode.SERVER_ERROR, "Cannot recover from already existing logs");
         }

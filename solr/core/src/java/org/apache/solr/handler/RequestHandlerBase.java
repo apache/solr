@@ -246,7 +246,7 @@ public abstract class RequestHandlerBase
     } catch (QueryLimitsExceededException e) {
       rsp.setPartialResults(req);
     } catch (Exception e) {
-      Exception normalized = normalizeReceivedException(req, e);
+      Exception normalized = processReceivedException(req, e);
       processErrorMetricsOnException(normalized, metrics);
       rsp.setException(normalized);
     } finally {
@@ -304,15 +304,21 @@ public abstract class RequestHandlerBase
     }
   }
 
-  public static Exception normalizeReceivedException(SolrQueryRequest req, Exception e) {
+  /**
+   * Processes and normalizes any exceptions that are received from the request handler. This method is called
+   * before any error metrics are recorded.
+   * <p>
+   * If a tragic exception occurred in the index writer, this method also replaces the index writer with a new
+   * one to attempt to get out of a transient failure (e.g. disk failure).
+   */
+  public static Exception processReceivedException(SolrQueryRequest req, Exception e) {
     if (req.getCore() != null) {
       assert req.getCoreContainer() != null;
       if (req.getCoreContainer().checkTragicException(req.getCore())) {
         if (req.getCoreContainer().isZooKeeperAware()) {
           try {
             // If the error was something like a full file system disconnect, this probably won't
-            // help
-            // But if it is a transient disk failure then it's worth a try
+            // help, but if it is a transient disk failure then it's worth a try.
             req.getCore()
                 .getSolrCoreState()
                 .newIndexWriter(req.getCore(), false); // should we rollback?
