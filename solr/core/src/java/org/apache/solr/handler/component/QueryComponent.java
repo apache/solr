@@ -165,7 +165,6 @@ public class QueryComponent extends SearchComponent {
       rb.setDistribStatsDisabled(!params.getBool(CommonParams.DISTRIB_STATS_CACHE, true));
     }
 
-    // Set field flags
     ReturnFields returnFields = new SolrReturnFields(req);
     rsp.setReturnFields(returnFields);
     int flags = 0;
