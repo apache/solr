@@ -46,7 +46,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -241,8 +240,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     // SOLR-7625)
     JettySolrRunner replicaJetty = getJettyOnPort(getReplicaPort(notLeader));
     CoreContainer coreContainer = replicaJetty.getCoreContainer();
-    ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
-    String coreName = replicaCoreNodeProps.getCoreName();
+    String coreName = notLeader.getCoreName();
     try (SolrCore core = coreContainer.getCore(coreName)) {
       assertNotNull("Core '" + coreName + "' not found for replica: " + notLeader.getName(), core);
     }
@@ -517,8 +515,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected SolrClient getHttpSolrClient(Replica replica, String collection) {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    return getHttpSolrClient(zkProps.getBaseUrl(), collection);
+    return getHttpSolrClient(replica.getBaseUrl(), collection);
   }
 
   // Send doc directly to a server (without going through proxy)

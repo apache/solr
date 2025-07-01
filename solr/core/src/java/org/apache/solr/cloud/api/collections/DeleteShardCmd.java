@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -201,7 +202,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       } else {
         ccc.offerStateUpdate(m);
       }
-
+      cleanupZooKeeperShardMetadata(collectionName, sliceId);
       zkStateReader.waitForState(
           collectionName, 45, TimeUnit.SECONDS, (c) -> c.getSlice(sliceId) == null);
 
@@ -237,5 +238,34 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       sourceReplicas.add(props);
     }
     return sourceReplicas;
+  }
+
+  /**
+   * Best effort to delete Zookeeper nodes that stored other details than the shard itself in
+   * cluster state. If we fail for any reason, we just log and the shard is still deleted.
+   */
+  private void cleanupZooKeeperShardMetadata(String collection, String sliceId)
+      throws InterruptedException {
+
+    String[] cleanupPaths =
+        new String[] {
+          ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/" + sliceId,
+          ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + sliceId,
+          ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + sliceId
+        };
+
+    SolrZkClient client = ccc.getZkStateReader().getZkClient();
+    for (String path : cleanupPaths) {
+      try {
+        client.clean(path);
+      } catch (KeeperException ex) {
+        log.warn(
+            "Non-fatal error occurred when deleting shard metadata {}/{} at path {}",
+            collection,
+            sliceId,
+            path,
+            ex);
+      }
+    }
   }
 }

@@ -19,12 +19,12 @@ package org.apache.solr.client.solrj.request;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Objects;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   private final SolrParams params; // not null
@@ -47,10 +47,34 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
    * @param path the HTTP path to use for this request. If users are making a collection-aware
    *     request (i.e. {@link #setRequiresCollection(boolean)} is called with 'true'), only the
    *     section of the API path following the collection or core should be provided here.
+   * @param requestType the type of this request
+   */
+  public GenericSolrRequest(METHOD m, String path, SolrRequestType requestType) {
+    this(m, path, requestType, new ModifiableSolrParams());
+  }
+
+  /**
+   * @param m the HTTP method to use for this request
+   * @param path the HTTP path to use for this request. If users are making a collection-aware
+   *     request (i.e. {@link #setRequiresCollection(boolean)} is called with 'true'), only the
+   *     section of the API path following the collection or core should be provided here.
    * @param params query parameter names and values for making this request.
    */
   public GenericSolrRequest(METHOD m, String path, SolrParams params) {
-    super(m, path);
+    super(m, path, SolrRequestType.UNSPECIFIED);
+    this.params = Objects.requireNonNull(params);
+  }
+
+  /**
+   * @param m the HTTP method to use for this request
+   * @param path the HTTP path to use for this request. If users are making a collection-aware
+   *     request (i.e. {@link #setRequiresCollection(boolean)} is called with 'true'), only the
+   *     section of the API path following the collection or core should be provided here.
+   * @param requestType the type of this request
+   * @param params query parameter names and values for making this request.
+   */
+  public GenericSolrRequest(METHOD m, String path, SolrRequestType requestType, SolrParams params) {
+    super(m, path, requestType);
     this.params = Objects.requireNonNull(params);
   }
 
@@ -104,12 +128,7 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   }
 
   @Override
-  protected SimpleSolrResponse createResponse(SolrClient client) {
+  protected SimpleSolrResponse createResponse(NamedList<Object> namedList) {
     return response;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.UNSPECIFIED.toString();
   }
 }

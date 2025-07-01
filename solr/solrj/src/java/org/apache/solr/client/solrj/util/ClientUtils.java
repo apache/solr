@@ -29,7 +29,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -286,7 +285,7 @@ public class ClientUtils {
    * @param request the {@link SolrRequest} being executed
    */
   public static boolean shouldApplyDefaultCollection(
-      String providedCollection, SolrRequest<? extends SolrResponse> request) {
+      String providedCollection, SolrRequest<?> request) {
     return providedCollection == null && request.requiresCollection();
   }
 }

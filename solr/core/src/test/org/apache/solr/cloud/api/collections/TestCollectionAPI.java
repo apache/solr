@@ -27,11 +27,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -120,8 +122,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("replicationFactor", 25);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       client.request(request);
       NamedList<Object> rsp =
@@ -141,9 +143,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("replicationFactor", "");
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       rsp =
@@ -164,8 +165,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("non_existent_property", "");
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
@@ -186,8 +187,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("numShards", "1");
       params.set("replicationFactor", "1");
       params.set("nrtReplicas", "2");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
@@ -214,8 +215,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", "test_repFactorColl");
       params.set("replicationFactor", "4");
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
@@ -240,9 +241,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("numShards", "1");
       params.set("replicationFactor", "1");
       params.set("collection.configName", configSet);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       waitForCollection(ZkStateReader.from(client), collection, 1);
@@ -278,8 +278,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
     params.set("collection", collectionName);
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     NamedList<Object> rsp = client.request(request);
     NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
@@ -300,8 +300,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("shard", SHARD1);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
@@ -441,8 +441,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       List<?> collections = (List<?>) rsp.get("collections");
@@ -461,8 +461,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
@@ -483,8 +483,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
@@ -513,8 +513,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", cname);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
@@ -554,8 +554,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
       params.set(ShardParams._ROUTE_, "a!");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       @SuppressWarnings({"unchecked"})
@@ -586,8 +586,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "myalias");
       params.set("collections", DEFAULT_COLLECTION + "," + COLLECTION_NAME);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       client.request(request);
 
@@ -595,8 +595,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
 
@@ -621,8 +621,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "myalias");
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       // SOLR-12938 - this should NOT cause an exception
       rsp = client.request(request);
@@ -638,7 +638,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "notAnAliasOrCollection");
-      request = new QueryRequest(params);
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       request.setPath("/admin/collections");
 
       // SOLR-12938 - this should still cause an exception
@@ -663,9 +664,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("collection", COLLECTION_NAME);
       params.set("shard", SHARD1);
       params.set("wt", "json");
-      QueryRequest request = new QueryRequest(params);
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       request.setResponseParser(new NoOpResponseParser("json"));
-      request.setPath("/admin/collections");
       NamedList<Object> rsp = client.request(request);
       String actualResponse = (String) rsp.get("response");
 
@@ -694,15 +695,15 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());
       params.set("node", replica.getNodeName());
       params.set("role", "overseer");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       NamedList<Object> rsp = client.request(request);
       NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
@@ -722,8 +723,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "bad_collection_name");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
@@ -772,8 +773,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       missingParamsError(client, params);
       params.set("property.value", "true");
 
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       // The above should have set exactly one preferredleader...
@@ -1143,8 +1144,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
       params.set("name", "invalid@name#with$weird%characters");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
@@ -1166,8 +1167,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("router.name", "implicit");
       params.set("numShards", "1");
       params.set("shards", "invalid@name#with$weird%characters");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
@@ -1187,8 +1188,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "invalid@name#with$weird%characters");
       params.set("collections", COLLECTION_NAME);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
@@ -1211,8 +1212,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("name", "valid_collection_name");
       params.set("shards", "a");
       params.set("router.name", "implicit");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
       client.request(request);
 
       params = new ModifiableSolrParams();
@@ -1220,8 +1221,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("collection", "valid_collection_name");
       params.set("shard", "invalid@name#with$weird%characters");
 
-      request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);
@@ -1257,10 +1258,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void missingParamsError(CloudSolrClient client, ModifiableSolrParams origParams)
       throws IOException, SolrServerException {
 
-    QueryRequest request;
+    GenericSolrRequest request;
     try {
-      request = new QueryRequest(origParams);
-      request.setPath("/admin/collections");
+      request =
+          new GenericSolrRequest(
+              METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, origParams);
       client.request(request);
       fail("Should have thrown a SolrException due to lack of a required parameter.");
     } catch (SolrException se) {
@@ -1349,8 +1351,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("collection.configName", "conf1");
       params.set("numShards", "1");
       params.set(CollectionAdminParams.PER_REPLICA_STATE, "False");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);

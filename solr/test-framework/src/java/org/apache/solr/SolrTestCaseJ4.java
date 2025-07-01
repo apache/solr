@@ -467,7 +467,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.write(
         solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE), xmlStr.getBytes(StandardCharsets.UTF_8));
     h = new TestHarness(SolrXmlConfig.fromSolrHome(solrHome, new Properties()));
-    lrf = h.getRequestFactory("/select", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("/select", 0, 20);
   }
 
   /**
@@ -730,21 +730,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     h =
         new TestHarness(
             coreName, initAndGetDataDir().toAbsolutePath().toString(), solrConfig, getSchemaFile());
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
   }
 
   public static CoreContainer createCoreContainer(Path solrHome, String solrXML) {
     testSolrHome = requireNonNull(solrHome);
     System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h = new TestHarness(solrHome, solrXML);
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 
   public static CoreContainer createCoreContainer(NodeConfig config, CoresLocator locator) {
     testSolrHome = config.getSolrHome();
     h = new TestHarness(config, locator);
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 
@@ -766,7 +766,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             initAndGetDataDir().toAbsolutePath().toString(),
             "solrconfig.xml",
             "schema.xml");
-    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20);
     return h.getCoreContainer();
   }
 
@@ -1864,9 +1864,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     values.forEach(
         (s, o) -> {
           if (o instanceof String) {
-            assertEquals(o, rsp.getResponse()._getStr(s, null));
+            assertEquals(o, rsp.getResponse()._getStr(s));
           } else {
-            assertEquals(o, rsp.getResponse()._get(s, null));
+            assertEquals(o, rsp.getResponse()._get(s));
           }
         });
   }
@@ -2872,7 +2872,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.TrieLongField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.TrieDoubleField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.TrieDateField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumField");
 
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else {
@@ -2885,7 +2884,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.LongPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.DoublePointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.DatePointField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumFieldType");
 
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     }

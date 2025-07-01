@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
-import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
+import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -990,21 +990,21 @@ public abstract class SolrClient implements Serializable, Closeable {
   public QueryResponse queryAndStreamResponse(
       String collection, SolrParams params, StreamingResponseCallback callback)
       throws SolrServerException, IOException {
-    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+    return getQueryResponse(collection, params, new StreamingJavaBinResponseParser(callback));
   }
 
   public QueryResponse queryAndStreamResponse(
       String collection, SolrParams params, FastStreamingDocsCallback callback)
       throws SolrServerException, IOException {
-    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+    return getQueryResponse(collection, params, new StreamingJavaBinResponseParser(callback));
   }
 
   private QueryResponse getQueryResponse(
       String collection, SolrParams params, ResponseParser parser)
       throws SolrServerException, IOException {
     QueryRequest req = new QueryRequest(params);
-    if (parser instanceof StreamingBinaryResponseParser) {
-      req.setStreamingResponseCallback(((StreamingBinaryResponseParser) parser).callback);
+    if (parser instanceof StreamingJavaBinResponseParser) {
+      req.setStreamingResponseCallback(((StreamingJavaBinResponseParser) parser).callback);
     }
     req.setResponseParser(parser);
     return req.process(this, collection);

@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -295,7 +295,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
     try {
       req.setContentStreams(
-          Collections.singletonList(ContentStreamBase.create(new BinaryRequestWriter(), ureq)));
+          Collections.singletonList(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));
       UpdateRequestHandler h = new UpdateRequestHandler();
       h.init(new NamedList<>());
       h.handleRequestBody(req, new SolrQueryResponse());

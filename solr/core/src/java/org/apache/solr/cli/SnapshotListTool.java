@@ -75,9 +75,7 @@ public class SnapshotListTool extends ToolBase {
 
       NamedList<?> apiResult =
           (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
-      for (int i = 0; i < apiResult.size(); i++) {
-        echo(apiResult.getName(i));
-      }
+      apiResult.forEach((name, value) -> echo(name));
 
     } catch (Exception e) {
       echo(

@@ -42,10 +42,12 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -54,7 +56,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -192,8 +193,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     String collectionName = "badactioncollection";
     params.set("name", collectionName);
     params.set("numShards", 2);
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -208,8 +209,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set("action", CollectionAction.CREATE.toString());
     params.set("numShards", 2);
     // missing required collection parameter
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -227,8 +228,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set(REPLICATION_FACTOR, 10);
     params.set("collection.configName", "conf");
 
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     expectThrows(
         Exception.class,
@@ -246,8 +247,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     params.set("numShards", 0);
     params.set("collection.configName", "conf");
 
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
     expectThrows(
         Exception.class,
         () -> {
@@ -565,13 +566,12 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     if (collectionState != null) {
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
-          ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
           CoreStatusResponse.SingleCoreData coreStatus;
-          try (SolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
-            coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
+          try (SolrClient server = getHttpSolrClient(replica.getBaseUrl())) {
+            coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
           }
           long before = coreStatus.startTime.getTime();
-          urlToTime.put(coreProps.getCoreUrl(), before);
+          urlToTime.put(replica.getCoreUrl(), before);
         }
       }
     } else {
@@ -655,6 +655,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .process(cluster.getSolrClient());
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
+    cluster.waitForActiveCollection(collectionName, 2, 6);
 
     try (SolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
@@ -675,8 +676,9 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
               params.set("collection", collectionName);
               params.set("shard", "shard1");
               params.set("name", coreName);
-              QueryRequest request = new QueryRequest(params);
-              request.setPath("/admin/collections");
+              var request =
+                  new GenericSolrRequest(
+                      METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
               cluster.getSolrClient().request(request);
             });
 
@@ -696,6 +698,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals(
         "'core' should be 'propertyDotName' ", "propertyDotName", newReplica.getStr("core"));
+    cluster.waitForActiveCollection(collectionName, 2, 7);
   }
 
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {

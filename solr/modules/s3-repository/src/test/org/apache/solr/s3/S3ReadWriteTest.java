@@ -18,8 +18,12 @@ package org.apache.solr.s3;
 
 import static org.hamcrest.Matchers.containsString;
 
+import com.carrotsearch.randomizedtesting.generators.RandomBytes;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import org.apache.solr.common.util.ResumableInputStream;
+import org.apache.solr.util.LogListener;
 import org.junit.Test;
 
 /** Basic test that write data and read them through the S3 client. */
@@ -100,5 +104,83 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   public void testNotFound() {
     assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
     assertThrows(S3NotFoundException.class, () -> client.length("/not-found"));
+  }
+
+  /** Check that a read can succeed even with Connection Loss. */
+  @Test
+  public void testReadWithConnectionLoss() throws IOException {
+    String key = "flush-very-large";
+
+    int numBytes = 20_000_000;
+    pushContent(key, RandomBytes.randomBytesOfLength(random(), numBytes));
+
+    int numExceptions = 20;
+    int bytesPerException = numBytes / numExceptions;
+    // Check we can re-read same content
+
+    int maxBuffer = 100;
+    byte[] buffer = new byte[maxBuffer];
+    boolean done = false;
+    try (LogListener logListener = LogListener.warn(ResumableInputStream.class)) {
+      try (InputStream input = client.pullStream(key)) {
+        long byteCount = 0;
+        while (!done) {
+          // Use the same number of bytes no matter which method we are testing
+          int numBytesToRead = random().nextInt(maxBuffer) + 1;
+          // test both read() and read(buffer, off, len)
+          switch (random().nextInt(3)) {
+              // read()
+            case 0:
+              {
+                for (int i = 0; i < numBytesToRead && !done; i++) {
+                  done = input.read() == -1;
+                  if (!done) {
+                    byteCount++;
+                  }
+                }
+              }
+              break;
+              // read(byte, off, len)
+            case 1:
+              {
+                int readLen = input.read(buffer, 0, numBytesToRead);
+                if (readLen > 0) {
+                  byteCount += readLen;
+                } else {
+                  // We are done when readLen = -1
+                  done = true;
+                }
+              }
+              break;
+              // skip(len)
+            case 2:
+              {
+                // We only want to skip 1 because
+                long bytesSkipped = input.skip(numBytesToRead);
+                byteCount += bytesSkipped;
+                if (bytesSkipped < numBytesToRead) {
+                  // We are done when no bytes are skipped
+                  done = true;
+                }
+              }
+              break;
+          }
+          // Initiate a connection loss at the beginning of every "bytesPerException" cycle.
+          // The input stream will not immediately see an error, it will have pre-loaded some data.
+          if ((byteCount % bytesPerException <= maxBuffer)) {
+            initiateS3ConnectionLoss();
+          }
+        }
+        assertEquals("Wrong amount of data found from InputStream", numBytes, byteCount);
+      }
+      // We just need to ensure we saw at least one IOException
+      assertNotEquals(
+          "There was no logging of an IOException that caused the InputStream to be resumed",
+          0,
+          logListener.getCount());
+      // LogListener will fail because we haven't polled for each warning.
+      // Just clear the queue instead, we only care that the queue is not empty.
+      logListener.clearQueue();
+    }
   }
 }
