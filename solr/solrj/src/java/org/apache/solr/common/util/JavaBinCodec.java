@@ -124,6 +124,9 @@ public class JavaBinCodec implements PushWriter {
   private boolean alreadyUnmarshalled;
   protected boolean readStringAsCharSeq = false;
 
+  private boolean readMapAsNamedList =
+      EnvUtils.getPropertyAsBool("solr.solrj.javabin.readMapAsNamedList", false);
+
   public JavaBinCodec() {
     resolver = null;
     writableDocFields = null;
@@ -848,9 +851,14 @@ public class JavaBinCodec implements PushWriter {
     return size < 0 ? new LinkedHashMap<>() : CollectionUtil.newLinkedHashMap(size);
   }
 
-  public Map<Object, Object> readMap(DataInputInputStream dis) throws IOException {
+  public Map<?, Object> readMap(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
-    return readMap(dis, sz);
+
+    if (readMapAsNamedList) {
+      return readMapAsSimpleOrderedMapForStringKeys(dis, sz);
+    } else {
+      return readMap(dis, sz);
+    }
   }
 
   protected Map<Object, Object> readMap(DataInputInputStream dis, int sz) throws IOException {
@@ -861,6 +869,17 @@ public class JavaBinCodec implements PushWriter {
       m.put(key, val);
     }
     return m;
+  }
+
+  protected Map<?, Object> readMapAsSimpleOrderedMapForStringKeys(DataInputInputStream dis, int sz)
+      throws IOException {
+    SimpleOrderedMap<Object> entries = new SimpleOrderedMap<>(sz);
+    for (int i = 0; i < sz; i++) {
+      Object key = readVal(dis);
+      Object val = readVal(dis);
+      entries.add((String) key, val); // using NL.add() since key won't repeat
+    }
+    return entries;
   }
 
   public final ItemWriter itemWriter =
@@ -1435,5 +1454,12 @@ public class JavaBinCodec implements PushWriter {
     if (daos != null) {
       daos.flushBuffer();
     }
+  }
+
+  /**
+   * If set, Maps will be deserialized as {@link SimpleOrderedMap} instead of {@link LinkedHashMap}
+   */
+  public void readMapAsNamedList(boolean readMapAsNamedList) {
+    this.readMapAsNamedList = readMapAsNamedList;
   }
 }

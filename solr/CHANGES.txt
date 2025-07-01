@@ -133,6 +133,8 @@ Deprecation Removals
 
 * SOLR-17698: Removed deprecated EnumField field type. (Eric Pugh, David Smiley)
 
+* SOLR-17778: Removed no-op core admin operation FORCEPREPAREFORLEADERSHIP and its SolrJ peer OverrideLastPublished. (Pierre Salagnac)
+
 Dependency Upgrades
 ---------------------
 
@@ -240,7 +242,8 @@ Improvements
 
 * SOLR-17732: Score-based return fields other than "score" can now be returned in distributed queries. (Houston Putman)
 
-* SOLR-17744: Solr now enables Jetty's Graceful Shutdown features to prevent client connections from being abruptly terminated on orderly shutdown (hossman)
+* SOLR-17744: Solr now supports Jetty's Graceful Shutdown module (via SOLR_JETTY_GRACEFUL=true) to prevent client connections from being
+  abruptly terminated on orderly shutdown (hossman)
 
 * SOLR-17187: The polling interval for PULL and TLOG replicas can now be overridden using the `commitPollInterval` setting, which takes a String
   formatted as "HH:mm:ss" (Torsten Koster via Christine Poerschke, Jason Gerlowski)
@@ -257,6 +260,8 @@ Improvements
 
 * SOLR-17776: The HttpJdkSolrClient wasn't setting the connection timeout as per the builder configuration. (David Smiley)
 
+* SOLR-17746: Provide long form --jettyconfig option to go with -j in bin/solr scripts. (Eric Pugh, Rahul Goswami)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
@@ -266,6 +271,10 @@ Optimizations
 * SOLR-17756: Parallelize index fingerprint computation across segments via a dedicated thread pool (Matthew Biscocho, Luke Kot-Zaniewski)
 
 * SOLR-17775: Speed up function queries in 'fl' param. (Yura Korolov)
+
+* SOLR-17801: Use TotalHitCountCollector to collect count when no rows needed (Kevin Risden)
+
+* SOLR-17130: edismax MatchAllDocsQuery (*:*) Optimization (Kevin Risden)
 
 Bug Fixes
 ---------------------
@@ -320,6 +329,12 @@ Bug Fixes
 
 * SOLR-17790: Allow the -j or --jettyconfig option to start with a dash (-). (Houston Putman)
 
+* SOLR-17726: MoreLikeThis to support copy-fields (Ilaria Petreti via Alessandro Benedetti)
+
+* SOLR-16667: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
+
+* SOLR-17800: Security Manager should handle symlink on /tmp (Kevin Risden)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
@@ -367,6 +382,12 @@ Other Changes
 
 * SOLR-17625: Replaced NamedList.findRecursive usages with _get, which can do Map traversal, and
   thus makes it easier to transition intermediate NamedLists to Maps. (Gaurav Tuli)
+
+* SOLR-17635: javabin format: provide option to decode maps as SimpleOrderedMap (a NamedList & Map)
+  instead of LinkedHashMap.  Intended to aid in 10.x compatibility.  Enable via sys prop: solr.solrj.javabin.readMapAsNamedList=true
+  (Renato Haeberli, David Smiley)
+
+* SOLR-17803: Fix native access warning when using MemorySegmentIndexInput (Kevin Risden)
 
 ==================  9.8.1 ==================
 Bug Fixes
