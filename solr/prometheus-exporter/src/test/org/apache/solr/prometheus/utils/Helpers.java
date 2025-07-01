@@ -17,9 +17,11 @@
 
 package org.apache.solr.prometheus.utils;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -35,16 +37,22 @@ public class Helpers {
   }
 
   public static void indexAllDocs(SolrClient client) throws IOException, SolrServerException {
-    File exampleDocsDir =
-        new File(SolrTestCaseJ4.getFile("exampledocs").toAbsolutePath().toString());
-    File[] xmlFiles =
-        Objects.requireNonNull(exampleDocsDir.listFiles((dir, name) -> name.endsWith(".xml")));
-    for (File xml : xmlFiles) {
-      ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
-      req.addFile(xml.toPath(), "application/xml");
-      client.request(req, PrometheusExporterTestBase.COLLECTION);
+    Path exampleDocsDir = SolrTestCaseJ4.getFile("exampledocs").toAbsolutePath();
+    try (Stream<Path> files = Objects.requireNonNull(Files.list(exampleDocsDir))) {
+      files
+          .filter(xmlFile -> xmlFile.getFileName().toString().endsWith(".xml"))
+          .forEach(
+              xml -> {
+                ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
+                try {
+                  req.addFile(xml, "application/xml");
+                  client.request(req, PrometheusExporterTestBase.COLLECTION);
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
+      client.commit(PrometheusExporterTestBase.COLLECTION);
     }
-    client.commit(PrometheusExporterTestBase.COLLECTION);
   }
 
   // Parses a prometheus line into key and value, e.g.

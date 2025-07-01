@@ -71,6 +71,12 @@ Due to changes in Lucene 9, that isn't possible any more.
 === Java Security Manager
 Java removed support for the Security Manager starting with Java 24, therefore Solr will disable the feature when run with Java 24 or later.
 
+=== SolrJ
+
+If Http2SolrClient.Builder.withHttpClient is used, (and it's used more in 9.8, shifted from deprecated Apache HttpClient based clients), settings affecting HttpClient construction cannot be customized; an IllegalStateException will now be thrown if you try.
+The connection timeout cannot be customized, but idle & request timeouts can be.
+Callers (various places in Solr) no longer customize the connection timeout.
+
 == Solr 9.8.1
 === Configuration
 

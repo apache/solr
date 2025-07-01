@@ -33,7 +33,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -117,18 +116,9 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", mockCC);
 
     Set<String> methodNames = new HashSet<>();
-    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
-    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
-    methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]", null));
-    assertTrue(methodNames.contains("POST"));
-
-    methodNames = new HashSet<>();
-
-    rsp =
-        invoke(
-            coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", mockCC);
-    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
-    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
+    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]"));
+    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]"));
+    methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]"));
     assertTrue(methodNames.contains("POST"));
   }
 
@@ -141,13 +131,13 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     ValidatingJsonMap spec = apis.get(0).getSpec();
 
-    assertEquals("POST", spec._getStr("/methods[0]", null));
-    assertEquals("POST", spec._getStr("/methods[0]", null));
-    assertEquals("/cluster/package", spec._getStr("/url/paths[0]", null));
-    assertEquals("string", spec._getStr("/commands/add/properties/package/type", null));
-    assertEquals("array", spec._getStr("/commands/add/properties/files/type", null));
-    assertEquals("string", spec._getStr("/commands/add/properties/files/items/type", null));
-    assertEquals("string", spec._getStr("/commands/delete/items/type", null));
+    assertEquals("POST", spec._getStr("/methods[0]"));
+    assertEquals("POST", spec._getStr("/methods[0]"));
+    assertEquals("/cluster/package", spec._getStr("/url/paths[0]"));
+    assertEquals("string", spec._getStr("/commands/add/properties/package/type"));
+    assertEquals("array", spec._getStr("/commands/add/properties/files/type"));
+    assertEquals("string", spec._getStr("/commands/add/properties/files/items/type"));
+    assertEquals("string", spec._getStr("/commands/delete/items/type"));
     SolrQueryResponse rsp =
         v2ApiInvoke(
             apiBag,
@@ -173,8 +163,8 @@ public class TestApiFramework extends SolrTestCaseJ4 {
             new ByteArrayInputStream(
                 "{\"package\":\"mypkg\", \"version\": \"1.0\", \"files\" : [\"a.jar\", \"b.jar\"]}"
                     .getBytes(UTF_8)));
-    assertEquals("mypkg", rsp.getValues()._getStr("payload/package", null));
-    assertEquals("1.0", rsp.getValues()._getStr("payload/version", null));
+    assertEquals("mypkg", rsp.getValues()._getStr("payload/package"));
+    assertEquals("1.0", rsp.getValues()._getStr("payload/version"));
   }
 
   public static class C {
@@ -400,7 +390,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
         .when(mockCC)
         .unload(any(String.class), anyBoolean(), anyBoolean(), anyBoolean());
 
-    when(mockCC.getCoreRootDirectory()).thenReturn(Paths.get("coreroot"));
+    when(mockCC.getCoreRootDirectory()).thenReturn(Path.of("coreroot"));
     when(mockCC.getContainerProperties()).thenReturn(new Properties());
 
     when(mockCC.getRequestHandlers()).thenAnswer(invocationOnMock -> out.get("getRequestHandlers"));

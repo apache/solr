@@ -19,13 +19,14 @@ package org.apache.solr.core;
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -53,7 +54,7 @@ import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.TimeOut;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.noggit.JSONParser;
@@ -78,8 +79,8 @@ public class TestSolrConfigHandler extends RestTestBase {
    */
   public static ByteBuffer getFileContent(String f, boolean loadFromClassPath) throws IOException {
     ByteBuffer jar;
-    File file = loadFromClassPath ? getFile(f).toFile() : new File(f);
-    try (FileInputStream fis = new FileInputStream(file)) {
+    Path file = loadFromClassPath ? getFile(f) : Path.of(f);
+    try (InputStream fis = Files.newInputStream(file)) {
       byte[] buf = new byte[fis.available()];
       // TODO: This should check that we read the entire stream
       fis.read(buf);
@@ -115,8 +116,8 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -124,7 +125,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
+        tmpSolrHome,
         "solrconfig-managed-schema.xml",
         "schema-rest.xml",
         "/solr",
@@ -159,32 +160,31 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     String payload =
         "{\n"
-            + " 'set-property' : { 'updateHandler.autoCommit.maxDocs':100, 'updateHandler.autoCommit.maxTime':10 , 'requestDispatcher.requestParsers.addHttpRequestToContext':true} \n"
+            + " 'set-property' : { 'updateHandler.autoCommit.maxDocs':100, 'updateHandler.autoCommit.maxTime':10 } \n"
             + " }";
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness);
-    assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs", null));
-    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
+    assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs"));
+    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime"));
 
     m = getRespMap("/config/updateHandler", harness);
-    assertNotNull(m._get("config/updateHandler/commitWithin/softCommit", null));
-    assertNotNull(m._get("config/updateHandler/autoCommit/maxDocs", null));
-    assertNotNull(m._get("config/updateHandler/autoCommit/maxTime", null));
+    assertNotNull(m._get("config/updateHandler/commitWithin/softCommit"));
+    assertNotNull(m._get("config/updateHandler/autoCommit/maxDocs"));
+    assertNotNull(m._get("config/updateHandler/autoCommit/maxTime"));
 
     m = getRespMap("/config", harness);
     assertNotNull(m);
 
-    assertEquals("100", m._getStr("config/updateHandler/autoCommit/maxDocs", null));
-    assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime", null));
-    assertEquals(
-        "true", m._getStr("config/requestDispatcher/requestParsers/addHttpRequestToContext", null));
+    assertEquals("100", m._getStr("config/updateHandler/autoCommit/maxDocs"));
+    assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime"));
+
     payload = "{\n" + " 'unset-property' :  'updateHandler.autoCommit.maxDocs' \n" + " }";
     runConfigCommand(harness, "/config", payload);
 
     m = getRespMap("/config/overlay", harness);
-    assertNull(m._get("overlay/props/updateHandler/autoCommit/maxDocs", null));
-    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime", null));
+    assertNull(m._get("overlay/props/updateHandler/autoCommit/maxDocs"));
+    assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime"));
   }
 
   public void testUserProp() throws Exception {
@@ -197,13 +197,13 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(harness, "/config", payload);
 
     MapWriter m = getRespMap("/config/overlay", harness); // .get("overlay");
-    assertEquals(m._get("overlay/userProps/my.custom.variable.a", null), "MODIFIEDA");
-    assertEquals(m._get("overlay/userProps/my.custom.variable.b", null), "MODIFIEDB");
+    assertEquals(m._get("overlay/userProps/my.custom.variable.a"), "MODIFIEDA");
+    assertEquals(m._get("overlay/userProps/my.custom.variable.b"), "MODIFIEDB");
 
     m = getRespMap("/dump?json.nl=map&initArgs=true", harness); // .get("initArgs");
 
-    assertEquals("MODIFIEDA", m._get("initArgs/defaults/a", null));
-    assertEquals("MODIFIEDB", m._get("initArgs/defaults/b", null));
+    assertEquals("MODIFIEDA", m._get("initArgs/defaults/a"));
+    assertEquals("MODIFIEDB", m._get("initArgs/defaults/b"));
   }
 
   public void testReqHandlerAPIs() throws Exception {
@@ -1029,7 +1029,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     String payload = "{'set-property' : { 'query.documentCache.size': 399} }";
     runConfigCommand(restTestHarness, "/config", payload);
     MapWriter overlay = getRespMap("/config/overlay", restTestHarness);
-    assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size", null));
+    assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size"));
     // Setting size only will not enable the cache
     restTestHarness.setServerProvider(() -> getBaseUrl());
     MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);

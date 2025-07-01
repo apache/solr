@@ -37,8 +37,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.StatsField.Stat;
-import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.DatePointField;
+import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
@@ -85,7 +85,7 @@ public class StatsValuesFactory {
       return statsValue;
     } else if (StrField.class.isInstance(fieldType)) {
       return new StringStatsValues(statsField);
-    } else if (AbstractEnumField.class.isInstance(fieldType)) {
+    } else if (EnumFieldType.class.isInstance(fieldType)) {
       return new EnumStatsValues(statsField);
     } else {
       throw new SolrException(
@@ -239,29 +239,21 @@ public class StatsValuesFactory {
 
       updateTypeSpecificStats(stv);
 
-      NamedList<?> f = (NamedList<?>) stv.get(FACETS);
+      var f = (NamedList<NamedList<NamedList<?>>>) stv.get(FACETS);
       if (f == null) {
         return;
       }
 
-      for (int i = 0; i < f.size(); i++) {
-        String field = f.getName(i);
-        NamedList<?> vals = (NamedList<?>) f.getVal(i);
-        Map<String, StatsValues> addTo = facets.get(field);
-        if (addTo == null) {
-          addTo = new HashMap<>();
-          facets.put(field, addTo);
-        }
-        for (int j = 0; j < vals.size(); j++) {
-          String val = vals.getName(j);
-          StatsValues vvals = addTo.get(val);
-          if (vvals == null) {
-            vvals = createStatsValues(statsField);
-            addTo.put(val, vvals);
-          }
-          vvals.accumulate((NamedList<?>) vals.getVal(j));
-        }
-      }
+      f.forEach(
+          (field, vals) -> {
+            Map<String, StatsValues> addTo = facets.computeIfAbsent(field, k -> new HashMap<>());
+            vals.forEach(
+                (val, vval) -> {
+                  StatsValues vvals =
+                      addTo.computeIfAbsent(val, k -> createStatsValues(statsField));
+                  vvals.accumulate(vval);
+                });
+          });
     }
 
     @Override

@@ -110,7 +110,9 @@ public class TestDistribFileStore extends SolrCloudTestCase {
               "/package/mypkg/v1.0/runtimelibs.jar",
               "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
-      assertTrue(rsp._getStr("message", "").contains("File with same metadata exists "));
+      assertTrue(
+          Objects.requireNonNullElse(rsp._getStr("message"), "")
+              .contains("File with same metadata exists "));
 
       assertResponseValues(
           10,
@@ -246,7 +248,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static NavigableObject assertResponseValues(
       int repeats, SolrClient client, SolrRequest<?> req, Map<String, Object> vals)
       throws Exception {
-    Callable<NavigableObject> callable = () -> req.process(client);
+    Callable<NavigableObject> callable = () -> client.request(req);
 
     return assertResponseValues(repeats, callable, vals);
   }
@@ -324,7 +326,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       final var syncReq = new FileStoreApi.SyncFile(path);
       final var syncRsp = syncReq.process(client);
       if (log.isInfoEnabled()) {
-        log.info("sync resp for path {} was {}", path, syncRsp.getParsed().responseHeader.status);
+        log.info("sync resp for path {} was {}", path, syncRsp.responseHeader.status);
       }
     }
     checkAllNodesForFile(

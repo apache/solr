@@ -17,8 +17,8 @@
 
 package org.apache.solr.cli;
 
-import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.MissingArgumentException;
@@ -72,12 +72,8 @@ public class ConfigTool extends ToolBase {
           .desc("Set the property to this value; accepts JSON objects and strings.")
           .build();
 
-  public ConfigTool() {
-    this(CLIO.getOutStream());
-  }
-
-  public ConfigTool(PrintStream stdout) {
-    super(stdout);
+  public ConfigTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -129,7 +125,7 @@ public class ConfigTool extends ToolBase {
     try (SolrClient solrClient =
         CLIUtils.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
-      Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
+      Integer statusCode = (Integer) result._get(List.of("responseHeader", "status"), null);
       if (statusCode == 0) {
         if (value != null) {
           echo("Successfully " + action + " " + property + " to " + value);

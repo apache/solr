@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
@@ -38,7 +38,7 @@ public class TestClusteringResponse extends SolrJettyTestBase {
     NamedList<Object> response = null;
 
     /*Load a simple XML with the clustering response encoded in an XML format*/
-    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath());
         InputStream is = loader.openResource("solrj/sampleClusteringResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {

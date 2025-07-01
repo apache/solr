@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
+import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
@@ -34,8 +35,8 @@ import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -188,6 +189,10 @@ public class CoreContainer {
     return indexSearcherExecutor;
   }
 
+  public ExecutorService getIndexFingerprintExecutor() {
+    return indexFingerprintExecutor;
+  }
+
   public static class CoreLoadFailure {
 
     public final CoreDescriptor cd;
@@ -240,9 +245,7 @@ public class CoreContainer {
 
   private volatile HttpSolrClientProvider solrClientProvider;
 
-  private volatile ExecutorService coreContainerWorkExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(
-          new SolrNamedThreadFactory("coreContainerWorkExecutor"));
+  private volatile ExecutorService coreLoadExecutor;
 
   private final OrderedExecutor<BytesRef> replayUpdatesExecutor;
 
@@ -292,6 +295,8 @@ public class CoreContainer {
   public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
+
+  private final ExecutorService indexFingerprintExecutor;
 
   private final ClusterSingletons clusterSingletons =
       new ClusterSingletons(
@@ -450,6 +455,12 @@ public class CoreContainer {
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
     this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
+
+    this.indexFingerprintExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            EXECUTOR_MAX_CPU_THREADS,
+            Integer.MAX_VALUE,
+            new SolrNamedThreadFactory("IndexFingerprintPool"));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -679,6 +690,7 @@ public class CoreContainer {
     allowPaths = null;
     allowListUrlChecker = null;
     indexSearcherExecutor = null;
+    indexFingerprintExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -824,16 +836,6 @@ public class CoreContainer {
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 
     tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
-
-    coreContainerWorkExecutor =
-        MetricUtils.instrumentedExecutorService(
-            coreContainerWorkExecutor,
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreContainerWorkExecutor",
-                SolrInfoBean.Category.CONTAINER.toString(),
-                "threadPool"));
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -989,13 +991,32 @@ public class CoreContainer {
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
     solrMetricsContext.gauge(
-        () -> dataHome.toFile().getTotalSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(dataHome).getTotalSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving total space for data home directory" + dataHome,
+                e);
+          }
+        },
         true,
         "totalSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
         "fs");
+
     solrMetricsContext.gauge(
-        () -> dataHome.toFile().getUsableSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(dataHome).getUsableSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for data home directory" + dataHome,
+                e);
+          }
+        },
         true,
         "usableSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
@@ -1003,14 +1024,34 @@ public class CoreContainer {
     solrMetricsContext.gauge(
         dataHome::toString, true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(
-        () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(cfg.getCoreRootDirectory()).getTotalSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error retrieving total space for core root directory: "
+                    + cfg.getCoreRootDirectory(),
+                e);
+          }
+        },
         true,
         "totalSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
         "fs",
         "coreRoot");
     solrMetricsContext.gauge(
-        () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
+        () -> {
+          try {
+            return Files.getFileStore(cfg.getCoreRootDirectory()).getUsableSpace();
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error retrieving usable space for core root directory: "
+                    + cfg.getCoreRootDirectory(),
+                e);
+          }
+        },
         true,
         "usableSpace",
         SolrInfoBean.Category.CONTAINER.toString(),
@@ -1045,7 +1086,7 @@ public class CoreContainer {
     }
 
     // setup executor to load cores in parallel
-    ExecutorService coreLoadExecutor =
+    coreLoadExecutor =
         MetricUtils.instrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
@@ -1078,19 +1119,23 @@ public class CoreContainer {
           coreLoadExecutor.execute(
               () -> {
                 SolrCore core;
+                boolean pendingCoreOpAdded = false;
                 try {
                   if (zkSys.getZkController() != null) {
                     zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
                   }
                   MDCLoggingContext.setCoreDescriptor(this, cd);
                   solrCores.waitAddPendingCoreOps(cd.getName());
+                  pendingCoreOpAdded = true;
                   core = createFromDescriptor(cd, false, false);
                 } catch (Exception e) {
                   log.error("SolrCore failed to load on startup", e);
                   MDCLoggingContext.clear();
                   return;
                 } finally {
-                  solrCores.removeFromPendingOps(cd.getName());
+                  if (pendingCoreOpAdded) {
+                    solrCores.removeFromPendingOps(cd.getName());
+                  }
                   if (asyncSolrCoreLoad) {
                     solrCores.markCoreAsNotLoading(cd);
                   }
@@ -1111,11 +1156,9 @@ public class CoreContainer {
       backgroundCloser.start();
 
     } finally {
-      if (asyncSolrCoreLoad) {
-        coreContainerWorkExecutor.execute(
-            () -> ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor));
-      } else {
-        ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor);
+      coreLoadExecutor.shutdown(); // doesn't block
+      if (!asyncSolrCoreLoad) {
+        ExecutorUtil.awaitTerminationForever(coreLoadExecutor);
       }
     }
 
@@ -1290,6 +1333,7 @@ public class CoreContainer {
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
+    ExecutorUtil.shutdownNowAndAwaitTermination(indexFingerprintExecutor);
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
@@ -1304,7 +1348,7 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
-      ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // First wake up the closer thread, it'll terminate almost immediately since it checks
       // isShutDown.
@@ -1593,7 +1637,7 @@ public class CoreContainer {
 
       // Validate paths are relative to known locations to avoid path traversal
       assertPathAllowed(cd.getInstanceDir());
-      assertPathAllowed(Paths.get(cd.getDataDir()));
+      assertPathAllowed(Path.of(cd.getDataDir()));
 
       boolean preExistingZkEntry = false;
       try {
@@ -1610,8 +1654,8 @@ public class CoreContainer {
         coresLocator.create(this, cd);
 
         SolrCore core;
+        solrCores.waitAddPendingCoreOps(cd.getName());
         try {
-          solrCores.waitAddPendingCoreOps(cd.getName());
           core = createFromDescriptor(cd, true, newCollection);
           // Write out the current core properties in case anything changed when the core was
           // created
@@ -1737,13 +1781,11 @@ public class CoreContainer {
       }
 
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
-      dcore.setConfigSetTrusted(coreConfig.isTrusted());
       if (log.isInfoEnabled()) {
         log.info(
-            "Creating SolrCore '{}' using configuration from {}, trusted={}",
+            "Creating SolrCore '{}' using configuration from {}",
             dcore.getName(),
-            coreConfig.getName(),
-            dcore.isConfigSetTrusted());
+            coreConfig.getName());
       }
       try {
         core = new SolrCore(this, dcore, coreConfig);
@@ -2047,8 +2089,8 @@ public class CoreContainer {
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
       boolean success = false;
+      solrCores.waitAddPendingCoreOps(cd.getName());
       try {
-        solrCores.waitAddPendingCoreOps(cd.getName());
         ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
         if (log.isInfoEnabled()) {
           log.info(
@@ -2105,8 +2147,8 @@ public class CoreContainer {
       if (coreId != null) return; // yeah, this core is already reloaded/unloaded return right away
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
+        solrCores.waitAddPendingCoreOps(clf.cd.getName());
         try {
-          solrCores.waitAddPendingCoreOps(clf.cd.getName());
           createFromDescriptor(clf.cd, true, false);
         } finally {
           solrCores.removeFromPendingOps(clf.cd.getName());
@@ -2149,8 +2191,8 @@ public class CoreContainer {
    */
   public void unload(
       String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
+    solrCores.waitAddPendingCoreOps(name);
     try {
-      solrCores.waitAddPendingCoreOps(name);
       unloadWithoutCoreOp(name, deleteIndexDir, deleteDataDir, deleteInstanceDir);
     } finally {
       solrCores.removeFromPendingOps(name);

@@ -80,3 +80,11 @@ teardown() {
   run cat ${SOLR_LOGS_DIR}/solr-${SOLR_PORT}-console.log
   refute_output --partial 'Exception'
 }
+
+@test "start with custom jetty options" {
+  export ENABLE_REMOTE_JMX_OPTS=true
+  export RMI_PORT=65535 # need to make sure we don't exceed port range so hard code it
+
+  solr start --jettyconfig "--module=server"
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+}

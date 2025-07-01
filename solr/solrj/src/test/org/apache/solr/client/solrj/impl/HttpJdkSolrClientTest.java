@@ -105,8 +105,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         client.deleteById("id");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
@@ -122,8 +120,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         client.deleteByQuery("*:*");
       } catch (SolrClient.RemoteSolrException ignored) {
       }
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
     }
@@ -152,7 +148,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = b.build()) {
       client.query(q, method);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
     }
   }
 
@@ -167,11 +163,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     q.setParam("a", MUST_ENCODE);
 
     HttpJdkSolrClient.Builder b =
-        builder(someOtherUrl).withResponseParser(new BinaryResponseParser());
+        builder(someOtherUrl).withResponseParser(new JavaBinResponseParser());
     try (HttpJdkSolrClient client = b.build()) {
       client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+          client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
     }
   }
 
@@ -347,8 +343,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client =
         builder(url)
-            .withRequestWriter(new BinaryRequestWriter())
-            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new JavaBinRequestWriter())
+            .withResponseParser(new JavaBinResponseParser())
             .build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
       assertNoHeadRequestWithSsl(client);
@@ -440,7 +436,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       queryToHelpJdkReleaseThreads(client);
     }
 
-    rp = new BinaryResponseParser();
+    rp = new JavaBinResponseParser();
     try (HttpJdkSolrClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
       assertTrue(
           client.processorAcceptsMimeType(

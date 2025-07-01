@@ -53,17 +53,14 @@ public class TestLlmBase extends RestTestBase {
       String solrconfig, String schema, boolean buildIndex, boolean persistModelStore)
       throws Exception {
     initFolders(persistModelStore);
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome.toAbsolutePath(), solrconfig, schema, "/solr", true, null);
     if (buildIndex) prepareIndex();
   }
 
   protected static void initFolders(boolean isPersistent) throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
-    tmpConfDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
-
     final Path modelStore = tmpConfDir.resolve(MODEL_FILE_NAME);
 
     if (isPersistent) {

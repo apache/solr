@@ -198,6 +198,7 @@ public class PivotFacetHelper {
     if (globalQueryCounts == null) {
       return shardQueryCounts;
     }
+    // TODO use Map.compute if we switch to Map
     for (Entry<String, Number> entry : shardQueryCounts) {
       int idx = globalQueryCounts.indexOf(entry.getKey(), 0);
       if (idx == -1) {

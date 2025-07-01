@@ -123,7 +123,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * <p>This parser represents the default Response Parser chosen to parse the response if the
    * parser were not specified as part of the request.
    *
-   * @see org.apache.solr.client.solrj.impl.BinaryResponseParser
+   * @see org.apache.solr.client.solrj.impl.JavaBinResponseParser
    */
   protected volatile ResponseParser parser;
 
@@ -132,7 +132,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    *
    * @see org.apache.solr.client.solrj.request.RequestWriter
    */
-  protected volatile RequestWriter requestWriter = new BinaryRequestWriter();
+  protected volatile RequestWriter requestWriter = new JavaBinRequestWriter();
 
   private final HttpClient httpClient;
 
@@ -343,12 +343,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     Header[] contextHeaders = buildRequestSpecificHeaders(request);
 
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
+    // The parser 'wt=' param is used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams(params);
     if (parser != null) {
       wparams.set(CommonParams.WT, parser.getWriterType());
-      wparams.set(CommonParams.VERSION, parser.getVersion());
     }
     if (invariantParams != null) {
       wparams.add(invariantParams);
@@ -752,7 +750,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         new BasicHeader(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
 
     contextHeaders[1] =
-        new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType());
+        new BasicHeader(CommonParams.SOLR_REQUEST_TYPE_PARAM, request.getRequestType().toString());
 
     return contextHeaders;
   }
@@ -812,7 +810,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     protected ModifiableSolrParams invariantParams = new ModifiableSolrParams();
 
     public Builder() {
-      this.responseParser = new BinaryResponseParser();
+      this.responseParser = new JavaBinResponseParser();
     }
 
     /**
@@ -847,15 +845,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
      *
      * <p>By default, compression is not enabled on created HttpSolrClient objects. By default,
      * redirects are not followed in created HttpSolrClient objects. By default, {@link
-     * BinaryRequestWriter} is used for composing requests. By default, {@link BinaryResponseParser}
-     * is used for parsing responses.
+     * JavaBinRequestWriter} is used for composing requests. By default, {@link
+     * JavaBinResponseParser} is used for parsing responses.
      *
      * @param baseSolrUrl a URL to the root Solr path (i.e. "/solr") that will be targeted by any
      *     created clients.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
-      this.responseParser = new BinaryResponseParser();
+      this.responseParser = new JavaBinResponseParser();
     }
 
     /** Chooses whether created {@link HttpSolrClient}s use compression by default. */
