@@ -736,7 +736,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
         getSummaryDataPointSnapshot(
             actualSnapshot,
             Labels.of("category", "QUERY", "core", "collection1", "handler", "/select[shard]"));
-    assertEquals(0, actualSummaryDataPoint.getCount(), 0);
+    assertEquals(0, (float) actualSummaryDataPoint.getCount(), 0);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_requests");
     CounterSnapshot.CounterDataPointSnapshot actualCounterDataPoint =
@@ -793,7 +793,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     actualSummaryDataPoint =
         getSummaryDataPointSnapshot(
             actualSnapshot, Labels.of("core", "collection1", "type", "warmup"));
-    assertEquals(0, actualSummaryDataPoint.getCount(), 0);
+    assertEquals(0, (float) actualSummaryDataPoint.getCount(), 0);
 
     handler.close();
   }
