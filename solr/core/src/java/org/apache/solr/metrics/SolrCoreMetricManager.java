@@ -146,7 +146,8 @@ public class SolrCoreMetricManager implements Closeable {
               + producer);
     }
 
-    // NOCOMMIT SOLR-17458: These attributes may not work for standalone mode
+    // NOCOMMIT SOLR-17458: These attributes may not work for standalone mode and maybe make the
+    // scope attribute optional
     // use deprecated method for back-compat, remove in 9.0
     producer.initializeMetrics(
         solrMetricsContext,
