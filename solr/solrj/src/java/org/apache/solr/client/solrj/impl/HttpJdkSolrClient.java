@@ -86,12 +86,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   protected HttpJdkSolrClient(String serverBaseUrl, HttpJdkSolrClient.Builder builder) {
     super(serverBaseUrl, builder);
+    HttpClient.Builder b = HttpClient.newBuilder();
 
     HttpClient.Redirect followRedirects =
         Boolean.TRUE.equals(builder.followRedirects)
             ? HttpClient.Redirect.NORMAL
             : HttpClient.Redirect.NEVER;
-    HttpClient.Builder b = HttpClient.newBuilder().followRedirects(followRedirects);
+    b.followRedirects(followRedirects);
+
+    b.connectTimeout(Duration.of(builder.getConnectionTimeoutMillis(), ChronoUnit.MILLIS));
+    // note: idle timeout isn't used for the JDK client
+    // note: request timeout is set per request
+
     if (builder.sslContext != null) {
       b.sslContext(builder.sslContext);
     }
@@ -113,7 +119,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
     b.executor(this.executor);
 
-    if (builder.useHttp1_1) {
+    if (builder.shouldUseHttp1_1()) {
       this.forceHttp11 = true;
       b.version(HttpClient.Version.HTTP_1_1);
     }
@@ -419,11 +425,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
-    if (requestTimeoutMillis > 0) {
-      reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
-    } else if (idleTimeoutMillis > 0) {
-      reqb.timeout(Duration.of(idleTimeoutMillis, ChronoUnit.MILLIS));
-    }
+    reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
     reqb.header("User-Agent", USER_AGENT);
     setBasicAuthHeader(solrRequest, reqb);
     Map<String, String> headers = solrRequest.getHeaders();
@@ -553,12 +555,6 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
     @Override
     public HttpJdkSolrClient build() {
-      if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
-        idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
-      }
-      if (connectionTimeoutMillis == null) {
-        connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
-      }
       return new HttpJdkSolrClient(baseSolrUrl, this);
     }
 

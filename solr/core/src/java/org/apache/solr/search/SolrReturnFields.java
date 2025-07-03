@@ -37,7 +37,7 @@ import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
-import org.apache.solr.response.transform.MatchScoreAugmenter;
+import org.apache.solr.response.transform.OriginalScoreAugmenter;
 import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -48,7 +48,8 @@ import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
 public class SolrReturnFields extends ReturnFields {
   // Special Field Keys
   public static final String SCORE = "score";
-  public static final String MATCH_SCORE = "matchScore";
+  public static final String ORIGINAL_SCORE_NAME = "originalScore";
+  public static final String ORIGINAL_SCORE = "originalScore()";
 
   private final List<String> globs = new ArrayList<>(1);
 
@@ -313,6 +314,19 @@ public class SolrReturnFields extends ReturnFields {
               globs.add(field);
             }
             continue;
+          } else if (ORIGINAL_SCORE_NAME.equals(field) && sp.opt("(") && sp.opt(")")) {
+            // TODO: Remove this in https://issues.apache.org/jira/browse/SOLR-17784 when
+            // originalScore() becomes a true function
+            ch = sp.ch();
+            if (Character.isWhitespace(ch) || ch == ',' || ch == 0) {
+              _wantsScore = true;
+
+              String disp = (key == null) ? ORIGINAL_SCORE : key;
+              augmenters.addTransformer(new OriginalScoreAugmenter(disp));
+              scoreDependentFields.put(disp, disp.equals(ORIGINAL_SCORE) ? "" : ORIGINAL_SCORE);
+              addField(ORIGINAL_SCORE, disp, augmenters, true);
+              continue;
+            }
           }
 
           // an invalid glob
@@ -501,12 +515,6 @@ public class SolrReturnFields extends ReturnFields {
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new ScoreAugmenter(disp));
       scoreDependentFields.put(disp, disp.equals(SCORE) ? "" : SCORE);
-    } else if (MATCH_SCORE.equals(field)) {
-      _wantsScore = true;
-
-      String disp = (key == null) ? field : key;
-      augmenters.addTransformer(new MatchScoreAugmenter(disp));
-      scoreDependentFields.put(disp, disp.equals(MATCH_SCORE) ? "" : MATCH_SCORE);
     }
   }
 
