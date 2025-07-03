@@ -56,6 +56,8 @@ import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
+import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -739,6 +741,7 @@ public class SolrMetricManager {
                           PeriodicMetricReader.builder(metricExporter)
                               .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
                               .build());
+              SdkMeterProviderUtil.setExemplarFilter(builder, ExemplarFilter.traceBased());
               return new MeterProviderAndReaders(builder.build(), reader);
             })
         .sdkMeterProvider();
