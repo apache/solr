@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import static org.apache.solr.metrics.otel.OtlpExporterFactory.OTLP_EXPORTER_INTERVAL;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -52,6 +54,10 @@ import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
+import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -82,6 +88,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.otel.OtlpExporterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -152,8 +159,11 @@ public class SolrMetricManager {
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
 
-  public SolrMetricManager() {
+  private final MetricExporter metricExporter;
+
+  public SolrMetricManager(MetricExporter exporter) {
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
+    metricExporter = exporter;
     counterSupplier = MetricSuppliers.counterSupplier(null, null);
     meterSupplier = MetricSuppliers.meterSupplier(null, null);
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
@@ -162,6 +172,7 @@ public class SolrMetricManager {
 
   public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
     this.metricsConfig = metricsConfig;
+    this.metricExporter = OtlpExporterFactory.getExporter();
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
@@ -723,10 +734,15 @@ public class SolrMetricManager {
             providerName,
             key -> {
               var reader = new PrometheusMetricReader(true, null);
-              // NOCOMMIT: We need to add a Periodic Metric Reader here if we want to push with OTLP
-              // with an exporter
-              var provider = SdkMeterProvider.builder().registerMetricReader(reader).build();
-              return new MeterProviderAndReaders(provider, reader);
+              var builder =
+                  SdkMeterProvider.builder()
+                      .registerMetricReader(reader)
+                      .registerMetricReader(
+                          PeriodicMetricReader.builder(metricExporter)
+                              .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
+                              .build());
+              SdkMeterProviderUtil.setExemplarFilter(builder, ExemplarFilter.traceBased());
+              return new MeterProviderAndReaders(builder.build(), reader);
             })
         .sdkMeterProvider();
   }
@@ -754,7 +770,7 @@ public class SolrMetricManager {
    *
    * @param registry name of the registry to remove
    */
-  // TODO SOLR-17458: You can't delete OTEL meters
+  // NOCOMMIT: Remove this
   public void removeRegistry(String registry) {
     // NOCOMMIT Remove all closing Dropwizard registries
     // close any reporters for this registry first
@@ -1668,6 +1684,10 @@ public class SolrMetricManager {
   public PrometheusMetricReader getPrometheusMetricReader(String providerName) {
     MeterProviderAndReaders mpr = meterProviderAndReaders.get(enforcePrefix(providerName));
     return (mpr != null) ? mpr.prometheusMetricReader() : null;
+  }
+
+  public MetricExporter getMetricExporter() {
+    return metricExporter;
   }
 
   private record MeterProviderAndReaders(
