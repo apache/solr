@@ -365,18 +365,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
                   deleteByQueryCommands.longValue(),
                   baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
             });
-
-    // NOCOMMIT: Temporary to see metrics
-    //    numErrorsCumulative.add(0L);
-    //    deleteByQueryCommandsCumulative.add(0L);
-    //    deleteByIdCommandsCumulative.add(0L);
-    //    addCommandsCumulative.add(0L);
-    //    expungeDeleteCommands.add(0L);
-    //    mergeIndexesCommands.add(0L);
-    //    commitCommands.add(0L);
-    //    splitCommands.add(0L);
-    //    optimizeCommands.add(0L);
-    //    rollbackCommands.add(0L);
   }
 
   private void deleteAll() throws IOException {
