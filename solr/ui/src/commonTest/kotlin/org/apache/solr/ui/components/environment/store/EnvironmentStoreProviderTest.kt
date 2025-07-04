@@ -42,6 +42,7 @@ class EnvironmentStoreProviderTest {
         val store = EnvironmentStoreProvider(
             storeFactory = DefaultStoreFactory(),
             client = client,
+            mainContext = coroutineContext,
             ioContext = backgroundScope.coroutineContext
         ).provide()
 
@@ -84,6 +85,7 @@ class EnvironmentStoreProviderTest {
         val store = EnvironmentStoreProvider(
             storeFactory = DefaultStoreFactory(),
             client = client,
+            mainContext = coroutineContext,
             ioContext = backgroundScope.coroutineContext,
         ).provide()
 
