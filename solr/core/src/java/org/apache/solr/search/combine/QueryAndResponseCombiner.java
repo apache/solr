@@ -97,8 +97,8 @@ public abstract class QueryAndResponseCombiner {
    */
   public static QueryAndResponseCombiner getImplementation(SolrParams requestParams) {
     String algorithm =
-        requestParams.get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.RECIPROCAl_RANK_FUSION);
-    if (algorithm.equals(CombinerParams.RECIPROCAl_RANK_FUSION)) {
+        requestParams.get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.RECIPROCAL_RANK_FUSION);
+    if (algorithm.equals(CombinerParams.RECIPROCAL_RANK_FUSION)) {
       return new ReciprocalRankFusion(requestParams);
     }
     throw new SolrException(
