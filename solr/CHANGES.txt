@@ -135,6 +135,8 @@ Deprecation Removals
 
 * SOLR-17778: Removed no-op core admin operation FORCEPREPAREFORLEADERSHIP and its SolrJ peer OverrideLastPublished. (Pierre Salagnac)
 
+* SOLR-17742: Removed the handleSelect option of <requestDispatcher>.  (Gaurav Tuli)
+
 Dependency Upgrades
 ---------------------
 
