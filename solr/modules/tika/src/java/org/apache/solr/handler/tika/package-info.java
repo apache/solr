@@ -14,19 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-
-public class RenameCoreRequestBody {
-  @Schema(
-      description = "The new name for the Solr core.",
-      requiredMode = Schema.RequiredMode.REQUIRED)
-  @JsonProperty
-  public String to;
-
-  @Schema(description = "Request ID to track this action which will be processed asynchronously.")
-  @JsonProperty
-  public String async;
-}
+/** Classes related to Tika Server request handler */
+package org.apache.solr.handler.tika;
