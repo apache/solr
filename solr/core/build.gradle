@@ -107,6 +107,7 @@ dependencies {
   implementation libs.commonscodec.commonscodec
 
   implementation libs.commonscli.commonscli
+  implementation libs.picocli
 
   implementation libs.locationtech.spatial4j
 
