@@ -633,7 +633,6 @@ public class SearchHandler extends RequestHandlerBase
             if (srsp.getException() != null) {
               // If things are not tolerant, abort everything and rethrow
               if (!tolerant) {
-                shardHandler1.cancelAll();
                 throwSolrException(srsp.getException());
               } else {
                 // Check if the purpose includes 'PURPOSE_GET_TOP_IDS'
