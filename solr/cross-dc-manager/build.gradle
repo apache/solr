@@ -32,6 +32,7 @@ dependencies {
   implementation libs.dropwizard.metrics.servlets
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
+  implementation libs.google.guava
   implementation libs.slf4j.api
   runtimeOnly libs.google.protobuf.javautils
   runtimeOnly libs.commonscodec.commonscodec

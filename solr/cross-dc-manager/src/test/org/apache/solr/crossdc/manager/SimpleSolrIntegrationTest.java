@@ -51,7 +51,7 @@ public class SimpleSolrIntegrationTest extends SolrCloudTestCase {
 
     CloudSolrClient cloudClient1 = cluster1.getSolrClient();
 
-    processor = new SolrMessageProcessor(cloudClient1, null);
+    processor = new SolrMessageProcessor(() -> cloudClient1, null);
 
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, 1, 1);

@@ -55,7 +55,7 @@ public class SolrMessageProcessorTest {
   public void setUp() {
     client = mock(CloudSolrClient.class);
     resubmitBackoffPolicy = mock(ResubmitBackoffPolicy.class);
-    solrMessageProcessor = new SolrMessageProcessor(client, resubmitBackoffPolicy);
+    solrMessageProcessor = new SolrMessageProcessor(() -> client, resubmitBackoffPolicy);
   }
 
   /** Should handle MirroredSolrRequest and return a failed result with no retry */
