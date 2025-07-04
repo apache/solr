@@ -28,7 +28,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.component.ShardDoc;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
 import org.junit.BeforeClass;
@@ -110,21 +109,5 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
     List<ShardDoc> shardDocs = reciprocalRankFusion.combine(shardDocMap);
     assertEquals(2, shardDocs.size());
     assertEquals("id2", shardDocs.getFirst().id);
-  }
-
-  /**
-   * This method tests the explanation functionality. It retrieves query results, extracts the doc
-   * lists, combines them into a single QueryResult, and then explores the explanations provided by
-   * reciprocalRankFusion.
-   */
-  @Test
-  public void testExplain() {
-    List<QueryResult> rankedLists = getQueryResults();
-    List<DocList> docLists = new ArrayList<>(rankedLists.size());
-    for (QueryResult rankedList : rankedLists) {
-      docLists.add(rankedList.getDocList());
-    }
-    QueryResult combinedResult = new QueryResult();
-    // reciprocalRankFusion.getExplanations()
   }
 }

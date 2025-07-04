@@ -88,9 +88,6 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           core.getSearchComponent(FacetComponent.COMPONENT_NAME),
           handler.getComponents(false).get(0));
       assertEquals(
-          core.getSearchComponent(CombinedQueryComponent.COMPONENT_NAME),
-          handler.getComponents(true).get(0));
-      assertEquals(
           core.getSearchComponent(DebugComponent.COMPONENT_NAME),
           handler.getComponents(false).get(1));
       assertEquals(
@@ -123,6 +120,22 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       // Debug component is always last in this case
       assertEquals(
           core.getSearchComponent(DebugComponent.COMPONENT_NAME), comps.get(comps.size() - 1));
+    } catch (IOException e) {
+      fail("Exception when closing SearchHandler");
+    }
+  }
+
+  @Test
+  public void testCombinedComponentInit() {
+    SolrCore core = h.getCore();
+
+    try (SearchHandler handler = new SearchHandler()) {
+      handler.init(new NamedList<>());
+      handler.inform(core);
+      assertEquals(9, handler.getComponents(true).size());
+      assertEquals(
+          core.getSearchComponent(CombinedQueryComponent.COMPONENT_NAME),
+          handler.getComponents(true).getFirst());
     } catch (IOException e) {
       fail("Exception when closing SearchHandler");
     }

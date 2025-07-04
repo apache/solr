@@ -252,7 +252,7 @@ public class SearchHandler extends RequestHandlerBase
       // Use the default component list
       list = getDefaultComponents();
 
-      if (isCombinedQuery) {
+      if (isCombinedQuery && list.getFirst().equals(QueryComponent.COMPONENT_NAME)) {
         list.removeFirst();
         list.addFirst(CombinedQueryComponent.COMPONENT_NAME);
       }
