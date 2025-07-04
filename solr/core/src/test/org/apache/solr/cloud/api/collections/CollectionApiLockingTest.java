@@ -20,8 +20,8 @@ package org.apache.solr.cloud.api.collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.CuratorDistributedCollectionLockFactory;
 import org.apache.solr.cloud.DistributedMultiLock;
-import org.apache.solr.cloud.ZkDistributedCollectionLockFactory;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
@@ -50,7 +50,8 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
               .build()) {
         CollectionApiLockFactory apiLockFactory =
             new CollectionApiLockFactory(
-                new ZkDistributedCollectionLockFactory(zkClient, "/apiLockTestRoot"));
+                new CuratorDistributedCollectionLockFactory(
+                    zkClient.getCuratorFramework(), "/apiLockTestRoot"));
 
         monothreadedTests(apiLockFactory);
         multithreadedTests(apiLockFactory);
