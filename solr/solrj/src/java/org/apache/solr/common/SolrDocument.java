@@ -20,12 +20,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -166,8 +168,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
   /** returns the first value for a field */
   public Object getFirstValue(String name) {
     Object v = _fields.get(name);
-    if (v == null || !(v instanceof Collection)) return v;
-    Collection<?> c = (Collection<?>) v;
+    if (v == null || !(v instanceof Collection<?> c)) return v;
     if (c.size() > 0) {
       return c.iterator().next();
     }
@@ -196,6 +197,19 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
     return null;
   }
 
+  /** Get the value or collection of values for a given field. */
+  public Map<String, Object> getSubsetOfFields(Set<String> fieldNames) {
+    final HashMap<String, Object> subset = CollectionUtil.newHashMap(fieldNames.size());
+    fieldNames.forEach(
+        f -> {
+          Object v = getFieldValue(f);
+          if (v != null) {
+            subset.put(f, getFieldValue(f));
+          }
+        });
+    return subset;
+  }
+
   @Override
   public String toString() {
     return "SolrDocument" + _fields;
@@ -215,8 +229,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
       final Object value = keyVal.getValue();
       if (value instanceof SolrDocument) {
         consumer.accept(keyVal.getKey(), (SolrDocument) value);
-      } else if (value instanceof Collection) {
-        Collection<?> cVal = (Collection<?>) value;
+      } else if (value instanceof Collection<?> cVal) {
         for (Object v : cVal) {
           if (v instanceof SolrDocument) {
             consumer.accept(keyVal.getKey(), (SolrDocument) v);

@@ -47,32 +47,3 @@ Certain plugins or add-ons to plugins require placement here, and they will have
 Solr incorporates Jetty for providing HTTP server functionality.
 Jetty has some directories that contain `.jar` files for itself and its own plugins / modules or JVM level plugins (e.g., loggers).
 Solr plugins won't work in these locations.
-
-== Lib Directives in SolrConfig
-
-_Both_ plugin and xref:resource-loading.adoc[resource] file paths are configurable via `<lib/>` directives in `solrconfig.xml`.
-When a directive matches a directory, then resources can be resolved from it.
-When a directive matches a `.jar` file, Solr plugins and their dependencies are resolved from it.
-Resources can be placed in a `.jar` too but that's unusual.
-It's erroneous to refer to any other type of file.
-
-A `<lib/>` directive must have one (not both) of these two attributes:
-
-* `path`: used to refer to a single directory (for resources) or file (for a plugin `.jar`)
-
-* `dir`: used to refer to _all_ direct descendants of the specified directory.  Optionally supply a `regex` attribute to filter these to those matching the regular expression.
-
-All directories are resolved as relative to the Solr core's `instanceDir`.
-
-These examples show how to load modules into Solr:
-
-[source,xml]
-----
-  <lib dir="${solr.install.dir:../../../..}/modules/extraction/lib" regex=".*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/modules/clustering/lib/" regex=".*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/modules/langid/lib/" regex=".*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib/" regex=".*\.jar" />
-----

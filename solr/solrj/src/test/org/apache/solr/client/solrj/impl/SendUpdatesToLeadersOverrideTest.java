@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
@@ -48,13 +47,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Test the behavior of {@link CloudSolrClient#isUpdatesToLeaders} and {@link
- * IsUpdateRequest#isSendToLeaders}.
+ * UpdateRequest#isSendToLeaders}.
  *
  * <p>This class uses {@link TrackingUpdateProcessorFactory} instances (configured both before, and
  * after the <code>distrib</code> processor) to inspect which replicas receive various {@link
  * UpdateRequest}s from variously configured {@link CloudSolrClient}s. In some requests, <code>
  * shards.preference=replica.type:PULL</code> is specified to confirm that typical routing
- * prefrences are respected (when the effective value of <code>isSendToLeaders</code> is <code>false
+ * preferences are respected (when the effective value of <code>isSendToLeaders</code> is <code>
+ * false
  * </code>)
  */
 public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
@@ -82,12 +82,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
     configureCluster(numNodes)
         .addConfig(
             CONFIG,
-            getFile("solrj")
-                .toPath()
-                .resolve("solr")
-                .resolve("configsets")
-                .resolve(CONFIG)
-                .resolve("conf"))
+            getFile("solrj").resolve("solr").resolve("configsets").resolve(CONFIG).resolve("conf"))
         .configure();
 
     // create 2 shard collection with 1 NRT (leader) and 1 PULL replica
@@ -134,7 +129,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
         .collect(Collectors.toUnmodifiableList());
   }
 
-  /** Convinience class for making assertions about the updates that were processed */
+  /** Convenience class for making assertions about the updates that were processed */
   private static class RecordingResults {
     public final List<UpdateCommand> preDistribCommands;
     public final List<UpdateCommand> postDistribCommands;
@@ -206,7 +201,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
    * setting <code>shards.preference=replica.type:PULL</code> on the input req, and then returning
    * that req
    */
-  private static AbstractUpdateRequest prefPull(final AbstractUpdateRequest req) {
+  private static UpdateRequest prefPull(final UpdateRequest req) {
     req.setParam("shards.preference", "replica.type:PULL");
     return req;
   }
@@ -271,7 +266,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   }
 
   /**
-   * Given a SolrClient, sends various updates and asserts expecations regarding default behavior:
+   * Given a SolrClient, sends various updates and asserts expectations regarding default behavior:
    * that these requests will be initially sent to shard leaders, and "routed" requests will be sent
    * to the leader for that route's shard
    */
@@ -300,7 +295,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           "add pre and post should be exact same reqs",
           add.preDistribRequests.keySet(),
           add.postDistribRequests.keySet());
-      // NOTE: we can't assert the pre/post commands are the same, because they add versioning
+      // NOTE: we can't assert the pre- / post-commands are the same, because they add versioning
 
       // whatever leader our add was routed to, a DBI for the same id should go to the same leader
       final RecordingResults del =
@@ -366,7 +361,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           record.preDistribCores.keySet(),
           record.postDistribCores.keySet());
 
-      // NOTE: we make no asertion about number of post-distrb requests, just commands
+      // NOTE: we make no assertion about number of post-distrib requests, just commands
       // (distrib proc may batch differently then what we send)
       assertEquals(
           "multi post-distrib cores don't match pre-distrib cores",
@@ -377,8 +372,8 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   }
 
   /**
-   * Given a SolrClient, sends various updates using {@link #prefPull} and asserts expecations that
-   * these requests will be initially sent to PULL replcias
+   * Given a SolrClient, sends various updates using {@link #prefPull} and asserts expectations that
+   * these requests will be initially sent to PULL replicas
    */
   private void checkUpdatesWithShardsPrefPull(final CloudSolrClient client) throws Exception {
 
@@ -474,7 +469,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           record.postDistribCores.keySet());
       // NOTE: Don't assume our docIds are spread across multi-shards...
       //
-      // We make no asertion about number of post-distrb requests
+      // We make no asertion about number of post-distrib requests
       // (distrib proc may batch differently then what we send)
       assertThat(
           "multi post-distrib cores",
@@ -485,8 +480,8 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
   }
 
   /**
-   * Given a SolrClient, sends various updates were {@link IsUpdateRequest#isSendToLeaders} returns
-   * false, and asserts expectations that requess using {@link #prefPull} are all sent to PULL
+   * Given a SolrClient, sends various updates were {@link UpdateRequest#isSendToLeaders} returns
+   * false, and asserts expectations that requests using {@link #prefPull} are all sent to PULL
    * replicas, regardless of how the client is configured.
    */
   private void checkUpdatesWithSendToLeadersFalse(final CloudSolrClient client) throws Exception {
@@ -583,7 +578,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           record.postDistribCores.keySet());
       // NOTE: Don't assume our docIds are spread across multi-shards...
       //
-      // We make no asertion about number of post-distrb requests
+      // We make no assertion about number of post-distrib requests
       // (distrib proc may batch differently then what we send)
       assertThat(
           "multi post-distrib cores",

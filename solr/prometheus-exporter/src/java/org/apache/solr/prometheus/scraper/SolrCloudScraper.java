@@ -19,6 +19,7 @@ package org.apache.solr.prometheus.scraper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,10 +57,10 @@ public class SolrCloudScraper extends SolrScraper {
   public Map<String, MetricSamples> pingAllCores(MetricsQuery query) throws IOException {
     Map<String, Http2SolrClient> httpSolrClients = createHttpSolrClients();
 
-    Map<String, DocCollection> collectionState = solrClient.getClusterState().getCollectionsMap();
-
     List<Replica> replicas =
-        collectionState.values().stream()
+        solrClient
+            .getClusterState()
+            .collectionStream()
             .map(DocCollection::getReplicas)
             .flatMap(List::stream)
             .collect(Collectors.toList());
@@ -130,15 +131,17 @@ public class SolrCloudScraper extends SolrScraper {
   }
 
   private Set<String> getBaseUrls() throws IOException {
-    return solrClient.getClusterState().getCollectionsMap().values().stream()
+    return solrClient
+        .getClusterState()
+        .collectionStream()
         .map(DocCollection::getReplicas)
         .flatMap(List::stream)
         .map(Replica::getBaseUrl)
         .collect(Collectors.toSet());
   }
 
-  private Set<String> getCollections() throws IOException {
-    return solrClient.getClusterState().getCollectionStates().keySet();
+  private Collection<String> getCollections() throws IOException {
+    return solrClient.getClusterState().getCollectionNames();
   }
 
   @Override

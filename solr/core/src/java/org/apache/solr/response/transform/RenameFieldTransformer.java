@@ -17,6 +17,7 @@
 package org.apache.solr.response.transform;
 
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.search.DocIterationInfo;
 
 /**
  * Return a field with a name that is different that what is indexed
@@ -43,7 +44,7 @@ public class RenameFieldTransformer extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid) {
+  public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
     Object v = (copy) ? doc.get(from) : doc.remove(from);
     if (v != null) {
       doc.setField(to, v);

@@ -17,22 +17,18 @@
 
 package org.apache.solr.cli;
 
-import java.util.Collections;
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
 import org.apache.solr.client.api.util.SolrVersion;
 
 public class VersionTool extends ToolBase {
 
-  @Override
-  public String getName() {
-    return "version";
+  public VersionTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
-  public List<Option> getOptions() {
-    return Collections.emptyList();
+  public String getName() {
+    return "version";
   }
 
   @Override

@@ -20,7 +20,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.endpoint.MergeIndexesApi;
@@ -103,7 +103,7 @@ public class MergeIndexesTest extends SolrTestCaseJ4 {
     when(mockSolrCore.getCoreContainer()).thenReturn(mockCoreContainer);
     doThrow(IndexOutOfBoundsException.class)
         .when(mockCoreContainer)
-        .assertPathAllowed(Paths.get(path_not_allowed));
+        .assertPathAllowed(Path.of(path_not_allowed));
     var exp =
         assertThrows(SolrException.class, () -> mergeIndexes.mergeIndexes(coreName, requestBody));
   }

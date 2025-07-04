@@ -92,8 +92,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
       String algorithmString = params.get(ALGORITHM_PARAM);
       Algorithm classificationAlgorithm;
       try {
-        if (algorithmString == null
-            || Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT)) == null) {
+        if (algorithmString == null) {
           classificationAlgorithm = DEFAULT_ALGORITHM;
         } else {
           classificationAlgorithm = Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT));

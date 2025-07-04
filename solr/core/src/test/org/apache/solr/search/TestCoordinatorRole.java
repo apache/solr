@@ -361,11 +361,17 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // TODO: could separate this out into a different test method, but this should suffice for
         // now
         pullJetty.start(true);
+        waitForState(
+            "Pull jetty replicas didn't become active in time",
+            COLL,
+            ((liveNodes, collectionState) ->
+                collectionState.getReplicasOnNode(pullJettyF.getNodeName()).stream()
+                    .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
         AtomicBoolean done = new AtomicBoolean();
         long runMinutes = 1;
         long finishTimeMs =
             new Date().getTime() + TimeUnit.MILLISECONDS.convert(runMinutes, TimeUnit.MINUTES);
-        JettySolrRunner[] jettys = new JettySolrRunner[] {nrtJettyF, pullJettyF};
+        JettySolrRunner[] jettys = new JettySolrRunner[] {pullJettyF, nrtJettyF};
         Random threadRandom = new Random(r.nextInt());
         Future<Integer> f =
             executor.submit(
@@ -386,6 +392,12 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                       log.info("restarting {} ...", idx);
                       toManipulate.start(true);
                       log.info("restarted {}.", idx);
+                      waitForState(
+                          toManipulate.getNodeName() + " replicas didn't become active in time",
+                          COLL,
+                          ((liveNodes, collectionState) ->
+                              collectionState.getReplicasOnNode(toManipulate.getNodeName()).stream()
+                                  .allMatch(rep -> rep.getState() == Replica.State.ACTIVE)));
                     } catch (Exception e) {
                       throw new RuntimeException(e);
                     }
@@ -750,7 +762,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Failed to wait for child shards after split",
           COLLECTION_NAME,
-          (liveNodes, collectionState) ->
+          collectionState ->
               collectionState.getSlice("shard1_0") != null
                   && collectionState.getSlice("shard1_0").getState() == Slice.State.ACTIVE
                   && collectionState.getSlice("shard1_1") != null
@@ -761,7 +773,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Parent shard is not yet deleted after split",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> collectionState.getSlice("shard1") == null);
+          collectionState -> collectionState.getSlice("shard1") == null);
 
       response =
           new QueryRequest(new SolrQuery("*:*"))
@@ -796,7 +808,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Cannot find replica on first node yet",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             if (collectionState.getReplicas().size() == 1) {
               Replica replica = collectionState.getReplicas().get(0);
               return fromNode.equals(replica.getNodeName())
@@ -837,7 +849,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       waitForState(
           "Cannot find replica on second node yet after repliac move",
           COLLECTION_NAME,
-          (liveNodes, collectionState) -> {
+          collectionState -> {
             if (collectionState.getReplicas().size() == 1) {
               Replica replica = collectionState.getReplicas().get(0);
               return toNodeName.equals(replica.getNodeName())
@@ -859,6 +871,69 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
               .process(client, COLLECTION_NAME);
 
       assertEquals(DOC_PER_COLLECTION_COUNT, response.getResults().getNumFound());
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  public void testCoreReload() throws Exception {
+    final int DATA_NODE_COUNT = 1;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .configure();
+
+    List<String> dataNodes =
+        cluster.getJettySolrRunners().stream()
+            .map(JettySolrRunner::getNodeName)
+            .collect(Collectors.toUnmodifiableList());
+
+    try {
+      CollectionAdminRequest.createCollection("c1", "conf1", 1, 1).process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c1", 1, 1);
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      JettySolrRunner coordinatorJetty;
+      try {
+        coordinatorJetty = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      try (HttpSolrClient coordinatorClient =
+          new HttpSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
+        HttpResponse response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(
+                    new HttpGet(
+                        coordinatorJetty.getBaseUrl()
+                            + "/c1/select?q:*:*")); // make a call so the synthetic core would be
+        // created
+        assertEquals(200, response.getStatusLine().getStatusCode());
+        // conf1 has no cache-control
+        assertNull(response.getFirstHeader("cache-control"));
+
+        // now update conf1
+        cluster.uploadConfigSet(configset("cache-control"), "conf1");
+
+        response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(
+                    new HttpGet(
+                        coordinatorJetty.getBaseUrl()
+                            + "/admin/cores?core=.sys.COORDINATOR-COLL-conf1_core&action=reload"));
+        assertEquals(200, response.getStatusLine().getStatusCode());
+
+        response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(new HttpGet(coordinatorJetty.getBaseUrl() + "/c1/select?q:*:*"));
+        assertEquals(200, response.getStatusLine().getStatusCode());
+        // now the response should show cache-control
+        assertTrue(response.getFirstHeader("cache-control").getValue().contains("max-age=30"));
+      }
     } finally {
       cluster.shutdown();
     }

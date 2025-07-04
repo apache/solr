@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "lifecycle of package" {
-  run solr start -c -Denable.packages=true
+  run solr start -Denable.packages=true
 
   run solr package --help
   assert_output --partial "Add a repository to Solr"
@@ -39,12 +39,12 @@ teardown() {
 }
 
 @test "deploying and undeploying a collection level package" {
-  run solr start -c -Denable.packages=true
+  run solr start -Denable.packages=true
 
   solr create -c foo-1.2
 
   # Deploy package - the package doesn't need to exist before the collection validation kicks in
-  run solr package deploy PACKAGE_NAME -collections foo-1.2
+  run solr package deploy PACKAGE_NAME --collections foo-1.2
   # assert_output --partial "Deployment successful"
   refute_output --partial "Invalid collection"
   
@@ -52,28 +52,30 @@ teardown() {
   assert_output --partial "Package instance doesn't exist: PACKAGE_NAME:null"
 
   # Undeploy package
-  run solr package undeploy PACKAGE_NAME -collections foo-1.2
+  run solr package undeploy PACKAGE_NAME --collections foo-1.2
   refute_output --partial "Invalid collection"
   assert_output --partial "Package PACKAGE_NAME not deployed on collection foo-1.2"
 }
 
 # This test is useful if you are debugging/working with packages.
-# We have commented it out for now since it depends on a live internet
+# We have disabled it for now since it depends on a live internet
 # connection to run.  This could be updated with a local Repo server if we had
 # a package that is part of the Solr project to use.
-# @test "deploying and undeploying a cluster level package" {
-#  run solr start -c -Denable.packages=true
-  
-#  run solr package add-repo splainer "https://raw.githubusercontent.com/o19s/splainer/main/solr-splainer-package/repo"
-#  assert_output --partial "Added repository: splainer"
-  
-#  run solr package list-available
-#  assert_output --partial "solr-splainer 		Splainer for Solr"
-#  run solr package install solr-splainer
-#  assert_output --partial "solr-splainer installed."
+@test "deploying and undeploying a cluster level package" {
+  skip "For developing package infra; requires a connection to github"
 
-#  run solr package deploy solr-splainer -y -cluster
-#  assert_output --partial "Deployment successful"
+  run solr start -Denable.packages=true
   
-#  run -0 curl --fail http://localhost:${SOLR_PORT}/v2/splainer/index.html
-# }
+  run solr package add-repo splainer "https://raw.githubusercontent.com/o19s/splainer/refs/heads/main/solr-splainer-package/repo/"
+  assert_output --partial "Added repository: splainer"
+  
+  run solr package list-available
+  assert_output --partial "solr-splainer 		Splainer for Solr"
+  run solr package install solr-splainer
+  assert_output --partial "solr-splainer installed."
+
+  run solr package deploy solr-splainer -y --cluster
+  assert_output --partial "Deployment successful"
+  
+  run -0 curl --fail http://localhost:${SOLR_PORT}/v2/splainer/index.html
+}

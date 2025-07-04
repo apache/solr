@@ -171,15 +171,12 @@ public abstract class CoreAdminParams {
     PREPRECOVERY,
     REQUESTRECOVERY,
     REQUESTSYNCSHARD,
-    DELETEALIAS,
     REQUESTBUFFERUPDATES,
     REQUESTAPPLYUPDATES,
     OVERSEEROP,
     REQUESTSTATUS(true),
     REJOINLEADERELECTION,
-    // internal API used by force shard leader election
-    FORCEPREPAREFORLEADERSHIP,
-    // Internal APIs to backup and restore a core
+    // Internal APIs to back up and restore a core
     BACKUPCORE,
     RESTORECORE,
     INSTALLCOREDATA,

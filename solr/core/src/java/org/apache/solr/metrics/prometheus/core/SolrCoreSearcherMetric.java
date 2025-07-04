@@ -22,16 +22,15 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /** Dropwizard metrics of name SEARCHER.* */
 public class SolrCoreSearcherMetric extends SolrCoreMetric {
   public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher_documents";
   public static final String CORE_SEARCHER_TIMES = "solr_metrics_core_average_searcher_warmup_time";
 
-  public SolrCoreSearcherMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrCoreSearcherMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   /*
@@ -50,15 +49,16 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("liveDocsCache")) {
-        exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+        formatter.exportGauge(
+            CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
       } else {
-        exporter.exportGauge(CORE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+        formatter.exportGauge(CORE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Timer) {
-      exporter.exportTimer(CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, getLabels());
+      formatter.exportTimer(CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, getLabels());
     }
   }
 }

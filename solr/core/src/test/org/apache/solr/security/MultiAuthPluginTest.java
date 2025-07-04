@@ -23,6 +23,9 @@ import static org.apache.solr.security.BasicAuthStandaloneTest.createAndStartJet
 import static org.apache.solr.security.BasicAuthStandaloneTest.doHttpPost;
 import static org.apache.solr.security.BasicAuthStandaloneTest.doHttpPostWithHeader;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -35,9 +38,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;

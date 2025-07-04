@@ -21,6 +21,7 @@ import static org.apache.solr.client.solrj.request.CollectionAdminRequest.delete
 
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -149,9 +149,9 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     deleteAfterTest(collectionName);
 
     final String singleShardLocation = singleShard1Uri.toString();
-    final BaseHttpSolrClient.RemoteSolrException rse =
+    final SolrClient.RemoteSolrException rse =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               CollectionAdminRequest.installDataToShard(
                       collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
@@ -188,7 +188,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     { // Test synchronous request error reporting
       final var expectedException =
           expectThrows(
-              BaseHttpSolrClient.RemoteSolrException.class,
+              SolrClient.RemoteSolrException.class,
               () -> {
                 CollectionAdminRequest.installDataToShard(
                         collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
@@ -291,12 +291,12 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
             .get();
     final CoreDescriptor cd = cc.getCoreDescriptor(coreName);
     final Path coreInstanceDir = cd.getInstanceDir();
-    assert coreInstanceDir.toFile().exists();
-    assert coreInstanceDir.toFile().isDirectory();
+    assert Files.exists(coreInstanceDir);
+    assert Files.isDirectory(coreInstanceDir);
 
     final Path coreIndexDir = coreInstanceDir.resolve("data").resolve("index");
-    assert coreIndexDir.toFile().exists();
-    assert coreIndexDir.toFile().isDirectory();
+    assert Files.exists(coreIndexDir);
+    assert Files.isDirectory(coreIndexDir);
 
     try (final BackupRepository backupRepository = cc.newBackupRepository(BACKUP_REPO_NAME);
         final SolrCore core = cc.getCore(coreName)) {

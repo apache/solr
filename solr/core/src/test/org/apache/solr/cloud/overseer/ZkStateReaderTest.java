@@ -627,7 +627,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       // start another thread to constantly updating the state
       final AtomicReference<Exception> updateException = new AtomicReference<>();
-      executorService.submit(
+      executorService.execute(
           () -> {
             try {
               ClusterState clusterState = reader.getClusterState();
@@ -655,7 +655,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             } catch (Exception e) {
               updateException.set(e);
             }
-            return null;
           });
       executorService.shutdown();
 
@@ -733,12 +732,12 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         (coll) -> {
           // add a watcher that tracks how many times it's invoked per znode version
           if (coll != null) {
+            invoked.computeIfAbsent(coll.getZNodeVersion(), (k) -> new LongAdder()).increment();
             try {
               barrier.await(250, TimeUnit.MILLISECONDS);
             } catch (InterruptedException | TimeoutException | BrokenBarrierException e) {
               throw new RuntimeException(e);
             }
-            invoked.computeIfAbsent(coll.getZNodeVersion(), (k) -> new LongAdder()).increment();
           }
           return false;
         });

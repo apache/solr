@@ -27,7 +27,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -844,7 +843,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       Replica parentShardLeader,
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
-      throws SolrException, IOException {
+      throws Exception {
 
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
@@ -859,17 +858,19 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             .add("key", indexSizeMetricName)
             .add("key", freeDiskSpaceMetricName);
     SolrResponse rsp =
-        cloudManager.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params));
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params)
+            .process(cloudManager.getSolrClient());
 
-    Number size = (Number) rsp.getResponse().findRecursive("metrics", indexSizeMetricName);
+    Number size = (Number) rsp.getResponse()._get(List.of("metrics", indexSizeMetricName), null);
     if (size == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
     double indexSize = size.doubleValue();
 
-    Number freeSize = (Number) rsp.getResponse().findRecursive("metrics", freeDiskSpaceMetricName);
+    Number freeSize =
+        (Number) rsp.getResponse()._get(List.of("metrics", freeDiskSpaceMetricName), null);
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;
@@ -1126,8 +1127,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         }
       }
     } else if (splitKey != null) {
-      if (router instanceof CompositeIdRouter) {
-        CompositeIdRouter compositeIdRouter = (CompositeIdRouter) router;
+      if (router instanceof CompositeIdRouter compositeIdRouter) {
         List<DocRouter.Range> tmpSubRanges = compositeIdRouter.partitionRangeByKey(splitKey, range);
         if (tmpSubRanges.size() == 1) {
           throw new SolrException(

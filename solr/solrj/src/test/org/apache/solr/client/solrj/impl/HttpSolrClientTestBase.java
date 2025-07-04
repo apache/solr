@@ -37,11 +37,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -51,7 +51,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
 
 public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
@@ -63,6 +63,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   protected static final String DEBUG_SERVLET_REGEX = DEBUG_SERVLET_PATH + "/*";
   protected static final String REDIRECT_SERVLET_PATH = "/redirect";
   protected static final String REDIRECT_SERVLET_REGEX = REDIRECT_SERVLET_PATH + "/*";
+  protected static final String SLOW_STREAM_SERVLET_PATH = "/slowStream";
+  protected static final String SLOW_STREAM_SERVLET_REGEX = SLOW_STREAM_SERVLET_PATH + "/*";
   protected static final String COLLECTION_1 = "collection1";
   // example chars that must be URI encoded - non-ASCII and curly quote
   protected static final String MUST_ENCODE = "\u1234\u007B";
@@ -77,6 +79,9 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
             .withServlet(
                 new ServletHolder(BasicHttpSolrClientTest.SlowServlet.class), SLOW_SERVLET_REGEX)
             .withServlet(new ServletHolder(DebugServlet.class), DEBUG_SERVLET_REGEX)
+            .withServlet(
+                new ServletHolder(BasicHttpSolrClientTest.SlowStreamServlet.class),
+                SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
@@ -107,8 +112,6 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     // default wt
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-    // default version
-    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     // agent
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     // content-type
@@ -116,6 +119,11 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     // param encoding
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    // case sensitive param
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
   }
 
   public void testQueryPost() throws Exception {
@@ -125,13 +133,16 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
     // this validates that URI encoding has been applied - the content-length is smaller if not
-    assertEquals("41", DebugServlet.headers.get("content-length"));
+    assertEquals("93", DebugServlet.headers.get("content-length"));
   }
 
   public void testQueryPut() throws Exception {
@@ -141,12 +152,15 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
-    assertEquals("41", DebugServlet.headers.get("content-length"));
+    assertEquals("93", DebugServlet.headers.get("content-length"));
   }
 
   public void testQueryXmlGet() throws Exception {
@@ -156,9 +170,12 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
   }
 
@@ -169,9 +186,12 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
   }
@@ -183,9 +203,12 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
   }
@@ -197,8 +220,6 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     // default wt
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-    // default version
-    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     // agent
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
   }
@@ -208,22 +229,22 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     Collection<String> ids = Collections.singletonList("a");
     try {
       client.getById("a");
-    } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+    } catch (SolrClient.RemoteSolrException ignored) {
     }
 
     try {
       client.getById(ids, null);
-    } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+    } catch (SolrClient.RemoteSolrException ignored) {
     }
 
     try {
       client.getById("foo", "a");
-    } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+    } catch (SolrClient.RemoteSolrException ignored) {
     }
 
     try {
       client.getById("foo", ids, null);
-    } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+    } catch (SolrClient.RemoteSolrException ignored) {
     }
   }
 
@@ -250,33 +271,6 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  /**
-   * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
-   * even when not on the list of ErrorCodes solr may return.
-   */
-  public void testSolrExceptionWithNullBaseurl(HttpSolrClientBase client)
-      throws IOException, SolrServerException {
-    final int status = 527;
-    assertEquals(
-        status
-            + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
-        SolrException.ErrorCode.UNKNOWN,
-        SolrException.ErrorCode.getErrorCode(status));
-
-    DebugServlet.setErrorCode(status);
-    try {
-      // if client base url is null, request url will be used in exception message
-      SolrPing ping = new SolrPing();
-      ping.setBasePath(getBaseUrl() + DEBUG_SERVLET_PATH);
-      client.request(ping, DEFAULT_CORE);
-
-      fail("Didn't get excepted exception from oversided request");
-    } catch (SolrException e) {
-      assertEquals("Unexpected exception status code", status, e.code());
-      assertTrue(e.getMessage().contains(getBaseUrl()));
-    }
-  }
-
   protected enum WT {
     JAVABIN,
     XML
@@ -291,10 +285,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     req.add(doc);
     // non-ASCII characters and curly quotes should be URI-encoded
     req.setParam("a", MUST_ENCODE);
+    // params should be case sensitive
+    req.setParam("case_sensitive_param", "lowercase");
+    req.setParam("CASE_SENSITIVE_PARAM", "uppercase");
 
     try {
       client.request(req);
-    } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+    } catch (SolrClient.RemoteSolrException ignored) {
     }
 
     assertEquals("post", DebugServlet.lastMethod);
@@ -302,12 +299,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
     assertEquals(
         wt.toString().toLowerCase(Locale.ROOT), DebugServlet.parameters.get(CommonParams.WT)[0]);
-    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-    assertEquals(
-        client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
     assertEquals(contentType, DebugServlet.headers.get("content-type"));
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals(MUST_ENCODE, DebugServlet.parameters.get("a")[0]);
+    assertEquals(1, DebugServlet.parameters.get("case_sensitive_param").length);
+    assertEquals("lowercase", DebugServlet.parameters.get("case_sensitive_param")[0]);
+    assertEquals(1, DebugServlet.parameters.get("CASE_SENSITIVE_PARAM").length);
+    assertEquals("uppercase", DebugServlet.parameters.get("CASE_SENSITIVE_PARAM")[0]);
 
     if (wt == WT.XML) {
       String requestBody = new String(DebugServlet.requestBody, StandardCharsets.UTF_8);
@@ -390,7 +388,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
       try {
         client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
 
@@ -406,7 +404,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "requestOnly", "notRequest");
       try {
         client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
 
@@ -422,7 +420,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
       try {
         client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
     }
@@ -439,10 +437,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
       try {
         client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       // NOTE: single stream requests send all the params
-      // as part of the query string.  So add "neither" to the request
+      // as part of the query string.  So add "neither" to the request,
       // so it passes the verification step.
       req.setQueryParams(Set.of("requestOnly", "both", "neither"));
       verifyServletState(client, req);
@@ -454,7 +452,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     final var req = new QueryRequest(params("q", "*:*"));
     req.setResponseParser(new InputStreamResponseParser("xml"));
     final var rsp = req.process(client);
-    Object stream = rsp.getResponse().get("stream");
+    Object stream = rsp.getResponse().get(InputStreamResponseParser.STREAM_KEY);
     assertNotNull(stream);
     assertThat(stream, instanceOf(InputStream.class));
     InputStream is = (InputStream) stream;
@@ -598,18 +596,14 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void testQueryAsync() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
+  protected void testQueryAsync(HttpSolrClientBuilderBase<?, ?> builder) throws Exception {
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpSolrClientBuilderBase<?, ?> b =
-        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
 
     List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
 
-    try (HttpSolrClientBase client = b.build()) {
+    try (HttpSolrClientBase client = builder.build()) {
       for (int i = 0; i < limit; i++) {
         DebugServlet.responseBodyByQueryFragment.put(
             ("id=KEY-" + i),
@@ -655,7 +649,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         ee = ee1;
       }
       assertTrue(future.isCompletedExceptionally());
-      assertTrue(ee.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
+      assertTrue(ee.getCause() instanceof SolrClient.RemoteSolrException);
       assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
   }

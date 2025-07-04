@@ -17,10 +17,12 @@
 package org.apache.solr.handler;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,9 +35,11 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -43,8 +47,10 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CpuAllowedLimit;
+import org.apache.solr.search.QueryLimits;
+import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -62,6 +68,7 @@ public abstract class RequestHandlerBase
         ApiSupport,
         PermissionNameProvider {
 
+  public static final String REQUEST_CPU_TIMER_CONTEXT = "publishCpuTime";
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
@@ -217,12 +224,8 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    ThreadCpuTimer threadCpuTimer = null;
     if (publishCpuTime) {
-      threadCpuTimer =
-          SolrRequestInfo.getRequestInfo() == null
-              ? new ThreadCpuTimer()
-              : SolrRequestInfo.getRequestInfo().getThreadCpuTimer();
+      ThreadCpuTimer.beginContext(REQUEST_CPU_TIMER_CONTEXT);
     }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
@@ -237,38 +240,55 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      if (rsp.isPartialResults()) {
+
+      if (!haveCompleteResults(rsp.getResponseHeader())) {
         metrics.numTimeouts.mark();
         rsp.setHttpCaching(false);
       }
+    } catch (QueryLimitsExceededException e) {
+      rsp.setPartialResults(req);
     } catch (Exception e) {
-      Exception normalized = normalizeReceivedException(req, e);
+      Exception normalized = processReceivedException(req, e);
       processErrorMetricsOnException(normalized, metrics);
       rsp.setException(normalized);
     } finally {
-      long elapsed = timer.stop();
-      metrics.totalTime.inc(elapsed);
+      try {
+        long elapsed = timer.stop();
+        metrics.totalTime.inc(elapsed);
 
-      if (publishCpuTime && threadCpuTimer != null) {
-        Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
-        if (cpuTime.isPresent()) {
-          // add CPU_TIME if not already added by SearchHandler
-          NamedList<Object> header = rsp.getResponseHeader();
-          if (header != null) {
-            if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
-              header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
-            }
+        if (publishCpuTime) {
+          Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);
+          if (QueryLimits.getCurrentLimits().isLimitsEnabled()) {
+            // prefer the value from the limit if available to avoid confusing users with trivial
+            // differences. Not fond of the spotless formatting here...
+            cpuTime =
+                Optional.ofNullable(
+                    (Long)
+                        QueryLimits.getCurrentLimits()
+                            .currentLimitValueFor(CpuAllowedLimit.class)
+                            .orElse(cpuTime.orElse(null)));
           }
-          rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
+          if (cpuTime.isPresent()) {
+            // add CPU_TIME if not already added by SearchHandler
+            NamedList<Object> header = rsp.getResponseHeader();
+            if (header != null) {
+              if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+                header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
+              }
+            }
+            rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
+          }
         }
+      } finally {
+        // whatever happens be sure to clear things out at end of request.
+        ThreadCpuTimer.reset();
       }
     }
   }
 
   public static void processErrorMetricsOnException(Exception e, HandlerMetrics metrics) {
     boolean isClientError = false;
-    if (e instanceof SolrException) {
-      final SolrException se = (SolrException) e;
+    if (e instanceof SolrException se) {
       if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
         return;
       } else if (se.code() >= 400 && se.code() < 500) {
@@ -286,10 +306,30 @@ public abstract class RequestHandlerBase
     }
   }
 
-  public static Exception normalizeReceivedException(SolrQueryRequest req, Exception e) {
-    if (req.getCore() != null) {
-      assert req.getCoreContainer() != null;
-      if (req.getCoreContainer().checkTragicException(req.getCore())) {
+  /**
+   * Processes and normalizes any exceptions that are received from the request handler. This method
+   * is called before any error metrics are recorded.
+   *
+   * <p>If a tragic exception occurred in the index writer, this method also gives up leadership of
+   * the shard, and replaces the index writer with a new one to attempt to get out of a transient
+   * failure (e.g. disk failure).
+   */
+  public static Exception processReceivedException(SolrQueryRequest req, Exception e) {
+    SolrCore core = req.getCore();
+    if (core != null) {
+      CoreContainer coreContainer = req.getCoreContainer();
+      assert coreContainer != null;
+      if (coreContainer.checkTragicException(core)) {
+        if (coreContainer.isZooKeeperAware()) {
+          coreContainer.getZkController().giveupLeadership(core.getCoreDescriptor());
+          try {
+            // If the error was something like a full file system disconnect, this probably won't
+            // help, but if it is a transient disk failure then it's worth a try.
+            core.getSolrCoreState().newIndexWriter(core, false); // should we rollback?
+          } catch (IOException ioe) {
+            log.warn("Could not roll index writer after tragedy");
+          }
+        }
         return SolrException.wrapLuceneTragicExceptionIfNecessary(e);
       }
     }

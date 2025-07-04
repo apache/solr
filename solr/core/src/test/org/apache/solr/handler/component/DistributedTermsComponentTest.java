@@ -26,7 +26,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -228,8 +228,8 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
       // other way is to pass whole response to compare
       assertNull(
           compare(
-              rsp.findRecursive("terms"),
-              controlRsp.findRecursive("terms"),
+              rsp._get(List.of("terms"), null),
+              controlRsp._get(List.of("terms"), null),
               flags(handle, "terms"),
               handle));
     }
@@ -251,7 +251,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
   private ResponseParser[] getResponseParsers() {
     // can't use junit parameters as this would also require RunWith
     return new ResponseParser[] {
-      new BinaryResponseParser(), new JsonMapResponseParser(), new XMLResponseParser()
+      new JavaBinResponseParser(), new JsonMapResponseParser(), new XMLResponseParser()
     };
   }
 }

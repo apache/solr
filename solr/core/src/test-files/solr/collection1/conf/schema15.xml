@@ -40,7 +40,7 @@
   <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
+  <fieldType name="currency" class="solr.CurrencyFieldType" amountLongSuffix="_l_ns" codeStrSuffix="_s_ns" currencyConfig="currency.xml" multiValued="false"/>
   <fieldType name="rank" class="solr.RankField"/>
 
   <!-- Dense Vector Fields -->
@@ -612,6 +612,10 @@
   <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
   <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
 
+  <!-- Subfields used with CurrencyFieldType -->
+  <dynamicField name="*_s_ns" type="string" indexed="true" stored="false" />
+  <dynamicField name="*_l_ns" type="long" indexed="true" stored="false"/>
+  
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>
 

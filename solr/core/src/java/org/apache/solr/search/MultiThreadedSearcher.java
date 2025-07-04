@@ -24,22 +24,16 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.automaton.ByteRunAutomaton;
-import org.apache.solr.search.join.GraphQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +52,8 @@ public class MultiThreadedSearcher {
       Query query,
       boolean needTopDocs,
       boolean needMaxScore,
-      boolean needDocSet)
+      boolean needDocSet,
+      QueryResult queryResult)
       throws IOException {
     Collection<CollectorManager<Collector, Object>> collectors = new ArrayList<>();
 
@@ -91,17 +86,22 @@ public class MultiThreadedSearcher {
     }
     if (needDocSet) {
       int maxDoc = searcher.getRawReader().maxDoc();
-      log.error("raw read max={}", searcher.getRawReader().maxDoc());
-
       collectors.add(new DocSetCM(maxDoc));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
-    SolrMultiCollectorManager manager = new SolrMultiCollectorManager(colls);
+    final SolrMultiCollectorManager manager = new SolrMultiCollectorManager(cmd, colls);
     Object[] ret;
     try {
       ret = searcher.search(query, manager);
+    } catch (EarlyTerminatingCollectorException ex) {
+      ret = manager.reduce();
+      queryResult.setMaxHitsTerminatedEarly(true);
+      queryResult.setPartialResults(Boolean.TRUE);
+      queryResult.setPartialResultsDetails(ex.getMessage());
+      queryResult.setApproximateTotalHits(
+          ex.getApproximateTotalHits(searcher.getIndexReader().maxDoc()));
     } catch (Exception ex) {
       if (ex instanceof RuntimeException
           && ex.getCause() != null
@@ -119,66 +119,11 @@ public class MultiThreadedSearcher {
     return new SearchResult(scoreMode, ret);
   }
 
-  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
-    if (postFilter != null
-        || cmd.getSegmentTerminateEarly()
-        || cmd.getTimeAllowed() > 0
-        || !cmd.getMultiThreaded()) {
-      return false;
-    } else {
-      MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();
-      query.visit(allowMT);
-      return allowMT.allowed();
-    }
-  }
-
-  /**
-   * A {@link QueryVisitor} that recurses through the query tree, determining if all queries support
-   * multi-threaded collecting.
-   */
-  private static class MTCollectorQueryCheck extends QueryVisitor {
-
-    private QueryVisitor subVisitor = this;
-
-    private boolean allowMt(Query query) {
-      if (query instanceof RankQuery || query instanceof GraphQuery || query instanceof JoinQuery) {
-        return false;
-      }
-      return true;
-    }
-
-    @Override
-    public void consumeTerms(Query query, Term... terms) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      }
-    }
-
-    @Override
-    public void consumeTermsMatching(
-        Query query, String field, Supplier<ByteRunAutomaton> automaton) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      } else {
-        super.consumeTermsMatching(query, field, automaton);
-      }
-    }
-
-    @Override
-    public void visitLeaf(Query query) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      }
-    }
-
-    @Override
-    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-      return subVisitor;
-    }
-
-    public boolean allowed() {
-      return subVisitor != EMPTY_VISITOR;
-    }
+  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd) {
+    // TODO: it's unclear if segmentTerminateEarly is truly incompatible but
+    //  since it has to appropriately denote partial results this needs to be
+    //  investigated/tested before we can remove this check (perhaps for 9.8).
+    return postFilter == null && !cmd.getSegmentTerminateEarly() && cmd.getMultiThreaded();
   }
 
   static class MaxScoreResult {
@@ -254,7 +199,7 @@ public class MultiThreadedSearcher {
     final ScoreMode scoreMode;
     private final Object[] result;
 
-    public SearchResult(ScoreMode scoreMode, Object[] result) {
+    SearchResult(ScoreMode scoreMode, Object[] result) {
       this.scoreMode = scoreMode;
       this.result = result;
     }
@@ -315,10 +260,14 @@ public class MultiThreadedSearcher {
 
       MaxScoreCollector collector;
       float maxScore = 0.0f;
-      for (Iterator var4 = collectors.iterator();
-          var4.hasNext();
+      for (Iterator collectorIterator = collectors.iterator();
+          collectorIterator.hasNext();
           maxScore = Math.max(maxScore, collector.getMaxScore())) {
-        collector = (MaxScoreCollector) var4.next();
+        Collector next = (Collector) collectorIterator.next();
+        if (next instanceof final EarlyTerminatingCollector earlyTerminatingCollector) {
+          next = earlyTerminatingCollector.getDelegate();
+        }
+        collector = (MaxScoreCollector) next;
       }
 
       return new MaxScoreResult(maxScore);
@@ -343,8 +292,7 @@ public class MultiThreadedSearcher {
     public Object reduce(Collection collectors) throws IOException {
       final FixedBitSet reduced = new FixedBitSet(maxDoc);
       for (Object collector : collectors) {
-        if (collector instanceof FixedBitSetCollector) {
-          FixedBitSetCollector fixedBitSetCollector = (FixedBitSetCollector) collector;
+        if (collector instanceof FixedBitSetCollector fixedBitSetCollector) {
           fixedBitSetCollector.update(reduced);
         }
       }
@@ -388,6 +336,9 @@ public class MultiThreadedSearcher {
       Collector collector;
       for (Object o : collectors) {
         collector = (Collector) o;
+        if (collector instanceof final EarlyTerminatingCollector earlyTerminatingCollector) {
+          collector = earlyTerminatingCollector.getDelegate();
+        }
         if (collector instanceof TopDocsCollector) {
           TopDocs td = ((TopDocsCollector) collector).topDocs(0, len);
           assert td != null : Arrays.asList(topDocs);

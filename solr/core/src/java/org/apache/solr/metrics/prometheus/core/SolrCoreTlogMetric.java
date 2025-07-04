@@ -18,15 +18,14 @@ package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /** Dropwizard metrics of name TLOG.* */
 public class SolrCoreTlogMetric extends SolrCoreMetric {
   public static final String CORE_TLOG_METRICS = "solr_metrics_core_tlog";
 
-  public SolrCoreTlogMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrCoreTlogMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   /*
@@ -44,9 +43,9 @@ public class SolrCoreTlogMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (dropwizardMetric instanceof Meter) {
-      exporter.exportMeter(CORE_TLOG_METRICS, (Meter) dropwizardMetric, getLabels());
+      formatter.exportMeter(CORE_TLOG_METRICS, (Meter) dropwizardMetric, getLabels());
     }
   }
 }

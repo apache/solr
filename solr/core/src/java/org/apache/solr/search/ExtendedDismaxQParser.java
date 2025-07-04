@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
@@ -187,10 +186,19 @@ public class ExtendedDismaxQParser extends QParser {
       query.add(f, BooleanClause.Occur.SHOULD);
     }
 
-    //
-    // create a boosted query (scores multiplied by boosts)
-    //
     Query topQuery = QueryUtils.build(query, this);
+
+    // If topQuery is a boolean query, unwrap the boolean query to check if it is just
+    // a MatchAllDocsQuery. Using MatchAllDocsQuery by itself enables later optimizations
+    BooleanQuery topQueryBoolean = (BooleanQuery) topQuery;
+    if (topQueryBoolean.clauses().size() == 1) {
+      Query onlyQuery = topQueryBoolean.clauses().get(0).getQuery();
+      if (onlyQuery instanceof MatchAllDocsQuery) {
+        topQuery = onlyQuery;
+      }
+    }
+
+    // create a boosted query (scores multiplied by boosts)
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size() > 1) {
       ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[0]));
@@ -532,13 +540,11 @@ public class ExtendedDismaxQParser extends QParser {
     List<ValueSource> boosts = new ArrayList<>();
     if (config.hasMultiplicativeBoosts()) {
       for (String boostStr : config.multBoosts) {
-        if (boostStr == null || boostStr.length() == 0) continue;
-        Query boost = subQuery(boostStr, FunctionQParserPlugin.NAME).getQuery();
-        ValueSource vs;
-        if (boost instanceof FunctionQuery) {
-          vs = ((FunctionQuery) boost).getValueSource();
-        } else {
-          vs = new QueryValueSource(boost, 1.0f);
+        if (boostStr == null || boostStr.isEmpty()) continue;
+        ValueSource vs = subQuery(boostStr, FunctionQParserPlugin.NAME).parseAsValueSource();
+        // the default score should be 1, not 0
+        if (vs instanceof QueryValueSource qvs && qvs.getDefaultValue() == 0.0f) {
+          vs = new QueryValueSource(qvs.getQuery(), 1.0f);
         }
         boosts.add(vs);
       }
@@ -1236,8 +1242,7 @@ public class ExtendedDismaxQParser extends QParser {
               subs.clear();
               // Make a dismax query for each clause position in the boolean per-field queries.
               for (int n = 0; n < lst.size(); ++n) {
-                if (lst.get(n) instanceof BoostQuery) {
-                  BoostQuery boostQuery = (BoostQuery) lst.get(n);
+                if (lst.get(n) instanceof BoostQuery boostQuery) {
                   BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
                   subs.add(
                       new BoostQuery(
@@ -1440,8 +1445,7 @@ public class ExtendedDismaxQParser extends QParser {
                 BooleanQuery bq = (BooleanQuery) query;
                 query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
               }
-            } else if (query instanceof PhraseQuery) {
-              PhraseQuery pq = (PhraseQuery) query;
+            } else if (query instanceof PhraseQuery pq) {
               if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;
               PhraseQuery.Builder builder = new PhraseQuery.Builder();
               Term[] terms = pq.getTerms();
@@ -1451,8 +1455,7 @@ public class ExtendedDismaxQParser extends QParser {
               }
               builder.setSlop(slop);
               query = builder.build();
-            } else if (query instanceof MultiPhraseQuery) {
-              MultiPhraseQuery mpq = (MultiPhraseQuery) query;
+            } else if (query instanceof MultiPhraseQuery mpq) {
               if (minClauseSize > 1 && mpq.getTermArrays().length < minClauseSize) return null;
               if (slop != mpq.getSlop()) {
                 query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
@@ -1485,16 +1488,14 @@ public class ExtendedDismaxQParser extends QParser {
     private Analyzer noStopwordFilterAnalyzer(String fieldName) {
       FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
       Analyzer qa = ft.getQueryAnalyzer();
-      if (!(qa instanceof TokenizerChain)) {
+      if (!(qa instanceof TokenizerChain tcq)) {
         return qa;
       }
 
-      TokenizerChain tcq = (TokenizerChain) qa;
       Analyzer ia = ft.getIndexAnalyzer();
-      if (ia == qa || !(ia instanceof TokenizerChain)) {
+      if (ia == qa || !(ia instanceof TokenizerChain tci)) {
         return qa;
       }
-      TokenizerChain tci = (TokenizerChain) ia;
 
       // make sure that there isn't a stop filter in the indexer
       for (TokenFilterFactory tf : tci.getTokenFilterFactories()) {

@@ -36,7 +36,6 @@ import org.apache.jute.OutputArchive;
 import org.apache.jute.Record;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -128,8 +127,8 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
       Create create = new Create();
       create.setBaseConfigSetName(BASE_CONFIGSET_NAME).setConfigSetName(CONFIGSET_NAME);
-      RemoteSolrException se =
-          expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
+      SolrClient.RemoteSolrException se =
+          expectThrows(SolrClient.RemoteSolrException.class, () -> create.process(solrClient));
       // partial creation should have been cleaned up
       assertFalse(configSetService.checkConfigExists(CONFIGSET_NAME));
       assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, se.code());
@@ -142,9 +141,8 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
       throws Exception {
-    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
-    tmpConfigDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
       Files.writeString(

@@ -19,7 +19,7 @@ package org.apache.solr.metrics.prometheus.jvm;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /* Dropwizard metrics of name os.* and threads.* */
 public class SolrJvmOsMetric extends SolrJvmMetric {
@@ -48,11 +48,11 @@ public class SolrJvmOsMetric extends SolrJvmMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (metricName.startsWith("threads.")) {
-      exporter.exportGauge(JVM_OS_THREADS, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(JVM_OS_THREADS, (Gauge<?>) dropwizardMetric, getLabels());
     } else {
-      exporter.exportGauge(JVM_OS, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(JVM_OS, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

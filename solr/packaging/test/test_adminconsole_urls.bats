@@ -25,11 +25,11 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "assert able to launch solr admin console" {
-  run solr start -c
+  run solr start
 
   run curl -s -o /dev/null -w "%{http_code}" http://localhost:${SOLR_PORT}/solr/
 

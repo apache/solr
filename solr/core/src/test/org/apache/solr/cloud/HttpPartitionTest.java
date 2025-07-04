@@ -19,9 +19,9 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.cloud.Replica.State.DOWN;
 import static org.apache.solr.common.cloud.Replica.State.RECOVERING;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -45,16 +46,13 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -96,7 +94,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   /** Overrides the parent implementation to install a SocketProxy in-front of the Jetty server. */
   @Override
   public JettySolrRunner createJetty(
-      File solrHome,
+      Path solrHome,
       String dataDir,
       String shardList,
       String solrConfigOverride,
@@ -242,8 +240,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     // SOLR-7625)
     JettySolrRunner replicaJetty = getJettyOnPort(getReplicaPort(notLeader));
     CoreContainer coreContainer = replicaJetty.getCoreContainer();
-    ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
-    String coreName = replicaCoreNodeProps.getCoreName();
+    String coreName = notLeader.getCoreName();
     try (SolrCore core = coreContainer.getCore(coreName)) {
       assertNotNull("Core '" + coreName + "' not found for replica: " + notLeader.getName(), core);
     }
@@ -291,27 +288,23 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   protected void waitForState(String collection, String replicaName, Replica.State state, long ms)
       throws KeeperException, InterruptedException {
-    TimeOut timeOut = new TimeOut(ms, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    Replica.State replicaState = Replica.State.ACTIVE;
-    while (!timeOut.hasTimedOut()) {
-      ZkStateReader zkr = ZkStateReader.from(cloudClient);
-      zkr.forceUpdateCollection(collection); // force the state to be fresh
-      ClusterState cs = zkr.getClusterState();
-      Collection<Slice> slices = cs.getCollection(collection).getActiveSlices();
-      Slice slice = slices.iterator().next();
-      Replica partitionedReplica = slice.getReplica(replicaName);
-      replicaState = partitionedReplica.getState();
-      if (replicaState == state) return;
+    ZkStateReader zkr = ZkStateReader.from(cloudClient);
+
+    try {
+      zkr.waitForState(
+          collection,
+          ms,
+          TimeUnit.MILLISECONDS,
+          c -> {
+            Collection<Slice> slices = c.getActiveSlices();
+            Slice slice = slices.iterator().next();
+            Replica partitionedReplica = slice.getReplica(replicaName);
+            Replica.State replicaState = partitionedReplica.getState();
+            return replicaState == state;
+          });
+    } catch (TimeoutException e) {
+      fail("Timeout waiting for state " + state + " of replica " + replicaName);
     }
-    assertEquals(
-        "Timeout waiting for state "
-            + state
-            + " of replica "
-            + replicaName
-            + ", current state "
-            + replicaState,
-        state,
-        replicaState);
   }
 
   protected void testRf3() throws Exception {
@@ -522,8 +515,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected SolrClient getHttpSolrClient(Replica replica, String collection) {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    return getHttpSolrClient(zkProps.getBaseUrl(), collection);
+    return getHttpSolrClient(replica.getBaseUrl(), collection);
   }
 
   // Send doc directly to a server (without going through proxy)

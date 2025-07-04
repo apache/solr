@@ -35,7 +35,7 @@ NOTE: This API can only be used with Solr running in SolrCloud mode.
 If you are not running Solr in SolrCloud mode but would still like to use shared configurations, please see the section xref:config-sets.adoc[].
 
 The API works by passing commands to the `configs` endpoint.
-The path to the endpoint varies depending on the API being used: the v1 API uses `solr/admin/configs`, while the v2 API uses `api/cluster/configs`.
+The path to the endpoint varies depending on the API being used: the v1 API uses `/solr/admin/configs`, while the v2 API uses `/api/configsets`.
 Examples of both types are provided below.
 
 [[configsets-list]]
@@ -64,7 +64,7 @@ With the v2 API, the `list` command is implied when there is no data sent with t
 
 [source,bash]
 ----
-http://localhost:8983/api/cluster/configs?omitHeader=true
+http://localhost:8983/api/configsets?omitHeader=true
 ----
 ====
 ======
@@ -97,8 +97,6 @@ Upon creation of a collection using an "untrusted" configset, the following func
 
 * The XSLT transformer (`tr` parameter) cannot be used at request processing time.
 * If specified in the configset, the ScriptUpdateProcessorFactory will not initialize.
-* Collections won't initialize if <lib> directives are used in the configset.
-(Note: Libraries added to Solr's classpath don't need the <lib> directive)
 
 If you use any of these parameters or features, you must have enabled security features in your Solr installation and you must upload the configset as an authenticated user.
 
@@ -183,7 +181,7 @@ With the v2 API, the name of the configset to upload is provided as a path param
 $ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
 
 $ curl -X PUT --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip
-    "http://localhost:8983/api/cluster/configs/myConfigSet"
+    "http://localhost:8983/api/configsets/myConfigSet"
 ----
 
 With this  API, the default behavior is to overwrite the configset if it already exists.
@@ -213,14 +211,14 @@ V2 API::
 +
 ====
 With the v2 API, the name of the configset and file are both provided in the URL.
-They can be substituted in `/cluster/configs/__config_name__/__file_name__`.
+They can be substituted in `/configsets/__config_name__/__file_name__`.
 The filename may be nested and include `/` characters.
 
 [source,bash]
 ----
 curl -X PUT --header "Content-Type:application/octet-stream"
     --data-binary @solr/server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml
-    "http://localhost:8983/api/cluster/configs/myConfigSet/solrconfig.xml"
+    "http://localhost:8983/api/configsets/myConfigSet/solrconfig.xml"
 ----
 
 With this API, the default behavior is to overwrite the file if it already exists within the configset.
@@ -282,30 +280,18 @@ http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConf
 V2 API::
 +
 ====
-With the v2 API, the `create` command is provided as part of the JSON data that contains the required parameters:
+With the v2 API, the `create` command is implicit and parameters are specified in a `POST` request body.
 
 [source,bash]
 ----
 curl -X POST -H 'Content-type: application/json' -d '{
-  "create":{
-    "name": "myConfigSet",
-    "baseConfigSet": "predefinedTemplate",
-    "configSetProp.immutable": "false"}}'
-    http://localhost:8983/api/cluster/configs?omitHeader=true
-----
-
-With the v2 API, configset properties can also be provided via the `properties` map:
-
-[source,bash]
-----
-curl -X POST -H 'Content-type: application/json' -d '{
-  "create":{
-    "name": "myConfigSet",
-    "baseConfigSet": "predefinedTemplate",
-    "properties": {
-      "immutable": "false"
-    }}}'
-    http://localhost:8983/api/cluster/configs?omitHeader=true
+  "name": "myConfigSet",
+  "baseConfigSet": "predefinedTemplate",
+  "properties": {
+    "immutable": "false"
+  }
+}'
+  http://localhost:8983/api/configsets?omitHeader=true
 ----
 ====
 ======
@@ -361,7 +347,7 @@ The name of the configset to delete is provided as a path parameter:
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/cluster/configs/myConfigSet?omitHeader=true
+curl -X DELETE http://localhost:8983/api/configsets/myConfigSet?omitHeader=true
 ----
 ====
 ======

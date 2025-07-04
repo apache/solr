@@ -24,7 +24,7 @@ To run it, open a window and enter:
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/gettingstarted/update example/films/films.json
+$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted example/films/films.json
 ----
 
 This will contact the server at `localhost:8983`.
@@ -41,63 +41,36 @@ The basic usage of `bin/solr post` is:
 
 [source,plain]
 ----
-usage: post
+usage: bin/solr post [-c <NAME>] [--delay <delay>] [--dry-run] [--format] [-ft <<type>[,<type>,...]>] [-h] [--mode
+       <mode>] [-o] [--params <<key>=<value>[&<key>=<value>...]>] [-r <recursive>] [-s <HOST>] [--skip-commit] [-t
+       <content-type>] [-u <credentials>] [--verbose]
+
+List of options:
  -c,--name <NAME>                                 Name of the collection.
- -d,--delay <delay>                               If recursive then delay
-                                                  will be the wait time
-                                                  between posts.  default:
+    --delay <delay>                               If recursive then delay will be the wait time between posts.  default:
                                                   10 for web, 0 for files
-    --dry-run                                     Performs a dry run of
-                                                  the posting process
-                                                  without actually sending
-                                                  documents to Solr.  Only
-                                                  works with files mode.
- -f,--format                                      sends application/json
-                                                  content as Solr commands
-                                                  to /update instead of
+    --dry-run                                     Performs a dry run of the posting process without actually sending
+                                                  documents to Solr.  Only works with files mode.
+    --format                                      sends application/json content as Solr commands to /update instead of
                                                   /update/json/docs.
  -ft,--filetypes <<type>[,<type>,...]>            default:
-                                                  xml,json,jsonl,csv,pdf,d
-                                                  oc,docx,ppt,pptx,xls,xls
-                                                  x,odt,odp,ods,ott,otp,ot
-                                                  s,rtf,htm,html,txt,log
+                                                  xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,
+                                                  ots,rtf,htm,html,txt,log
  -h,--help                                        Print this message.
-    --mode <mode>                                 Which mode the Post tool
-                                                  is running in, 'files'
-                                                  crawls local directory,
-                                                  'web' crawls website,
-                                                  'args' processes input
-                                                  args, and 'stdin' reads
-                                                  a command from standard
-                                                  in. default: files.
- -o,--optimize                                    Issue an optimize at end
-                                                  of posting documents.
-    --out                                         sends Solr response
-                                                  outputs to console.
- -p,--params <<key>=<value>[&<key>=<value>...]>   values must be
-                                                  URL-encoded; these pass
-                                                  through to Solr update
-                                                  request.
- -r,--recursive <recursive>                       For web crawl, how deep
-                                                  to go. default: 1
-    --skip-commit                                 Do not 'commit', and
-                                                  thus changes won't be
-                                                  visible till a commit
+    --mode <mode>                                 Which mode the Post tool is running in, 'files' crawls local
+                                                  directory, 'web' crawls website, 'args' processes input args, and
+                                                  'stdin' reads a command from standard in. default: files.
+ -o,--optimize                                    Issue an optimize at end of posting documents.
+    --params <<key>=<value>[&<key>=<value>...]>   Values must be URL-encoded; these pass through to Solr update request.
+ -r,--recursive <recursive>                       For web crawl, how deep to go. default: 1
+ -s,--solr-url <HOST>                             Base Solr URL, which can be used to determine the zk-host if that's
+                                                  not known; defaults to: http://localhost:8983.
+    --skip-commit                                 Do not 'commit', and thus changes won't be visible till a commit
                                                   occurs.
- -t,--type <content-type>                         Specify a specific
-                                                  mimetype to use, such as
-                                                  application/json.
- -u,--credentials <credentials>                   Credentials in the
-                                                  format
-                                                  username:password.
-                                                  Example: --credentials
+ -t,--type <content-type>                         Specify a specific mimetype to use, such as application/json.
+ -u,--credentials <credentials>                   Credentials in the format username:password. Example: --credentials
                                                   solr:SolrRocks
- -url,--solr-update-url <UPDATEURL>               Solr Update URL, the
-                                                  full url to the update
-                                                  handler, including the
-                                                  /update.
- -v,--verbose                                     Enable more verbose
-                                                  command output.
+    --verbose                                     Enable verbose command output.
 
 ----
 
@@ -112,7 +85,7 @@ Index all JSON files into `gettingstarted`.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.json
+$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted *.json
 ----
 
 === Indexing XML
@@ -121,21 +94,21 @@ Add all documents with file extension `.xml` to the collection named `gettingsta
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.xml
+$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted *.xml
 ----
 
 Add all documents starting with `article` with file extension `.xml` to the `gettingstarted` collection on Solr running on port `8984`.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8984/solr/gettingstarted/update article*.xml
+$ bin/solr post --solr-url http://localhost:8984 --name gettingstarted article*.xml
 ----
 
 Send XML arguments to delete a document from `gettingstarted`.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update -mode args -type application/xml '<delete><id>42</id></delete>'
+$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted --mode args --type application/xml '<delete><id>42</id></delete>'
 ----
 
 === Indexing CSV and JSON
@@ -144,14 +117,14 @@ Index all CSV and JSON files into `gettingstarted` from current directory:
 
 [,console]
 ----
-$ bin/solr post -c gettingstarted -filetypes json,csv .
+$ bin/solr post -c gettingstarted --filetypes json,csv .
 ----
 
 Index a tab-separated file into `gettingstarted`:
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8984/solr/signals/update -params "separator=%09" -type text/csv data.tsv
+$ bin/solr post --solr-url http://localhost:8984 --name signals --params "separator=%09" --type text/csv data.tsv
 ----
 
 The content type (`-type`) parameter is required to treat the file as the proper type, otherwise it will be ignored and a WARNING logged as it does not know what type of content a .tsv file is.
@@ -163,21 +136,21 @@ Index a PDF file into `gettingstarted`.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update a.pdf
+$ bin/solr post --solr-url http://localhost:8983/solr --name gettingstarted a.pdf
 ----
 
 Automatically detect content types in a folder, and recursively scan it for documents for indexing into `gettingstarted`.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update afolder/
+$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted  afolder/
 ----
 
 Automatically detect content types in a folder, but limit it to PPT and HTML files and index into `gettingstarted`.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update -filetypes ppt,html afolder/
+$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted --filetypes ppt,html afolder/
 ----
 
 === Indexing to a Password Protected Solr (Basic Auth)
@@ -186,7 +159,7 @@ Index a PDF as the user "solr" with password "SolrRocks":
 
 [,console]
 ----
-$ bin/solr post -u solr:SolrRocks -url http://localhost:8983/solr/gettingstarted/update a.pdf
+$ bin/solr post -u solr:SolrRocks --solr-url http://localhost:8983 --name gettingstarted a.pdf
 ----
 
 === Crawling a Website to Index Documents 
@@ -197,17 +170,17 @@ See xref:indexing-with-tika.adoc#trying-out-solr-cell[Trying Out Solr Cell] to l
 
 [,console]
 ----
-$ bin/solr post -mode web -c gettingstarted -recursive 1 -delay 1 https://solr.apache.org/ 
+$ bin/solr post --mode web -c gettingstarted --recursive 1 --delay 1 https://solr.apache.org/
 ----
 
 === Standard Input as Source for Indexing
 
 You can use the standard input as your source for data to index.  
-Notice the `-out` providing raw responses from Solr.
+Notice the `--verbose` providing raw responses from Solr.
 
 [,console]
 ----
-$ echo '{commit: {}}' | bin/solr post -mode stdin -url http://localhost:8983/my_collection/update -out
+$ echo '{commit: {}}' | bin/solr post --mode stdin --solr-url http://localhost:8983 --name my_collection --verbose
 ----
 
 === Raw Data as Source for Indexing
@@ -216,5 +189,5 @@ Provide the raw document as a string for indexing.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/signals/update -mode args -type text/csv -out $'id,value\n1,0.47' 
+$ bin/solr post --solr-url http://localhost:8983 --name signals -mode args --type text/csv --verbose $'id,value\n1,0.47' 
 ----

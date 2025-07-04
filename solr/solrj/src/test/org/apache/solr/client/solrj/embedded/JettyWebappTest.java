@@ -16,9 +16,10 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Random;
 import org.apache.http.Header;
@@ -30,12 +31,12 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
 
 /**
  * @since solr 1.3
@@ -48,21 +49,20 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.solr.home", legacyExampleCollection1SolrHome());
+    System.setProperty("solr.solr.home", legacyExampleCollection1SolrHome().toString());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 
-    File dataDir = createTempDir().toFile();
-    dataDir.mkdirs();
+    Path dataDir = createTempDir();
+    Files.createDirectories(dataDir);
 
-    System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
-    String path = ExternalPaths.WEBAPP_HOME;
+    System.setProperty("solr.data.dir", dataDir.toRealPath().toString());
+    String path = ExternalPaths.WEBAPP_HOME.toString();
 
     server = new Server(port);
     // insecure: only use for tests!!!!
-    server.setSessionIdManager(
-        new DefaultSessionIdManager(server, new Random(random().nextLong())));
-    new WebAppContext(server, path, "/solr");
+    server.addBean(new DefaultSessionIdManager(server, new Random(random().nextLong())));
+    server.setHandler(new WebAppContext(path, "/solr"));
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);

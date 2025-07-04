@@ -17,9 +17,8 @@
 
 package org.apache.solr.cli;
 
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
 public interface Tool {
   /** Defines the interface to a Solr tool that can be run from this command-line app. */
@@ -39,7 +38,7 @@ public interface Tool {
    * Optional header to display before the options in help output. Defaults to 'List of options:'
    */
   default String getHeader() {
-    return "\nList of options:";
+    return "List of options:";
   }
 
   /**
@@ -50,7 +49,15 @@ public interface Tool {
     return "\nPlease see the Reference Guide for more tools documentation: https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html";
   }
 
-  List<Option> getOptions();
+  /** Return non-null runtime of the tool. */
+  ToolRuntime getRuntime();
+
+  /**
+   * Retrieve the {@link Options} supported by this tool.
+   *
+   * @return The {@link Options} this tool supports.
+   */
+  Options getOptions();
 
   int runTool(CommandLine cli) throws Exception;
 }
