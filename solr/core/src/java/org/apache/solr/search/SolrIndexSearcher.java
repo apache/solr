@@ -1897,18 +1897,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final Collector collector;
 
       if (!needScores) {
-        collector =
-            new SimpleCollector() {
-              @Override
-              public void collect(int doc) {
-                numHits[0]++;
-              }
-
-              @Override
-              public ScoreMode scoreMode() {
-                return ScoreMode.COMPLETE_NO_SCORES;
-              }
-            };
+        collector = new TotalHitCountCollector();
       } else {
         collector =
             new SimpleCollector() {
@@ -1936,6 +1925,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
       totalHits = numHits[0];
+      if (collector instanceof TotalHitCountCollector) {
+        totalHits = ((TotalHitCountCollector) collector).getTotalHits();
+      } else {
+        totalHits = numHits[0];
+      }
       maxScore = totalHits > 0 ? topscore[0] : 0.0f;
       docList =
           new DocSlice(

@@ -298,14 +298,14 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
               .setRepositoryName(BACKUP_REPO_NAME)
               .setLocation(backupLocation)
               .process(cluster.getSolrClient());
-      assertEquals(1, resp.getResponse()._get("deleted[0]/backupId", null));
+      assertEquals(1, resp.getResponse()._get("deleted[0]/backupId"));
 
       resp =
           CollectionAdminRequest.deleteBackupById(backupName, 3)
               .setRepositoryName(BACKUP_REPO_NAME)
               .setLocation(backupLocation)
               .process(cluster.getSolrClient());
-      assertEquals(3, resp.getResponse()._get("deleted[0]/backupId", null));
+      assertEquals(3, resp.getResponse()._get("deleted[0]/backupId"));
 
       simpleRestoreAndCheckDocCount(solrClient, backupLocation, backupName);
 

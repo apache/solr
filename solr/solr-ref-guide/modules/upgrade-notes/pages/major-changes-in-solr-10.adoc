@@ -114,6 +114,9 @@ Users who that don't need to vary JAR access on a per-core basis have several op
 * The `addHttpRequestToContext` option in `solrconfig.xml` has been removed; it's obsolete.
 Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.getHttpSolrCall().getReq()`.
 
+* EnumField has been removed.  Users should migrate to the `EnumFieldType` implementation.
+
+
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.

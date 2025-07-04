@@ -324,7 +324,7 @@ goto err
 @echo                 you could pass: --jvm-opts "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
-@echo   -j opts       Additional parameters to pass to Jetty when starting Solr.
+@echo   -j/--jettyconfig opts Additional parameters to pass to Jetty when starting Solr.
 @echo                 For example, to add configuration folder that jetty should read
 @echo                 you could pass: -j "--include-jetty-dir=/etc/jetty/custom/server/"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
@@ -1031,6 +1031,9 @@ IF "%GC_TUNE%"=="" (
 
 REM Add vector optimizations module
 set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
+
+REM Support native madvise for MemorySegmentIndexInputProvider
+set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --enable-native-access=ALL-UNNAMED
 
 IF "%GC_LOG_OPTS%"=="" (
   set GC_LOG_OPTS="-Xlog:gc*"
