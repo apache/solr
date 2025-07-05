@@ -378,7 +378,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
     SearchHandler handler = (SearchHandler) core.getRequestHandler(handlerName);
     assertTrue(
         "Clustering engine named '" + engineName + "' exists.",
-        handler.getComponents().stream()
+        handler.getComponents(false).stream()
             .filter(c -> c instanceof ClusteringComponent)
             .flatMap(c -> ((ClusteringComponent) c).getEngineNames().stream())
             .anyMatch(localName -> Objects.equals(localName, engineName)));
