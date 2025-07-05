@@ -100,7 +100,6 @@ import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.combine.QueryAndResponseCombiner;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
@@ -1164,37 +1163,17 @@ public class QueryComponent extends SearchComponent {
     // the docs offset -> queuesize
     int resultSize = queue.size() - ss.getOffset();
     resultSize = Math.max(0, resultSize); // there may not be any docs in range
-    Map<Object, ShardDoc> resultIds = new HashMap<>();
 
-    if (rb instanceof CombinedQueryResponseBuilder) {
-      QueryAndResponseCombiner combinerStrategy =
-          QueryAndResponseCombiner.getImplementation(rb.req.getParams());
-      List<ShardDoc> combinedShardDocs = combinerStrategy.combine(shardDocMap);
-      maxScore = 0.0f;
-      for (int i = 0; i < resultSize; i++) {
-        ShardDoc shardDoc = combinedShardDocs.get(i);
-        shardDoc.positionInResponse = i;
-        maxScore = Math.max(maxScore, shardDoc.score);
-        // Need the toString() for correlation with other lists that must
-        // be strings (like keys in highlighting, explain, etc)
-        resultIds.put(shardDoc.id.toString(), shardDoc);
-      }
-    } else {
-      for (int i = resultSize - 1; i >= 0; i--) {
-        ShardDoc shardDoc = queue.pop();
-        shardDoc.positionInResponse = i;
-        // Need the toString() for correlation with other lists that must
-        // be strings (like keys in highlighting, explain, etc)
-        resultIds.put(shardDoc.id.toString(), shardDoc);
-      }
-    }
+    SolrDocumentList responseDocs = new SolrDocumentList();
+    if (maxScore != null) responseDocs.setMaxScore(maxScore);
+
+    Map<Object, ShardDoc> resultIds =
+        createShardResult(rb, resultSize, queue, shardDocMap, responseDocs);
 
     // Add hits for distributed requests
     // https://issues.apache.org/jira/browse/SOLR-3518
     rb.rsp.addToLog("hits", numFound);
 
-    SolrDocumentList responseDocs = new SolrDocumentList();
-    if (maxScore != null) responseDocs.setMaxScore(maxScore);
     responseDocs.setNumFound(numFound);
     responseDocs.setNumFoundExact(hitCountIsExact);
     responseDocs.setStart(ss.getOffset());
@@ -1249,6 +1228,34 @@ public class QueryComponent extends SearchComponent {
                 SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
       }
     }
+  }
+
+  /**
+   * Creates a map of shard results based on the provided parameters.
+   *
+   * @param rb ResponseBuilder to retrieve any request info
+   * @param resultSize the desired size of the result map
+   * @param queue the queue containing sorted hits from different shards
+   * @param shardDocMap a map of shard documents indexed by shard ID
+   * @param responseDocs the final SolrDocumentList to be returned or set in the responseBuilder
+   * @return a map of shard documents, where the keys are the shard IDs as strings, and the values
+   *     are the corresponding ShardDoc objects
+   */
+  protected Map<Object, ShardDoc> createShardResult(
+      ResponseBuilder rb,
+      int resultSize,
+      ShardFieldSortedHitQueue queue,
+      Map<String, List<ShardDoc>> shardDocMap,
+      SolrDocumentList responseDocs) {
+    Map<Object, ShardDoc> resultIds = new HashMap<>();
+    for (int i = resultSize - 1; i >= 0; i--) {
+      ShardDoc shardDoc = queue.pop();
+      shardDoc.positionInResponse = i;
+      // Need the toString() for correlation with other lists that must
+      // be strings (like keys in highlighting, explain, etc)
+      resultIds.put(shardDoc.id.toString(), shardDoc);
+    }
+    return resultIds;
   }
 
   /**

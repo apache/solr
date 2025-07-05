@@ -19,7 +19,10 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ShardParams;
@@ -128,6 +131,35 @@ public class CombinedQueryComponent extends QueryComponent {
     } else {
       super.process(rb);
     }
+  }
+
+  @Override
+  protected Map<Object, ShardDoc> createShardResult(
+      ResponseBuilder rb,
+      int resultSize,
+      ShardFieldSortedHitQueue queue,
+      Map<String, List<ShardDoc>> shardDocMap,
+      SolrDocumentList responseDocs) {
+    QueryAndResponseCombiner combinerStrategy =
+        QueryAndResponseCombiner.getImplementation(rb.req.getParams());
+    List<ShardDoc> combinedShardDocs = combinerStrategy.combine(shardDocMap);
+    Map<String, ShardDoc> shardDocIdMap = new HashMap<>();
+    shardDocMap.forEach(
+        (shardKey, shardDocs) ->
+            shardDocs.forEach(shardDoc -> shardDocIdMap.put(shardDoc.id.toString(), shardDoc)));
+    Map<Object, ShardDoc> resultIds = new HashMap<>();
+    float maxScore = 0.0f;
+    for (int i = 0; i < resultSize; i++) {
+      ShardDoc shardDoc = combinedShardDocs.get(i);
+      shardDoc.positionInResponse = i;
+      maxScore = Math.max(maxScore, shardDoc.score);
+      if (Float.isNaN(shardDocIdMap.get(shardDoc.id.toString()).score)) {
+        shardDoc.score = Float.NaN;
+      }
+      resultIds.put(shardDoc.id.toString(), shardDoc);
+    }
+    responseDocs.setMaxScore(maxScore);
+    return resultIds;
   }
 
   @Override
