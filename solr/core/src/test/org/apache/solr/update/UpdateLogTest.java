@@ -314,7 +314,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
 
   private long scanLastLogId(Path tlogDir) throws IOException {
     try (UpdateLog uLog = new UpdateLog()) {
-      String[] tlogFiles = uLog.getLogList(tlogDir);
+      String[] tlogFiles = uLog.getLogList(tlogDir.toFile());
       return UpdateLog.scanLastLogId(tlogFiles);
     }
   }

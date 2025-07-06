@@ -1628,7 +1628,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           throw new SolrException(
               ErrorCode.SERVER_ERROR, "Cannot recover from already existing logs");
         }
-        tlogFiles = getLogList(tlogDir);
+        tlogFiles = getLogList(tlogDir.toFile());
         id = scanLastLogId(tlogFiles) + 1; // add 1 since we create a new log
       }
       tlog = newTransactionLog(newLogPath, globalStrings, false);
