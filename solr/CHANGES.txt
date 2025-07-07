@@ -71,6 +71,8 @@ Improvements
 
 * SOLR-17746: Provide long form --jettyconfig option to go with -j in bin/solr scripts. (Eric Pugh, Rahul Goswami)
 
+* SOLR-17628: Export metric timers via `wt=prometheus` as Prometheus summaries. (Jude Muriithi, Matthew Biscocho)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
