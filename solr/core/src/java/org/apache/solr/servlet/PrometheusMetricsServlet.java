@@ -857,7 +857,25 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         "background_requests_delay_p99",
         "background request p99 duration",
         "p99_ms",
-        PrometheusMetricType.GAUGE);
+        PrometheusMetricType.GAUGE),
+    CUMULATIVE_DOCUMENT_CACHE_LOCAL_EVICTION(
+        "CACHE.searcher.documentCache",
+        "document_cache_store_local_eviction",
+        "Cumulative evictions from the per core local document cache store (vs backing shared cache store)",
+        "cumulative_evictions",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_FILTER_CACHE_LOCAL_EVICTION(
+        "CACHE.searcher.filterCache",
+        "filter_cache_store_local_eviction",
+        "Cumulative evictions from the per core local filter cache store (vs backing shared cache store)",
+        "cumulative_evictions",
+        PrometheusMetricType.COUNTER),
+    CUMULATIVE_QUERY_RESULT_CACHE_LOCAL_EVICTION(
+        "CACHE.searcher.queryResultCache",
+        "query_result_cache_store_local_eviction",
+        "Cumulative evictions from the per core local query result cache store (vs backing shared cache store)",
+        "cumulative_evictions",
+        PrometheusMetricType.COUNTER);
     final String key, metricName, desc, property;
     private final PrometheusMetricType metricType;
     private static final Map<String, CoreMetric> lookup = new HashMap<>();
@@ -997,11 +1015,11 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       }
 
       String propertyClause =
-          String.join(
-              "&property=",
-              properties.stream()
-                  .map(p -> URLEncoder.encode(p, StandardCharsets.UTF_8))
-                  .collect(Collectors.toSet()));
+          properties.stream()
+              .distinct()
+              .map(p -> "&property=" + URLEncoder.encode(p, StandardCharsets.UTF_8))
+              .collect(Collectors.joining());
+
       return String.format(
           Locale.ROOT,
           "wt=json&indent=false&compact=true&group=%s&prefix=%s%s",
