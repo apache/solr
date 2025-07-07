@@ -337,6 +337,10 @@ Bug Fixes
 
 * SOLR-17805: Exception in TransactionLog constructor deletes the file and does not block subsequent updates. (Bruno Roustant)
 
+* SOLR-17711: Remove total request timeout during recovery that was inadvertently added. (Luke Kot-Zaniewski)
+
+* SOLR-17777: Fix a very minor memory leak in metrics reporting code when a core is deleted. (Pierre Salagnac)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
