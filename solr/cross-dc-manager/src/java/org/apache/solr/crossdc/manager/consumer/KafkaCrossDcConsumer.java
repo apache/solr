@@ -118,6 +118,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
           .build();
     }
 
+    @Override
     public CloudSolrClient get() {
       CloudSolrClient existingClient = solrClientRef.get();
       if (existingClient == null) {
