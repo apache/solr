@@ -144,6 +144,8 @@ Bug Fixes
 
 * SOLR-17711: Remove total request timeout during recovery that was inadvertently added. (Luke Kot-Zaniewski)
 
+* SOLR-17777: Fix a very minor memory leak in metrics reporting code when a core is deleted. (Pierre Salagnac)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
