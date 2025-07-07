@@ -65,7 +65,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRerankReturnMatchScore() throws Exception {
+  public void testRerankReturnOriginalScore() throws Exception {
 
     assertU(delQ("*:*"));
     assertU(commit());
@@ -121,17 +121,17 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
-    params.add("fl", "id,test_ti,score,matchScore");
+    params.add("fl", "id,test_ti,score,originalScore()");
 
     assertQ(
         req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[1]/float[@name='score'][.>'10000.03']",
-        "//result/doc[1]/float[@name='matchScore'][.>'0.03']",
+        "//result/doc[1]/float[@name='originalScore()'][.>'0.03']",
         "//result/doc[2]/str[@name='id'][.='4']",
         "//result/doc[2]/float[@name='score'][.>'1000.03']",
-        "//result/doc[2]/float[@name='matchScore'][.>'0.03']",
+        "//result/doc[2]/float[@name='originalScore()'][.>'0.03']",
         "//result/doc[3]/str[@name='id'][.='2']",
         "//result/doc[4]/str[@name='id'][.='6']",
         "//result/doc[5]/str[@name='id'][.='1']",
@@ -139,7 +139,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRerankReturnMatchScoreNotRequested() throws Exception {
+  public void testRerankReturnOriginalScoreNotRequested() throws Exception {
 
     assertU(delQ("*:*"));
     assertU(commit());
@@ -198,7 +198,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,test_ti,score");
 
     String response = JQ(req(params));
-    assertFalse(response.contains("matchScore"));
+    assertFalse(response.contains("originalScore()"));
   }
 
   @Test
