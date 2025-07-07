@@ -98,13 +98,14 @@ public class KafkaCrossDcConsumerTest {
     kafkaMirroringSinkMock = mock(KafkaMirroringSink.class);
     messageProcessorMock = mock(SolrMessageProcessor.class);
     conf = testCrossDCConf();
-    KafkaCrossDcConsumer.SolrClientSupplier supplier = new KafkaCrossDcConsumer.SolrClientSupplier(null) {
-      @Override
-      protected CloudSolrClient createSolrClient() {
-        solrClientCounter.incrementAndGet();
-        return solrClientMock;
-      }
-    };
+    KafkaCrossDcConsumer.SolrClientSupplier supplier =
+        new KafkaCrossDcConsumer.SolrClientSupplier(null) {
+          @Override
+          protected CloudSolrClient createSolrClient() {
+            solrClientCounter.incrementAndGet();
+            return solrClientMock;
+          }
+        };
 
     // Set necessary configurations
 

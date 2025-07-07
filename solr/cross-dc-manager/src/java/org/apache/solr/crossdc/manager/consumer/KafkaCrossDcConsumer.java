@@ -19,9 +19,6 @@ package org.apache.solr.crossdc.manager.consumer;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.annotations.VisibleForTesting;
-
-import java.io.Closeable;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Arrays;
@@ -117,8 +114,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     protected CloudSolrClient createSolrClient() {
       log.info("-- creating new SolrClient...");
       return new CloudSolrClient.Builder(
-          Collections.singletonList(zkConnectString),
-          Optional.empty())
+              Collections.singletonList(zkConnectString), Optional.empty())
           .build();
     }
 
@@ -152,7 +148,6 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         return existingClient;
       }
     }
-
   }
 
   /**
