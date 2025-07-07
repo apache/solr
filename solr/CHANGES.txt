@@ -148,6 +148,10 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
+* PR#3078: chore(deps): update apache.kafka to v3.9.0 (solrbot)
+
+* PR#3234: Update mockito to v5.16.1 (solrbot)
+
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
 
 * Upgrade forbiddenapis to 3.9. (Uwe Schindler)
