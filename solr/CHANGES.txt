@@ -156,6 +156,8 @@ Dependency Upgrades
 
 * PR#3061: Update apache.zookeeper to v3.9.3 (solrbot)
 
+* PR#3228: Update amazon.awssdk to v2.31.77 (solrbot)
+
 * SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
 
 * Upgrade forbiddenapis to 3.9. (Uwe Schindler)
