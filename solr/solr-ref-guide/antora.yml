@@ -52,6 +52,6 @@ asciidoc:
     dep-version-log4j: '2.21.0'
     dep-version-opennlp: '1.9.4'
     dep-version-tika: '1.28.5'
-    dep-version-zookeeper: '3.9.2'
+    dep-version-zookeeper: '3.9.3'
     dep-version-lucene: '9.12.2'
     dep-version-opentelemetry: '1.40.0'

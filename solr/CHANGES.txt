@@ -154,6 +154,8 @@ Dependency Upgrades
 
 * PR#3234: Update mockito to v5.16.1 (solrbot)
 
+* PR#3061: Update apache.zookeeper to v3.9.3 (solrbot)
+
 * SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
 
 * Upgrade forbiddenapis to 3.9. (Uwe Schindler)
