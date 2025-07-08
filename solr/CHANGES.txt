@@ -195,6 +195,31 @@ Other Changes
 
 * SOLR-17703: SolrJ - Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to "JavaBin.." equivalent. (Abhishek Umarjikar)
 
+==================  9.10.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.9.0 ==================
 New Features
 ---------------------
@@ -262,6 +287,8 @@ Improvements
 
 * SOLR-17746: Provide long form --jettyconfig option to go with -j in bin/solr scripts. (Eric Pugh, Rahul Goswami)
 
+* SOLR-17628: Export metric timers via `wt=prometheus` as Prometheus summaries. (Jude Muriithi, Matthew Biscocho)
+
 Optimizations
 ---------------------
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
@@ -271,6 +298,10 @@ Optimizations
 * SOLR-17756: Parallelize index fingerprint computation across segments via a dedicated thread pool (Matthew Biscocho, Luke Kot-Zaniewski)
 
 * SOLR-17775: Speed up function queries in 'fl' param. (Yura Korolov)
+
+* SOLR-17801: Use TotalHitCountCollector to collect count when no rows needed (Kevin Risden)
+
+* SOLR-17130: edismax MatchAllDocsQuery (*:*) Optimization (Kevin Risden)
 
 Bug Fixes
 ---------------------
@@ -329,6 +360,14 @@ Bug Fixes
 
 * SOLR-16667: Fixed dense/sparse representation in LTR module. (Anna Ruggero, Alessandro Benedetti)
 
+* SOLR-17800: Security Manager should handle symlink on /tmp (Kevin Risden)
+
+* SOLR-17805: Exception in TransactionLog constructor deletes the file and does not block subsequent updates. (Bruno Roustant)
+
+* SOLR-17711: Remove total request timeout during recovery that was inadvertently added. (Luke Kot-Zaniewski)
+
+* SOLR-17777: Fix a very minor memory leak in metrics reporting code when a core is deleted. (Pierre Salagnac)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
@@ -380,6 +419,8 @@ Other Changes
 * SOLR-17635: javabin format: provide option to decode maps as SimpleOrderedMap (a NamedList & Map)
   instead of LinkedHashMap.  Intended to aid in 10.x compatibility.  Enable via sys prop: solr.solrj.javabin.readMapAsNamedList=true
   (Renato Haeberli, David Smiley)
+
+* SOLR-17803: Fix native access warning when using MemorySegmentIndexInput (Kevin Risden)
 
 ==================  9.8.1 ==================
 Bug Fixes
