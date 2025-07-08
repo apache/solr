@@ -106,7 +106,6 @@ import org.apache.solr.search.function.DualDoubleFunction;
 import org.apache.solr.search.function.EqualFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
-import org.apache.solr.search.function.ScoreFunction;
 import org.apache.solr.search.function.SolrComparisonBoolFunction;
 import org.apache.solr.search.function.distance.GeoDistValueSourceParser;
 import org.apache.solr.search.function.distance.GeohashFunction;
@@ -329,14 +328,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             return new CollapseScoreFunction();
-          }
-        });
-    addParser(
-        "score",
-        new ValueSourceParser() {
-          @Override
-          public ValueSource parse(FunctionQParser fp) {
-            return new ScoreFunction();
           }
         });
     addParser(

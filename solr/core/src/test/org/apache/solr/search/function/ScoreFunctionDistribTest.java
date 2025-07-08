@@ -60,7 +60,7 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
             COLLECTION,
             params(
                 "q",
-                "{!boost b=if(lte(score(),2),2.5,1)}foo^=1 bar^=2 qux^=3 asd^=4",
+                "{!boost b=if(lte(score,2),2.5,1)}foo^=1 bar^=2 qux^=3 asd^=4",
                 "df",
                 "text_s",
                 "fl",
@@ -108,7 +108,7 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
                 "fl",
                 "id,score",
                 "fq",
-                "{!frange l=2 u=3 cache=false}score()"));
+                "{!frange l=2 u=3 cache=false}score"));
 
     assertJSONEquals(
         """
@@ -142,7 +142,7 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
                 "df",
                 "text_s",
                 "fl",
-                "id,score,custom:add(1,score(),score())"));
+                "id,score,custom:add(1,score,score)"));
 
     assertJSONEquals(
         """
@@ -183,6 +183,6 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
                     "df",
                     "text_s",
                     "fl",
-                    "id,custom:add(1,score(),score())")));
+                    "id,custom:add(1,score,score)")));
   }
 }

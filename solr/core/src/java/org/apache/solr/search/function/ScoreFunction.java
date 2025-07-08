@@ -28,14 +28,15 @@ import org.apache.solr.common.SolrException;
 /** Returns the score of the current hit. */
 public final class ScoreFunction extends ValueSource {
 
+  public static final ScoreFunction INSTANCE = new ScoreFunction();
+
   @Override
   public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
       throws IOException {
     Scorable scorer = (Scorable) context.get("scorer");
     if (scorer == null) {
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "score() function cannot access the document scores");
+          SolrException.ErrorCode.BAD_REQUEST, "score function cannot access the document scores");
     }
 
     return new FloatDocValues(this) {
@@ -67,6 +68,6 @@ public final class ScoreFunction extends ValueSource {
 
   @Override
   public String description() {
-    return "score()";
+    return "score";
   }
 }

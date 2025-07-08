@@ -35,6 +35,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.function.FieldNameValueSource;
+import org.apache.solr.search.function.ScoreFunction;
 
 public class FunctionQParser extends QParser {
 
@@ -485,6 +486,8 @@ public class FunctionQParser extends QParser {
           valueSource = ValueSourceParser.BoolConstValueSource.TRUE;
         } else if ("false".equals(id)) {
           valueSource = ValueSourceParser.BoolConstValueSource.FALSE;
+        } else if ("score".equals(id)) {
+          valueSource = ScoreFunction.INSTANCE;
         } else {
           if ((flags & FLAG_USE_FIELDNAME_SOURCE) != 0) {
             // Don't try to create a ValueSource for the field, just use a placeholder.

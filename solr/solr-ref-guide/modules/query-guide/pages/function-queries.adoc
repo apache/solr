@@ -454,9 +454,9 @@ The function can only be used in a few specific ways - see examples below for wh
 
 *Syntax Examples*
 
-* `fl=*,score,score_plus_one:add(1,score())`: a xref:common-query-parameters.adoc#functions-with-fl[pseudo-field] that computes the field value based on the document score,
-* `fq={!frange cache=false l=4}score()`: a xref:common-query-parameters.adoc#cache-local-parameter[post filter] that filters the hits based on their score,
-* `q={!boost b=if(gte(score(),10),2,1)}solrrocks`: a boost query that determines the boost factor from the document score produced by the underlying query.
+* `fl=*,score,score_plus_one:add(1,score)`: a xref:common-query-parameters.adoc#functions-with-fl[pseudo-field] that computes the field value based on the document score,
+* `fq={!frange cache=false l=4}score`: a xref:common-query-parameters.adoc#cache-local-parameter[post filter] that filters the hits based on their score,
+* `q={!boost b=if(gte(score,10),2,1)}solrrocks`: a boost query that determines the boost factor from the document score produced by the underlying query.
 
 === sqedist Function
 The Square Euclidean distance calculates the 2-norm (Euclidean distance) but does not take the square root, thus saving a fairly expensive operation.

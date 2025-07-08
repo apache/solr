@@ -81,11 +81,11 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
         "/response/docs/[3]/id=='1'",
         "/response/docs/[3]/score==1.0");
 
-    // boost function that relies on score()
+    // boost function that relies on score
     assertJQ(
         req(
             "q",
-            "{!boost b=if(lte(score(),2),2.5,1)}foo^=1 bar^=2 qux^=3 asd^=4",
+            "{!boost b=if(lte(score,2),2.5,1)}foo^=1 bar^=2 qux^=3 asd^=4",
             "df",
             "text",
             "fl",
@@ -113,7 +113,7 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
             "fl",
             "id,score",
             "fq",
-            "{!frange l=2 u=3 cache=false}score()"),
+            "{!frange l=2 u=3 cache=false}score"),
         "/response/numFound==2",
         "/response/docs/[0]/id=='3'",
         "/response/docs/[0]/score==3.0",
@@ -133,7 +133,7 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
                     "fl",
                     "id,score",
                     "fq",
-                    "{!frange l=2 u=3}score()")));
+                    "{!frange l=2 u=3}score")));
   }
 
   @Test
@@ -142,7 +142,7 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
         req(
             "q", "foo^=1 bar^=2 qux^=3",
             "df", "text",
-            "fl", "id,score,custom:add(1,score(),score())"),
+            "fl", "id,score,custom:add(1,score,score)"),
         "/response/numFound==3",
         "/response/docs/[0]/id=='3'",
         "/response/docs/[0]/score==3.0",
@@ -162,7 +162,7 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
                 req(
                     "q", "foo^=1 bar^=2 qux^=3",
                     "df", "text",
-                    "fl", "id,custom:add(1,score(),score())")));
+                    "fl", "id,custom:add(1,score,score)")));
   }
 
   @Test
@@ -174,10 +174,10 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
                 {
                   "query": {
                     "boost": {
-                      "b": "if(lte(score(),6),1,0.1)",
+                      "b": "if(lte(score,6),1,0.1)",
                       "query": {
                         "boost": {
-                          "b": "if(gte(score(),3),2,1)",
+                          "b": "if(gte(score,3),2,1)",
                           "query": "foo^=1 bar^=2 qux^=3 asd^=4"
                         }
                       }
@@ -203,10 +203,10 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
                 {
                   "query": {
                     "boost": {
-                      "b": "if(gte(score(),10),0.1,1)",
+                      "b": "if(gte(score,10),0.1,1)",
                       "query": {
                         "boost": {
-                          "b": "if(eq(query($q1),score()),100,1)",
+                          "b": "if(eq(query($q1),score),100,1)",
                           "query": "foo^=1 bar^=2 qux^=3 asd^=4"
                         }
                       }
@@ -215,7 +215,7 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
                   "queries": {
                     "q1": {
                       "boost": {
-                        "b": "if(eq(score(),3),1,2)",
+                        "b": "if(eq(score,3),1,2)",
                         "query": "qux^=3 asd^=4"
                       }
                     }
@@ -238,11 +238,11 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
   public void testScoreFunction_combined() throws Exception {
     assertJQ(
         req(
-            "q", "{!boost b=if(gte(score(),3),2,1) v=$qq}",
+            "q", "{!boost b=if(gte(score,3),2,1) v=$qq}",
             "qq", "foo^=1 bar^=2 qux^=3 asd^=4",
-            "fq", "{!frange cache=false u=7}score()",
+            "fq", "{!frange cache=false u=7}score",
             "df", "text",
-            "fl", "id,score,score_plus_one:add(1,score())"),
+            "fl", "id,score,score_plus_one:add(1,score)"),
         "/response/numFound==3",
         "/response/docs/[0]/id=='3'",
         "/response/docs/[0]/score==6.0",
@@ -261,10 +261,10 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
     // TODO incorporate a docValues value, and some assertions on the order
     assertQEx(
         "unsupported",
-        "score() function cannot access the document scores",
+        "score function cannot access the document scores",
         req(
             "q", "*:*",
-            "sort", "div(1,score()) desc"),
+            "sort", "div(1,score) desc"),
         ErrorCode.BAD_REQUEST);
   }
 }
