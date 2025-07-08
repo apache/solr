@@ -76,6 +76,7 @@ public class KafkaCrossDcConsumerTest {
   private CloudSolrClient solrClientMock;
   private KafkaMirroringSink kafkaMirroringSinkMock;
   private ClusterStateProvider clusterStateProviderMock;
+  private KafkaCrossDcConsumer.SolrClientSupplier supplier;
   private AtomicInteger solrClientCounter = new AtomicInteger(0);
   private boolean clusterStateProviderIsClosed = false;
 
@@ -98,7 +99,7 @@ public class KafkaCrossDcConsumerTest {
     kafkaMirroringSinkMock = mock(KafkaMirroringSink.class);
     messageProcessorMock = mock(SolrMessageProcessor.class);
     conf = testCrossDCConf();
-    KafkaCrossDcConsumer.SolrClientSupplier supplier =
+    supplier =
         new KafkaCrossDcConsumer.SolrClientSupplier(null) {
           @Override
           protected CloudSolrClient createSolrClient() {
@@ -205,10 +206,10 @@ public class KafkaCrossDcConsumerTest {
 
   @Test
   public void testSolrClientSupplier() throws Exception {
-    kafkaCrossDcConsumer.getSolrClientSupplier().get();
+    supplier.get();
     assertEquals(1, solrClientCounter.get());
     clusterStateProviderIsClosed = true;
-    kafkaCrossDcConsumer.getSolrClientSupplier().get();
+    supplier.get();
     assertEquals(2, solrClientCounter.get());
   }
 

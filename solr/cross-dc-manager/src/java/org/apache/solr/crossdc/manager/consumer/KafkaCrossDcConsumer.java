@@ -18,7 +18,6 @@ package org.apache.solr.crossdc.manager.consumer;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
-import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Arrays;
@@ -241,11 +240,6 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
   protected KafkaMirroringSink createKafkaMirroringSink(KafkaCrossDcConf conf) {
     return new KafkaMirroringSink(conf);
-  }
-
-  @VisibleForTesting
-  public SolrClientSupplier getSolrClientSupplier() {
-    return solrClientSupplier;
   }
 
   /**
