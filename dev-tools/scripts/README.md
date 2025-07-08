@@ -15,37 +15,30 @@ Used to validate new release candidates (RC). The script downloads an RC from a 
 or local folder, then runs a number of sanity checks on the artifacts, and then runs
 the full tests.
 
-    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed]
-                               [--local-keys PATH] [--revision REVISION]
-                               [--version X.Y.Z(-ALPHA|-BETA)?]
-                               [--test-java12 JAVA12_HOME] [--download-only]
-                               url ...
-    
+    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--test-alt-java TEST_ALT_JAVA] [--download-only] [--dev-mode] url ...
+
     Utility to test a release.
     
     positional arguments:
       url                   Url pointing to release to test
-      test_args             Arguments to pass to ant for testing, e.g.
-                            -Dwhat=ever.
+      test_args             Arguments to pass to gradle for testing, e.g. -Dwhat=ever.
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
-      --tmp-dir PATH        Temporary directory to test inside, defaults to
-                            /tmp/smoke_solr_$version_$revision
+      --tmp-dir PATH        Temporary directory to test inside, defaults to /tmp/smoke_solr_$version_$revision
       --not-signed          Indicates the release is not signed
-      --local-keys PATH     Uses local KEYS file instead of fetching from
-                            https://archive.apache.org/dist/solr/KEYS
-      --revision REVISION   GIT revision number that release was built with,
-                            defaults to that in URL
+      --local-keys PATH     Uses local KEYS file instead of fetching from https://archive.apache.org/dist/solr/KEYS
+      --revision REVISION   GIT revision number that release was built with, defaults to that in URL
       --version X.Y.Z(-ALPHA|-BETA)?
                             Version of the release, defaults to that in URL
-      --test-java12 JAVA12_HOME
-                            Path to Java12 home directory, to run tests with if
-                            specified
+      --test-alt-java TEST_ALT_JAVA
+                            Path to Java alternative home directory, to run tests with if specified
       --download-only       Only perform download and sha hash check steps
+      --dev-mode            Enable dev mode, will not check branch compatibility
     
     Example usage:
-    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-9.0.1-RC2-revc7510a0...
+    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
+
 
 ### releaseWizard.py
 
