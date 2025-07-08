@@ -16,12 +16,18 @@
  */
 package org.apache.solr.search.function;
 
+import static org.hamcrest.Matchers.isA;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.response.transform.DocTransformers;
+import org.apache.solr.response.transform.RenameFieldTransformer;
+import org.apache.solr.response.transform.ScoreAugmenter;
+import org.apache.solr.response.transform.ValueSourceAugmenter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -253,6 +259,35 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
         "/response/docs/[2]/id=='1'",
         "/response/docs/[2]/score==1.0",
         "/response/docs/[2]/score_plus_one==2.0");
+  }
+
+  @Test
+  public void testScoreFunction_renameFieldAndValueSource() throws Exception {
+    // The pseudo-field definition 'renamed_score:score' can be
+    // parsed as either the rename field or the value source.
+    // Solr attempts to parse rename fields first,
+    // so 'renamed_score' is treated as a rename field.
+    var request =
+        req(
+            "q", "asd^=4",
+            "df", "text",
+            "fl", "id,score,renamed_score:score,score_plus_one:add(1,score)");
+
+    try (request) {
+      var response = h.queryAndResponse("/select", request);
+      var transformer = (DocTransformers) response.getReturnFields().getTransformer();
+
+      assertEquals(4, transformer.size());
+
+      // score
+      assertThat(transformer.getTransformer(0), isA(ScoreAugmenter.class));
+      // renamed_score
+      assertThat(transformer.getTransformer(1), isA(ScoreAugmenter.class));
+      // score_plus_one
+      assertThat(transformer.getTransformer(2), isA(ValueSourceAugmenter.class));
+      // renamed_score
+      assertThat(transformer.getTransformer(3), isA(RenameFieldTransformer.class));
+    }
   }
 
   // @Ignore // TODO would like this to work someday
