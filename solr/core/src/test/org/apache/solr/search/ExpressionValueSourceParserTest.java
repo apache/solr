@@ -26,14 +26,10 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.ExpressionValueSourceParser.SolrBindings;
 import org.apache.solr.util.DateMathParser;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
 
   private final List<DoubleValuesSource> positionalArgs = new ArrayList<>();
-
-  // TODO need "bad-solrconfig..." level test of cycle expressions, using score w/null score
-  // binding, etc...
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -114,14 +110,13 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   }
 
   /** tests an expression referring to a score field using an overridden score binding */
-  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
   public void testSortSsccoorree() {
     assertQ(
         "sort",
         req(
             "fl", "id",
             "q", "{!func}field(int1_i)",
-            "sort", "expr_ssccoorree(one_plus_score) desc,id asc"),
+            "sort", "expr_ssccoorree() desc,id asc"),
         "//*[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='4']",
@@ -185,7 +180,6 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   }
 
   /** tests an expression referring to a score field */
-  @Ignore("SOLR-XXXX can't sort by expression referencing the score")
   public void testSortScore() {
     assertQ(
         "sort",
@@ -272,7 +266,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testReturnScores() {
     assertQ(
         "return",
-        // :nocommit: see ValueSourceAugmenter's nocommit for why fl needs "score"
+        // unfortunately, need to add fl=score for ValueSourceAugmenter to access it
         req(
             "fl", "one_plus_score(),score",
             "q", "{!func}field(int1_i)",
@@ -288,7 +282,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testReturnScores2() {
     assertQ(
         "return",
-        // :nocommit: see ValueSourceAugmenter's nocommit for why fl needs "score"
+        // unfortunately, need to add fl=score for ValueSourceAugmenter to access it
         req(
             "fl", "two_plus_score:two_plus_score(),score",
             "q", "{!func}field(int1_i)",
@@ -304,7 +298,7 @@ public class ExpressionValueSourceParserTest extends SolrTestCaseJ4 {
   public void testReturnScores3() {
     assertQ(
         "return",
-        // :nocommit: see ValueSourceAugmenter's nocommit for why fl needs "score"
+        // unfortunately, need to add fl=score for ValueSourceAugmenter to access it
         req(
             "fl", "foo:sqrt_int1_i_plus_one_plus_score(),score",
             "q", "{!func}field(int1_i)",
