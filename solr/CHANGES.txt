@@ -595,8 +595,6 @@ Other Changes
 
 * SOLR-16996: Update Solr Exporter for Prometheus cli to use commons-cli instead of argparse4j.  (Christos Malliaridis via Eric Pugh)
 
->>>>>>> origin/branch_9x
-
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
