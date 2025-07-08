@@ -2,7 +2,6 @@ package org.apache.solr.search.function;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -14,18 +13,15 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "coll1";
 
-  private static SolrClient client;
-
   @BeforeClass
   public static void configureSolr() throws Exception {
     configureCluster(2).addConfig("config1", configset("cloud-minimal")).configure();
-
-    client = cluster.getSolrClient();
 
     prepareCollection();
   }
 
   private static void prepareCollection() throws Exception {
+    var client = cluster.getSolrClient();
     var createResponse =
         CollectionAdminRequest.createCollection(COLLECTION, "config1", 2, 1).process(client);
     assertEquals(0, createResponse.getStatus());
@@ -56,15 +52,17 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
   @Test
   public void testScoreFunction_boostQuery() throws Exception {
     var resp =
-        client.query(
-            COLLECTION,
-            params(
-                "q",
-                "{!boost b=if(lte(score,2),2.5,1)}foo^=1 bar^=2 qux^=3 asd^=4",
-                "df",
-                "text_s",
-                "fl",
-                "id,score"));
+        cluster
+            .getSolrClient()
+            .query(
+                COLLECTION,
+                params(
+                    "q",
+                    "{!boost b=if(lte(score,2),2.5,1)}foo^=1 bar^=2 qux^=3 asd^=4",
+                    "df",
+                    "text_s",
+                    "fl",
+                    "id,score"));
 
     assertJSONEquals(
         """
@@ -98,17 +96,19 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
   @Test
   public void testScoreFunction_postFilter() throws Exception {
     var resp =
-        client.query(
-            COLLECTION,
-            params(
-                "q",
-                "foo^=1 bar^=2 qux^=3 asd^=4",
-                "df",
-                "text_s",
-                "fl",
-                "id,score",
-                "fq",
-                "{!frange l=2 u=3 cache=false}score"));
+        cluster
+            .getSolrClient()
+            .query(
+                COLLECTION,
+                params(
+                    "q",
+                    "foo^=1 bar^=2 qux^=3 asd^=4",
+                    "df",
+                    "text_s",
+                    "fl",
+                    "id,score",
+                    "fq",
+                    "{!frange l=2 u=3 cache=false}score"));
 
     assertJSONEquals(
         """
@@ -134,15 +134,17 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
   @Test
   public void testScoreFunction_pseudoField() throws Exception {
     var resp =
-        client.query(
-            COLLECTION,
-            params(
-                "q",
-                "foo^=1 bar^=2 qux^=3",
-                "df",
-                "text_s",
-                "fl",
-                "id,score,custom:add(1,score,score)"));
+        cluster
+            .getSolrClient()
+            .query(
+                COLLECTION,
+                params(
+                    "q",
+                    "foo^=1 bar^=2 qux^=3",
+                    "df",
+                    "text_s",
+                    "fl",
+                    "id,score,custom:add(1,score,score)"));
 
     assertJSONEquals(
         """
@@ -175,14 +177,16 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
     assertThrows(
         SolrException.class,
         () ->
-            client.query(
-                COLLECTION,
-                params(
-                    "q",
-                    "foo^=1 bar^=2 qux^=3",
-                    "df",
-                    "text_s",
-                    "fl",
-                    "id,custom:add(1,score,score)")));
+            cluster
+                .getSolrClient()
+                .query(
+                    COLLECTION,
+                    params(
+                        "q",
+                        "foo^=1 bar^=2 qux^=3",
+                        "df",
+                        "text_s",
+                        "fl",
+                        "id,custom:add(1,score,score)")));
   }
 }
