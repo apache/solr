@@ -97,6 +97,14 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
   private final BlockingQueue<Runnable> queue = new BlockingQueue<>(10);
 
+  /**
+   * Supplier for creating and managing a working CloudSolrClient instance.
+   * This class ensures that the CloudSolrClient instance doesn't try to use its {@link org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider}
+   * in a closed state, which may happen if e.g. the ZooKeeper connection is lost. When this happens the
+   * CloudSolrClient is re-created to ensure it can continue to function properly.
+   *
+   * <p>TODO: this functionality should be moved to the CloudSolrClient itself.</p>
+   */
   public static class SolrClientSupplier implements Supplier<CloudSolrClient>, AutoCloseable {
     private final AtomicReference<CloudSolrClient> solrClientRef = new AtomicReference<>();
     private final String zkConnectString;
@@ -111,7 +119,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     }
 
     protected CloudSolrClient createSolrClient() {
-      log.info("-- creating new SolrClient...");
+      log.debug("Creating new SolrClient...");
       return new CloudSolrClient.Builder(
               Collections.singletonList(zkConnectString), Optional.empty())
           .build();
@@ -123,7 +131,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
       if (existingClient == null) {
         synchronized (solrClientRef) {
           if (solrClientRef.get() == null) {
-            log.info("- initializing Solr client");
+            log.info("Initializing Solr client.");
             solrClientRef.set(createSolrClient());
           }
           return solrClientRef.get();
@@ -135,7 +143,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
           // refresh and check again
           existingClient = solrClientRef.get();
           if (existingClient.getClusterStateProvider().isClosed()) {
-            log.info("- re-creating Solr client because its CSP was closed");
+            log.info("Re-creating Solr client because its ClusterStateProvider was closed.");
             CloudSolrClient newClient = createSolrClient();
             solrClientRef.set(newClient);
             IOUtils.closeQuietly(existingClient);
