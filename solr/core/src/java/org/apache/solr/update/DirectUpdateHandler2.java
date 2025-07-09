@@ -336,11 +336,18 @@ public class DirectUpdateHandler2 extends UpdateHandler
               + errorDetails;
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, iae);
     } catch (RuntimeException t) {
+      SolrException.ErrorCode errorCode =
+          core.getCoreContainer().checkTragicException(core)
+              ? SolrException.ErrorCode.SERVER_ERROR
+              : SolrException.ErrorCode.BAD_REQUEST;
       String errorMsg =
           "Exception writing document id "
               + cmd.getPrintableId()
-              + " to the index; possible analysis error.";
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, t);
+              + " to the index"
+              + (errorCode == SolrException.ErrorCode.SERVER_ERROR
+                  ? "."
+                  : "; possible analysis error.");
+      throw new SolrException(errorCode, errorMsg, t);
     }
   }
 

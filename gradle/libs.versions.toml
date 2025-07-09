@@ -14,7 +14,7 @@
 # limitations under the License.
 [versions]
 adobe-testing-s3mock = "3.9.1"
-amazon-awssdk = "2.28.11"
+amazon-awssdk = "2.31.77"
 # @keep Antora version used in ref-guide
 antora = "3.1.4"
 # @keep Most recent commit as of 2022-06-24, this repo does not have tags
@@ -37,13 +37,13 @@ apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.0"
 apache-log4j = "2.21.0"
-apache-lucene = "9.12.1"
+apache-lucene = "9.12.2"
 apache-opennlp = "1.9.4"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
 apache-tika = "1.28.5"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.2"
+apache-zookeeper = "3.9.3"
 # @keep for version alignment
 apiguardian = "1.1.2"
 aqute-bnd = "6.4.1"
