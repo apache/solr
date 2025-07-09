@@ -43,6 +43,11 @@
         <Set name="idleTimeout"><Property name="solr.jetty.http.idleTimeout" default="120000"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="solr.jetty.http.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="solr.jetty.http.acceptQueueSize" default="0"/></Set>
+        <Set name="reuseAddress"><Property name="solr.jetty.http.reuseAddress" default="true"/></Set>
+        <Set name="reusePort"><Property name="solr.jetty.http.reusePort" default="false"/></Set>
+        <Set name="acceptedTcpNoDelay"><Property name="solr.jetty.http.acceptedTcpNoDelay" default="true"/></Set>
+        <Set name="acceptedReceiveBufferSize" property="solr.jetty.http.acceptedReceiveBufferSize" />
+        <Set name="acceptedSendBufferSize" property="solr.jetty.http.acceptedSendBufferSize" />
       </New>
     </Arg>
   </Call>
