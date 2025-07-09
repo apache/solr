@@ -199,6 +199,25 @@ public class CacheConfig implements MapSerializable {
     return new HashMap<>(args);
   }
 
+  /**
+   * Returns a CacheConfig with the given arguments merged into the existing ones. <br>
+   * The existing config should not be modified
+   *
+   * @param newArgs new arguments to merge into the existing config, overrides existing values
+   */
+  public CacheConfig withArgs(Map<String, String> newArgs) {
+    if (newArgs == null || newArgs.isEmpty()) {
+      return this;
+    }
+    if (this.args == null) {
+      return new CacheConfig(this.clazz.get(), new HashMap<>(newArgs), this.regenerator);
+    } else {
+      Map<String, String> finalArgs = new HashMap<>(this.args);
+      finalArgs.putAll(newArgs);
+      return new CacheConfig(this.clazz.get(), finalArgs, this.regenerator);
+    }
+  }
+
   public String getNodeName() {
     return nodeName;
   }

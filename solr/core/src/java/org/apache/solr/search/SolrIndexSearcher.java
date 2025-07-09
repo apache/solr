@@ -387,22 +387,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (cachingEnabled) {
       final ArrayList<SolrCache> clist = new ArrayList<>();
       clist.add(ordMapCache.toInternal());
-      fieldValueCache =
-          solrConfig.fieldValueCacheConfig == null
-              ? null
-              : solrConfig.fieldValueCacheConfig.newInstance(core);
+      fieldValueCache = buildCache(solrConfig, "fieldValueCache", core);
       if (fieldValueCache != null) {
         clist.add(fieldValueCache.toInternal());
       }
-      filterCache =
-          solrConfig.filterCacheConfig == null
-              ? null
-              : solrConfig.filterCacheConfig.newInstance(core);
+
+      filterCache = buildCache(solrConfig, "filterCache", core);
       if (filterCache != null) clist.add(filterCache.toInternal());
-      queryResultCache =
-          solrConfig.queryResultCacheConfig == null
-              ? null
-              : solrConfig.queryResultCacheConfig.newInstance(core);
+
+      queryResultCache = buildCache(solrConfig, "queryResultCache", core);
       if (queryResultCache != null) {
         clist.add(queryResultCache.toInternal());
       }
@@ -413,9 +406,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         cacheMap = NO_GENERIC_CACHES;
       } else {
         cacheMap = CollectionUtil.newHashMap(solrConfig.userCacheConfigs.size());
-        for (Map.Entry<String, CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          CacheConfig config = e.getValue();
-          SolrCache<?, ?> cache = config.newInstance(core);
+        for (String cacheName : solrConfig.userCacheConfigs.keySet()) {
+          SolrCache cache = buildCache(solrConfig, cacheName, core);
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache.toInternal());
@@ -438,6 +430,40 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // do this at the end since an exception in the constructor means we won't close
     numOpens.incrementAndGet();
     assert ObjectReleaseTracker.track(this);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <K, V> SolrCache<K, V> buildCache(
+      SolrConfig solrConfig, String cacheName, SolrCore core) {
+    CacheConfig cacheConfig;
+    switch (cacheName) {
+      case "fieldValueCache":
+        cacheConfig = solrConfig.fieldValueCacheConfig;
+        break;
+      case "filterCache":
+        cacheConfig = solrConfig.filterCacheConfig;
+        break;
+      case "queryResultCache":
+        cacheConfig = solrConfig.queryResultCacheConfig;
+        break;
+      default: // generic caches
+        cacheConfig = solrConfig.userCacheConfigs.get(cacheName);
+    }
+
+    if (cacheConfig == null) {
+      return null;
+    }
+
+    // check overrides
+    CacheOverridesManager cacheOverridesManager =
+        core.getCoreContainer().getCacheOverridesManager();
+    if (cacheOverridesManager != null) {
+      cacheConfig =
+          cacheOverridesManager.applyOverrides(
+              cacheConfig, cacheName, core.getCoreDescriptor().getCollectionName());
+    }
+
+    return (SolrCache<K, V>) cacheConfig.newInstance(core);
   }
 
   public SolrDocumentFetcher getDocFetcher() {

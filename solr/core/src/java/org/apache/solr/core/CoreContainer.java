@@ -142,6 +142,7 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.CacheOverridesManager;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AllowListUrlChecker;
@@ -310,6 +311,8 @@ public class CoreContainer {
   private final Set<Path> allowPaths;
 
   private final AllowListUrlChecker allowListUrlChecker;
+
+  private volatile CacheOverridesManager cacheOverridesManager;
 
   // Bits for the state variable.
   public static final long LOAD_COMPLETE = 0x1L;
@@ -1040,6 +1043,10 @@ public class CoreContainer {
       metricManager.loadClusterReporters(metricReporters, this);
     }
 
+    if (getZkController() != null) {
+      cacheOverridesManager = new CacheOverridesManager(zkClientSupplier.get());
+    }
+
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor =
         MetricUtils.instrumentedExecutorService(
@@ -1704,6 +1711,10 @@ public class CoreContainer {
   /** Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml. */
   public AllowListUrlChecker getAllowListUrlChecker() {
     return allowListUrlChecker;
+  }
+
+  public CacheOverridesManager getCacheOverridesManager() {
+    return cacheOverridesManager;
   }
 
   /**
