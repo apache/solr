@@ -293,18 +293,19 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   /**
    * Test if JWTPrincipal is passed correctly on internode communication. Setup a cluster with more
-   * nodes using jwtAuth for both authentication and authorization.Add a private collection with
-   * less replicas and shards then the number of nodes. Test if we can query the collection on every
-   * node.
+   * nodes using jwtAuth for both authentication and authorization. Add a collection with restricted
+   * access and with less replicas and shards then the number of nodes. Test if we can query the
+   * collection on every node.
    */
   @Test
   public void testInternodeAuthorization() throws Exception {
-    // Start cluster with security.json that contains permissions for a private collection
+    // Start cluster with security.json that contains permissions for a collection with restricted
+    // access
     cluster = configureClusterStaticKeys("jwt_plugin_jwk_security_with_authorization.json", 3);
     // Get a random url to use for general requests to the cluster
     String randomBaseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
 
-    // Add our private collection to the cluster with only one shard and replica
+    // Add the collection to the cluster
     String COLLECTION = "jwtColl";
     createCollection(cluster, COLLECTION);
 
