@@ -811,8 +811,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "core1",
               ZkStateReader.CORE_NODE_NAME_PROP,
               "core_node1",
-              ZkStateReader.ROLES_PROP,
-              "",
               ZkStateReader.STATE_PROP,
               Replica.State.RECOVERING.toString());
 
@@ -834,8 +832,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "shard1",
               ZkStateReader.CORE_NAME_PROP,
               "core1",
-              ZkStateReader.ROLES_PROP,
-              "",
               ZkStateReader.STATE_PROP,
               Replica.State.ACTIVE.toString());
 
@@ -1598,8 +1594,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               COLLECTION,
               ZkStateReader.CORE_NAME_PROP,
               "core1",
-              ZkStateReader.ROLES_PROP,
-              "",
               ZkStateReader.STATE_PROP,
               Replica.State.RECOVERING.toString());
       queue.offer(m);
@@ -1615,8 +1609,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               COLLECTION,
               ZkStateReader.CORE_NAME_PROP,
               "core2",
-              ZkStateReader.ROLES_PROP,
-              "",
               ZkStateReader.STATE_PROP,
               Replica.State.RECOVERING.toString());
       queue.offer(m);
@@ -1637,8 +1629,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               COLLECTION,
               ZkStateReader.CORE_NAME_PROP,
               "core3",
-              ZkStateReader.ROLES_PROP,
-              "",
               ZkStateReader.STATE_PROP,
               Replica.State.RECOVERING.toString());
       queue.offer(m);
@@ -1700,8 +1690,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "core1",
               ZkStateReader.CORE_NODE_NAME_PROP,
               "core_node1",
-              ZkStateReader.ROLES_PROP,
-              "",
               ZkStateReader.STATE_PROP,
               Replica.State.DOWN.toString());
 
@@ -1722,8 +1710,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "c1",
               ZkStateReader.CORE_NAME_PROP,
               "core1",
-              ZkStateReader.ROLES_PROP,
-              "",
               ZkStateReader.STATE_PROP,
               Replica.State.RECOVERING.toString());
 
@@ -1741,8 +1727,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "c1",
               ZkStateReader.CORE_NAME_PROP,
               "core1",
-              ZkStateReader.ROLES_PROP,
-              "",
               ZkStateReader.STATE_PROP,
               Replica.State.ACTIVE.toString());
 
@@ -2015,8 +1999,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
                   "core" + N,
                   ZkStateReader.CORE_NODE_NAME_PROP,
                   "core_node" + N,
-                  ZkStateReader.ROLES_PROP,
-                  "",
                   ZkStateReader.STATE_PROP,
                   Replica.State.RECOVERING.toString());
 
@@ -2048,8 +2030,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
                   COLLECTION,
                   ZkStateReader.CORE_NAME_PROP,
                   "core" + N,
-                  ZkStateReader.ROLES_PROP,
-                  "",
                   ZkStateReader.STATE_PROP,
                   Replica.State.ACTIVE.toString());
 

@@ -91,8 +91,6 @@ public abstract class CoreAdminParams {
 
   public static final String GET_RANGES = "getRanges";
 
-  public static final String ROLES = "roles";
-
   public static final String REQUESTID = "requestid";
 
   public static final String CORE_NODE_NAME = "coreNodeName";

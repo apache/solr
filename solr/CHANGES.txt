@@ -135,6 +135,8 @@ Deprecation Removals
 
 * SOLR-17778: Removed no-op core admin operation FORCEPREPAREFORLEADERSHIP and its SolrJ peer OverrideLastPublished. (Pierre Salagnac)
 
+* SOLR-17779: Removed obsolete 'roles' and 'numShards' core properties, which were persisted with but unused (Pierre Salagnac).
+
 Dependency Upgrades
 ---------------------
 

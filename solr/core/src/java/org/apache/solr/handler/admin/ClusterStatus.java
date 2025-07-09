@@ -51,6 +51,7 @@ public class ClusterStatus {
   public static final String INCLUDE_ALL = "includeAll";
   public static final String LIVENODES_PROP = "liveNodes";
   public static final String CLUSTER_PROP = "clusterProperties";
+  public static final String ROLES_PROP = "roles";
   public static final String ALIASES_PROP = "aliases";
 
   /** Shard / collection health state. */
@@ -108,7 +109,7 @@ public class ClusterStatus {
     boolean includeAll = solrParams.getBool(INCLUDE_ALL, true);
     boolean withLiveNodes = solrParams.getBool(LIVENODES_PROP, includeAll);
     boolean withClusterProperties = solrParams.getBool(CLUSTER_PROP, includeAll);
-    boolean withRoles = solrParams.getBool(ZkStateReader.ROLES_PROP, includeAll);
+    boolean withRoles = solrParams.getBool(ROLES_PROP, includeAll);
     boolean withCollection = includeAll || (collection != null);
     boolean withAliases = solrParams.getBool(ALIASES_PROP, includeAll);
 

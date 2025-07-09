@@ -21,7 +21,6 @@ import static org.apache.solr.cloud.ZkController.COLLECTION_PARAM_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.ROLES;
 import static org.apache.solr.handler.admin.CoreAdminHandler.paramToProp;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
@@ -31,7 +30,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.CoreApis;
 import org.apache.solr.client.api.model.CreateCoreParams;
@@ -40,7 +38,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.PropertiesUtil;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -138,11 +135,6 @@ public class CreateCore extends CoreAdminAPIBase implements CoreApis.Create {
       if (createParamMap.containsKey(entry.getKey())) {
         Object value = createParamMap.get(entry.getKey());
         if (value != null) {
-          if (entry.getKey().equals(ROLES) && value instanceof List) {
-            @SuppressWarnings("unchecked")
-            final var values = (List<String>) value;
-            value = StrUtils.join(values, ',');
-          }
           coreParams.put(entry.getValue(), value.toString());
         }
       }
@@ -184,9 +176,6 @@ public class CreateCore extends CoreAdminAPIBase implements CoreApis.Create {
       if (key.startsWith(COLLECTION_PARAM_PREFIX)) {
         v1ParamMap.remove(key);
         collectionProperties.put(key.substring(COLLECTION_PARAM_PREFIX.length()), value.toString());
-      }
-      if (key.equals(ROLES)) {
-        v1ParamMap.put(ROLES, value.toString().split(","));
       }
     }
     if (CollectionUtil.isNotEmpty(coreProperties)) {
