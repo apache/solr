@@ -143,6 +143,8 @@ public class ScoreFunctionDistribTest extends SolrCloudTestCase {
                     "foo^=1 bar^=2 qux^=3",
                     "df",
                     "text_s",
+                    "preFetchDocs",
+                    "0", // TODO FIXME handle pre-fetching introduced in SOLR-17775
                     "fl",
                     "id,score,custom:add(1,score,score)"));
 

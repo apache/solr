@@ -125,9 +125,8 @@ public class ValueSourceAugmenter extends DocTransformer {
         if (context.wantsScores()) {
           fcontext.put("scorer", new ScoreAndDoc(localId, docIterationInfo.score()));
         }
-        
-        FunctionValues values = valueSource.getValues(fcontext, rcontext);
 
+        FunctionValues values = valueSource.getValues(fcontext, rcontext);
         setValue(doc, values.objectVal(localId));
       } catch (IOException e) {
         throw new SolrException(

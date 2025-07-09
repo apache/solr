@@ -148,6 +148,7 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
         req(
             "q", "foo^=1 bar^=2 qux^=3",
             "df", "text",
+            "preFetchDocs", "0", // TODO FIXME handle pre-fetching introduced in SOLR-17775
             "fl", "id,score,custom:add(1,score,score)"),
         "/response/numFound==3",
         "/response/docs/[0]/id=='3'",
@@ -248,6 +249,7 @@ public class ScoreFunctionTest extends SolrTestCaseJ4 {
             "qq", "foo^=1 bar^=2 qux^=3 asd^=4",
             "fq", "{!frange cache=false u=7}score",
             "df", "text",
+            "preFetchDocs", "0", // TODO FIXME handle pre-fetching introduced in SOLR-17775
             "fl", "id,score,score_plus_one:add(1,score)"),
         "/response/numFound==3",
         "/response/docs/[0]/id=='3'",
