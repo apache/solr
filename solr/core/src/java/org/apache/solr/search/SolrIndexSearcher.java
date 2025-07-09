@@ -80,8 +80,9 @@ import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
 import org.apache.lucene.search.TopFieldDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
@@ -1860,14 +1861,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
-      return TopScoreDocCollector.create(len, minNumFound);
+      return new TopScoreDocCollectorManager(len, null, minNumFound, false).newCollector();
     } else {
       // we have a sort
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, minNumFound);
+      return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound, false)
+          .newCollector();
     }
   }
 
