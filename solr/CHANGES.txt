@@ -368,6 +368,8 @@ Bug Fixes
 
 * SOLR-17777: Fix a very minor memory leak in metrics reporting code when a core is deleted. (Pierre Salagnac)
 
+* SOLR-17599: CrossDC should not use the MirroringUpdateHandler when replaying updates from the transaction log or when doing PeerSync. (Mark Miller)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
