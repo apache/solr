@@ -63,7 +63,7 @@ import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
@@ -78,6 +78,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -126,9 +127,13 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     solrParams.set("analysis.showmatch", true);
     solrParams.set("analysis.fieldname", fieldName);
     solrParams.set("analysis.fieldvalue", "POST");
-    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/analysis/field", solrParams);
+    var request =
+        new GenericCollectionRequest(
+            SolrRequest.METHOD.POST,
+            "/analysis/field",
+            SolrRequest.SolrRequestType.ADMIN,
+            solrParams);
     request.withContent(fieldText.getBytes(StandardCharsets.UTF_8), "text/plain");
-    request.setRequiresCollection(true);
     request.setResponseParser(new JsonMapResponseParser());
     try {
       var resp = request.process(cloudClient(), mutableId).getResponse();
@@ -483,8 +488,12 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
-    var request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/blob/" + configSet + "_sample");
-    request.setRequiresCollection(true);
+    var request =
+        new GenericCollectionRequest(
+            SolrRequest.METHOD.GET,
+            "/blob/" + configSet + "_sample",
+            SolrRequest.SolrRequestType.ADMIN,
+            SolrParams.of());
     request.setResponseParser(new InputStreamResponseParser("filestream"));
     InputStream inputStream = null;
     try {
@@ -515,9 +524,13 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
       throws IOException {
-    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/blob/" + blobName);
+    var request =
+        new GenericCollectionRequest(
+            SolrRequest.METHOD.POST,
+            "/blob/" + blobName,
+            SolrRequest.SolrRequestType.ADMIN,
+            SolrParams.of());
     request.withContent(bytes, JavaBinResponseParser.JAVABIN_CONTENT_TYPE);
-    request.setRequiresCollection(true);
     try {
       request.process(cloudClient, BLOB_STORE_ID);
     } catch (SolrServerException e) {

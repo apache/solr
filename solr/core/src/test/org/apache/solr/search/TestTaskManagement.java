@@ -31,9 +31,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -106,9 +107,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("queryUUID", "foobar");
 
-    GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/cancel", params)
-            .setRequiresCollection(true);
+    var request =
+        new GenericCollectionRequest(
+            SolrRequest.METHOD.GET, "/tasks/cancel", SolrRequestType.ADMIN, params);
     NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     assertEquals("Query with queryID foobar not found", queryResponse.get("status"));
@@ -185,8 +186,11 @@ public class TestTaskManagement extends SolrCloudTestCase {
         cluster
             .getSolrClient(COLLECTION_NAME)
             .request(
-                new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list")
-                    .setRequiresCollection(true));
+                new GenericCollectionRequest(
+                    SolrRequest.METHOD.GET,
+                    "/tasks/list",
+                    SolrRequestType.ADMIN,
+                    new ModifiableSolrParams()));
     return (NamedList<String>) response.get("taskList");
   }
 
@@ -195,9 +199,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("taskUUID", "25");
 
-    GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", params)
-            .setRequiresCollection(true);
+    var request =
+        new GenericCollectionRequest(
+            SolrRequest.METHOD.GET, "/tasks/list", SolrRequestType.ADMIN, params);
     NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     String result = (String) queryResponse.get("taskStatus");
@@ -212,8 +216,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
           ModifiableSolrParams params = new ModifiableSolrParams();
 
           params.set("queryUUID", queryID);
-          SolrRequest<?> request = new QueryRequest(params);
-          request.setPath("/tasks/cancel");
+          var request =
+              new GenericCollectionRequest(
+                  SolrRequest.METHOD.POST, "/tasks/cancel", SolrRequestType.ADMIN, params);
 
           try {
             NamedList<Object> queryResponse;

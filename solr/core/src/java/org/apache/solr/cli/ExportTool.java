@@ -65,7 +65,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -253,11 +253,12 @@ public class ExportTool extends ToolBase {
               .build();
       NamedList<Object> response =
           solrClient.request(
-              new GenericSolrRequest(
-                      SolrRequest.METHOD.GET,
-                      "/schema/uniquekey",
-                      SolrParams.of("collection", coll))
-                  .setRequiresCollection(true));
+              new GenericCollectionRequest(
+                  SolrRequest.METHOD.GET,
+                  "/schema/uniquekey",
+                  SolrRequest.SolrRequestType.ADMIN,
+                  SolrParams.of()),
+              coll);
       uniqueKey = (String) response.get("uniqueKey");
     }
 
