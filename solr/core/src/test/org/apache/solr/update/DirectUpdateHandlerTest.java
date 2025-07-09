@@ -121,14 +121,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of pending adds",
         2,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_pending_operations", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "adds").getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of cumulative adds",
         2,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds").getValue(),
         0.0);
 
     assertU(commit());
@@ -136,20 +134,17 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of cumulative commits",
         1,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "commits")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "commits").getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of pending adds after commit",
         0,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_pending_operations", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "adds").getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of cumulative adds after commit",
         2,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds").getValue(),
         0.0);
 
     // now they should be there
@@ -162,14 +157,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of pending deletes_by_id",
         1,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_pending_operations", "deletes_by_id")
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "deletes_by_id")
             .getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of cumulative deletes_by_id",
         1,
-        getGaugeOpDatapoint(
-                reader, "solr_metrics_core_update_operations_cumulative", "deletes_by_id")
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "deletes_by_id")
             .getValue(),
         0.0);
 
@@ -181,14 +175,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of pending deletes_by_id after commit",
         0,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_pending_operations", "deletes_by_id")
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "deletes_by_id")
             .getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of cumulative deletes_by_id after commit",
         1,
-        getGaugeOpDatapoint(
-                reader, "solr_metrics_core_update_operations_cumulative", "deletes_by_id")
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "deletes_by_id")
             .getValue(),
         0.0);
 
@@ -202,15 +195,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of pending deletes_by_id",
         1,
-        getGaugeOpDatapoint(
-                reader, "solr_metrics_core_update_pending_operations", "deletes_by_query")
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "deletes_by_query")
             .getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of pending cumulative deletes_by_id",
         1,
-        getGaugeOpDatapoint(
-                reader, "solr_metrics_core_update_operations_cumulative", "deletes_by_query")
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "deletes_by_query")
             .getValue(),
         0.0);
 
@@ -222,15 +213,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of pending pending deletes_by_query after commit",
         0,
-        getGaugeOpDatapoint(
-                reader, "solr_metrics_core_update_pending_operations", "deletes_by_query")
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "deletes_by_query")
             .getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of pending cumulative deletes_by_query after commit",
         1,
-        getGaugeOpDatapoint(
-                reader, "solr_metrics_core_update_operations_cumulative", "deletes_by_query")
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "deletes_by_query")
             .getValue(),
         0.0);
 
@@ -238,17 +227,14 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("q", "id:6"), "//*[@numFound='0']");
 
     // verify final metrics
-    var commits =
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "commits");
-    var pendingAdds =
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_pending_operations", "adds");
+    var commits = getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "commits");
+    var pendingAdds = getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "adds");
     var cumulativeAdds =
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds");
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds");
     var pendingDeletesById =
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_pending_operations", "deletes_by_id");
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "deletes_by_id");
     var cumulativeDeletesById =
-        getGaugeOpDatapoint(
-            reader, "solr_metrics_core_update_operations_cumulative", "deletes_by_id");
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "deletes_by_id");
 
     assertEquals(
         "Did not have the expected number of cumulative commits", 3, commits.getValue(), 0.0);
@@ -294,26 +280,23 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of cumulative adds",
         1,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds").getValue(),
         0.0);
     assertNull(
         "No commits should have been processed yet",
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "commits"));
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "commits"));
 
     updater.commit(cmtCmd);
     assertEquals(0, duh2.addCommands.longValue());
     assertEquals(
         "Did not have the expected number of cumulative adds",
         1,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds").getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of cumulative commits",
         1,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "commits")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "commits").getValue(),
         0.0);
 
     ureq.close();
@@ -327,20 +310,18 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of cumulative adds",
         2,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds").getValue(),
         0.0);
     assertNull(
         "No rollbacks should have been processed yet",
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_maintenance_operations", "rollback"));
+        getGaugeOpDatapoint(reader, "solr_core_update_maintenance_operations", "rollback"));
 
     updater.rollback(rbkCmd);
     assertEquals(0, duh2.addCommands.longValue());
     assertEquals(
         "Did not have the expected number of cumulative adds",
         1,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds").getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of cumulative rollback",
@@ -348,7 +329,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
         ((CounterSnapshot.CounterDataPointSnapshot)
                 SolrMetricTestUtils.getDataPointSnapshot(
                     reader,
-                    "solr_metrics_core_update_maintenance_operations",
+                    "solr_core_update_maintenance_operations",
                     SolrMetricTestUtils.getStandaloneLabelsBase(h.getCore())
                         .get()
                         .label("category", "UPDATE")
@@ -406,12 +387,11 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of cumulative adds",
         2,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds").getValue(),
         0.0);
     assertNull(
         "No commits should have been processed yet",
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "commits"));
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "commits"));
 
     updater.commit(cmtCmd);
     assertEquals(0, duh2.addCommands.longValue());
@@ -420,14 +400,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of cumulative adds",
         2,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "adds")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "adds").getValue(),
         0.0);
     assertEquals(
         "Did not have the expected number of cumulative commits",
         1,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_operations_cumulative", "commits")
-            .getValue(),
+        getGaugeOpDatapoint(reader, "solr_core_update_operations_cumulative", "commits").getValue(),
         0.0);
     ureq.close();
 
@@ -461,12 +439,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of pending deletes_by_id",
         1,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_pending_operations", "deletes_by_id")
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "deletes_by_id")
             .getValue(),
         0.0);
     assertNull(
         "No rollbacks should have been processed yet",
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_maintenance_operations", "rollback"));
+        getGaugeOpDatapoint(reader, "solr_core_update_maintenance_operations", "rollback"));
 
     updater.rollback(rbkCmd);
     ureq.close();
@@ -474,7 +452,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertEquals(
         "Did not have the expected number of pending deletes_by_id",
         0,
-        getGaugeOpDatapoint(reader, "solr_metrics_core_update_pending_operations", "deletes_by_id")
+        getGaugeOpDatapoint(reader, "solr_core_update_pending_operations", "deletes_by_id")
             .getValue(),
         0.0);
     assertEquals(
@@ -483,7 +461,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
         ((CounterSnapshot.CounterDataPointSnapshot)
                 SolrMetricTestUtils.getDataPointSnapshot(
                     reader,
-                    "solr_metrics_core_update_maintenance_operations",
+                    "solr_core_update_maintenance_operations",
                     SolrMetricTestUtils.getStandaloneLabelsBase(h.getCore())
                         .get()
                         .label("category", "UPDATE")

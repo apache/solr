@@ -104,10 +104,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
   AttributedLongUpDownCounter addCommandsCumulative;
 
   // Maintenance operations
-  AttributedLongUpDownCounter expungeDeleteCommands;
-  AttributedLongUpDownCounter mergeIndexesCommands;
-  AttributedLongUpDownCounter commitCommands;
-  AttributedLongUpDownCounter optimizeCommands;
+  AttributedLongCounter expungeDeleteCommands;
+  AttributedLongCounter mergeIndexesCommands;
+  AttributedLongCounter commitCommands;
+  AttributedLongCounter optimizeCommands;
 
   AttributedLongCounter numErrorsCumulative;
 
@@ -246,7 +246,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     var baseCommandsMetric =
         solrMetricsContext.longUpDownCounter(
-            "solr_metrics_core_update_operations_cumulative",
+            "solr_core_update_operations_cumulative",
             "Cumulative number of update commands processed. Metric can go down from rollback command");
 
     addCommandsCumulative =
@@ -262,27 +262,29 @@ public class DirectUpdateHandler2 extends UpdateHandler
             baseCommandsMetric,
             baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
 
+    var baseCommitMetric =
+        solrMetricsContext.longCounter(
+            "solr_core_update_commit_operations", "Total number of commit operations");
+
     commitCommands =
-        new AttributedLongUpDownCounter(
-            baseCommandsMetric, baseAttributes.get().put(OPERATION_ATTR, "commits").build());
+        new AttributedLongCounter(
+            baseCommitMetric, baseAttributes.get().put(OPERATION_ATTR, "commits").build());
 
     optimizeCommands =
-        new AttributedLongUpDownCounter(
-            baseCommandsMetric, baseAttributes.get().put(OPERATION_ATTR, "optimize").build());
+        new AttributedLongCounter(
+            baseCommitMetric, baseAttributes.get().put(OPERATION_ATTR, "optimize").build());
 
     mergeIndexesCommands =
-        new AttributedLongUpDownCounter(
-            baseCommandsMetric, baseAttributes.get().put(OPERATION_ATTR, "merges").build());
+        new AttributedLongCounter(
+            baseCommitMetric, baseAttributes.get().put(OPERATION_ATTR, "merges").build());
 
     expungeDeleteCommands =
-        new AttributedLongUpDownCounter(
-            baseCommandsMetric,
-            baseAttributes.get().put(OPERATION_ATTR, "expunge_deletes").build());
+        new AttributedLongCounter(
+            baseCommitMetric, baseAttributes.get().put(OPERATION_ATTR, "expunge_deletes").build());
 
     var baseMaintenanceMetric =
         solrMetricsContext.longCounter(
-            "solr_metrics_core_update_maintenance_operations",
-            "Total number of maintenance operations");
+            "solr_core_update_maintenance_operations", "Total number of maintenance operations");
 
     rollbackCommands =
         new AttributedLongCounter(
@@ -293,14 +295,13 @@ public class DirectUpdateHandler2 extends UpdateHandler
             baseMaintenanceMetric, baseAttributes.get().put(OPERATION_ATTR, "split").build());
 
     var baseErrorsMetric =
-        solrMetricsContext.longCounter(
-            "solr_metrics_core_update_errors", "Total number of update errors");
+        solrMetricsContext.longCounter("solr_core_update_errors", "Total number of update errors");
 
     numErrorsCumulative = new AttributedLongCounter(baseErrorsMetric, baseAttributes.get().build());
 
     softAutoCommits =
         solrMetricsContext.observableLongCounter(
-            "solr_metrics_core_update_auto_commits",
+            "solr_core_update_auto_commits",
             "Total number of auto commits",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(
@@ -316,7 +317,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     // rarely change.
     commitStats =
         solrMetricsContext.observableLongGauge(
-            "solr_metrics_core_update_commit_stats",
+            "solr_core_update_commit_stats",
             "Metrics around commits",
             (observableLongMeasurement -> {
               if (commitTracker.getDocsUpperBound() > 0) {
@@ -349,7 +350,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     updateStats =
         solrMetricsContext.observableLongGauge(
-            "solr_metrics_core_update_pending_operations",
+            "solr_core_update_pending_operations",
             "Operations pending commit. Values get reset after commit",
             (observableLongMeasurement) -> {
               observableLongMeasurement.record(

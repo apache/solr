@@ -145,8 +145,8 @@ public final class SolrMetricTestUtils {
   public static Supplier<Labels.Builder> getCloudLabelsBase(SolrCore core) {
     return () ->
         Labels.builder()
-            .label("collection", "tlog_replica_test_only_leader_indexes")
-            .label("shard", "shard1")
+            .label("collection", core.getCoreDescriptor().getCloudDescriptor().getCollectionName())
+            .label("shard", core.getCoreDescriptor().getCloudDescriptor().getShardId())
             .label("core", core.getName())
             .label(
                 "replica",
