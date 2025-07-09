@@ -98,12 +98,13 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final BlockingQueue<Runnable> queue = new BlockingQueue<>(10);
 
   /**
-   * Supplier for creating and managing a working CloudSolrClient instance.
-   * This class ensures that the CloudSolrClient instance doesn't try to use its {@link org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider}
-   * in a closed state, which may happen if e.g. the ZooKeeper connection is lost. When this happens the
-   * CloudSolrClient is re-created to ensure it can continue to function properly.
+   * Supplier for creating and managing a working CloudSolrClient instance. This class ensures that
+   * the CloudSolrClient instance doesn't try to use its {@link
+   * org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider} in a closed state, which may
+   * happen if e.g. the ZooKeeper connection is lost. When this happens the CloudSolrClient is
+   * re-created to ensure it can continue to function properly.
    *
-   * <p>TODO: this functionality should be moved to the CloudSolrClient itself.</p>
+   * <p>TODO: this functionality should be moved to the CloudSolrClient itself.
    */
   public static class SolrClientSupplier implements Supplier<CloudSolrClient>, AutoCloseable {
     private final AtomicReference<CloudSolrClient> solrClientRef = new AtomicReference<>();
