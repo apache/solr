@@ -859,7 +859,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testFuncScore() throws Exception {
-    assertFuncEquals("score()", "score(  )");
+    assertFuncEquals("score", "score  ");
   }
 
   public void testFuncTop() throws Exception {
