@@ -343,12 +343,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     Header[] contextHeaders = buildRequestSpecificHeaders(request);
 
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
+    // The parser 'wt=' param is used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams(params);
     if (parser != null) {
       wparams.set(CommonParams.WT, parser.getWriterType());
-      wparams.set(CommonParams.VERSION, parser.getVersion());
     }
     if (invariantParams != null) {
       wparams.add(invariantParams);

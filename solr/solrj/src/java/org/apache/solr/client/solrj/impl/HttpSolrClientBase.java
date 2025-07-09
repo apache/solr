@@ -57,8 +57,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
   /** The URL of the Solr server. */
   protected final String serverBaseUrl;
 
-  protected final long idleTimeoutMillis;
-
   protected final long requestTimeoutMillis;
 
   protected final Set<String> urlParamNames;
@@ -85,11 +83,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
     } else {
       this.serverBaseUrl = null;
     }
-    if (builder.idleTimeoutMillis != null) {
-      this.idleTimeoutMillis = builder.idleTimeoutMillis;
-    } else {
-      this.idleTimeoutMillis = -1;
-    }
+    this.requestTimeoutMillis = builder.getRequestTimeoutMillis();
     this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
     if (builder.requestWriter != null) {
       this.requestWriter = builder.requestWriter;
@@ -98,11 +92,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
       this.parser = builder.responseParser;
     }
     this.defaultCollection = builder.defaultCollection;
-    if (builder.requestTimeoutMillis != null) {
-      this.requestTimeoutMillis = builder.requestTimeoutMillis;
-    } else {
-      this.requestTimeoutMillis = -1;
-    }
     if (builder.urlParamNames != null) {
       this.urlParamNames = builder.urlParamNames;
     } else {
@@ -133,11 +122,9 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
+    // The parser 'wt=' param is used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
     wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    wparams.set(CommonParams.VERSION, parserToUse.getVersion());
     return wparams;
   }
 
@@ -396,10 +383,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   public ResponseParser getParser() {
     return parser;
-  }
-
-  public long getIdleTimeout() {
-    return idleTimeoutMillis;
   }
 
   public Set<String> getUrlParamNames() {

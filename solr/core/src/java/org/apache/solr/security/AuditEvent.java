@@ -20,6 +20,7 @@ import static org.apache.solr.security.AuditEvent.EventType.ANONYMOUS;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Arrays;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.servlet.ServletUtils;

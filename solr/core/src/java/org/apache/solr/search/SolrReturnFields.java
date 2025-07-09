@@ -28,10 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -40,7 +37,7 @@ import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
-import org.apache.solr.response.transform.MatchScoreAugmenter;
+import org.apache.solr.response.transform.OriginalScoreAugmenter;
 import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -51,7 +48,8 @@ import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
 public class SolrReturnFields extends ReturnFields {
   // Special Field Keys
   public static final String SCORE = "score";
-  public static final String MATCH_SCORE = "matchScore";
+  public static final String ORIGINAL_SCORE_NAME = "originalScore";
+  public static final String ORIGINAL_SCORE = "originalScore()";
 
   private final List<String> globs = new ArrayList<>(1);
 
@@ -316,6 +314,19 @@ public class SolrReturnFields extends ReturnFields {
               globs.add(field);
             }
             continue;
+          } else if (ORIGINAL_SCORE_NAME.equals(field) && sp.opt("(") && sp.opt(")")) {
+            // TODO: Remove this in https://issues.apache.org/jira/browse/SOLR-17784 when
+            // originalScore() becomes a true function
+            ch = sp.ch();
+            if (Character.isWhitespace(ch) || ch == ',' || ch == 0) {
+              _wantsScore = true;
+
+              String disp = (key == null) ? ORIGINAL_SCORE : key;
+              augmenters.addTransformer(new OriginalScoreAugmenter(disp));
+              scoreDependentFields.put(disp, disp.equals(ORIGINAL_SCORE) ? "" : ORIGINAL_SCORE);
+              addField(ORIGINAL_SCORE, disp, augmenters, true);
+              continue;
+            }
           }
 
           // an invalid glob
@@ -382,46 +393,9 @@ public class SolrReturnFields extends ReturnFields {
 
         // let's try it as a function instead
         QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
-        Query q = null;
-        ValueSource vs = null;
-
         try {
-          if (parser instanceof FunctionQParser fparser) {
-            fparser.setParseMultipleSources(false);
-            fparser.setParseToEnd(false);
-
-            q = fparser.getQuery();
-
-            if (fparser.localParams != null) {
-              if (fparser.valFollowedParams) {
-                // need to find the end of the function query via the string parser
-                int leftOver = fparser.sp.end - fparser.sp.pos;
-                sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
-              } else {
-                // the value was via the "v" param in localParams, so we need to find
-                // the end of the local params themselves to pick up where we left off
-                sp.pos = start + fparser.localParamsEnd;
-              }
-            } else {
-              // need to find the end of the function query via the string parser
-              int leftOver = fparser.sp.end - fparser.sp.pos;
-              sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
-            }
-          } else {
-            // A QParser that's not for function queries.
-            // It must have been specified via local params.
-            q = parser.getQuery();
-
-            assert parser.getLocalParams() != null;
-            sp.pos = start + parser.localParamsEnd;
-          }
+          ValueSource vs = SortSpecParsing.parseValueSource(parser, sp, start);
           funcStr = sp.val.substring(start, sp.pos);
-
-          if (q instanceof FunctionQuery) {
-            vs = ((FunctionQuery) q).getValueSource();
-          } else {
-            vs = new QueryValueSource(q, 0.0f);
-          }
 
           if (key == null) {
             SolrParams localParams = parser.getLocalParams();
@@ -541,12 +515,6 @@ public class SolrReturnFields extends ReturnFields {
       String disp = (key == null) ? field : key;
       augmenters.addTransformer(new ScoreAugmenter(disp));
       scoreDependentFields.put(disp, disp.equals(SCORE) ? "" : SCORE);
-    } else if (MATCH_SCORE.equals(field)) {
-      _wantsScore = true;
-
-      String disp = (key == null) ? field : key;
-      augmenters.addTransformer(new MatchScoreAugmenter(disp));
-      scoreDependentFields.put(disp, disp.equals(MATCH_SCORE) ? "" : MATCH_SCORE);
     } else if (key != null && isPseudoField) {
       // SOLR-15030: a pseudo-field based on the function query may need scores,
       // so we consider all pseudo-fields as potentially requiring scores.

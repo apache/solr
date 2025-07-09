@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 [versions]
-adobe-testing-s3mock = "2.17.0"
-amazon-awssdk = "2.26.19"
+adobe-testing-s3mock = "3.9.1"
+amazon-awssdk = "2.31.77"
 # @keep Antora version used in ref-guide
 antora = "3.1.4"
 # @keep Most recent commit as of 2022-06-24, this repo does not have tags
@@ -37,13 +37,13 @@ apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.0"
 apache-log4j = "2.21.0"
-apache-lucene = "9.12.1"
+apache-lucene = "9.12.2"
 apache-opennlp = "1.9.4"
 apache-poi = "5.2.2"
 apache-rat = "0.15"
 apache-tika = "1.28.5"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.2"
+apache-zookeeper = "3.9.3"
 # @keep for version alignment
 apiguardian = "1.1.2"
 aqute-bnd = "6.4.1"
@@ -80,8 +80,8 @@ decompose = "3.2.2"
 diffplug-spotless = "6.5.2"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
-eclipse-jetty = "10.0.22"
-eclipse-jettytoolchain = "4.0.6"
+eclipse-jetty = "12.0.19"
+eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "6.7.0.202309050840-r"
 essenty = "2.4.0"
@@ -122,6 +122,7 @@ immutables-valueannotations = "2.10.1"
 j256-simplemagic = "1.17"
 jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
+jakarta-servlet = "6.0.0"
 jakarta-ws = "3.1.0"
 # @keep This is the minimum required Java version for the project.
 java-min = "21"
@@ -224,6 +225,7 @@ amazon-awssdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "amaz
 amazon-awssdk-httpclient-spi = { module = "software.amazon.awssdk:http-client-spi", version.ref = "amazon-awssdk" }
 amazon-awssdk-profiles = { module = "software.amazon.awssdk:profiles", version.ref = "amazon-awssdk" }
 amazon-awssdk-regions = { module = "software.amazon.awssdk:regions", version.ref = "amazon-awssdk" }
+amazon-awssdk-retries-spi = { module = "software.amazon.awssdk:retries-spi", version.ref = "amazon-awssdk" }
 amazon-awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "amazon-awssdk" }
 amazon-awssdk-sdkcore = { module = "software.amazon.awssdk:sdk-core", version.ref = "amazon-awssdk" }
 amazon-awssdk-sts = { module = "software.amazon.awssdk:sts", version.ref = "amazon-awssdk" }
@@ -311,33 +313,38 @@ decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.re
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decompose" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-graphite = { module = "io.dropwizard.metrics:metrics-graphite", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jetty10 = { module = "io.dropwizard.metrics:metrics-jetty10", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jetty12 = { module = "io.dropwizard.metrics:metrics-jetty12", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jetty12-ee10 = { module = "io.dropwizard.metrics:metrics-jetty12-ee10", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jvm = { module = "io.dropwizard.metrics:metrics-jvm", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-servlets = { module = "io.dropwizard.metrics:metrics-servlets", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-servlets = { module = "io.dropwizard.metrics:metrics-jakarta-servlets", version.ref = "dropwizard-metrics" }
 eclipse-jdt-ecj = { module = "org.eclipse.jdt:ecj", version.ref = "eclipse-ecj" }
 eclipse-jetty-alpnjavaclient = { module = "org.eclipse.jetty:jetty-alpn-java-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-alpnserver = { module = "org.eclipse.jetty:jetty-alpn-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-client = { module = "org.eclipse.jetty:jetty-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-deploy = { module = "org.eclipse.jetty:jetty-deploy", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee = { module = "org.eclipse.jetty:jetty-ee", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee10-servlet = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlet", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee10-servlets = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlets", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee10-webapp = { module = "org.eclipse.jetty.ee10:jetty-ee10-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-http = { module = "org.eclipse.jetty:jetty-http", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-client = { module = "org.eclipse.jetty.http2:http2-client", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-common = { module = "org.eclipse.jetty.http2:http2-common", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-hpack = { module = "org.eclipse.jetty.http2:http2-hpack", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-httpclienttransport = { module = "org.eclipse.jetty.http2:http2-http-client-transport", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-server = { module = "org.eclipse.jetty.http2:http2-server", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-client = { module = "org.eclipse.jetty.http2:jetty-http2-client", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-common = { module = "org.eclipse.jetty.http2:jetty-http2-common", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-hpack = { module = "org.eclipse.jetty.http2:jetty-http2-hpack", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-httpclienttransport = { module = "org.eclipse.jetty.http2:jetty-http2-client-transport", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-server = { module = "org.eclipse.jetty.http2:jetty-http2-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-io = { module = "org.eclipse.jetty:jetty-io", version.ref = "eclipse-jetty" }
 eclipse-jetty-jmx = { module = "org.eclipse.jetty:jetty-jmx", version.ref = "eclipse-jetty" }
+eclipse-jetty-jndi = { module = "org.eclipse.jetty:jetty-jndi", version.ref = "eclipse-jetty" }
+eclipse-jetty-plus = { module = "org.eclipse.jetty:jetty-plus", version.ref = "eclipse-jetty" }
 eclipse-jetty-rewrite = { module = "org.eclipse.jetty:jetty-rewrite", version.ref = "eclipse-jetty" }
 eclipse-jetty-security = { module = "org.eclipse.jetty:jetty-security", version.ref = "eclipse-jetty" }
 eclipse-jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "eclipse-jetty" }
-eclipse-jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "eclipse-jetty" }
-eclipse-jetty-servlets = { module = "org.eclipse.jetty:jetty-servlets", version.ref = "eclipse-jetty" }
+eclipse-jetty-session = { module = "org.eclipse.jetty:jetty-session", version.ref = "eclipse-jetty" }
 eclipse-jetty-start = { module = "org.eclipse.jetty:jetty-start", version.ref = "eclipse-jetty" }
-eclipse-jetty-toolchain-servletapi = { module = "org.eclipse.jetty.toolchain:jetty-servlet-api", version.ref = "eclipse-jettytoolchain" }
+eclipse-jetty-toolchain-servletapi = { module = "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api", version.ref = "eclipse-jettytoolchain" }
 eclipse-jetty-util = { module = "org.eclipse.jetty:jetty-util", version.ref = "eclipse-jetty" }
-eclipse-jetty-webapp = { module = "org.eclipse.jetty:jetty-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "eclipse-jetty" }
 eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }
 essenty-lifecycle = { module = "com.arkivanov.essenty:lifecycle", version.ref = "essenty" }
@@ -399,6 +406,7 @@ immutables-valueannotations = { module = "org.immutables:value-annotations", ver
 j256-simplemagic = { module = "com.j256.simplemagic:simplemagic", version.ref = "j256-simplemagic" }
 jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
 jakarta-inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject" }
+jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api", version.ref = "jakarta-servlet" }
 jakarta-ws-rsapi = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "jakarta-ws" }
 javacc-javacc = { module = "net.java.dev.javacc:javacc", version.ref = "javacc" }
 # @keep transitive dependency for version alignment

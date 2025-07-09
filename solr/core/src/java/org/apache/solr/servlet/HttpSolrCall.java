@@ -33,6 +33,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,8 +58,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -1193,7 +1193,13 @@ public class HttpSolrCall {
       return null;
     }
     try {
-      return SolrVersion.valueOf(header.substring(header.lastIndexOf(' ') + 1));
+      String userAgent = header.substring(header.lastIndexOf(' ') + 1);
+      if ("1.0".equals(userAgent)) {
+        userAgent = "1.0.0";
+      } else if ("2.0".equals(userAgent)) {
+        userAgent = "2.0.0";
+      }
+      return SolrVersion.valueOf(userAgent);
     } catch (Exception e) {
       // unexpected but let's not freak out
       assert false : e.toString();
