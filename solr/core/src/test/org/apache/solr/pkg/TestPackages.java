@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -292,12 +293,12 @@ public class TestPackages extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(
         10,
         cluster.getSolrClient(),
-        new GenericSolrRequest(
-                SolrRequest.METHOD.GET,
-                "/stream",
-                new MapSolrParams(
-                    Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "action", "plugins")))
-            .setRequiresCollection(true),
+        new GenericCollectionRequest(
+            SolrRequest.METHOD.GET,
+            "/stream",
+            SolrRequest.SolrRequestType.ADMIN,
+            new MapSolrParams(
+                Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "action", "plugins"))),
         Map.of(":plugins:mincopy", "org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric"));
 
     UpdateRequest ur = new UpdateRequest();
@@ -567,13 +568,14 @@ public class TestPackages extends SolrCloudTestCase {
                 "meta",
                 "true"));
 
-    GenericSolrRequest req1 =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/" + componentType, params)
-            .setRequiresCollection(true);
     TestDistribFileStore.assertResponseValues(
         10,
         client,
-        req1,
+        new GenericCollectionRequest(
+            SolrRequest.METHOD.GET,
+            "/config/" + componentType,
+            SolrRequest.SolrRequestType.ADMIN,
+            params),
         Map.of(
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:package", pkg,
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:version", version));
