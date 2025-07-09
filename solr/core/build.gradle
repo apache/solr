@@ -156,6 +156,7 @@ dependencies {
   // Distributed Tracing
   api libs.opentelemetry.api
   implementation libs.opentelemetry.context
+  implementation libs.opentelemetry.exporter.otlp
 
   implementation(libs.opentelemetry.exporter.prometheus, {
     exclude group: "io.prometheus", module: "prometheus-metrics-exporter-httpserver"
@@ -217,4 +218,6 @@ dependencies {
   testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+
+  testImplementation libs.opentelemetry.sdktesting
 }
