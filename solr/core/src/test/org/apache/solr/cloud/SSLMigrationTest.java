@@ -19,20 +19,21 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SSLTestConfig;
@@ -115,18 +116,17 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   }
 
   private void setUrlScheme(String value) throws Exception {
-    var request =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.POST,
-            "/admin/collections",
-            SolrRequestType.ADMIN,
-            params(
-                "action",
-                CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),
-                "name",
-                "urlScheme",
-                "val",
-                value));
+    Map<String, String> m =
+        Map.of(
+            "action",
+            CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),
+            "name",
+            "urlScheme",
+            "val",
+            value);
+    SolrParams params = new MapSolrParams(m);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
 
     String[] urls =
         getReplicas().stream()

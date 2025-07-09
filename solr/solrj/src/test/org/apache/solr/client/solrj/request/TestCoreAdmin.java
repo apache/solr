@@ -28,8 +28,6 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
@@ -121,9 +119,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     params.set("action", "BADACTION");
     String collectionName = "badactioncollection";
     params.set("name", collectionName);
-    var request =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.POST, "/admin/cores", SolrRequestType.ADMIN, params);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/cores");
     expectThrows(SolrException.class, () -> getSolrAdmin().request(request));
   }
 

@@ -25,10 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.common.params.CollectionParams;
@@ -228,7 +227,8 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
   protected NamedList<Object> sendRequest(ModifiableSolrParams params)
       throws SolrServerException, IOException {
-    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/admin/collections", params);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
 
     String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 

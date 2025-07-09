@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericCollectionRequest;
@@ -109,7 +108,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     var request =
         new GenericCollectionRequest(
-            SolrRequest.METHOD.GET, "/tasks/cancel", SolrRequestType.ADMIN, params);
+            SolrRequest.METHOD.GET, "/tasks/cancel", SolrRequest.SolrRequestType.ADMIN, params);
     NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     assertEquals("Query with queryID foobar not found", queryResponse.get("status"));
@@ -189,7 +188,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
                 new GenericCollectionRequest(
                     SolrRequest.METHOD.GET,
                     "/tasks/list",
-                    SolrRequestType.ADMIN,
+                    SolrRequest.SolrRequestType.ADMIN,
                     new ModifiableSolrParams()));
     return (NamedList<String>) response.get("taskList");
   }
@@ -201,7 +200,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     var request =
         new GenericCollectionRequest(
-            SolrRequest.METHOD.GET, "/tasks/list", SolrRequestType.ADMIN, params);
+            SolrRequest.METHOD.GET, "/tasks/list", SolrRequest.SolrRequestType.ADMIN, params);
     NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     String result = (String) queryResponse.get("taskStatus");
@@ -216,9 +215,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
           ModifiableSolrParams params = new ModifiableSolrParams();
 
           params.set("queryUUID", queryID);
-          var request =
-              new GenericCollectionRequest(
-                  SolrRequest.METHOD.POST, "/tasks/cancel", SolrRequestType.ADMIN, params);
+          SolrRequest<?> request = new QueryRequest(params);
+          request.setPath("/tasks/cancel");
 
           try {
             NamedList<Object> queryResponse;

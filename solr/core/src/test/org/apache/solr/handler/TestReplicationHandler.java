@@ -51,11 +51,10 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericCollectionRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -202,9 +201,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command", "details");
     params.set("_trace", "getDetails");
-    var req =
-        new GenericCollectionRequest(
-            SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params);
+    params.set("qt", ReplicationHandler.PATH);
+    QueryRequest req = new QueryRequest(params);
 
     NamedList<Object> res = s.request(req);
     assertReplicationResponseSucceeded(res);
@@ -222,9 +220,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command", "indexversion");
     params.set("_trace", "getIndexVersion");
-    var req =
-        new GenericCollectionRequest(
-            SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params);
+    params.set("qt", ReplicationHandler.PATH);
+    QueryRequest req = new QueryRequest(params);
+
     NamedList<Object> res = s.request(req);
     assertReplicationResponseSucceeded(res);
 
@@ -236,9 +234,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "reload");
     params.set("core", core);
-    var req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.POST, "/admin/cores", SolrRequestType.ADMIN, params);
+    params.set("qt", "/admin/cores");
+    QueryRequest req = new QueryRequest(params);
 
     try (SolrClient adminClient = adminClient(jettySolrRunner)) {
       NamedList<Object> res = adminClient.request(req);
@@ -1563,7 +1560,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           new GenericCollectionRequest(
               SolrRequest.METHOD.POST,
               "/replication",
-              SolrRequestType.ADMIN,
+              SolrRequest.SolrRequestType.ADMIN,
               params("command", "backup", "location", backupDir.toString(), "name", backupName));
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
@@ -1586,7 +1583,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           new GenericCollectionRequest(
               SolrRequest.METHOD.POST,
               "/replication",
-              SolrRequestType.ADMIN,
+              SolrRequest.SolrRequestType.ADMIN,
               params("command", "backup", "location", backupDir.toString(), "name", backupName));
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);

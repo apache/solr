@@ -24,10 +24,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -58,9 +56,8 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   public void test() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.STATUS.toString());
-    var request =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET, "/admin/cores", SolrRequestType.ADMIN, params);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
 
     // create a client that does not have the /collection1 as part of the URL.
