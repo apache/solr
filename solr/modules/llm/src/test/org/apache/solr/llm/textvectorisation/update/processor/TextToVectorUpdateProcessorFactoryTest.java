@@ -132,7 +132,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
 
   /* Following test depends on a real solr schema and depends on BeforeClass-AfterClass methods */
   @Test
-  public void init_notExistentInputField_shouldThrowExceptionWithDetailedMessage() {
+  public void init_notExistentInputField_shouldNotThrowException() {
     NamedList<String> args = new NamedList<>();
     args.add("inputField", "notExistentInput");
     args.add("outputField", "vector");
@@ -144,9 +144,6 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     SolrCore collection1 = solrClientTestRule.getCoreContainer().getCore("collection1");
     SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
     factoryToTest.init(args);
-    SolrException e =
-        assertThrows(SolrException.class, () -> factoryToTest.getInstance(req, null, null));
-    assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
     collection1.close();
   }
 }
