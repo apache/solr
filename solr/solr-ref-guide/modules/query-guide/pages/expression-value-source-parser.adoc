@@ -17,8 +17,8 @@
 // under the License.
 
 The `ExpressionValueSourceParser` allows you to implement a custom valueSource merely by adding a concise JavaScript expression to your `solrconfig.xml`.
-The expression is precompiled, and offers competitive performance to those written in Java.
-The syntax is a limited subset of JavaScript that is purely numerical oriented, and only certain built-in fuctions can be called.
+The expression is precompiled and offers competitive performance to those written in Java.
+The syntax is a limited subset of JavaScript that is purely numerically oriented, and only certain built-in functions can be called.
 The implementation is based on the Lucene Expressions module, which you can learn more about in the {lucene-javadocs}/expressions/org/apache/lucene/expressions/js/package-summary.html[Lucene Expressions documentation].
 
 == Examples

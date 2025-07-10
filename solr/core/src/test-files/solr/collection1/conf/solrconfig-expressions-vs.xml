@@ -29,7 +29,6 @@
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
   <valueSourceParser name="sin1" class="solr.ExpressionValueSourceParser">
-    <!-- Note: uses default score binding of 'score' -->
     <str name="expression">sin(1)</str>
   </valueSourceParser>
 
@@ -66,6 +65,7 @@
   </valueSourceParser>
 
   <valueSourceParser name="expr_ssccoorree" class="solr.ExpressionValueSourceParser">
+    <!-- unclear if anyone needs this capability -->
     <str name="score-name">ssccoorree</str>
     <str name="expression">1 + ssccoorree</str>
   </valueSourceParser>
