@@ -1,12 +1,5 @@
 [
   {
-    "name": "value_feature_2",
-    "class": "org.apache.solr.ltr.feature.ValueFeature",
-    "params": {
-      "value": 1
-    }
-  },
-  {
     "name": "value_feature_1",
     "class": "org.apache.solr.ltr.feature.ValueFeature",
     "params": {

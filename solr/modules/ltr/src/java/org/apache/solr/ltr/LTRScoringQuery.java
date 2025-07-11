@@ -66,7 +66,7 @@ public class LTRScoringQuery extends Query implements Accountable {
   private FeatureLogger logger;
   // Map of external parameters, such as query intent, that can be used by
   // features
-  private final Map<String, String[]> efi;
+  private Map<String, String[]> efi;
   // Original solr query used to fetch matching documents
   private Query originalQuery;
   // Original solr request
@@ -116,6 +116,10 @@ public class LTRScoringQuery extends Query implements Accountable {
 
   public Map<String, String[]> getExternalFeatureInfo() {
     return efi;
+  }
+
+  public void setExternalFeatureInfo(Map<String, String[]> efi) {
+    this.efi = efi;
   }
 
   public void setRequest(SolrQueryRequest request) {
