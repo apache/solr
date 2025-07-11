@@ -377,8 +377,11 @@ public class HttpShardHandler extends ShardHandler {
     // Queue a fake response to notify take() that it should no longer wait on responses as the
     // outstanding requests have been canceled
     synchronized (canceled) {
-      canceled.set(true);
-      responses.add(CANCELLATION_NOTIFICATION);
+      boolean alreadyCanceled = canceled.getAndSet(true);
+      if (!alreadyCanceled) {
+        // We don't want to queue this multiple times if we are already canceled
+        responses.add(CANCELLATION_NOTIFICATION);
+      }
       // Cancel all outstanding requests
       for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
         if (!future.isDone()) {
