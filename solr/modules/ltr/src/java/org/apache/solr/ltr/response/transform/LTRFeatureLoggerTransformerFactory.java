@@ -258,7 +258,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
               modelFeatures,
               docsWereReranked);
       setupRerankingQueriesForLogging(
-          transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
+              transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context, featureLogger);
     }
 
@@ -329,41 +329,42 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * @param transformerExternalFeatureInfo explicit efi for the transformer
      */
     private void setupRerankingQueriesForLogging(
-        String transformerFeatureStore,
-        Map<String, String[]> transformerExternalFeatureInfo,
-        LoggingModel loggingModel) {
+            String transformerFeatureStore,
+            Map<String, String[]> transformerExternalFeatureInfo,
+            LoggingModel loggingModel) {
       if (!docsWereReranked) { // no reranking query
         LTRScoringQuery loggingQuery =
-            new LTRScoringQuery(loggingModel, transformerExternalFeatureInfo, threadManager);
+                new LTRScoringQuery(loggingModel, transformerExternalFeatureInfo, threadManager);
         rerankingQueries = new LTRScoringQuery[] {loggingQuery};
       } else {
         rerankingQueries = new LTRScoringQuery[rerankingQueriesFromContext.length];
         System.arraycopy(
-            rerankingQueriesFromContext,
-            0,
-            rerankingQueries,
-            0,
-            rerankingQueriesFromContext.length);
+                rerankingQueriesFromContext,
+                0,
+                rerankingQueries,
+                0,
+                rerankingQueriesFromContext.length);
 
-        if (transformerFeatureStore != null) { // explicit feature store for the transformer
-          LTRScoringModel matchingRerankingModel = loggingModel;
-          for (LTRScoringQuery rerankingQuery : rerankingQueries) {
-            if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery)
-                && transformerFeatureStore.equals(
-                    rerankingQuery.getScoringModel().getFeatureStoreName())) {
-              matchingRerankingModel = rerankingQuery.getScoringModel();
-            }
+        if (transformerFeatureStore == null) {
+          transformerFeatureStore = FeatureStore.DEFAULT_FEATURE_STORE_NAME;
+        }
+        LTRScoringModel matchingRerankingModel = loggingModel;
+        for (LTRScoringQuery rerankingQuery : rerankingQueries) {
+          if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery)
+                  && transformerFeatureStore.equals(
+                  rerankingQuery.getScoringModel().getFeatureStoreName())) {
+            matchingRerankingModel = rerankingQuery.getScoringModel();
           }
+        }
 
-          for (int i = 0; i < rerankingQueries.length; i++) {
-            rerankingQueries[i] =
-                new LTRScoringQuery(
-                    matchingRerankingModel,
-                    (!transformerExternalFeatureInfo.isEmpty()
-                        ? transformerExternalFeatureInfo
-                        : rerankingQueries[i].getExternalFeatureInfo()),
-                    threadManager);
-          }
+        for (int i = 0; i < rerankingQueries.length; i++) {
+          rerankingQueries[i] =
+                  new LTRScoringQuery(
+                          matchingRerankingModel,
+                          (!transformerExternalFeatureInfo.isEmpty()
+                                  ? transformerExternalFeatureInfo
+                                  : rerankingQueries[i].getExternalFeatureInfo()),
+                          threadManager);
         }
       }
     }
