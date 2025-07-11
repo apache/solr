@@ -129,25 +129,20 @@ public class LTRScoringQuery extends Query implements Accountable {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = ltrScoringModel.getFeatureStoreName().hashCode();
-    result = (prime * result) + addEfisHash(result, prime);
-    if (logger != null) {
-      result = (prime * result) + logger.featureFormat.hashCode();
-    }
-    result = (prime * result) + this.toString().hashCode();
-    return result;
-  }
-
-  private int addEfisHash(int result, int prime) {
-    if (efi != null) {
-      TreeMap<String, String[]> sorted = new TreeMap<>(efi);
-      for (final Map.Entry<String, String[]> entry : sorted.entrySet()) {
+    int result = classHash();
+    result = (prime * result) + ((ltrScoringModel == null) ? 0 : ltrScoringModel.hashCode());
+    result = (prime * result) + ((originalQuery == null) ? 0 : originalQuery.hashCode());
+    if (efi == null) {
+      result = (prime * result) + 0;
+    } else {
+      for (final Map.Entry<String, String[]> entry : efi.entrySet()) {
         final String key = entry.getKey();
         final String[] values = entry.getValue();
         result = (prime * result) + key.hashCode();
         result = (prime * result) + Arrays.hashCode(values);
       }
     }
+    result = (prime * result) + this.toString().hashCode();
     return result;
   }
 
@@ -527,6 +522,10 @@ public class LTRScoringQuery extends Query implements Accountable {
         this.featureVectorCache = cacheToUse;
       }
 
+      public SolrCache<Integer, float[]> getCache() {
+        return featureVectorCache;
+      }
+
       @Override
       public Collection<ChildScorable> getChildren() throws IOException {
         return featureTraversalScorer.getChildren();
@@ -550,10 +549,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       @Override
       public DocIdSetIterator iterator() {
         return featureTraversalScorer.iterator();
-      }
-
-      private LTRScoringQuery getScoringQuery() {
-        return LTRScoringQuery.this;
       }
 
       abstract class FeatureTraversalScorer extends Scorer {
@@ -583,7 +578,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
             if (featureVectorCache != null) {
               int docId = activeDoc + leafContext.docBase;
-              int fvCacheKey = fvCacheKey(getScoringQuery(), docId);
+              int fvCacheKey = fvCacheKey(docId);
               featureVector = featureVectorCache.get(fvCacheKey);
               if (featureVector == null) {
                 featureVector = extractFeatureVector();
@@ -605,8 +600,31 @@ public class LTRScoringQuery extends Query implements Accountable {
           }
         }
 
-        private int fvCacheKey(LTRScoringQuery scoringQuery, int docId) {
-          return (31 * scoringQuery.hashCode()) + docId;
+        private int fvCacheKey(int docId) {
+          int prime = 31;
+          int result = docId;
+          if (Objects.equals(featureVectorCache.name(), "rerankingFeatureVectorCache")) {
+            result = (prime * result) + ltrScoringModel.getName().hashCode();
+          }
+          if (Objects.equals(featureVectorCache.name(), "loggingFeatureVectorCache")) {
+            result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
+            result = (prime * result) + logger.featureFormat.hashCode();
+          }
+          result = (prime * result) + addEfisHash(result, prime);
+          return result;
+        }
+
+        private int addEfisHash(int result, int prime) {
+          if (efi != null) {
+            TreeMap<String, String[]> sorted = new TreeMap<>(efi);
+            for (final Map.Entry<String, String[]> entry : sorted.entrySet()) {
+              final String key = entry.getKey();
+              final String[] values = entry.getValue();
+              result = (prime * result) + key.hashCode();
+              result = (prime * result) + Arrays.hashCode(values);
+            }
+          }
+          return result;
         }
 
         protected float[] initFeatureVector(FeatureInfo[] featuresInfos) {
