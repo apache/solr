@@ -25,6 +25,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.internal.hppc.IntObjectHashMap;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Scorable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.ResultContext;
@@ -119,8 +120,13 @@ public class ValueSourceAugmenter extends DocTransformer {
       try {
         int idx = ReaderUtil.subIndex(docid, readerContexts);
         LeafReaderContext rcontext = readerContexts.get(idx);
-        FunctionValues values = valueSource.getValues(fcontext, rcontext);
         int localId = docid - rcontext.docBase;
+
+        if (context.wantsScores()) {
+          fcontext.put("scorer", new ScoreAndDoc(localId, docIterationInfo.score()));
+        }
+
+        FunctionValues values = valueSource.getValues(fcontext, rcontext);
         setValue(doc, values.objectVal(localId));
       } catch (IOException e) {
         throw new SolrException(
@@ -140,6 +146,26 @@ public class ValueSourceAugmenter extends DocTransformer {
   protected void setValue(SolrDocument doc, Object val) {
     if (val != null) {
       doc.setField(name, val);
+    }
+  }
+
+  private static class ScoreAndDoc extends Scorable {
+    private final int docId;
+    private final float score;
+
+    ScoreAndDoc(int docId, float score) {
+      this.docId = docId;
+      this.score = score;
+    }
+
+    @Override
+    public int docID() {
+      return docId;
+    }
+
+    @Override
+    public float score() {
+      return score;
     }
   }
 }
