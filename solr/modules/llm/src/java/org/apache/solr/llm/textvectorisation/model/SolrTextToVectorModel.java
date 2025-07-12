@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.textvectorisation.store.TextToVectorModelException;
 import org.apache.solr.llm.textvectorisation.store.rest.ManagedTextToVectorModelStore;
@@ -116,7 +114,7 @@ public class SolrTextToVectorModel implements Accountable {
                       .invoke(builder, params.get(paramName).toString());
                 } catch (NoSuchMethodException e) {
                   log.error("Parameter {} not supported by model {}", paramName, className);
-                  throw new SolrException(ErrorCode.BAD_REQUEST, ,e);
+                  throw e;
                 }
               }
             }

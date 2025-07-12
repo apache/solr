@@ -20,28 +20,47 @@ package org.apache.solr.llm.textvectorisation.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.llm.textvectorisation.model.SolrTextToVectorModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.zookeeper.common.StringUtils;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private IndexSchema schema;
+  private final IndexSchema schema;
   private final String inputField;
   private final String outputField;
-  private SolrTextToVectorModel textToVector;
+  private final SolrTextToVectorModel textToVector;
+  private final String[] additionalInputFields;
 
   public TextToVectorUpdateProcessor(
       String inputField,
+      String[] additionalInputFields,
       String outputField,
       SolrTextToVectorModel textToVector,
       SolrQueryRequest req,
@@ -51,6 +70,8 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
     this.inputField = inputField;
     this.outputField = outputField;
     this.textToVector = textToVector;
+
+    this.additionalInputFields = additionalInputFields;
   }
 
   /**
@@ -59,17 +80,27 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
    */
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    SolrInputDocument doc = cmd.getSolrInputDocument();
-    SolrInputField inputFieldContent = doc.get(inputField);
-    if (!isNullOrEmpty(inputFieldContent)) {
+    SolrInputDocument newDoc = cmd.getSolrInputDocument();
+
+    SolrInputField inputFieldContent = newDoc.get(inputField);
+
+    ArrayList<String> allFields = new ArrayList<>(Arrays.asList(additionalInputFields));
+    allFields.add(inputField);
+    Collections.reverse(allFields);
+
+    //todo do we really need to create a map?
+    String contentFromNewDoc = concatenatedFieldContent(newDoc.toMap(new HashMap<>()), allFields);
+
+    if (!isNullOrEmpty(inputFieldContent) || !StringUtils.isBlank(contentFromNewDoc)) {
       try {
-        String textToVectorise = inputFieldContent.getValue().toString();
-        float[] vector = textToVector.vectorise(textToVectorise);
-        List<Float> vectorAsList = new ArrayList<Float>(vector.length);
-        for (float f : vector) {
-          vectorAsList.add(f);
-        }
-        doc.addField(outputField, vectorAsList);
+
+        SolrDocument oldDoc =
+            getCurrentSolrDocFromCore(
+                cmd.getReq().getCore(), newDoc.getField("id").getValue().toString(), allFields);
+
+        List<Float> targetVector = getFreshVectorIfChanged(oldDoc, allFields, contentFromNewDoc);
+
+        newDoc.addField(outputField, targetVector);
       } catch (RuntimeException vectorisationFailure) {
         if (log.isErrorEnabled()) {
           SchemaField uniqueKeyField = schema.getUniqueKeyField();
@@ -78,12 +109,82 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
               "Could not vectorise: {} for the document with {}: {}",
               inputField,
               uniqueKeyFieldName,
-              doc.getFieldValue(uniqueKeyFieldName),
+              newDoc.getFieldValue(uniqueKeyFieldName),
               vectorisationFailure);
         }
       }
     }
     super.processAdd(cmd);
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Float> getFreshVectorIfChanged(
+      SolrDocument oldDoc, ArrayList<String> allFields, String contentFromNewDoc) {
+
+    if (oldDoc != null && oldDoc.getFieldValue(outputField) != null) {
+
+      String contentOldDoc = concatenatedFieldContent(oldDoc, allFields);
+      //no need to create vector if old content is equals to new content
+      if (contentFromNewDoc.equals(contentOldDoc)) {
+        Object fieldValue = oldDoc.getFieldValue(outputField);
+        return (List<Float>) fieldValue;
+      }
+    }
+    return vectorize(contentFromNewDoc);
+  }
+
+  private List<Float> vectorize(String textToVectorise) {
+    float[] vector = textToVector.vectorise(textToVectorise);
+    List<Float> vectorAsList = new ArrayList<>(vector.length);
+    for (float f : vector) {
+      vectorAsList.add(f);
+    }
+    return vectorAsList;
+  }
+
+  private SolrDocument getCurrentSolrDocFromCore(SolrCore core, String id, List<String> allFields) {
+
+    long t1 = System.currentTimeMillis();
+    SolrClient solrClient = new EmbeddedSolrServer(core);
+    log.info("create SolrClient took {}", System.currentTimeMillis() - t1);
+
+    // we need to make a copy since we add an element to it
+    allFields = new ArrayList<>(allFields);
+    allFields.add(outputField);
+
+    ModifiableSolrParams queryParams = new ModifiableSolrParams();
+    queryParams.set("q", "id:" + id);
+    queryParams.set("fl", allFields.toArray(new String[0]));
+
+    t1 = System.currentTimeMillis();
+
+    QueryResponse response;
+    try {
+      response = solrClient.query(queryParams);
+    } catch (SolrServerException | IOException e) {
+      log.error("error here");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
+    }
+
+    log.info("create SolrClient took {}", System.currentTimeMillis() - t1);
+
+    SolrDocumentList results = response.getResults();
+    if (results.getNumFound() > 0) {
+      return (results.getFirst());
+    }
+    return null;
+  }
+
+  private String concatenatedFieldContent(Map<String, Object> docFields, List<String> allFields) {
+    if (additionalInputFields == null) {
+      return "";
+    }
+
+    return allFields.stream()
+        .map(docFields::get)
+        .filter(Objects::nonNull)
+        .map(Object::toString)
+        .collect(Collectors.joining(" "));
   }
 
   protected boolean isNullOrEmpty(SolrInputField inputFieldContent) {

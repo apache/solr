@@ -49,21 +49,24 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
  */
 public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   private static final String INPUT_FIELD_PARAM = "inputField";
+  private static final String ADDITIONAL_INPUT_FIELDS_PARAM = "additionalInputField";
   private static final String OUTPUT_FIELD_PARAM = "outputField";
   private static final String MODEL_NAME = "model";
 
   private String inputField;
   private String outputField;
   private String modelName;
-  private SolrParams params;
+  private String[] additionalInputFields;
 
   @Override
   public void init(final NamedList<?> args) {
-    params = args.toSolrParams();
+    SolrParams params = args.toSolrParams();
     RequiredSolrParams required = params.required();
     inputField = required.get(INPUT_FIELD_PARAM);
     outputField = required.get(OUTPUT_FIELD_PARAM);
     modelName = required.get(MODEL_NAME);
+    String inputFields = params.get(ADDITIONAL_INPUT_FIELDS_PARAM);
+    additionalInputFields = inputFields != null ? inputFields.split(",") : null;
   }
 
   @Override
@@ -80,6 +83,7 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "undefined field: \"" + outputField + "\"");
     }
+
     final SchemaField outputFieldSchema = latestSchema.getField(outputField);
     assertIsDenseVectorField(outputFieldSchema);
 
@@ -95,7 +99,8 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
               + ManagedTextToVectorModelStore.REST_END_POINT);
     }
 
-    return new TextToVectorUpdateProcessor(inputField, outputField, textToVector, req, next);
+    return new TextToVectorUpdateProcessor(
+        inputField, additionalInputFields, outputField, textToVector, req, next);
   }
 
   protected void assertIsDenseVectorField(SchemaField schemaField) {
