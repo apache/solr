@@ -49,7 +49,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;

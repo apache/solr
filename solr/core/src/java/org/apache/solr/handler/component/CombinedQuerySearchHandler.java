@@ -16,58 +16,60 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.facet.FacetModule;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * The CombinedQuerySearchHandler class extends the SearchHandler and provides custom behavior
- * for handling combined queries. It overrides methods to create a response builder based on
- * the {@link CombinerParams#COMBINER} parameter and to define the default components included
- * in the search configuration.
+ * The CombinedQuerySearchHandler class extends the SearchHandler and provides custom behavior for
+ * handling combined queries. It overrides methods to create a response builder based on the {@link
+ * CombinerParams#COMBINER} parameter and to define the default components included in the search
+ * configuration.
  */
 public class CombinedQuerySearchHandler extends SearchHandler {
 
-    /**
-     * Overrides the default response builder creation method.
-     * This method checks if the {@link CombinerParams#COMBINER} parameter is set to true in the request.
-     * If it is, it returns an instance of {@link CombinedQueryResponseBuilder}, otherwise, it returns an instance of {@link ResponseBuilder}.
-     *
-     * @param req        the SolrQueryRequest object
-     * @param rsp        the SolrQueryResponse object
-     * @param components the list of SearchComponent objects
-     * @return the appropriate ResponseBuilder instance based on the CombinerParams.COMBINER parameter
-     */
-    @Override
-    protected ResponseBuilder newResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
-        if (req.getParams().getBool(CombinerParams.COMBINER, false)) {
-            return new CombinedQueryResponseBuilder(req, rsp, components);
-        }
-        return new ResponseBuilder(req, rsp, components);
+  /**
+   * Overrides the default response builder creation method. This method checks if the {@link
+   * CombinerParams#COMBINER} parameter is set to true in the request. If it is, it returns an
+   * instance of {@link CombinedQueryResponseBuilder}, otherwise, it returns an instance of {@link
+   * ResponseBuilder}.
+   *
+   * @param req the SolrQueryRequest object
+   * @param rsp the SolrQueryResponse object
+   * @param components the list of SearchComponent objects
+   * @return the appropriate ResponseBuilder instance based on the CombinerParams.COMBINER parameter
+   */
+  @Override
+  protected ResponseBuilder newResponseBuilder(
+      SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
+    if (req.getParams().getBool(CombinerParams.COMBINER, false)) {
+      return new CombinedQueryResponseBuilder(req, rsp, components);
     }
+    return new ResponseBuilder(req, rsp, components);
+  }
 
-    /**
-     * Overrides the default components and returns a list of component names
-     * that are included in the default configuration.
-     *
-     * @return a list of component names
-     */
-    @Override
-    protected List<String> getDefaultComponents() {
-        List<String> names = new ArrayList<>(9);
-        names.add(CombinedQueryComponent.COMPONENT_NAME);
-        names.add(FacetComponent.COMPONENT_NAME);
-        names.add(FacetModule.COMPONENT_NAME);
-        names.add(MoreLikeThisComponent.COMPONENT_NAME);
-        names.add(HighlightComponent.COMPONENT_NAME);
-        names.add(StatsComponent.COMPONENT_NAME);
-        names.add(DebugComponent.COMPONENT_NAME);
-        names.add(ExpandComponent.COMPONENT_NAME);
-        names.add(TermsComponent.COMPONENT_NAME);
-        return names;
-    }
+  /**
+   * Overrides the default components and returns a list of component names that are included in the
+   * default configuration.
+   *
+   * @return a list of component names
+   */
+  @Override
+  @SuppressWarnings("unchecked")
+  protected List<String> getDefaultComponents() {
+    List<String> names = new ArrayList<>(9);
+    names.add(CombinedQueryComponent.COMPONENT_NAME);
+    names.add(FacetComponent.COMPONENT_NAME);
+    names.add(FacetModule.COMPONENT_NAME);
+    names.add(MoreLikeThisComponent.COMPONENT_NAME);
+    names.add(HighlightComponent.COMPONENT_NAME);
+    names.add(StatsComponent.COMPONENT_NAME);
+    names.add(DebugComponent.COMPONENT_NAME);
+    names.add(ExpandComponent.COMPONENT_NAME);
+    names.add(TermsComponent.COMPONENT_NAME);
+    return names;
+  }
 }

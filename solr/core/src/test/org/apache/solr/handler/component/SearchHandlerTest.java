@@ -85,11 +85,9 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
 
       assertEquals(3, handler.getComponents().size());
       assertEquals(
-          core.getSearchComponent(FacetComponent.COMPONENT_NAME),
-          handler.getComponents().get(0));
+          core.getSearchComponent(FacetComponent.COMPONENT_NAME), handler.getComponents().get(0));
       assertEquals(
-          core.getSearchComponent(DebugComponent.COMPONENT_NAME),
-          handler.getComponents().get(1));
+          core.getSearchComponent(DebugComponent.COMPONENT_NAME), handler.getComponents().get(1));
       assertEquals(
           core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
           handler.getComponents().get(2));

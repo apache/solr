@@ -190,6 +190,16 @@
         <bool name="httpCaching">true</bool>
     </requestHandler>
 
+    <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+        <lst name="combiners">
+            <lst name="test">
+                <str name="class">org.apache.solr.search.combine.TestCombiner</str>
+                <int name="var1">60</int>
+                <str name="var2">test</str>
+            </lst>
+        </lst>
+    </searchComponent>
+
   <requestHandler name="/dismax" class="solr.SearchHandler" >
     <lst name="defaults">
      <str name="defType">dismax</str>
@@ -389,8 +399,6 @@
   </requestHandler>
 
   <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
-  <searchComponent name="combined_query" class="org.apache.solr.handler.component.CombinedQueryComponent"/>
-
   <requestHandler name="/tvrh" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
 

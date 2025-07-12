@@ -112,7 +112,9 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
                 "shards",
-                getShardsString(), CommonParams.QT, "/search"));
+                getShardsString(),
+                CommonParams.QT,
+                "/search"));
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
   }
@@ -136,7 +138,9 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
                 "shards",
-                getShardsString(), CommonParams.QT, "/search"));
+                getShardsString(),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "1", "2", "3", "4", "5");
   }
@@ -162,7 +166,9 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
                 "shards",
-                getShardsString(), CommonParams.QT, "/search"));
+                getShardsString(),
+                CommonParams.QT,
+                "/search"));
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "3", "4", "1", "10");
   }

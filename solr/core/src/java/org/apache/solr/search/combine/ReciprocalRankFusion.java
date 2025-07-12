@@ -31,7 +31,6 @@ import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.component.CombinedQueryComponent;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
@@ -47,31 +46,39 @@ import org.apache.solr.search.SortedIntDocSet;
  */
 public class ReciprocalRankFusion extends QueryAndResponseCombiner {
 
-  private final int k;
+  private int k;
 
-  /**
-   * Constructs a ReciprocalRankFusion instance.
-   *
-   * @param requestParams the SolrParams containing the configuration parameters for this combiner.
-   */
-  public ReciprocalRankFusion(SolrParams requestParams) {
-    this.k =
-        requestParams.getInt(CombinerParams.COMBINER_RRF_K, CombinerParams.COMBINER_RRF_K_DEFAULT);
+  public int getK() {
+    return k;
+  }
+
+  public ReciprocalRankFusion() {
+    this.k = CombinerParams.COMBINER_RRF_K_DEFAULT;
   }
 
   @Override
-  public QueryResult combine(List<QueryResult> rankedLists) {
+  public void init(NamedList<?> args) {
+    Object kParam = args.get("k");
+    if (kParam != null) {
+      this.k = Integer.parseInt(kParam.toString());
+    }
+  }
+
+  @Override
+  public QueryResult combine(List<QueryResult> rankedLists, SolrParams solrParams) {
+    int kVal = solrParams.getInt(CombinerParams.COMBINER_RRF_K, this.k);
     List<DocList> docLists = new ArrayList<>(rankedLists.size());
     for (QueryResult rankedList : rankedLists) {
       docLists.add(rankedList.getDocList());
     }
     QueryResult combinedResult = new QueryResult();
-    combineResults(combinedResult, docLists, false);
+    combineResults(combinedResult, docLists, false, kVal);
     return combinedResult;
   }
 
   @Override
-  public List<ShardDoc> combine(Map<String, List<ShardDoc>> shardDocMap) {
+  public List<ShardDoc> combine(Map<String, List<ShardDoc>> shardDocMap, SolrParams solrParams) {
+    int kVal = solrParams.getInt(CombinerParams.COMBINER_RRF_K, this.k);
     HashMap<String, Float> docIdToScore = new HashMap<>();
     Map<String, ShardDoc> docIdToShardDoc = new HashMap<>();
     List<ShardDoc> finalShardDocList = new ArrayList<>();
@@ -81,13 +88,13 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
       while (ranking <= shardDocList.size()) {
         String docId = shardDocList.get(ranking - 1).id.toString();
         docIdToShardDoc.put(docId, shardDocList.get(ranking - 1));
-        float rrfScore = 1f / (k + ranking);
+        float rrfScore = 1f / (kVal + ranking);
         docIdToScore.compute(docId, (id, score) -> (score == null) ? rrfScore : score + rrfScore);
         ranking++;
       }
     }
     List<Map.Entry<String, Float>> sortedByScoreDescending =
-            docIdToScore.entrySet().stream()
+        docIdToScore.entrySet().stream()
             .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
             .toList();
     for (Map.Entry<String, Float> scoredDoc : sortedByScoreDescending) {
@@ -103,7 +110,8 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
   private Map<Integer, Integer[]> combineResults(
       QueryResult combinedRankedList,
       List<DocList> rankedLists,
-      boolean saveRankPositionsForExplain) {
+      boolean saveRankPositionsForExplain,
+      int kVal) {
     Map<Integer, Integer[]> docIdToRanks = null;
     HashMap<Integer, Float> docIdToScore = new HashMap<>();
     long totalMatches = 0;
@@ -113,7 +121,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
       int ranking = 1;
       while (docs.hasNext()) {
         int docId = docs.nextDoc();
-        float rrfScore = 1f / (k + ranking);
+        float rrfScore = 1f / (kVal + ranking);
         docIdToScore.compute(docId, (id, score) -> (score == null) ? rrfScore : score + rrfScore);
         ranking++;
       }
@@ -177,11 +185,14 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
       List<Query> queries,
       List<DocList> rankedLists,
       SolrIndexSearcher searcher,
-      IndexSchema schema)
+      IndexSchema schema,
+      SolrParams solrParams)
       throws IOException {
+    int kVal = solrParams.getInt(CombinerParams.COMBINER_RRF_K, this.k);
     NamedList<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
     QueryResult combinedRankedList = new QueryResult();
-    Map<Integer, Integer[]> docIdToRanks = combineResults(combinedRankedList, rankedLists, true);
+    Map<Integer, Integer[]> docIdToRanks =
+        combineResults(combinedRankedList, rankedLists, true, kVal);
     DocList combinedDocList = combinedRankedList.getDocList();
 
     DocIterator iterator = combinedDocList.iterator();
@@ -201,19 +212,20 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
       Explanation fullDocIdExplanation =
           Explanation.match(
               iterator.score(),
-              getReciprocalRankFusionExplain(queryKeys, rankPerQuery),
+              getReciprocalRankFusionExplain(queryKeys, rankPerQuery, kVal),
               originalExplanations);
       docIdsExplanations.add(docUniqueKey, fullDocIdExplanation);
     }
     return docIdsExplanations;
   }
 
-  private String getReciprocalRankFusionExplain(String[] queryKeys, Integer[] rankPerQuery) {
+  private String getReciprocalRankFusionExplain(
+      String[] queryKeys, Integer[] rankPerQuery, int kVal) {
     StringBuilder reciprocalRankFusionExplain = new StringBuilder();
     StringJoiner scoreComponents = new StringJoiner(" + ");
     for (Integer rank : rankPerQuery) {
       if (rank != null) {
-        scoreComponents.add("1/(" + k + "+" + rank + ")");
+        scoreComponents.add("1/(" + kVal + "+" + rank + ")");
       }
     }
     reciprocalRankFusionExplain.append(scoreComponents);

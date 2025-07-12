@@ -17,6 +17,7 @@
 package org.apache.solr.search.combine;
 
 import static org.apache.solr.common.params.CombinerParams.COMBINER_RRF_K;
+import static org.apache.solr.common.params.CombinerParams.RECIPROCAL_RANK_FUSION;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.util.ArrayList;
@@ -25,9 +26,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.component.CombinedQueryComponent;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
@@ -49,15 +51,18 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
    */
   @BeforeClass
   public static void beforeClass() {
-    SolrParams params = new ModifiableSolrParams(Map.of(COMBINER_RRF_K, new String[] {"10"}));
-    reciprocalRankFusion = new ReciprocalRankFusion(params);
+    NamedList<?> args = new NamedList<>(Map.of("k", "20"));
+    reciprocalRankFusion = new ReciprocalRankFusion();
+    reciprocalRankFusion.init(args);
   }
 
   /** Tests the functionality of combining using RRF across local search indices. */
   @Test
   public void testSearcherCombine() {
     List<QueryResult> rankedList = getQueryResults();
-    QueryResult result = reciprocalRankFusion.combine(rankedList);
+    SolrParams solrParams = params(COMBINER_RRF_K, "10");
+    QueryResult result = reciprocalRankFusion.combine(rankedList, solrParams);
+    assertEquals(20, reciprocalRankFusion.getK());
     assertEquals(3, result.getDocList().size());
   }
 
@@ -85,7 +90,7 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
     return List.of(r1, r2);
   }
 
-  /** Tests the {@link ReciprocalRankFusion#combine(Map)} method across shards. */
+  /** Test shard combine for RRF. */
   @Test
   public void testShardCombine() {
     Map<String, List<ShardDoc>> shardDocMap = new HashMap<>();
@@ -107,8 +112,23 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
     shardDoc.shard = "shard2";
     shardDoc.orderInShard = 1;
     shardDocMap.put(shardDoc.shard, List.of(shardDoc));
-    List<ShardDoc> shardDocs = reciprocalRankFusion.combine(shardDocMap);
+    SolrParams solrParams = params();
+    List<ShardDoc> shardDocs = reciprocalRankFusion.combine(shardDocMap, solrParams);
     assertEquals(2, shardDocs.size());
     assertEquals("id2", shardDocs.getFirst().id);
+  }
+
+  @Test
+  public void testImplementationFactory() {
+    Map<String, QueryAndResponseCombiner> combinerMap = new HashMap<>(1);
+    SolrParams emptySolrParms = params();
+    assertThrows(
+        SolrException.class,
+        () -> QueryAndResponseCombiner.getImplementation(emptySolrParms, combinerMap));
+    SolrParams solrParams = params(CombinerParams.COMBINER_ALGORITHM, RECIPROCAL_RANK_FUSION);
+    combinerMap.put(RECIPROCAL_RANK_FUSION, new ReciprocalRankFusion());
+    assertTrue(
+        QueryAndResponseCombiner.getImplementation(solrParams, combinerMap)
+            instanceof ReciprocalRankFusion);
   }
 }

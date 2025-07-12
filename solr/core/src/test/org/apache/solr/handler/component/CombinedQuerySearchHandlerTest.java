@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.util.NamedList;
@@ -25,57 +27,50 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-
-/**
- * The type Combined query search handler test.
- */
+/** The type Combined query search handler test. */
 public class CombinedQuerySearchHandlerTest extends SolrTestCaseJ4 {
 
-    /**
-     * Before tests.
-     *
-     * @throws Exception the exception
-     */
-    @BeforeClass
-    public static void beforeTests() throws Exception {
-        initCore("solrconfig.xml", "schema.xml");
-    }
+  /**
+   * Before tests.
+   *
+   * @throws Exception the exception
+   */
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
 
-    /**
-     * Test combined component init in search components list.
-     */
-    @Test
-    public void testCombinedComponentInit() {
-        SolrCore core = h.getCore();
+  /** Test combined component init in search components list. */
+  @Test
+  public void testCombinedComponentInit() {
+    SolrCore core = h.getCore();
 
-        try (CombinedQuerySearchHandler handler = new CombinedQuerySearchHandler()) {
-            handler.init(new NamedList<>());
-            handler.inform(core);
-            assertEquals(9, handler.getComponents().size());
-            assertEquals(
-                    core.getSearchComponent(CombinedQueryComponent.COMPONENT_NAME),
-                    handler.getComponents().getFirst());
-        } catch (IOException e) {
-            fail("Exception when closing CombinedQuerySearchHandler");
-        }
+    try (CombinedQuerySearchHandler handler = new CombinedQuerySearchHandler()) {
+      handler.init(new NamedList<>());
+      handler.inform(core);
+      assertEquals(9, handler.getComponents().size());
+      assertEquals(
+          core.getSearchComponent(CombinedQueryComponent.COMPONENT_NAME),
+          handler.getComponents().getFirst());
+    } catch (IOException e) {
+      fail("Exception when closing CombinedQuerySearchHandler");
     }
+  }
 
-    /**
-     * Test combined response buildr type create dynamically.
-     */
-    @Test
-    public void testCombinedResponseBuilder() {
-        SolrQueryRequest request = req("q", "testQuery");
-        try (CombinedQuerySearchHandler handler = new CombinedQuerySearchHandler()) {
-            assertFalse(handler.newResponseBuilder(request, new SolrQueryResponse(),
-                    new ArrayList<>()) instanceof CombinedQueryResponseBuilder);
-            request = req("q", "testQuery", CombinerParams.COMBINER, "true");
-            assertTrue(handler.newResponseBuilder(request, new SolrQueryResponse(),
-                    new ArrayList<>()) instanceof CombinedQueryResponseBuilder);
-        } catch (IOException e) {
-            fail("Exception when closing CombinedQuerySearchHandler");
-        }
+  /** Test combined response buildr type create dynamically. */
+  @Test
+  public void testCombinedResponseBuilder() {
+    SolrQueryRequest request = req("q", "testQuery");
+    try (CombinedQuerySearchHandler handler = new CombinedQuerySearchHandler()) {
+      assertFalse(
+          handler.newResponseBuilder(request, new SolrQueryResponse(), new ArrayList<>())
+              instanceof CombinedQueryResponseBuilder);
+      request = req("q", "testQuery", CombinerParams.COMBINER, "true");
+      assertTrue(
+          handler.newResponseBuilder(request, new SolrQueryResponse(), new ArrayList<>())
+              instanceof CombinedQueryResponseBuilder);
+    } catch (IOException e) {
+      fail("Exception when closing CombinedQuerySearchHandler");
     }
+  }
 }
