@@ -110,9 +110,9 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "{\"lexical1\":{\"lucene\":{\"query\":\"id:2^=10\"}}},"
                     + "\"limit\":5,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.upTo\":10,\"combiner.query\":[\"lexical1\"]}}",
+                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}",
                 "shards",
-                getShardsString()));
+                getShardsString(), CommonParams.QT, "/search"));
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
   }
@@ -134,9 +134,9 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                     + "\"limit\":5,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.upTo\":100,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
                 "shards",
-                getShardsString()));
+                getShardsString(), CommonParams.QT, "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "1", "2", "3", "4", "5");
   }
@@ -158,12 +158,12 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 "{\"queries\":"
                     + "{\"lexical\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
                     + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
-                    + "\"limit\":4,"
+                    + "\"limit\":4,\"offset\":1"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
-                    + "\"params\":{\"combiner\":true,\"combiner.upTo\":10,\"combiner.query\":[\"lexical\",\"vector\"]}}",
+                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}",
                 "shards",
-                getShardsString()));
+                getShardsString(), CommonParams.QT, "/search"));
     assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "2", "3", "1", "4");
+    assertFieldValues(rsp.getResults(), id, "3", "4", "1", "10");
   }
 }

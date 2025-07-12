@@ -17,22 +17,35 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.SolrReturnFields;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.combine.QueryAndResponseCombiner;
+import org.apache.solr.util.SolrResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,10 +147,300 @@ public class CombinedQueryComponent extends QueryComponent {
   }
 
   @Override
+  protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
+    List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
+    if (mergeStrategies != null) {
+      mergeStrategies.sort(MergeStrategy.MERGE_COMP);
+      boolean idsMerged = false;
+      for (MergeStrategy mergeStrategy : mergeStrategies) {
+        mergeStrategy.merge(rb, sreq);
+        if (mergeStrategy.mergesIds()) {
+          idsMerged = true;
+        }
+      }
+
+      if (idsMerged) {
+        return; // ids were merged above so return.
+      }
+    }
+
+    SortSpec ss = rb.getSortSpec();
+
+    // If the shard request was also used to get fields (along with the scores), there is no reason
+    // to copy over the score dependent fields, since those will already exist in the document with
+    // the return fields
+    Set<String> scoreDependentFields;
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0) {
+      scoreDependentFields =
+              rb.rsp.getReturnFields().getScoreDependentReturnFields().keySet().stream()
+                      .filter(field -> !field.equals(SolrReturnFields.SCORE))
+                      .collect(Collectors.toSet());
+    } else {
+      scoreDependentFields = Collections.emptySet();
+    }
+
+    IndexSchema schema = rb.req.getSchema();
+    SchemaField uniqueKeyField = schema.getUniqueKeyField();
+
+    // id to shard mapping, to eliminate any accidental dups
+    HashMap<Object, String> uniqueDoc = new HashMap<>();
+
+    NamedList<Object> shardInfo = null;
+    if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
+      shardInfo = new SimpleOrderedMap<>();
+      rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardInfo);
+    }
+
+    long numFound = 0;
+    boolean hitCountIsExact = true;
+    Float maxScore = null;
+    boolean thereArePartialResults = false;
+    Boolean segmentTerminatedEarly = null;
+    boolean maxHitsTerminatedEarly = false;
+    long approximateTotalHits = 0;
+    int failedShardCount = 0;
+    Map<String, List<ShardDoc>> shardDocMap = new HashMap<>();
+    for (ShardResponse srsp : sreq.responses) {
+      SolrDocumentList docs = null;
+      NamedList<?> responseHeader = null;
+
+      if (shardInfo != null) {
+        SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
+
+        if (srsp.getException() != null) {
+          Throwable t = srsp.getException();
+          if (t instanceof SolrServerException && t.getCause() != null) {
+            t = t.getCause();
+          }
+          nl.add("error", t.toString());
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            nl.add("trace", trace.toString());
+          }
+          if (!StrUtils.isNullOrEmpty(srsp.getShardAddress())) {
+            nl.add("shardAddress", srsp.getShardAddress());
+          }
+        } else {
+          responseHeader =
+                  (NamedList<?>)
+                          SolrResponseUtil.getSubsectionFromShardResponse(
+                                  rb, srsp, "responseHeader", false);
+          if (responseHeader == null) {
+            continue;
+          }
+          final Object rhste =
+                  responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+          if (rhste != null) {
+            nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
+          }
+          final Object rhmhte =
+                  responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY);
+          if (rhmhte != null) {
+            nl.add(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, rhmhte);
+          }
+          final Object rhath =
+                  responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
+          if (rhath != null) {
+            nl.add(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, rhath);
+          }
+          docs =
+                  (SolrDocumentList)
+                          SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false);
+          if (docs == null) {
+            continue;
+          }
+          nl.add("numFound", docs.getNumFound());
+          nl.add("numFoundExact", docs.getNumFoundExact());
+          nl.add("maxScore", docs.getMaxScore());
+          nl.add("shardAddress", srsp.getShardAddress());
+        }
+        if (srsp.getSolrResponse() != null) {
+          nl.add("time", srsp.getSolrResponse().getElapsedTime());
+        }
+        // This ought to be better, but at least this ensures no duplicate keys in JSON result
+        String shard = srsp.getShard();
+        if (StrUtils.isNullOrEmpty(shard)) {
+          failedShardCount += 1;
+          shard = "unknown_shard_" + failedShardCount;
+        }
+        shardInfo.add(shard, nl);
+      }
+      // now that we've added the shard info, let's only proceed if we have no error.
+      if (srsp.getException() != null) {
+        thereArePartialResults = true;
+        continue;
+      }
+
+      if (docs == null) { // could have been initialized in the shards info block above
+        docs =
+                Objects.requireNonNull(
+                        (SolrDocumentList)
+                                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false));
+      }
+
+      if (responseHeader == null) { // could have been initialized in the shards info block above
+        responseHeader =
+                Objects.requireNonNull(
+                        (NamedList<?>)
+                                SolrResponseUtil.getSubsectionFromShardResponse(
+                                        rb, srsp, "responseHeader", false));
+      }
+
+      final boolean thisResponseIsPartial;
+      thisResponseIsPartial =
+              Boolean.TRUE.equals(
+                      responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+      thereArePartialResults |= thisResponseIsPartial;
+
+      if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
+        final Object ste =
+                responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+        if (Boolean.TRUE.equals(ste)) {
+          segmentTerminatedEarly = Boolean.TRUE;
+        } else if (Boolean.FALSE.equals(ste)) {
+          segmentTerminatedEarly = Boolean.FALSE;
+        }
+      }
+
+      if (!maxHitsTerminatedEarly) {
+        if (Boolean.TRUE.equals(
+                responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY))) {
+          maxHitsTerminatedEarly = true;
+        }
+      }
+      Object ath = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
+      if (ath == null) {
+        approximateTotalHits += numFound;
+      } else {
+        approximateTotalHits += ((Number) ath).longValue();
+      }
+
+      // calculate global maxScore and numDocsFound
+      if (docs.getMaxScore() != null) {
+        maxScore = maxScore == null ? docs.getMaxScore() : Math.max(maxScore, docs.getMaxScore());
+      }
+      numFound += docs.getNumFound();
+
+      if (hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact())) {
+        hitCountIsExact = false;
+      }
+
+      @SuppressWarnings("unchecked")
+      NamedList<List<Object>> sortFieldValues =
+              (NamedList<List<Object>>)
+                      SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "sort_values", true);
+      if (null == sortFieldValues) {
+        sortFieldValues = new NamedList<>();
+      }
+
+      // if the SortSpec contains a field besides score or the Lucene docid, then the values will
+      // need to be unmarshalled from sortFieldValues.
+      boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
+
+      // if we need to unmarshal the sortFieldValues for sorting but we have none, which can happen
+      // if partial results are being returned from the shard, then skip merging the results for the
+      // shard. This avoids an exception below. if the shard returned partial results but we don't
+      // need to unmarshal (a normal scoring query), then merge what we got.
+      if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
+        continue;
+      }
+
+      // Checking needsUnmarshalling saves on iterating the SortFields in the SortSpec again.
+      NamedList<List<Object>> unmarshalledSortFieldValues =
+              needsUnmarshalling ? unmarshalSortValues(ss, sortFieldValues, schema) : new NamedList<>();
+
+      // go through every doc in this response, construct a ShardDoc, and
+      // put it in the priority queue so it can be ordered.
+      for (int i = 0; i < docs.size(); i++) {
+        SolrDocument doc = docs.get(i);
+        Object id = doc.getFieldValue(uniqueKeyField.getName());
+        ShardDoc shardDoc = new ShardDoc();
+        shardDoc.id = id;
+        shardDoc.shard = srsp.getShard();
+        shardDoc.orderInShard = i;
+        Object scoreObj = doc.getFieldValue(SolrReturnFields.SCORE);
+        if (scoreObj != null) {
+          if (scoreObj instanceof String) {
+            shardDoc.score = Float.parseFloat((String) scoreObj);
+          } else {
+            shardDoc.score = ((Number) scoreObj).floatValue();
+          }
+        }
+        if (!scoreDependentFields.isEmpty()) {
+          shardDoc.scoreDependentFields = doc.getSubsetOfFields(scoreDependentFields);
+        }
+
+        shardDoc.sortFieldValues = unmarshalledSortFieldValues;
+        shardDocMap.computeIfAbsent(srsp.getShard(), list -> new ArrayList<>()).add(shardDoc);
+        String prevShard = uniqueDoc.put(id, srsp.getShard());
+        if (prevShard != null) {
+          // duplicate detected
+          numFound--;
+        }
+      } // end for-each-doc-in-response
+    } // end for-each-response
+
+    SolrDocumentList responseDocs = new SolrDocumentList();
+    if (maxScore != null) responseDocs.setMaxScore(maxScore);
+    rb.rsp.addToLog("hits", numFound);
+
+    responseDocs.setNumFound(numFound);
+    responseDocs.setNumFoundExact(hitCountIsExact);
+    responseDocs.setStart(ss.getOffset());
+
+      // save these results in a private area so we can access them
+    // again when retrieving stored fields.
+    // TODO: use ResponseBuilder (w/ comments) or the request context?
+    rb.resultIds = createShardResult(rb, shardDocMap, responseDocs);
+    rb.setResponseDocs(responseDocs);
+
+    populateNextCursorMarkFromMergedShards(rb);
+
+    if (thereArePartialResults) {
+      rb.rsp
+              .getResponseHeader()
+              .asShallowMap()
+              .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+    }
+    if (segmentTerminatedEarly != null) {
+      final Object existingSegmentTerminatedEarly =
+              rb.rsp
+                      .getResponseHeader()
+                      .get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+      if (existingSegmentTerminatedEarly == null) {
+        rb.rsp
+                .getResponseHeader()
+                .add(
+                        SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
+                        segmentTerminatedEarly);
+      } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly)
+              && Boolean.TRUE.equals(segmentTerminatedEarly)) {
+        rb.rsp
+                .getResponseHeader()
+                .remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+        rb.rsp
+                .getResponseHeader()
+                .add(
+                        SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
+                        segmentTerminatedEarly);
+      }
+    }
+    if (maxHitsTerminatedEarly) {
+      rb.rsp
+              .getResponseHeader()
+              .add(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, Boolean.TRUE);
+      if (approximateTotalHits > 0) {
+        rb.rsp
+                .getResponseHeader()
+                .add(
+                        SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
+      }
+    }
+  }
+
   protected Map<Object, ShardDoc> createShardResult(
       ResponseBuilder rb,
-      int resultSize,
-      ShardFieldSortedHitQueue queue,
       Map<String, List<ShardDoc>> shardDocMap,
       SolrDocumentList responseDocs) {
     QueryAndResponseCombiner combinerStrategy =
@@ -149,8 +452,21 @@ public class CombinedQueryComponent extends QueryComponent {
             shardDocs.forEach(shardDoc -> shardDocIdMap.put(shardDoc.id.toString(), shardDoc)));
     Map<Object, ShardDoc> resultIds = new HashMap<>();
     float maxScore = 0.0f;
-    for (int i = 0; i < resultSize; i++) {
-      ShardDoc shardDoc = combinedShardDocs.get(i);
+    Sort sort = rb.getSortSpec().getSort();
+    SortField[] sortFields;
+    if (sort != null) {
+      sortFields = sort.getSort();
+    }
+    else {
+      sortFields = new SortField[] {SortField.FIELD_SCORE};
+    }
+    final ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(
+                    sortFields, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount(), rb.req.getSearcher());
+    combinedShardDocs.forEach(queue::insertWithOverflow);
+    int resultSize = queue.size() - rb.getSortSpec().getOffset();
+    resultSize = Math.max(0, resultSize);
+    for (int i = resultSize - 1; i >= 0; i--) {
+      ShardDoc shardDoc = queue.pop();
       shardDoc.positionInResponse = i;
       maxScore = Math.max(maxScore, shardDoc.score);
       if (Float.isNaN(shardDocIdMap.get(shardDoc.id.toString()).score)) {
@@ -159,6 +475,7 @@ public class CombinedQueryComponent extends QueryComponent {
       resultIds.put(shardDoc.id.toString(), shardDoc);
     }
     responseDocs.setMaxScore(maxScore);
+    for (int i = 0; i < resultSize; i++) responseDocs.add(null);
     return resultIds;
   }
 

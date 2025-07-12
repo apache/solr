@@ -241,7 +241,7 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings({"unchecked"})
-  private void initComponents(boolean isCombinedQuery) {
+  private void initComponents() {
     Object declaredComponents = initArgs.get(INIT_COMPONENTS);
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
     List<String> last = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
@@ -251,11 +251,6 @@ public class SearchHandler extends RequestHandlerBase
     if (declaredComponents == null) {
       // Use the default component list
       list = getDefaultComponents();
-
-      if (isCombinedQuery && list.getFirst().equals(QueryComponent.COMPONENT_NAME)) {
-        list.removeFirst();
-        list.addFirst(CombinedQueryComponent.COMPONENT_NAME);
-      }
 
       if (first != null) {
         List<String> clist = first;
@@ -295,12 +290,12 @@ public class SearchHandler extends RequestHandlerBase
     this.components = components;
   }
 
-  public List<SearchComponent> getComponents(boolean isCombinedQuery) {
+  public List<SearchComponent> getComponents() {
     List<SearchComponent> result = components; // volatile read
     if (result == null) {
       synchronized (this) {
         if (components == null) {
-          initComponents(isCombinedQuery);
+          initComponents();
         }
         result = components;
       }
@@ -360,9 +355,6 @@ public class SearchHandler extends RequestHandlerBase
    */
   protected ResponseBuilder newResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
-    if (req.getParams().getBool(CombinerParams.COMBINER, false)) {
-      return new CombinedQueryResponseBuilder(req, rsp, components);
-    }
     return new ResponseBuilder(req, rsp, components);
   }
 
@@ -410,8 +402,7 @@ public class SearchHandler extends RequestHandlerBase
           purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
     }
 
-    List<SearchComponent> components =
-        getComponents(req.getParams().getBool(CombinerParams.COMBINER, false));
+    List<SearchComponent> components = getComponents();
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);

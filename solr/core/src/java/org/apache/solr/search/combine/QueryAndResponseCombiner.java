@@ -25,6 +25,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.CombinedQueryComponent;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocList;
@@ -33,22 +34,10 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * The QueryAndResponseCombiner class is an abstract base class for combining query results and
- * responses. It provides a framework for different algorithms to be implemented for merging ranked
+ * shard documents. It provides a framework for different algorithms to be implemented for merging ranked
  * lists and shard documents.
  */
 public abstract class QueryAndResponseCombiner {
-
-  protected int upTo;
-
-  /**
-   * Constructs a QueryAndResponseCombiner instance.
-   *
-   * @param requestParams the SolrParams containing the request parameters.
-   */
-  protected QueryAndResponseCombiner(SolrParams requestParams) {
-    this.upTo =
-        requestParams.getInt(CombinerParams.COMBINER_UP_TO, CombinerParams.COMBINER_UP_TO_DEFAULT);
-  }
 
   /**
    * Combines multiple ranked lists into a single QueryResult.

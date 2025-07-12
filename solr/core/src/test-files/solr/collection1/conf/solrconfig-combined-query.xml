@@ -186,6 +186,10 @@
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
+    <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
+        <bool name="httpCaching">true</bool>
+    </requestHandler>
+
   <requestHandler name="/dismax" class="solr.SearchHandler" >
     <lst name="defaults">
      <str name="defType">dismax</str>
@@ -525,7 +529,7 @@
   </restManager>
 
   <!-- warning: not a best practice; requests generally ought to be explicit to thus not require this -->
-  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants">
+  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants,/search">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

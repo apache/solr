@@ -89,7 +89,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 5\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.upTo\":100,\"combiner.query\":[\"lexical1\"]}}"),
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\"]}}", CommonParams.QT, "/search"),
         "//result[@numFound='10']",
         "//result/doc[1]/str[@name='id'][.='5']");
   }
@@ -104,7 +104,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.upTo\":100,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}"),
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}", CommonParams.QT, "/search"),
         "//result[@numFound='10']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']");
@@ -122,7 +122,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.upTo\":10,\"combiner.query\":[\"lexical\",\"vector\"]}}"),
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical\",\"vector\"]}}", CommonParams.QT, "/search"),
         "//result[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='3']",

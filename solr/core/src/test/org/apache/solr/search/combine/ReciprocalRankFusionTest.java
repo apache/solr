@@ -27,6 +27,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.component.CombinedQueryComponent;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;

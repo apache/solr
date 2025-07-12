@@ -62,10 +62,10 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       handler.init(args);
       handler.inform(core);
 
-      assertEquals(1, handler.getComponents(false).size());
+      assertEquals(1, handler.getComponents().size());
       assertEquals(
           core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
-          handler.getComponents(false).get(0));
+          handler.getComponents().get(0));
     } catch (IOException e) {
       fail("IOException closing SearchHandler");
     }
@@ -83,16 +83,16 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       handler.init(args);
       handler.inform(core);
 
-      assertEquals(3, handler.getComponents(false).size());
+      assertEquals(3, handler.getComponents().size());
       assertEquals(
           core.getSearchComponent(FacetComponent.COMPONENT_NAME),
-          handler.getComponents(false).get(0));
+          handler.getComponents().get(0));
       assertEquals(
           core.getSearchComponent(DebugComponent.COMPONENT_NAME),
-          handler.getComponents(false).get(1));
+          handler.getComponents().get(1));
       assertEquals(
           core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
-          handler.getComponents(false).get(2));
+          handler.getComponents().get(2));
     } catch (IOException e) {
       fail("Exception when closing SearchHandler");
     }
@@ -112,7 +112,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       handler.init(args);
       handler.inform(core);
 
-      List<SearchComponent> comps = handler.getComponents(false);
+      List<SearchComponent> comps = handler.getComponents();
       assertEquals(2 + handler.getDefaultComponents().size(), comps.size());
       assertEquals(core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME), comps.get(0));
       assertEquals(
@@ -120,22 +120,6 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       // Debug component is always last in this case
       assertEquals(
           core.getSearchComponent(DebugComponent.COMPONENT_NAME), comps.get(comps.size() - 1));
-    } catch (IOException e) {
-      fail("Exception when closing SearchHandler");
-    }
-  }
-
-  @Test
-  public void testCombinedComponentInit() {
-    SolrCore core = h.getCore();
-
-    try (SearchHandler handler = new SearchHandler()) {
-      handler.init(new NamedList<>());
-      handler.inform(core);
-      assertEquals(9, handler.getComponents(true).size());
-      assertEquals(
-          core.getSearchComponent(CombinedQueryComponent.COMPONENT_NAME),
-          handler.getComponents(true).getFirst());
     } catch (IOException e) {
       fail("Exception when closing SearchHandler");
     }

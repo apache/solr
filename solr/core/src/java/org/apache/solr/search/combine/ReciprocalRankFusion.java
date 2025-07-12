@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.component.CombinedQueryComponent;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
@@ -54,7 +55,6 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
    * @param requestParams the SolrParams containing the configuration parameters for this combiner.
    */
   public ReciprocalRankFusion(SolrParams requestParams) {
-    super(requestParams);
     this.k =
         requestParams.getInt(CombinerParams.COMBINER_RRF_K, CombinerParams.COMBINER_RRF_K_DEFAULT);
   }
@@ -78,7 +78,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     for (Map.Entry<String, List<ShardDoc>> shardDocEntry : shardDocMap.entrySet()) {
       List<ShardDoc> shardDocList = shardDocEntry.getValue();
       int ranking = 1;
-      while (ranking <= shardDocList.size() && ranking <= upTo) {
+      while (ranking <= shardDocList.size()) {
         String docId = shardDocList.get(ranking - 1).id.toString();
         docIdToShardDoc.put(docId, shardDocList.get(ranking - 1));
         float rrfScore = 1f / (k + ranking);
@@ -86,9 +86,8 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
         ranking++;
       }
     }
-    // TODO: Add the remaining items out of upTo limit to the docIdToScore
     List<Map.Entry<String, Float>> sortedByScoreDescending =
-        docIdToScore.entrySet().stream()
+            docIdToScore.entrySet().stream()
             .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
             .toList();
     for (Map.Entry<String, Float> scoredDoc : sortedByScoreDescending) {
@@ -112,7 +111,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
       DocIterator docs = rankedList.iterator();
       totalMatches = Math.max(totalMatches, rankedList.matches());
       int ranking = 1;
-      while (docs.hasNext() && ranking <= upTo) {
+      while (docs.hasNext()) {
         int docId = docs.nextDoc();
         float rrfScore = 1f / (k + ranking);
         docIdToScore.compute(docId, (id, score) -> (score == null) ? rrfScore : score + rrfScore);
@@ -163,7 +162,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     for (int j = 0; j < docLists.size(); j++) {
       DocIterator iterator = docLists.get(j).iterator();
       int rank = 1;
-      while (iterator.hasNext() && rank <= upTo) {
+      while (iterator.hasNext()) {
         int docId = iterator.nextDoc();
         docIdToRanks.get(docId)[j] = rank;
         rank++;
