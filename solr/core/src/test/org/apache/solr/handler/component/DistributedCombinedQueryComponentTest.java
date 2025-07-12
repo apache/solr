@@ -153,7 +153,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   public void testHybridQuery() throws Exception {
     prepareIndexDocs();
     // lexical => 2,3
-    // vector => 1,4,2,10,3
+    // vector => 1,4,2,10,3,6
     QueryResponse rsp;
     rsp =
         queryServer(
@@ -170,6 +170,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 CommonParams.QT,
                 "/search"));
     assertEquals(4, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "3", "4", "1", "10");
+    assertFieldValues(rsp.getResults(), id, "3", "4", "1", "6");
   }
 }

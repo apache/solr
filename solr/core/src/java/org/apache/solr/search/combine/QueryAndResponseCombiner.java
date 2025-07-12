@@ -27,7 +27,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -66,7 +65,7 @@ public abstract class QueryAndResponseCombiner {
    *
    * @param queryKeys the keys associated with the queries
    * @param queries the list of queries for which explanations are requested
-   * @param resultsPerQuery the list of document lists corresponding to each query
+   * @param queryResult the list of QueryResult corresponding to each query
    * @param searcher the SolrIndexSearcher used to perform the search
    * @param schema the IndexSchema used to interpret the search results
    * @param solrParams params to be used when provided at query time
@@ -76,7 +75,7 @@ public abstract class QueryAndResponseCombiner {
   public abstract NamedList<Explanation> getExplanations(
       String[] queryKeys,
       List<Query> queries,
-      List<DocList> resultsPerQuery,
+      List<QueryResult> queryResult,
       SolrIndexSearcher searcher,
       IndexSchema schema,
       SolrParams solrParams)

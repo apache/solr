@@ -29,6 +29,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -160,6 +162,19 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       combinedQueryResult.setPartialResults(partialResults);
       combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
       crb.setResult(combinedQueryResult);
+      if (rb.isDebug()) {
+        String[] queryKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
+        List<Query> queries = crb.responseBuilders.stream().map(ResponseBuilder::getQuery).toList();
+        NamedList<Explanation> explanations =
+            combinerStrategy.getExplanations(
+                queryKeys,
+                queries,
+                queryResults,
+                rb.req.getSearcher(),
+                rb.req.getSchema(),
+                rb.req.getParams());
+        rb.addDebugInfo("combinerExplanations", explanations);
+      }
       ResultContext ctx = new BasicResultContext(crb);
       crb.rsp.addResponse(ctx);
       crb.rsp

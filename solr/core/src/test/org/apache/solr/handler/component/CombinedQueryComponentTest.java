@@ -107,12 +107,13 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
                 + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
                 + "\"limit\":5,"
                 + "\"fields\":[\"id\",\"score\",\"title\"],"
-                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+                + "\"params\":{\"combiner\":true,\"debugQuery\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
             CommonParams.QT,
             "/search"),
         "//result[@numFound='10']",
         "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='2']");
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//lst[@name='debug']/lst[@name='combinerExplanations'][node()]");
   }
 
   /** Tests the functionality of a hybrid query that combines lexical and vector search. */

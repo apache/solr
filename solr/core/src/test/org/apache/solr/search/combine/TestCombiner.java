@@ -29,7 +29,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -106,7 +105,7 @@ public class TestCombiner extends QueryAndResponseCombiner {
   public NamedList<Explanation> getExplanations(
       String[] queryKeys,
       List<Query> queries,
-      List<DocList> resultsPerQuery,
+      List<QueryResult> queryResults,
       SolrIndexSearcher searcher,
       IndexSchema schema,
       SolrParams solrParams)
