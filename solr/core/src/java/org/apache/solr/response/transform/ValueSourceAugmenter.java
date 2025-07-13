@@ -22,9 +22,11 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.internal.hppc.IntFloatHashMap;
 import org.apache.lucene.internal.hppc.IntObjectHashMap;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Scorable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.ResultContext;
@@ -67,20 +69,44 @@ public class ValueSourceAugmenter extends DocTransformer {
       fcontext = ValueSource.newContext(searcher);
       this.valueSource.createWeight(fcontext, searcher);
       final var docList = context.getDocList();
-      if (docList == null) {
+      final int prefetchSize = docList == null ? 0 : Math.min(docList.size(), maxPrefetchSize);
+      if (prefetchSize == 0) {
         return;
       }
 
-      final int prefetchSize = Math.min(docList.size(), maxPrefetchSize);
+      // Check if scores are wanted and initialize the Scorable if so
+      final MutableScorable scorable; // stored in fcontext (when not null)
+      final IntFloatHashMap docToScoreMap;
+      if (context.wantsScores()) { // TODO switch to ValueSource.needsScores once it exists
+        docToScoreMap = new IntFloatHashMap(prefetchSize);
+        scorable =
+            new MutableScorable() {
+              @Override
+              public float score() throws IOException {
+                return docToScoreMap.get(docBase + localDocId);
+              }
+            };
+        fcontext.put("scorer", scorable);
+      } else {
+        scorable = null;
+        docToScoreMap = null;
+      }
+
+      // Get the IDs and scores
       final int[] ids = new int[prefetchSize];
       int i = 0;
       var iter = docList.iterator();
       while (iter.hasNext() && i < prefetchSize) {
-        ids[i++] = iter.nextDoc();
+        ids[i] = iter.nextDoc();
+        if (docToScoreMap != null) {
+          docToScoreMap.put(ids[i], iter.score());
+        }
+        i++;
       }
       Arrays.sort(ids);
-      cachedValuesById = new IntObjectHashMap<>(ids.length);
 
+      // Get the values in docId order.  Store in cachedValuesById
+      cachedValuesById = new IntObjectHashMap<>(ids.length);
       FunctionValues values = null;
       int docBase = -1;
       int nextDocBase = 0; // i.e. this segment's maxDoc
@@ -94,9 +120,16 @@ public class ValueSourceAugmenter extends DocTransformer {
         }
 
         int localId = docid - docBase;
-        var value = values.objectVal(localId);
+
+        if (scorable != null) {
+          scorable.docBase = docBase;
+          scorable.localDocId = localId;
+        }
+        var value = values.objectVal(localId); // note: might use the Scorable
+
         cachedValuesById.put(docid, value != null ? value : NULL_SENTINEL);
       }
+      fcontext.remove("scorer"); // remove ours; it was there only for prefetching
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "exception for valuesource " + valueSource, e);
@@ -118,8 +151,13 @@ public class ValueSourceAugmenter extends DocTransformer {
       try {
         int idx = ReaderUtil.subIndex(docid, readerContexts);
         LeafReaderContext rcontext = readerContexts.get(idx);
-        FunctionValues values = valueSource.getValues(fcontext, rcontext);
         int localId = docid - rcontext.docBase;
+
+        if (context.wantsScores()) {
+          fcontext.put("scorer", new ScoreAndDoc(localId, (float) doc.get("score")));
+        }
+
+        FunctionValues values = valueSource.getValues(fcontext, rcontext);
         setValue(doc, values.objectVal(localId));
       } catch (IOException e) {
         throw new SolrException(
@@ -127,6 +165,17 @@ public class ValueSourceAugmenter extends DocTransformer {
             "exception at docid " + docid + " for valuesource " + valueSource,
             e);
       }
+    }
+  }
+
+  private abstract static class MutableScorable extends Scorable {
+
+    int docBase;
+    int localDocId;
+
+    @Override
+    public int docID() {
+      return localDocId;
     }
   }
 
@@ -139,6 +188,27 @@ public class ValueSourceAugmenter extends DocTransformer {
   protected void setValue(SolrDocument doc, Object val) {
     if (val != null) {
       doc.setField(name, val);
+    }
+  }
+
+  /** Fake scorer for a single document */
+  protected static class ScoreAndDoc extends Scorable {
+    final int docid;
+    final float score;
+
+    ScoreAndDoc(int docid, float score) {
+      this.docid = docid;
+      this.score = score;
+    }
+
+    @Override
+    public int docID() {
+      return docid;
+    }
+
+    @Override
+    public float score() throws IOException {
+      return score;
     }
   }
 }
