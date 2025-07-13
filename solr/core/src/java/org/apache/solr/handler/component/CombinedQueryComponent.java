@@ -36,6 +36,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ShardParams;
@@ -69,12 +70,14 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
   public static final String COMPONENT_NAME = "combined_query";
   protected NamedList<?> initParams;
   private Map<String, QueryAndResponseCombiner> combiners = new ConcurrentHashMap<>();
+  private int maxCombinerQueries;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
+    this.maxCombinerQueries = CombinerParams.DEFAULT_MAX_COMBINER_QUERIES;
   }
 
   @Override
@@ -90,6 +93,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             core.getResourceLoader().newInstance(className, QueryAndResponseCombiner.class);
         combiner.init(combinerConfig);
         combiners.computeIfAbsent(name, combinerName -> combiner);
+      }
+      Object maxQueries = initParams.get("maxCombinerQueries");
+      if (maxQueries != null) {
+        this.maxCombinerQueries = Integer.parseInt(maxQueries.toString());
       }
     }
     combiners.computeIfAbsent(
@@ -112,6 +119,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     if (rb instanceof CombinedQueryResponseBuilder crb) {
       SolrParams params = crb.req.getParams();
       String[] queriesToCombineKeys = params.getParams(CombinerParams.COMBINER_QUERY);
+      if (queriesToCombineKeys.length > maxCombinerQueries) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Too many queries to combine: limit is " + maxCombinerQueries);
+      }
       for (String queryKey : queriesToCombineKeys) {
         final var unparsedQuery = params.get(queryKey);
         ResponseBuilder rbNew = new ResponseBuilder(rb.req, new SolrQueryResponse(), rb.components);

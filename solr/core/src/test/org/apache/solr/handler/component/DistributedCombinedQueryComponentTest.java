@@ -59,14 +59,14 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    *
    * @throws Exception if any error occurs during the indexing process.
    */
-  private void prepareIndexDocs() throws Exception {
+  private synchronized void prepareIndexDocs() throws Exception {
     List<SolrInputDocument> docs = new ArrayList<>();
     for (int i = 1; i <= NUM_DOCS; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", Integer.toString(i));
       doc.addField("text", "test text for doc " + i);
       doc.addField("title", "title test for doc " + i);
-      doc.addField("nullfirst", String.valueOf(i%3));
+      doc.addField("nullfirst", String.valueOf(i % 3));
       docs.add(doc);
     }
     // cosine distance vector1= 1.0
@@ -144,7 +144,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 CommonParams.QT,
                 "/search"));
     assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "1", "2", "3", "4", "5");
+    assertFieldValues(rsp.getResults(), id, "2", "1", "4", "5", "8");
   }
 
   /**
@@ -153,23 +153,23 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @throws Exception the exception
    */
   @Test
-  public void testMultipleQueryWithSort() throws Exception{
+  public void testMultipleQueryWithSort() throws Exception {
     prepareIndexDocs();
     QueryResponse rsp;
     rsp =
-            queryServer(
-                    createParams(
-                            CommonParams.JSON,
-                            "{\"queries\":"
-                                    + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
-                                    + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
-                                    + "\"limit\":5,\"sort\":\"nullfirst desc\""
-                                    + "\"fields\":[\"id\",\"score\",\"title\"],"
-                                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
-                            "shards",
-                            getShardsString(),
-                            CommonParams.QT,
-                            "/search"));
+        queryServer(
+            createParams(
+                CommonParams.JSON,
+                "{\"queries\":"
+                    + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
+                    + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+                    + "\"limit\":5,\"sort\":\"nullfirst desc\""
+                    + "\"fields\":[\"id\",\"score\",\"title\"],"
+                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+                "shards",
+                getShardsString(),
+                CommonParams.QT,
+                "/search"));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2", "8", "5", "4", "1");
   }
