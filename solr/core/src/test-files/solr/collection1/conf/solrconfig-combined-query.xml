@@ -191,6 +191,7 @@
     </requestHandler>
 
     <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+        <int name="maxCombinerQueries">2</int>
         <lst name="combiners">
             <lst name="test">
                 <str name="class">org.apache.solr.search.combine.TestCombiner</str>

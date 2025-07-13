@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * The DistributedCombinedQueryComponentTest class is a JUnit test suite that evaluates the
@@ -65,6 +66,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
       doc.addField("id", Integer.toString(i));
       doc.addField("text", "test text for doc " + i);
       doc.addField("title", "title test for doc " + i);
+      doc.addField("nullfirst", String.valueOf(i%3));
       docs.add(doc);
     }
     // cosine distance vector1= 1.0
@@ -146,11 +148,38 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   }
 
   /**
+   * Test multiple query execution with sort.
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testMultipleQueryWithSort() throws Exception{
+    prepareIndexDocs();
+    QueryResponse rsp;
+    rsp =
+            queryServer(
+                    createParams(
+                            CommonParams.JSON,
+                            "{\"queries\":"
+                                    + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
+                                    + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+                                    + "\"limit\":5,\"sort\":\"nullfirst desc\""
+                                    + "\"fields\":[\"id\",\"score\",\"title\"],"
+                                    + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+                            "shards",
+                            getShardsString(),
+                            CommonParams.QT,
+                            "/search"));
+    assertEquals(5, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "2", "8", "5", "4", "1");
+  }
+
+  /**
    * Tests the hybrid query functionality of the system.
    *
    * @throws Exception if any unexpected error occurs during the test execution.
    */
-  public void testHybridQuery() throws Exception {
+  public void testHybridQueryWithPagination() throws Exception {
     prepareIndexDocs();
     // lexical => 2,3
     // vector => 1,4,2,10,3,6

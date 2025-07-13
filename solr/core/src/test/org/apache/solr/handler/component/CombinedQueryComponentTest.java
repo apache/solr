@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -98,7 +100,7 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
   }
 
   /** Performs multiple lexical queries and verifies the results. */
-  public void testMultipleLexicalQuery() {
+  public void testMultipleLexicalQueryWithDebug() {
     assertQ(
         req(
             CommonParams.JSON,
@@ -135,6 +137,42 @@ public class CombinedQueryComponentTest extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='3']",
         "//result/doc[3]/str[@name='id'][.='1']");
+  }
+
+  /** Test no results in combined queries. */
+  @Test
+  public void testNoResults() {
+    assertQ(
+        req(
+            CommonParams.JSON,
+            "{\"queries\":"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"title:Solr is the blazing-fast, open source search platform\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"text:Solr powers the search\"}}},"
+                + "\"limit\":5,"
+                + "\"fields\":[\"id\",\"score\",\"title\"],"
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+            CommonParams.QT,
+            "/search"),
+        "//result[@numFound='0']");
+  }
+
+  /** Test max combiner queries limit set from solrconfig to 2. */
+  @Test
+  public void testMaxQueriesLimit() {
+    assertQEx(
+        "Too many queries to combine: limit is 2",
+        req(
+            CommonParams.JSON,
+            "{\"queries\":"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=2 OR 3^=1)\"}},"
+                + "\"vector\":{\"knn\":{ \"f\": \"vector\", \"topK\": 5, \"query\": \"[1.0, 2.0, 3.0, 4.0]\"}}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+                + "\"limit\":5,"
+                + "\"fields\":[\"id\",\"score\",\"title\"],"
+                + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"vector\", \"lexical2\"]}}",
+            CommonParams.QT,
+            "/search"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
   /**
