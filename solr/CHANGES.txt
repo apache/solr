@@ -372,6 +372,8 @@ Bug Fixes
 
 * SOLR-17777: Fix a very minor memory leak in metrics reporting code when a core is deleted. (Pierre Salagnac)
 
+* SOLR-17792: Fix deadlocks in ParallelHttpShardHandler, re-implement synchronization in HttpShardHandler (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
