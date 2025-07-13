@@ -7,38 +7,25 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.core.utils.isAssertOnMainThreadEnabled
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.callContext
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.MockEngineConfig
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.MockRequestHandler
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
-import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
-import io.ktor.http.Url
 import io.ktor.http.path
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.expect
-import kotlin.test.fail
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.newCoroutineContext
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
-import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.StartComponent.Output
@@ -55,8 +42,15 @@ class DefaultStartComponentIntegrationTest {
     /**
      * Response handler that always responds with HTTP code OK.
      */
-    private val successResponseHandler: MockRequestHandler = { scope: MockRequestHandleScope, data: HttpRequestData ->
+    private val okResponseHandler: MockRequestHandler = { scope: MockRequestHandleScope, data: HttpRequestData ->
         scope.respond(content = "Ignore", status = HttpStatusCode.OK)
+    }
+
+    /**
+     * Response handler that always responds with HTTP code Forbidden.
+     */
+    private val forbiddenResponseHandler: MockRequestHandler = { scope: MockRequestHandleScope, data: HttpRequestData ->
+        scope.respond(content = "Forbidden", status = HttpStatusCode.Forbidden)
     }
 
     @BeforeTest
@@ -71,7 +65,7 @@ class DefaultStartComponentIntegrationTest {
 
     @Test
     fun `GIVEN initial state WHEN onConnect THEN use default Solr URL`() = runTest {
-        val engine = createMockEngine(successResponseHandler)
+        val engine = createMockEngine(okResponseHandler)
         val component = createComponent(httpClient = HttpClient(engine))
 
         component.onConnect()
@@ -90,7 +84,7 @@ class DefaultStartComponentIntegrationTest {
 
     @Test
     fun `GIVEN invalid URL WHEN onConnect THEN invalidUrlError`() = runTest {
-        val engine = createMockEngine(successResponseHandler)
+        val engine = createMockEngine(okResponseHandler)
         val component = createComponent(httpClient = HttpClient(engine))
 
         component.onSolrUrlChange("some.-invalid-url")
@@ -113,7 +107,7 @@ class DefaultStartComponentIntegrationTest {
 
     @Test
     fun `GIVEN valid Solr URL WHEN onConnect THEN connection request sent`() = runTest {
-        val engine = createMockEngine(successResponseHandler)
+        val engine = createMockEngine(okResponseHandler)
         val component = createComponent(httpClient = HttpClient(engine))
         val validSolrUrl = "https://my-solr-instance.local/"
 
@@ -135,7 +129,7 @@ class DefaultStartComponentIntegrationTest {
     @Test
     fun `GIVEN a solr instance with no auth WHEN onConnect THEN output Connected`() = runTest {
         val outputStack = mutableListOf<Output>()
-        val engine = createMockEngine(successResponseHandler)
+        val engine = createMockEngine(okResponseHandler)
         val component = createComponent(
             output = { outputStack.add(it) },
             httpClient = HttpClient(engine),
@@ -154,6 +148,22 @@ class DefaultStartComponentIntegrationTest {
             actual = outputStack[0],
             message = "Expected output to be Connected",
         )
+    }
+
+    @Test
+    fun `GIVEN input error WHEN input changes THEN error resets`() = runTest {
+        val component = createComponent()
+        component.onSolrUrlChange("some.-invalid-url")
+        // Cause an error in state
+        component.onConnect()
+
+        advanceUntilIdle()
+        assertNotNull(component.model.value.error)
+
+        component.onSolrUrlChange("some-other-url")
+        advanceUntilIdle()
+
+        assertNull(component.model.value.error)
     }
 
     /**

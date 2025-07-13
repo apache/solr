@@ -100,6 +100,7 @@ fun StartContent(
                 singleLine = true,
                 onValueChange = component::onSolrUrlChange,
                 placeholder = { Text(text = DEFAULT_SOLR_URL) },
+                enabled = !model.isConnecting,
                 supportingText = {
                     model.error?.let {
                         Text(
@@ -114,6 +115,7 @@ fun StartContent(
 
             SolrButton(
                 modifier = Modifier.fillMaxWidth().testTag("connect_button"),
+                enabled = !model.isConnecting,
                 onClick = component::onConnect,
             ) {
                 Text(text = stringResource(Res.string.action_connect))

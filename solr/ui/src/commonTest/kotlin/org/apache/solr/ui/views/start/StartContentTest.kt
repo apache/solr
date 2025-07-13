@@ -57,11 +57,12 @@ class StartContentTest {
     }
 
     @Test
-    fun `WHEN isConnecting THEN connect button disabled`() = runComposeUiTest {
+    fun `WHEN isConnecting THEN connect inputs disabled`() = runComposeUiTest {
         setContent {
             StartContent(createComponent(Model(isConnecting = true)))
         }
 
+        onNodeWithTag("solr_url_input").assertIsNotEnabled()
         onNodeWithTag("connect_button").assertIsNotEnabled()
     }
 
