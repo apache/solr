@@ -85,20 +85,27 @@ public class SolrTextToVectorModel implements Accountable {
            * support, some of them may require to be handled in here as separate switch cases
            */
           switch (paramName) {
-            case TIMEOUT_PARAM -> {
+            case TIMEOUT_PARAM:
               Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
               builder.getClass().getMethod(paramName, Duration.class).invoke(builder, timeOut);
-            }
-            case MAX_SEGMENTS_PER_BATCH_PARAM, MAX_RETRIES_PARAM -> builder
-                .getClass()
-                .getMethod(paramName, Integer.class)
-                .invoke(builder, ((Long) params.get(paramName)).intValue());
-
+              break;
+            case MAX_SEGMENTS_PER_BATCH_PARAM:
+              builder
+                  .getClass()
+                  .getMethod(paramName, Integer.class)
+                  .invoke(builder, ((Long) params.get(paramName)).intValue());
+              break;
+            case MAX_RETRIES_PARAM:
+              builder
+                  .getClass()
+                  .getMethod(paramName, Integer.class)
+                  .invoke(builder, ((Long) params.get(paramName)).intValue());
+              break;
               /*
                * For primitive params if there's only one setter available, we call it.
                * If there's choice we default to the string one
                */
-            default -> {
+            default:
               ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {
                 if (paramName.equals(method.getName()) && method.getParameterCount() == 1) {
@@ -106,7 +113,7 @@ public class SolrTextToVectorModel implements Accountable {
                 }
               }
               if (paramNameMatches.size() == 1) {
-                paramNameMatches.getFirst().invoke(builder, params.get(paramName));
+                paramNameMatches.get(0).invoke(builder, params.get(paramName));
               } else {
                 try {
                   builder
@@ -118,7 +125,6 @@ public class SolrTextToVectorModel implements Accountable {
                   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
                 }
               }
-            }
           }
         }
       }
