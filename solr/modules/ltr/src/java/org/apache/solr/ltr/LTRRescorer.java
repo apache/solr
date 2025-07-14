@@ -33,7 +33,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
 import org.apache.solr.search.IncompleteRerankingException;
 import org.apache.solr.search.QueryLimits;
-import org.apache.solr.search.SolrCache;
 
 /**
  * Implements the rescoring logic. The top documents returned by solr with their original scores,
@@ -209,7 +208,6 @@ public class LTRRescorer extends Rescorer {
     scorer.iterator().advance(targetDoc);
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
-    scorer.setCache(scoringQuery.getRequest().getSearcher().getRerankingFeatureVectorCache());
     hit.score = scorer.score();
     if (QueryLimits.getCurrentLimits()
         .maybeExitWithPartialResults(
@@ -259,7 +257,6 @@ public class LTRRescorer extends Rescorer {
   }
 
   public static LTRScoringQuery.FeatureInfo[] extractFeaturesInfo(
-      SolrCache<Integer, float[]> loggingCache,
       LTRScoringQuery.ModelWeight modelWeight,
       int docid,
       Float originalDocScore,
@@ -277,7 +274,6 @@ public class LTRRescorer extends Rescorer {
         // score, which some features can use instead of recalculating it
         r.getDocInfo().setOriginalDocScore(originalDocScore);
       }
-      r.setCache(loggingCache);
       r.score();
       return modelWeight.getFeaturesInfo();
     }
