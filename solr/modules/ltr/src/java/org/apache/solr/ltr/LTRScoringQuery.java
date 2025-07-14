@@ -40,6 +40,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrCache;
 import org.slf4j.Logger;
@@ -497,7 +498,6 @@ public class LTRScoringQuery extends Query implements Accountable {
     public class ModelScorer extends Scorer {
       private final DocInfo docInfo;
       private final Scorer featureTraversalScorer;
-      private SolrCache<Integer, float[]> featureVectorCache;
 
       public DocInfo getDocInfo() {
         return docInfo;
@@ -505,7 +505,6 @@ public class LTRScoringQuery extends Query implements Accountable {
 
       public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers, LeafReaderContext leafContext) {
         super(weight);
-        featureVectorCache = null;
         docInfo = new DocInfo();
         for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
           subScorer.setDocInfo(docInfo);
@@ -516,14 +515,6 @@ public class LTRScoringQuery extends Query implements Accountable {
         } else {
           featureTraversalScorer = new SparseModelScorer(weight, featureScorers, leafContext);
         }
-      }
-
-      public void setCache(SolrCache<Integer, float[]> cacheToUse) {
-        this.featureVectorCache = cacheToUse;
-      }
-
-      public SolrCache<Integer, float[]> getCache() {
-        return featureVectorCache;
       }
 
       @Override
@@ -577,6 +568,7 @@ public class LTRScoringQuery extends Query implements Accountable {
           if (activeDoc == targetDoc) {
             float[] featureVector;
 
+            SolrCache<Integer, float[]> featureVectorCache = request.getSearcher().getFeatureVectorCache();
             if (featureVectorCache != null) {
               int docId = activeDoc + leafContext.docBase;
               int fvCacheKey = fvCacheKey(docId);
@@ -604,12 +596,11 @@ public class LTRScoringQuery extends Query implements Accountable {
         private int fvCacheKey(int docId) {
           int prime = 31;
           int result = docId;
-          if (Objects.equals(featureVectorCache.name(), "rerankingFeatureVectorCache")) {
+          if (!Objects.equals(ltrScoringModel.getName(), LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)) {
             result = (prime * result) + ltrScoringModel.getName().hashCode();
           }
-          if (Objects.equals(featureVectorCache.name(), "loggingFeatureVectorCache")) {
+          else {
             result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
-            result = (prime * result) + logger.featureFormat.hashCode();
           }
           result = (prime * result) + addEfisHash(result, prime);
           return result;
