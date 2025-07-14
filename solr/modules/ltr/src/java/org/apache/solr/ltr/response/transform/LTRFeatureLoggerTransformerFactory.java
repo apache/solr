@@ -75,7 +75,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   // used inside fl to specify to log (all|model only) features
   private static final String FV_LOG_ALL = "logAll";
 
-  private static final String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
+  public static final String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
   private static final boolean DEFAULT_NO_RERANKING_LOGGING_ALL = true;
 
@@ -423,7 +423,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         String featureVector =
                 featureLogger.printFeatureVector(
                         LTRRescorer.extractFeaturesInfo(
-                                req.getSearcher().getLoggingFeatureVectorCache(),
                                 rerankingModelWeight,
                                 docid,
                                 (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,

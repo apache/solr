@@ -28,8 +28,7 @@
 
     <query>
         <filterCache class="solr.CaffeineCache" size="4096" initialSize="2048" autowarmCount="0" />
-        <rerankingFeatureVectorCache class="solr.CaffeineCache" size="4096" initialSize="2048" autowarmCount="0" />
-        <loggingFeatureVectorCache class="solr.CaffeineCache" size="4096" initialSize="2048" autowarmCount="0" />
+        <featureVectorCache class="solr.CaffeineCache" size="4096" initialSize="2048" autowarmCount="0" />
     </query>
 
     <!-- add a transformer that will encode the document features in the response.
