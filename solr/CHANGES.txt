@@ -154,6 +154,8 @@ Bug Fixes
 
 * SOLR-17792: Fix deadlocks in ParallelHttpShardHandler, re-implement synchronization in HttpShardHandler (Houston Putman)
 
+* GITHUB#3426: Improving check in TextToVectorUpdateProcessorFactory, which breaks update for new dynamic fields. (Renato Haeberli via Alessandro Benedetti)
+
 Dependency Upgrades
 ---------------------
 * PR#3078: chore(deps): update apache.kafka to v3.9.0 (solrbot)
