@@ -58,6 +58,7 @@
   <string name="slack">Slack</string>
   <string name="solr_query_syntax">Solr Query Syntax</string>
   <string name="support">Support</string>
+  <string name="connecting">Connecting...</string>
 
   <!-- Uncategorized -->
 </resources>

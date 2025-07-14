@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_connect
+import org.apache.solr.ui.generated.resources.connecting
 import org.apache.solr.ui.generated.resources.cd_solr_logo
 import org.apache.solr.ui.generated.resources.desc_to_get_started
 import org.apache.solr.ui.generated.resources.solr_sun
@@ -46,6 +47,7 @@ import org.apache.solr.ui.generated.resources.title_welcome_to_solr
 import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
 import org.apache.solr.ui.views.components.SolrButton
 import org.apache.solr.ui.views.components.SolrCard
+import org.apache.solr.ui.views.components.SolrLinearProgressIndicator
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -113,12 +115,22 @@ fun StartContent(
                 // TODO Update colors if necessary
             )
 
-            SolrButton(
-                modifier = Modifier.fillMaxWidth().testTag("connect_button"),
-                enabled = !model.isConnecting,
-                onClick = component::onConnect,
-            ) {
-                Text(text = stringResource(Res.string.action_connect))
+            Column {
+                SolrButton(
+                    modifier = Modifier.fillMaxWidth().testTag("connect_button"),
+                    enabled = !model.isConnecting,
+                    onClick = component::onConnect,
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (model.isConnecting) Res.string.connecting
+                            else Res.string.action_connect
+                        ),
+                    )
+                }
+                if (model.isConnecting) SolrLinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().testTag("loading_indicator"),
+                )
             }
         }
     }
