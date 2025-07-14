@@ -181,21 +181,20 @@ public class LTRRescorer extends Rescorer {
         docBase = readerContext.docBase;
         scorer = modelWeight.modelScorer(readerContext);
       }
-      scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked, scoringQuery);
+      scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked);
       hitUpto++;
     }
   }
 
   /** Scores a single document. */
-  protected static void scoreSingleHit(
+  protected void scoreSingleHit(
       int topN,
       int docBase,
       int hitUpto,
       ScoreDoc hit,
       int docID,
       LTRScoringQuery.ModelWeight.ModelScorer scorer,
-      ScoreDoc[] reranked,
-      LTRScoringQuery scoringQuery)
+      ScoreDoc[] reranked)
       throws IOException {
     /*
      * Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to call
