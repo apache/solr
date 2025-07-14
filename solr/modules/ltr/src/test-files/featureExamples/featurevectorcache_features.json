@@ -7,6 +7,13 @@
     }
   },
   {
+    "name": "value_feature_3",
+    "class": "org.apache.solr.ltr.feature.ValueFeature",
+    "params": {
+      "value": 3
+    }
+  },
+  {
     "name" : "efi_feature",
     "class":"org.apache.solr.ltr.feature.ValueFeature",
     "params" : {
@@ -27,6 +34,24 @@
     "class": "org.apache.solr.ltr.feature.FieldValueFeature",
     "params": {
       "field": "popularity"
+    }
+  },
+  {
+    "name" : "match_w1_title",
+    "class":"org.apache.solr.ltr.feature.SolrFeature",
+    "store": "store1",
+    "params" : {
+      "fq": [
+        "{!terms f=title}w1"
+      ]
+    }
+  },
+  {
+    "name": "value_feature_2",
+    "class": "org.apache.solr.ltr.feature.ValueFeature",
+    "store": "store1",
+    "params": {
+      "value": 2
     }
   }
 ]
