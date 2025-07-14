@@ -179,6 +179,8 @@ Bug Fixes
 
 * SOLR-17792: Fix deadlocks in ParallelHttpShardHandler, re-implement synchronization in HttpShardHandler (Houston Putman)
 
+* GITHUB#3426: Improving check in TextToVectorUpdateProcessorFactory, which breaks update for new dynamic fields. (Renato Haeberli via Alessandro Benedetti)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
