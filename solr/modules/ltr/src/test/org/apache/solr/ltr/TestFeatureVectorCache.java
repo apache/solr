@@ -61,28 +61,6 @@ public class TestFeatureVectorCache extends TestRerankBase {
     }
 
     @Test
-    public void testFeatureVectorCache_sameScoreAsWithoutCache() throws Exception {
-        final SolrQuery query = new SolrQuery();
-        query.setQuery("*:*");
-        query.add("rows", "3");
-        query.add("fl", "id,score");
-        query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
-
-        // No caching
-        assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
-        assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==3.4");
-        assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='2'");
-        assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==2.3");
-
-        query.add("sort", "popularity desc");
-        // Caching, we want to see the same score
-        assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
-        assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==3.4");
-        assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='2'");
-        assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==2.3");
-    }
-
-    @Test
     public void testFeatureVectorCache_loggingDefaultStoreNoReranking() throws Exception {
         final String docs0fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
                 "value_feature_1", "1.0", "value_feature_3", "3.0", "efi_feature", "3.0",
@@ -168,23 +146,29 @@ public class TestFeatureVectorCache extends TestRerankBase {
         final SolrQuery query = new SolrQuery();
         query.setQuery("*:*");
         query.add("rows", "3");
-        query.add("fl", "[fv efi.efi_feature=3]");
+        query.add("fl", "id,score,fv:[fv efi.efi_feature=3]");
         query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
         // No caching, we want to see lookups, an insertions and no hits since the efi are different
         assertJQ(
                 "/query" + query.toQueryString(),
-                "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
+                "/response/docs/[0]/=={" +
+                        "'id':'1'," +
+                        "'score':3.4," +
+                        "'fv':'" + docs0fv_default_csv + "'}");
         Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
         assertEquals(4, (long) filterCacheMetrics.get("inserts"));
         assertEquals(4, (long) filterCacheMetrics.get("lookups"));
         assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
         query.add("sort", "popularity desc");
-        // Caching, we want to see hits
+        // Caching, we want to see hits and same score
         assertJQ(
                 "/query" + query.toQueryString(),
-                "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
+                "/response/docs/[0]/=={" +
+                        "'id':'1'," +
+                        "'score':3.4," +
+                        "'fv':'" + docs0fv_default_csv + "'}");
         filterCacheMetrics = lookupFilterCacheMetrics(core);
         assertEquals(4, (long) filterCacheMetrics.get("inserts"));
         assertEquals(8, (long) filterCacheMetrics.get("lookups"));
@@ -205,23 +189,29 @@ public class TestFeatureVectorCache extends TestRerankBase {
         final SolrQuery query = new SolrQuery();
         query.setQuery("*:*");
         query.add("rows", "3");
-        query.add("fl", "[fv efi.efi_feature=4]");
+        query.add("fl", "id,score,fv:[fv efi.efi_feature=4]");
         query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
         // No caching for reranking but logging should hit since we have the same feature store and efis
         assertJQ(
                 "/query" + query.toQueryString(),
-                "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
+                "/response/docs/[0]/=={" +
+                        "'id':'1'," +
+                        "'score':3.4," +
+                        "'fv':'" + docs0fv_default_csv + "'}");
         Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
         assertEquals(2, (long) filterCacheMetrics.get("inserts"));
         assertEquals(4, (long) filterCacheMetrics.get("lookups"));
         assertEquals(2, (long) filterCacheMetrics.get("hits"));
 
         query.add("sort", "popularity desc");
-        // Caching, we want to see hits
+        // Caching, we want to see hits and same score
         assertJQ(
                 "/query" + query.toQueryString(),
-                "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
+                "/response/docs/[0]/=={" +
+                        "'id':'1'," +
+                        "'score':3.4," +
+                        "'fv':'" + docs0fv_default_csv + "'}");
         filterCacheMetrics = lookupFilterCacheMetrics(core);
         assertEquals(2, (long) filterCacheMetrics.get("inserts"));
         assertEquals(8, (long) filterCacheMetrics.get("lookups"));
@@ -243,23 +233,29 @@ public class TestFeatureVectorCache extends TestRerankBase {
         final SolrQuery query = new SolrQuery();
         query.setQuery("*:*");
         query.add("rows", "3");
-        query.add("fl", "[fv logAll=true efi.efi_feature=3]");
+        query.add("fl", "id,score,fv:[fv logAll=true efi.efi_feature=3]");
         query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
         // No caching, we want to see lookups, an insertions and no hits since the efi are different
         assertJQ(
                 "/query" + query.toQueryString(),
-                "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
+                "/response/docs/[0]/=={" +
+                        "'id':'1'," +
+                        "'score':3.4," +
+                        "'fv':'" + docs0fv_default_csv + "'}");
         Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
         assertEquals(4, (long) filterCacheMetrics.get("inserts"));
         assertEquals(4, (long) filterCacheMetrics.get("lookups"));
         assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
         query.add("sort", "popularity desc");
-        // Caching, we want to see hits
+        // Caching, we want to see hits and same score
         assertJQ(
                 "/query" + query.toQueryString(),
-                "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
+                "/response/docs/[0]/=={" +
+                        "'id':'1'," +
+                        "'score':3.4," +
+                        "'fv':'" + docs0fv_default_csv + "'}");
         filterCacheMetrics = lookupFilterCacheMetrics(core);
         assertEquals(4, (long) filterCacheMetrics.get("inserts"));
         assertEquals(8, (long) filterCacheMetrics.get("lookups"));
@@ -279,23 +275,29 @@ public class TestFeatureVectorCache extends TestRerankBase {
         final SolrQuery query = new SolrQuery();
         query.setQuery("*:*");
         query.add("rows", "3");
-        query.add("fl", "[fv store=store1 efi.efi_feature=3]");
+        query.add("fl", "id,score,fv:[fv store=store1 efi.efi_feature=3]");
         query.add("rq", "{!ltr reRankDocs=3 model=featurevectorcache_linear_model efi.efi_feature=4}");
 
         // No caching, we want to see lookups, an insertions and no hits since the efi are different
         assertJQ(
                 "/query" + query.toQueryString(),
-                "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
+                "/response/docs/[0]/=={" +
+                        "'id':'1'," +
+                        "'score':3.4," +
+                        "'fv':'" + docs0fv_default_csv + "'}");
         Map<String, Object> filterCacheMetrics = lookupFilterCacheMetrics(core);
         assertEquals(4, (long) filterCacheMetrics.get("inserts"));
         assertEquals(4, (long) filterCacheMetrics.get("lookups"));
         assertEquals(0, (long) filterCacheMetrics.get("hits"));
 
         query.add("sort", "popularity desc");
-        // Caching, we want to see hits
+        // Caching, we want to see hits and same score
         assertJQ(
                 "/query" + query.toQueryString(),
-                "/response/docs/[0]/=={'[fv]':'" + docs0fv_default_csv + "'}");
+                "/response/docs/[0]/=={" +
+                        "'id':'1'," +
+                        "'score':3.4," +
+                        "'fv':'" + docs0fv_default_csv + "'}");
         filterCacheMetrics = lookupFilterCacheMetrics(core);
         assertEquals(4, (long) filterCacheMetrics.get("inserts"));
         assertEquals(8, (long) filterCacheMetrics.get("lookups"));
