@@ -503,12 +503,14 @@ public class LTRScoringQuery extends Query implements Accountable {
     public class ModelScorer extends Scorer {
       private final DocInfo docInfo;
       private final Scorer featureTraversalScorer;
+      protected boolean isLogging;
 
       public DocInfo getDocInfo() {
         return docInfo;
       }
 
       public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers, LeafReaderContext leafContext) {
+        isLogging = false;
         docInfo = new DocInfo();
         for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
           subScorer.setDocInfo(docInfo);
@@ -544,6 +546,10 @@ public class LTRScoringQuery extends Query implements Accountable {
       @Override
       public DocIdSetIterator iterator() {
         return featureTraversalScorer.iterator();
+      }
+
+      public void setIsLogging(boolean isLogging) {
+        this.isLogging = isLogging;
       }
 
       abstract class FeatureTraversalScorer extends Scorer {
@@ -604,11 +610,11 @@ public class LTRScoringQuery extends Query implements Accountable {
         private int fvCacheKey(int docId) {
           int prime = 31;
           int result = docId;
-          if (!Objects.equals(ltrScoringModel.getName(), LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)) {
-            result = (prime * result) + ltrScoringModel.getName().hashCode();
+          if (Objects.equals(ltrScoringModel.getName(), LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME) || (isLogging && logger.isLoggingAll())) {
+            result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
           }
           else {
-            result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
+            result = (prime * result) + ltrScoringModel.getName().hashCode();
           }
           result = (prime * result) + addEfisHash(result, prime);
           return result;
