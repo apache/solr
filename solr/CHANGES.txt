@@ -181,6 +181,8 @@ Bug Fixes
 
 * GITHUB#3426: Improving check in TextToVectorUpdateProcessorFactory, which breaks update for new dynamic fields. (Renato Haeberli via Alessandro Benedetti)
 
+* SOLR-17819: Disable http2 request cancellation for Jetty 10, the cancellation can bleed across to other requestsg. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
