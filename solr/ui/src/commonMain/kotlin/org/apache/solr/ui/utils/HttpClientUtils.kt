@@ -28,7 +28,7 @@ import kotlinx.serialization.json.Json
  * Function that returns a simple HTTP client that is preconfigured with a base
  * URL.
  */
-fun getDefaultClient(url: Url = Url("http://localhost:8983/")) = HttpClient {
+fun getDefaultClient(url: Url = Url("http://127.0.0.1:8983/")) = HttpClient {
     defaultRequest {
         url(url.toString())
     }
