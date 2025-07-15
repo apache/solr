@@ -16,9 +16,7 @@
  */
 package org.apache.solr.metrics;
 
-import static org.apache.solr.metrics.otel.OtlpExporterFactory.OTLP_EXPORTER_ENABLED;
 import static org.apache.solr.metrics.otel.OtlpExporterFactory.OTLP_EXPORTER_INTERVAL;
-import static org.apache.solr.metrics.otel.OtlpExporterFactory.OTLP_EXPORTER_PROTOCOL;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -736,13 +734,13 @@ public class SolrMetricManager {
             providerName,
             key -> {
               var reader = new PrometheusMetricReader(true, null);
-              var builder = SdkMeterProvider.builder().registerMetricReader(reader);
-              if (OTLP_EXPORTER_ENABLED && !OTLP_EXPORTER_PROTOCOL.equals("none")) {
-                builder.registerMetricReader(
-                    PeriodicMetricReader.builder(metricExporter)
-                        .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
-                        .build());
-              }
+              var builder =
+                  SdkMeterProvider.builder()
+                      .registerMetricReader(reader)
+                      .registerMetricReader(
+                          PeriodicMetricReader.builder(metricExporter)
+                              .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
+                              .build());
               SdkMeterProviderUtil.setExemplarFilter(builder, ExemplarFilter.traceBased());
               return new MeterProviderAndReaders(builder.build(), reader);
             })

@@ -18,7 +18,7 @@ package org.apache.solr.response;
 
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
-import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
@@ -55,7 +55,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
     List<MetricSnapshot> snapshots =
         readers.values().stream().flatMap(r -> r.collect().stream()).toList();
 
-    new OpenMetricsTextFormatWriter(false, true).write(out, mergeSnapshots(snapshots));
+    new PrometheusTextFormatWriter(false).write(out, mergeSnapshots(snapshots));
   }
 
   @Override
