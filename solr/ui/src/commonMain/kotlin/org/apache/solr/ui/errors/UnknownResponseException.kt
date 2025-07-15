@@ -15,27 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.theme
+package org.apache.solr.ui.errors
 
-import androidx.compose.foundation.shape.CutCornerShape
-import androidx.compose.material3.Shapes
-import androidx.compose.ui.unit.dp
-
-/*
- * This file holds shape values that are used for customizing the shapes of the material theme
- * to match the Solr theme.
- *
- * In general, the Solr theme follows a more edgy theme and therefore the default round corners
- * from the Material theme are overridden.
- */
+import io.ktor.client.statement.HttpResponse
 
 /**
- * Custom shapes that do not use rounded corners for elements.
+ * Exception that is thrown when an unknown response has been received.
+ *
+ * This is usually the case when an unhandled status code was received.
+ *
+ * @property response The response that could not be handled.
  */
-internal val SolrShapes = Shapes(
-    extraSmall = CutCornerShape(0.dp),
-    small = CutCornerShape(0.dp),
-    medium = CutCornerShape(0.dp),
-    large = CutCornerShape(0.dp),
-    extraLarge = CutCornerShape(0.dp),
-)
+class UnknownResponseException(val response: HttpResponse): Exception()

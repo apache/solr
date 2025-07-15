@@ -15,27 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.theme
+package org.apache.solr.ui.views.start
 
-import androidx.compose.foundation.shape.CutCornerShape
-import androidx.compose.material3.Shapes
-import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.components.start.StartComponent.Model
 
-/*
- * This file holds shape values that are used for customizing the shapes of the material theme
- * to match the Solr theme.
- *
- * In general, the Solr theme follows a more edgy theme and therefore the default round corners
- * from the Material theme are overridden.
- */
+class TestStartComponent(model: Model = Model()): StartComponent {
 
-/**
- * Custom shapes that do not use rounded corners for elements.
- */
-internal val SolrShapes = Shapes(
-    extraSmall = CutCornerShape(0.dp),
-    small = CutCornerShape(0.dp),
-    medium = CutCornerShape(0.dp),
-    large = CutCornerShape(0.dp),
-    extraLarge = CutCornerShape(0.dp),
-)
+    override val model: StateFlow<Model> = MutableStateFlow(model)
+
+    var solrUrl = ""
+    var onConnectClicked = false
+
+    override fun onSolrUrlChange(url: String) {
+        solrUrl = url
+    }
+
+    override fun onConnect() {
+        onConnectClicked = true
+    }
+}

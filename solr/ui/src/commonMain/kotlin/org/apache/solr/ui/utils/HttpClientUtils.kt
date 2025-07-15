@@ -20,6 +20,7 @@ package org.apache.solr.ui.utils
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.http.Url
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -27,9 +28,9 @@ import kotlinx.serialization.json.Json
  * Function that returns a simple HTTP client that is preconfigured with a base
  * URL.
  */
-fun getDefaultClient() = HttpClient {
+fun getDefaultClient(url: Url = Url("http://127.0.0.1:8983/")) = HttpClient {
     defaultRequest {
-        url("http://localhost:8983/")
+        url(url.toString())
     }
 
     install(ContentNegotiation) {

@@ -15,30 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.root
+package org.apache.solr.ui.views.auth
 
-import com.arkivanov.decompose.router.stack.ChildStack
-import com.arkivanov.decompose.value.Value
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.auth.UnauthenticatedComponent
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.views.components.SolrButton
 
 /**
- * Root component used by each target as an entry point to the application.
- *
- * This component checks the information available at start time and redirects the user accordingly.
- * Implementations may check user session, access level, destination and more.
+ * The user authentication content is the composable that will check and display
+ * the available authentication options to the user.
  */
-interface RootComponent {
+@Composable
+fun UserAuthenticationContent(
+    component: UnauthenticatedComponent,
+    modifier: Modifier = Modifier,
+) = Column(
+    modifier = modifier,
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+) {
+    Text(text = "Authentication not implemented yet")
 
-    val childStack: Value<ChildStack<*, Child>>
-
-    sealed interface Child {
-
-        data class Start(val component: StartComponent): Child
-
-        data class Main(val component: MainComponent): Child
-
-        data class Unauthenticated(val component: UnauthenticatedComponent): Child
+    SolrButton(onClick = component::onAbort) {
+        Text(text = "Go Back")
     }
 }

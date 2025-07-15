@@ -15,41 +15,59 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.environment.integration
+package org.apache.solr.ui.components.start.integration
 
 import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
+import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import org.apache.solr.ui.components.environment.EnvironmentComponent
-import org.apache.solr.ui.components.environment.store.EnvironmentStoreProvider
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.components.start.store.StartStore
+import org.apache.solr.ui.components.start.store.StartStore.Intent
+import org.apache.solr.ui.components.start.store.StartStoreProvider
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
 import org.apache.solr.ui.utils.map
 
-/**
- * Default implementation of the [EnvironmentComponent].
- */
-class DefaultEnvironmentComponent(
+class DefaultStartComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-) : EnvironmentComponent, AppComponentContext by componentContext {
+    output: (StartComponent.Output) -> Unit,
+) : StartComponent, AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
     private val ioScope = coroutineScope(SupervisorJob() + ioContext)
 
     private val store = instanceKeeper.getStore {
-        EnvironmentStoreProvider(
+        StartStoreProvider(
             storeFactory = storeFactory,
-            client = HttpEnvironmentStoreClient(httpClient),
+            client = HttpStartStoreClient(httpClient),
             mainContext = mainScope.coroutineContext,
             ioContext = ioScope.coroutineContext,
         ).provide()
     }
 
+    init {
+        store.labels.onEach { label ->
+            when (label) {
+                is StartStore.Label.AuthRequired ->
+                    output(StartComponent.Output.OnAuthRequired(url = label.url))
+                is StartStore.Label.Connected ->
+                    output(StartComponent.Output.OnConnected(url = label.url))
+            }
+        }.launchIn(mainScope)
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val model = store.stateFlow.map(mainScope, environmentStateToModel)
+    override val model = store.stateFlow.map(mainScope, startStateToModel)
+
+    override fun onSolrUrlChange(url: String) = store.accept(Intent.UpdateSolrUrl(url))
+
+    override fun onConnect() = store.accept(Intent.Connect)
 }

@@ -15,27 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.theme
-
-import androidx.compose.foundation.shape.CutCornerShape
-import androidx.compose.material3.Shapes
-import androidx.compose.ui.unit.dp
-
-/*
- * This file holds shape values that are used for customizing the shapes of the material theme
- * to match the Solr theme.
- *
- * In general, the Solr theme follows a more edgy theme and therefore the default round corners
- * from the Material theme are overridden.
- */
+package org.apache.solr.ui.utils
 
 /**
- * Custom shapes that do not use rounded corners for elements.
+ * The default Solr URL that may be used in various places.
  */
-internal val SolrShapes = Shapes(
-    extraSmall = CutCornerShape(0.dp),
-    small = CutCornerShape(0.dp),
-    medium = CutCornerShape(0.dp),
-    large = CutCornerShape(0.dp),
-    extraLarge = CutCornerShape(0.dp),
-)
+const val DEFAULT_SOLR_URL = "http://127.0.0.1:8983/"

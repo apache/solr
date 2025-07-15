@@ -15,30 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.root
+package org.apache.solr.ui.components.auth.integration
 
-import com.arkivanov.decompose.router.stack.ChildStack
-import com.arkivanov.decompose.value.Value
+import com.arkivanov.mvikotlin.core.store.StoreFactory
+import io.ktor.client.HttpClient
 import org.apache.solr.ui.components.auth.UnauthenticatedComponent
-import org.apache.solr.ui.components.main.MainComponent
-import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.utils.AppComponentContext
 
-/**
- * Root component used by each target as an entry point to the application.
- *
- * This component checks the information available at start time and redirects the user accordingly.
- * Implementations may check user session, access level, destination and more.
- */
-interface RootComponent {
+class DefaultUnauthenticatedComponent(
+    componentContext: AppComponentContext,
+    storeFactory: StoreFactory,
+    httpClient: HttpClient,
+    private val output: (UnauthenticatedComponent.Output) -> Unit
+) : UnauthenticatedComponent, AppComponentContext by componentContext {
 
-    val childStack: Value<ChildStack<*, Child>>
+    // TODO Implement me
 
-    sealed interface Child {
-
-        data class Start(val component: StartComponent): Child
-
-        data class Main(val component: MainComponent): Child
-
-        data class Unauthenticated(val component: UnauthenticatedComponent): Child
-    }
+    override fun onAbort() = output(UnauthenticatedComponent.Output.OnAbort)
 }

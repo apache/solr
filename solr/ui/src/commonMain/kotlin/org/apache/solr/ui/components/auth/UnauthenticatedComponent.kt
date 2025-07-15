@@ -15,27 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.theme
+package org.apache.solr.ui.components.auth
 
-import androidx.compose.foundation.shape.CutCornerShape
-import androidx.compose.material3.Shapes
-import androidx.compose.ui.unit.dp
+import io.ktor.http.Url
 
-/*
- * This file holds shape values that are used for customizing the shapes of the material theme
- * to match the Solr theme.
- *
- * In general, the Solr theme follows a more edgy theme and therefore the default round corners
- * from the Material theme are overridden.
- */
+interface UnauthenticatedComponent {
 
-/**
- * Custom shapes that do not use rounded corners for elements.
- */
-internal val SolrShapes = Shapes(
-    extraSmall = CutCornerShape(0.dp),
-    small = CutCornerShape(0.dp),
-    medium = CutCornerShape(0.dp),
-    large = CutCornerShape(0.dp),
-    extraLarge = CutCornerShape(0.dp),
-)
+    /**
+     * Aborts the authentication attempt.
+     */
+    fun onAbort()
+
+    sealed interface Output {
+
+        /**
+         * Emitted when the user successfully authenticated against
+         * the Solr instance.
+         *
+         * @property url The URL the connection was established with
+         */
+        data class OnConnected(val url: Url): Output
+
+        /**
+         * Emitted when the user aborts the authentication flow.
+         */
+        data object OnAbort: Output
+    }
+}
