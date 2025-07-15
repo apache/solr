@@ -274,6 +274,7 @@ public class LTRRescorer extends Rescorer {
         // score, which some features can use instead of recalculating it
         r.getDocInfo().setOriginalDocScore(originalDocScore);
       }
+      r.setIsLogging(true);
       r.score();
       return modelWeight.getFeaturesInfo();
     }
