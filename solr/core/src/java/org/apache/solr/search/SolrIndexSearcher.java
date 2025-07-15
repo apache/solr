@@ -458,9 +458,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     CacheOverridesManager cacheOverridesManager =
         core.getCoreContainer().getCacheOverridesManager();
     if (cacheOverridesManager != null) {
-      cacheConfig =
-          cacheOverridesManager.applyOverrides(
-              cacheConfig, cacheName, core.getCoreDescriptor().getCollectionName());
+      cacheConfig = cacheOverridesManager.applyOverrides(cacheConfig, cacheName, core);
     }
 
     return (SolrCache<K, V>) cacheConfig.newInstance(core);

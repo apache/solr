@@ -1044,7 +1044,7 @@ public class CoreContainer {
     }
 
     if (getZkController() != null) {
-      cacheOverridesManager = new CacheOverridesManager(zkClientSupplier.get());
+      cacheOverridesManager = new CacheOverridesManager(getZkController().getZkStateReader());
     }
 
     // setup executor to load cores in parallel
