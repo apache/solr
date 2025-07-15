@@ -18,6 +18,7 @@ package org.apache.solr.response;
 
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
@@ -42,6 +43,9 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
   // not TextQueryResponseWriter because Prometheus libs work with an OutputStream
 
   private static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
+  private static final String CONTENT_TYPE_OPEN_METRICS =
+      "application/openmetrics-text; version=1.0.0; charset=utf-8";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -55,12 +59,19 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
     List<MetricSnapshot> snapshots =
         readers.values().stream().flatMap(r -> r.collect().stream()).toList();
 
-    new PrometheusTextFormatWriter(false).write(out, mergeSnapshots(snapshots));
+    boolean openMetricsFormat = "openmetrics".equals(request.getParams().get("format"));
+    if (openMetricsFormat) {
+      new OpenMetricsTextFormatWriter(false, true).write(out, mergeSnapshots(snapshots));
+    } else {
+      new PrometheusTextFormatWriter(false).write(out, mergeSnapshots(snapshots));
+    }
   }
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return CONTENT_TYPE_PROMETHEUS;
+    return ("openmetrics".equals(request.getParams().get("format")))
+        ? CONTENT_TYPE_OPEN_METRICS
+        : CONTENT_TYPE_PROMETHEUS;
   }
 
   /**
