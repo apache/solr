@@ -28,9 +28,7 @@ import org.apache.lucene.codecs.KnnVectorsWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene912.Lucene912Codec;
 import org.apache.lucene.codecs.lucene912.Lucene912Codec.Mode;
-import org.apache.lucene.codecs.lucene99.Lucene99HnswScalarQuantizedVectorsFormat;
 import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
-import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.solr.common.SolrException;
@@ -38,13 +36,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.ScalarQuantizedDenseVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_NUM_MERGE_WORKER;
 
 /**
  * Per-field CodecFactory implementation, extends Lucene's and returns postings format
@@ -133,10 +128,11 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             FieldType fieldType = (schemaField == null ? null : schemaField.getType());
             if (fieldType instanceof DenseVectorField) {
               final DenseVectorField vectorField = (DenseVectorField) fieldType;
-              return new SolrDelegatingKnnVectorsFormat(vectorField.buildKnnVectorsFormat(),
-                      vectorField.getDimension());
+              return new SolrDelegatingKnnVectorsFormat(
+                  vectorField.buildKnnVectorsFormat(), vectorField.getDimension());
             } else {
-              throw new SolrException(ErrorCode.SERVER_ERROR, "field is not a support KNN vector type");
+              throw new SolrException(
+                  ErrorCode.SERVER_ERROR, "field is not a support KNN vector type");
             }
           }
         };
