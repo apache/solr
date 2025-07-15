@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class BufferStoreTest extends SolrTestCase {
   @Before
   public void setup() {
     metrics = new Metrics();
-    SolrMetricManager metricManager = new SolrMetricManager();
+    SolrMetricManager metricManager = new SolrMetricManager(new NoopMetricExporter());
     String registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
