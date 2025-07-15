@@ -64,9 +64,6 @@ import org.slf4j.LoggerFactory;
  */
 public class DenseVectorField extends FloatPointField {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String HNSW_ALGORITHM = "hnsw";
-  public static final String FLAT_ALGORITHM = "flat";
-  public static final String DEFAULT_KNN_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_ALGORITHM = "knnAlgorithm";
   static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
@@ -77,7 +74,6 @@ public class DenseVectorField extends FloatPointField {
   static final VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
-  private String knnAlgorithm;
 
   /**
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
@@ -135,9 +131,6 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_SIMILARITY);
     args.remove(KNN_SIMILARITY_FUNCTION);
 
-    this.knnAlgorithm = args.getOrDefault(KNN_ALGORITHM, DEFAULT_KNN_ALGORITHM);
-    args.remove(KNN_ALGORITHM);
-
     this.vectorEncoding =
         ofNullable(args.get(VECTOR_ENCODING))
             .map(value -> VectorEncoding.valueOf(value.toUpperCase(Locale.ROOT)))
@@ -164,10 +157,6 @@ public class DenseVectorField extends FloatPointField {
 
   public VectorSimilarityFunction getSimilarityFunction() {
     return similarityFunction;
-  }
-
-  public String getKnnAlgorithm() {
-    return knnAlgorithm;
   }
 
   public Integer getHnswMaxConn() {

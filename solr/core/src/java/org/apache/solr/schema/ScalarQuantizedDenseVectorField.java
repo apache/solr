@@ -29,10 +29,10 @@ import static java.util.Optional.ofNullable;
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_NUM_MERGE_WORKER;
 
 public class ScalarQuantizedDenseVectorField extends DenseVectorField {
-    public static final String BITS = "bits"; //
-    public static final String CONFIDENCE_INTERVAL = "confidenceInterval";
-    public static final String DYNAMIC_CONFIDENCE_INTERVAL = "dynamicConfidenceInterval";
-    public static final String COMPRESS = "compress"; // can only be enabled when bits = 4 per Lucene codec spec
+    public static final String BITS_PARAM = "bits"; //
+    public static final String CONFIDENCE_INTERVAL_PARAM = "confidenceInterval";
+    public static final String DYNAMIC_CONFIDENCE_INTERVAL_PARAM = "dynamicConfidenceInterval";
+    public static final String COMPRESS_PARAM = "compress"; // can only be enabled when bits = 4 per Lucene codec spec
 
     private static final int DEFAULT_BITS = 7; // use signed byte as default when unspecified
     private static final Float DEFAULT_CONFIDENCE_INTERVAL = null; // use dimension scaled confidence interval
@@ -71,19 +71,19 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     public void init(IndexSchema schema, Map<String, String> args) {
         super.init(schema, args);
 
-        this.bits = ofNullable(args.remove(BITS))
+        this.bits = ofNullable(args.remove(BITS_PARAM))
                 .map(Integer::parseInt)
                 .orElse(DEFAULT_BITS);
 
-        this.compress = ofNullable(args.remove(COMPRESS))
+        this.compress = ofNullable(args.remove(COMPRESS_PARAM))
                 .map(Boolean::parseBoolean)
                 .orElse(false);
 
-        this.confidenceInterval = ofNullable(args.remove(CONFIDENCE_INTERVAL))
+        this.confidenceInterval = ofNullable(args.remove(CONFIDENCE_INTERVAL_PARAM))
                 .map(Float::parseFloat)
                 .orElse(DEFAULT_CONFIDENCE_INTERVAL);
 
-        if (ofNullable(args.remove(DYNAMIC_CONFIDENCE_INTERVAL))
+        if (ofNullable(args.remove(DYNAMIC_CONFIDENCE_INTERVAL_PARAM))
                 .map(Boolean::parseBoolean)
                 .orElse(false)) {
             this.confidenceInterval = Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL;
@@ -92,25 +92,15 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
 
     @Override
     public KnnVectorsFormat buildKnnVectorsFormat() {
-        final String knnAlgorithm = getKnnAlgorithm();
-        if (KNN_ALGORITHM.equals(knnAlgorithm)) {
-            return new Lucene99HnswScalarQuantizedVectorsFormat(
-                    getHnswMaxConn(),
-                    getHnswBeamWidth(),
-                    DEFAULT_NUM_MERGE_WORKER,
-                    getBits(),
-                    useCompression(),
-                    getConfidenceInterval(),
-                    null
-            );
-        } else if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
-            return new Lucene99ScalarQuantizedVectorsFormat(
-                    getConfidenceInterval(),
-                    getBits(),
-                    useCompression());
-        } else {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, String.format("Unrecognized KNN algorithm: %s", knnAlgorithm));
-        }
+        return new Lucene99HnswScalarQuantizedVectorsFormat(
+                getHnswMaxConn(),
+                getHnswBeamWidth(),
+                DEFAULT_NUM_MERGE_WORKER,
+                getBits(),
+                useCompression(),
+                getConfidenceInterval(),
+                null
+        );
     }
 
     public int getBits() {
