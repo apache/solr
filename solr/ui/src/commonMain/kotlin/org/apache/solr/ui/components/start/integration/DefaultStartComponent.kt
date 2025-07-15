@@ -56,8 +56,10 @@ class DefaultStartComponent(
     init {
         store.labels.onEach { label ->
             when (label) {
-                is StartStore.Label.AuthRequired -> output(StartComponent.Output.OnAuthRequired)
-                is StartStore.Label.Connected -> output(StartComponent.Output.OnConnected)
+                is StartStore.Label.AuthRequired ->
+                    output(StartComponent.Output.OnAuthRequired(url = label.url))
+                is StartStore.Label.Connected ->
+                    output(StartComponent.Output.OnConnected(url = label.url))
             }
         }.launchIn(mainScope)
     }

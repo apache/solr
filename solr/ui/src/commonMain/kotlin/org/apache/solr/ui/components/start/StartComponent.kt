@@ -17,6 +17,7 @@
 
 package org.apache.solr.ui.components.start
 
+import io.ktor.http.Url
 import kotlinx.coroutines.flow.StateFlow
 import org.jetbrains.compose.resources.StringResource
 
@@ -56,13 +57,17 @@ interface StartComponent {
         /**
          * Emitted when a connection to a Solr instance has been
          * established and no authentication is required.
+         *
+         * @property url The URL the connection was established.
          */
-        data object OnConnected : Output
+        data class OnConnected(val url: Url) : Output
 
         /**
          * Emitted when a connection to a Solr instance has been established and authentication
          * is needed.
+         *
+         * @property url The URL the connection was established but requires authentication.
          */
-        data object OnAuthRequired : Output
+        data class OnAuthRequired(val url: Url) : Output
     }
 }

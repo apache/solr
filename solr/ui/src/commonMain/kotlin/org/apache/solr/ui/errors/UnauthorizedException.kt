@@ -17,9 +17,13 @@
 
 package org.apache.solr.ui.errors
 
+import io.ktor.http.Url
+
 /**
  * Exception that is thrown for unauthorized access to the API.
  *
  * This is usually used when a response has HTTP status code 401.
+ *
+ * @property url The URL that threw the unauthorized response.
  */
-class UnauthorizedException: Exception()
+class UnauthorizedException(val url: Url? = null): Exception()

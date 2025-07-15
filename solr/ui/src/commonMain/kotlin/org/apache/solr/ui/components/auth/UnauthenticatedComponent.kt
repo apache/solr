@@ -17,6 +17,8 @@
 
 package org.apache.solr.ui.components.auth
 
+import io.ktor.http.Url
+
 interface UnauthenticatedComponent {
 
     /**
@@ -29,8 +31,10 @@ interface UnauthenticatedComponent {
         /**
          * Emitted when the user successfully authenticated against
          * the Solr instance.
+         *
+         * @property url The URL the connection was established with
          */
-        data object OnConnected: Output
+        data class OnConnected(val url: Url): Output
 
         /**
          * Emitted when the user aborts the authentication flow.

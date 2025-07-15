@@ -35,6 +35,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -160,9 +161,8 @@ class DefaultStartComponentIntegrationTest {
             actual = outputStack.size,
             message = "Expected one output",
         )
-        assertEquals(
-            expected = Output.OnConnected,
-            actual = outputStack[0],
+        assertIs<Output.OnConnected>(
+            value = outputStack[0],
             message = "Expected output to be Connected",
         )
     }
