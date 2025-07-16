@@ -74,25 +74,24 @@ public class SolrIndexWriter extends IndexWriter {
   private static final String MERGE_METRIC_PATH_COMPONENT = "merge";
   private static final String MERGE_METRIC_PATH_COMPONENT_MAJOR = "major";
   private static final String MERGE_METRIC_PATH_COMPONENT_MINOR = "minor";
-  private static final String MERGE_METRIC_PATH_COMPONENT_COMPLETED = "completed";
-  private static final String MERGE_METRIC_PATH_COMPONENT_START = "start";
+  private static final String MERGE_METRIC_PATH_COMPONENT_FINISHED = "finished";
+  private static final String MERGE_METRIC_PATH_COMPONENT_STARTED = "started";
 
+  private static final String MERGES_METRIC_NAME = "merges";
   private static final String MERGE_DOCS_METRIC_NAME = "docs";
   private static final String MERGE_DELETED_DOCS_METRIC_NAME = "deletedDocs";
   private static final String MERGE_SEGMENTS_METRIC_NAME = "segments";
   private static final String MERGE_TIMES_METRIC_NAME = "mergeTimes";
-  private static final String MERGE_FLUSH_METRIC_NAME = "flush";
+  private static final String MERGE_FLUSH_METRIC_NAME = "flushes";
   private static final String MERGE_ERRORS_METRIC_NAME = "errors";
 
   private static final Map<String, Counter> majorMergeStartedMetrics = new HashMap<>();
   private static final Map<String, Counter> minorMergeStartedMetrics = new HashMap<>();
-  private static final Map<String, Counter> majorMergeCompletedMetrics = new HashMap<>();
-  private static final Map<String, Counter> minorMergeCompletedMetrics = new HashMap<>();
+  private static final Map<String, Counter> majorMergeFinishedMetrics = new HashMap<>();
+  private static final Map<String, Counter> minorMergeFinishedMetrics = new HashMap<>();
 
   private long majorMergeDocs = 512 * 1024;
   private Meter flushMeter; // original counter is package-private in IndexWriter
-  private Meter majorMergeMeter;
-  private Meter minorMergeMeter;
   private Timer majorMergeTimer;
   private Timer minorMergeTimer;
   private Counter mergeErrorsCounter;
@@ -336,20 +335,8 @@ public class SolrIndexWriter extends IndexWriter {
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MINOR);
-    minorMergeMeter =
-        solrMetricsContext.meter(
-            MERGE_TIMES_METRIC_NAME,
-            SolrInfoBean.Category.INDEX.toString(),
-            MERGE_METRIC_PATH_COMPONENT,
-            MERGE_METRIC_PATH_COMPONENT_MINOR);
     majorMergeTimer =
         solrMetricsContext.timer(
-            MERGE_TIMES_METRIC_NAME,
-            SolrInfoBean.Category.INDEX.toString(),
-            MERGE_METRIC_PATH_COMPONENT,
-            MERGE_METRIC_PATH_COMPONENT_MAJOR);
-    majorMergeMeter =
-        solrMetricsContext.meter(
             MERGE_TIMES_METRIC_NAME,
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
@@ -357,13 +344,21 @@ public class SolrIndexWriter extends IndexWriter {
 
     // merge started metrics
     majorMergeStartedMetrics.put(
+        MERGES_METRIC_NAME,
+        solrMetricsContext.counter(
+            MERGES_METRIC_NAME,
+            SolrInfoBean.Category.INDEX.toString(),
+            MERGE_METRIC_PATH_COMPONENT,
+            MERGE_METRIC_PATH_COMPONENT_MAJOR,
+            MERGE_METRIC_PATH_COMPONENT_STARTED));
+    majorMergeStartedMetrics.put(
         MERGE_DOCS_METRIC_NAME,
         solrMetricsContext.counter(
             MERGE_DOCS_METRIC_NAME,
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MAJOR,
-            MERGE_METRIC_PATH_COMPONENT_START));
+            MERGE_METRIC_PATH_COMPONENT_STARTED));
     majorMergeStartedMetrics.put(
         MERGE_DELETED_DOCS_METRIC_NAME,
         solrMetricsContext.counter(
@@ -371,7 +366,7 @@ public class SolrIndexWriter extends IndexWriter {
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MAJOR,
-            MERGE_METRIC_PATH_COMPONENT_START));
+            MERGE_METRIC_PATH_COMPONENT_STARTED));
     majorMergeStartedMetrics.put(
         MERGE_SEGMENTS_METRIC_NAME,
         solrMetricsContext.counter(
@@ -379,7 +374,16 @@ public class SolrIndexWriter extends IndexWriter {
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MAJOR,
-            MERGE_METRIC_PATH_COMPONENT_START));
+            MERGE_METRIC_PATH_COMPONENT_STARTED));
+
+    minorMergeStartedMetrics.put(
+        MERGES_METRIC_NAME,
+        solrMetricsContext.counter(
+            MERGES_METRIC_NAME,
+            SolrInfoBean.Category.INDEX.toString(),
+            MERGE_METRIC_PATH_COMPONENT,
+            MERGE_METRIC_PATH_COMPONENT_MINOR,
+            MERGE_METRIC_PATH_COMPONENT_STARTED));
     minorMergeStartedMetrics.put(
         MERGE_DOCS_METRIC_NAME,
         solrMetricsContext.counter(
@@ -387,7 +391,7 @@ public class SolrIndexWriter extends IndexWriter {
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MINOR,
-            MERGE_METRIC_PATH_COMPONENT_START));
+            MERGE_METRIC_PATH_COMPONENT_STARTED));
     minorMergeStartedMetrics.put(
         MERGE_DELETED_DOCS_METRIC_NAME,
         solrMetricsContext.counter(
@@ -395,7 +399,7 @@ public class SolrIndexWriter extends IndexWriter {
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MINOR,
-            MERGE_METRIC_PATH_COMPONENT_START));
+            MERGE_METRIC_PATH_COMPONENT_STARTED));
     minorMergeStartedMetrics.put(
         MERGE_SEGMENTS_METRIC_NAME,
         solrMetricsContext.counter(
@@ -403,58 +407,74 @@ public class SolrIndexWriter extends IndexWriter {
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MINOR,
-            MERGE_METRIC_PATH_COMPONENT_START));
+            MERGE_METRIC_PATH_COMPONENT_STARTED));
 
     // merge completed metrics
-    majorMergeCompletedMetrics.put(
+    majorMergeFinishedMetrics.put(
+        MERGES_METRIC_NAME,
+        solrMetricsContext.counter(
+            MERGES_METRIC_NAME,
+            SolrInfoBean.Category.INDEX.toString(),
+            MERGE_METRIC_PATH_COMPONENT,
+            MERGE_METRIC_PATH_COMPONENT_MAJOR,
+            MERGE_METRIC_PATH_COMPONENT_FINISHED));
+    majorMergeFinishedMetrics.put(
         MERGE_DOCS_METRIC_NAME,
         solrMetricsContext.counter(
             MERGE_DOCS_METRIC_NAME,
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MAJOR,
-            MERGE_METRIC_PATH_COMPONENT_COMPLETED));
-    majorMergeCompletedMetrics.put(
+            MERGE_METRIC_PATH_COMPONENT_FINISHED));
+    majorMergeFinishedMetrics.put(
         MERGE_DELETED_DOCS_METRIC_NAME,
         solrMetricsContext.counter(
             MERGE_DELETED_DOCS_METRIC_NAME,
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MAJOR,
-            MERGE_METRIC_PATH_COMPONENT_COMPLETED));
-    majorMergeCompletedMetrics.put(
+            MERGE_METRIC_PATH_COMPONENT_FINISHED));
+    majorMergeFinishedMetrics.put(
         MERGE_SEGMENTS_METRIC_NAME,
         solrMetricsContext.counter(
             MERGE_SEGMENTS_METRIC_NAME,
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MAJOR,
-            MERGE_METRIC_PATH_COMPONENT_COMPLETED));
+            MERGE_METRIC_PATH_COMPONENT_FINISHED));
 
-    minorMergeCompletedMetrics.put(
+    minorMergeFinishedMetrics.put(
+        MERGES_METRIC_NAME,
+        solrMetricsContext.counter(
+            MERGES_METRIC_NAME,
+            SolrInfoBean.Category.INDEX.toString(),
+            MERGE_METRIC_PATH_COMPONENT,
+            MERGE_METRIC_PATH_COMPONENT_MINOR,
+            MERGE_METRIC_PATH_COMPONENT_FINISHED));
+    minorMergeFinishedMetrics.put(
         MERGE_DOCS_METRIC_NAME,
         solrMetricsContext.counter(
             MERGE_DOCS_METRIC_NAME,
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MINOR,
-            MERGE_METRIC_PATH_COMPONENT_COMPLETED));
-    minorMergeCompletedMetrics.put(
+            MERGE_METRIC_PATH_COMPONENT_FINISHED));
+    minorMergeFinishedMetrics.put(
         MERGE_DELETED_DOCS_METRIC_NAME,
         solrMetricsContext.counter(
             MERGE_DELETED_DOCS_METRIC_NAME,
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MINOR,
-            MERGE_METRIC_PATH_COMPONENT_COMPLETED));
-    minorMergeCompletedMetrics.put(
+            MERGE_METRIC_PATH_COMPONENT_FINISHED));
+    minorMergeFinishedMetrics.put(
         MERGE_SEGMENTS_METRIC_NAME,
         solrMetricsContext.counter(
             MERGE_SEGMENTS_METRIC_NAME,
             SolrInfoBean.Category.INDEX.toString(),
             MERGE_METRIC_PATH_COMPONENT,
             MERGE_METRIC_PATH_COMPONENT_MINOR,
-            MERGE_METRIC_PATH_COMPONENT_COMPLETED));
+            MERGE_METRIC_PATH_COMPONENT_FINISHED));
 
     flushMeter =
         solrMetricsContext.meter(
@@ -474,9 +494,10 @@ public class SolrIndexWriter extends IndexWriter {
    * @param numDocs number of documents in merge op
    * @param numDeletedDocs number of deleted docs in merge op
    * @param numSegments number of segments in merge op
-   * @param mergeCompleted true if being called post-merge, else false to signify a merge is about to start
+   * @param mergeCompleted true if being called post-merge, else false to signify a merge is about
+   *     to start
    * @param timerContext an existing timer context for actively running merge
-   * @return
+   * @return timer context for current merge operation
    */
   private Timer.Context updateMergeMetrics(
       long numDocs,
@@ -494,25 +515,22 @@ public class SolrIndexWriter extends IndexWriter {
         timerContext.stop();
       }
       if (isMajorMerge) {
-        majorMergeMeter.mark();
-        metricsToUpdate = majorMergeCompletedMetrics;
+        metricsToUpdate = majorMergeFinishedMetrics;
       } else {
-        minorMergeMeter.mark();
-        metricsToUpdate = minorMergeCompletedMetrics;
+        metricsToUpdate = minorMergeFinishedMetrics;
       }
     } else { // merge is starting
       if (isMajorMerge) {
         metricsToUpdate = majorMergeStartedMetrics;
-
         timerContext = majorMergeTimer.time();
       } else {
         metricsToUpdate = minorMergeStartedMetrics;
-
         timerContext = minorMergeTimer.time();
       }
     }
 
     try {
+      metricsToUpdate.get(MERGES_METRIC_NAME).inc();
       metricsToUpdate.get(MERGE_DOCS_METRIC_NAME).inc(numDocs);
       metricsToUpdate.get(MERGE_DELETED_DOCS_METRIC_NAME).inc(numDeletedDocs);
       metricsToUpdate.get(MERGE_SEGMENTS_METRIC_NAME).inc(numSegments);
