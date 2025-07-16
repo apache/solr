@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -61,6 +62,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    */
   private synchronized void prepareIndexDocs() throws Exception {
     List<SolrInputDocument> docs = new ArrayList<>();
+    fixShardCount(2);
     for (int i = 1; i <= NUM_DOCS; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", Integer.toString(i));
@@ -119,6 +121,29 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                 "/search"));
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
+  }
+
+  protected String getShardsString() {
+    if (deadServers == null) return shards;
+
+    StringBuilder sb = new StringBuilder();
+    int index = 1;
+    for (String shard : shardsArr) {
+      if (sb.length() > 0) sb.append(',');
+      int nDeadServers = index--;
+      if (nDeadServers > 0) {
+        List<String> replicas = new ArrayList<>(Arrays.asList(deadServers));
+        Collections.shuffle(replicas, r);
+        replicas.add(r.nextInt(nDeadServers + 1), shard);
+        for (int i = 0; i < nDeadServers + 1; i++) {
+          if (i != 0) sb.append('|');
+          sb.append(replicas.get(i));
+        }
+      } else {
+        sb.append(shard);
+      }
+    }
+    return sb.toString();
   }
 
   /**

@@ -149,23 +149,25 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     if (rb instanceof CombinedQueryResponseBuilder crb) {
       boolean partialResults = false;
       boolean segmentTerminatedEarly = false;
+      boolean setMaxHitsTerminatedEarly = false;
       List<QueryResult> queryResults = new ArrayList<>();
       for (ResponseBuilder rbNow : crb.responseBuilders) {
+        // propagating from global ResponseBuilder, so that if in case cursor is needed for
+        // retrieving the next batch of documents
+        // which might have duplicate results from the previous cursorMark as we are dealing with
+        // multiple queries
+        rbNow.setCursorMark(crb.getCursorMark());
         super.process(rbNow);
         DocListAndSet docListAndSet = rbNow.getResults();
         QueryResult queryResult = new QueryResult();
         queryResult.setDocListAndSet(docListAndSet);
         queryResults.add(queryResult);
-        partialResults |= SolrQueryResponse.isPartialResults(rbNow.rsp.getResponseHeader());
-        rbNow.setCursorMark(rbNow.getCursorMark());
-        if (rbNow.rsp.getResponseHeader() != null) {
-          segmentTerminatedEarly |=
-              (boolean)
-                  rbNow
-                      .rsp
-                      .getResponseHeader()
-                      .getOrDefault(
-                          SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, false);
+        partialResults |= queryResult.isPartialResults();
+        if (queryResult.getSegmentTerminatedEarly() != null) {
+          segmentTerminatedEarly |= queryResult.getSegmentTerminatedEarly();
+        }
+        if (queryResult.getMaxHitsTerminatedEarly() != null) {
+          setMaxHitsTerminatedEarly |= queryResult.getMaxHitsTerminatedEarly();
         }
       }
       QueryAndResponseCombiner combinerStrategy =
@@ -173,6 +175,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       QueryResult combinedQueryResult = combinerStrategy.combine(queryResults, rb.req.getParams());
       combinedQueryResult.setPartialResults(partialResults);
       combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
+      combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
       crb.setResult(combinedQueryResult);
       if (rb.isDebug()) {
         String[] queryKeys = rb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
@@ -197,9 +200,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                   ? 0
                   : crb.getResults().docList.matches());
       if (!crb.req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+        // for non-distributed request
         if (null != crb.getNextCursorMark()) {
           crb.rsp.add(
-              CursorMarkParams.CURSOR_MARK_NEXT, crb.getNextCursorMark().getSerializedTotem());
+              CursorMarkParams.CURSOR_MARK_NEXT,
+              crb.responseBuilders.getFirst().getNextCursorMark().getSerializedTotem());
         }
       }
 

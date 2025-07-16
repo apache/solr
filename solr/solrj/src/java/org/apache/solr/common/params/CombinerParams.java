@@ -31,5 +31,5 @@ public class CombinerParams {
   public static final String COMBINER_RRF_K = COMBINER + "." + RECIPROCAL_RANK_FUSION + ".k";
   public static final String DEFAULT_COMBINER = RECIPROCAL_RANK_FUSION;
   public static final int COMBINER_RRF_K_DEFAULT = 60;
-  public static final int DEFAULT_MAX_COMBINER_QUERIES = 1;
+  public static final int DEFAULT_MAX_COMBINER_QUERIES = 5;
 }
