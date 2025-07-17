@@ -23,6 +23,7 @@
 ** xref:dismax-query-parser.adoc[]
 ** xref:edismax-query-parser.adoc[]
 ** xref:function-queries.adoc[]
+*** xref:expression-value-source-parser.adoc[]
 ** xref:local-params.adoc[]
 ** xref:json-request-api.adoc[]
 *** xref:json-query-dsl.adoc[]

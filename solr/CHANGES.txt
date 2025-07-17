@@ -225,10 +225,6 @@ Other Changes
 ==================  9.9.0 ==================
 New Features
 ---------------------
-* SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
-  fetching and computing it on the fly.  To avoid a backwards compatibility concern, this won't work
-  for wt=javabin.  (Matthew Biscocho, David Smiley)
-
 * SOLR-17626: Add RawTFSimilarityFactory class. (Christine Poerschke)
 
 * SOLR-17656: New 'skipLeaderRecovery' replica property allows PULL replicas with existing indexes to immediately become ACTIVE (hossman)
@@ -244,6 +240,10 @@ New Features
 * SOLR-17447: Support terminating a search early based on maxHitsAllowed per shard. (Siju Varghese, Houston Putman, David Smiley, Gus Heck)
 
 * SOLR-17749: Added linear function support for RankField via RankQParserPlugin. (Christine Poerschke)
+
+* SOLR-5707: New ExpressionValueSourceParser that allows custom function queries / VSPs to be defined in a
+  subset of JavaScript, pre-compiled, and that which can access the score and fields. It's powered by
+  the Lucene Expressions module. (hossman, David Smiley, Ryan Ernst, Kevin Risden)
 
 Improvements
 ---------------------
@@ -293,6 +293,10 @@ Improvements
 
 Optimizations
 ---------------------
+* SOLR-17582: The CLUSTERSTATUS API will now stream each collection's status to the response,
+  fetching and computing it on the fly.  To avoid a backwards compatibility concern, this won't work
+  for wt=javabin.  (Matthew Biscocho, David Smiley)
+
 * SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
 * SOLR-17669: Reduced memory usage in SolrJ getBeans() method when handling dynamic fields with wildcards. (Martin Anzinger)
@@ -370,9 +374,13 @@ Bug Fixes
 
 * SOLR-17777: Fix a very minor memory leak in metrics reporting code when a core is deleted. (Pierre Salagnac)
 
+* SOLR-17792: Fix deadlocks in ParallelHttpShardHandler, re-implement synchronization in HttpShardHandler (Houston Putman)
+
+* GITHUB#3426: Improving check in TextToVectorUpdateProcessorFactory, which breaks update for new dynamic fields. (Renato Haeberli via Alessandro Benedetti)
+
 Dependency Upgrades
 ---------------------
-* SOLR-17471: Upgrade Lucene to 9.12.1. (Pierre Salagnac, Christine Poerschke)
+* SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
 
 * Upgrade forbiddenapis to 3.9. (Uwe Schindler)
 

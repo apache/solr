@@ -21,8 +21,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.llm.TestLlmBase;
+import org.apache.solr.llm.textvectorisation.model.SolrTextToVectorModel;
+import org.apache.solr.llm.textvectorisation.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,6 +41,18 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
   @AfterClass
   public static void cleanup() throws Exception {
     afterTest();
+  }
+
+  SolrCore collection1;
+
+  @Before
+  public void setup() {
+    collection1 = solrClientTestRule.getCoreContainer().getCore("collection1");
+  }
+
+  @After
+  public void after() {
+    collection1.close();
   }
 
   @Test
@@ -100,13 +117,11 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     TextToVectorUpdateProcessorFactory factoryToTest = new TextToVectorUpdateProcessorFactory();
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    SolrCore collection1 = solrClientTestRule.getCoreContainer().getCore("collection1");
     SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
     factoryToTest.init(args);
     SolrException e =
         assertThrows(SolrException.class, () -> factoryToTest.getInstance(req, null, null));
     assertEquals("undefined field: \"notExistentOutput\"", e.getMessage());
-    collection1.close();
   }
 
   /* Following test depends on a real solr schema and depends on BeforeClass-AfterClass methods */
@@ -120,14 +135,12 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     TextToVectorUpdateProcessorFactory factoryToTest = new TextToVectorUpdateProcessorFactory();
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    SolrCore collection1 = solrClientTestRule.getCoreContainer().getCore("collection1");
     SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
     factoryToTest.init(args);
     SolrException e =
         assertThrows(SolrException.class, () -> factoryToTest.getInstance(req, null, null));
     assertEquals(
         "only DenseVectorField is compatible with Vector Query Parsers: _text_", e.getMessage());
-    collection1.close();
   }
 
   /* Following test depends on a real solr schema and depends on BeforeClass-AfterClass methods */
@@ -141,12 +154,51 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLlmBase {
     TextToVectorUpdateProcessorFactory factoryToTest = new TextToVectorUpdateProcessorFactory();
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    SolrCore collection1 = solrClientTestRule.getCoreContainer().getCore("collection1");
     SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
     factoryToTest.init(args);
     SolrException e =
         assertThrows(SolrException.class, () -> factoryToTest.getInstance(req, null, null));
     assertEquals("undefined field: \"notExistentInput\"", e.getMessage());
-    collection1.close();
+  }
+
+  /* Following test depends on a real solr schema and depends on BeforeClass-AfterClass methods */
+  @Test
+  public void init_notExistentDynamicInputField_shouldNotThrowException() {
+    String inputFieldName = "text_s";
+    String outputFieldName = "vector";
+
+    UpdateRequestProcessor instance =
+        createUpdateProcessor(inputFieldName, outputFieldName, collection1, "model1");
+    assertNotNull(instance);
+  }
+
+  /* Following test depends on a real solr schema and depends on BeforeClass-AfterClass methods */
+  @Test
+  public void init_notExistingDynamicOutputField_shouldNotThrowException() {
+    String inputFieldName = "_text_";
+    String outputFieldName = "vec_vector1024";
+
+    UpdateRequestProcessor instance =
+        createUpdateProcessor(inputFieldName, outputFieldName, collection1, "model2");
+    assertNotNull(instance);
+  }
+
+  private UpdateRequestProcessor createUpdateProcessor(
+      String inputFieldName, String outputFieldName, SolrCore collection1, String modelName) {
+    NamedList<String> args = new NamedList<>();
+
+    ManagedTextToVectorModelStore.getManagedModelStore(collection1)
+        .addModel(new SolrTextToVectorModel(modelName, null, null));
+    args.add("inputField", inputFieldName);
+    args.add("outputField", outputFieldName);
+    args.add("model", modelName);
+
+    TextToVectorUpdateProcessorFactory factoryToTest = new TextToVectorUpdateProcessorFactory();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    factoryToTest.init(args);
+
+    SolrQueryRequestBase req = new SolrQueryRequestBase(collection1, params) {};
+
+    return factoryToTest.getInstance(req, null, null);
   }
 }

@@ -50,7 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.logout
+import org.apache.solr.ui.generated.resources.action_logout
 import org.apache.solr.ui.generated.resources.nav_cluster
 import org.apache.solr.ui.generated.resources.nav_collections
 import org.apache.solr.ui.generated.resources.nav_configsets
@@ -102,7 +102,7 @@ fun NavigationSideBar(
 
             // TODO Add condition for displaying logout button if user identity / auth present
             MenuElement(
-                text = stringResource(Res.string.logout),
+                text = stringResource(Res.string.action_logout),
                 imageVector = Icons.AutoMirrored.Rounded.Logout,
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {}, // TODO Call logout on auth component
