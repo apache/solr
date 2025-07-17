@@ -16,8 +16,6 @@
  */
 package org.apache.solr;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -40,7 +38,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -127,14 +125,19 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertNotNull(core.getRequestHandler("/mock"));
 
     // test stats call
-    SolrMetricManager manager = core.getCoreContainer().getMetricManager();
-    String registry = core.getCoreMetricManager().getRegistryName();
-    Map<String, Metric> metrics = manager.registry(registry).getMetrics();
-    assertTrue(metrics.containsKey("CORE.coreName"));
-    assertTrue(metrics.containsKey("CORE.refCount"));
-    @SuppressWarnings({"unchecked"})
-    Gauge<Number> g = (Gauge<Number>) metrics.get("CORE.refCount");
-    assertTrue(g.getValue().intValue() > 0);
+    var reader = SolrMetricTestUtils.getPrometheusMetricReader(h.getCore());
+
+    var refCount =
+        SolrMetricTestUtils.getGaugeOpDatapoint(
+            reader,
+            "solr_core_ref_count",
+            SolrMetricTestUtils.getStandaloneLabelsBase(core)
+                .get()
+                .label("category", "CORE")
+                .build());
+    assertNotNull(refCount);
+
+    assertTrue(refCount.getValue() > 0);
 
     assertQ(
         "test query on empty index",

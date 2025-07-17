@@ -26,6 +26,8 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -48,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -851,5 +854,9 @@ public class MetricUtils {
         // ignore
       }
     }
+  }
+
+  public static Supplier<AttributesBuilder> baseAttributesSupplier(Attributes attributes) {
+    return () -> Attributes.builder().putAll(attributes);
   }
 }

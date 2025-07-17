@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.SolrClient;
@@ -389,7 +390,9 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     }
   }
 
+  // NOCOMMIT: Failing from JMX reporter
   @Test
+  @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17458")
   public void testCollectionsAPI() throws Exception {
 
     // create new collections rapid fire

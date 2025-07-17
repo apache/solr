@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
  * <p>NOTE: {@link com.codahale.metrics.jmx.JmxReporter} that this class uses exports only newly
  * added metrics (it doesn't process already existing metrics in a registry)
  */
+// NOCOMMIT: This JMX reporter looks to be wrapped over a Dropwizard registry. We need to migrate
+// this to OTEL. Maybe we can look at available otel shims for JMX?
 public class SolrJmxReporter extends FilteringSolrMetricReporter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
