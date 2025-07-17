@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +34,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -354,15 +353,19 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     executor.execute(
         () -> {
           while (!created.get()) {
-            var metrics =
-                metricManager.getMetrics(
-                    "solr.core." + coreName,
-                    MetricFilter.startsWith(SolrInfoBean.Category.INDEX.toString()));
-            for (var m : metrics.values()) {
-              if (m instanceof Gauge) {
-                var v = ((Gauge<?>) m).getValue();
-                atLeastOnePoll.compareAndSet(false, v != null);
-              }
+            var reader = SolrMetricTestUtils.getPrometheusMetricReader(h.getCore());
+
+            var datapoint =
+                SolrMetricTestUtils.getGaugeOpDatapoint(
+                    reader,
+                    "solr_core_index_size_bytes",
+                    SolrMetricTestUtils.getStandaloneLabelsBase(h.getCore())
+                        .get()
+                        .label("category", "CORE")
+                        .build());
+
+            if (datapoint != null && datapoint.getValue() >= 0) {
+              atLeastOnePoll.set(true);
             }
 
             try {

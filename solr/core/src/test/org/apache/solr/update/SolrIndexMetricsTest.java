@@ -23,6 +23,7 @@ import com.codahale.metrics.Timer;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Test;
@@ -67,8 +68,10 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     Map<String, Metric> metrics = registry.getMetrics();
 
+    // NOCOMMIT: As we migrate more metrics to OTEL, this will need to migrate to check prometheus
+    // reader instead
     assertEquals(
-        13, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+        10, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
 
     // check basic index meters
     Timer timer = (Timer) metrics.get("INDEX.merge.minor");
@@ -95,10 +98,26 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
             .registry(h.getCore().getCoreMetricManager().getRegistryName());
     assertNotNull(registry);
 
-    Map<String, Metric> metrics = registry.getMetrics();
-    // INDEX.size, INDEX.sizeInBytes, INDEX.segmentCount
-    assertEquals(
-        3, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    var reader = SolrMetricTestUtils.getPrometheusMetricReader(h.getCore());
+
+    var indexSize =
+        SolrMetricTestUtils.getGaugeOpDatapoint(
+            reader,
+            "solr_core_index_size_bytes",
+            SolrMetricTestUtils.getStandaloneLabelsBase(h.getCore())
+                .get()
+                .label("category", "CORE")
+                .build());
+    var segmentSize =
+        SolrMetricTestUtils.getGaugeOpDatapoint(
+            reader,
+            "solr_core_segment_count",
+            SolrMetricTestUtils.getStandaloneLabelsBase(h.getCore())
+                .get()
+                .label("category", "CORE")
+                .build());
+    assertNotNull(indexSize);
+    assertNotNull(segmentSize);
   }
 
   @Test
