@@ -343,7 +343,7 @@ public class HttpShardHandler extends ShardHandler {
             // Otherwise return the last response that we processed.
             return previousResponse.getShardRequest().responses.stream()
                 .filter(sr -> sr.getException() != null)
-                .findAny()
+                .findFirst()
                 .orElse(previousResponse);
           }
         } else {
