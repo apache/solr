@@ -1348,14 +1348,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
         new AttributedLongCounter(
             parentContext.longCounter(
                 "solr_core_max_reached_searcher",
-                "Total number of maximum number of concurrent warming searchers was reached"),
+                "Total number of maximum number of concurrent warming searchers reached"),
             baseSearcherAttributes);
 
     newSearcherOtherErrorsCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
-                "solr_core_searcher_errors",
-                "Total number of maximum number of concurrent warming searchers was reached"),
+                "solr_core_searcher_errors", "Total number of searcher errors"),
             baseSearcherAttributes);
 
     newSearcherTimer =
