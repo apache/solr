@@ -262,7 +262,6 @@ public abstract class RequestHandlerBase
       otelNumTimeouts.add(0L);
       otelNumClientErrors.add(0L);
       otelNumServerErrors.add(0L);
-      otelRequestTimes.start().stop();
     }
   }
 

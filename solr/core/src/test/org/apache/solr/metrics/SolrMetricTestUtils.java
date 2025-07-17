@@ -132,7 +132,6 @@ public final class SolrMetricTestUtils {
 
   public static DataPointSnapshot getDataPointSnapshot(
       PrometheusMetricReader reader, String metricName, Labels labels) {
-    var metricss = reader.collect();
     return reader.collect().stream()
         .filter(ms -> ms.getMetadata().getPrometheusName().equals(metricName))
         .findFirst()
@@ -164,8 +163,12 @@ public final class SolrMetricTestUtils {
   }
 
   public static Supplier<Labels.Builder> getStandaloneLabelsBase(SolrCore core) {
+    return getStandaloneLabelsBase(core.getName());
+  }
+
+  public static Supplier<Labels.Builder> getStandaloneLabelsBase(String coreName) {
     return () ->
-        Labels.builder().label("core", core.getName()).label("otel_scope_name", "org.apache.solr");
+        Labels.builder().label("core", coreName).label("otel_scope_name", "org.apache.solr");
   }
 
   public static PrometheusMetricReader getPrometheusMetricReader(
