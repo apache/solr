@@ -1108,9 +1108,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       setLatestSchema(schema);
 
       // initialize core metrics
-      // NOCOMMIT SOLR-17458: Add OTEL
       if (coreContainer.isZooKeeperAware()) {
-        // cloud mode
         initializeMetrics(
             solrMetricsContext,
             Attributes.builder()
@@ -1292,7 +1290,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private UpdateHandler initUpdateHandler(UpdateHandler updateHandler) throws IOException {
+  private UpdateHandler initUpdateHandler(UpdateHandler updateHandler) {
     String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
     if (updateHandlerClass == null) {
       updateHandlerClass = DirectUpdateHandler2.class.getName();

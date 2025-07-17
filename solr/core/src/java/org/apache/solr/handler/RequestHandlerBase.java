@@ -258,11 +258,11 @@ public abstract class RequestHandlerBase
 
       otelRequestTimes = new AttributedLongTimer(baseRequestTimeMetric, attributes);
       // NOCOMMIT: Temporary to see metrics
-      //      otelRequests.add(0L);
-      //      otelNumTimeouts.add(0L);
-      //      otelNumClientErrors.add(0L);
-      //      otelNumServerErrors.add(0L);
-      //      otelRequestTimes.start().stop();c
+      otelRequests.add(0L);
+      otelNumTimeouts.add(0L);
+      otelNumClientErrors.add(0L);
+      otelNumServerErrors.add(0L);
+      otelRequestTimes.start().stop();
     }
   }
 
