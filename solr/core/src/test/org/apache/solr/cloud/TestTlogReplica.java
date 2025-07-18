@@ -20,7 +20,7 @@ import static org.apache.solr.cloud.TestPullReplica.getHypotheticalTlogDir;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.codahale.metrics.Meter;
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -576,21 +576,15 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     {
       SolrCore core = getSolrCore(true).getFirst();
-      var reader =
-          core.getSolrMetricsContext()
-              .getMetricManager()
-              .getPrometheusMetricReader(
-                  getSolrCore(true).getFirst().getCoreMetricManager().getRegistryName());
       var actual =
-          (GaugeSnapshot.GaugeDataPointSnapshot)
-              SolrMetricTestUtils.getDataPointSnapshot(
-                  reader,
-                  "solr_metrics_core_update_pending_operations",
-                  SolrMetricTestUtils.getCloudLabelsBase(core)
-                      .get()
-                      .label("category", "UPDATE")
-                      .label("operation", "docs_pending")
-                      .build());
+          SolrMetricTestUtils.getGaugeDatapoint(
+              core,
+              "solr_core_update_docs_pending_commit",
+              Labels.builder()
+                  .label("category", "UPDATE")
+                  .label("operation", "docs_pending")
+                  .build(),
+              true);
       assertEquals(
           "Expected 4 docs are pending in core " + getSolrCore(true).get(0).getCoreDescriptor(),
           4,
@@ -598,21 +592,15 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
 
     for (SolrCore solrCore : getSolrCore(false)) {
-      var reader =
-          solrCore
-              .getSolrMetricsContext()
-              .getMetricManager()
-              .getPrometheusMetricReader(solrCore.getCoreMetricManager().getRegistryName());
       var actual =
-          (GaugeSnapshot.GaugeDataPointSnapshot)
-              SolrMetricTestUtils.getDataPointSnapshot(
-                  reader,
-                  "solr_metrics_core_update_pending_operations",
-                  SolrMetricTestUtils.getCloudLabelsBase(solrCore)
-                      .get()
-                      .label("category", "UPDATE")
-                      .label("operation", "docs_pending")
-                      .build());
+          SolrMetricTestUtils.getGaugeDatapoint(
+              solrCore,
+              "solr_core_update_docs_pending_commit",
+              Labels.builder()
+                  .label("category", "UPDATE")
+                  .label("operation", "docs_pending")
+                  .build(),
+              true);
       assertEquals(
           "Expected non docs are pending in core " + solrCore.getCoreDescriptor(),
           0,

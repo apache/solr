@@ -24,7 +24,7 @@ import java.io.IOException;
 public interface SolrMetricProducer extends AutoCloseable {
 
   public final AttributeKey<String> TYPE_ATTR = AttributeKey.stringKey("type");
-  public final AttributeKey<String> OPERATION_ATTR = AttributeKey.stringKey("operation");
+  public final AttributeKey<String> OPERATION_ATTR = AttributeKey.stringKey("ops");
 
   /**
    * Unique metric tag identifies components with the same life-cycle, which should be registered /

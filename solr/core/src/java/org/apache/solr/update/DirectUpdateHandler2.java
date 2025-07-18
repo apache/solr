@@ -103,6 +103,14 @@ public class DirectUpdateHandler2 extends UpdateHandler
   AttributedLongUpDownCounter deleteByIdCommandsCumulative;
   AttributedLongUpDownCounter addCommandsCumulative;
 
+  AttributedLongCounter submittedAdds;
+  AttributedLongCounter submittedDeleteById;
+  AttributedLongCounter submittedDeleteByQuery;
+
+  AttributedLongCounter committedAdds;
+  AttributedLongCounter committedDeleteById;
+  AttributedLongCounter committedDeleteByQuery;
+
   // Maintenance operations
   AttributedLongCounter expungeDeleteCommands;
   AttributedLongCounter mergeIndexesCommands;
@@ -246,8 +254,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     var baseCommandsMetric =
         solrMetricsContext.longUpDownCounter(
-            "solr_core_update_operations_cumulative",
-            "Cumulative number of update commands processed. Metric can go down from rollback command");
+            "solr_core_update_cumulative_ops",
+            "Cumulative number of update commands processed. Cumulative can decrease from rollback command");
 
     addCommandsCumulative =
         new AttributedLongUpDownCounter(
@@ -262,29 +270,30 @@ public class DirectUpdateHandler2 extends UpdateHandler
             baseCommandsMetric,
             baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
 
-    var baseCommitMetric =
+    var baseCommitOpsMetric =
         solrMetricsContext.longCounter(
-            "solr_core_update_commit_operations", "Total number of commit operations");
+            "solr_core_update_commit_ops", "Total number of commit operations");
 
     commitCommands =
         new AttributedLongCounter(
-            baseCommitMetric, baseAttributes.get().put(OPERATION_ATTR, "commits").build());
+            baseCommitOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "commits").build());
 
     optimizeCommands =
         new AttributedLongCounter(
-            baseCommitMetric, baseAttributes.get().put(OPERATION_ATTR, "optimize").build());
+            baseCommitOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "optimize").build());
 
     mergeIndexesCommands =
         new AttributedLongCounter(
-            baseCommitMetric, baseAttributes.get().put(OPERATION_ATTR, "merges").build());
+            baseCommitOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "merge_indexes").build());
 
     expungeDeleteCommands =
         new AttributedLongCounter(
-            baseCommitMetric, baseAttributes.get().put(OPERATION_ATTR, "expunge_deletes").build());
+            baseCommitOpsMetric,
+            baseAttributes.get().put(OPERATION_ATTR, "expunge_deletes").build());
 
     var baseMaintenanceMetric =
         solrMetricsContext.longCounter(
-            "solr_core_update_maintenance_operations", "Total number of maintenance operations");
+            "solr_core_update_maintenance_ops", "Total number of maintenance operations");
 
     rollbackCommands =
         new AttributedLongCounter(
@@ -302,7 +311,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     softAutoCommits =
         solrMetricsContext.observableLongCounter(
             "solr_core_update_auto_commits",
-            "Total number of auto commits",
+            "Current number of auto commits",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(
                   commitTracker.getCommitCount(),
@@ -325,7 +334,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
                     commitTracker.getDocsUpperBound(),
                     baseAttributes.get().put(TYPE_ATTR, "auto_commit_max_docs").build());
               }
-
               if (commitTracker.getTLogFileSizeUpperBound() > 0) {
                 observableLongMeasurement.record(
                     commitTracker.getTLogFileSizeUpperBound(),
@@ -350,22 +358,45 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     updateStats =
         solrMetricsContext.observableLongGauge(
-            "solr_core_update_pending_operations",
-            "Operations pending commit. Values get reset after commit",
+            "solr_core_update_docs_pending_commit",
+            "Current number of documents pending commit. Value is reset to 0 on commit.",
             (observableLongMeasurement) -> {
-              observableLongMeasurement.record(
-                  addCommands.longValue(),
-                  baseAttributes.get().put(OPERATION_ATTR, "adds").build());
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
                   baseAttributes.get().put(OPERATION_ATTR, "docs_pending").build());
-              observableLongMeasurement.record(
-                  deleteByIdCommands.longValue(),
-                  baseAttributes.get().put(OPERATION_ATTR, "deletes_by_id").build());
-              observableLongMeasurement.record(
-                  deleteByQueryCommands.longValue(),
-                  baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
             });
+
+    var baseSubmittedOpsMetric =
+        solrMetricsContext.longCounter(
+            "solr_core_update_submitted_ops", "Total number of submitted update operations");
+
+    var baseCommittedOpsMetric =
+        solrMetricsContext.longCounter(
+            "solr_core_update_committed_ops", "Total number of committed update operations");
+
+    submittedAdds =
+        new AttributedLongCounter(
+            baseSubmittedOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "adds").build());
+    submittedDeleteById =
+        new AttributedLongCounter(
+            baseSubmittedOpsMetric,
+            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_id").build());
+    submittedDeleteByQuery =
+        new AttributedLongCounter(
+            baseSubmittedOpsMetric,
+            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
+
+    committedAdds =
+        new AttributedLongCounter(
+            baseCommittedOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "adds").build());
+    committedDeleteById =
+        new AttributedLongCounter(
+            baseCommittedOpsMetric,
+            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_id").build());
+    committedDeleteByQuery =
+        new AttributedLongCounter(
+            baseCommittedOpsMetric,
+            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
   }
 
   private void deleteAll() throws IOException {
@@ -428,6 +459,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     addCommands.increment();
     addCommandsCumulative.inc();
+    submittedAdds.inc();
 
     // if there is no ID field, don't overwrite
     if (idField == null) {
@@ -575,6 +607,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     TestInjection.injectDirectUpdateLatch();
     deleteByIdCommands.increment();
     deleteByIdCommandsCumulative.inc();
+    submittedDeleteById.inc();
 
     if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
       if (ulog != null) ulog.delete(cmd);
@@ -641,6 +674,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     TestInjection.injectDirectUpdateLatch();
     deleteByQueryCommands.increment();
     deleteByQueryCommandsCumulative.inc();
+    submittedDeleteByQuery.inc();
     boolean madeIt = false;
     try {
       Query q = getQuery(cmd);
@@ -896,7 +930,9 @@ public class DirectUpdateHandler2 extends UpdateHandler
       if (!cmd.softCommit) {
         solrCoreState.getCommitLock().unlock();
       }
-
+      committedAdds.add(addCommands.longValue());
+      committedDeleteById.add(deleteByIdCommands.longValue());
+      committedDeleteByQuery.add(deleteByQueryCommands.longValue());
       addCommands.reset();
       deleteByIdCommands.reset();
       deleteByQueryCommands.reset();
