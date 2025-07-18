@@ -144,35 +144,6 @@ public final class SolrMetricTestUtils {
         .orElse(null);
   }
 
-  private static <T> T getDatapoint(
-      SolrCore core, String metricName, Labels labels, boolean cloudLabels, Class<T> snapshotType) {
-
-    var reader =
-        core.getSolrMetricsContext()
-            .getMetricManager()
-            .getPrometheusMetricReader(core.getCoreMetricManager().getRegistryName());
-
-    var baseBuilder =
-        (cloudLabels ? getCloudLabelsBase(core) : getStandaloneLabelsBase(core)).get();
-
-    labels.stream().forEach(label -> baseBuilder.label(label.getName(), label.getValue()));
-
-    return snapshotType.cast(
-        SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, baseBuilder.build()));
-  }
-
-  public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
-      SolrCore core, String metricName, Labels labels, boolean cloudLabels) {
-    return getDatapoint(
-        core, metricName, labels, cloudLabels, GaugeSnapshot.GaugeDataPointSnapshot.class);
-  }
-
-  public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
-      SolrCore core, String metricName, Labels labels, boolean cloudLabels) {
-    return getDatapoint(
-        core, metricName, labels, cloudLabels, CounterSnapshot.CounterDataPointSnapshot.class);
-  }
-
   public static Supplier<Labels.Builder> getCloudLabelsBase(SolrCore core) {
     return () ->
         Labels.builder()
@@ -203,5 +174,31 @@ public final class SolrMetricTestUtils {
   public static PrometheusMetricReader getPrometheusMetricReader(
       CoreContainer container, String registryName) {
     return container.getMetricManager().getPrometheusMetricReader(registryName);
+  }
+
+  private static <T> T getDatapoint(
+      SolrCore core, String metricName, Labels labels, boolean cloudLabels, Class<T> snapshotType) {
+
+    var reader = getPrometheusMetricReader(core);
+
+    var baseBuilder =
+        (cloudLabels ? getCloudLabelsBase(core) : getStandaloneLabelsBase(core)).get();
+
+    labels.stream().forEach(label -> baseBuilder.label(label.getName(), label.getValue()));
+
+    return snapshotType.cast(
+        SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, baseBuilder.build()));
+  }
+
+  public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
+      SolrCore core, String metricName, Labels labels, boolean cloudLabels) {
+    return getDatapoint(
+        core, metricName, labels, cloudLabels, GaugeSnapshot.GaugeDataPointSnapshot.class);
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
+      SolrCore core, String metricName, Labels labels, boolean cloudLabels) {
+    return getDatapoint(
+        core, metricName, labels, cloudLabels, CounterSnapshot.CounterDataPointSnapshot.class);
   }
 }
