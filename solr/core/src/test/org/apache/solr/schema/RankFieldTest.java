@@ -23,6 +23,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.util.LogListener;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
@@ -59,7 +60,8 @@ public class RankFieldTest extends SolrTestCaseJ4 {
   }
 
   public void testBadFormat() {
-    try (LogListener errors = LogListener.error().substring("Expecting float")) {
+    try (LogListener errors =
+        LogListener.error(RequestHandlerBase.class).substring("Expecting float")) {
       assertFailedU(adoc("id", "1", RANK_1, "foo"));
 
       assertFailedU(adoc("id", "1", RANK_1, "1.2.3"));
@@ -67,7 +69,8 @@ public class RankFieldTest extends SolrTestCaseJ4 {
       errors.clearQueue();
     }
 
-    try (LogListener errors = LogListener.error().substring("must be finite")) {
+    try (LogListener errors =
+        LogListener.error(RequestHandlerBase.class).substring("must be finite")) {
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(Float.POSITIVE_INFINITY)));
 
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(Float.NEGATIVE_INFINITY)));
@@ -77,7 +80,8 @@ public class RankFieldTest extends SolrTestCaseJ4 {
       errors.clearQueue();
     }
 
-    try (LogListener errors = LogListener.error().substring("must be a positive")) {
+    try (LogListener errors =
+        LogListener.error(RequestHandlerBase.class).substring("must be a positive")) {
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(-0.0f)));
 
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(-1f)));
