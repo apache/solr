@@ -57,7 +57,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     protected String collection;
     private Integer numShards;
     private String shardId;
-    private String roles;
     private String coreNodeName;
     private Boolean loadOnStartup;
     private Boolean isTransient;
@@ -101,10 +100,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
     public void setShardId(String shardId) {
       this.shardId = shardId;
-    }
-
-    public void setRoles(String roles) {
-      this.roles = roles;
     }
 
     public void setCoreNodeName(String coreNodeName) {
@@ -154,10 +149,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
     public String getShardId() {
       return shardId;
-    }
-
-    public String getRoles() {
-      return roles;
     }
 
     public String getCoreNodeName() {
@@ -225,9 +216,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       }
       if (shardId != null) {
         params.set(CoreAdminParams.SHARD, shardId);
-      }
-      if (roles != null) {
-        params.set(CoreAdminParams.ROLES, roles);
       }
       if (coreNodeName != null) {
         params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
