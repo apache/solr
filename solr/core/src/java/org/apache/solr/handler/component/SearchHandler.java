@@ -37,6 +37,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -630,10 +632,17 @@ public class SearchHandler extends RequestHandlerBase
               rsp.setPartialResults(rb.req);
             }
             // Was there an exception?
-            if (srsp.getException() != null) {
+            // In the case of tolerant search, we need to check all responses to see if there was an
+            // exception.
+            Optional<Throwable> shardException =
+                srsp.getShardRequest().responses.stream()
+                    .map(ShardResponse::getException)
+                    .filter(Objects::nonNull)
+                    .findFirst();
+            if (shardException.isPresent()) {
               // If things are not tolerant, abort everything and rethrow
               if (!tolerant) {
-                throwSolrException(srsp.getException());
+                throwSolrException(shardException.get());
               } else {
                 // Check if the purpose includes 'PURPOSE_GET_TOP_IDS'
                 boolean includesTopIdsPurpose =
@@ -646,7 +655,7 @@ public class SearchHandler extends RequestHandlerBase
                 boolean allShardsFailed = includesTopIdsPurpose && allResponsesHaveExceptions;
                 // if all shards fail, fail the request despite shards.tolerant
                 if (allShardsFailed) {
-                  throwSolrException(srsp.getException());
+                  throwSolrException(shardException.get());
                 } else {
                   rsp.setPartialResults(rb.req);
                   if (publishCpuTime) {
