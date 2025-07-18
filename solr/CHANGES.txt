@@ -156,6 +156,8 @@ Bug Fixes
 
 * GITHUB#3426: Improving check in TextToVectorUpdateProcessorFactory, which breaks update for new dynamic fields. (Renato Haeberli via Alessandro Benedetti)
 
+* SOLR-17819: Disable http2 request cancellation for Jetty 10, the cancellation can bleed across to other requests. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * PR#3078: chore(deps): update apache.kafka to v3.9.0 (solrbot)
