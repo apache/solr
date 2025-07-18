@@ -567,11 +567,15 @@ public class Http2SolrClient extends HttpSolrClientBase {
                     new SolrServerException(failure.getMessage(), failure));
               }
             });
-    future.exceptionally(
-        (error) -> {
-          mrrv.request.abort(error);
-          return null;
-        });
+
+    // SOLR-17819: Disabling request aborting for Solr 9.x (Jetty 10).
+    // Not disabled for Solr 10.x because Jetty 12 does not have the same issue.
+    //
+    // future.exceptionally(
+    //     (error) -> {
+    //       mrrv.request.abort(error);
+    //       return null;
+    //     });
 
     if (mrrv.contentWriter != null) {
       try (var output = mrrv.requestContent.getOutputStream()) {
