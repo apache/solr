@@ -142,6 +142,9 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CONFIGS_ZKNODE = "/configs";
   public static final String CONFIGNAME_PROP = "configName";
 
+  /** The version that created the cluster and that which gates some settings. */
+  public static final String CLUSTER_SOLR_VERSION = "clusterSolrVersion";
+
   public static final String URL_SCHEME = "urlScheme";
   public static final String HTTP = "http";
   public static final String HTTPS = "https";
@@ -368,6 +371,7 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final Set<String> KNOWN_CLUSTER_PROPS =
       Set.of(
+          CLUSTER_SOLR_VERSION,
           URL_SCHEME,
           CoreAdminParams.BACKUP_LOCATION,
           DEFAULT_SHARD_PREFERENCES,
