@@ -18,11 +18,20 @@ package org.apache.solr.metrics;
 
 import com.codahale.metrics.Counter;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Supplier;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 
 public final class SolrMetricTestUtils {
@@ -120,5 +129,76 @@ public final class SolrMetricTestUtils {
             + "\n}";
       }
     };
+  }
+
+  public static DataPointSnapshot getDataPointSnapshot(
+      PrometheusMetricReader reader, String metricName, Labels labels) {
+    return reader.collect().stream()
+        .filter(ms -> ms.getMetadata().getPrometheusName().equals(metricName))
+        .findFirst()
+        .flatMap(
+            ms ->
+                ms.getDataPoints().stream()
+                    .filter(dp -> dp.getLabels().hasSameValues(labels))
+                    .findFirst())
+        .orElse(null);
+  }
+
+  public static Supplier<Labels.Builder> getCloudLabelsBase(SolrCore core) {
+    return () ->
+        Labels.builder()
+            .label("collection", core.getCoreDescriptor().getCloudDescriptor().getCollectionName())
+            .label("shard", core.getCoreDescriptor().getCloudDescriptor().getShardId())
+            .label("core", core.getName())
+            .label(
+                "replica",
+                Utils.parseMetricsReplicaName(
+                    core.getCoreDescriptor().getCollectionName(), core.getName()))
+            .label("otel_scope_name", "org.apache.solr");
+  }
+
+  public static Supplier<Labels.Builder> getStandaloneLabelsBase(SolrCore core) {
+    return getStandaloneLabelsBase(core.getName());
+  }
+
+  public static Supplier<Labels.Builder> getStandaloneLabelsBase(String coreName) {
+    return () ->
+        Labels.builder().label("core", coreName).label("otel_scope_name", "org.apache.solr");
+  }
+
+  public static PrometheusMetricReader getPrometheusMetricReader(SolrCore core) {
+    return getPrometheusMetricReader(
+        core.getCoreContainer(), core.getCoreMetricManager().getRegistryName());
+  }
+
+  public static PrometheusMetricReader getPrometheusMetricReader(
+      CoreContainer container, String registryName) {
+    return container.getMetricManager().getPrometheusMetricReader(registryName);
+  }
+
+  private static <T> T getDatapoint(
+      SolrCore core, String metricName, Labels labels, boolean cloudLabels, Class<T> snapshotType) {
+
+    var reader = getPrometheusMetricReader(core);
+
+    var baseBuilder =
+        (cloudLabels ? getCloudLabelsBase(core) : getStandaloneLabelsBase(core)).get();
+
+    labels.stream().forEach(label -> baseBuilder.label(label.getName(), label.getValue()));
+
+    return snapshotType.cast(
+        SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, baseBuilder.build()));
+  }
+
+  public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
+      SolrCore core, String metricName, Labels labels, boolean cloudLabels) {
+    return getDatapoint(
+        core, metricName, labels, cloudLabels, GaugeSnapshot.GaugeDataPointSnapshot.class);
+  }
+
+  public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
+      SolrCore core, String metricName, Labels labels, boolean cloudLabels) {
+    return getDatapoint(
+        core, metricName, labels, cloudLabels, CounterSnapshot.CounterDataPointSnapshot.class);
   }
 }
