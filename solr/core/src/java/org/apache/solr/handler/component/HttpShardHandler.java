@@ -267,7 +267,7 @@ public class HttpShardHandler extends ShardHandler {
     // Synchronize on canceled, so that we know precisely whether to add it to the responseFutureMap
     // or not.
     synchronized (canceled) {
-      if (canceled.get()) {
+      if (canceled.get() && !future.isDone()) {
         future.cancel(true);
         return;
       } else {
@@ -335,7 +335,17 @@ public class HttpShardHandler extends ShardHandler {
           responses.clear();
 
           // We want to return the last response we received, if possible
-          return previousResponse;
+          if (previousResponse == null) {
+            return null;
+          } else {
+            // If we have been canceled, return a response from this request that has an exception,
+            // since that is the contract of the method.
+            // Otherwise return the last response that we processed.
+            return previousResponse.getShardRequest().responses.stream()
+                .filter(sr -> sr.getException() != null)
+                .findFirst()
+                .orElse(previousResponse);
+          }
         } else {
           responseFutureMap.remove(rsp);
 
