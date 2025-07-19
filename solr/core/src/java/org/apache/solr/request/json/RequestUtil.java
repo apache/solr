@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.request.macro.MacroExpander;
 import org.apache.solr.search.QueryParsing;
 import org.noggit.JSONParser;
@@ -97,6 +99,12 @@ public class RequestUtil {
               "Exception reading content stream for request:" + req,
               e);
         }
+      }
+      if (map.containsKey(JSON)) { // something appears after processing content streams
+        SolrRequestInfo.getReqInfo()
+            .ifPresent(
+                reqInfo ->
+                    reqInfo.getRsp().getToLog().add("cs.params", Arrays.toString(map.get(JSON))));
       }
 
       // append existing "json" params
