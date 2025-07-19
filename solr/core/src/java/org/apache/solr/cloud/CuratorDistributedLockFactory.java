@@ -17,36 +17,27 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 
-abstract class ZkDistributedLockFactory {
+abstract class CuratorDistributedLockFactory {
 
-  private final SolrZkClient zkClient;
+  private final CuratorFramework curator;
   private final String rootPath;
 
-  ZkDistributedLockFactory(SolrZkClient zkClient, String rootPath) {
-    this.zkClient = zkClient;
+  CuratorDistributedLockFactory(CuratorFramework curator, String rootPath) {
+    this.curator = curator;
     this.rootPath = rootPath;
   }
 
-  protected DistributedLock doCreateLock(boolean isWriteLock, String lockPath) {
+  protected final DistributedLock doCreateLock(boolean isWriteLock, String lockPath) {
     try {
-      // TODO optimize by first attempting to create the ZkDistributedLock without calling
-      // makeLockPath() and only call it if the lock creation fails. This will be less costly on
-      // high contention (and slightly more on low contention)
       makeLockPath(lockPath);
-
       return isWriteLock
-          ? new ZkDistributedLock.Write(zkClient, lockPath)
-          : new ZkDistributedLock.Read(zkClient, lockPath);
-    } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+          ? new CuratorDistributedLocks.Write(curator, lockPath)
+          : new CuratorDistributedLocks.Read(curator, lockPath);
+    } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -57,12 +48,12 @@ abstract class ZkDistributedLockFactory {
     return path;
   }
 
-  private void makeLockPath(String lockNodePath) throws KeeperException, InterruptedException {
+  private void makeLockPath(String lockNodePath) throws Exception {
     try {
-      if (!zkClient.exists(lockNodePath, true)) {
-        zkClient.makePath(lockNodePath, new byte[0], CreateMode.PERSISTENT, true);
+      if (curator.checkExists().forPath(lockNodePath) == null) {
+        curator.create().creatingParentsIfNeeded().forPath(lockNodePath, new byte[0]);
       }
-    } catch (KeeperException.NodeExistsException nee) {
+    } catch (org.apache.zookeeper.KeeperException.NodeExistsException nee) {
       // Some other thread (on this or another JVM) beat us to create the node, that's ok.
     }
   }
