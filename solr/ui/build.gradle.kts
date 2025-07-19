@@ -17,6 +17,8 @@
 
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 repositories {
@@ -174,4 +176,9 @@ tasks.matching { task ->
     // Note that "gradlew check -x test --dry-run" does not correctly resolve this exclusion rule,
     // and you will see the test tasks being listed there as well, but they will be skipped as
     // expected
+}
+
+rootProject.plugins.withType(NodeJsRootPlugin::class.java) {
+    // Configure nodejs version to align with project's version
+    rootProject.the<NodeJsRootExtension>().version = libs.versions.nodejs.get()
 }
