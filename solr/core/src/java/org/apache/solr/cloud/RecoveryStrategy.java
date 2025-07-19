@@ -799,11 +799,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return null;
       }
 
-      Replica leaderReplica;
+      Replica leaderReplica = null;
       try {
         leaderReplica =
             zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId());
       } catch (SolrException e) {
+        // ignore
+      }
+      if (leaderReplica == null) {
         Thread.sleep(500);
         continue;
       }
