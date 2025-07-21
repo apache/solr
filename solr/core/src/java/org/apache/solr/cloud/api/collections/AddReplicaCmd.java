@@ -174,7 +174,8 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       ModifiableSolrParams params =
           getReplicaParams(
               message, collectionName, coll, skipCreateReplicaInClusterState, createReplica);
-      shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
+      shardRequestTracker.sendShardRequest(
+          createReplica.node, createReplica.coreName, params, shardHandler);
     }
 
     Runnable runnable =

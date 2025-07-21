@@ -313,7 +313,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
     final ShardRequestTracker shardRequestTracker =
         CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
     if (isLive) {
-      shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(replica, params, shardHandler);
     }
 
     Callable<Boolean> callable =

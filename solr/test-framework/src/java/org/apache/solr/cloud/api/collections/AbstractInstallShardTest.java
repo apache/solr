@@ -174,8 +174,12 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     CollectionAdminRequest.installDataToShard(
             collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
         .process(cluster.getSolrClient());
-    waitForState("The failed core-install (previous leader) should recover and become healthy",
-        collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, replicasPerShard));
+    waitForState(
+        "The failed core-install (previous leader) should recover and become healthy",
+        collectionName,
+        30,
+        TimeUnit.SECONDS,
+        SolrCloudTestCase.activeClusterShape(1, replicasPerShard));
 
     assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
   }
@@ -216,11 +220,11 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     final String collectionName = createAndAwaitEmptyCollection(1, replicasPerShard);
     deleteAfterTest(collectionName);
     enableReadOnly(collectionName);
-    final String nonExistentLocation = nonExistentLocationUri.toString();
+    final String singleShardLocation = singleShard1Uri.toString();
 
     { // Test synchronous request error reporting
       CollectionAdminRequest.installDataToShard(
-              collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
+              collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
           .process(cluster.getSolrClient());
       assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
     }
@@ -228,7 +232,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     { // Test asynchronous request error reporting
       final var requestStatusState =
           CollectionAdminRequest.installDataToShard(
-                  collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
+                  collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
               .processAndWait(cluster.getSolrClient(), 15);
 
       assertEquals(RequestStatusState.COMPLETED, requestStatusState);

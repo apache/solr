@@ -18,8 +18,10 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.cloud.ShardTerms;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -58,6 +60,23 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
         log.info(
             "Start recovery on {} because core's term is less than leader's term", coreNodeName);
         lastTermDoRecovery.set(terms.getTerm(coreNodeName));
+        if (coreDescriptor.getCloudDescriptor().isLeader()) {
+          log.warn(
+              "Removing {} leader as leader, since its term is no longer the highest",
+              coreNodeName);
+          coreContainer.getZkController().giveupLeadership(coreDescriptor);
+          coreContainer
+              .getZkController()
+              .getZkStateReader()
+              .waitForState(
+                  coreDescriptor.getCollectionName(),
+                  20,
+                  TimeUnit.SECONDS,
+                  dc -> {
+                    Replica leader = dc.getLeader(coreDescriptor.getCloudDescriptor().getShardId());
+                    return leader == null || !leader.getCoreName().equals(coreDescriptor.getName());
+                  });
+        }
         solrCore
             .getUpdateHandler()
             .getSolrCoreState()

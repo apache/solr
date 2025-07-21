@@ -122,7 +122,7 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
         params.set(CORE_NAME_PROP, coreName);
         params.set(CoreAdminParams.COMMIT_NAME, commitName);
 
-        shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
+        shardRequestTracker.sendShardRequest(replica, params, shardHandler);
         log.debug(
             "Sent createsnapshot request to core={} with commitName={}", coreName, commitName);
 

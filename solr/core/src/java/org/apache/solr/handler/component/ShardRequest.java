@@ -56,6 +56,9 @@ public class ShardRequest {
   /** may be null */
   public String nodeName;
 
+  /** may be null */
+  public String coreName;
+
   // TODO: one could store a list of numbers to correlate where returned docs
   // go in the top-level response rather than looking up by id...
   // this would work well if we ever transitioned to using internal ids and
