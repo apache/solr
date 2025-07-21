@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -353,16 +354,12 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     executor.execute(
         () -> {
           while (!created.get()) {
-            var reader = SolrMetricTestUtils.getPrometheusMetricReader(h.getCore());
-
             var datapoint =
-                SolrMetricTestUtils.getGaugeOpDatapoint(
-                    reader,
+                SolrMetricTestUtils.getGaugeDatapoint(
+                    h.getCore(),
                     "solr_core_index_size_bytes",
-                    SolrMetricTestUtils.getStandaloneLabelsBase(h.getCore())
-                        .get()
-                        .label("category", "CORE")
-                        .build());
+                    Labels.of("category", "CORE"),
+                    false);
 
             if (datapoint != null && datapoint.getValue() >= 0) {
               atLeastOnePoll.set(true);

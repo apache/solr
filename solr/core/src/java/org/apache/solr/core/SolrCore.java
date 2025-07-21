@@ -1341,14 +1341,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
     newSearcherCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
-                "solr_core_new_searcher", "Total number of new searchers opened"),
+                "solr_core_searcher_new", "Total number of new searchers opened"),
             baseSearcherAttributes);
 
     newSearcherMaxReachedCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
-                "solr_core_max_reached_searcher",
-                "Total number of maximum number of concurrent warming searchers reached"),
+                "solr_core_searcher_warming_max",
+                "Total number of maximum concurrent warming searchers reached"),
             baseSearcherAttributes);
 
     newSearcherOtherErrorsCounter =
@@ -1685,7 +1685,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /** Load the request processors */
-  private Map<String, UpdateRequestProcessorChain> loadUpdateProcessorChains() throws IOException {
+  private Map<String, UpdateRequestProcessorChain> loadUpdateProcessorChains() {
     Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
     UpdateRequestProcessorChain def =
         initPlugins(

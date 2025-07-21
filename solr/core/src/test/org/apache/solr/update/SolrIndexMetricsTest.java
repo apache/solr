@@ -20,6 +20,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.prometheus.metrics.model.snapshots.Labels;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -97,25 +98,12 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
             .getMetricManager()
             .registry(h.getCore().getCoreMetricManager().getRegistryName());
     assertNotNull(registry);
-
-    var reader = SolrMetricTestUtils.getPrometheusMetricReader(h.getCore());
-
     var indexSize =
-        SolrMetricTestUtils.getGaugeOpDatapoint(
-            reader,
-            "solr_core_index_size_bytes",
-            SolrMetricTestUtils.getStandaloneLabelsBase(h.getCore())
-                .get()
-                .label("category", "CORE")
-                .build());
+        SolrMetricTestUtils.getGaugeDatapoint(
+            h.getCore(), "solr_core_index_size_bytes", Labels.of("category", "CORE"), false);
     var segmentSize =
-        SolrMetricTestUtils.getGaugeOpDatapoint(
-            reader,
-            "solr_core_segment_count",
-            SolrMetricTestUtils.getStandaloneLabelsBase(h.getCore())
-                .get()
-                .label("category", "CORE")
-                .build());
+        SolrMetricTestUtils.getGaugeDatapoint(
+            h.getCore(), "solr_core_segment_count", Labels.of("category", "CORE"), false);
     assertNotNull(indexSize);
     assertNotNull(segmentSize);
   }
