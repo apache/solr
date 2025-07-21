@@ -72,11 +72,6 @@ public class SyncStrategy {
     updateExecutor = updateShardHandler.getUpdateExecutor();
   }
 
-  private static class ShardCoreRequest extends ShardRequest {
-    String coreName;
-    public String baseUrl;
-  }
-
   public PeerSync.PeerSyncResult sync(
       ZkController zkController, SolrCore core, ZkNodeProps leaderProps) {
     return sync(zkController, core, leaderProps, false);
@@ -283,8 +278,8 @@ public class SyncStrategy {
         } else {
           RecoveryRequest rr = new RecoveryRequest();
           rr.leaderProps = leaderProps;
-          rr.baseUrl = ((ShardCoreRequest) srsp.getShardRequest()).baseUrl;
-          rr.coreName = ((ShardCoreRequest) srsp.getShardRequest()).coreName;
+          rr.baseUrl = srsp.getShardRequest().nodeName;
+          rr.coreName = srsp.getShardRequest().coreName;
           recoveryRequests.add(rr);
         }
       } else {
@@ -316,9 +311,9 @@ public class SyncStrategy {
   private void requestSync(
       String baseUrl, String replica, String leaderUrl, String coreName, int nUpdates) {
     // TODO should we use peerSyncWithLeader instead?
-    ShardCoreRequest sreq = new ShardCoreRequest();
+    ShardRequest sreq = new ShardRequest();
     sreq.coreName = coreName;
-    sreq.baseUrl = baseUrl;
+    sreq.nodeName = baseUrl;
     sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
     sreq.shards = new String[] {replica};
     sreq.actualShards = sreq.shards;
