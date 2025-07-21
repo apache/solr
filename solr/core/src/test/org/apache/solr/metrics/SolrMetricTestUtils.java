@@ -138,9 +138,7 @@ public final class SolrMetricTestUtils {
         .findFirst()
         .flatMap(
             ms ->
-                ms.getDataPoints().stream()
-                    .filter(dp -> dp.getLabels().hasSameValues(labels))
-                    .findFirst())
+                ms.getDataPoints().stream().filter(dp -> dp.getLabels().equals(labels)).findFirst())
         .orElse(null);
   }
 

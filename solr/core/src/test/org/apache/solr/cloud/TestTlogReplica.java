@@ -580,13 +580,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
           SolrMetricTestUtils.getGaugeDatapoint(
               core,
               "solr_core_update_docs_pending_commit",
-              Labels.builder()
-                  .label("category", "UPDATE")
-                  .label("operation", "docs_pending")
-                  .build(),
+              Labels.builder().label("category", "UPDATE").label("ops", "docs_pending").build(),
               true);
       assertEquals(
-          "Expected 4 docs are pending in core " + getSolrCore(true).get(0).getCoreDescriptor(),
+          "Expected 4 docs are pending in core " + getSolrCore(true).getFirst().getCoreDescriptor(),
           4,
           (long) actual.getValue());
     }
@@ -596,10 +593,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
           SolrMetricTestUtils.getGaugeDatapoint(
               solrCore,
               "solr_core_update_docs_pending_commit",
-              Labels.builder()
-                  .label("category", "UPDATE")
-                  .label("operation", "docs_pending")
-                  .build(),
+              Labels.builder().label("category", "UPDATE").label("ops", "docs_pending").build(),
               true);
       assertEquals(
           "Expected non docs are pending in core " + solrCore.getCoreDescriptor(),
