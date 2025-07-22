@@ -473,6 +473,7 @@ opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref
 opentelemetry-context = { module = "io.opentelemetry:opentelemetry-context", version.ref = "opentelemetry" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
 opentelemetry-exporter-prometheus = { module = "io.opentelemetry:opentelemetry-exporter-prometheus", version.ref = "opentelemetry-prometheus" }
+opentelemetry-exporter-sender-okhttp = { module = "io.opentelemetry:opentelemetry-exporter-sender-okhttp", version.ref = "opentelemetry" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 opentelemetry-sdkextension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
 opentelemetry-sdktesting = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }

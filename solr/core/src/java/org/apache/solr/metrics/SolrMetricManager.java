@@ -16,7 +16,8 @@
  */
 package org.apache.solr.metrics;
 
-import static org.apache.solr.metrics.otel.OtlpExporterFactory.OTLP_EXPORTER_INTERVAL;
+import static org.apache.solr.metrics.otel.MetricExporterFactory.OTLP_EXPORTER_ENABLED;
+import static org.apache.solr.metrics.otel.MetricExporterFactory.OTLP_EXPORTER_INTERVAL;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -78,6 +79,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
@@ -86,7 +88,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.otel.OtlpExporterFactory;
+import org.apache.solr.metrics.otel.MetricExporterFactory;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -170,7 +173,7 @@ public class SolrMetricManager {
 
   public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
     this.metricsConfig = metricsConfig;
-    this.metricExporter = OtlpExporterFactory.getExporter();
+    this.metricExporter = loadMetricExporter(loader);
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
@@ -1685,6 +1688,20 @@ public class SolrMetricManager {
 
   public MetricExporter getMetricExporter() {
     return metricExporter;
+  }
+
+  private MetricExporter loadMetricExporter(SolrResourceLoader loader) {
+    if (!OTLP_EXPORTER_ENABLED) return new NoopMetricExporter();
+    try {
+      MetricExporterFactory exporterFactory =
+          loader.newInstance(
+              "org.apache.solr.opentelemetry.OtlpExporterFactory", MetricExporterFactory.class);
+      return exporterFactory.getExporter();
+    } catch (SolrException e) {
+      log.error(
+          "Could not load OTLP exporter. Check that the Open Telemetry module is enabled.", e);
+      return new NoopMetricExporter();
+    }
   }
 
   private record MeterProviderAndReaders(

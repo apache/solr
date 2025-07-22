@@ -14,13 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.otel;
+package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.metrics.otel.MetricExporterFactory;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,20 +32,11 @@ import org.slf4j.LoggerFactory;
  * @see io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter
  * @see NoopMetricExporter
  */
-public class OtlpExporterFactory {
+public class OtlpExporterFactory implements MetricExporterFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final Boolean OTLP_EXPORTER_ENABLED =
-      Boolean.parseBoolean(EnvUtils.getProperty("solr.otlpMetricExporterEnabled", "false"));
-
-  public static final String OTLP_EXPORTER_PROTOCOL =
-      EnvUtils.getProperty("solr.otlpMetricExporterProtocol", "grpc");
-
-  public static final int OTLP_EXPORTER_INTERVAL =
-      Integer.parseInt(EnvUtils.getProperty("solr.otlpMetricExporterInterval", "60000"));
-
-  public static MetricExporter getExporter() {
+  public MetricExporter getExporter() {
     if (!OTLP_EXPORTER_ENABLED) {
       log.info("OTLP metric exporter is disabled.");
       return new NoopMetricExporter();

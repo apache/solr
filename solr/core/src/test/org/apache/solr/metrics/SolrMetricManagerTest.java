@@ -63,7 +63,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.otlpMetricExporterInterval", "1000");
+    System.setProperty("solr.metrics.otlpExporterInterval", "1000");
     this.metricManager = new SolrMetricManager(InMemoryMetricExporter.create());
     // Initialize a metric reader for tests
     metricManager.meterProvider(METER_PROVIDER_NAME);
