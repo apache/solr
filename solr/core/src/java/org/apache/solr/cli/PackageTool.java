@@ -30,6 +30,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
@@ -50,12 +51,8 @@ public class PackageTool extends ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @SuppressForbidden(
-      reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
   public PackageTool(ToolRuntime runtime) {
     super(runtime);
-    // Need a logging free, clean output going through to the user.
-    Configurator.setRootLevel(Level.OFF);
   }
 
   @Override
@@ -73,8 +70,14 @@ public class PackageTool extends ToolBase {
       reason =
           "We really need to print the stacktrace here, otherwise "
               + "there shall be little else information to debug problems. Other SolrCLI tools "
-              + "don't print stack traces, hence special treatment is needed here.")
+              + "don't print stack traces, hence special treatment is needed here."
+              + "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
   public void runImpl(CommandLine cli) throws Exception {
+
+    // Need a logging free, clean output going through to the user.
+    Level oldLevel = LoggerContext.getContext(false).getRootLogger().getLevel();
+    Configurator.setRootLevel(Level.OFF);
+
     try {
       String solrUrl =
           cli.hasOption("solr-url")
@@ -254,6 +257,9 @@ public class PackageTool extends ToolBase {
       // of brevity. Package tool should surely print full stacktraces!
       ex.printStackTrace();
       throw ex;
+    } finally {
+      // Restore the old logging level
+      Configurator.setRootLevel(oldLevel);
     }
   }
 
