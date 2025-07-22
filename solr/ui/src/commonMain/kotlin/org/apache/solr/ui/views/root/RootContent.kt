@@ -61,7 +61,7 @@ fun RootContent(
 
                 is RootComponent.Child.Unauthenticated -> UserAuthenticationContent(
                     component = child.component,
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }

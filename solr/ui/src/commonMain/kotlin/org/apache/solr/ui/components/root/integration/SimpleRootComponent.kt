@@ -36,8 +36,10 @@ import org.apache.solr.ui.components.root.RootComponent
 import org.apache.solr.ui.components.root.RootComponent.Child.*
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.integration.DefaultStartComponent
+import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.getDefaultClient
+import org.apache.solr.ui.utils.getHttpClientWithCredentials
 
 /**
  * A simple root component implementation that does not check the user's access level and redirects
@@ -51,7 +53,8 @@ class SimpleRootComponent(
     storeFactory: StoreFactory,
     private val startComponent: (AppComponentContext, (StartComponent.Output) -> Unit) -> StartComponent,
     private val mainComponent: (AppComponentContext, Url) -> MainComponent,
-    private val unauthenticatedComponent: (AppComponentContext, Url, (UnauthenticatedComponent.Output) -> Unit) -> UnauthenticatedComponent,
+    private val mainComponentWithBasicAuth: (AppComponentContext, Url, String, String) -> MainComponent,
+    private val unauthenticatedComponent: UnauthenticatedComponentProducer,
 ) : RootComponent, AppComponentContext by componentContext {
 
     private val navigation = StackNavigation<Configuration>()
@@ -89,11 +92,20 @@ class SimpleRootComponent(
                 destination = destination,
             )
         },
-        unauthenticatedComponent = { childContext, url, output ->
+        mainComponentWithBasicAuth = { childContext, url, username, password ->
+            DefaultMainComponent(
+                componentContext = childContext,
+                storeFactory = storeFactory,
+                httpClient = getHttpClientWithCredentials(url, username, password),
+                destination = destination,
+            )
+        },
+        unauthenticatedComponent = { childContext, url, methods, output ->
             DefaultUnauthenticatedComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
                 httpClient = getDefaultClient(url),
+                methods = methods,
                 output = output,
             )
         }
@@ -105,12 +117,22 @@ class SimpleRootComponent(
     ): RootComponent.Child = when (configuration) {
         is Configuration.Start -> Start(startComponent(componentContext, ::startOutput))
         is Configuration.Main -> Main(mainComponent(componentContext, configuration.url))
+        is Configuration.MainWithBasicAuth -> Main(
+            component = mainComponentWithBasicAuth(
+                componentContext,
+                configuration.url,
+                configuration.username,
+                configuration.password,
+            )
+        )
         is Configuration.Unauthenticated -> Unauthenticated(
             unauthenticatedComponent(
                 componentContext,
                 configuration.url,
-                ::unauthenticatedOutput,
-            )
+                configuration.methods,
+            ) { output ->
+                unauthenticatedOutput(output, configuration.url)
+            }
         )
     }
 
@@ -120,7 +142,12 @@ class SimpleRootComponent(
      * @param output The output returned by the start component implementation.
      */
     private fun startOutput(output: StartComponent.Output) = when (output) {
-        is StartComponent.Output.OnAuthRequired -> navigation.pushNew(Configuration.Unauthenticated(output.url))
+        is StartComponent.Output.OnAuthRequired -> navigation.pushNew(
+            Configuration.Unauthenticated(
+                url = output.url,
+                methods = output.methods,
+            )
+        )
         is StartComponent.Output.OnConnected ->
             navigation.replaceAll(Configuration.Main(url = output.url))
     }
@@ -130,8 +157,15 @@ class SimpleRootComponent(
      *
      * @param output The output returned by the unauthenticated component implementation.
      */
-    private fun unauthenticatedOutput(output: UnauthenticatedComponent.Output) = when (output) {
-        is UnauthenticatedComponent.Output.OnConnected -> navigation.replaceAll(Configuration.Main(output.url))
+    private fun unauthenticatedOutput(output: UnauthenticatedComponent.Output, url: Url) = when (output) {
+        is UnauthenticatedComponent.Output.OnAuthenticatedWithBasicAuth ->
+            navigation.replaceAll(
+                Configuration.MainWithBasicAuth(
+                    url = url,
+                    username = output.username,
+                    password = output.password,
+                )
+            )
         is UnauthenticatedComponent.Output.OnAbort -> navigation.pop()
     }
 
@@ -141,10 +175,34 @@ class SimpleRootComponent(
         @Serializable
         data object Start : Configuration
 
+        /**
+         * Configuration for pending authentication actions.
+         *
+         * @property url The URL where the user is not authenticated.
+         * @property methods List of methods that can be used to authenticate the user
+         * again.
+         */
         @Serializable
-        data class Unauthenticated(val url: Url) : Configuration
+        data class Unauthenticated(val url: Url, val methods: List<AuthMethod>) : Configuration
 
         @Serializable
         data class Main(val url: Url) : Configuration
+
+        @Serializable
+        data class MainWithBasicAuth(
+            val url: Url,
+            val username: String,
+            val password: String,
+        ) : Configuration
     }
 }
+
+/**
+ * The unauthenticated component producer (alias)
+ */
+private typealias UnauthenticatedComponentProducer = (
+    AppComponentContext,
+    Url,
+    List<AuthMethod>,
+    (UnauthenticatedComponent.Output) -> Unit,
+) -> UnauthenticatedComponent

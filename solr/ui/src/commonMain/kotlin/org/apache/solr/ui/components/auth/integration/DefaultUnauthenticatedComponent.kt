@@ -17,19 +17,84 @@
 
 package org.apache.solr.ui.components.auth.integration
 
+import com.arkivanov.decompose.router.slot.ChildSlot
+import com.arkivanov.decompose.router.slot.SlotNavigation
+import com.arkivanov.decompose.router.slot.activate
+import com.arkivanov.decompose.router.slot.childSlot
+import com.arkivanov.decompose.value.Value
+import com.arkivanov.essenty.lifecycle.doOnCreate
+import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
+import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import org.apache.solr.ui.components.auth.BasicAuthComponent
 import org.apache.solr.ui.components.auth.UnauthenticatedComponent
+import org.apache.solr.ui.components.auth.UnauthenticatedComponent.BasicAuthConfiguration
+import org.apache.solr.ui.components.auth.UnauthenticatedComponent.Output
+import org.apache.solr.ui.components.auth.store.UnauthenticatedStore.Intent
+import org.apache.solr.ui.components.auth.store.UnauthenticatedStoreProvider
+import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.utils.AppComponentContext
+import org.apache.solr.ui.utils.coroutineScope
+import org.apache.solr.ui.utils.map
 
 class DefaultUnauthenticatedComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-    private val output: (UnauthenticatedComponent.Output) -> Unit
+    methods: List<AuthMethod>,
+    private val output: (Output) -> Unit,
 ) : UnauthenticatedComponent, AppComponentContext by componentContext {
 
-    // TODO Implement me
+    private val mainScope = coroutineScope(SupervisorJob() + mainContext)
+    private val ioScope = coroutineScope(SupervisorJob() + ioContext)
 
-    override fun onAbort() = output(UnauthenticatedComponent.Output.OnAbort)
+    private val store = instanceKeeper.getStore {
+        UnauthenticatedStoreProvider(
+            storeFactory = storeFactory,
+            mainContext = mainScope.coroutineContext,
+            ioContext = ioScope.coroutineContext,
+            methods = methods,
+        ).provide()
+    }
+
+    private val basicAuthNavigation = SlotNavigation<BasicAuthConfiguration>()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val model = store.stateFlow.map(mainScope, unauthenticatedStateToModel)
+
+    override val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>> =
+        childSlot(
+            source = basicAuthNavigation,
+            serializer = BasicAuthConfiguration.serializer(),
+            handleBackButton = true,
+        ) { config, childComponentContext ->
+            DefaultBasicAuthComponent(
+                componentContext = childComponentContext,
+                storeFactory = storeFactory,
+                httpClient = httpClient,
+                output = ::basicAuthOutput,
+            )
+        }
+
+    init {
+        lifecycle.doOnCreate {
+            methods.forEach { method ->
+                when(method) {
+                    is AuthMethod.BasicAuthMethod ->
+                        basicAuthNavigation.activate(configuration = BasicAuthConfiguration(method))
+                }
+            }
+        }
+    }
+
+    fun basicAuthOutput(output: BasicAuthComponent.Output): Unit = when (output) {
+        is BasicAuthComponent.Output.Authenticated -> output(Output.OnAuthenticatedWithBasicAuth(username = output.username, password = output.password))
+        is BasicAuthComponent.Output.Authenticating -> store.accept(Intent.StartAuthenticating)
+        is BasicAuthComponent.Output.AuthenticationFailed -> store.accept(Intent.FailAuthentication(output.error))
+    }
+
+    override fun onAbort() = output(Output.OnAbort)
 }

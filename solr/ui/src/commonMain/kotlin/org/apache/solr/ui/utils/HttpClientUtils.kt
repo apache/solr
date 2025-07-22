@@ -18,6 +18,10 @@
 package org.apache.solr.ui.utils
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
+import io.ktor.client.plugins.auth.providers.basic
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.Url
@@ -28,7 +32,10 @@ import kotlinx.serialization.json.Json
  * Function that returns a simple HTTP client that is preconfigured with a base
  * URL.
  */
-fun getDefaultClient(url: Url = Url("http://127.0.0.1:8983/")) = HttpClient {
+fun getDefaultClient(
+    url: Url = Url("http://127.0.0.1:8983/"),
+    block: HttpClientConfig<*>.() -> Unit = {},
+) = HttpClient {
     defaultRequest {
         url(url.toString())
     }
@@ -40,5 +47,19 @@ fun getDefaultClient(url: Url = Url("http://127.0.0.1:8983/")) = HttpClient {
                 allowSpecialFloatingPointValues = true
             }
         )
+    }
+
+    block()
+}
+
+fun getHttpClientWithCredentials(
+    url: Url = Url("http://127.0.0.1:8983/"),
+    username: String,
+    password: String,
+) = getDefaultClient(url) {
+    install(Auth) {
+        basic {
+            credentials { BasicAuthCredentials(username, password) }
+        }
     }
 }

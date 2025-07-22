@@ -17,24 +17,51 @@
 
 package org.apache.solr.ui.components.auth
 
+import com.arkivanov.decompose.router.slot.ChildSlot
+import com.arkivanov.decompose.value.Value
 import io.ktor.http.Url
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.Serializable
+import org.apache.solr.ui.domain.AuthMethod
+import org.jetbrains.compose.resources.StringResource
 
 interface UnauthenticatedComponent {
+
+    val model: StateFlow<Model>
+
+    val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>>
+
+    @Serializable
+    data class BasicAuthConfiguration(val method: AuthMethod.BasicAuthMethod)
 
     /**
      * Aborts the authentication attempt.
      */
     fun onAbort()
 
+    /**
+     * @property methods List of authentication methods to render.
+     * @property isAuthenticating Whether a connection is currently established.
+     * @property error The error that may have occurred.
+     */
+    data class Model(
+        val methods: List<AuthMethod> = emptyList(),
+        val isAuthenticating: Boolean = false,
+        val error: StringResource? = null,
+    )
+
     sealed interface Output {
 
         /**
-         * Emitted when the user successfully authenticated against
-         * the Solr instance.
+         * Emitted when the user successfully authenticated against the Solr instance.
          *
-         * @property url The URL the connection was established with
+         * @property username The username to use for further authenticated requests.
+         * @property password The password to use for further authenticated requests.
          */
-        data class OnConnected(val url: Url): Output
+        data class OnAuthenticatedWithBasicAuth(
+            val username: String,
+            val password: String,
+        ): Output
 
         /**
          * Emitted when the user aborts the authentication flow.

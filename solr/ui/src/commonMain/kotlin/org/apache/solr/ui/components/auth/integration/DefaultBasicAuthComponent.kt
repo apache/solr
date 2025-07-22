@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.start.integration
+package org.apache.solr.ui.components.auth.integration
 
 import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
@@ -26,52 +26,55 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import org.apache.solr.ui.components.start.StartComponent
-import org.apache.solr.ui.components.start.store.StartStore
-import org.apache.solr.ui.components.start.store.StartStore.Intent
-import org.apache.solr.ui.components.start.store.StartStoreProvider
+import org.apache.solr.ui.components.auth.BasicAuthComponent
+import org.apache.solr.ui.components.auth.BasicAuthComponent.Output
+import org.apache.solr.ui.components.auth.store.BasicAuthStore
+import org.apache.solr.ui.components.auth.store.BasicAuthStore.Intent
+import org.apache.solr.ui.components.auth.store.BasicAuthStoreProvider
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
 import org.apache.solr.ui.utils.map
 
-class DefaultStartComponent(
+class DefaultBasicAuthComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-    output: (StartComponent.Output) -> Unit,
-) : StartComponent, AppComponentContext by componentContext {
+    private val output: (Output) -> Unit
+) : BasicAuthComponent, AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
     private val ioScope = coroutineScope(SupervisorJob() + ioContext)
 
     private val store = instanceKeeper.getStore {
-        StartStoreProvider(
+        BasicAuthStoreProvider(
             storeFactory = storeFactory,
-            client = HttpStartStoreClient(httpClient),
+            client = HttpBasicAuthStoreClient(httpClient),
             mainContext = mainScope.coroutineContext,
             ioContext = ioScope.coroutineContext,
         ).provide()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val model = store.stateFlow.map(mainScope, startStateToModel)
+    override val model = store.stateFlow.map(mainScope, stateToBasicAuthModel)
 
     init {
         store.labels.onEach { label ->
             when (label) {
-                is StartStore.Label.AuthRequired -> output(
-                    StartComponent.Output.OnAuthRequired(
-                        url = label.url,
-                        methods = label.methods,
-                    )
+                is BasicAuthStore.Label.Authenticated -> output(
+                    Output.Authenticated(username = label.username, password = label.password)
                 )
-                is StartStore.Label.Connected ->
-                    output(StartComponent.Output.OnConnected(url = label.url))
+
+                is BasicAuthStore.Label.AuthenticationFailed -> output(
+                    Output.AuthenticationFailed(error = label.error)
+                )
+                is BasicAuthStore.Label.AuthenticationStarted -> output(Output.Authenticating)
             }
         }.launchIn(mainScope)
     }
 
-    override fun onSolrUrlChange(url: String) = store.accept(Intent.UpdateSolrUrl(url))
+    override fun onChangeUsername(username: String) = store.accept(Intent.UpdateUsername(username))
 
-    override fun onConnect() = store.accept(Intent.Connect)
+    override fun onChangePassword(password: String) = store.accept(Intent.UpdatePassword(password))
+
+    override fun onAuthenticate() = store.accept(Intent.Authenticate)
 }

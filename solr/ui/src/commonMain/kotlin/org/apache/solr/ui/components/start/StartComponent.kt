@@ -19,6 +19,7 @@ package org.apache.solr.ui.components.start
 
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.domain.AuthMethod
 import org.jetbrains.compose.resources.StringResource
 
 /**
@@ -67,7 +68,8 @@ interface StartComponent {
          * is needed.
          *
          * @property url The URL the connection was established but requires authentication.
+         * @property methods List of authentication methods that can be used for authenticating.
          */
-        data class OnAuthRequired(val url: Url) : Output
+        data class OnAuthRequired(val url: Url, val methods: List<AuthMethod>) : Output
     }
 }
