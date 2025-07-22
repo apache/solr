@@ -112,8 +112,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertEquals(0, (int) status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
-    // Sometimes multiple cores land on the same node so it's less than 4
-    int nodesCreated = response.getCollectionNodesStatus().size();
+
     // Use of _default configset should generate a warning for data-driven functionality in
     // production use
     assertTrue(
@@ -244,8 +243,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertTrue(status.get("QTime") > 0);
     }
 
-    // Sometimes multiple cores land on the same node so it's less than 4
-    int nodesCreated = response.getCollectionNodesStatus().size();
     response =
         CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
 
