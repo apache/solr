@@ -85,10 +85,10 @@ public class SolrIndexWriter extends IndexWriter {
   private static final String MERGE_FLUSH_METRIC_NAME = "flushes";
   private static final String MERGE_ERRORS_METRIC_NAME = "errors";
 
-  private static final Map<String, Counter> majorMergeStartedMetrics = new HashMap<>();
-  private static final Map<String, Counter> minorMergeStartedMetrics = new HashMap<>();
-  private static final Map<String, Counter> majorMergeFinishedMetrics = new HashMap<>();
-  private static final Map<String, Counter> minorMergeFinishedMetrics = new HashMap<>();
+  private final Map<String, Counter> majorMergeStartedMetrics = new HashMap<>();
+  private final Map<String, Counter> minorMergeStartedMetrics = new HashMap<>();
+  private final Map<String, Counter> majorMergeFinishedMetrics = new HashMap<>();
+  private final Map<String, Counter> minorMergeFinishedMetrics = new HashMap<>();
 
   public static final long DEFAULT_MAJOR_MERGE_DOCS = 512 * 1024;
   private long majorMergeDocs = DEFAULT_MAJOR_MERGE_DOCS;
