@@ -90,7 +90,8 @@ public class SolrIndexWriter extends IndexWriter {
   private static final Map<String, Counter> majorMergeFinishedMetrics = new HashMap<>();
   private static final Map<String, Counter> minorMergeFinishedMetrics = new HashMap<>();
 
-  private long majorMergeDocs = 512 * 1024;
+  public static final long DEFAULT_MAJOR_MERGE_DOCS = 512 * 1024;
+  private long majorMergeDocs = DEFAULT_MAJOR_MERGE_DOCS;
   private Meter flushMeter; // original counter is package-private in IndexWriter
   private Timer majorMergeTimer;
   private Timer minorMergeTimer;
@@ -322,6 +323,11 @@ public class SolrIndexWriter extends IndexWriter {
         solrMetricsContext.unregister();
       }
     }
+  }
+
+  // for testing
+  public void setMajorMergeDocs(long majorMergeDocs) {
+    this.majorMergeDocs = majorMergeDocs;
   }
 
   private void initMetrics(final SolrCore core) {
