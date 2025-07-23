@@ -119,7 +119,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
     b.executor(this.executor);
 
-    if (builder.useHttp1_1) {
+    if (builder.shouldUseHttp1_1()) {
       this.forceHttp11 = true;
       b.version(HttpClient.Version.HTTP_1_1);
     }
