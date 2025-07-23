@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import io.prometheus.metrics.model.snapshots.Labels;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -358,8 +357,9 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
                 SolrMetricTestUtils.getGaugeDatapoint(
                     h.getCore(),
                     "solr_core_index_size_bytes",
-                    Labels.of("category", "CORE"),
-                    false);
+                    SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
+                        .label("category", "CORE")
+                        .build());
 
             if (datapoint != null && datapoint.getValue() >= 0) {
               atLeastOnePoll.set(true);

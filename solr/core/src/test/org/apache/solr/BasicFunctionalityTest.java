@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -128,7 +127,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // test stats call
     var refCount =
         SolrMetricTestUtils.getGaugeDatapoint(
-            core, "solr_core_ref_count", Labels.of("category", "CORE"), false);
+            core,
+            "solr_core_ref_count",
+            SolrMetricTestUtils.newStandaloneLabelsBuilder(core).label("category", "CORE").build());
     assertNotNull(refCount);
 
     assertTrue(refCount.getValue() > 0);

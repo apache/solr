@@ -177,7 +177,6 @@ import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -1325,15 +1324,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
 
-    var searcherAttributesBuilder =
-        MetricUtils.baseAttributesSupplier(
-            attributes.toBuilder().put(CATEGORY_ATTR, Category.SEARCHER.toString()).build());
-    var gaugeCoreAttributesBuilder =
-        MetricUtils.baseAttributesSupplier(
-            attributes.toBuilder().put(CATEGORY_ATTR, Category.CORE.toString()).build());
-
-    Attributes baseSearcherAttributes = searcherAttributesBuilder.get().build();
-    Attributes baseGaugeCoreAttributes = gaugeCoreAttributesBuilder.get().build();
+    Attributes baseSearcherAttributes =
+        Attributes.builder()
+            .putAll(attributes)
+            .put(CATEGORY_ATTR, Category.SEARCHER.toString())
+            .build();
+    Attributes baseGaugeCoreAttributes =
+        Attributes.builder()
+            .putAll(attributes)
+            .put(CATEGORY_ATTR, Category.CORE.toString())
+            .build();
 
     var baseSearcherTimerMetric =
         parentContext.longHistogram("solr_searcher_timer", "Timer for opening new searchers", "ms");
@@ -1359,12 +1359,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     newSearcherTimer =
         new AttributedLongTimer(
-            baseSearcherTimerMetric, searcherAttributesBuilder.get().put(TYPE_ATTR, "new").build());
+            baseSearcherTimerMetric,
+            Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "new").build());
 
     newSearcherWarmupTimer =
         new AttributedLongTimer(
             baseSearcherTimerMetric,
-            searcherAttributesBuilder.get().put(TYPE_ATTR, "warmup").build());
+            Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "warmup").build());
 
     parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
 
@@ -1383,9 +1384,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
           // initialize disk total / free metrics
           Path dataDirPath = Path.of(dataDir);
           var totalSpaceAttributes =
-              gaugeCoreAttributesBuilder.get().put(TYPE_ATTR, "total_space").build();
+              Attributes.builder()
+                  .putAll(baseGaugeCoreAttributes)
+                  .put(TYPE_ATTR, "total_space")
+                  .build();
           var usableSpaceAttributes =
-              gaugeCoreAttributesBuilder.get().put(TYPE_ATTR, "usable_space").build();
+              Attributes.builder()
+                  .putAll(baseGaugeCoreAttributes)
+                  .put(TYPE_ATTR, "usable_space")
+                  .build();
           try {
             observableLongMeasurement.record(
                 Files.getFileStore(dataDirPath).getTotalSpace(), totalSpaceAttributes);
@@ -1426,7 +1433,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
         (observableLongMeasurement -> {
           observableLongMeasurement.record(
               startTime.getTime(),
-              gaugeCoreAttributesBuilder.get().put(TYPE_ATTR, "start_time").build());
+              Attributes.builder()
+                  .putAll(baseGaugeCoreAttributes)
+                  .put(TYPE_ATTR, "start_time")
+                  .build());
         }));
 
     if (coreContainer.isZooKeeperAware())
