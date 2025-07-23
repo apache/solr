@@ -22,8 +22,6 @@ import com.arkivanov.mvikotlin.core.store.SimpleBootstrapper
 import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
-import io.ktor.http.Url
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,19 +31,22 @@ import org.apache.solr.ui.components.auth.store.BasicAuthStore.State
 import org.apache.solr.ui.errors.InvalidCredentialsException
 import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.errors.parseError
+import kotlin.coroutines.CoroutineContext
+import org.apache.solr.ui.domain.AuthMethod
 
 class BasicAuthStoreProvider(
     private val storeFactory: StoreFactory,
     private val client: Client,
     private val mainContext: CoroutineContext,
     private val ioContext: CoroutineContext,
+    private val method: AuthMethod.BasicAuthMethod,
 ) {
 
     fun provide(): BasicAuthStore = object :
         BasicAuthStore,
         Store<Intent, State, Label> by storeFactory.create(
             name = "BasicAuthStore",
-            initialState = State(),
+            initialState = State(method = method),
             bootstrapper = SimpleBootstrapper(),
             executorFactory = ::ExecutorImpl,
             reducer = ReducerImpl,
@@ -65,17 +66,20 @@ class BasicAuthStoreProvider(
     }
 
     private inner class ExecutorImpl : CoroutineExecutor<Intent, Unit, State, Message, Label>(mainContext) {
-        override fun executeIntent(intent: Intent) = when(intent) {
+        override fun executeIntent(intent: Intent) = when (intent) {
             is Intent.Authenticate -> authenticate()
             is Intent.UpdateUsername -> dispatch(Message.UsernameUpdated(intent.username))
             is Intent.UpdatePassword -> dispatch(Message.PasswordUpdated(intent.password))
         }
 
         private fun authenticate(): Unit = with(state()) {
-            scope.launch(context = CoroutineExceptionHandler { _, throwable ->
-                // error returned here is platform-specific and needs further parsing
-                publish(Label.AuthenticationFailed(error = parseError(throwable)))
-            }) {
+            publish(Label.AuthenticationStarted)
+            scope.launch(
+                context = CoroutineExceptionHandler { _, throwable ->
+                    // error returned here is platform-specific and needs further parsing
+                    publish(Label.AuthenticationFailed(error = parseError(throwable)))
+                },
+            ) {
                 withContext(ioContext) {
                     client.authenticate(username, password)
                 }.onSuccess {
@@ -92,6 +96,7 @@ class BasicAuthStoreProvider(
                 // Unauthorized response means that the credentials are invalid
                 publish(Label.AuthenticationFailed(error = InvalidCredentialsException()))
             }
+
             else -> publish(Label.AuthenticationFailed(error))
         }
     }

@@ -33,7 +33,9 @@ import org.apache.solr.ui.components.auth.integration.DefaultAuthenticationCompo
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.main.integration.DefaultMainComponent
 import org.apache.solr.ui.components.root.RootComponent
-import org.apache.solr.ui.components.root.RootComponent.Child.*
+import org.apache.solr.ui.components.root.RootComponent.Child.Authentication
+import org.apache.solr.ui.components.root.RootComponent.Child.Main
+import org.apache.solr.ui.components.root.RootComponent.Child.Start
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.integration.DefaultStartComponent
 import org.apache.solr.ui.domain.AuthMethod
@@ -49,13 +51,14 @@ import org.apache.solr.ui.utils.getHttpClientWithCredentials
  * that checks the access level of the user before redirecting.
  */
 class SimpleRootComponent(
-  componentContext: AppComponentContext,
-  storeFactory: StoreFactory,
-  private val startComponent: (AppComponentContext, (StartComponent.Output) -> Unit) -> StartComponent,
-  private val mainComponent: (AppComponentContext, Url) -> MainComponent,
-  private val mainComponentWithBasicAuth: (AppComponentContext, Url, String, String) -> MainComponent,
-  private val authenticationComponent: AuthenticationComponentProducer,
-) : RootComponent, AppComponentContext by componentContext {
+    componentContext: AppComponentContext,
+    storeFactory: StoreFactory,
+    private val startComponent: (AppComponentContext, (StartComponent.Output) -> Unit) -> StartComponent,
+    private val mainComponent: (AppComponentContext, Url) -> MainComponent,
+    private val mainComponentWithBasicAuth: (AppComponentContext, Url, String, String) -> MainComponent,
+    private val authenticationComponent: AuthenticationComponentProducer,
+) : RootComponent,
+    AppComponentContext by componentContext {
 
     private val navigation = StackNavigation<Configuration>()
     private val stack = childStack(
@@ -63,7 +66,7 @@ class SimpleRootComponent(
         serializer = Configuration.serializer(),
         initialStack = { listOf(Configuration.Start) },
         handleBackButton = true,
-        childFactory = ::createChild
+        childFactory = ::createChild,
     )
 
     override val childStack: Value<ChildStack<*, RootComponent.Child>> = stack
@@ -105,10 +108,11 @@ class SimpleRootComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
                 httpClient = getDefaultClient(url),
+                url = url,
                 methods = methods,
                 output = output,
             )
-        }
+        },
     )
 
     private fun createChild(
@@ -123,16 +127,17 @@ class SimpleRootComponent(
                 configuration.url,
                 configuration.username,
                 configuration.password,
-            )
+            ),
         )
+
         is Configuration.Authentication -> Authentication(
-          authenticationComponent(
-            componentContext,
-            configuration.url,
-            configuration.methods,
-          ) { output ->
-            authenticationOutput(output, configuration.url)
-          }
+            authenticationComponent(
+                componentContext,
+                configuration.url,
+                configuration.methods,
+            ) { output ->
+                authenticationOutput(output, configuration.url)
+            },
         )
     }
 
@@ -146,8 +151,9 @@ class SimpleRootComponent(
             Configuration.Authentication(
                 url = output.url,
                 methods = output.methods,
-            )
+            ),
         )
+
         is StartComponent.Output.OnConnected ->
             navigation.replaceAll(Configuration.Main(url = output.url))
     }
@@ -164,8 +170,9 @@ class SimpleRootComponent(
                     url = url,
                     username = output.username,
                     password = output.password,
-                )
+                ),
             )
+
         is AuthenticationComponent.Output.OnAbort -> navigation.pop()
     }
 
@@ -201,8 +208,8 @@ class SimpleRootComponent(
  * The authentication component producer (alias)
  */
 private typealias AuthenticationComponentProducer = (
-  AppComponentContext,
-  Url,
-  List<AuthMethod>,
-  (AuthenticationComponent.Output) -> Unit,
+    AppComponentContext,
+    Url,
+    List<AuthMethod>,
+    (AuthenticationComponent.Output) -> Unit,
 ) -> AuthenticationComponent

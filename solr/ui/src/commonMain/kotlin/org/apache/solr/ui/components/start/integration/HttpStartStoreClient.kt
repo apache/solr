@@ -58,15 +58,20 @@ class HttpStartStoreClient(
             HttpStatusCode.OK -> Result.success(Unit)
             HttpStatusCode.Unauthorized -> {
                 val methods = getAuthMethodsFromHeader(response.headers)
-                Result.failure(UnauthorizedException(
-                    url = url,
-                    methods = methods,
-                    message =
-                        if (methods.isEmpty()) "Unauthorized response received with missing or unsupported auth method."
-                        else null,
-                    )
+                Result.failure(
+                    UnauthorizedException(
+                        url = url,
+                        methods = methods,
+                        message =
+                        if (methods.isEmpty()) {
+                            "Unauthorized response received with missing or unsupported auth method."
+                        } else {
+                            null
+                        },
+                    ),
                 )
             }
+
             else -> Result.failure(UnknownResponseException(response))
         }
     }
@@ -82,8 +87,10 @@ class HttpStartStoreClient(
         val parts = authHeader?.split(" ", limit = 2)
         val scheme = parts?.firstOrNull()
 
+        // TODO Get realm from header value
+
         return when (scheme) {
-            "Basic" -> listOf(AuthMethod.BasicAuthMethod)
+            "Basic" -> listOf(AuthMethod.BasicAuthMethod(realm = "solr"))
             else -> emptyList()
         }
     }

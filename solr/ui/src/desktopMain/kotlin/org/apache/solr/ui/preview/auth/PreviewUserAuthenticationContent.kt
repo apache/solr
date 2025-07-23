@@ -24,8 +24,9 @@ import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.auth.BasicAuthComponent
 import org.apache.solr.ui.components.auth.AuthenticationComponent
+import org.apache.solr.ui.components.auth.AuthenticationComponent.BasicAuthConfiguration
+import org.apache.solr.ui.components.auth.BasicAuthComponent
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.auth.UserAuthenticationContent
@@ -33,33 +34,34 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 @Preview
-fun PreviewUserAuthenticationContent() = PreviewContainer {
+internal fun PreviewUserAuthenticationContent() = PreviewContainer {
     UserAuthenticationContent(component = PreviewAuthenticationComponentWithBasicAuth)
 }
 
-private data object PreviewAuthenticationComponentWithBasicAuth: AuthenticationComponent {
-    override val model: StateFlow<AuthenticationComponent.Model> =
-        MutableStateFlow(
-            AuthenticationComponent.Model(
-                methods = listOf(AuthMethod.BasicAuthMethod),
-            )
-        )
+private data object PreviewAuthenticationComponentWithBasicAuth : AuthenticationComponent {
+    override val model: StateFlow<AuthenticationComponent.Model> = MutableStateFlow(
+        AuthenticationComponent.Model(
+            methods = listOf(AuthMethod.BasicAuthMethod()),
+        ),
+    )
 
-    override val basicAuthSlot: Value<ChildSlot<AuthenticationComponent.BasicAuthConfiguration, BasicAuthComponent>> =
+    override val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>> =
         MutableValue(
             ChildSlot(
                 child = Child.Created(
-                    configuration = AuthenticationComponent.BasicAuthConfiguration(method = AuthMethod.BasicAuthMethod),
+                    configuration = BasicAuthConfiguration(),
                     instance = PreviewBasicAuthComponent,
-                )
-            )
+                ),
+            ),
         )
 
     override fun onAbort() = Unit
 }
 
 private object PreviewBasicAuthComponent : BasicAuthComponent {
-    override val model: StateFlow<BasicAuthComponent.Model> = MutableStateFlow(BasicAuthComponent.Model())
+    override val model: StateFlow<BasicAuthComponent.Model> =
+        MutableStateFlow(BasicAuthComponent.Model())
+
     override fun onChangeUsername(username: String) = Unit
     override fun onChangePassword(password: String) = Unit
     override fun onAuthenticate() = Unit

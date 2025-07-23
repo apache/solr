@@ -17,27 +17,23 @@
 
 package org.apache.solr.ui.components.auth.integration
 
-import io.ktor.client.network.sockets.ConnectTimeoutException
-import io.ktor.http.URLParserException
-import org.apache.solr.ui.components.auth.BasicAuthComponent
 import org.apache.solr.ui.components.auth.AuthenticationComponent
-import org.apache.solr.ui.components.auth.store.BasicAuthStore
+import org.apache.solr.ui.components.auth.BasicAuthComponent
 import org.apache.solr.ui.components.auth.store.AuthenticationStore
-import org.apache.solr.ui.errors.HostNotFoundException
+import org.apache.solr.ui.components.auth.store.BasicAuthStore
+import org.apache.solr.ui.errors.InvalidCredentialsException
 import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.error_invalid_url
-import org.apache.solr.ui.generated.resources.error_solr_host_not_found
+import org.apache.solr.ui.generated.resources.error_invalid_credentials
 import org.apache.solr.ui.generated.resources.error_unknown
 
-internal val authenticationStateToModel: (AuthenticationStore.State) -> AuthenticationComponent.Model = {
+internal val authStateToModel: (AuthenticationStore.State) -> AuthenticationComponent.Model = {
     AuthenticationComponent.Model(
+        url = it.url.toString(),
         methods = it.methods,
         isAuthenticating = it.isAuthenticating,
         error = it.error?.let { error ->
             when (error) {
-                is URLParserException -> Res.string.error_invalid_url
-                is HostNotFoundException -> Res.string.error_solr_host_not_found
-                is ConnectTimeoutException -> Res.string.error_solr_host_not_found
+                is InvalidCredentialsException -> Res.string.error_invalid_credentials
                 else -> Res.string.error_unknown
             }
         },
@@ -46,6 +42,7 @@ internal val authenticationStateToModel: (AuthenticationStore.State) -> Authenti
 
 internal val stateToBasicAuthModel: (BasicAuthStore.State) -> BasicAuthComponent.Model = {
     BasicAuthComponent.Model(
+        realm = it.method.realm,
         username = it.username,
         password = it.password,
     )

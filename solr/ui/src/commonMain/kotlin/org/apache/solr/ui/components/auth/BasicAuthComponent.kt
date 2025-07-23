@@ -20,14 +20,20 @@ package org.apache.solr.ui.components.auth
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * The component interface that is handling basic authentication with username and password.
+ * Component interface that is handling basic authentication with username and password.
  */
 interface BasicAuthComponent {
 
     val model: StateFlow<Model>
 
+    /**
+     * Function that handles username changes.
+     */
     fun onChangeUsername(username: String)
 
+    /**
+     * Function that handles password changes.
+     */
     fun onChangePassword(password: String)
 
     /**
@@ -35,7 +41,15 @@ interface BasicAuthComponent {
      */
     fun onAuthenticate()
 
+    /**
+     * Data class model that represents the [BasicAuthComponent] state.
+     *
+     * @property realm The basic auth realm the user is supposed to provide the credentials for.
+     * @property username The username that is currently typed in.
+     * @property password The password that is currently typed in.
+     */
     data class Model(
+        val realm: String = "",
         val username: String = "",
         val password: String = "",
     )
@@ -45,7 +59,7 @@ interface BasicAuthComponent {
         /**
          * Output that is emitted when a connection process is started.
          */
-        data object Authenticating: Output
+        data object Authenticating : Output
 
         /**
          * Output that is emitted when the user successfully connected to the server
@@ -57,7 +71,7 @@ interface BasicAuthComponent {
          * @property username The username that was used for authentication.
          * @property password The password that was used for authentication.
          */
-        data class Authenticated(val username: String, val password: String): Output
+        data class Authenticated(val username: String, val password: String) : Output
 
         /**
          * Output that is emitted when an authentication error occurs, for example, in case
@@ -65,6 +79,11 @@ interface BasicAuthComponent {
          *
          * @property error The error that was thrown during a connection establishment.
          */
-        data class AuthenticationFailed(val error: Throwable): Output
+        data class AuthenticationFailed(val error: Throwable) : Output
+
+        /**
+         * Output that allows resetting any error reported via [AuthenticationFailed].
+         */
+        data object ErrorReset : Output
     }
 }

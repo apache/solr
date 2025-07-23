@@ -18,11 +18,10 @@
 package org.apache.solr.ui.components.auth.store
 
 import com.arkivanov.mvikotlin.core.store.Store
-import io.ktor.http.Url
 import org.apache.solr.ui.components.auth.store.BasicAuthStore.Intent
 import org.apache.solr.ui.components.auth.store.BasicAuthStore.Label
 import org.apache.solr.ui.components.auth.store.BasicAuthStore.State
-import org.apache.solr.ui.domain.AuthMethod
+import org.apache.solr.ui.domain.AuthMethod.BasicAuthMethod
 
 interface BasicAuthStore : Store<Intent, State, Label> {
 
@@ -34,17 +33,17 @@ interface BasicAuthStore : Store<Intent, State, Label> {
         /**
          * Intent for updating the username value.
          */
-        data class UpdateUsername(val username: String): Intent
+        data class UpdateUsername(val username: String) : Intent
 
         /**
          * Intent for updating the password value.
          */
-        data class UpdatePassword(val password: String): Intent
+        data class UpdatePassword(val password: String) : Intent
 
         /**
          * Intent for initiating an authentication attempt with the current credentials.
          */
-        data object Authenticate: Intent
+        data object Authenticate : Intent
     }
 
     sealed interface Label {
@@ -52,7 +51,7 @@ interface BasicAuthStore : Store<Intent, State, Label> {
         /**
          * Label that is published when a new authentication process starts.
          */
-        data object AuthenticationStarted: Label
+        data object AuthenticationStarted : Label
 
         /**
          * Label that is published when the user successfully authenticated to the Solr instance.
@@ -60,20 +59,21 @@ interface BasicAuthStore : Store<Intent, State, Label> {
          * @property username The username that was used for authentication.
          * @property password The password that was used for authentication.
          */
-        data class Authenticated(val username: String, val password: String): Label
+        data class Authenticated(val username: String, val password: String) : Label
 
         /**
          * Label that is published when the authentication process failed with an error.
          *
          * @property error The error that occurred during the authentication process.
          */
-        data class AuthenticationFailed(val error: Throwable): Label
+        data class AuthenticationFailed(val error: Throwable) : Label
     }
 
     /**
      * State class that holds the data of the [BasicAuthStore].
      */
     data class State(
+        val method: BasicAuthMethod = BasicAuthMethod(),
         val username: String = "",
         val password: String = "",
         val usernameError: Throwable? = null,

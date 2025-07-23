@@ -24,14 +24,25 @@ import kotlinx.serialization.Serializable
 import org.apache.solr.ui.domain.AuthMethod
 import org.jetbrains.compose.resources.StringResource
 
+/**
+ * The authentication component takes care of the authentication processes. This typically includes
+ * user authentication with credentials, tokens or certificates.
+ */
 interface AuthenticationComponent {
 
+    /**
+     * Component state flow.
+     */
     val model: StateFlow<Model>
 
+    /**
+     * A child slot that holds the [BasicAuthComponent] for user authentication with credentials
+     * (basic auth) if it is supported.
+     */
     val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>>
 
     @Serializable
-    data class BasicAuthConfiguration(val method: AuthMethod.BasicAuthMethod)
+    data class BasicAuthConfiguration(val method: AuthMethod.BasicAuthMethod = AuthMethod.BasicAuthMethod())
 
     /**
      * Aborts the authentication attempt.
@@ -39,11 +50,15 @@ interface AuthenticationComponent {
     fun onAbort()
 
     /**
+     * Model data class that represents the component state.
+     *
+     * @property url URL of the Solr instance the user is trying to connect.
      * @property methods List of authentication methods to render.
      * @property isAuthenticating Whether a connection is currently established.
      * @property error The error that may have occurred.
      */
     data class Model(
+        val url: String = "",
         val methods: List<AuthMethod> = emptyList(),
         val isAuthenticating: Boolean = false,
         val error: StringResource? = null,
@@ -60,11 +75,11 @@ interface AuthenticationComponent {
         data class OnAuthenticatedWithBasicAuth(
             val username: String,
             val password: String,
-        ): Output
+        ) : Output
 
         /**
          * Emitted when the user aborts the authentication flow.
          */
-        data object OnAbort: Output
+        data object OnAbort : Output
     }
 }

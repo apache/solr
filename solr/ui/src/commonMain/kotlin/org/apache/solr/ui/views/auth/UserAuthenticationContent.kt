@@ -32,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_go_back
 import org.apache.solr.ui.generated.resources.cd_back_navigation
 import org.apache.solr.ui.generated.resources.cd_solr_logo
+import org.apache.solr.ui.generated.resources.desc_solr_instance_with_auth
 import org.apache.solr.ui.generated.resources.solr_sun
 import org.apache.solr.ui.generated.resources.title_sign_in_to_solr
 import org.apache.solr.ui.views.components.SolrCard
@@ -57,13 +59,15 @@ import org.jetbrains.compose.resources.stringResource
  */
 @Composable
 fun UserAuthenticationContent(
-  component: AuthenticationComponent,
-  modifier: Modifier = Modifier,
+    component: AuthenticationComponent,
+    modifier: Modifier = Modifier,
 ) = Row(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalAlignment = Alignment.CenterVertically,
 ) {
+    val model by component.model.collectAsState()
+
     Image(
         modifier = Modifier.weight(1f)
             .align(Alignment.Bottom)
@@ -72,11 +76,10 @@ fun UserAuthenticationContent(
             .scale(1.5f),
         alpha = .3f,
         painter = painterResource(Res.drawable.solr_sun),
-        contentDescription = stringResource(Res.string.cd_solr_logo)
+        contentDescription = stringResource(Res.string.cd_solr_logo),
     )
 
     Column(modifier = Modifier.weight(1f).padding(16.dp)) {
-
         SolrTextButton(
             onClick = component::onAbort,
             contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
@@ -97,12 +100,10 @@ fun UserAuthenticationContent(
                 style = MaterialTheme.typography.headlineMedium,
             )
 
-            // TODO Provide a description text that includes the Solr URL the user
-            //  is trying to sign in to.
-//            Text(
-//                text = stringResource(Res.string.desc_you_are_signing_in_to, model.url),
-//                style = MaterialTheme.typography.bodyLarge,
-//            )
+            Text(
+                text = stringResource(Res.string.desc_solr_instance_with_auth, model.url),
+                style = MaterialTheme.typography.bodyMedium,
+            )
 
             val basicAuthState by component.basicAuthSlot.subscribeAsState()
 
@@ -110,6 +111,15 @@ fun UserAuthenticationContent(
                 BasicAuthContent(
                     modifier = Modifier.testTag("basic_auth_content"),
                     component = basicAuth.instance,
+                    isAuthenticating = model.isAuthenticating,
+                )
+            }
+
+            model.error?.let { error ->
+                Text(
+                    text = stringResource(resource = error),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }

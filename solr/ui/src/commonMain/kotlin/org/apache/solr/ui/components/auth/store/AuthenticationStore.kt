@@ -18,6 +18,7 @@
 package org.apache.solr.ui.components.auth.store
 
 import com.arkivanov.mvikotlin.core.store.Store
+import io.ktor.http.Url
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.Label
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.State
@@ -30,12 +31,17 @@ interface AuthenticationStore : Store<Intent, State, Label> {
         /**
          * Intent for indicating that an authentication flow is in process.
          */
-        data object StartAuthenticating: Intent
+        data object StartAuthenticating : Intent
 
         /**
          * Intent for when an authentication error occurs.
          */
-        data class FailAuthentication(val error: Throwable): Intent
+        data class FailAuthentication(val error: Throwable) : Intent
+
+        /**
+         * Intent for resetting any errors set via [FailAuthentication].
+         */
+        data object ResetError : Intent
     }
 
     sealed interface Label {
@@ -51,6 +57,7 @@ interface AuthenticationStore : Store<Intent, State, Label> {
      * @property error The authentication error in case something went wrong.
      */
     data class State(
+        val url: Url = Url(""),
         val methods: List<AuthMethod> = emptyList(),
         val isAuthenticating: Boolean = false,
         val error: Throwable? = null,

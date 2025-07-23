@@ -32,5 +32,5 @@ sealed interface AuthMethod {
      * Note that additional params like realm etc. are currently ignored in basic auth.
      */
     @Serializable
-    data object BasicAuthMethod: AuthMethod
+    data class BasicAuthMethod(val realm: String = "") : AuthMethod
 }

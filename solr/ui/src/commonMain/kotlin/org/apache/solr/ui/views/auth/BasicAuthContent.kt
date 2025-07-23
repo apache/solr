@@ -20,6 +20,7 @@ package org.apache.solr.ui.views.auth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -32,31 +33,47 @@ import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.auth.BasicAuthComponent
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_sign_in_with_credentials
+import org.apache.solr.ui.generated.resources.authenticating
+import org.apache.solr.ui.generated.resources.desc_sign_in_with_credentials_to_realm
 import org.apache.solr.ui.generated.resources.label_password
 import org.apache.solr.ui.generated.resources.label_username
 import org.apache.solr.ui.views.components.SolrButton
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * The basic auth content is a form where the user can provide credentials to authenticate and
+ * sign in to a Solr instance.
+ *
+ * @param component The [BasicAuthComponent] that is handling the interactions with this composable.
+ * @param modifier Modifier that is applied to the root of this composable.
+ * @param isAuthenticating Whether the user is currently being authenticated. This disables the inputs
+ * and updates the text shown in the button.
+ */
 @Composable
 fun BasicAuthContent(
     component: BasicAuthComponent,
     modifier: Modifier = Modifier,
+    isAuthenticating: Boolean = true,
 ) = Column(
     modifier = modifier,
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+    verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
     val model by component.model.collectAsState()
 
-    // TODO Include description text that mentions for which realm the user will
-    //  provide the credentials.
+    Text(
+        text = stringResource(Res.string.desc_sign_in_with_credentials_to_realm, model.realm),
+        style = MaterialTheme.typography.bodyMedium,
+    )
 
     TextField(
         modifier = Modifier
             .fillMaxWidth()
             .testTag(tag = "username_input_field"),
         value = model.username,
+        singleLine = true,
         label = { Text(stringResource(Res.string.label_username)) },
         onValueChange = component::onChangeUsername,
+        enabled = !isAuthenticating,
     )
 
     TextField(
@@ -64,15 +81,24 @@ fun BasicAuthContent(
             .fillMaxWidth()
             .testTag(tag = "password_input_field"),
         value = model.password,
+        singleLine = true,
         label = { Text(stringResource(Res.string.label_password)) },
         visualTransformation = PasswordVisualTransformation(),
         onValueChange = component::onChangePassword,
+        enabled = !isAuthenticating,
     )
 
     SolrButton(
         modifier = Modifier.fillMaxWidth().testTag(tag = "sign_in_button"),
         onClick = component::onAuthenticate,
+        enabled = !isAuthenticating,
     ) {
-        Text(text = stringResource(Res.string.action_sign_in_with_credentials))
+        Text(
+            text = if (isAuthenticating) {
+                stringResource(Res.string.authenticating)
+            } else {
+                stringResource(Res.string.action_sign_in_with_credentials)
+            },
+        )
     }
 }

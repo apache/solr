@@ -31,6 +31,7 @@ import org.apache.solr.ui.components.auth.BasicAuthComponent.Output
 import org.apache.solr.ui.components.auth.store.BasicAuthStore
 import org.apache.solr.ui.components.auth.store.BasicAuthStore.Intent
 import org.apache.solr.ui.components.auth.store.BasicAuthStoreProvider
+import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
 import org.apache.solr.ui.utils.map
@@ -39,8 +40,10 @@ class DefaultBasicAuthComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
-    private val output: (Output) -> Unit
-) : BasicAuthComponent, AppComponentContext by componentContext {
+    method: AuthMethod.BasicAuthMethod,
+    private val output: (Output) -> Unit,
+) : BasicAuthComponent,
+    AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
     private val ioScope = coroutineScope(SupervisorJob() + ioContext)
@@ -51,6 +54,7 @@ class DefaultBasicAuthComponent(
             client = HttpBasicAuthStoreClient(httpClient),
             mainContext = mainScope.coroutineContext,
             ioContext = ioScope.coroutineContext,
+            method = method,
         ).provide()
     }
 
@@ -61,12 +65,13 @@ class DefaultBasicAuthComponent(
         store.labels.onEach { label ->
             when (label) {
                 is BasicAuthStore.Label.Authenticated -> output(
-                    Output.Authenticated(username = label.username, password = label.password)
+                    Output.Authenticated(username = label.username, password = label.password),
                 )
 
                 is BasicAuthStore.Label.AuthenticationFailed -> output(
-                    Output.AuthenticationFailed(error = label.error)
+                    Output.AuthenticationFailed(error = label.error),
                 )
+
                 is BasicAuthStore.Label.AuthenticationStarted -> output(Output.Authenticating)
             }
         }.launchIn(mainScope)

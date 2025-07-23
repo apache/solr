@@ -29,12 +29,14 @@
 
   <!-- Descriptions (desc) -->
   <string name="desc_to_get_started">To get started, please provide a Solr host URL:</string>
-  <string name="desc_you_are_signing_in_to">You are currently trying to sign in to the Solr instance $1%s</string>
+  <string name="desc_solr_instance_with_auth">The Solr instance %1$s has enabled authentication.</string>
+  <string name="desc_sign_in_with_credentials_to_realm">To authenticate you may use your credentials for the realm %1$s.</string>
 
   <!-- Errors (error) -->
   <string name="error_invalid_url">The provided URL is invalid.</string>
   <string name="error_solr_host_not_found">Solr host could not be found.</string>
   <string name="error_unknown">An unknown error occurred.</string>
+  <string name="error_invalid_credentials">Invalid credentials. Please try again.</string>
 
   <!-- Navigation (nav) -->
   <string name="nav_cluster">Cluster</string>
@@ -56,6 +58,7 @@
   <string name="title_sign_in_to_solr">Sign In to Solr</string>
 
   <!-- General Text -->
+  <string name="authenticating">Authenticating...</string>
   <string name="community">Community</string>
   <string name="documentation">Documentation</string>
   <string name="irc">IRC</string>
