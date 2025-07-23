@@ -20,10 +20,8 @@ package org.apache.solr.ui.views.root
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import org.apache.solr.ui.components.root.RootComponent
 import org.apache.solr.ui.views.auth.UserAuthenticationContent
@@ -59,7 +57,7 @@ fun RootContent(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                is RootComponent.Child.Unauthenticated -> UserAuthenticationContent(
+                is RootComponent.Child.Authentication -> UserAuthenticationContent(
                     component = child.component,
                     modifier = Modifier.fillMaxSize(),
                 )

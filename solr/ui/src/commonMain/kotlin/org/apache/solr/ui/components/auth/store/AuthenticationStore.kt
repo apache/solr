@@ -18,12 +18,12 @@
 package org.apache.solr.ui.components.auth.store
 
 import com.arkivanov.mvikotlin.core.store.Store
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStore.Intent
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStore.Label
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStore.State
+import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent
+import org.apache.solr.ui.components.auth.store.AuthenticationStore.Label
+import org.apache.solr.ui.components.auth.store.AuthenticationStore.State
 import org.apache.solr.ui.domain.AuthMethod
 
-interface UnauthenticatedStore : Store<Intent, State, Label> {
+interface AuthenticationStore : Store<Intent, State, Label> {
 
     sealed interface Intent {
 
@@ -39,11 +39,11 @@ interface UnauthenticatedStore : Store<Intent, State, Label> {
     }
 
     sealed interface Label {
-        // TODO Add labels for the unauthenticated store
+        // TODO Add labels for the authentication store
     }
 
     /**
-     * State class that holds the data of the [UnauthenticatedStore].
+     * State class that holds the data of the [AuthenticationStore].
      *
      * @property methods Authentication methods that are configured and can be used
      * for authentication.

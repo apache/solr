@@ -28,8 +28,8 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import io.ktor.client.HttpClient
 import io.ktor.http.Url
 import kotlinx.serialization.Serializable
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent
-import org.apache.solr.ui.components.auth.integration.DefaultUnauthenticatedComponent
+import org.apache.solr.ui.components.auth.AuthenticationComponent
+import org.apache.solr.ui.components.auth.integration.DefaultAuthenticationComponent
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.main.integration.DefaultMainComponent
 import org.apache.solr.ui.components.root.RootComponent
@@ -49,12 +49,12 @@ import org.apache.solr.ui.utils.getHttpClientWithCredentials
  * that checks the access level of the user before redirecting.
  */
 class SimpleRootComponent(
-    componentContext: AppComponentContext,
-    storeFactory: StoreFactory,
-    private val startComponent: (AppComponentContext, (StartComponent.Output) -> Unit) -> StartComponent,
-    private val mainComponent: (AppComponentContext, Url) -> MainComponent,
-    private val mainComponentWithBasicAuth: (AppComponentContext, Url, String, String) -> MainComponent,
-    private val unauthenticatedComponent: UnauthenticatedComponentProducer,
+  componentContext: AppComponentContext,
+  storeFactory: StoreFactory,
+  private val startComponent: (AppComponentContext, (StartComponent.Output) -> Unit) -> StartComponent,
+  private val mainComponent: (AppComponentContext, Url) -> MainComponent,
+  private val mainComponentWithBasicAuth: (AppComponentContext, Url, String, String) -> MainComponent,
+  private val authenticationComponent: AuthenticationComponentProducer,
 ) : RootComponent, AppComponentContext by componentContext {
 
     private val navigation = StackNavigation<Configuration>()
@@ -100,8 +100,8 @@ class SimpleRootComponent(
                 destination = destination,
             )
         },
-        unauthenticatedComponent = { childContext, url, methods, output ->
-            DefaultUnauthenticatedComponent(
+        authenticationComponent = { childContext, url, methods, output ->
+            DefaultAuthenticationComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
                 httpClient = getDefaultClient(url),
@@ -125,14 +125,14 @@ class SimpleRootComponent(
                 configuration.password,
             )
         )
-        is Configuration.Unauthenticated -> Unauthenticated(
-            unauthenticatedComponent(
-                componentContext,
-                configuration.url,
-                configuration.methods,
-            ) { output ->
-                unauthenticatedOutput(output, configuration.url)
-            }
+        is Configuration.Authentication -> Authentication(
+          authenticationComponent(
+            componentContext,
+            configuration.url,
+            configuration.methods,
+          ) { output ->
+            authenticationOutput(output, configuration.url)
+          }
         )
     }
 
@@ -143,7 +143,7 @@ class SimpleRootComponent(
      */
     private fun startOutput(output: StartComponent.Output) = when (output) {
         is StartComponent.Output.OnAuthRequired -> navigation.pushNew(
-            Configuration.Unauthenticated(
+            Configuration.Authentication(
                 url = output.url,
                 methods = output.methods,
             )
@@ -153,12 +153,12 @@ class SimpleRootComponent(
     }
 
     /**
-     * Output handler for any output returned by the [UnauthenticatedComponent].
+     * Output handler for any output returned by the [AuthenticationComponent].
      *
-     * @param output The output returned by the unauthenticated component implementation.
+     * @param output The output returned by the authentication component implementation.
      */
-    private fun unauthenticatedOutput(output: UnauthenticatedComponent.Output, url: Url) = when (output) {
-        is UnauthenticatedComponent.Output.OnAuthenticatedWithBasicAuth ->
+    private fun authenticationOutput(output: AuthenticationComponent.Output, url: Url) = when (output) {
+        is AuthenticationComponent.Output.OnAuthenticatedWithBasicAuth ->
             navigation.replaceAll(
                 Configuration.MainWithBasicAuth(
                     url = url,
@@ -166,7 +166,7 @@ class SimpleRootComponent(
                     password = output.password,
                 )
             )
-        is UnauthenticatedComponent.Output.OnAbort -> navigation.pop()
+        is AuthenticationComponent.Output.OnAbort -> navigation.pop()
     }
 
     @Serializable
@@ -183,7 +183,7 @@ class SimpleRootComponent(
          * again.
          */
         @Serializable
-        data class Unauthenticated(val url: Url, val methods: List<AuthMethod>) : Configuration
+        data class Authentication(val url: Url, val methods: List<AuthMethod>) : Configuration
 
         @Serializable
         data class Main(val url: Url) : Configuration
@@ -198,11 +198,11 @@ class SimpleRootComponent(
 }
 
 /**
- * The unauthenticated component producer (alias)
+ * The authentication component producer (alias)
  */
-private typealias UnauthenticatedComponentProducer = (
-    AppComponentContext,
-    Url,
-    List<AuthMethod>,
-    (UnauthenticatedComponent.Output) -> Unit,
-) -> UnauthenticatedComponent
+private typealias AuthenticationComponentProducer = (
+  AppComponentContext,
+  Url,
+  List<AuthMethod>,
+  (AuthenticationComponent.Output) -> Unit,
+) -> AuthenticationComponent

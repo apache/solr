@@ -30,29 +30,29 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import org.apache.solr.ui.components.auth.BasicAuthComponent
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent.BasicAuthConfiguration
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent.Output
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStore.Intent
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStoreProvider
+import org.apache.solr.ui.components.auth.AuthenticationComponent
+import org.apache.solr.ui.components.auth.AuthenticationComponent.BasicAuthConfiguration
+import org.apache.solr.ui.components.auth.AuthenticationComponent.Output
+import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent
+import org.apache.solr.ui.components.auth.store.AuthenticationStoreProvider
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.utils.AppComponentContext
 import org.apache.solr.ui.utils.coroutineScope
 import org.apache.solr.ui.utils.map
 
-class DefaultUnauthenticatedComponent(
+class DefaultAuthenticationComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     httpClient: HttpClient,
     methods: List<AuthMethod>,
     private val output: (Output) -> Unit,
-) : UnauthenticatedComponent, AppComponentContext by componentContext {
+) : AuthenticationComponent, AppComponentContext by componentContext {
 
     private val mainScope = coroutineScope(SupervisorJob() + mainContext)
     private val ioScope = coroutineScope(SupervisorJob() + ioContext)
 
     private val store = instanceKeeper.getStore {
-        UnauthenticatedStoreProvider(
+        AuthenticationStoreProvider(
             storeFactory = storeFactory,
             mainContext = mainScope.coroutineContext,
             ioContext = ioScope.coroutineContext,
@@ -63,7 +63,7 @@ class DefaultUnauthenticatedComponent(
     private val basicAuthNavigation = SlotNavigation<BasicAuthConfiguration>()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val model = store.stateFlow.map(mainScope, unauthenticatedStateToModel)
+    override val model = store.stateFlow.map(mainScope, authenticationStateToModel)
 
     override val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>> =
         childSlot(

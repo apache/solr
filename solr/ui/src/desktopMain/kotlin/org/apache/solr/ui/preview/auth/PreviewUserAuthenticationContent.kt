@@ -25,7 +25,7 @@ import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.auth.BasicAuthComponent
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent
+import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.auth.UserAuthenticationContent
@@ -34,22 +34,22 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Composable
 @Preview
 fun PreviewUserAuthenticationContent() = PreviewContainer {
-    UserAuthenticationContent(component = PreviewUnauthenticatedComponentWithBasicAuth)
+    UserAuthenticationContent(component = PreviewAuthenticationComponentWithBasicAuth)
 }
 
-private data object PreviewUnauthenticatedComponentWithBasicAuth: UnauthenticatedComponent {
-    override val model: StateFlow<UnauthenticatedComponent.Model> =
+private data object PreviewAuthenticationComponentWithBasicAuth: AuthenticationComponent {
+    override val model: StateFlow<AuthenticationComponent.Model> =
         MutableStateFlow(
-            UnauthenticatedComponent.Model(
+            AuthenticationComponent.Model(
                 methods = listOf(AuthMethod.BasicAuthMethod),
             )
         )
 
-    override val basicAuthSlot: Value<ChildSlot<UnauthenticatedComponent.BasicAuthConfiguration, BasicAuthComponent>> =
+    override val basicAuthSlot: Value<ChildSlot<AuthenticationComponent.BasicAuthConfiguration, BasicAuthComponent>> =
         MutableValue(
             ChildSlot(
                 child = Child.Created(
-                    configuration = UnauthenticatedComponent.BasicAuthConfiguration(method = AuthMethod.BasicAuthMethod),
+                    configuration = AuthenticationComponent.BasicAuthConfiguration(method = AuthMethod.BasicAuthMethod),
                     instance = PreviewBasicAuthComponent,
                 )
             )

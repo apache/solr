@@ -23,20 +23,20 @@ import com.arkivanov.mvikotlin.core.store.Store
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import kotlin.coroutines.CoroutineContext
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStore.Intent
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStore.Label
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStore.State
+import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent
+import org.apache.solr.ui.components.auth.store.AuthenticationStore.Label
+import org.apache.solr.ui.components.auth.store.AuthenticationStore.State
 import org.apache.solr.ui.domain.AuthMethod
 
-class UnauthenticatedStoreProvider(
+class AuthenticationStoreProvider(
     private val storeFactory: StoreFactory,
     private val mainContext: CoroutineContext,
     private val ioContext: CoroutineContext,
     private val methods: List<AuthMethod>,
 ) {
 
-    fun provide(): UnauthenticatedStore = object :
-        UnauthenticatedStore,
+    fun provide(): AuthenticationStore = object :
+        AuthenticationStore,
         Store<Intent, State, Label> by storeFactory.create(
             name = "BasicAuthStore",
             initialState = State(methods),
@@ -54,7 +54,7 @@ class UnauthenticatedStoreProvider(
         /**
          * Message that is dispatched when an authentication error occurred.
          */
-        data class AuthenticationFailed(val error: Throwable) : Message
+        data class AuthenticationFailed(val error: Throwable): Message
     }
 
     private inner class ExecutorImpl : CoroutineExecutor<Intent, Unit, State, Message, Label>(mainContext) {

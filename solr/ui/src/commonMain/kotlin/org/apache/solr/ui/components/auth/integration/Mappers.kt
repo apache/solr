@@ -20,17 +20,17 @@ package org.apache.solr.ui.components.auth.integration
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.http.URLParserException
 import org.apache.solr.ui.components.auth.BasicAuthComponent
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent
+import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.auth.store.BasicAuthStore
-import org.apache.solr.ui.components.auth.store.UnauthenticatedStore
+import org.apache.solr.ui.components.auth.store.AuthenticationStore
 import org.apache.solr.ui.errors.HostNotFoundException
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.error_invalid_url
 import org.apache.solr.ui.generated.resources.error_solr_host_not_found
 import org.apache.solr.ui.generated.resources.error_unknown
 
-internal val unauthenticatedStateToModel: (UnauthenticatedStore.State) -> UnauthenticatedComponent.Model = {
-    UnauthenticatedComponent.Model(
+internal val authenticationStateToModel: (AuthenticationStore.State) -> AuthenticationComponent.Model = {
+    AuthenticationComponent.Model(
         methods = it.methods,
         isAuthenticating = it.isAuthenticating,
         error = it.error?.let { error ->

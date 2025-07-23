@@ -39,7 +39,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent
+import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.action_go_back
 import org.apache.solr.ui.generated.resources.cd_back_navigation
@@ -57,8 +57,8 @@ import org.jetbrains.compose.resources.stringResource
  */
 @Composable
 fun UserAuthenticationContent(
-    component: UnauthenticatedComponent,
-    modifier: Modifier = Modifier,
+  component: AuthenticationComponent,
+  modifier: Modifier = Modifier,
 ) = Row(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(16.dp),
