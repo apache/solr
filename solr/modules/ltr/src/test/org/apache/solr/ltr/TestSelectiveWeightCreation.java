@@ -189,8 +189,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
             TestLinearModel.makeFeatureWeights(features));
     LTRScoringQuery ltrQuery2 = new LTRScoringQuery(ltrScoringModel2);
     // features requested in response
-    ltrQuery2.setFeatureLogger(
-        new CSVFeatureLogger(FeatureLogger.FeatureFormat.DENSE, true));
+    ltrQuery2.setFeatureLogger(new CSVFeatureLogger(FeatureLogger.FeatureFormat.DENSE, true));
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc, ltrQuery2);
     featuresInfo = modelWeight.getFeaturesInfo();
 

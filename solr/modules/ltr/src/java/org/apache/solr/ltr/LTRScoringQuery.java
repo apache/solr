@@ -18,7 +18,14 @@ package org.apache.solr.ltr;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -579,7 +586,8 @@ public class LTRScoringQuery extends Query implements Accountable {
             float[] featureVector;
 
             // Check added otherwise org.apache.solr.ltr.TestLTRScoringQuery.testLTRScoringQuery
-            // and org.apache.solr.ltr.TestSelectiveWeightCreation.testScoringQueryWeightCreation fail
+            // and org.apache.solr.ltr.TestSelectiveWeightCreation.testScoringQueryWeightCreation
+            // fail
             if (request != null) {
               featureVectorCache = request.getSearcher().getFeatureVectorCache();
             }
@@ -599,7 +607,7 @@ public class LTRScoringQuery extends Query implements Accountable {
               int featureId = extractedFeatureWeights[i].getIndex();
               float featureValue = featureVector[featureId];
               if (!Float.isNaN(featureValue)
-                      && featureValue != extractedFeatureWeights[i].getDefaultValue()) {
+                  && featureValue != extractedFeatureWeights[i].getDefaultValue()) {
                 featuresInfo[featureId].setValue(featureValue);
                 featuresInfo[featureId].setIsDefaultValue(false);
               }
@@ -610,10 +618,12 @@ public class LTRScoringQuery extends Query implements Accountable {
         private int fvCacheKey(int docId) {
           int prime = 31;
           int result = docId;
-          if (Objects.equals(ltrScoringModel.getName(), LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME) || (isLogging && logger.isLoggingAll())) {
+          if (Objects.equals(
+                  ltrScoringModel.getName(),
+                  LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)
+              || (isLogging && logger.isLoggingAll())) {
             result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
-          }
-          else {
+          } else {
             result = (prime * result) + ltrScoringModel.getName().hashCode();
           }
           result = (prime * result) + addEfisHash(result, prime);
