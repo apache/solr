@@ -16,6 +16,8 @@
  */
 package org.apache.solr.response;
 
+import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
+
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
@@ -32,6 +34,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
@@ -59,8 +62,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
     List<MetricSnapshot> snapshots =
         readers.values().stream().flatMap(r -> r.collect().stream()).toList();
 
-    boolean openMetricsFormat = "openmetrics".equals(request.getParams().get("format"));
-    if (openMetricsFormat) {
+    if (OPEN_METRICS_WT.equals(request.getParams().get(CommonParams.WT))) {
       new OpenMetricsTextFormatWriter(false, true).write(out, mergeSnapshots(snapshots));
     } else {
       new PrometheusTextFormatWriter(false).write(out, mergeSnapshots(snapshots));
@@ -69,7 +71,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return ("openmetrics".equals(request.getParams().get("format")))
+    return (OPEN_METRICS_WT.equals(request.getParams().get(CommonParams.WT)))
         ? CONTENT_TYPE_OPEN_METRICS
         : CONTENT_TYPE_PROMETHEUS;
   }
