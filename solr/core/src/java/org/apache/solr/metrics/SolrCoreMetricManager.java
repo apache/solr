@@ -148,17 +148,14 @@ public class SolrCoreMetricManager implements Closeable {
 
     // NOCOMMIT SOLR-17458: These attributes may not work for standalone mode and maybe make the
     // scope attribute optional
-    // use deprecated method for back-compat, remove in 9.0
-    producer.initializeMetrics(
-        solrMetricsContext,
+    var attributesBuilder =
         Attributes.builder()
             .put(CORE_ATTR, core.getCoreDescriptor().getName())
             .put(COLLECTION_ATTR, collectionName)
             .put(SHARD_ATTR, shardName)
-            .put(REPLICA_ATTR, replicaName)
-            .put((scope.startsWith("/")) ? HANDLER_ATTR : SCOPE_ATTR, scope)
-            .build(),
-        scope);
+            .put(REPLICA_ATTR, replicaName);
+    if (scope.startsWith("/")) attributesBuilder.put(HANDLER_ATTR, scope);
+    producer.initializeMetrics(solrMetricsContext, attributesBuilder.build(), scope);
   }
 
   /** Return the registry used by this SolrCore. */

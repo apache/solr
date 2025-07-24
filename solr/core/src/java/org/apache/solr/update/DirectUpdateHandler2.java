@@ -240,13 +240,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
 
-    // NOCOMMIT: We do not need a scope attribute that just appends scope="updateHandler" on all of
-    // these. The metric name
-    // provides this context already with _update_ in the metric name already. We should see if we
-    // can omit this from SolrCoreMetricManager instead of directly removing it from builder.
     var baseAttributes =
         attributes.toBuilder()
-            .remove(AttributeKey.stringKey("scope"))
             .put(AttributeKey.stringKey("category"), getCategory().toString())
             .build();
 
