@@ -28,7 +28,8 @@ develocity {
         uploadInBackground = !isCIBuild
 
         publishing.onlyIf { buildScan ->
-          println "MY_CUSTOM_ENV = ${System.getenv("DEVELOCITY_ACCESS_KEY")}"
+          println "Entered into build scan module..."
+          println "buildScan: ${buildScan}"
           println "Develocity Authenticated: ${buildScan.authenticated}"
           buildScan.authenticated
         }
