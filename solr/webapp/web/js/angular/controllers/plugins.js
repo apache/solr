@@ -15,6 +15,8 @@
  limitations under the License.
 */
 
+//NOCOMMIT: This plugin seems tied to the Admin UIs plugin management but is tied to dropwizard metrics failing some tests.
+// This needs to change how it gets these metrics or we need to make a shim to the /admin/plugins handler for this to support it
 solrAdminApp.controller('PluginsController',
     function($scope, $rootScope, $routeParams, $location, Mbeans, Constants) {
         $scope.resetMenu("plugins", Constants.IS_CORE_PAGE);
