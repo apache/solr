@@ -378,8 +378,18 @@ Bug Fixes
 
 * GITHUB#3426: Improving check in TextToVectorUpdateProcessorFactory, which breaks update for new dynamic fields. (Renato Haeberli via Alessandro Benedetti)
 
+* SOLR-17819: Disable http2 request cancellation for Jetty 10, the cancellation can bleed across to other requests. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
+* PR#3078: chore(deps): update apache.kafka to v3.9.0 (solrbot)
+
+* PR#3234: Update mockito to v5.16.1 (solrbot)
+
+* PR#3061: Update apache.zookeeper to v3.9.3 (solrbot)
+
+* PR#3228: Update amazon.awssdk to v2.31.77 (solrbot)
+
 * SOLR-17795: Upgrade Lucene to 9.12.2. (Pierre Salagnac, Christine Poerschke, Houston Putman)
 
 * Upgrade forbiddenapis to 3.9. (Uwe Schindler)
@@ -417,11 +427,13 @@ Other Changes
 
 * SOLR-17667: Simplify zombie server logic in LBSolrClient (Houston Putman)
 
-* SOLR-17518: Deprecate UpdateRequest.getXml() and replace it with XMLRequestWriter. (Pierre Salagnac)
+* SOLR-17518: Deprecate UpdateRequest.getXml(). Usage of XMLRequestWriter is now preferred. (Pierre Salagnac)
 
 * SOLR-17716: Handle interrupted exception in SolrCores.waitAddPendingCoreOps. (Bruno Roustant)
 
 * SOLR-17651: Add System.exit() in forbidden APIs, and make sure CLI unit tests never call it. (Pierre Salagnac)
+
+* SOLR-17741: Deprecated 'addHttpRequestToContext', removed in 10.  (David Smiley)
 
 * SOLR-17625: Replaced NamedList.findRecursive usages with _get, which can do Map traversal, and
   thus makes it easier to transition intermediate NamedLists to Maps. (Gaurav Tuli)
