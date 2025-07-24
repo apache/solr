@@ -131,16 +131,12 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 <queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"/>
 ----
 
-* Configuration of the feature values cache.
+* Configuration of the feature values cache which is used for both reranking and feature logging.
+This needs to be added in the `<query>` section as follows.
 +
 [source,xml]
 ----
-<cache name="QUERY_DOC_FV"
-       class="solr.search.CaffeineCache"
-       size="4096"
-       initialSize="2048"
-       autowarmCount="4096"
-       regenerator="solr.search.NoOpRegenerator" />
+<featureVectorCache class="solr.CaffeineCache" size="4096" initialSize="2048" autowarmCount="4096"/>
 ----
 
 * Declaration of the `[features]` transformer.
