@@ -69,7 +69,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String KEY_PARAM = "key";
   public static final String EXPR_PARAM = "expr";
   public static final String TYPE_PARAM = "type";
+  // NOCOMMIT: This wt=prometheus will be removed as it will become the default for /admin/metrics
   public static final String PROMETHEUS_METRICS_WT = "prometheus";
+  public static final String OPEN_METRICS_WT = "openmetrics";
 
   public static final String ALL = "all";
 
@@ -126,8 +128,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
-    // TODO SOLR-17458: Make this the default option after dropwizard removal
-    if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
+    // NOCOMMIT SOLR-17458: Make this the default option after dropwizard removal
+    if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))
+        || OPEN_METRICS_WT.equals(params.get(CommonParams.WT))) {
       consumer.accept("metrics", metricManager.getPrometheusMetricReaders());
       return;
     }
