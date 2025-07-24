@@ -315,7 +315,7 @@ public class CollectionHandlingUtils {
     Map<String, Object> props =
         Map.of(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collectionName);
     new DeleteCollectionCmd(ccc)
-        .call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), results);
+        .call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), null, results);
   }
 
   static Map<String, Replica> waitToSeeReplicasInState(

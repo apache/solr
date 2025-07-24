@@ -81,13 +81,13 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     // Only install data to shards which belong to a collection in read-only mode
     final DocCollection dc =
         coreContainer.getZkController().getZkStateReader().getCollection(collName);
-    if (!dc.isReadOnly()) {
+    if (dc.getSlice(shardName).getReplicas().size() > 1 && !dc.isReadOnly()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Collection must be in readOnly mode before installing data to shard");
+          "Collection must be in readOnly mode before installing data to shard with more than 1 replica");
     }
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collName, shardName, requestBody);
+    ZkNodeProps remoteMessage = createRemoteMessage(collName, shardName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
@@ -126,7 +126,10 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     if (requestBody != null) {
       messageTyped.location = requestBody.location;
       messageTyped.repository = requestBody.repository;
+      messageTyped.name = requestBody.name;
+      messageTyped.shardBackupId = requestBody.shardBackupId;
       messageTyped.asyncId = requestBody.async;
+      messageTyped.callingLockId = requestBody.callingLockId;
     }
 
     messageTyped.validate();

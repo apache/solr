@@ -114,7 +114,8 @@ public class CollApiCmds {
    * classes whose names ends in {@code Cmd}.
    */
   protected interface CollectionApiCommand {
-    void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception;
+    void call(ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
+        throws Exception;
   }
 
   /**
@@ -206,7 +207,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
         throws Exception {
       final Span localSpan;
       final Context localContext;
@@ -226,7 +228,7 @@ public class CollApiCmds {
 
       try (var scope = localContext.makeCurrent()) {
         assert scope != null; // prevent javac warning about scope being unused
-        command.call(state, message, results);
+        command.call(state, message, lockId, results);
       } finally {
         if (localSpan != null) {
           localSpan.end();
@@ -238,7 +240,8 @@ public class CollApiCmds {
   public static class MockOperationCmd implements CollectionApiCommand {
     @Override
     @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
-    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
         throws InterruptedException {
       // only for test purposes
       Thread.sleep(message.getInt("sleep", 1));
@@ -260,7 +263,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) {
+    public void call(
+        ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
@@ -285,7 +289,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message,
@@ -326,7 +331,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message,
@@ -360,7 +366,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
@@ -389,7 +396,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
         throws Exception {
       if (StrUtils.isBlank(message.getStr(COLLECTION_PROP))
           || StrUtils.isBlank(message.getStr(PROPERTY_PROP))) {
@@ -425,7 +433,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
         throws Exception {
 
       final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -508,7 +517,7 @@ public class CollApiCmds {
       // if switching to/from read-only mode or configName is not null reload the collection
       if (message.keySet().contains(ZkStateReader.READ_ONLY) || configName != null) {
         new ReloadCollectionCmd(ccc)
-            .call(clusterState, new ZkNodeProps(NAME, collectionName), results);
+            .call(clusterState, new ZkNodeProps(NAME, collectionName), lockId, results);
       }
     }
   }

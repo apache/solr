@@ -41,7 +41,8 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
 
   @SuppressWarnings({"unchecked"})
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     Set<String> nodes;
     Object nodesRaw = message.get(CollectionParams.NODES);

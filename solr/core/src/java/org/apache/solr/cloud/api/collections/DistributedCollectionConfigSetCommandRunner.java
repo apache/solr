@@ -429,7 +429,12 @@ public class DistributedCollectionConfigSetCommandRunner {
 
           CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);
           if (command != null) {
-            command.call(ccc.getSolrCloudManager().getClusterState(), message, results);
+            // TODO: FIX
+            command.call(
+                ccc.getSolrCloudManager().getClusterState(),
+                message,
+                lock.hashCode() + "",
+                results);
           } else {
             asyncTaskTracker.cancelAsyncId(asyncId);
             // Seeing this is a bug, not bad user data

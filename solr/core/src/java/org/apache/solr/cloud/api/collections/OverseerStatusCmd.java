@@ -161,7 +161,8 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     // If Collection API execution is distributed, we're not running on the Overseer node so can't
     // return any Overseer stats.

@@ -55,7 +55,8 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     if (ccc.isDistributedCollectionAPI()) {
       // No Overseer (not accessible from Collection API command execution in any case) so this

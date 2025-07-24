@@ -113,6 +113,11 @@ public class CollectionApiLockFactory {
     };
     List<DistributedLock> locks = new ArrayList<>(iterationOrder.length);
     for (CollectionParams.LockLevel level : iterationOrder) {
+      // We do not want to re-lock from the parent lock level
+      // TODO: Fix
+      //      if (calledFromLockLevel.isHigherOrEqual(level)) {
+      //        continue;
+      //      }
       // This comparison is based on the LockLevel height value that classifies replica > shard >
       // collection.
       if (lockLevel.isHigherOrEqual(level)) {

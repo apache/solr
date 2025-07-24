@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -61,7 +62,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   @Override
-  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation, Lock lock) {
     NamedList<Object> results = new NamedList<>();
     try {
       if (!operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
@@ -117,7 +118,22 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     String configSetName = getTaskKey(message);
     if (canExecute(configSetName, message)) {
       markExclusiveTask(configSetName, message);
-      return () -> unmarkExclusiveTask(configSetName, message);
+      return new Lock() {
+        @Override
+        public void unlock() {
+          unmarkExclusiveTask(configSetName, message);
+        }
+
+        @Override
+        public String id() {
+          return configSetName;
+        }
+
+        @Override
+        public boolean validateSubpath(int lockLevel, List<String> path) {
+          return false;
+        }
+      };
     }
     return null;
   }
