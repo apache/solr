@@ -20,7 +20,6 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
-import io.prometheus.metrics.model.snapshots.Labels;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -619,8 +618,10 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     return SolrMetricTestUtils.getGaugeDatapoint(
         core,
         metricName,
-        Labels.builder().label("category", "UPDATE").label("ops", operation).build(),
-        false);
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("category", "UPDATE")
+            .label("ops", operation)
+            .build());
   }
 
   private CounterSnapshot.CounterDataPointSnapshot getCounterOpDatapoint(
@@ -628,7 +629,9 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     return SolrMetricTestUtils.getCounterDatapoint(
         core,
         metricName,
-        Labels.builder().label("category", "UPDATE").label("ops", operation).build(),
-        false);
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("category", "UPDATE")
+            .label("ops", operation)
+            .build());
   }
 }

@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Supplier;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -142,26 +141,24 @@ public final class SolrMetricTestUtils {
         .orElse(null);
   }
 
-  public static Supplier<Labels.Builder> getCloudLabelsBase(SolrCore core) {
-    return () ->
-        Labels.builder()
-            .label("collection", core.getCoreDescriptor().getCloudDescriptor().getCollectionName())
-            .label("shard", core.getCoreDescriptor().getCloudDescriptor().getShardId())
-            .label("core", core.getName())
-            .label(
-                "replica",
-                Utils.parseMetricsReplicaName(
-                    core.getCoreDescriptor().getCollectionName(), core.getName()))
-            .label("otel_scope_name", "org.apache.solr");
+  public static Labels.Builder newCloudLabelsBuilder(SolrCore core) {
+    return Labels.builder()
+        .label("collection", core.getCoreDescriptor().getCloudDescriptor().getCollectionName())
+        .label("shard", core.getCoreDescriptor().getCloudDescriptor().getShardId())
+        .label("core", core.getName())
+        .label(
+            "replica",
+            Utils.parseMetricsReplicaName(
+                core.getCoreDescriptor().getCollectionName(), core.getName()))
+        .label("otel_scope_name", "org.apache.solr");
   }
 
-  public static Supplier<Labels.Builder> getStandaloneLabelsBase(SolrCore core) {
-    return getStandaloneLabelsBase(core.getName());
+  public static Labels.Builder newStandaloneLabelsBuilder(SolrCore core) {
+    return newStandaloneLabelsBuilder(core.getName());
   }
 
-  public static Supplier<Labels.Builder> getStandaloneLabelsBase(String coreName) {
-    return () ->
-        Labels.builder().label("core", coreName).label("otel_scope_name", "org.apache.solr");
+  public static Labels.Builder newStandaloneLabelsBuilder(String coreName) {
+    return Labels.builder().label("core", coreName).label("otel_scope_name", "org.apache.solr");
   }
 
   public static PrometheusMetricReader getPrometheusMetricReader(SolrCore core) {
@@ -175,28 +172,20 @@ public final class SolrMetricTestUtils {
   }
 
   private static <T> T getDatapoint(
-      SolrCore core, String metricName, Labels labels, boolean cloudLabels, Class<T> snapshotType) {
+      SolrCore core, String metricName, Labels labels, Class<T> snapshotType) {
 
     var reader = getPrometheusMetricReader(core);
 
-    var baseBuilder =
-        (cloudLabels ? getCloudLabelsBase(core) : getStandaloneLabelsBase(core)).get();
-
-    labels.stream().forEach(label -> baseBuilder.label(label.getName(), label.getValue()));
-
-    return snapshotType.cast(
-        SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, baseBuilder.build()));
+    return snapshotType.cast(SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, labels));
   }
 
   public static GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapoint(
-      SolrCore core, String metricName, Labels labels, boolean cloudLabels) {
-    return getDatapoint(
-        core, metricName, labels, cloudLabels, GaugeSnapshot.GaugeDataPointSnapshot.class);
+      SolrCore core, String metricName, Labels labels) {
+    return getDatapoint(core, metricName, labels, GaugeSnapshot.GaugeDataPointSnapshot.class);
   }
 
   public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
-      SolrCore core, String metricName, Labels labels, boolean cloudLabels) {
-    return getDatapoint(
-        core, metricName, labels, cloudLabels, CounterSnapshot.CounterDataPointSnapshot.class);
+      SolrCore core, String metricName, Labels labels) {
+    return getDatapoint(core, metricName, labels, CounterSnapshot.CounterDataPointSnapshot.class);
   }
 }

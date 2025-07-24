@@ -20,7 +20,6 @@ import static org.apache.solr.cloud.TestPullReplica.getHypotheticalTlogDir;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.codahale.metrics.Meter;
-import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -580,8 +579,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
           SolrMetricTestUtils.getGaugeDatapoint(
               core,
               "solr_core_update_docs_pending_commit",
-              Labels.builder().label("category", "UPDATE").label("ops", "docs_pending").build(),
-              true);
+              SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                  .label("category", "UPDATE")
+                  .label("ops", "docs_pending")
+                  .build());
       assertEquals(
           "Expected 4 docs are pending in core " + getSolrCore(true).getFirst().getCoreDescriptor(),
           4,
@@ -593,8 +594,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
           SolrMetricTestUtils.getGaugeDatapoint(
               solrCore,
               "solr_core_update_docs_pending_commit",
-              Labels.builder().label("category", "UPDATE").label("ops", "docs_pending").build(),
-              true);
+              SolrMetricTestUtils.newCloudLabelsBuilder(solrCore)
+                  .label("category", "UPDATE")
+                  .label("ops", "docs_pending")
+                  .build());
       assertEquals(
           "Expected non docs are pending in core " + solrCore.getCoreDescriptor(),
           0,
