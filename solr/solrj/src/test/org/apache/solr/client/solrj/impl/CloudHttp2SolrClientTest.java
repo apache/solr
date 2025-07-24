@@ -532,7 +532,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // And since all the nodes are hosting cores from all shards, the
     // distributed query formed by this node will select cores from the
     // local shards only
-    QueryResponse qResponse = cloudClient.query(collectionName, qRequest);
+    QueryResponse qResponse = null;
+    for (int i = 0; i < 100; i++) {
+      qResponse = cloudClient.query(collectionName, qRequest);
+    }
 
     Object shardsInfo = qResponse.getResponse().get(ShardParams.SHARDS_INFO);
     assertNotNull("Unable to obtain " + ShardParams.SHARDS_INFO, shardsInfo);

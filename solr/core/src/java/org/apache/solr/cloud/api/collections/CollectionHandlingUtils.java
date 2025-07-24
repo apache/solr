@@ -326,7 +326,7 @@ public class CollectionHandlingUtils {
     Map<String, Object> props =
         Map.of(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collectionName);
     new DeleteCollectionCmd(ccc)
-        .call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), results);
+        .call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), null, results);
   }
 
   static Map<String, Replica> waitToSeeReplicasInState(
@@ -562,8 +562,27 @@ public class CollectionHandlingUtils {
           }
 
           String r = (String) srsp.getSolrResponse().getResponse().get("STATUS");
+          if (r == null) {
+            // For Collections API Calls
+            r = (String) srsp.getSolrResponse().getResponse()._get("status/state");
+          }
+          if (r == null) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Could not find status of async command in response: "
+                    + srsp.getSolrResponse().getResponse().toString());
+          }
           if (r.equals("running")) {
             log.debug("The task is still RUNNING, continuing to wait.");
+            try {
+              Thread.sleep(1000);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            continue;
+
+          } else if (r.equals("submitted")) {
+            log.debug("The task is still SUBMITTED, continuing to wait.");
             try {
               Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -618,6 +637,12 @@ public class CollectionHandlingUtils {
         ccc.getAdminPath(),
         ccc.getZkStateReader(),
         ccc.newShardHandler().getShardHandlerFactory());
+  }
+
+  public static ShardRequestTracker asyncRequestTracker(
+      String asyncId, String adminPath, CollectionCommandContext ccc) {
+    return new ShardRequestTracker(
+        asyncId, adminPath, ccc.getZkStateReader(), ccc.newShardHandler().getShardHandlerFactory());
   }
 
   public static class ShardRequestTracker {
@@ -767,14 +792,19 @@ public class CollectionHandlingUtils {
         final String node = asyncCmdInfo.nodeName;
         final String coreName = asyncCmdInfo.coreName;
         final String shardAsyncId = asyncCmdInfo.asyncId;
-        log.info("I am Waiting for :{}/{}/{}", node, coreName, shardAsyncId);
+        log.info("I am Waiting for: {}/{}/{}", node, coreName, shardAsyncId);
         NamedList<Object> reqResult =
             waitForCoreAdminAsyncCallToComplete(
                 shardHandlerFactory, adminPath, zkStateReader, node, coreName, shardAsyncId);
         if (INCLUDE_TOP_LEVEL_RESPONSE) {
           results.add(shardAsyncId, reqResult);
         }
-        if ("failed".equalsIgnoreCase(((String) reqResult.get("STATUS")))) {
+        String status = (String) reqResult.get("STATUS");
+        if (status == null) {
+          // For Collections API Calls
+          status = (String) reqResult._get("status/state");
+        }
+        if ("failed".equalsIgnoreCase(status)) {
           log.error("Error from shard {}: {}", node, reqResult);
           addFailure(results, node, coreName, reqResult);
         } else {

@@ -545,7 +545,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           if (log.isDebugEnabled()) {
             log.debug("Runner processing {}", head.getId());
           }
-          response = messageHandler.processMessage(message, operation);
+          response = messageHandler.processMessage(message, operation, lock);
         } finally {
           timerContext.stop();
           updateStats(statsName);

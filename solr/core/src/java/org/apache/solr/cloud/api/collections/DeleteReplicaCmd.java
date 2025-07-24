@@ -61,7 +61,8 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     deleteReplica(clusterState, message, results, null);
   }

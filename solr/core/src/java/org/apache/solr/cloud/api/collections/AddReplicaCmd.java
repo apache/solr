@@ -76,7 +76,8 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     addReplica(state, message, results, null);
   }

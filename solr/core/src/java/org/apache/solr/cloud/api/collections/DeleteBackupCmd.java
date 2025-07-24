@@ -71,7 +71,8 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     String backupLocation = message.getStr(CoreAdminParams.BACKUP_LOCATION);
     String backupName = message.getStr(NAME);

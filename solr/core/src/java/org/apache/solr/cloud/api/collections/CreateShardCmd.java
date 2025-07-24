@@ -45,7 +45,8 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
@@ -149,7 +150,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
       // clean up the slice that we created
       ZkNodeProps deleteShard =
           new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName, ASYNC, async);
-      new DeleteShardCmd(ccc).call(clusterState, deleteShard, results);
+      new DeleteShardCmd(ccc).call(clusterState, deleteShard, lockId, results);
       throw e;
     }
 
