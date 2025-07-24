@@ -22,8 +22,9 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -80,6 +81,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -264,10 +266,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected List<Long> startingVersions;
 
   // metrics
-  protected Gauge<Integer> bufferedOpsGauge;
-  protected Meter applyingBufferedOpsMeter;
-  protected Meter replayOpsMeter;
-  protected Meter copyOverOldUpdatesMeter;
+  protected AttributedLongCounter applyingBufferedOpsCounter;
+  protected AttributedLongCounter replayOpsCounter;
+  protected AttributedLongCounter copyOverOldUpdatesCounter;
   protected SolrMetricsContext solrMetricsContext;
 
   public static class LogPtr {
@@ -627,40 +628,85 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    bufferedOpsGauge =
-        () -> {
+
+    // NOCOMMIT: We do not need a scope attribute
+    // Will need to fix up SolrCoreMetricManager instead of directly removing it from builder.
+    var baseAttributes =
+        attributes.toBuilder()
+            .remove(AttributeKey.stringKey("scope"))
+            .put(AttributeKey.stringKey("category"), SolrInfoBean.Category.TLOG.toString())
+            .build();
+
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_log_buffered_ops",
+        "The current number of buffered operations",
+        (observableLongMeasurement -> {
           if (state == State.BUFFERING) {
-            if (bufferTlog == null) return 0;
+            if (bufferTlog == null) {
+              observableLongMeasurement.record(0, baseAttributes);
+              return;
+            }
             // numRecords counts header as a record
-            return bufferTlog.numRecords() - 1;
+            observableLongMeasurement.record(bufferTlog.numRecords() - 1, baseAttributes);
+            return;
           }
           if (tlog == null) {
-            return 0;
+            observableLongMeasurement.record(0, baseAttributes);
           } else if (state == State.APPLYING_BUFFERED) {
             // numRecords counts header as a record
-            return tlog.numRecords()
-                - 1
-                - recoveryInfo.adds
-                - recoveryInfo.deleteByQuery
-                - recoveryInfo.deletes
-                - recoveryInfo.errors.get();
+            observableLongMeasurement.record(
+                tlog.numRecords()
+                    - 1
+                    - recoveryInfo.adds
+                    - recoveryInfo.deleteByQuery
+                    - recoveryInfo.deletes
+                    - recoveryInfo.errors.get(),
+                baseAttributes);
           } else {
-            return 0;
+            observableLongMeasurement.record(0, baseAttributes);
           }
-        };
+        }));
 
-    solrMetricsContext.gauge(bufferedOpsGauge, true, "ops", scope, "buffered");
-    solrMetricsContext.gauge(() -> logs.size(), true, "logs", scope, "replay", "remaining");
-    solrMetricsContext.gauge(() -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
-    applyingBufferedOpsMeter = solrMetricsContext.meter("ops", scope, "applyingBuffered");
-    replayOpsMeter = solrMetricsContext.meter("ops", scope, "replay");
-    copyOverOldUpdatesMeter = solrMetricsContext.meter("ops", scope, "copyOverOldUpdates");
-    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_log_replay_logs_remaining",
+        "The current number of tlogs remaining to be replayed",
+        (observableLongMeasurement -> {
+          observableLongMeasurement.record(logs.size(), baseAttributes);
+        }));
+
+    solrMetricsContext.observableLongGauge(
+        "solr_core_update_log_size_remaining",
+        "The total size of all tlogs remaining to be replayed",
+        (observableLongMeasurement -> {
+          observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
+        }),
+        "By");
+
+    // NOCOMMIT: Do we want to keep this? Metric was just state with the numeric enum value.
+    // With no context this doesn't mean anything. Maybe keep the numeric value and put the value meaning in the
+    // description?
+    //    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
+
+    LongCounter bufferedOps =
+        solrMetricsContext.longCounter(
+            "solr_core_update_log_applied_buffered_ops",
+            "Total number of buffered operations applied");
+    applyingBufferedOpsCounter = new AttributedLongCounter(bufferedOps, baseAttributes);
+
+    LongCounter replayOps =
+        solrMetricsContext.longCounter(
+            "solr_core_update_log_replay_ops", "Total number of log replay operations");
+    replayOpsCounter = new AttributedLongCounter(replayOps, baseAttributes);
+
+    LongCounter oldUpdatesCounter =
+        solrMetricsContext.longCounter(
+            "solr_core_update_log_old_updates_copied",
+            "Total number of updates copied from previous tlog or last tlog to a new tlog");
+    copyOverOldUpdatesCounter = new AttributedLongCounter(oldUpdatesCounter, baseAttributes);
   }
 
   @Override
@@ -1506,7 +1552,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    *     over
    */
   public void copyOverOldUpdates(long commitVersion, TransactionLog oldTlog) {
-    copyOverOldUpdatesMeter.mark();
+    copyOverOldUpdatesCounter.inc();
 
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
     TransactionLog.LogReader logReader = null;
@@ -2252,9 +2298,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               throw rsp.getException();
             }
             if (state == State.REPLAYING) {
-              replayOpsMeter.mark();
+              replayOpsCounter.inc();
             } else if (state == State.APPLYING_BUFFERED) {
-              applyingBufferedOpsMeter.mark();
+              applyingBufferedOpsCounter.inc();
             } else {
               // XXX should not happen?
             }

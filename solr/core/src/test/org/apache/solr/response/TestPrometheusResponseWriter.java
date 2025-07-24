@@ -109,8 +109,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
               return;
             }
             assertTrue(
-                "All metrics should start with 'solr_metrics_'",
-                actualMetric.startsWith("solr_metrics_"));
+                "All metrics should start with 'solr_'", actualMetric.startsWith("solr_"));
             try {
               Float.parseFloat(actualValue);
             } catch (NumberFormatException e) {
