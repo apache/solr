@@ -212,7 +212,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
@@ -338,8 +338,6 @@ Bug Fixes
 * SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
 
 * SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
-
-* SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
 
 * SOLR-17720: Fix rare deadlock in CollectionProperties internals.  (Aparna Suresh, Houston Putman)
 
