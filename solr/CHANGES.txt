@@ -214,6 +214,8 @@ Bug Fixes
 ---------------------
 * SOLR-17294: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. (Mark Miller, Jason Gerlowski)
 
+* SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -334,8 +336,6 @@ Bug Fixes
 
 * SOLR-12831: Clean up shard metadata in ZooKeeper nodes after shard deletion is invoked. This makes sure Zookeeper
  nodes for leader election and terms are not left behind (Andy Vuong, Pierre Salagnac).
-
-* SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
 
 * SOLR-17740: When the V2 API is receiving raw files, it could sometimes skip the first byte. (David Smiley)
 
