@@ -49,6 +49,8 @@ import org.slf4j.MDC;
  *       <code>solr.jvm</code>, <code>solr.core</code>, etc
  * </ul>
  */
+// NOCOMMIT: Will we still be supporting this? Need to understand how Slf4j works and if it is even
+// possible to wrap OTEL into this like dropwizard.
 public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
 
   @SuppressWarnings("unused") // we need this to pass validate-source-patterns
