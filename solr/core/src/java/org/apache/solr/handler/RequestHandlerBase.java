@@ -36,7 +36,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
@@ -44,6 +43,7 @@ import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.NoopMetricExporter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -188,10 +188,7 @@ public abstract class RequestHandlerBase
     public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
             new SolrMetricsContext(
-                new SolrMetricManager(
-                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
-                "NO_OP",
-                "NO_OP"),
+                new SolrMetricManager(new NoopMetricExporter()), "NO_OP", "NO_OP"),
             Attributes.empty());
 
     public final Meter numErrors;
