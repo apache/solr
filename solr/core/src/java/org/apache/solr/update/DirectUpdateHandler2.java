@@ -75,7 +75,6 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,11 +245,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
     // provides this context already with _update_ in the metric name already. We should see if we
     // can omit this from SolrCoreMetricManager instead of directly removing it from builder.
     var baseAttributes =
-        MetricUtils.baseAttributesSupplier(
-            attributes.toBuilder()
-                .remove(AttributeKey.stringKey("scope"))
-                .put(AttributeKey.stringKey("category"), getCategory().toString())
-                .build());
+        attributes.toBuilder()
+            .remove(AttributeKey.stringKey("scope"))
+            .put(AttributeKey.stringKey("category"), getCategory().toString())
+            .build();
 
     var baseCommandsMetric =
         solrMetricsContext.longUpDownCounter(
@@ -259,16 +257,17 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     addCommandsCumulative =
         new AttributedLongUpDownCounter(
-            baseCommandsMetric, baseAttributes.get().put(OPERATION_ATTR, "adds").build());
+            baseCommandsMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "adds").build());
 
     deleteByIdCommandsCumulative =
         new AttributedLongUpDownCounter(
-            baseCommandsMetric, baseAttributes.get().put(OPERATION_ATTR, "deletes_by_id").build());
+            baseCommandsMetric,
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_id").build());
 
     deleteByQueryCommandsCumulative =
         new AttributedLongUpDownCounter(
             baseCommandsMetric,
-            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_query").build());
 
     var baseCommitOpsMetric =
         solrMetricsContext.longCounter(
@@ -276,20 +275,22 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     commitCommands =
         new AttributedLongCounter(
-            baseCommitOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "commits").build());
+            baseCommitOpsMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "commits").build());
 
     optimizeCommands =
         new AttributedLongCounter(
-            baseCommitOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "optimize").build());
+            baseCommitOpsMetric,
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "optimize").build());
 
     mergeIndexesCommands =
         new AttributedLongCounter(
-            baseCommitOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "merge_indexes").build());
+            baseCommitOpsMetric,
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "merge_indexes").build());
 
     expungeDeleteCommands =
         new AttributedLongCounter(
             baseCommitOpsMetric,
-            baseAttributes.get().put(OPERATION_ATTR, "expunge_deletes").build());
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "expunge_deletes").build());
 
     var baseMaintenanceMetric =
         solrMetricsContext.longCounter(
@@ -297,16 +298,18 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     rollbackCommands =
         new AttributedLongCounter(
-            baseMaintenanceMetric, baseAttributes.get().put(OPERATION_ATTR, "rollback").build());
+            baseMaintenanceMetric,
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "rollback").build());
 
     splitCommands =
         new AttributedLongCounter(
-            baseMaintenanceMetric, baseAttributes.get().put(OPERATION_ATTR, "split").build());
+            baseMaintenanceMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "split").build());
 
     var baseErrorsMetric =
         solrMetricsContext.longCounter("solr_core_update_errors", "Total number of update errors");
 
-    numErrorsCumulative = new AttributedLongCounter(baseErrorsMetric, baseAttributes.get().build());
+    numErrorsCumulative =
+        new AttributedLongCounter(baseErrorsMetric, baseAttributes.toBuilder().build());
 
     softAutoCommits =
         solrMetricsContext.observableLongCounter(
@@ -315,10 +318,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
             (observableLongMeasurement -> {
               observableLongMeasurement.record(
                   commitTracker.getCommitCount(),
-                  baseAttributes.get().put(TYPE_ATTR, "auto_commits").build());
+                  baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commits").build());
               observableLongMeasurement.record(
                   softCommitTracker.getCommitCount(),
-                  baseAttributes.get().put(TYPE_ATTR, "soft_auto_commits").build());
+                  baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commits").build());
             }));
 
     // NOCOMMIT: This might not need to be an obseravableLongGauge, but a simple long gauge. Seems
@@ -332,27 +335,27 @@ public class DirectUpdateHandler2 extends UpdateHandler
               if (commitTracker.getDocsUpperBound() > 0) {
                 observableLongMeasurement.record(
                     commitTracker.getDocsUpperBound(),
-                    baseAttributes.get().put(TYPE_ATTR, "auto_commit_max_docs").build());
+                    baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_docs").build());
               }
               if (commitTracker.getTLogFileSizeUpperBound() > 0) {
                 observableLongMeasurement.record(
                     commitTracker.getTLogFileSizeUpperBound(),
-                    baseAttributes.get().put(TYPE_ATTR, "auto_commit_max_size").build());
+                    baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_size").build());
               }
               if (softCommitTracker.getDocsUpperBound() > 0) {
                 observableLongMeasurement.record(
                     softCommitTracker.getDocsUpperBound(),
-                    baseAttributes.get().put(TYPE_ATTR, "soft_auto_commit_max_docs").build());
+                    baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commit_max_docs").build());
               }
               if (commitTracker.getTimeUpperBound() > 0) {
                 observableLongMeasurement.record(
                     commitTracker.getTimeUpperBound(),
-                    baseAttributes.get().put(TYPE_ATTR, "auto_commit_max_time").build());
+                    baseAttributes.toBuilder().put(TYPE_ATTR, "auto_commit_max_time").build());
               }
               if (softCommitTracker.getTimeUpperBound() > 0) {
                 observableLongMeasurement.record(
                     softCommitTracker.getTimeUpperBound(),
-                    baseAttributes.get().put(TYPE_ATTR, "soft_auto_commit_max_time").build());
+                    baseAttributes.toBuilder().put(TYPE_ATTR, "soft_auto_commit_max_time").build());
               }
             }));
 
@@ -363,7 +366,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
             (observableLongMeasurement) -> {
               observableLongMeasurement.record(
                   numDocsPending.longValue(),
-                  baseAttributes.get().put(OPERATION_ATTR, "docs_pending").build());
+                  baseAttributes.toBuilder().put(OPERATION_ATTR, "docs_pending").build());
             });
 
     var baseSubmittedOpsMetric =
@@ -376,27 +379,27 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     submittedAdds =
         new AttributedLongCounter(
-            baseSubmittedOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "adds").build());
+            baseSubmittedOpsMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "adds").build());
     submittedDeleteById =
         new AttributedLongCounter(
             baseSubmittedOpsMetric,
-            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_id").build());
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_id").build());
     submittedDeleteByQuery =
         new AttributedLongCounter(
             baseSubmittedOpsMetric,
-            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_query").build());
 
     committedAdds =
         new AttributedLongCounter(
-            baseCommittedOpsMetric, baseAttributes.get().put(OPERATION_ATTR, "adds").build());
+            baseCommittedOpsMetric, baseAttributes.toBuilder().put(OPERATION_ATTR, "adds").build());
     committedDeleteById =
         new AttributedLongCounter(
             baseCommittedOpsMetric,
-            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_id").build());
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_id").build());
     committedDeleteByQuery =
         new AttributedLongCounter(
             baseCommittedOpsMetric,
-            baseAttributes.get().put(OPERATION_ATTR, "deletes_by_query").build());
+            baseAttributes.toBuilder().put(OPERATION_ATTR, "deletes_by_query").build());
   }
 
   private void deleteAll() throws IOException {
