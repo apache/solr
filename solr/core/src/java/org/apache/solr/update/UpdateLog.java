@@ -636,7 +636,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     var baseAttributes =
         attributes.toBuilder()
             .remove(AttributeKey.stringKey("scope"))
-            .put(AttributeKey.stringKey("category"), SolrInfoBean.Category.TLOG.toString())
+            .put(CATEGORY_ATTR, SolrInfoBean.Category.TLOG.toString())
             .build();
 
     solrMetricsContext.observableLongGauge(
