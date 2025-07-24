@@ -23,6 +23,7 @@ import com.codahale.metrics.Timer;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Test;
@@ -67,8 +68,10 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     Map<String, Metric> metrics = registry.getMetrics();
 
+    // NOCOMMIT: As we migrate more metrics to OTEL, this will need to migrate to check prometheus
+    // reader instead
     assertEquals(
-        13, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+        10, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
 
     // check basic index meters
     Timer timer = (Timer) metrics.get("INDEX.merge.minor");
@@ -94,11 +97,22 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
             .getMetricManager()
             .registry(h.getCore().getCoreMetricManager().getRegistryName());
     assertNotNull(registry);
-
-    Map<String, Metric> metrics = registry.getMetrics();
-    // INDEX.size, INDEX.sizeInBytes, INDEX.segmentCount
-    assertEquals(
-        3, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    var indexSize =
+        SolrMetricTestUtils.getGaugeDatapoint(
+            h.getCore(),
+            "solr_core_index_size_bytes",
+            SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
+                .label("category", "CORE")
+                .build());
+    var segmentSize =
+        SolrMetricTestUtils.getGaugeDatapoint(
+            h.getCore(),
+            "solr_core_segment_count",
+            SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
+                .label("category", "CORE")
+                .build());
+    assertNotNull(indexSize);
+    assertNotNull(segmentSize);
   }
 
   @Test

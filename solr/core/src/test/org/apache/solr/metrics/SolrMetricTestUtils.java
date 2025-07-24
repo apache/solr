@@ -175,7 +175,6 @@ public final class SolrMetricTestUtils {
       SolrCore core, String metricName, Labels labels, Class<T> snapshotType) {
 
     var reader = getPrometheusMetricReader(core);
-    var me = reader.collect();
 
     return snapshotType.cast(SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, labels));
   }

@@ -108,8 +108,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
               // Skip standard OTEL metric
               return;
             }
-            assertTrue(
-                "All metrics should start with 'solr_'", actualMetric.startsWith("solr_"));
+            assertTrue("All metrics should start with 'solr_'", actualMetric.startsWith("solr_"));
             try {
               Float.parseFloat(actualValue);
             } catch (NumberFormatException e) {
