@@ -21,10 +21,8 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
-import com.codahale.metrics.Gauge;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.LongCounter;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -644,32 +642,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     solrMetricsContext.observableLongGauge(
         "solr_core_update_log_buffered_ops",
         "The current number of buffered operations",
-        (observableLongMeasurement -> {
-          if (state == State.BUFFERING) {
-            if (bufferTlog == null) {
-              observableLongMeasurement.record(0, baseAttributes);
-              return;
-            }
-            // numRecords counts header as a record
-            observableLongMeasurement.record(bufferTlog.numRecords() - 1, baseAttributes);
-            return;
-          }
-          if (tlog == null) {
-            observableLongMeasurement.record(0, baseAttributes);
-          } else if (state == State.APPLYING_BUFFERED) {
-            // numRecords counts header as a record
-            observableLongMeasurement.record(
-                tlog.numRecords()
-                    - 1
-                    - recoveryInfo.adds
-                    - recoveryInfo.deleteByQuery
-                    - recoveryInfo.deletes
-                    - recoveryInfo.errors.get(),
-                baseAttributes);
-          } else {
-            observableLongMeasurement.record(0, baseAttributes);
-          }
-        }));
+        (observableLongMeasurement ->
+            observableLongMeasurement.record(computeBufferedOps(), baseAttributes)));
 
     solrMetricsContext.observableLongGauge(
         "solr_core_update_log_replay_logs_remaining",
@@ -680,38 +654,59 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     solrMetricsContext.observableLongGauge(
         "solr_core_update_log_size_remaining",
-        "The total size of all tlogs remaining to be replayed",
+        "The total size in bytes of all tlogs remaining to be replayed",
         (observableLongMeasurement -> {
           observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
         }),
         "By");
 
     // NOCOMMIT: Do we want to keep this? Metric was just state with the numeric enum value.
-    // With no context this doesn't mean anything. Maybe keep the numeric value and put the value meaning in the
+    // Without context this doesn't mean anything and can be very confusing. Maybe keep the numeric
+    // value and put the value meaning in the
     // description?
     //    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
 
-    LongCounter bufferedOps =
-        solrMetricsContext.longCounter(
-            "solr_core_update_log_applied_buffered_ops",
-            "Total number of buffered operations applied");
-    applyingBufferedOpsCounter = new AttributedLongCounter(bufferedOps, baseAttributes);
+    applyingBufferedOpsCounter =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_update_log_applied_buffered_ops",
+                "Total number of buffered operations applied"),
+            baseAttributes);
 
-    LongCounter replayOps =
-        solrMetricsContext.longCounter(
-            "solr_core_update_log_replay_ops", "Total number of log replay operations");
-    replayOpsCounter = new AttributedLongCounter(replayOps, baseAttributes);
+    replayOpsCounter =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_update_log_replay_ops", "Total number of log replay operations"),
+            baseAttributes);
 
-    LongCounter oldUpdatesCounter =
-        solrMetricsContext.longCounter(
-            "solr_core_update_log_old_updates_copied",
-            "Total number of updates copied from previous tlog or last tlog to a new tlog");
-    copyOverOldUpdatesCounter = new AttributedLongCounter(oldUpdatesCounter, baseAttributes);
+    copyOverOldUpdatesCounter =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_update_log_old_updates_copied",
+                "Total number of updates copied from previous tlog or last tlog to a new tlog"),
+            baseAttributes);
   }
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
+  }
+
+  private long computeBufferedOps() {
+    switch (state) {
+      case BUFFERING:
+        return (bufferTlog == null ? 0 : bufferTlog.numRecords() - 1);
+      case APPLYING_BUFFERED:
+        if (tlog == null) return 0;
+        return tlog.numRecords()
+            - 1
+            - recoveryInfo.adds
+            - recoveryInfo.deleteByQuery
+            - recoveryInfo.deletes
+            - recoveryInfo.errors.get();
+      default:
+        return 0;
+    }
   }
 
   /**
