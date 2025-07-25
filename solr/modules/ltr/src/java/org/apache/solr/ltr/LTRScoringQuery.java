@@ -568,7 +568,7 @@ public class LTRScoringQuery extends Query implements Accountable {
           if (featureScorers.size() <= 1) {
             throw new IllegalArgumentException("There must be at least 2 subScorers");
           }
-          subScorers = new DisiPriorityQueue(featureScorers.size());
+          subScorers = DisiPriorityQueue.ofMaxSize(featureScorers.size());
           for (final Scorer scorer : featureScorers) {
             final DisiWrapper w = new DisiWrapper(scorer, false /* impacts */);
             subScorers.add(w);
