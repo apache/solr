@@ -41,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -1288,7 +1288,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       params.set("prefix", "UPDATE.updateHandler");
       params.set("registry", "solr.core." + collection);
       // use generic request to avoid extra processing of queries
-      var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+      var req =
+          new GenericSolrRequest(
+              SolrRequest.METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
       NamedList<Object> resp = client.request(req);
       NamedList<?> metrics = (NamedList<?>) resp.get("metrics");
       NamedList<?> uhandlerCat = (NamedList<?>) metrics.getVal(0);
