@@ -17,17 +17,12 @@
 
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.Timer;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -35,9 +30,10 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.TestInjection;
@@ -140,22 +136,19 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
     // check metrics
     long replicationCount = 0;
-    long errorsCount = 0;
-    long skippedCount = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      SolrMetricManager manager = jetty.getCoreContainer().getMetricManager();
-      List<String> registryNames =
-          manager.registryNames().stream()
-              .filter(s -> s.startsWith("solr.core."))
-              .collect(Collectors.toList());
-      for (String registry : registryNames) {
-        Map<String, Metric> metrics = manager.registry(registry).getMetrics();
-        Timer timer = (Timer) metrics.get("REPLICATION.peerSync.time");
-        Counter counter = (Counter) metrics.get("REPLICATION.peerSync.errors");
-        Counter skipped = (Counter) metrics.get("REPLICATION.peerSync.skipped");
-        replicationCount += timer.getCount();
-        errorsCount += counter.getCount();
-        skippedCount += skipped.getCount();
+      CoreContainer cc = jetty.getCoreContainer();
+      for (String coreName : cc.getAllCoreNames()) {
+        try (SolrCore core = cc.getCore(coreName)) {
+          var replicationDatapoint =
+              SolrMetricTestUtils.getHistogramDatapoint(
+                  core,
+                  "solr_core_peer_sync_time_milliseconds",
+                  SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                      .label("category", "REPLICATION")
+                      .build());
+          replicationCount += (replicationDatapoint != null) ? replicationDatapoint.getCount() : 0;
+        }
       }
     }
     if (onlyLeaderIndexes) {

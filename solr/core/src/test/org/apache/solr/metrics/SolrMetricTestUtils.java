@@ -22,6 +22,7 @@ import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -173,9 +174,7 @@ public final class SolrMetricTestUtils {
 
   private static <T> T getDatapoint(
       SolrCore core, String metricName, Labels labels, Class<T> snapshotType) {
-
     var reader = getPrometheusMetricReader(core);
-
     return snapshotType.cast(SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, labels));
   }
 
@@ -187,5 +186,11 @@ public final class SolrMetricTestUtils {
   public static CounterSnapshot.CounterDataPointSnapshot getCounterDatapoint(
       SolrCore core, String metricName, Labels labels) {
     return getDatapoint(core, metricName, labels, CounterSnapshot.CounterDataPointSnapshot.class);
+  }
+
+  public static HistogramSnapshot.HistogramDataPointSnapshot getHistogramDatapoint(
+      SolrCore core, String metricName, Labels labels) {
+    return getDatapoint(
+        core, metricName, labels, HistogramSnapshot.HistogramDataPointSnapshot.class);
   }
 }
