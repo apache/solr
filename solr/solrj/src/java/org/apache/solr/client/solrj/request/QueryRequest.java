@@ -68,7 +68,6 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
 
   @Override
   public SolrParams getParams() {
-    // Remove qt parameter from the final parameters sent to server
     String qt = query.get(CommonParams.QT);
     if (qt != null) {
       ModifiableSolrParams params = new ModifiableSolrParams(query);

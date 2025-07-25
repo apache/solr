@@ -22,9 +22,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
-/**
- * Test that verifies SOLR-17715: qt parameter should not be sent to Solr server
- */
 public class QueryRequestQtTest extends SolrTestCase {
 
   @Test
@@ -33,11 +30,9 @@ public class QueryRequestQtTest extends SolrTestCase {
     query.setRequestHandler("/custom");
     
     QueryRequest request = new QueryRequest(query);
-    
     // The path should be extracted from qt
     assertEquals("/custom", request.getPath());
-    
-    // But qt should not be in the final parameters
+
     SolrParams params = request.getParams();
     assertNull("qt parameter should be removed from request params", 
                params.get(CommonParams.QT));
@@ -47,14 +42,11 @@ public class QueryRequestQtTest extends SolrTestCase {
   @Test
   public void testQtParameterWithoutSlashUsesSelect() {
     SolrQuery query = new SolrQuery("*:*");
-    query.setRequestHandler("custom"); // no leading slash
+    query.setRequestHandler("custom");
     
     QueryRequest request = new QueryRequest(query);
-    
-    // Should default to /select when qt doesn't start with /
     assertEquals("/select", request.getPath());
     
-    // qt should still be removed from parameters
     SolrParams params = request.getParams();
     assertNull("qt parameter should be removed from request params", 
                params.get(CommonParams.QT));
@@ -63,14 +55,10 @@ public class QueryRequestQtTest extends SolrTestCase {
   @Test
   public void testNoQtParameter() {
     SolrQuery query = new SolrQuery("*:*");
-    // Don't set any request handler
-    
     QueryRequest request = new QueryRequest(query);
-    
-    // Should default to /select
     assertEquals("/select", request.getPath());
-    
-    // Should not have qt parameter
+
+    // qt should still be removed from parameters
     SolrParams params = request.getParams();
     assertNull("qt parameter should not be present", 
                params.get(CommonParams.QT));
