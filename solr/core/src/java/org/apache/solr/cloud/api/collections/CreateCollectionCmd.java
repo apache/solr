@@ -361,7 +361,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         if (async != null) {
           String coreAdminAsyncId = async + Math.abs(System.nanoTime());
           params.add(ASYNC, coreAdminAsyncId);
-          shardRequestTracker.track(nodeName, coreAdminAsyncId);
+          shardRequestTracker.track(nodeName, coreName, coreAdminAsyncId);
         }
         CollectionHandlingUtils.addPropertyParams(message, params);
 
