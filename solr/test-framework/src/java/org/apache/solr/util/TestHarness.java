@@ -34,13 +34,11 @@ import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.MDCSnapshot;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -195,15 +193,7 @@ public class TestHarness extends BaseTestHarness {
                 .setZkHost(System.getProperty("zkHost"))
                 .build();
 
-    // universal default metric reporter
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("name", "default");
-    attributes.put("class", SolrJmxReporter.class.getName());
-    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-    MetricsConfig metricsConfig =
-        new MetricsConfig.MetricsConfigBuilder()
-            .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
-            .build();
+    MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
