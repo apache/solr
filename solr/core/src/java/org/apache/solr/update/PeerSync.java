@@ -21,8 +21,6 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
@@ -51,6 +49,8 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -90,9 +90,9 @@ public class PeerSync implements SolrMetricProducer {
   private MissedUpdatesFinder missedUpdatesFinder;
 
   // metrics
-  private Timer syncTime;
-  private Counter syncErrors;
-  private Counter syncSkipped;
+  private AttributedLongTimer syncTime;
+  private AttributedLongCounter syncErrors;
+  private AttributedLongCounter syncSkipped;
   private SolrMetricsContext solrMetricsContext;
 
   // comparator that sorts by absolute value, putting highest first
@@ -143,14 +143,28 @@ public class PeerSync implements SolrMetricProducer {
     return solrMetricsContext;
   }
 
-  // TODO SOLR-17458: Migrate to Otel
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
-    syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);
-    syncSkipped = solrMetricsContext.counter("skipped", scope, METRIC_SCOPE);
+    var baseAttributes =
+        attributes.toBuilder()
+            .put("category", SolrInfoBean.Category.REPLICATION.toString())
+            .build();
+    syncErrors =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_peer_sync_errors", "Total number of sync errors with peer"),
+            baseAttributes);
+    syncSkipped =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_peer_sync_skipped", "Total number of skipped syncs with peer"),
+            baseAttributes);
+    syncTime =
+        new AttributedLongTimer(
+            solrMetricsContext.longHistogram("solr_core_peer_sync_time", "Peer sync times", "ms"),
+            baseAttributes);
   }
 
   public static long percentile(List<Long> arr, float frac) {
@@ -181,7 +195,7 @@ public class PeerSync implements SolrMetricProducer {
       syncErrors.inc();
       return PeerSyncResult.failure();
     }
-    Timer.Context timerContext = null;
+    AttributedLongTimer.MetricTimer timerContext = null;
     try {
       if (log.isInfoEnabled()) {
         log.info("{} START replicas={} nUpdates={}", msg(), replicas, nUpdates);
@@ -194,7 +208,7 @@ public class PeerSync implements SolrMetricProducer {
       }
 
       // measure only when actual sync is performed
-      timerContext = syncTime.time();
+      timerContext = syncTime.start();
 
       // Fire off the requests before getting our own recent updates (for better concurrency)
       // This also allows us to avoid getting updates we don't need... if we got our updates and
@@ -273,7 +287,7 @@ public class PeerSync implements SolrMetricProducer {
       return success ? PeerSyncResult.success() : PeerSyncResult.failure();
     } finally {
       if (timerContext != null) {
-        timerContext.close();
+        timerContext.stop();
       }
     }
   }
