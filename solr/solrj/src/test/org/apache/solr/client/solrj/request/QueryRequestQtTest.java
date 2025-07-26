@@ -28,30 +28,28 @@ public class QueryRequestQtTest extends SolrTestCase {
   public void testQtParameterRemovedFromRequest() {
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("/custom");
-    
+
     QueryRequest request = new QueryRequest(query);
     // The path should be extracted from qt
     assertEquals("/custom", request.getPath());
 
     SolrParams params = request.getParams();
-    assertNull("qt parameter should be removed from request params", 
-               params.get(CommonParams.QT));
+    assertNull("qt parameter should be removed from request params", params.get(CommonParams.QT));
     assertEquals("*:*", params.get(CommonParams.Q));
   }
-  
+
   @Test
   public void testQtParameterWithoutSlashUsesSelect() {
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("custom");
-    
+
     QueryRequest request = new QueryRequest(query);
     assertEquals("/select", request.getPath());
-    
+
     SolrParams params = request.getParams();
-    assertNull("qt parameter should be removed from request params", 
-               params.get(CommonParams.QT));
+    assertNull("qt parameter should be removed from request params", params.get(CommonParams.QT));
   }
-  
+
   @Test
   public void testNoQtParameter() {
     SolrQuery query = new SolrQuery("*:*");
@@ -60,8 +58,7 @@ public class QueryRequestQtTest extends SolrTestCase {
 
     // qt should still be removed from parameters
     SolrParams params = request.getParams();
-    assertNull("qt parameter should not be present", 
-               params.get(CommonParams.QT));
+    assertNull("qt parameter should not be present", params.get(CommonParams.QT));
     assertEquals("*:*", params.get(CommonParams.Q));
   }
 }

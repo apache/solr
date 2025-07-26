@@ -87,14 +87,13 @@ public class ClientUtilsTest extends SolrTestCase {
   public void testQueryRequestQtParameterRemoval() {
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("/custom");
-    
+
     QueryRequest request = new QueryRequest(query);
 
     assertEquals("/custom", request.getPath());
-    
+
     SolrParams params = request.getParams();
-    assertNull("qt parameter should be removed from request params", 
-               params.get(CommonParams.QT));
+    assertNull("qt parameter should be removed from request params", params.get(CommonParams.QT));
     assertEquals("*:*", params.get(CommonParams.Q));
   }
 
@@ -102,13 +101,12 @@ public class ClientUtilsTest extends SolrTestCase {
   public void testQueryRequestQtParameterWithoutSlash() {
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("custom"); // no leading slash
-    
+
     QueryRequest request = new QueryRequest(query);
-    
+
     assertEquals("/select", request.getPath());
-    
+
     SolrParams params = request.getParams();
-    assertNull("qt parameter should be removed from request params", 
-               params.get(CommonParams.QT));
+    assertNull("qt parameter should be removed from request params", params.get(CommonParams.QT));
   }
 }
