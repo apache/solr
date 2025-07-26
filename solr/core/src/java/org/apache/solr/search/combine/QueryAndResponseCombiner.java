@@ -22,23 +22,20 @@ import java.util.Map;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
  * The QueryAndResponseCombiner class is an abstract base class for combining query results and
  * shard documents. It provides a framework for different algorithms to be implemented for merging
  * ranked lists and shard documents.
  */
-public abstract class QueryAndResponseCombiner {
-
-  public abstract void init(NamedList<?> args);
-
+public abstract class QueryAndResponseCombiner implements NamedListInitializedPlugin {
   /**
    * Combines multiple ranked lists into a single QueryResult.
    *
@@ -84,16 +81,13 @@ public abstract class QueryAndResponseCombiner {
   /**
    * Retrieves an implementation of the QueryAndResponseCombiner based on the specified algorithm.
    *
-   * @param requestParams the SolrParams containing the request parameters, including the combiner
-   *     algorithm.
+   * @param algorithm the combiner algorithm
    * @param combiners The already initialised map of QueryAndResponseCombiner
    * @return an instance of QueryAndResponseCombiner corresponding to the specified algorithm.
    * @throws SolrException if an unknown combiner algorithm is specified.
    */
   public static QueryAndResponseCombiner getImplementation(
-      SolrParams requestParams, Map<String, QueryAndResponseCombiner> combiners) {
-    String algorithm =
-        requestParams.get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
+      String algorithm, Map<String, QueryAndResponseCombiner> combiners) {
     if (combiners.containsKey(algorithm)) {
       return combiners.get(algorithm);
     }

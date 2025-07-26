@@ -48,7 +48,7 @@ public class CombinedQuerySearchHandler extends SearchHandler {
     if (req.getParams().getBool(CombinerParams.COMBINER, false)) {
       return new CombinedQueryResponseBuilder(req, rsp, components);
     }
-    return new ResponseBuilder(req, rsp, components);
+    return super.newResponseBuilder(req, rsp, components);
   }
 
   /**

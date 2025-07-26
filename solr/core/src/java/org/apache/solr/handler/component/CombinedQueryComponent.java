@@ -92,7 +92,16 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         QueryAndResponseCombiner combiner =
             core.getResourceLoader().newInstance(className, QueryAndResponseCombiner.class);
         combiner.init(combinerConfig);
-        combiners.computeIfAbsent(name, combinerName -> combiner);
+        combiners.compute(
+            name,
+            (k, existingCombiner) -> {
+              if (existingCombiner == null) {
+                return combiner;
+              }
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Found more than one combiner with same name");
+            });
       }
       Object maxQueries = initParams.get("maxCombinerQueries");
       if (maxQueries != null) {
@@ -170,8 +179,12 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           setMaxHitsTerminatedEarly |= queryResult.getMaxHitsTerminatedEarly();
         }
       }
+      String algorithm =
+          rb.req
+              .getParams()
+              .get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
       QueryAndResponseCombiner combinerStrategy =
-          QueryAndResponseCombiner.getImplementation(rb.req.getParams(), combiners);
+          QueryAndResponseCombiner.getImplementation(algorithm, combiners);
       QueryResult combinedQueryResult = combinerStrategy.combine(queryResults, rb.req.getParams());
       combinedQueryResult.setPartialResults(partialResults);
       combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
@@ -527,8 +540,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
    */
   protected Map<Object, ShardDoc> createShardResult(
       ResponseBuilder rb, Map<String, List<ShardDoc>> shardDocMap, SolrDocumentList responseDocs) {
+    String algorithm =
+        rb.req.getParams().get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
     QueryAndResponseCombiner combinerStrategy =
-        QueryAndResponseCombiner.getImplementation(rb.req.getParams(), combiners);
+        QueryAndResponseCombiner.getImplementation(algorithm, combiners);
     List<ShardDoc> combinedShardDocs = combinerStrategy.combine(shardDocMap, rb.req.getParams());
     Map<String, ShardDoc> shardDocIdMap = new HashMap<>();
     shardDocMap.forEach(

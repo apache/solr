@@ -122,13 +122,17 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
   public void testImplementationFactory() {
     Map<String, QueryAndResponseCombiner> combinerMap = new HashMap<>(1);
     SolrParams emptySolrParms = params();
+    String emptyParamAlgorithm =
+        emptySolrParms.get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
     assertThrows(
         SolrException.class,
-        () -> QueryAndResponseCombiner.getImplementation(emptySolrParms, combinerMap));
+        () -> QueryAndResponseCombiner.getImplementation(emptyParamAlgorithm, combinerMap));
     SolrParams solrParams = params(CombinerParams.COMBINER_ALGORITHM, RECIPROCAL_RANK_FUSION);
+    String algorithm =
+        solrParams.get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
     combinerMap.put(RECIPROCAL_RANK_FUSION, new ReciprocalRankFusion());
     assertTrue(
-        QueryAndResponseCombiner.getImplementation(solrParams, combinerMap)
+        QueryAndResponseCombiner.getImplementation(algorithm, combinerMap)
             instanceof ReciprocalRankFusion);
   }
 }
