@@ -15,30 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth
+package org.apache.solr.ui.domain
 
-import io.ktor.http.Url
+import kotlinx.serialization.Serializable
 
-interface UnauthenticatedComponent {
+/**
+ * A sealed interface that represents an authentication method.
+ */
+@Serializable
+sealed interface AuthMethod {
 
     /**
-     * Aborts the authentication attempt.
+     * Basic authentication method that uses username and password for
+     * authenticating.
+     *
+     * Note that additional params like realm etc. are currently ignored in basic auth.
      */
-    fun onAbort()
-
-    sealed interface Output {
-
-        /**
-         * Emitted when the user successfully authenticated against
-         * the Solr instance.
-         *
-         * @property url The URL the connection was established with
-         */
-        data class OnConnected(val url: Url): Output
-
-        /**
-         * Emitted when the user aborts the authentication flow.
-         */
-        data object OnAbort: Output
-    }
+    @Serializable
+    data class BasicAuthMethod(val realm: String = "") : AuthMethod
 }
