@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.request;
 import java.util.Objects;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
@@ -67,6 +68,12 @@ public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> 
 
   @Override
   public SolrParams getParams() {
+    String qt = query.get(CommonParams.QT);
+    if (qt != null) {
+      ModifiableSolrParams params = new ModifiableSolrParams(query);
+      params.remove(CommonParams.QT);
+      return params;
+    }
     return query;
   }
 }

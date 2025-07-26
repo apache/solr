@@ -17,11 +17,14 @@
 package org.apache.solr.client.solrj.util;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
 /**
@@ -78,5 +81,32 @@ public class ClientUtilsTest extends SolrTestCase {
           ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", "unneededCollection");
       assertEquals("http://localhost:8983/solr/admin/info/health", url);
     }
+  }
+
+  @Test
+  public void testQueryRequestQtParameterRemoval() {
+    SolrQuery query = new SolrQuery("*:*");
+    query.setRequestHandler("/custom");
+
+    QueryRequest request = new QueryRequest(query);
+
+    assertEquals("/custom", request.getPath());
+
+    SolrParams params = request.getParams();
+    assertNull("qt parameter should be removed from request params", params.get(CommonParams.QT));
+    assertEquals("*:*", params.get(CommonParams.Q));
+  }
+
+  @Test
+  public void testQueryRequestQtParameterWithoutSlash() {
+    SolrQuery query = new SolrQuery("*:*");
+    query.setRequestHandler("custom"); // no leading slash
+
+    QueryRequest request = new QueryRequest(query);
+
+    assertEquals("/select", request.getPath());
+
+    SolrParams params = request.getParams();
+    assertNull("qt parameter should be removed from request params", params.get(CommonParams.QT));
   }
 }
