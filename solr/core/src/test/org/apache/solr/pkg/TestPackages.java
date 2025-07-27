@@ -436,7 +436,8 @@ public class TestPackages extends SolrCloudTestCase {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("collection", COLLECTION_NAME);
-    new GenericCollectionRequest(SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
+    new GenericCollectionRequest(
+        SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
       @Override
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
@@ -460,7 +461,8 @@ public class TestPackages extends SolrCloudTestCase {
     verifyComponent(
         cluster.getSolrClient(), COLLECTION_NAME, "requestHandler", "/runtime", "mypkg", "1.1");
 
-    new GenericCollectionRequest(SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
+    new GenericCollectionRequest(
+        SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
       @Override
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
