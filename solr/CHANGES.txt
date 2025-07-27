@@ -21,6 +21,8 @@ Bug Fixes
 ---------------------
 (No changes)
 
+* SOLR-17824: RecoveryStrategy.pingLeader could NPE when there's no shard leader (David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
