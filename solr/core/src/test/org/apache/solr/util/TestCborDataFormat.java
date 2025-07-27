@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.MapSolrParams;
@@ -50,7 +51,6 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.loader.CborLoader;
-import org.apache.solr.response.XMLResponseWriter;
 
 public class TestCborDataFormat extends SolrCloudTestCase {
 
@@ -162,7 +162,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
                         + "{\"name\":\"genre\",\"type\":\"string\",\"multiValued\":true,\"stored\":true},\n"
                         + "{\"name\":\"film_vector\",\"type\":\"knn_vector_10\",\"indexed\":true,\"stored\":true}]}")
                     .getBytes(StandardCharsets.UTF_8),
-                XMLResponseWriter.CONTENT_TYPE_XML_UTF8),
+                ClientUtils.TEXT_JSON),
         testCollection);
   }
 
