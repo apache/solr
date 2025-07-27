@@ -50,7 +50,6 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericCollectionRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -437,16 +436,11 @@ public class TestPackages extends SolrCloudTestCase {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("collection", COLLECTION_NAME);
-    new GenericSolrRequest(SolrRequest.METHOD.POST, "/config/params", params) {
+    new GenericCollectionRequest(SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
       @Override
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '1.1'}}}", ClientUtils.TEXT_JSON);
-      }
-
-      @Override
-      public boolean requiresCollection() {
-        return true;
       }
     }.process(cluster.getSolrClient());
 
@@ -466,16 +460,11 @@ public class TestPackages extends SolrCloudTestCase {
     verifyComponent(
         cluster.getSolrClient(), COLLECTION_NAME, "requestHandler", "/runtime", "mypkg", "1.1");
 
-    new GenericSolrRequest(SolrRequest.METHOD.POST, "/config/params", params) {
+    new GenericCollectionRequest(SolrRequest.METHOD.POST, "/config/params", SolrRequest.SolrRequestType.ADMIN, params) {
       @Override
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '2.1'}}}", ClientUtils.TEXT_JSON);
-      }
-
-      @Override
-      public boolean requiresCollection() {
-        return true;
       }
     }.process(cluster.getSolrClient());
 
