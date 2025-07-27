@@ -1513,7 +1513,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           try (SolrClient client = getHttpSolrClient(baseUrl)) {
             // client.setConnectionTimeout(15000);
             Create createCmd = new Create();
-            createCmd.setRoles("none");
             createCmd.setCoreName(collection + num);
             createCmd.setCollection(collection);
 

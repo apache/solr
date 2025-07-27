@@ -18,7 +18,6 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
 import java.util.Map;
 
 public class CreateCoreParams {
@@ -46,8 +45,6 @@ public class CreateCoreParams {
   @JsonProperty public String shard;
 
   @JsonProperty public String collection;
-
-  @JsonProperty public List<String> roles;
 
   @JsonProperty public String replicaType;
 
