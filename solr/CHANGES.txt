@@ -216,6 +216,8 @@ Bug Fixes
 
 * SOLR-17717: Starting solr on newer Windows 11 Home complained about missing wmic (Jan Høydahl)
 
+* SOLR-17824: RecoveryStrategy.pingLeader could NPE when there's no shard leader (David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
