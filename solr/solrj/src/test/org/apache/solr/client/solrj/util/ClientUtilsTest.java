@@ -82,31 +82,4 @@ public class ClientUtilsTest extends SolrTestCase {
       assertEquals("http://localhost:8983/solr/admin/info/health", url);
     }
   }
-
-  @Test
-  public void testQueryRequestQtParameterRemoval() {
-    SolrQuery query = new SolrQuery("*:*");
-    query.setRequestHandler("/custom");
-
-    QueryRequest request = new QueryRequest(query);
-
-    assertEquals("/custom", request.getPath());
-
-    SolrParams params = request.getParams();
-    assertNull("qt parameter should be removed from request params", params.get(CommonParams.QT));
-    assertEquals("*:*", params.get(CommonParams.Q));
-  }
-
-  @Test
-  public void testQueryRequestQtParameterWithoutSlash() {
-    SolrQuery query = new SolrQuery("*:*");
-    query.setRequestHandler("custom"); // no leading slash
-
-    QueryRequest request = new QueryRequest(query);
-
-    assertEquals("/select", request.getPath());
-
-    SolrParams params = request.getParams();
-    assertNull("qt parameter should be removed from request params", params.get(CommonParams.QT));
-  }
 }

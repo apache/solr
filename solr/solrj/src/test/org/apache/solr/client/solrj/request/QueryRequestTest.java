@@ -22,7 +22,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
-public class QueryRequestQtTest extends SolrTestCase {
+public class QueryRequestTest extends SolrTestCase {
 
   @Test
   public void testQtParameterRemovedFromRequest() {
