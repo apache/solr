@@ -222,7 +222,8 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17829: SolrJ introducing GenericCollectionRequest for generic collection/core specific requests, and that which
+  make the request type and other aspects mandatory.  Also, changed the requestType of some internal requests.
 
 ==================  9.9.0 ==================
 New Features
