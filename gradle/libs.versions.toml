@@ -128,7 +128,7 @@ jakarta-ws = "3.1.0"
 java-min = "21"
 # @keep This is the minimum required Java version for SolrJ.
 java-solrj = "17"
-javacc = "7.0.12"
+javacc = "7.0.13"
 # @keep for version alignment
 jaxb = "2.3.8"
 jayway-jsonpath = "2.9.0"
