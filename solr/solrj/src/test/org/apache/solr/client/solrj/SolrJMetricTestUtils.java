@@ -29,15 +29,6 @@ import org.apache.solr.common.util.NamedList;
 
 public final class SolrJMetricTestUtils {
 
-  private SolrJMetricTestUtils() {} // utility class
-
-  /**
-   * Retrieves a specific Prometheus metric value from the admin/metrics endpoint
-   *
-   * @param solrClient the CloudSolrClient to query
-   * @param metricName the full metric name to search for (including labels)
-   * @return the metric value as a double
-   */
   public static double getPrometheusMetricValue(CloudSolrClient solrClient, String metricName)
       throws SolrServerException, IOException {
     var req =
@@ -58,7 +49,6 @@ public final class SolrJMetricTestUtils {
               .findFirst()
               .orElseThrow(() -> new AssertionError("Metric not found: " + metricName));
 
-      // Extract value after the last space
       return Double.parseDouble(line.substring(line.lastIndexOf(" ") + 1).trim());
     }
   }
@@ -94,7 +84,6 @@ public final class SolrJMetricTestUtils {
                             && l.contains(String.format("handler=\"%s\"", handler)))
                 .findFirst();
 
-        // If metric doesn't exist yet, return 0
         return line.map(s -> Float.parseFloat(s.substring(s.lastIndexOf(" ") + 1).trim()))
             .orElse(0.0F);
       }
@@ -128,7 +117,7 @@ public final class SolrJMetricTestUtils {
                             && l.contains(String.format("handler=\"%s\"", handler)))
                 .toList();
 
-        // If metric doesn't exist yet, return 0
+        // Sum both client and server errors
         return line.stream()
             .map(s -> Float.parseFloat(s.substring(s.lastIndexOf(" ") + 1).trim()))
             .reduce(Float::sum)

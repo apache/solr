@@ -140,6 +140,7 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
                 .label("handler", "/terms")
                 .build());
 
+    // RequestHandlers should not share statistics
     assertTrue(updateDp.getSum() > 0);
     assertNull("/terms should not have any time value", termDp);
   }

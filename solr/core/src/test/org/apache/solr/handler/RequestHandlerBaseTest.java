@@ -196,8 +196,6 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     when(metricsContext.longHistogram(any(), any())).thenReturn(mockLongHistogram);
 
     return new RequestHandlerBase.HandlerMetrics(
-        metricsContext,
-        Attributes.of(AttributeKey.stringKey("/handler"), "/someBaseMetricPath"),
-        "someBaseMetricPath");
+        metricsContext, Attributes.of(AttributeKey.stringKey("/handler"), "/someBaseMetricPath"));
   }
 }

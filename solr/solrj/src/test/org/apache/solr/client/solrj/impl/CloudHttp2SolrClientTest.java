@@ -2,7 +2,7 @@
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache Apache License, Version 2.0
+ * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -394,7 +394,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // Track request counts on each node before query calls
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection col = clusterState.getCollection("routing_collection");
-    Map<String, Float> requestCountsMap = new HashMap<>();
+    Map<String, Double> requestCountsMap = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
@@ -635,7 +635,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         replicaTypeToReplicas.get(shardAddresses.get(0)).toUpperCase(Locale.ROOT));
   }
 
-  private Float getNumRequests(String baseUrl, String collectionName)
+  private Double getNumRequests(String baseUrl, String collectionName)
       throws SolrServerException, IOException {
     return SolrJMetricTestUtils.getNumCoreRequests(baseUrl, collectionName, "QUERY", "/select");
   }
