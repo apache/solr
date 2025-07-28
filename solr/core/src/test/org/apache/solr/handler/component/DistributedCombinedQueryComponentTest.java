@@ -17,10 +17,13 @@
 package org.apache.solr.handler.component;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -91,6 +94,18 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     // cosine distance vector1= 0.997
     docs.get(9).addField(vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f));
     del("*:*");
+    clients.sort(
+        (client1, client2) -> {
+          try {
+            if (client2 instanceof HttpSolrClient httpClient2
+                && client1 instanceof HttpSolrClient httpClient1)
+              return new URI(httpClient1.getBaseURL()).getPort()
+                  - new URI(httpClient2.getBaseURL()).getPort();
+          } catch (URISyntaxException e) {
+            throw new RuntimeException("Unable to get URI from SolrClient", e);
+          }
+          return 0;
+        });
     for (SolrInputDocument doc : docs) {
       indexDoc(doc);
     }
@@ -126,7 +141,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   @Override
   protected String getShardsString() {
     if (deadServers == null) return shards;
-
+    Arrays.sort(shardsArr);
     StringBuilder sb = new StringBuilder();
     for (String shard : shardsArr) {
       if (!sb.isEmpty()) sb.append(',');
