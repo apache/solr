@@ -282,7 +282,7 @@ public abstract class RequestHandlerBase
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
-    AttributedLongTimer.MetricTimer otelTimer = metrics.requestTimes.start();
+    AttributedLongTimer.MetricTimer timer = metrics.requestTimes.start();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
@@ -305,7 +305,7 @@ public abstract class RequestHandlerBase
       rsp.setException(normalized);
     } finally {
       try {
-        otelTimer.stop();
+        timer.stop();
 
         if (publishCpuTime) {
           Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);

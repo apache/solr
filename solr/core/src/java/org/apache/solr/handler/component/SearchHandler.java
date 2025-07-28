@@ -90,6 +90,8 @@ import org.slf4j.MDC;
 /** Refer SOLR-281 */
 public class SearchHandler extends RequestHandlerBase
     implements SolrCoreAware, PluginInfoInitialized, PermissionNameProvider {
+
+  public static final AttributeKey<Boolean> INTERNAL_ATTR = AttributeKey.booleanKey("internal");
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
@@ -158,10 +160,7 @@ public class SearchHandler extends RequestHandlerBase
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     super.initializeMetrics(
         parentContext,
-        Attributes.builder()
-            .putAll(attributes)
-            .put(AttributeKey.booleanKey("internal"), false)
-            .build(),
+        Attributes.builder().putAll(attributes).put(INTERNAL_ATTR, false).build(),
         scope);
     metricsShard =
         new HandlerMetrics( // will register various metrics in the context
@@ -169,7 +168,7 @@ public class SearchHandler extends RequestHandlerBase
             Attributes.builder()
                 .putAll(attributes)
                 .put(CATEGORY_ATTR, getCategory().toString())
-                .put(AttributeKey.booleanKey("internal"), true)
+                .put(INTERNAL_ATTR, true)
                 .build());
   }
 
