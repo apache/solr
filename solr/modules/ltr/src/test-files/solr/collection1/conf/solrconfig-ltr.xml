@@ -11,7 +11,7 @@
  language governing permissions and limitations under the License. -->
 
 <config>
- <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+    <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
  <dataDir>${solr.data.dir:}</dataDir>
  <directoryFactory name="DirectoryFactory"
   class="${solr.directoryFactory:solr.MockDirectoryFactory}" />
@@ -41,9 +41,9 @@
  </transformer>
 
  <!-- add a transformer that will encode the model the interleaving process chose the search result from.
-  For each document the transformer will add an extra field in the response with the model picked. 
+  For each document the transformer will add an extra field in the response with the model picked.
   The name of the field will be the the name of the transformer
-  enclosed between brackets (in this case [interleaving]). 
+  enclosed between brackets (in this case [interleaving]).
   In order to get the model chosen for the search result
   you will have to specify that you want the field (e.g., fl="*,[interleaving]) -->
  <transformer name="interleaving" class="org.apache.solr.ltr.response.transform.LTRInterleavingTransformerFactory">
