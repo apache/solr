@@ -21,7 +21,6 @@ import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.TIMER;
 
-import com.codahale.metrics.Timer;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -92,9 +91,10 @@ public class RequestMetricHandling {
 
       // TODO SOLR-17458: Recording both Otel and dropwizard for now. Will remove Dropwizard after
       // removal
-      metrics.requests.inc();
+      //      metrics.requests.inc();
+      metrics.otelRequests.inc();
       requestContext.setProperty(TIMER, metrics.otelRequestTimes.start());
-      requestContext.setProperty("dropwizardTimer", metrics.requestTimes.time());
+      //      requestContext.setProperty("dropwizardTimer", metrics.requestTimes.time());
       requestContext.setProperty(HANDLER_METRICS, metrics);
     }
   }
@@ -120,14 +120,15 @@ public class RequestMetricHandling {
           && SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
         final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
         if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
-          metrics.numTimeouts.mark();
+          //          metrics.numTimeouts.mark();
           metrics.otelNumTimeouts.inc();
         }
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
-      final var dropwizardTimer = (Timer.Context) requestContext.getProperty("dropwizardTimer");
-      metrics.totalTime.inc(dropwizardTimer.stop());
+      //      final var dropwizardTimer = (Timer.Context)
+      // requestContext.getProperty("dropwizardTimer");
+      //      metrics.totalTime.inc(dropwizardTimer.stop());
 
       final var timer = (AttributedLongTimer.MetricTimer) requestContext.getProperty(TIMER);
       timer.stop();

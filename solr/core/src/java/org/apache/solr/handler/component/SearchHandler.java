@@ -153,7 +153,7 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
-  // TODO SOLR-17458: Fix metric Attributes
+  // NOCOMMIT SOLR-17458: Fix metric Attributes
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
@@ -161,8 +161,7 @@ public class SearchHandler extends RequestHandlerBase
         parentContext,
         Attributes.builder()
             .putAll(attributes)
-            .put(AttributeKey.stringKey("category"), getCategory().toString())
-            .put(AttributeKey.stringKey("internal"), "false")
+            .put(AttributeKey.booleanKey("internal"), false)
             .build(),
         scope);
     metricsShard =
@@ -170,7 +169,7 @@ public class SearchHandler extends RequestHandlerBase
             solrMetricsContext,
             Attributes.builder()
                 .putAll(attributes)
-                .put(AttributeKey.stringKey("category"), getCategory().toString())
+                .put(CATEGORY_ATTR, getCategory().toString())
                 .put(AttributeKey.stringKey("internal"), "true")
                 .build(),
             getCategory().toString(),

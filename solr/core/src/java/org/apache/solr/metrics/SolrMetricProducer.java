@@ -25,6 +25,7 @@ public interface SolrMetricProducer extends AutoCloseable {
 
   public static final AttributeKey<String> TYPE_ATTR = AttributeKey.stringKey("type");
   public static final AttributeKey<String> CATEGORY_ATTR = AttributeKey.stringKey("category");
+  public static final AttributeKey<String> HANDLER_ATTR = AttributeKey.stringKey("handler");
 
   /**
    * Unique metric tag identifies components with the same life-cycle, which should be registered /

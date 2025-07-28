@@ -2,7 +2,7 @@
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * The ASF licenses this file to You under the Apache Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -33,22 +33,18 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrJMetricTestUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -70,9 +66,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
@@ -401,7 +394,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // Track request counts on each node before query calls
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection col = clusterState.getCollection("routing_collection");
-    Map<String, Long> requestCountsMap = new HashMap<>();
+    Map<String, Float> requestCountsMap = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
@@ -464,15 +457,15 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // no increase in unexpected nodes.
     long increaseFromExpectedUrls = 0;
     long increaseFromUnexpectedUrls = 0;
-    Map<String, Long> numRequestsToUnexpectedUrls = new HashMap<>();
+    Map<String, Float> numRequestsToUnexpectedUrls = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
 
-        Long prevNumRequests = requestCountsMap.get(baseURL);
-        Long curNumRequests = getNumRequests(baseURL, "routing_collection");
+        Float prevNumRequests = requestCountsMap.get(baseURL);
+        Float curNumRequests = getNumRequests(baseURL, "routing_collection");
 
-        long delta = curNumRequests - prevNumRequests;
+        Float delta = curNumRequests - prevNumRequests;
         if (expectedBaseURLs.contains(baseURL)) {
           increaseFromExpectedUrls += delta;
         } else {
@@ -642,130 +635,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         replicaTypeToReplicas.get(shardAddresses.get(0)).toUpperCase(Locale.ROOT));
   }
 
-  private Long getNumRequests(String baseUrl, String collectionName)
+  private Float getNumRequests(String baseUrl, String collectionName)
       throws SolrServerException, IOException {
-    return getNumRequests(baseUrl, collectionName, "QUERY", "/select", null, false);
-  }
-
-  private Long getNumRequests(
-      String baseUrl,
-      String collectionName,
-      String category,
-      String key,
-      String scope,
-      boolean returnNumErrors)
-      throws SolrServerException, IOException {
-
-    NamedList<Object> resp;
-    try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
-            .withDefaultCollection(collectionName)
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
-            .build()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/admin/mbeans");
-      params.set("stats", "true");
-      params.set("key", key);
-      params.set("cat", category);
-      // use generic request to avoid extra processing of queries
-      QueryRequest req = new QueryRequest(params);
-      resp = client.request(req);
-    }
-    String name;
-    if (returnNumErrors) {
-      name = category + "." + (scope != null ? scope : key) + ".errors";
-    } else {
-      name = category + "." + (scope != null ? scope : key) + ".requests";
-    }
-    @SuppressWarnings({"unchecked"})
-    Map<String, Object> map =
-        (Map<String, Object>) resp.findRecursive("solr-mbeans", category, key, "stats");
-    if (map == null) {
-      return null;
-    }
-    if (scope != null) { // admin handler uses a meter instead of counter here
-      return (Long) map.get(name + ".count");
-    } else {
-      return (Long) map.get(name);
-    }
-  }
-
-  @Test
-  public void testNonRetryableRequests() throws Exception {
-
-    try (CloudSolrClient client =
-        new RandomizingCloudSolrClientBuilder(
-                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .withDefaultCollection("foo")
-            .build()) {
-      // important to have one replica on each node
-      RequestStatusState state =
-          CollectionAdminRequest.createCollection("foo", "conf", 1, NODE_COUNT)
-              .processAndWait(client, 60);
-      if (state == RequestStatusState.COMPLETED) {
-        cluster.waitForActiveCollection("foo", 1, NODE_COUNT);
-
-        Map<String, String> adminPathToMbean = new HashMap<>(CommonParams.ADMIN_PATHS.size());
-        adminPathToMbean.put(
-            CommonParams.COLLECTIONS_HANDLER_PATH, CollectionsHandler.class.getName());
-        adminPathToMbean.put(CommonParams.CORES_HANDLER_PATH, CoreAdminHandler.class.getName());
-        adminPathToMbean.put(
-            CommonParams.CONFIGSETS_HANDLER_PATH, ConfigSetsHandler.class.getName());
-        // we do not add the authc/authz handlers because they do not currently expose any mbeans
-
-        for (String adminPath : adminPathToMbean.keySet()) {
-          long errorsBefore = 0;
-          for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests =
-                getNumRequests(
-                    runner.getBaseUrl().toString(),
-                    "foo",
-                    "ADMIN",
-                    adminPathToMbean.get(adminPath),
-                    adminPath,
-                    true);
-            errorsBefore += numRequests;
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
-            }
-          }
-
-          ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set("action", "foobar"); // this should cause an error
-          params.set("qt", adminPath);
-
-          var request =
-              new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params);
-          try {
-            NamedList<Object> resp = client.request(request);
-            fail("call to foo for admin path " + adminPath + " should have failed");
-          } catch (Exception e) {
-            // expected
-          }
-          long errorsAfter = 0;
-          for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests =
-                getNumRequests(
-                    runner.getBaseUrl().toString(),
-                    "foo",
-                    "ADMIN",
-                    adminPathToMbean.get(adminPath),
-                    adminPath,
-                    true);
-            errorsAfter += numRequests;
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
-            }
-          }
-          assertEquals(errorsBefore + 1, errorsAfter);
-        }
-      } else {
-        fail("Collection could not be created within 60 seconds");
-      }
-    }
+    return SolrJMetricTestUtils.getNumCoreRequests(baseUrl, collectionName, "QUERY", "/select");
   }
 
   @Test
