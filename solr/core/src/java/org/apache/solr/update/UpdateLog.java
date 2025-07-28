@@ -693,20 +693,21 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   private long computeBufferedOps() {
-    switch (state) {
-      case BUFFERING:
-        return (bufferTlog == null ? 0 : bufferTlog.numRecords() - 1);
-      case APPLYING_BUFFERED:
-        if (tlog == null) return 0;
-        return tlog.numRecords()
+    return switch (state) {
+        // numRecords counts header as a record
+      case BUFFERING -> (bufferTlog == null ? 0 : bufferTlog.numRecords() - 1);
+      case APPLYING_BUFFERED -> {
+        if (tlog == null) yield 0;
+        // numRecords counts header as a record
+        yield tlog.numRecords()
             - 1
             - recoveryInfo.adds
             - recoveryInfo.deleteByQuery
             - recoveryInfo.deletes
             - recoveryInfo.errors.get();
-      default:
-        return 0;
-    }
+      }
+      default -> 0;
+    };
   }
 
   /**
