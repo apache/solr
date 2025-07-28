@@ -39,12 +39,15 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrJMetricTestUtils;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -66,6 +69,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
@@ -455,17 +461,17 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
     // no increase in unexpected nodes.
-    long increaseFromExpectedUrls = 0;
-    long increaseFromUnexpectedUrls = 0;
-    Map<String, Float> numRequestsToUnexpectedUrls = new HashMap<>();
+    double increaseFromExpectedUrls = 0.0;
+    double increaseFromUnexpectedUrls = 0.0;
+    Map<String, Double> numRequestsToUnexpectedUrls = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
 
-        Float prevNumRequests = requestCountsMap.get(baseURL);
-        Float curNumRequests = getNumRequests(baseURL, "routing_collection");
+        Double prevNumRequests = requestCountsMap.get(baseURL);
+        Double curNumRequests = getNumRequests(baseURL, "routing_collection");
 
-        Float delta = curNumRequests - prevNumRequests;
+        Double delta = curNumRequests - prevNumRequests;
         if (expectedBaseURLs.contains(baseURL)) {
           increaseFromExpectedUrls += delta;
         } else {
@@ -475,11 +481,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       }
     }
 
-    assertEquals("Unexpected number of requests to expected URLs", n, increaseFromExpectedUrls);
+    assertEquals(
+        "Unexpected number of requests to expected URLs", n, increaseFromExpectedUrls, 0.0);
     assertEquals(
         "Unexpected number of requests to unexpected URLs: " + numRequestsToUnexpectedUrls,
         0,
-        increaseFromUnexpectedUrls);
+        increaseFromUnexpectedUrls,
+        0.0);
   }
 
   /**
@@ -633,6 +641,78 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         "Make sure that the replica queried was the replicaType desired",
         typeToQuery.toString().toUpperCase(Locale.ROOT),
         replicaTypeToReplicas.get(shardAddresses.get(0)).toUpperCase(Locale.ROOT));
+  }
+
+  @Test
+  public void testNonRetryableRequests() throws Exception {
+
+    try (CloudSolrClient client =
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withDefaultCollection("foo")
+            .build()) {
+      // important to have one replica on each node
+      RequestStatusState state =
+          CollectionAdminRequest.createCollection("foo", "conf", 1, NODE_COUNT)
+              .processAndWait(client, 60);
+      if (state == RequestStatusState.COMPLETED) {
+        cluster.waitForActiveCollection("foo", 1, NODE_COUNT);
+
+        Map<String, String> adminPathToMbean = new HashMap<>(CommonParams.ADMIN_PATHS.size());
+        adminPathToMbean.put(
+            CommonParams.COLLECTIONS_HANDLER_PATH, CollectionsHandler.class.getName());
+        adminPathToMbean.put(CommonParams.CORES_HANDLER_PATH, CoreAdminHandler.class.getName());
+        adminPathToMbean.put(
+            CommonParams.CONFIGSETS_HANDLER_PATH, ConfigSetsHandler.class.getName());
+        // we do not add the authc/authz handlers because they do not currently expose any mbeans
+
+        for (String adminPath : adminPathToMbean.keySet()) {
+          long errorsBefore = 0;
+          for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+            Double numRequests =
+                SolrJMetricTestUtils.getNumNodeRequestErrors(
+                    runner.getBaseUrl().toString(),
+                    SolrRequest.SolrRequestType.ADMIN.name(),
+                    adminPath);
+            errorsBefore += numRequests;
+            if (log.isInfoEnabled()) {
+              log.info(
+                  "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
+            }
+          }
+
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set("action", "foobar"); // this should cause an error
+          params.set("qt", adminPath);
+
+          var request =
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET, adminPath, SolrRequest.SolrRequestType.ADMIN, params);
+          try {
+            NamedList<Object> resp = client.request(request);
+            fail("call to foo for admin path " + adminPath + " should have failed");
+          } catch (Exception e) {
+            // expected
+          }
+          long errorsAfter = 0;
+          for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+            Double numRequests =
+                SolrJMetricTestUtils.getNumNodeRequestErrors(
+                    runner.getBaseUrl().toString(),
+                    SolrRequest.SolrRequestType.ADMIN.name(),
+                    adminPath);
+            errorsAfter += numRequests;
+            if (log.isInfoEnabled()) {
+              log.info(
+                  "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
+            }
+          }
+          assertEquals(errorsBefore + 1, errorsAfter);
+        }
+      } else {
+        fail("Collection could not be created within 60 seconds");
+      }
+    }
   }
 
   private Double getNumRequests(String baseUrl, String collectionName)

@@ -202,7 +202,6 @@ public abstract class RequestHandlerBase
     public AttributedLongCounter numTimeouts;
     public AttributedLongTimer requestTimes;
 
-    // NOCOMMIT: metricPath will be removed upon dropwizard removal since we use attributes
     public HandlerMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
 
       LongCounter requestMetric;
@@ -295,7 +294,6 @@ public abstract class RequestHandlerBase
       // count timeouts
 
       if (!haveCompleteResults(rsp.getResponseHeader())) {
-        //        metrics.numTimeouts.mark();
         metrics.numTimeouts.inc();
         rsp.setHttpCaching(false);
       }
@@ -307,8 +305,6 @@ public abstract class RequestHandlerBase
       rsp.setException(normalized);
     } finally {
       try {
-        //        long elapsed = timer.stop();
-        //        metrics.totalTime.inc(elapsed);
         otelTimer.stop();
 
         if (publishCpuTime) {

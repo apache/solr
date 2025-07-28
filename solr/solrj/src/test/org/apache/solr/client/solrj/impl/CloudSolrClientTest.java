@@ -338,11 +338,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // Track request counts on each node before query calls
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection col = clusterState.getCollection("routing_collection");
-    Map<String, Float> requestCountsMap = new HashMap<>();
+    Map<String, Double> requestCountsMap = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
-        requestCountsMap.put(baseURL, getNumRequests(baseURL, "routing_collection"));
+        requestCountsMap.put(baseURL, getNumSelectRequests(baseURL));
       }
     }
 
@@ -398,17 +398,17 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
     // no increase in unexpected nodes.
-    long increaseFromExpectedUrls = 0;
-    long increaseFromUnexpectedUrls = 0;
-    Map<String, Float> numRequestsToUnexpectedUrls = new HashMap<>();
+    Double increaseFromExpectedUrls = 0.0;
+    Double increaseFromUnexpectedUrls = 0.0;
+    Map<String, Double> numRequestsToUnexpectedUrls = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
 
-        Float prevNumRequests = requestCountsMap.get(baseURL);
-        Float curNumRequests = getNumRequests(baseURL, "routing_collection");
+        Double prevNumRequests = requestCountsMap.get(baseURL);
+        Double curNumRequests = getNumSelectRequests(baseURL);
 
-        float delta = curNumRequests - prevNumRequests;
+        double delta = curNumRequests - prevNumRequests;
         if (expectedBaseURLs.contains(baseURL)) {
           increaseFromExpectedUrls += delta;
         } else {
@@ -418,11 +418,13 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       }
     }
 
-    assertEquals("Unexpected number of requests to expected URLs", n, increaseFromExpectedUrls);
+    assertEquals(
+        "Unexpected number of requests to expected URLs", n, increaseFromExpectedUrls, 0.0);
     assertEquals(
         "Unexpected number of requests to unexpected URLs: " + numRequestsToUnexpectedUrls,
         0,
-        increaseFromUnexpectedUrls);
+        increaseFromUnexpectedUrls,
+        0.0);
   }
 
   /**
@@ -577,9 +579,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         replicaTypeToReplicas.get(shardAddresses.get(0)).toUpperCase(Locale.ROOT));
   }
 
-  private Float getNumRequests(String baseUrl, String collectionName)
-      throws SolrServerException, IOException {
-    return SolrJMetricTestUtils.getNumCoreRequests(baseUrl, collectionName, "QUERY", "/select");
+  private Double getNumSelectRequests(String baseUrl) throws SolrServerException, IOException {
+    return SolrJMetricTestUtils.getNumCoreRequests(
+        baseUrl, "routing_collection", "QUERY", "/select");
   }
 
   @Test
@@ -609,9 +611,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         for (String adminPath : adminPathToMbean.keySet()) {
           long errorsBefore = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Float numRequests =
+            Double numRequests =
                 SolrJMetricTestUtils.getNumNodeRequestErrors(
-                    runner.getBaseUrl().toString(), "ADMIN", adminPath);
+                    runner.getBaseUrl().toString(), SolrRequestType.ADMIN.name(), adminPath);
             errorsBefore += numRequests;
             if (log.isInfoEnabled()) {
               log.info(
@@ -632,9 +634,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           }
           long errorsAfter = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Float numRequests =
+            Double numRequests =
                 SolrJMetricTestUtils.getNumNodeRequestErrors(
-                    runner.getBaseUrl().toString(), "ADMIN", adminPath);
+                    runner.getBaseUrl().toString(), SolrRequestType.ADMIN.name(), adminPath);
             errorsAfter += numRequests;
             if (log.isInfoEnabled()) {
               log.info(

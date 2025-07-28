@@ -53,7 +53,7 @@ public final class SolrJMetricTestUtils {
     }
   }
 
-  public static Float getNumCoreRequests(
+  public static Double getNumCoreRequests(
       String baseUrl, String collectionName, String category, String handler)
       throws SolrServerException, IOException {
 
@@ -84,13 +84,13 @@ public final class SolrJMetricTestUtils {
                             && l.contains(String.format("handler=\"%s\"", handler)))
                 .findFirst();
 
-        return line.map(s -> Float.parseFloat(s.substring(s.lastIndexOf(" ") + 1).trim()))
-            .orElse(0.0F);
+        return line.map(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
+            .orElse(0.0);
       }
     }
   }
 
-  public static Float getNumNodeRequestErrors(String baseUrl, String category, String handler)
+  public static Double getNumNodeRequestErrors(String baseUrl, String category, String handler)
       throws SolrServerException, IOException {
 
     try (Http2SolrClient client = new Http2SolrClient.Builder(baseUrl).build()) {
@@ -119,9 +119,9 @@ public final class SolrJMetricTestUtils {
 
         // Sum both client and server errors
         return line.stream()
-            .map(s -> Float.parseFloat(s.substring(s.lastIndexOf(" ") + 1).trim()))
-            .reduce(Float::sum)
-            .orElse(0.0F);
+            .map(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
+            .reduce(Double::sum)
+            .orElse(0.0);
       }
     }
   }
