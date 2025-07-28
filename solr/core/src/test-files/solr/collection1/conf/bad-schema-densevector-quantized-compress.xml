@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<!-- Test schema file for DenseVectorField -->
+<!-- Test schema file for DenseVectorField types -->
 
-<schema name="schema-densevector" version="1.0">
+<schema name="bad-schema-densevector-quantized-compress" version="1.0">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>  
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" />
   <fieldType name="knn_vector_byte_encoding" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" vectorEncoding="BYTE"/>
@@ -26,12 +26,24 @@
   <fieldType name="high_dimensional_byte_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="BYTE"/>
   <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
+  <!-- Scalar Quantized vectors -->
+  <!-- attempt to use compression with an invalid bit size alignment -->
+  <fieldType name="knn_vector_scalar_quantized_compressed" class="solr.ScalarQuantizedDenseVectorField"
+             vectorDimension="4"
+             similarityFunction="cosine"
+             bits="7"
+            compress="true"/>
+  <field name="v_scalar_compressed" type="knn_vector_scalar_quantized_compressed" indexed="true" stored="true" />
+
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
   <field name="vector2" type="knn_vector" indexed="true" stored="true"/>
   <field name="vector_byte_encoding" type="knn_vector_byte_encoding" indexed="true" stored="true" />
   <field name="2048_byte_vector" type="high_dimensional_byte_knn_vector" indexed="true" stored="true" />
   <field name="2048_float_vector" type="high_dimensional_float_knn_vector" indexed="true" stored="true" />
+
+
+
   <field name="string_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />

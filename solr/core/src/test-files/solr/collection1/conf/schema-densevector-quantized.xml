@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<!-- Test schema file for DenseVectorField -->
+<!-- Test schema file for DenseVectorField types -->
 
-<schema name="schema-densevector" version="1.0">
+<schema name="schema-densevector-quantized" version="1.0">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>  
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" />
   <fieldType name="knn_vector_byte_encoding" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" vectorEncoding="BYTE"/>
@@ -26,12 +26,43 @@
   <fieldType name="high_dimensional_byte_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="BYTE"/>
   <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
+  <!-- Scalar Quantized vectors -->
+  <fieldType name="knn_vector_scalar_quantized_default" class="solr.ScalarQuantizedDenseVectorField"
+             vectorDimension="4"
+             similarityFunction="cosine"
+  />
+  <fieldType name="knn_vector_scalar_quantized_unsigned" class="solr.ScalarQuantizedDenseVectorField"
+             vectorDimension="4"
+             similarityFunction="cosine"
+            bits="4"/>
+  <fieldType name="knn_vector_scalar_quantized_compressed" class="solr.ScalarQuantizedDenseVectorField"
+             vectorDimension="4"
+             similarityFunction="cosine"
+             bits="4"
+            compress="true"/>
+  <fieldType name="knn_vector_scalar_quantized_confidence_interval" class="solr.ScalarQuantizedDenseVectorField"
+             vectorDimension="4"
+             similarityFunction="cosine"
+             confidenceInterval="0.9"/>
+  <fieldType name="knn_vector_scalar_quantized_confidence_dynamic" class="solr.ScalarQuantizedDenseVectorField"
+             vectorDimension="4"
+             similarityFunction="cosine"
+             dynamicConfidenceInterval="true"/>
+
+
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
   <field name="vector2" type="knn_vector" indexed="true" stored="true"/>
   <field name="vector_byte_encoding" type="knn_vector_byte_encoding" indexed="true" stored="true" />
   <field name="2048_byte_vector" type="high_dimensional_byte_knn_vector" indexed="true" stored="true" />
   <field name="2048_float_vector" type="high_dimensional_float_knn_vector" indexed="true" stored="true" />
+
+  <field name="v_scalar_default" type="knn_vector_scalar_quantized_default" indexed="true" stored="true" />
+  <field name="v_scalar_unsigned" type="knn_vector_scalar_quantized_unsigned" indexed="true" stored="true" />
+  <field name="v_scalar_compressed" type="knn_vector_scalar_quantized_compressed" indexed="true" stored="true" />
+  <field name="v_scalar_confidence" type="knn_vector_scalar_quantized_confidence_interval" indexed="true" stored="true" />
+  <field name="v_scalar_dynamic" type="knn_vector_scalar_quantized_confidence_dynamic" indexed="true" stored="true" />
+
   <field name="string_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
