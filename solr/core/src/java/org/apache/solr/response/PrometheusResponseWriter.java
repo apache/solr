@@ -62,7 +62,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
     List<MetricSnapshot> snapshots =
         readers.values().stream().flatMap(r -> r.collect().stream()).toList();
 
-    if (OPEN_METRICS_WT.equals(request.getParams().get(CommonParams.WT))) {
+    if (writeOpenMetricsFormat(request)) {
       new OpenMetricsTextFormatWriter(false, true).write(out, mergeSnapshots(snapshots));
     } else {
       new PrometheusTextFormatWriter(false).write(out, mergeSnapshots(snapshots));
@@ -71,9 +71,26 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return (OPEN_METRICS_WT.equals(request.getParams().get(CommonParams.WT)))
-        ? CONTENT_TYPE_OPEN_METRICS
-        : CONTENT_TYPE_PROMETHEUS;
+    return writeOpenMetricsFormat(request) ? CONTENT_TYPE_OPEN_METRICS : CONTENT_TYPE_PROMETHEUS;
+  }
+
+  private boolean writeOpenMetricsFormat(SolrQueryRequest request) {
+    String wt = request.getParams().get(CommonParams.WT);
+    if (OPEN_METRICS_WT.equals(wt)) {
+      return true;
+    }
+
+    String acceptHeader =
+        request.getHttpSolrCall() != null
+            ? request.getHttpSolrCall().getReq().getHeader("Accept")
+            : null;
+
+    if (acceptHeader == null) {
+      return false;
+    }
+
+    return acceptHeader.contains("application/openmetrics-text")
+        && (acceptHeader.contains("version=1.0.0"));
   }
 
   /**
