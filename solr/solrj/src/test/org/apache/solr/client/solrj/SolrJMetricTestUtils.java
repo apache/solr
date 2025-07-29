@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 public final class SolrJMetricTestUtils {
@@ -36,20 +36,17 @@ public final class SolrJMetricTestUtils {
             SolrRequest.METHOD.GET,
             "/admin/metrics",
             SolrRequest.SolrRequestType.ADMIN,
-            new ModifiableSolrParams().set("wt", "prometheus"));
+            SolrParams.of("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
     try (InputStream in = (InputStream) resp.get("stream")) {
       String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-      var line =
-          output
-              .lines()
-              .filter(l -> l.startsWith(metricName))
-              .findFirst()
-              .orElseThrow(() -> new AssertionError("Metric not found: " + metricName));
-
-      return Double.parseDouble(line.substring(line.lastIndexOf(" ") + 1).trim());
+      return output
+          .lines()
+          .filter(l -> l.startsWith(metricName))
+          .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
+          .sum();
     }
   }
 
@@ -63,7 +60,7 @@ public final class SolrJMetricTestUtils {
               SolrRequest.METHOD.GET,
               "/admin/metrics",
               SolrRequest.SolrRequestType.ADMIN,
-              new ModifiableSolrParams().set("wt", "prometheus"));
+              SolrParams.of("wt", "prometheus"));
       req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       NamedList<Object> resp = client.request(req);
@@ -73,19 +70,16 @@ public final class SolrJMetricTestUtils {
 
         metricName = "solr_core_requests_total";
 
-        var line =
-            output
-                .lines()
-                .filter(
-                    l ->
-                        l.contains(metricName)
-                            && l.contains(String.format("category=\"%s\"", category))
-                            && l.contains(String.format("collection=\"%s\"", collectionName))
-                            && l.contains(String.format("handler=\"%s\"", handler)))
-                .findFirst();
-
-        return line.map(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
-            .orElse(0.0);
+        return output
+            .lines()
+            .filter(
+                l ->
+                    l.contains(metricName)
+                        && l.contains(String.format("category=\"%s\"", category))
+                        && l.contains(String.format("collection=\"%s\"", collectionName))
+                        && l.contains(String.format("handler=\"%s\"", handler)))
+            .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
+            .sum();
       }
     }
   }
@@ -99,7 +93,7 @@ public final class SolrJMetricTestUtils {
               SolrRequest.METHOD.GET,
               "/admin/metrics",
               SolrRequest.SolrRequestType.ADMIN,
-              new ModifiableSolrParams().set("wt", "prometheus"));
+              SolrParams.of("wt", "prometheus"));
       req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       NamedList<Object> resp = client.request(req);
@@ -107,21 +101,16 @@ public final class SolrJMetricTestUtils {
         String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         String metricName;
         metricName = "solr_node_requests_errors_total";
-        var line =
-            output
-                .lines()
-                .filter(
-                    l ->
-                        l.contains(metricName)
-                            && l.contains(String.format("category=\"%s\"", category))
-                            && l.contains(String.format("handler=\"%s\"", handler)))
-                .toList();
-
         // Sum both client and server errors
-        return line.stream()
-            .map(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
-            .reduce(Double::sum)
-            .orElse(0.0);
+        return output
+            .lines()
+            .filter(
+                l ->
+                    l.contains(metricName)
+                        && l.contains(String.format("category=\"%s\"", category))
+                        && l.contains(String.format("handler=\"%s\"", handler)))
+            .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
+            .sum();
       }
     }
   }

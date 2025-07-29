@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -71,10 +71,7 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
 
     var req =
         new GenericSolrRequest(
-            METHOD.GET,
-            "/admin/metrics",
-            SolrRequestType.ADMIN,
-            new ModifiableSolrParams().set("wt", "prometheus"));
+            METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, SolrParams.of("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
@@ -106,10 +103,7 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
 
     var req =
         new GenericSolrRequest(
-            METHOD.GET,
-            "/admin/metrics",
-            SolrRequestType.ADMIN,
-            new ModifiableSolrParams().set("wt", "prometheus"));
+            METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, SolrParams.of("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
