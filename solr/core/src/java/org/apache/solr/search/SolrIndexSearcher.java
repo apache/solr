@@ -137,15 +137,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
   public static final String STATISTICS_KEY = "searcher";
+
+public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectoryReader";
+
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
   private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
-
-  // If you find this useful, let us know in dev@solr.apache.org.  Likely to be removed eventually.
-  private static final boolean useExitableDirectoryReader =
-      Boolean.getBoolean("solr.useExitableDirectoryReader");
 
   public static final int EXECUTOR_MAX_CPU_THREADS = Runtime.getRuntime().availableProcessors();
 
@@ -213,8 +212,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       throws IOException {
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
-    if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
-      reader = ExitableDirectoryReader.wrap(reader, QueryLimits.getCurrentLimits());
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY)) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
+      reader = ExitableDirectoryReader.wrap(reader, () -> {
+        // If the query limits are exceeded, we should exit the reader.
+        return QueryLimits.getCurrentLimits().shouldExit();
+      });
     }
     return reader;
   }
@@ -775,7 +777,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    if (useExitableDirectoryReader || !queryLimits.isLimitsEnabled()) {
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY) || !queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {

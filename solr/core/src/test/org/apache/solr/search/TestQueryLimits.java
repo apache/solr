@@ -26,6 +26,8 @@ import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Map;
+
 public class TestQueryLimits extends SolrCloudTestCase {
 
   private static final String COLLECTION = "test";
@@ -66,7 +68,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
           "SearchHandler.handleRequestBody",
           "QueryComponent",
           "QueryComponent.process",
-          "FacetComponent.process"
+          "FacetComponent.process:2"
         };
     for (String matchingExpr : matchingExprTests) {
       CallerSpecificQueryLimit limit = new CallerSpecificQueryLimit(matchingExpr);
@@ -88,13 +90,12 @@ public class TestQueryLimits extends SolrCloudTestCase {
       assertNotNull(
           "should have partial results for expr " + matchingExpr,
           rsp.getHeader().get("partialResults"));
-      if (matchingExpr.contains(".")) {
-        assertEquals(matchingExpr, limit.trippedBy);
-      } else {
-        assertTrue(
-            "expected result to start with " + matchingExpr + " but was " + limit.trippedBy,
-            limit.trippedBy.startsWith(matchingExpr));
-      }
+      assertFalse("should have trippedBy info", limit.getTrippedBy().isEmpty());
+      assertTrue(
+          "expected result to start with " + matchingExpr + " but was " + limit.getTrippedBy(),
+          limit.getTrippedBy().iterator().next().startsWith(matchingExpr));
+      Map<String, Integer> callCounts = limit.getCallCounts();
+      assertTrue("call count should be > 0", callCounts.get(matchingExpr) > 0);
     }
   }
 }
