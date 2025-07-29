@@ -142,7 +142,7 @@ public final class SolrMetricTestUtils {
         .orElse(null);
   }
 
-  public static Labels.Builder getCloudLabelsBase(SolrCore core) {
+  public static Labels.Builder newCloudLabelsBuilder(SolrCore core) {
     return Labels.builder()
         .label("collection", core.getCoreDescriptor().getCloudDescriptor().getCollectionName())
         .label("shard", core.getCoreDescriptor().getCloudDescriptor().getShardId())
@@ -174,7 +174,6 @@ public final class SolrMetricTestUtils {
 
   private static <T> T getDatapoint(
       SolrCore core, String metricName, Labels labels, Class<T> snapshotType) {
-
     var reader = getPrometheusMetricReader(core);
     return snapshotType.cast(SolrMetricTestUtils.getDataPointSnapshot(reader, metricName, labels));
   }
