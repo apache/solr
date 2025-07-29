@@ -32,6 +32,7 @@ import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
+import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.util.Map;
@@ -230,6 +231,20 @@ public class SolrMetricsContext {
       Consumer<ObservableDoubleMeasurement> callback,
       String unit) {
     return metricManager.observableDoubleGauge(
+        registryName, metricName, description, callback, unit);
+  }
+
+  public ObservableLongCounter observableLongCounter(
+      String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
+    return observableLongCounter(metricName, description, callback, null);
+  }
+
+  public ObservableLongCounter observableLongCounter(
+      String metricName,
+      String description,
+      Consumer<ObservableLongMeasurement> callback,
+      String unit) {
+    return metricManager.observableLongCounter(
         registryName, metricName, description, callback, unit);
   }
 
