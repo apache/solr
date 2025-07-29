@@ -132,7 +132,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
                   vectorField.buildKnnVectorsFormat(), vectorField.getDimension());
             } else {
               throw new SolrException(
-                  ErrorCode.SERVER_ERROR, "field is not a support KNN vector type");
+                  ErrorCode.SERVER_ERROR, "field is not a supported KNN vector type");
             }
           }
         };

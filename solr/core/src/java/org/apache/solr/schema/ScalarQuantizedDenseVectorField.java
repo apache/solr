@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.lucene99.Lucene99HnswScalarQuantizedVectorsForma
 import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.solr.common.SolrException;
 
 public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public static final String BITS_PARAM = "bits"; //
@@ -33,9 +34,12 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public static final String COMPRESS_PARAM =
       "compress"; // can only be enabled when bits = 4 per Lucene codec spec
 
-  private static final int DEFAULT_BITS = 7; // use signed byte as default when unspecified
-  private static final Float DEFAULT_CONFIDENCE_INTERVAL =
-      null; // use dimension scaled confidence interval
+  static final int DEFAULT_BITS = 7; // use signed byte as default when unspecified
+  static final Float DEFAULT_CONFIDENCE_INTERVAL = null; // use dimension scaled confidence interval
+
+  // lucene does not expose these so we are duplicating them here
+  static final Float MINIMUM_CONFIDENCE_INTERVAL = 0.9f;
+  static final Float MAXIMUM_CONFIDENCE_INTERVAL = 1f;
 
   /**
    * Number of bits to use for storage Must be 4 (half-byte) or 7 (signed-byte) per Lucene codec
@@ -55,6 +59,10 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
    */
   private boolean compress;
 
+  public ScalarQuantizedDenseVectorField() {
+    super();
+  }
+
   public ScalarQuantizedDenseVectorField(
       int dimension,
       VectorSimilarityFunction similarityFunction,
@@ -70,8 +78,6 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
 
   @Override
   public void init(IndexSchema schema, Map<String, String> args) {
-    super.init(schema, args);
-
     this.bits = ofNullable(args.remove(BITS_PARAM)).map(Integer::parseInt).orElse(DEFAULT_BITS);
 
     this.compress =
@@ -87,6 +93,8 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
         .orElse(false)) {
       this.confidenceInterval = Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL;
     }
+
+    super.init(schema, args);
   }
 
   @Override
@@ -99,6 +107,37 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
         useCompression(),
         getConfidenceInterval(),
         null);
+  }
+
+  @Override
+  public void checkSchemaField(final SchemaField field) throws SolrException {
+    super.checkSchemaField(field);
+
+    if (confidenceInterval != null
+        && confidenceInterval != Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL
+        && (confidenceInterval < MINIMUM_CONFIDENCE_INTERVAL
+            || confidenceInterval > MAXIMUM_CONFIDENCE_INTERVAL)) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          getClass().getSimpleName()
+              + " fields must have non-dynamic confidence interval between 0.9 and 1.0 "
+              + field.getName());
+    }
+    if (getBits() != 4 && getBits() != 7) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          getClass().getSimpleName()
+              + " fields must have bit size of 4 (half-byte) or 7 (signed-byte) "
+              + field.getName());
+    }
+
+    if (useCompression() && getBits() != 4) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          getClass().getSimpleName()
+              + " fields must have bit size of 4 to enable compression "
+              + field.getName());
+    }
   }
 
   public int getBits() {

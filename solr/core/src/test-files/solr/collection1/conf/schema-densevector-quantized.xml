@@ -31,10 +31,10 @@
              vectorDimension="4"
              similarityFunction="cosine"
   />
-  <fieldType name="knn_vector_scalar_quantized_unsigned" class="solr.ScalarQuantizedDenseVectorField"
+  <fieldType name="knn_vector_scalar_quantized_half_byte" class="solr.ScalarQuantizedDenseVectorField"
              vectorDimension="4"
              similarityFunction="cosine"
-            bits="4"/>
+             bits="4"/>
   <fieldType name="knn_vector_scalar_quantized_compressed" class="solr.ScalarQuantizedDenseVectorField"
              vectorDimension="4"
              similarityFunction="cosine"
@@ -43,7 +43,7 @@
   <fieldType name="knn_vector_scalar_quantized_confidence_interval" class="solr.ScalarQuantizedDenseVectorField"
              vectorDimension="4"
              similarityFunction="cosine"
-             confidenceInterval="0.9"/>
+             confidenceInterval="0.91"/>
   <fieldType name="knn_vector_scalar_quantized_confidence_dynamic" class="solr.ScalarQuantizedDenseVectorField"
              vectorDimension="4"
              similarityFunction="cosine"
@@ -58,7 +58,7 @@
   <field name="2048_float_vector" type="high_dimensional_float_knn_vector" indexed="true" stored="true" />
 
   <field name="v_scalar_default" type="knn_vector_scalar_quantized_default" indexed="true" stored="true" />
-  <field name="v_scalar_unsigned" type="knn_vector_scalar_quantized_unsigned" indexed="true" stored="true" />
+  <field name="v_scalar_half_byte" type="knn_vector_scalar_quantized_half_byte" indexed="true" stored="true" />
   <field name="v_scalar_compressed" type="knn_vector_scalar_quantized_compressed" indexed="true" stored="true" />
   <field name="v_scalar_confidence" type="knn_vector_scalar_quantized_confidence_interval" indexed="true" stored="true" />
   <field name="v_scalar_dynamic" type="knn_vector_scalar_quantized_confidence_dynamic" indexed="true" stored="true" />
