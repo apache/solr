@@ -53,7 +53,8 @@ import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
@@ -823,9 +824,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if (limit == 0) {
         collector = new TotalHitCountCollector();
       } else if (sort == null) {
-        collector = TopScoreDocCollector.create(limit, Integer.MAX_VALUE);
+        collector =
+            new TopScoreDocCollectorManager(limit, null, Integer.MAX_VALUE, false).newCollector();
       } else {
-        collector = TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
+        collector =
+            new TopFieldCollectorManager(sort, limit, null, Integer.MAX_VALUE, false)
+                .newCollector();
       }
       return collector;
     }

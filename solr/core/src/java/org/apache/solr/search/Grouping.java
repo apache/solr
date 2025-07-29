@@ -40,7 +40,8 @@ import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
@@ -895,11 +896,18 @@ public class Grouping {
       Collector subCollector;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         subCollector =
-            topCollector = TopScoreDocCollector.create(groupDocsToCollect, Integer.MAX_VALUE);
+            topCollector =
+                new TopScoreDocCollectorManager(groupDocsToCollect, null, Integer.MAX_VALUE, false)
+                    .newCollector();
       } else {
         topCollector =
-            TopFieldCollector.create(
-                searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE);
+            new TopFieldCollectorManager(
+                    searcher.weightSort(withinGroupSort),
+                    groupDocsToCollect,
+                    null,
+                    Integer.MAX_VALUE,
+                    false)
+                .newCollector();
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();
           subCollector = MultiCollector.wrap(topCollector, maxScoreCollector);
