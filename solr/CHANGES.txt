@@ -23,6 +23,8 @@ Bug Fixes
 
 * SOLR-17824: RecoveryStrategy.pingLeader could NPE when there's no shard leader (David Smiley)
 
+* SOLR-17721: NPE can occur when doing Atomic Update using Add Distinct on documents with a null field value. (puneetSharma via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
