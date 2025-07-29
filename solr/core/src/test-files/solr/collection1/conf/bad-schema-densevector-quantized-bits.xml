@@ -31,7 +31,7 @@
   <fieldType name="knn_vector_scalar_quantized_bits" class="solr.ScalarQuantizedDenseVectorField"
              vectorDimension="4"
              similarityFunction="cosine"
-            bits="6"/>
+             bits="6"/>
   <field name="v_scalar_bits" type="knn_vector_scalar_quantized_bits" indexed="true" stored="true" />
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

@@ -18,7 +18,7 @@
 
 <!-- Test schema file for DenseVectorField types -->
 
-<schema name="bad-schema-densevector-quantized-compress" version="1.0">
+<schema name="bad-schema-densevector-quantized-confidence-interval-low" version="1.0">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>  
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" />
   <fieldType name="knn_vector_byte_encoding" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" vectorEncoding="BYTE"/>
@@ -28,12 +28,11 @@
 
   <!-- Scalar Quantized vectors -->
   <!-- attempt to use compression with an invalid bit size alignment -->
-  <fieldType name="knn_vector_scalar_quantized_compressed" class="solr.ScalarQuantizedDenseVectorField"
+  <fieldType name="knn_vector_scalar_quantized_ci_low" class="solr.ScalarQuantizedDenseVectorField"
              vectorDimension="4"
              similarityFunction="cosine"
-             bits="7"
-             compress="true"/>
-  <field name="v_scalar_compressed" type="knn_vector_scalar_quantized_compressed" indexed="true" stored="true" />
+             confidenceInterval="0.8"/>
+  <field name="v_scalar_ci" type="knn_vector_scalar_quantized_ci_low" indexed="true" stored="true" />
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
