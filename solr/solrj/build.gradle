@@ -35,8 +35,8 @@ dependencies {
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
 
-  api 'org.eclipse.jetty.http2:http2-client'
-  implementation 'org.eclipse.jetty.http2:http2-http-client-transport'
+  api 'org.eclipse.jetty.http2:jetty-http2-client'
+  implementation 'org.eclipse.jetty.http2:jetty-http2-client-transport'
   implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty:jetty-util'
@@ -81,8 +81,8 @@ dependencies {
   testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   testImplementation 'org.eclipse.jetty:jetty-server'
-  testImplementation 'org.eclipse.jetty:jetty-servlet'
-  testImplementation 'org.eclipse.jetty:jetty-webapp'
+  testImplementation 'org.eclipse.jetty.ee8:jetty-ee8-servlet'
+  testImplementation 'org.eclipse.jetty.ee8:jetty-ee8-webapp'
   testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })

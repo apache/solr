@@ -40,25 +40,29 @@ dependencies {
   serverLib('org.eclipse.jetty:jetty-deploy', {
     exclude group: "org.awaitility", module: "awaitility"
   })
+  serverLib 'org.eclipse.jetty:jetty-ee'
   serverLib 'org.eclipse.jetty:jetty-http'
   serverLib 'org.eclipse.jetty:jetty-io'
   serverLib 'org.eclipse.jetty:jetty-jmx'
+  serverLib 'org.eclipse.jetty:jetty-jndi'
+  serverLib 'org.eclipse.jetty:jetty-plus'
   serverLib 'org.eclipse.jetty:jetty-rewrite'
   serverLib 'org.eclipse.jetty:jetty-security'
   serverLib 'org.eclipse.jetty:jetty-server'
-  serverLib 'org.eclipse.jetty:jetty-servlet'
-  serverLib 'org.eclipse.jetty:jetty-servlets'
+  serverLib 'org.eclipse.jetty.ee8:jetty-ee8-servlet'
+  serverLib 'org.eclipse.jetty.ee8:jetty-ee8-servlets'
+  serverLib 'org.eclipse.jetty:jetty-session'
   serverLib 'org.eclipse.jetty:jetty-util'
-  serverLib 'org.eclipse.jetty:jetty-webapp'
+  serverLib 'org.eclipse.jetty.ee8:jetty-ee8-webapp'
   serverLib 'org.eclipse.jetty:jetty-xml'
   serverLib 'org.eclipse.jetty:jetty-alpn-server'
   serverLib('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
 
-  serverLib 'org.eclipse.jetty.http2:http2-server'
-  serverLib 'org.eclipse.jetty.http2:http2-common'
-  serverLib 'org.eclipse.jetty.http2:http2-hpack'
+  serverLib 'org.eclipse.jetty.http2:jetty-http2-server'
+  serverLib 'org.eclipse.jetty.http2:jetty-http2-common'
+  serverLib 'org.eclipse.jetty.http2:jetty-http2-hpack'
 
   serverLib 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
@@ -79,11 +83,14 @@ dependencies {
   libExt('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  libExt('io.dropwizard.metrics:metrics-jetty10', {
+  def excludeTransitiveJetty = {
     exclude group: "org.eclipse.jetty", module: "*"
     exclude group: "org.eclipse.jetty.http2", module: "*"
     exclude group: "org.eclipse.jetty.toolchain", module: "*"
-  })
+    exclude group: "org.eclipse.jetty.ee8", module: "*"
+  }
+  libExt('io.dropwizard.metrics:metrics-jetty12', excludeTransitiveJetty)
+  libExt('io.dropwizard.metrics:metrics-jetty12-ee8', excludeTransitiveJetty)
   libExt 'io.dropwizard.metrics:metrics-jvm'
   libExt 'io.dropwizard.metrics:metrics-jmx'
 
