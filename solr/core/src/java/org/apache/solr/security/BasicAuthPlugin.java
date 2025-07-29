@@ -252,7 +252,8 @@ public class BasicAuthPlugin extends AuthenticationPlugin
                 .encodeToString(
                     (principal.getName() + ":" + principal.getPassword())
                         .getBytes(StandardCharsets.UTF_8));
-        request.header(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64);
+        request.headers(
+            httpFields -> httpFields.add(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64));
         return true;
       }
     }

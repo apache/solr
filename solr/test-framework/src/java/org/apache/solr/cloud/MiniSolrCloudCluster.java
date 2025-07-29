@@ -1080,10 +1080,10 @@ public class MiniSolrCloudCluster {
     private volatile MetricRegistry metricRegistry;
 
     @Override
-    protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
+    protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
       metricRegistry = new MetricRegistry();
-      io.dropwizard.metrics.jetty10.InstrumentedHandler metrics =
-          new io.dropwizard.metrics.jetty10.InstrumentedHandler(metricRegistry);
+      io.dropwizard.metrics.jetty12.ee8.InstrumentedEE8Handler metrics =
+          new io.dropwizard.metrics.jetty12.ee8.InstrumentedEE8Handler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
     }

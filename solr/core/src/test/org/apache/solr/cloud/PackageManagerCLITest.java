@@ -30,8 +30,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.resource.PathResourceFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -248,13 +248,13 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       server.setStopAtShutdown(true);
 
       ResourceHandler resourceHandler = new ResourceHandler();
-      resourceHandler.setResourceBase(resourceDir);
-      resourceHandler.setDirectoriesListed(true);
+      resourceHandler.setBaseResource(new PathResourceFactory().newResource(resourceDir));
 
-      HandlerList handlers = new HandlerList();
-      handlers.setHandlers(new Handler[] {resourceHandler, new DefaultHandler()});
-      server.setHandler(handlers);
+      Handler.Sequence sequence = new Handler.Sequence();
+      sequence.addHandler(resourceHandler);
+      sequence.addHandler(new DefaultHandler());
 
+      server.setHandler(sequence);
       server.start();
     }
 

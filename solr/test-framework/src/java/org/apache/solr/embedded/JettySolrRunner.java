@@ -84,14 +84,14 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -353,7 +353,7 @@ public class JettySolrRunner {
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
 
       server.setConnectors(new Connector[] {connector});
-      server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
+      server.addBean(new DefaultSessionIdManager(server, new Random()), true);
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector =
@@ -368,13 +368,13 @@ public class JettySolrRunner {
       server.setConnectors(new Connector[] {connector});
     }
 
-    HandlerWrapper chain;
+    Handler.Wrapper chain;
     {
       // Initialize the servlets
       final ServletContextHandler root =
           new ServletContextHandler(server, config.context, ServletContextHandler.SESSIONS);
-      root.setResourceBase(".");
-
+      root.setServer(server);
+      root.setBaseResource(ResourceFactory.of(server).newResource("."));
       root.addEventListener(
           // Install CCP first.  Subclass CCP to do some pre-initialization
           new CoreContainerProvider() {
@@ -418,7 +418,7 @@ public class JettySolrRunner {
 
       // Default servlet as a fall-through
       root.addServlet(Servlet404.class, "/");
-      chain = root;
+      chain = root.getCoreContextHandler();
     }
 
     chain = injectJettyHandlers(chain);
@@ -426,8 +426,6 @@ public class JettySolrRunner {
     if (config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);
-      rwh.setRewriteRequestURI(true);
-      rwh.setRewritePathInfo(false);
       rwh.setOriginalPathAttribute("requestedPath");
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
       chain = rwh;
@@ -442,8 +440,7 @@ public class JettySolrRunner {
     server.setHandler(gzipHandler);
 
     // Mimic "graceful.mod"
-    final StatisticsHandler graceful = new StatisticsHandler();
-    graceful.setGracefulShutdownWaitsForRequests(true);
+    GracefulHandler graceful = new GracefulHandler();
     server.insertHandler(graceful);
     server.setStopTimeout(15 * 1000);
   }
@@ -452,7 +449,7 @@ public class JettySolrRunner {
    * descendants may inject own handler chaining it to the given root and then returning that own
    * one
    */
-  protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
+  protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
     return chain;
   }
 

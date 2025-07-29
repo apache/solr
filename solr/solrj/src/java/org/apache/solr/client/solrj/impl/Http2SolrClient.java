@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
-import java.net.CookieStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -311,7 +310,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     var cookieStore = builder.getCookieStore();
     if (cookieStore != null) {
-      httpClient.setCookieStore(cookieStore);
+      httpClient.setHttpCookieStore(cookieStore);
     }
 
     this.authenticationStore = new AuthenticationStoreHolder();
@@ -855,7 +854,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
           String[] vals = wparams.getParams(key);
           if (vals != null) {
             for (String val : vals) {
-              content.addFieldPart(key, new StringRequestContent(val), null);
+              content.addPart(
+                  new MultiPart.ContentSourcePart(key, null, null, new StringRequestContent(val)));
             }
           }
         }
@@ -871,11 +871,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
             }
             HttpFields.Mutable fields = HttpFields.build(1);
             fields.add(HttpHeader.CONTENT_TYPE, contentType);
-            content.addFilePart(
-                name,
-                contentStream.getName(),
-                new InputStreamRequestContent(contentStream.getStream()),
-                fields);
+            content.addPart(
+                new MultiPart.ContentSourcePart(
+                    name,
+                    contentStream.getName(),
+                    fields,
+                    new InputStreamRequestContent(contentStream.getStream())));
           }
         }
         req.body(content);
@@ -1021,7 +1022,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     private HttpClient httpClient;
 
-    protected CookieStore cookieStore;
+    protected HttpCookieStore cookieStore;
 
     private SSLConfig sslConfig;
 
@@ -1148,7 +1149,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return this;
     }
 
-    private CookieStore getCookieStore() {
+    private HttpCookieStore getCookieStore() {
       if (cookieStore == null) {
         return cookieStore;
       }
@@ -1214,7 +1215,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
      * @param cookieStore The CookieStore to set. {@code null} will set the default.
      * @return this Builder
      */
-    public Builder withCookieStore(CookieStore cookieStore) {
+    public Builder withCookieStore(HttpCookieStore cookieStore) {
       this.cookieStore = cookieStore;
       return this;
     }

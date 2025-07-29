@@ -454,11 +454,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
             if ("v1".equals(System.getProperty(SEND_VERSION))) {
               preFetchedUser
                   .map(generatedV1TokenCache::get)
-                  .ifPresent(token -> request.header(HEADER, token));
+                  .ifPresent(token -> request.headers(httpFields -> httpFields.add(HEADER, token)));
             } else {
               preFetchedUser
                   .map(generatedV2TokenCache::get)
-                  .ifPresent(token -> request.header(HEADER_V2, token));
+                  .ifPresent(
+                      token -> request.headers(httpFields -> httpFields.add(HEADER_V2, token)));
             }
           }
 

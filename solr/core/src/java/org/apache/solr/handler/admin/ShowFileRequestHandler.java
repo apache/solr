@@ -100,7 +100,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    KNOWN_MIME_TYPES = new HashSet<>(MimeTypes.getKnownMimeTypes());
+    MimeTypes mimeTypes = new MimeTypes();
+    KNOWN_MIME_TYPES = new HashSet<>(mimeTypes.getMimeMap().values());
     KNOWN_MIME_TYPES.add("text/xml");
     KNOWN_MIME_TYPES.add("text/javascript");
   }

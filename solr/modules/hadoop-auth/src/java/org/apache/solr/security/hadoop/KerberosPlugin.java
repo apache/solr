@@ -290,7 +290,8 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
 
   @Override
   protected boolean interceptInternodeRequest(Request request) {
-    return intercept(request::header);
+    return intercept(
+        (header, value) -> request.headers(httpFields -> httpFields.add(header, value)));
   }
 
   private boolean intercept(BiConsumer<String, String> header) {

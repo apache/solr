@@ -61,7 +61,7 @@ public class SolrBasicAuthentication implements Authentication {
 
       @Override
       public void apply(Request request) {
-        request.header(headerInfo.getHeader(), value);
+        request.headers(httpFields -> httpFields.add(headerInfo.getHeader(), value));
       }
     };
   }
