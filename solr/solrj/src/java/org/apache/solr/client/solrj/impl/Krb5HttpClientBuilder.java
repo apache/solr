@@ -41,9 +41,9 @@ import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.eclipse.jetty.client.HttpAuthenticationStore;
+import org.eclipse.jetty.client.SPNEGOAuthentication;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
-import org.eclipse.jetty.client.util.SPNEGOAuthentication;
+import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -61,7 +61,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

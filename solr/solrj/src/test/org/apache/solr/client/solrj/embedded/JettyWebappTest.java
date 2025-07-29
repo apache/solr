@@ -30,12 +30,12 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
+import org.eclipse.jetty.ee8.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
 
 /**
  * @since solr 1.3

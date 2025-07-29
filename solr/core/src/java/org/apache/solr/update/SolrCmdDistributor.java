@@ -431,7 +431,7 @@ public class SolrCmdDistributor implements Closeable {
     // care when assembling the final response to check both the rollup and leader trackers on the
     // aggregator node.
     public void trackRequestResult(
-        org.eclipse.jetty.client.api.Response resp, InputStream respBody, boolean success) {
+        org.eclipse.jetty.client.Response resp, InputStream respBody, boolean success) {
 
       // Returning Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just
       // need to increment our achieved rf if we are a leader, i.e. have a leaderTracker.

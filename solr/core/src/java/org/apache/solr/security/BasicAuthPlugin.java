@@ -47,7 +47,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ValidatingJsonMap;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -54,7 +54,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 
 /**
  * AuthenticationHandler that supports delegation tokens and simple authentication via the "user"
@@ -156,7 +156,11 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
         new HttpListenerFactory.RequestResponseListener() {
           @Override
           public void onQueued(Request request) {
-            getPrincipal().ifPresent(usr -> request.header(INTERNAL_REQUEST_HEADER, usr));
+            getPrincipal()
+                .ifPresent(
+                    usr ->
+                        request.headers(
+                            httpFields -> httpFields.add(INTERNAL_REQUEST_HEADER, usr)));
           }
         };
     client.addListenerFactory(() -> listener);

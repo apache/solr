@@ -36,9 +36,9 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.crossdc.common.ConfUtil;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.SensitivePropRedactionUtils;
+import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.servlet.ServletMapping;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

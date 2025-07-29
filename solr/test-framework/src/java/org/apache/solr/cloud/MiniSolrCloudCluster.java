@@ -84,8 +84,8 @@ import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
+import org.eclipse.jetty.server.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
