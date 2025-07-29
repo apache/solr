@@ -32,11 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -96,6 +96,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -1909,18 +1910,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final Collector collector;
 
       if (!needScores) {
-        collector =
-            new SimpleCollector() {
-              @Override
-              public void collect(int doc) {
-                numHits[0]++;
-              }
-
-              @Override
-              public ScoreMode scoreMode() {
-                return ScoreMode.COMPLETE_NO_SCORES;
-              }
-            };
+        collector = new TotalHitCountCollector();
       } else {
         collector =
             new SimpleCollector() {
@@ -1948,6 +1938,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
       totalHits = numHits[0];
+      if (collector instanceof TotalHitCountCollector) {
+        totalHits = ((TotalHitCountCollector) collector).getTotalHits();
+      } else {
+        totalHits = numHits[0];
+      }
       maxScore = totalHits > 0 ? topscore[0] : 0.0f;
       docList =
           new DocSlice(
@@ -2600,24 +2595,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
     final SolrIndexSearcher searcher = this;
-    final AtomicReference<IOException> exception = new AtomicReference<>();
-    try {
-      return searcher.getTopReaderContext().leaves().stream()
-          .map(
-              ctx -> {
-                try {
-                  return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
-                } catch (IOException e) {
-                  exception.set(e);
-                  return null;
-                }
-              })
-          .filter(java.util.Objects::nonNull)
-          .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
-
-    } finally {
-      if (exception.get() != null) throw exception.get();
-    }
+    List<Callable<IndexFingerprint>> tasks =
+        searcher.getTopReaderContext().leaves().stream()
+            .map(
+                ctx ->
+                    (Callable<IndexFingerprint>)
+                        () -> searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion))
+            .collect(Collectors.toList());
+    return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(
+            core.getCoreContainer().getIndexFingerprintExecutor(), tasks)
+        .stream()
+        .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
   }
 
   /////////////////////////////////////////////////////////////////////

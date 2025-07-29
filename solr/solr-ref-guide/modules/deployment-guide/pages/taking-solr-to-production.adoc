@@ -163,7 +163,7 @@ Notice that the following variables are setup for your environment based on the 
 [source,bash]
 ----
 SOLR_INSTALL_DIR=/opt/solr
-SOLR_ENV=/etc/default/solr.in.sh
+SOLR_INCLUDE=/etc/default/solr.in.sh
 RUNAS=solr
 ----
 

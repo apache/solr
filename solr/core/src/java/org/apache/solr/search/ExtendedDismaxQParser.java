@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
@@ -187,10 +186,19 @@ public class ExtendedDismaxQParser extends QParser {
       query.add(f, BooleanClause.Occur.SHOULD);
     }
 
-    //
-    // create a boosted query (scores multiplied by boosts)
-    //
     Query topQuery = QueryUtils.build(query, this);
+
+    // If topQuery is a boolean query, unwrap the boolean query to check if it is just
+    // a MatchAllDocsQuery. Using MatchAllDocsQuery by itself enables later optimizations
+    BooleanQuery topQueryBoolean = (BooleanQuery) topQuery;
+    if (topQueryBoolean.clauses().size() == 1) {
+      Query onlyQuery = topQueryBoolean.clauses().get(0).getQuery();
+      if (onlyQuery instanceof MatchAllDocsQuery) {
+        topQuery = onlyQuery;
+      }
+    }
+
+    // create a boosted query (scores multiplied by boosts)
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size() > 1) {
       ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[0]));
@@ -532,13 +540,11 @@ public class ExtendedDismaxQParser extends QParser {
     List<ValueSource> boosts = new ArrayList<>();
     if (config.hasMultiplicativeBoosts()) {
       for (String boostStr : config.multBoosts) {
-        if (boostStr == null || boostStr.length() == 0) continue;
-        Query boost = subQuery(boostStr, FunctionQParserPlugin.NAME).getQuery();
-        ValueSource vs;
-        if (boost instanceof FunctionQuery) {
-          vs = ((FunctionQuery) boost).getValueSource();
-        } else {
-          vs = new QueryValueSource(boost, 1.0f);
+        if (boostStr == null || boostStr.isEmpty()) continue;
+        ValueSource vs = subQuery(boostStr, FunctionQParserPlugin.NAME).parseAsValueSource();
+        // the default score should be 1, not 0
+        if (vs instanceof QueryValueSource && ((QueryValueSource) vs).getDefaultValue() == 0.0f) {
+          vs = new QueryValueSource(((QueryValueSource) vs).getQuery(), 1.0f);
         }
         boosts.add(vs);
       }

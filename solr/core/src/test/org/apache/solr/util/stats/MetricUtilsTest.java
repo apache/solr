@@ -245,7 +245,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             assertTrue(o instanceof MapWriter);
             MapWriter writer = (MapWriter) o;
             assertEquals(1, writer._size());
-            assertEquals("bar", writer._get("foo", null));
+            assertEquals("bar", writer._get("foo"));
           } else {
             assertTrue(o instanceof MapWriter);
             Map<String, Object> v = new HashMap<>();

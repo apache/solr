@@ -64,7 +64,7 @@ public class EarlyTerminatingCollector extends FilterCollector {
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     prevReaderCumulativeSize += currentReaderSize; // not current any more
-    currentReaderSize = context.reader().maxDoc() - 1;
+    currentReaderSize = context.reader().maxDoc();
 
     return new FilterLeafCollector(super.getLeafCollector(context)) {
 

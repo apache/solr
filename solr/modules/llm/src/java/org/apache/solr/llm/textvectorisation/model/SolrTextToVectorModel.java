@@ -18,6 +18,7 @@ package org.apache.solr.llm.textvectorisation.model;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -25,9 +26,12 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.textvectorisation.store.TextToVectorModelException;
 import org.apache.solr.llm.textvectorisation.store.rest.ManagedTextToVectorModelStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This object wraps a {@link dev.langchain4j.model.embedding.EmbeddingModel} to encode text to
@@ -35,6 +39,7 @@ import org.apache.solr.llm.textvectorisation.store.rest.ManagedTextToVectorModel
  * ManagedTextToVectorModelStore}
  */
 public class SolrTextToVectorModel implements Accountable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(SolrTextToVectorModel.class);
   private static final String TIMEOUT_PARAM = "timeout";
@@ -110,10 +115,15 @@ public class SolrTextToVectorModel implements Accountable {
               if (paramNameMatches.size() == 1) {
                 paramNameMatches.get(0).invoke(builder, params.get(paramName));
               } else {
-                builder
-                    .getClass()
-                    .getMethod(paramName, String.class)
-                    .invoke(builder, params.get(paramName).toString());
+                try {
+                  builder
+                      .getClass()
+                      .getMethod(paramName, String.class)
+                      .invoke(builder, params.get(paramName).toString());
+                } catch (NoSuchMethodException e) {
+                  log.error("Parameter {} not supported by model {}", paramName, className);
+                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
+                }
               }
           }
         }

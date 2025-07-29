@@ -168,7 +168,7 @@ public class NumericSearch {
           new QueryRequest(
               new SolrQuery(
                   "q",
-                  termQueryField + ":" + lowCardTerms.next(),
+                  termQueryField + ":\"" + lowCardTerms.next() + "\"",
                   "fq",
                   "{!terms cache=false f='" + field + "'}" + queries.next()));
       return q;

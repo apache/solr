@@ -620,7 +620,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> map =
-        (Map<String, Object>) resp.findRecursive("solr-mbeans", category, key, "stats");
+        (Map<String, Object>) resp._get(List.of("solr-mbeans", category, key, "stats"), null);
     if (map == null) {
       return null;
     }

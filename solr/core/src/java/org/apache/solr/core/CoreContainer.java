@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
+import static org.apache.solr.search.SolrIndexSearcher.EXECUTOR_MAX_CPU_THREADS;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
@@ -191,6 +192,10 @@ public class CoreContainer {
     return indexSearcherExecutor;
   }
 
+  public ExecutorService getIndexFingerprintExecutor() {
+    return indexFingerprintExecutor;
+  }
+
   public static class CoreLoadFailure {
 
     public final CoreDescriptor cd;
@@ -243,9 +248,7 @@ public class CoreContainer {
 
   private volatile HttpSolrClientProvider solrClientProvider;
 
-  private volatile ExecutorService coreContainerWorkExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(
-          new SolrNamedThreadFactory("coreContainerWorkExecutor"));
+  private volatile ExecutorService coreLoadExecutor;
 
   private final OrderedExecutor<BytesRef> replayUpdatesExecutor;
 
@@ -297,6 +300,8 @@ public class CoreContainer {
   public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
+
+  private final ExecutorService indexFingerprintExecutor;
 
   private final ClusterSingletons clusterSingletons =
       new ClusterSingletons(
@@ -455,6 +460,12 @@ public class CoreContainer {
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
     this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
+
+    this.indexFingerprintExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            EXECUTOR_MAX_CPU_THREADS,
+            Integer.MAX_VALUE,
+            new SolrNamedThreadFactory("IndexFingerprintPool"));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -682,6 +693,7 @@ public class CoreContainer {
     allowPaths = null;
     allowListUrlChecker = null;
     indexSearcherExecutor = null;
+    indexFingerprintExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -827,16 +839,6 @@ public class CoreContainer {
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 
     tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
-
-    coreContainerWorkExecutor =
-        MetricUtils.instrumentedExecutorService(
-            coreContainerWorkExecutor,
-            null,
-            metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-            SolrMetricManager.mkName(
-                "coreContainerWorkExecutor",
-                SolrInfoBean.Category.CONTAINER.toString(),
-                "threadPool"));
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -1050,7 +1052,7 @@ public class CoreContainer {
     }
 
     // setup executor to load cores in parallel
-    ExecutorService coreLoadExecutor =
+    coreLoadExecutor =
         MetricUtils.instrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
@@ -1120,11 +1122,9 @@ public class CoreContainer {
       backgroundCloser.start();
 
     } finally {
-      if (asyncSolrCoreLoad) {
-        coreContainerWorkExecutor.execute(
-            () -> ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor));
-      } else {
-        ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor);
+      coreLoadExecutor.shutdown(); // doesn't block
+      if (!asyncSolrCoreLoad) {
+        ExecutorUtil.awaitTerminationForever(coreLoadExecutor);
       }
     }
 
@@ -1301,6 +1301,7 @@ public class CoreContainer {
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
+    ExecutorUtil.shutdownNowAndAwaitTermination(indexFingerprintExecutor);
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
@@ -1315,7 +1316,7 @@ public class CoreContainer {
         zkSys.zkController.tryCancelAllElections();
       }
 
-      ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor); // actually already shutdown
 
       // First wake up the closer thread, it'll terminate almost immediately since it checks
       // isShutDown.
@@ -2540,6 +2541,8 @@ public class CoreContainer {
   }
 
   /**
+   * Checks whether a tragic exception was thrown during update (including update log).
+   *
    * @param solrCore the core against which we check if there has been a tragic exception
    * @return whether this Solr core has tragic exception
    * @see org.apache.lucene.index.IndexWriter#getTragicException()
@@ -2552,19 +2555,6 @@ public class CoreContainer {
       // failed to open an indexWriter
       tragicException = e;
     }
-
-    if (tragicException != null && isZooKeeperAware()) {
-      getZkController().giveupLeadership(solrCore.getCoreDescriptor());
-
-      try {
-        // If the error was something like a full file system disconnect, this probably won't help
-        // But if it is a transient disk failure then it's worth a try
-        solrCore.getSolrCoreState().newIndexWriter(solrCore, false); // should we rollback?
-      } catch (IOException e) {
-        log.warn("Could not roll index writer after tragedy");
-      }
-    }
-
     return tragicException != null;
   }
 
