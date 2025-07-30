@@ -283,7 +283,18 @@ For example: 0.9 means scale interval sizes to the middle 90% of values
 +
 If this param is omitted a default is used; scaled to the number of dimensions according to `1-1/(vector_dimensions + 1)`
 +
-If `0` is provided, confidence intervals will be dynamically adjusted (at segment merge time) optimized by sampling values
+Accepted values: `FLOAT32`  (within 0.9 and 1.0)
+
+`dynamicConfidenceInterval`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `false`
+|===
++
+If set to true, enables dynamically determining confidence interval (per dimension) by sampling values each time a merge occurs.
++
+`NOTE: when this is enabled, it will take precedence over any value configured for confidenceInterval`
 +
 Accepted values: `FLOAT32`  (within 0.9 and 1.0) or 0 for dynamically adjusted confidence interval
 
