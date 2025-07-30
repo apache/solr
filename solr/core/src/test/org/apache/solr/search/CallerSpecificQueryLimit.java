@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -26,20 +25,22 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Helper class to simulate query timeouts at specific points in various components that call {@link
  * QueryLimits#shouldExit()}. These calling points are identified by the calling class' simple name
- * and optionally a method name and the optional maximum count, e.g. <code>MoreLikeThisComponent</code> or <code>
+ * and optionally a method name and the optional maximum count, e.g. <code>MoreLikeThisComponent
+ * </code> or <code>
  * ClusteringComponent.finishStage</code>, <code>ClusteringComponent.finishStage:100</code>.
+ *
  * <p>NOTE: implementation details cause the expression <code>simpleName</code> to be disabled when
- * also any <code>simpleName.anyMethod[:NNN]</code> expression is used for the same class name.</p>
- * <p>NOTE 2: when maximum count is a negative number e.g. <code>simpleName.someMethod:-1</code> then
- * only the number of calls to {@link QueryLimits#shouldExit()} for that expression will be reported but
- * no limit will be enforced.</p>
+ * also any <code>simpleName.anyMethod[:NNN]</code> expression is used for the same class name.
+ *
+ * <p>NOTE 2: when maximum count is a negative number e.g. <code>simpleName.someMethod:-1</code>
+ * then only the number of calls to {@link QueryLimits#shouldExit()} for that expression will be
+ * reported but no limit will be enforced.
  */
 public class CallerSpecificQueryLimit implements QueryLimit {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -57,9 +58,9 @@ public class CallerSpecificQueryLimit implements QueryLimit {
   /**
    * Signal a timeout in places that match the calling classes (and methods).
    *
-   * @param callerExprs list of expressions in the format of <code>simpleClassName[.methodName][:NNN]</code>.
-   *     If the list is empty or null then the first call to {@link #shouldExit()} from any
-   *     caller will match.
+   * @param callerExprs list of expressions in the format of <code>
+   *     simpleClassName[.methodName][:NNN]</code>. If the list is empty or null then the first call
+   *     to {@link #shouldExit()} from any caller will match.
    */
   public CallerSpecificQueryLimit(String... callerExprs) {
     if (callerExprs != null && callerExprs.length > 0) {
@@ -90,22 +91,22 @@ public class CallerSpecificQueryLimit implements QueryLimit {
     }
   }
 
-  /**
-   * Returns the set of caller expressions that were tripped.
-   */
+  /** Returns the set of caller expressions that were tripped. */
   public Set<String> getTrippedBy() {
     return trippedBy;
   }
 
-  /**
-   * Returns a map of tripped caller expressions to their current call counts.
-   */
+  /** Returns a map of tripped caller expressions to their current call counts. */
   public Map<String, Integer> getCallCounts() {
     return callCounts.entrySet().stream()
-        .collect(Collectors.toMap(
-            e -> e.getKey() +
-                (maxCounts.containsKey(e.getKey()) ? ":" + maxCounts.get(e.getKey()) : ""),
-            e -> e.getValue().get()));
+        .collect(
+            Collectors.toMap(
+                e ->
+                    e.getKey()
+                        + (maxCounts.containsKey(e.getKey())
+                            ? ":" + maxCounts.get(e.getKey())
+                            : ""),
+                e -> e.getValue().get()));
   }
 
   @Override
@@ -128,7 +129,9 @@ public class CallerSpecificQueryLimit implements QueryLimit {
                               log.info("++++ Limit tripped by any first caller: {} ++++", expr);
                             }
                             trippedBy.add(expr);
-                            callCounts.computeIfAbsent(expr, k -> new AtomicInteger()).incrementAndGet();
+                            callCounts
+                                .computeIfAbsent(expr, k -> new AtomicInteger())
+                                .incrementAndGet();
                             return true;
                           }
                           Set<String> methods = interestingCallers.get(declaring.getSimpleName());
@@ -137,16 +140,25 @@ public class CallerSpecificQueryLimit implements QueryLimit {
                             return false;
                           }
                           // MATCH. Class name was specified, possibly with methods.
-                          // If methods is empty then all methods match, otherwise only the specified methods match.
+                          // If methods is empty then all methods match, otherwise only the
+                          // specified methods match.
                           if (methods.isEmpty() || methods.contains(method)) {
                             String expr = declaring.getSimpleName();
                             if (methods.contains(method)) {
                               expr = expr + "." + method;
                             } else {
-                              // even though we don't match/enforce at the method level, still record the method counts to give better insight into the callers
-                              callCounts.computeIfAbsent(declaring.getSimpleName() + "." + method, k -> new AtomicInteger(0)).incrementAndGet();
+                              // even though we don't match/enforce at the method level, still
+                              // record the method counts to give better insight into the callers
+                              callCounts
+                                  .computeIfAbsent(
+                                      declaring.getSimpleName() + "." + method,
+                                      k -> new AtomicInteger(0))
+                                  .incrementAndGet();
                             }
-                            int currentCount = callCounts.computeIfAbsent(expr, k -> new AtomicInteger(0)).incrementAndGet();
+                            int currentCount =
+                                callCounts
+                                    .computeIfAbsent(expr, k -> new AtomicInteger(0))
+                                    .incrementAndGet();
                             // check if we have a max count for this expression
                             if (maxCounts.containsKey(expr)) {
                               int maxCount = maxCounts.getOrDefault(expr, 0);

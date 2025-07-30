@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -25,8 +26,6 @@ import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Map;
 
 public class TestQueryLimits extends SolrCloudTestCase {
 

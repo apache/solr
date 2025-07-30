@@ -27,8 +27,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test that checks that long-running queries are exited by Solr using the {@link org.apache.solr.search.QueryLimits}
- * implementation.
+ * Test that checks that long-running queries are exited by Solr using the {@link
+ * org.apache.solr.search.QueryLimits} implementation.
  */
 public class TimeAllowedTest extends SolrTestCaseJ4 {
 

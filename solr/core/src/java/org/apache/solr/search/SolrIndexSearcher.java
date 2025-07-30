@@ -139,7 +139,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
   public static final String STATISTICS_KEY = "searcher";
 
-public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectoryReader";
+  public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectoryReader";
 
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
@@ -229,7 +229,8 @@ public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectory
       throws IOException {
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
-    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY)) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
+    // see SOLR-16693 and SOLR-17831 for more details
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY)) {
       reader = ExitableDirectoryReader.wrap(reader, QueryLimitsTimeout.INSTANCE);
     }
     return reader;
