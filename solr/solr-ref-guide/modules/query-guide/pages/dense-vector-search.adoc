@@ -240,6 +240,66 @@ client.add(Arrays.asList(d1, d2));
 ====
 ======
 
+=== ScalarQuantizedDenseVectorField
+Because dense vectors can have a costly storage footprint, it may be worthwhile to use a technique called "quantization"
+to reduce the stored representation size at the cost of some precision.
+
+This dense vector type uses a conversion that projects a 32 bit float precision feature down to an 8 bit int (or smaller)
+by linearly mapping the float range down to evenly sized "buckets" of values that fit into an int. A more detailed explanation
+can be found in this https://www.elastic.co/search-labs/blog/scalar-quantization-101[blog post].
+
+As a specific type of DenseVectorField, this field type supports all the same configurable properties outlined above as well
+as some additional ones.
+
+Here is how a ScalarQuantizedDenseVectorField can be defined in the schema:
+
+[source,xml]
+<fieldType name="scalar_quantized_vector" class="solr.ScalarQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+<field name="vector" type="scalar_quantized_vector" indexed="true" stored="true"/>
+
+`bits`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `7`
+|===
++
+The number of bits to use for each quantized dimension value
++
+Accepted values: 4 (half byte) or 7 (unsigned byte).
+
+`confidenceInterval`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `dimension-scaled`
+|===
++
+Statistically, outlier values are rarely meaningfully relevant to searches, so to increase the size of each bucket for
+quantization (and therefore information gain) we can scale the quantization intervals to the middle n % of values and place the remaining
+outliers in the outermost intervals.
++
+For example: 0.9 means scale interval sizes to the middle 90% of values
++
+If this param is omitted a default is used; scaled to the number of dimensions according to `1-1/(vector_dimensions + 1)`
++
+If `0` is provided, confidence intervals will be dynamically adjusted (at segment merge time) optimized by sampling values
++
+Accepted values: `FLOAT32`  (within 0.9 and 1.0) or 0 for dynamically adjusted confidence interval
+
+`compress`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `false`
+|===
++
+If set to true, this will further pack multiple dimension values within a one byte alignment. This further decreases the storage size by 50% at some decode penalty.
++
+`NOTE: this can only be enabled when bits=4`
++
+Accepted values: `BOOLEAN`
+
 == Query Time
 
 Apache Solr provides three query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, the `vectorSimilarity` query parser and the `knn_text_to_vector` query parser.
