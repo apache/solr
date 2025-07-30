@@ -51,6 +51,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -206,6 +207,22 @@ public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectory
     }
   }
 
+  private static final class QueryLimitsTimeout implements QueryTimeout {
+    private static final QueryLimitsTimeout INSTANCE = new QueryLimitsTimeout();
+
+    private QueryLimitsTimeout() {}
+
+    @Override
+    public boolean shouldExit() {
+      return QueryLimits.getCurrentLimits().shouldExit();
+    }
+
+    @Override
+    public String toString() {
+      return QueryLimits.getCurrentLimits().limitStatusMessage();
+    }
+  }
+
   // TODO: wrap elsewhere and return a "map" from the schema that overrides get() ?
   // this reader supports reopen
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader)
@@ -213,10 +230,7 @@ public static final String EXITABLE_READER_PROPERTY = "solr.useExitableDirectory
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
     if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY)) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
-      reader = ExitableDirectoryReader.wrap(reader, () -> {
-        // If the query limits are exceeded, we should exit the reader.
-        return QueryLimits.getCurrentLimits().shouldExit();
-      });
+      reader = ExitableDirectoryReader.wrap(reader, QueryLimitsTimeout.INSTANCE);
     }
     return reader;
   }
