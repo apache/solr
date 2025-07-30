@@ -45,7 +45,7 @@ public final class SolrJMetricTestUtils {
       return output
           .lines()
           .filter(l -> l.startsWith(metricName))
-          .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
+          .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" "))))
           .sum();
     }
   }
@@ -78,7 +78,7 @@ public final class SolrJMetricTestUtils {
                         && l.contains(String.format("category=\"%s\"", category))
                         && l.contains(String.format("collection=\"%s\"", collectionName))
                         && l.contains(String.format("handler=\"%s\"", handler)))
-            .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
+            .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" "))))
             .sum();
       }
     }
@@ -109,7 +109,7 @@ public final class SolrJMetricTestUtils {
                     l.contains(metricName)
                         && l.contains(String.format("category=\"%s\"", category))
                         && l.contains(String.format("handler=\"%s\"", handler)))
-            .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" ") + 1).trim()))
+            .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" "))))
             .sum();
       }
     }
