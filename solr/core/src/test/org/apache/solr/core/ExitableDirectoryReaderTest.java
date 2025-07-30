@@ -45,9 +45,8 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDownCore() {
     deleteCore();
-    super.tearDown();
   }
 
   @Test
