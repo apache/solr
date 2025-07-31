@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
+
 import com.codahale.metrics.MetricRegistry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -39,7 +41,6 @@ public class SolrCoreMetricManager implements Closeable {
   public static final AttributeKey<String> CORE_ATTR = AttributeKey.stringKey("core");
   public static final AttributeKey<String> SHARD_ATTR = AttributeKey.stringKey("shard");
   public static final AttributeKey<String> REPLICA_ATTR = AttributeKey.stringKey("replica");
-  public static final AttributeKey<String> HANDLER_ATTR = AttributeKey.stringKey("handler");
   public static final AttributeKey<String> SCOPE_ATTR = AttributeKey.stringKey("scope");
 
   private final SolrCore core;

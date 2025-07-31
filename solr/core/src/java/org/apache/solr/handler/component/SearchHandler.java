@@ -90,6 +90,8 @@ import org.slf4j.MDC;
 /** Refer SOLR-281 */
 public class SearchHandler extends RequestHandlerBase
     implements SolrCoreAware, PluginInfoInitialized, PermissionNameProvider {
+
+  public static final AttributeKey<Boolean> INTERNAL_ATTR = AttributeKey.booleanKey("internal");
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
@@ -153,28 +155,21 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
-  // TODO SOLR-17458: Fix metric Attributes
   @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, Attributes attributes, String scope) {
     super.initializeMetrics(
         parentContext,
-        Attributes.builder()
-            .putAll(attributes)
-            .put(AttributeKey.stringKey("category"), getCategory().toString())
-            .put(AttributeKey.stringKey("internal"), "false")
-            .build(),
+        Attributes.builder().putAll(attributes).put(INTERNAL_ATTR, false).build(),
         scope);
     metricsShard =
         new HandlerMetrics( // will register various metrics in the context
             solrMetricsContext,
             Attributes.builder()
                 .putAll(attributes)
-                .put(AttributeKey.stringKey("category"), getCategory().toString())
-                .put(AttributeKey.stringKey("internal"), "true")
-                .build(),
-            getCategory().toString(),
-            scope + SHARD_HANDLER_SUFFIX);
+                .put(CATEGORY_ATTR, getCategory().toString())
+                .put(INTERNAL_ATTR, true)
+                .build());
   }
 
   @Override
