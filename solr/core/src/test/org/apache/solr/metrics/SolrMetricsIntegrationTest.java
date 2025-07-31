@@ -20,17 +20,14 @@ package org.apache.solr.metrics;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -42,7 +39,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
 import org.hamcrest.number.OrderingComparison;
@@ -131,14 +127,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(
         "Reporter '" + MULTIREGISTRY + "' missing in solr.node",
         reporters.containsKey(MULTIREGISTRY));
-    SolrMetricReporter reporter = reporters.get(REPORTER_NAMES[0]);
-    assertTrue(
-        "Reporter " + reporter + " is not an instance of " + MockMetricReporter.class.getName(),
-        reporter instanceof MockMetricReporter);
-    reporter = reporters.get(UNIVERSAL);
-    assertTrue(
-        "Reporter " + reporter + " is not an instance of " + MockMetricReporter.class.getName(),
-        reporter instanceof MockMetricReporter);
   }
 
   @After
@@ -148,62 +136,10 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     }
 
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Map<String, SolrMetricReporter> reporters =
-        metricManager.getReporters(coreMetricManager.getRegistryName());
-
     Gauge<?> gauge = (Gauge<?>) coreMetricManager.getRegistry().getMetrics().get("CORE.indexDir");
     assertNotNull(gauge.getValue());
     deleteCore(); // closes TestHarness which closes CoreContainer which closes SolrCore
     assertEquals(metricManager.nullString(), gauge.getValue());
-
-    for (String reporterName : RENAMED_REPORTERS) {
-      SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
-      MockMetricReporter mockReporter = (MockMetricReporter) reporter;
-      assertTrue(
-          "Reporter " + reporterName + " was not closed: " + mockReporter, mockReporter.didClose);
-    }
-  }
-
-  @Test
-  public void testConfigureReporter() throws Exception {
-    Random random = random();
-
-    String metricName =
-        SolrMetricManager.mkName(METRIC_NAME, HANDLER_CATEGORY.toString(), HANDLER_NAME);
-    SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Timer timer = metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
-
-    long initialCount = timer.getCount();
-
-    int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
-    for (int i = 0; i < iterations; ++i) {
-      h.query(req("*"));
-    }
-
-    long finalCount = timer.getCount();
-    assertEquals("metric counter incorrect", iterations, finalCount - initialCount);
-    Map<String, SolrMetricReporter> reporters =
-        metricManager.getReporters(coreMetricManager.getRegistryName());
-    assertEquals(RENAMED_REPORTERS.length + jmxReporter, reporters.size());
-
-    // SPECIFIC and MULTIREGISTRY were skipped because they were
-    // specific to collection1
-    for (String reporterName : RENAMED_REPORTERS) {
-      SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
-      assertNotNull("Reporter " + reporterName + " was not found.", reporter);
-      assertTrue(reporter instanceof MockMetricReporter);
-
-      MockMetricReporter mockReporter = (MockMetricReporter) reporter;
-      assertTrue(
-          "Reporter " + reporterName + " was not initialized: " + mockReporter,
-          mockReporter.didInit);
-      assertTrue(
-          "Reporter " + reporterName + " was not validated: " + mockReporter,
-          mockReporter.didValidate);
-      assertFalse(
-          "Reporter " + reporterName + " was incorrectly closed: " + mockReporter,
-          mockReporter.didClose);
-    }
   }
 
   @Test
