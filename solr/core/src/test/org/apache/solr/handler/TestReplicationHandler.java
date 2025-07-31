@@ -53,7 +53,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoresApi;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericCollectionRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -1556,12 +1556,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     { // initial request w/o any committed docs
       final String backupName = "empty_backup1";
-      final GenericSolrRequest req =
-          new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  "/replication",
-                  params("command", "backup", "location", backupDir.toString(), "name", backupName))
-              .setRequiresCollection(true);
+      final GenericCollectionRequest req =
+          new GenericCollectionRequest(
+              SolrRequest.METHOD.POST,
+              "/replication",
+              SolrRequest.SolrRequestType.ADMIN,
+              params("command", "backup", "location", backupDir.toString(), "name", backupName));
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
 
@@ -1579,12 +1579,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     { // second backup w/uncommitted doc
       final String backupName = "empty_backup2";
-      final GenericSolrRequest req =
-          new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  "/replication",
-                  params("command", "backup", "location", backupDir.toString(), "name", backupName))
-              .setRequiresCollection(true);
+      final GenericCollectionRequest req =
+          new GenericCollectionRequest(
+              SolrRequest.METHOD.POST,
+              "/replication",
+              SolrRequest.SolrRequestType.ADMIN,
+              params("command", "backup", "location", backupDir.toString(), "name", backupName));
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
 
