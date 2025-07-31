@@ -41,6 +41,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -72,6 +73,7 @@ import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
@@ -782,10 +784,23 @@ public class HttpSolrCall {
         method.removeHeaders(CONTENT_LENGTH_HEADER);
       }
 
+      // Make sure the user principal is forwarded when its exist
+      HttpClientContext httpClientRequestContext =
+          HttpClientUtil.createNewHttpClientRequestContext();
+      Principal userPrincipal = req.getUserPrincipal();
+      if (userPrincipal != null) {
+        // Normally the context contains a static userToken to enable reuse resources. However, if a
+        // personal Principal object exists, we use that instead, also as a means to transfer
+        // authentication information to Auth plugins that wish to intercept the request later
+        if (log.isDebugEnabled()) {
+          log.debug("Forwarding principal {}", userPrincipal);
+        }
+        httpClientRequestContext.setUserToken(userPrincipal);
+      }
+
+      // Execute the method.
       final HttpResponse response =
-          solrDispatchFilter
-              .getHttpClient()
-              .execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+          solrDispatchFilter.getHttpClient().execute(method, httpClientRequestContext);
       int httpStatus = response.getStatusLine().getStatusCode();
       httpEntity = response.getEntity();
 
