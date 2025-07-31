@@ -422,7 +422,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
         String featureVector =
             featureLogger.printFeatureVector(
-                LTRRescorer.extractFeaturesInfo(
+                LTRRescorer.extractFeatures(
                     rerankingModelWeight,
                     docid,
                     (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,

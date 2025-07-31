@@ -376,8 +376,8 @@ public class LTRScoringQuery extends Query implements Accountable {
     private final float[] modelFeatureValuesNormalized;
     private final Feature.FeatureWeight[] extractedFeatureWeights;
 
-    // All the features
-    private final FeatureInfo[] featuresInfo;
+    // Array of all the features in the feature store of reference
+    private final FeatureInfo[] allFeaturesInStore;
 
     /*
      * @param modelFeatureWeights
@@ -397,7 +397,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       this.extractedFeatureWeights = extractedFeatureWeights;
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
-      this.featuresInfo = new FeatureInfo[allFeaturesSize];
+      this.allFeaturesInStore = new FeatureInfo[allFeaturesSize];
       setFeaturesInfo();
     }
 
@@ -406,12 +406,12 @@ public class LTRScoringQuery extends Query implements Accountable {
         String featName = extractedFeatureWeights[i].getName();
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
-        featuresInfo[featId] = new FeatureInfo(featName, value, true);
+        allFeaturesInStore[featId] = new FeatureInfo(featName, value, true);
       }
     }
 
-    public FeatureInfo[] getFeaturesInfo() {
-      return featuresInfo;
+    public FeatureInfo[] getAllFeaturesInStore() {
+      return allFeaturesInStore;
     }
 
     // for test use
@@ -433,22 +433,21 @@ public class LTRScoringQuery extends Query implements Accountable {
      * Goes through all the stored feature values, and calculates the normalized values for all the
      * features that will be used for scoring. Then calculate and return the model's score.
      */
-    private float makeNormalizedFeaturesAndScore() {
+    private void normalizeFeatures() {
       int pos = 0;
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getIndex();
-        FeatureInfo fInfo = featuresInfo[featureId];
+        FeatureInfo fInfo = allFeaturesInStore[featureId];
         modelFeatureValuesNormalized[pos] = fInfo.getValue();
         pos++;
       }
       ltrScoringModel.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
-      return ltrScoringModel.score(modelFeatureValuesNormalized);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
 
-      final Explanation[] explanations = new Explanation[this.featuresInfo.length];
+      final Explanation[] explanations = new Explanation[this.allFeaturesInStore.length];
       for (final Feature.FeatureWeight feature : extractedFeatureWeights) {
         explanations[feature.getIndex()] = feature.explain(context, doc);
       }
@@ -472,8 +471,8 @@ public class LTRScoringQuery extends Query implements Accountable {
         float value = extractedFeatureWeights[i].getDefaultValue();
         // need to set default value everytime as the default value is used in 'dense'
         // mode even if used=false
-        featuresInfo[featId].setValue(value);
-        featuresInfo[featId].setIsDefaultValue(true);
+        allFeaturesInStore[featId].setValue(value);
+        allFeaturesInStore[featId].setIsDefaultValue(true);
       }
     }
 
@@ -523,9 +522,9 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
         if (featureScorers.size() <= 1) {
           // future enhancement: allow the use of dense features in other cases
-          featureTraversalScorer = new DenseModelScorer(weight, featureScorers, leafContext);
+          featureTraversalScorer = new SingleFeatureScorer(weight, featureScorers, leafContext);
         } else {
-          featureTraversalScorer = new SparseModelScorer(weight, featureScorers, leafContext);
+          featureTraversalScorer = new MultiFeaturesScorer(weight, featureScorers, leafContext);
         }
       }
 
@@ -558,6 +557,9 @@ public class LTRScoringQuery extends Query implements Accountable {
         this.isLogging = isLogging;
       }
 
+      /**
+       * This class is responsible for extracting features and using them to score the document.
+       */
       abstract class FeatureTraversalScorer extends Scorer {
         protected int targetDoc = -1;
         protected int activeDoc = -1;
@@ -570,9 +572,11 @@ public class LTRScoringQuery extends Query implements Accountable {
 
         @Override
         public float score() throws IOException {
+          // Initialize features to their default values and set isDefaultValue to true.
           reset();
           fillFeaturesInfo();
-          return makeNormalizedFeaturesAndScore();
+          normalizeFeatures();
+          return ltrScoringModel.score(modelFeatureValuesNormalized);
         }
 
         @Override
@@ -585,15 +589,12 @@ public class LTRScoringQuery extends Query implements Accountable {
             SolrCache<Integer, float[]> featureVectorCache = null;
             float[] featureVector;
 
-            // Check added otherwise org.apache.solr.ltr.TestLTRScoringQuery.testLTRScoringQuery
-            // and org.apache.solr.ltr.TestSelectiveWeightCreation.testScoringQueryWeightCreation
-            // fail
             if (request != null) {
               featureVectorCache = request.getSearcher().getFeatureVectorCache();
             }
             if (featureVectorCache != null) {
               int docId = activeDoc + leafContext.docBase;
-              int fvCacheKey = fvCacheKey(docId);
+              int fvCacheKey = computeFeatureVectorCacheKey(docId);
               featureVector = featureVectorCache.get(fvCacheKey);
               if (featureVector == null) {
                 featureVector = extractFeatureVector();
@@ -608,14 +609,14 @@ public class LTRScoringQuery extends Query implements Accountable {
               float featureValue = featureVector[featureId];
               if (!Float.isNaN(featureValue)
                   && featureValue != extractedFeatureWeights[i].getDefaultValue()) {
-                featuresInfo[featureId].setValue(featureValue);
-                featuresInfo[featureId].setIsDefaultValue(false);
+                allFeaturesInStore[featureId].setValue(featureValue);
+                allFeaturesInStore[featureId].setIsDefaultValue(false);
               }
             }
           }
         }
 
-        private int fvCacheKey(int docId) {
+        private int computeFeatureVectorCacheKey(int docId) {
           int prime = 31;
           int result = docId;
           if (Objects.equals(
@@ -644,7 +645,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
 
         protected float[] initFeatureVector(FeatureInfo[] featuresInfos) {
-          float[] featureVector = new float[featuresInfo.length];
+          float[] featureVector = new float[allFeaturesInStore.length];
           for (int i = 0; i < featuresInfos.length; i++) {
             if (featuresInfos[i] != null) {
               featureVector[i] = featuresInfos[i].getValue();
@@ -656,11 +657,11 @@ public class LTRScoringQuery extends Query implements Accountable {
         protected abstract float[] extractFeatureVector() throws IOException;
       }
 
-      private class SparseModelScorer extends FeatureTraversalScorer {
+      private class MultiFeaturesScorer extends FeatureTraversalScorer {
         private final DisiPriorityQueue subScorers;
         private final ScoringQuerySparseIterator sparseIterator;
 
-        private SparseModelScorer(
+        private MultiFeaturesScorer(
             Weight weight,
             List<Feature.FeatureWeight.FeatureScorer> featureScorers,
             LeafReaderContext leafContext) {
@@ -684,7 +685,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
         protected float[] extractFeatureVector() throws IOException {
           final DisiWrapper topList = subScorers.topList();
-          float[] featureVector = initFeatureVector(featuresInfo);
+          float[] featureVector = initFeatureVector(allFeaturesInStore);
           for (DisiWrapper w = topList; w != null; w = w.next) {
             final Scorer subScorer = w.scorer;
             Feature.FeatureWeight feature = (Feature.FeatureWeight) subScorer.getWeight();
@@ -741,10 +742,10 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
       }
 
-      private class DenseModelScorer extends FeatureTraversalScorer {
+      private class SingleFeatureScorer extends FeatureTraversalScorer {
         private final List<Feature.FeatureWeight.FeatureScorer> featureScorers;
 
-        private DenseModelScorer(
+        private SingleFeatureScorer(
             Weight weight,
             List<Feature.FeatureWeight.FeatureScorer> featureScorers,
             LeafReaderContext leafContext) {
@@ -758,7 +759,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         }
 
         protected float[] extractFeatureVector() throws IOException {
-          float[] featureVector = initFeatureVector(featuresInfo);
+          float[] featureVector = initFeatureVector(allFeaturesInStore);
           for (int i = 0; i < featureScorers.size(); i++) {
             Scorer scorer = featureScorers.get(i);
             if (scorer.docID() == activeDoc) {
@@ -769,11 +770,6 @@ public class LTRScoringQuery extends Query implements Accountable {
             }
           }
           return featureVector;
-        }
-
-        @Override
-        public float getMaxScore(int upTo) throws IOException {
-          return Float.POSITIVE_INFINITY;
         }
 
         @Override
