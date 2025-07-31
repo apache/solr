@@ -230,7 +230,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
     // see SOLR-16693 and SOLR-17831 for more details
-    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY)) {
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY, Boolean.FALSE)) {
       reader = ExitableDirectoryReader.wrap(reader, QueryLimitsTimeout.INSTANCE);
     }
     return reader;
@@ -792,7 +792,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY) || !queryLimits.isLimitsEnabled()) {
+    if (EnvUtils.getPropertyAsBool(EXITABLE_READER_PROPERTY, Boolean.FALSE) || !queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {
