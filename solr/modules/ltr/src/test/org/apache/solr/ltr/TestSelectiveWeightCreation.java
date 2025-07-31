@@ -167,7 +167,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
             searcher,
             hits.scoreDocs[0].doc,
             new LTRScoringQuery(ltrScoringModel1)); // features not requested in response
-    LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getFeaturesInfo();
+    LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getAllFeaturesInStore();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
     int nonDefaultFeatures = 0;
@@ -191,7 +191,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // features requested in response
     ltrQuery2.setFeatureLogger(new CSVFeatureLogger(FeatureLogger.FeatureFormat.DENSE, true));
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc, ltrQuery2);
-    featuresInfo = modelWeight.getFeaturesInfo();
+    featuresInfo = modelWeight.getAllFeaturesInStore();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
     assertEquals(allFeatures.size(), modelWeight.getExtractedFeatureWeights().length);

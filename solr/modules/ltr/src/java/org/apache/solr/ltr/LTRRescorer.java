@@ -256,7 +256,7 @@ public class LTRRescorer extends Rescorer {
     return rankingWeight.explain(context, deBasedDoc);
   }
 
-  public static LTRScoringQuery.FeatureInfo[] extractFeaturesInfo(
+  public static LTRScoringQuery.FeatureInfo[] extractFeatures(
       LTRScoringQuery.ModelWeight modelWeight,
       int docid,
       Float originalDocScore,
@@ -276,7 +276,7 @@ public class LTRRescorer extends Rescorer {
       }
       r.setIsLogging(true);
       r.score();
-      return modelWeight.getFeaturesInfo();
+      return modelWeight.getAllFeaturesInStore();
     }
   }
 }
