@@ -17,9 +17,12 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -63,29 +66,31 @@ public class CallerSpecificQueryLimit implements QueryLimit {
    *     to {@link #shouldExit()} from any caller will match.
    */
   public CallerSpecificQueryLimit(String... callerExprs) {
-    if (callerExprs != null && callerExprs.length > 0) {
-      for (String callerExpr : callerExprs) {
-        String[] exprCount = callerExpr.split(":");
-        if (exprCount.length > 2) {
-          throw new RuntimeException("Invalid count in callerExpr: " + callerExpr);
-        }
-        String[] clazzMethod = exprCount[0].split("\\.");
-        if (clazzMethod.length > 2) {
-          throw new RuntimeException("Invalid method in callerExpr: " + callerExpr);
-        }
-        Set<String> methods =
-            interestingCallers.computeIfAbsent(clazzMethod[0], c -> new HashSet<>());
-        if (clazzMethod.length > 1) {
-          methods.add(clazzMethod[1]);
-        }
-        if (exprCount.length > 1) {
-          try {
-            int count = Integer.parseInt(exprCount[1]);
-            maxCounts.put(exprCount[0], count);
-            callCounts.put(exprCount[0], new AtomicInteger(0));
-          } catch (NumberFormatException e) {
-            throw new RuntimeException("Invalid count in callerExpr: " + callerExpr, e);
-          }
+    this(callerExprs != null ? Arrays.asList(callerExprs) : List.of());
+  }
+
+  public CallerSpecificQueryLimit(Collection<String> callerExprs) {
+    for (String callerExpr : callerExprs) {
+      String[] exprCount = callerExpr.split(":");
+      if (exprCount.length > 2) {
+        throw new RuntimeException("Invalid count in callerExpr: " + callerExpr);
+      }
+      String[] clazzMethod = exprCount[0].split("\\.");
+      if (clazzMethod.length > 2) {
+        throw new RuntimeException("Invalid method in callerExpr: " + callerExpr);
+      }
+      Set<String> methods =
+          interestingCallers.computeIfAbsent(clazzMethod[0], c -> new HashSet<>());
+      if (clazzMethod.length > 1) {
+        methods.add(clazzMethod[1]);
+      }
+      if (exprCount.length > 1) {
+        try {
+          int count = Integer.parseInt(exprCount[1]);
+          maxCounts.put(exprCount[0], count);
+          callCounts.put(exprCount[0], new AtomicInteger(0));
+        } catch (NumberFormatException e) {
+          throw new RuntimeException("Invalid count in callerExpr: " + callerExpr, e);
         }
       }
     }
