@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.solr.common.SolrDocument;
@@ -30,7 +31,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.CSVFeatureLogger;
 import org.apache.solr.ltr.FeatureLogger;
-import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
@@ -407,6 +407,30 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       implTransform(doc, docid, docInfo);
     }
 
+    private static LTRScoringQuery.FeatureInfo[] extractFeatures(
+        LTRScoringQuery.ModelWeight modelWeight,
+        int docid,
+        Float originalDocScore,
+        List<LeafReaderContext> leafContexts)
+        throws IOException {
+      final int n = ReaderUtil.subIndex(docid, leafContexts);
+      final LeafReaderContext atomicContext = leafContexts.get(n);
+      final int deBasedDoc = docid - atomicContext.docBase;
+      final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.scorer(atomicContext);
+      if ((r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc)) {
+        return new LTRScoringQuery.FeatureInfo[0];
+      } else {
+        if (originalDocScore != null) {
+          // If results have not been reranked, the score passed in is the original query's
+          // score, which some features can use instead of recalculating it
+          r.getDocInfo().setOriginalDocScore(originalDocScore);
+        }
+        r.fillFeaturesInfo();
+        r.setIsLogging(true);
+        return modelWeight.getAllFeaturesInStore();
+      }
+    }
+
     private void implTransform(SolrDocument doc, int docid, DocIterationInfo docInfo)
         throws IOException {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
@@ -422,7 +446,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
         String featureVector =
             featureLogger.printFeatureVector(
-                LTRRescorer.extractFeatures(
+                extractFeatures(
                     rerankingModelWeight,
                     docid,
                     (!docsWereReranked && docsHaveScores) ? docInfo.score() : null,

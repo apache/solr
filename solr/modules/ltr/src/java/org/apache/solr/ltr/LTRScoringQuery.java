@@ -508,7 +508,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
     public class ModelScorer extends Scorer {
       private final DocInfo docInfo;
-      private final Scorer featureTraversalScorer;
+      private final FeatureTraversalScorer featureTraversalScorer;
       protected boolean isLogging;
 
       public DocInfo getDocInfo() {
@@ -558,34 +558,66 @@ public class LTRScoringQuery extends Query implements Accountable {
         this.isLogging = isLogging;
       }
 
+      public void fillFeaturesInfo() throws IOException {
+        featureTraversalScorer.fillFeaturesInfo();
+      }
+
       /**
        * This class is responsible for extracting features and using them to score the document.
        */
-      abstract class FeatureTraversalScorer extends Scorer {
+      private abstract class FeatureTraversalScorer extends Scorer {
         protected int targetDoc = -1;
         protected int activeDoc = -1;
         protected LeafReaderContext leafContext;
+        protected FeatureExtractor featureExtractor;
 
         protected FeatureTraversalScorer(Weight weight, LeafReaderContext leafContext) {
           this.leafContext = leafContext;
+          this.featureExtractor = new FeatureExtractor(this);
+        }
+
+        void fillFeaturesInfo() throws IOException {
+          // Initialize features to their default values and set isDefaultValue to true.
+          reset();
+          featureExtractor.fillFeaturesInfo();
         }
 
         @Override
         public float score() throws IOException {
           // Initialize features to their default values and set isDefaultValue to true.
           reset();
-          fillFeaturesInfo();
+          featureExtractor.fillFeaturesInfo();
           normalizeFeatures();
           return ltrScoringModel.score(modelFeatureValuesNormalized);
         }
 
         @Override
-        public float getMaxScore(int upTo) throws IOException {
+        public float getMaxScore(int upTo) {
           return Float.POSITIVE_INFINITY;
         }
 
+        protected float[] initFeatureVector(FeatureInfo[] featuresInfos) {
+          float[] featureVector = new float[allFeaturesInStore.length];
+          for (int i = 0; i < featuresInfos.length; i++) {
+            if (featuresInfos[i] != null) {
+              featureVector[i] = featuresInfos[i].getValue();
+            }
+          }
+          return featureVector;
+        }
+
+        protected abstract float[] extractFeatureVector() throws IOException;
+      }
+
+      private class FeatureExtractor {
+        private final FeatureTraversalScorer traversalScorer;
+
+        private FeatureExtractor(FeatureTraversalScorer traversalScorer) {
+          this.traversalScorer = traversalScorer;
+        }
+
         private void fillFeaturesInfo() throws IOException {
-          if (activeDoc == targetDoc) {
+          if (traversalScorer.activeDoc == traversalScorer.targetDoc) {
             SolrCache<Integer, float[]> featureVectorCache = null;
             float[] featureVector;
 
@@ -593,15 +625,15 @@ public class LTRScoringQuery extends Query implements Accountable {
               featureVectorCache = request.getSearcher().getFeatureVectorCache();
             }
             if (featureVectorCache != null) {
-              int docId = activeDoc + leafContext.docBase;
+              int docId = traversalScorer.activeDoc + traversalScorer.leafContext.docBase;
               int fvCacheKey = computeFeatureVectorCacheKey(docId);
               featureVector = featureVectorCache.get(fvCacheKey);
               if (featureVector == null) {
-                featureVector = extractFeatureVector();
+                featureVector = traversalScorer.extractFeatureVector();
                 featureVectorCache.put(fvCacheKey, featureVector);
               }
             } else {
-              featureVector = extractFeatureVector();
+              featureVector = traversalScorer.extractFeatureVector();
             }
 
             for (int i = 0; i < extractedFeatureWeights.length; i++) {
@@ -620,8 +652,8 @@ public class LTRScoringQuery extends Query implements Accountable {
           int prime = 31;
           int result = docId;
           if (Objects.equals(
-                  ltrScoringModel.getName(),
-                  LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)
+              ltrScoringModel.getName(),
+              LTRFeatureLoggerTransformerFactory.DEFAULT_LOGGING_MODEL_NAME)
               || (isLogging && logger.isLoggingAll())) {
             result = (prime * result) + ltrScoringModel.getFeatureStoreName().hashCode();
           } else {
@@ -643,18 +675,6 @@ public class LTRScoringQuery extends Query implements Accountable {
           }
           return result;
         }
-
-        protected float[] initFeatureVector(FeatureInfo[] featuresInfos) {
-          float[] featureVector = new float[allFeaturesInStore.length];
-          for (int i = 0; i < featuresInfos.length; i++) {
-            if (featuresInfos[i] != null) {
-              featureVector[i] = featuresInfos[i].getValue();
-            }
-          }
-          return featureVector;
-        }
-
-        protected abstract float[] extractFeatureVector() throws IOException;
       }
 
       private class MultiFeaturesScorer extends FeatureTraversalScorer {

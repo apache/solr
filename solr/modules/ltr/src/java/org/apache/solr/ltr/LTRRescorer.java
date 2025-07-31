@@ -255,28 +255,4 @@ public class LTRRescorer extends Rescorer {
     }
     return rankingWeight.explain(context, deBasedDoc);
   }
-
-  public static LTRScoringQuery.FeatureInfo[] extractFeatures(
-      LTRScoringQuery.ModelWeight modelWeight,
-      int docid,
-      Float originalDocScore,
-      List<LeafReaderContext> leafContexts)
-      throws IOException {
-    final int n = ReaderUtil.subIndex(docid, leafContexts);
-    final LeafReaderContext atomicContext = leafContexts.get(n);
-    final int deBasedDoc = docid - atomicContext.docBase;
-    final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.modelScorer(atomicContext);
-    if ((r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc)) {
-      return new LTRScoringQuery.FeatureInfo[0];
-    } else {
-      if (originalDocScore != null) {
-        // If results have not been reranked, the score passed in is the original query's
-        // score, which some features can use instead of recalculating it
-        r.getDocInfo().setOriginalDocScore(originalDocScore);
-      }
-      r.setIsLogging(true);
-      r.score();
-      return modelWeight.getAllFeaturesInStore();
-    }
-  }
 }
