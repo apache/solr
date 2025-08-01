@@ -177,8 +177,8 @@ public class CreateAliasCmd extends AliasCmd {
       ZkStateReader zkStateReader,
       ClusterState state,
       Map<String, String> aliasProperties,
-      String lockId,
-      String initialCollectionName)
+      String initialCollectionName,
+      String lockId)
       throws Exception {
     // Create the collection
     createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, lockId, ccc);

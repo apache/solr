@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
@@ -75,17 +76,32 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     // Collection level locks
     DistributedLock collRL1 =
         factory.createLock(
-            false, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null);
+            false,
+            CollectionParams.LockLevel.COLLECTION,
+            COLLECTION_NAME,
+            null,
+            null,
+            Collections.emptyList());
     assertTrue("collRL1 should have been acquired", collRL1.isAcquired());
 
     DistributedLock collRL2 =
         factory.createLock(
-            false, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null);
+            false,
+            CollectionParams.LockLevel.COLLECTION,
+            COLLECTION_NAME,
+            null,
+            null,
+            Collections.emptyList());
     assertTrue("collRL1 should have been acquired", collRL2.isAcquired());
 
     DistributedLock collWL3 =
         factory.createLock(
-            true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null);
+            true,
+            CollectionParams.LockLevel.COLLECTION,
+            COLLECTION_NAME,
+            null,
+            null,
+            Collections.emptyList());
     assertFalse(
         "collWL3 should not have been acquired, due to collRL1 and collRL2", collWL3.isAcquired());
 
@@ -100,7 +116,12 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
 
     DistributedLock collRL4 =
         factory.createLock(
-            false, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null);
+            false,
+            CollectionParams.LockLevel.COLLECTION,
+            COLLECTION_NAME,
+            null,
+            null,
+            Collections.emptyList());
     assertFalse(
         "collRL4 should not have been acquired, due to collWL3 locking the collection",
         collRL4.isAcquired());
@@ -110,14 +131,24 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     // should see no impact.
     DistributedLock shardWL5 =
         factory.createLock(
-            true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null);
+            true,
+            CollectionParams.LockLevel.SHARD,
+            COLLECTION_NAME,
+            SHARD_NAME,
+            null,
+            Collections.emptyList());
     assertTrue(
         "shardWL5 should have been acquired, there is no lock on that shard",
         shardWL5.isAcquired());
 
     DistributedLock shardWL6 =
         factory.createLock(
-            true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null);
+            true,
+            CollectionParams.LockLevel.SHARD,
+            COLLECTION_NAME,
+            SHARD_NAME,
+            null,
+            Collections.emptyList());
     assertFalse(
         "shardWL6 should not have been acquired, shardWL5 is locking that shard",
         shardWL6.isAcquired());
@@ -125,12 +156,22 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     // Get a lock on a Replica. Again this is independent of collection or shard level
     DistributedLock replicaRL7 =
         factory.createLock(
-            false, CollectionParams.LockLevel.REPLICA, COLLECTION_NAME, SHARD_NAME, REPLICA_NAME);
+            false,
+            CollectionParams.LockLevel.REPLICA,
+            COLLECTION_NAME,
+            SHARD_NAME,
+            REPLICA_NAME,
+            Collections.emptyList());
     assertTrue("replicaRL7 should have been acquired", replicaRL7.isAcquired());
 
     DistributedLock replicaWL8 =
         factory.createLock(
-            true, CollectionParams.LockLevel.REPLICA, COLLECTION_NAME, SHARD_NAME, REPLICA_NAME);
+            true,
+            CollectionParams.LockLevel.REPLICA,
+            COLLECTION_NAME,
+            SHARD_NAME,
+            REPLICA_NAME,
+            Collections.emptyList());
     assertFalse(
         "replicaWL8 should not have been acquired, replicaRL7 is read locking that replica",
         replicaWL8.isAcquired());
@@ -164,13 +205,23 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     // Acquiring right away a read lock
     DistributedLock readLock =
         factory.createLock(
-            false, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null);
+            false,
+            CollectionParams.LockLevel.COLLECTION,
+            COLLECTION_NAME,
+            null,
+            null,
+            Collections.emptyList());
     assertTrue("readLock should have been acquired", readLock.isAcquired());
 
     // And now creating a write lock, that can't be acquired just yet, because of the read lock
     DistributedLock writeLock =
         factory.createLock(
-            true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null);
+            true,
+            CollectionParams.LockLevel.COLLECTION,
+            COLLECTION_NAME,
+            null,
+            null,
+            Collections.emptyList());
     assertFalse("writeLock should not have been acquired", writeLock.isAcquired());
 
     // Wait for acquisition of the write lock on another thread (and be notified via a latch)
