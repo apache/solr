@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee8.webapp.WebAppContext">
   <Set name="contextPath"><Property name="hostContext" default="/solr"/></Set>
   <Set name="war"><Property name="jetty.base"/>/solr-webapp/webapp</Set>
   <Set name="defaultsDescriptor"><Property name="jetty.base"/>/etc/webdefault.xml</Set>
@@ -26,7 +26,7 @@
   <Set name="parentLoaderPriority">true</Set>
   <Call name="addServerClassMatcher">
     <Arg>
-      <New id="removeServerClasses" class="org.eclipse.jetty.webapp.ClassMatcher">
+      <New id="removeServerClasses" class="org.eclipse.jetty.ee8.webapp.ClassMatcher">
         <Arg>
           <Array type="java.lang.String">
             <Item>-org.eclipse.jetty.</Item>
