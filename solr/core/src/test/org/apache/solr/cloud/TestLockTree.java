@@ -40,25 +40,30 @@ public class TestLockTree extends SolrTestCaseJ4 {
 
   public void testLocks() throws Exception {
     LockTree lockTree = new LockTree();
-    Lock coll1Lock = lockTree.getSession().lock(CollectionAction.CREATE, Arrays.asList("coll1"));
+    Lock coll1Lock =
+        lockTree.getSession().lock(CollectionAction.CREATE, Arrays.asList("coll1"), null);
     assertNotNull(coll1Lock);
     assertNull(
         "Should not be able to lock coll1/shard1",
         lockTree
             .getSession()
-            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1")));
+            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"), null));
 
     assertNull(
-        lockTree.getSession().lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2")));
+        lockTree
+            .getSession()
+            .lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2"), null));
     coll1Lock.unlock();
     Lock shard1Lock =
         lockTree
             .getSession()
-            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"));
+            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"), null);
     assertNotNull(shard1Lock);
     shard1Lock.unlock();
     Lock replica1Lock =
-        lockTree.getSession().lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2"));
+        lockTree
+            .getSession()
+            .lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2"), null);
     assertNotNull(replica1Lock);
 
     List<Pair<CollectionAction, List<String>>> operations = new ArrayList<>();
@@ -81,7 +86,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
       List<Lock> locks = new CopyOnWriteArrayList<>();
       List<Thread> threads = new ArrayList<>();
       for (Pair<CollectionAction, List<String>> operation : operations) {
-        final Lock lock = session.lock(operation.first(), operation.second());
+        final Lock lock = session.lock(operation.first(), operation.second(), null);
         if (lock != null) {
           Thread thread = new Thread(getRunnable(completedOps, operation, locks, lock));
           threads.add(thread);

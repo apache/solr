@@ -48,9 +48,9 @@ abstract class ZkDistributedLock implements DistributedLock {
 
   /** Read lock. */
   static class Read extends ZkDistributedLock {
-    protected Read(SolrZkClient zkClient, String lockPath)
+    protected Read(SolrZkClient zkClient, String lockPath, String mirroredLockId)
         throws KeeperException, InterruptedException {
-      super(zkClient, lockPath, READ_LOCK_PREFIX);
+      super(zkClient, lockPath, READ_LOCK_PREFIX, mirroredLockId);
     }
 
     @Override
@@ -63,9 +63,9 @@ abstract class ZkDistributedLock implements DistributedLock {
 
   /** Write lock. */
   static class Write extends ZkDistributedLock {
-    protected Write(SolrZkClient zkClient, String lockPath)
+    protected Write(SolrZkClient zkClient, String lockPath, String mirroredLockId)
         throws KeeperException, InterruptedException {
-      super(zkClient, lockPath, WRITE_LOCK_PREFIX);
+      super(zkClient, lockPath, WRITE_LOCK_PREFIX, mirroredLockId);
     }
 
     @Override
@@ -80,23 +80,31 @@ abstract class ZkDistributedLock implements DistributedLock {
   private final String lockNode;
   protected final long sequence;
   protected volatile boolean released = false;
+  protected final boolean mirrored;
 
-  protected ZkDistributedLock(SolrZkClient zkClient, String lockDir, String lockNodePrefix)
+  protected ZkDistributedLock(
+      SolrZkClient zkClient, String lockDir, String lockNodePrefix, String mirroredLockId)
       throws KeeperException, InterruptedException {
     this.zkClient = zkClient;
     this.lockDir = lockDir;
 
     // Create the SEQUENTIAL EPHEMERAL node. We enter the locking rat race here. We MUST eventually
     // call release() or we block others.
-    lockNode =
-        zkClient.create(
-            lockDir
-                + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR
-                + lockNodePrefix,
-            null,
-            CreateMode.EPHEMERAL_SEQUENTIAL,
-            false);
+    if (mirroredLockId == null || mirroredLockId.startsWith(lockDir)) {
+      lockNode =
+          zkClient.create(
+              lockDir
+                  + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR
+                  + lockNodePrefix,
+              null,
+              CreateMode.EPHEMERAL_SEQUENTIAL,
+              false);
 
+      mirrored = false;
+    } else {
+      lockNode = mirroredLockId;
+      mirrored = true;
+    }
     sequence = getSequenceFromNodename(lockNode);
   }
 
@@ -159,8 +167,10 @@ abstract class ZkDistributedLock implements DistributedLock {
   @Override
   public void release() {
     try {
-      zkClient.delete(lockNode, -1, true);
-      released = true;
+      if (!mirrored) {
+        zkClient.delete(lockNode, -1, true);
+        released = true;
+      }
     } catch (KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
@@ -213,7 +223,11 @@ abstract class ZkDistributedLock implements DistributedLock {
     if (!foundSelf) {
       // If this basic assumption doesn't hold with Zookeeper, we're in deep trouble. And not only
       // here.
-      throw new SolrException(SERVER_ERROR, "Missing lock node " + lockNode);
+      if (mirrored) {
+        throw new SolrException(SERVER_ERROR, "Missing mirrored lock node " + lockNode);
+      } else {
+        throw new SolrException(SERVER_ERROR, "Missing lock node " + lockNode);
+      }
     }
 
     // Didn't return early on any other blocking lock, means we own it
@@ -239,6 +253,16 @@ abstract class ZkDistributedLock implements DistributedLock {
     }
 
     return Long.parseLong(lockNode.substring(lockNode.length() - SEQUENCE_LENGTH));
+  }
+
+  @Override
+  public String getLockId() {
+    return lockNode;
+  }
+
+  @Override
+  public boolean isMirroringLock() {
+    return mirrored;
   }
 
   @Override

@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.util.List;
 import java.util.Objects;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
@@ -44,7 +45,8 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
       CollectionParams.LockLevel level,
       String collName,
       String shardId,
-      String replicaName) {
+      String replicaName,
+      List<String> callingLockIds) {
     Objects.requireNonNull(collName, "collName can't be null");
     if (level != CollectionParams.LockLevel.COLLECTION) {
       Objects.requireNonNull(
@@ -56,7 +58,8 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
     }
 
     String lockPath = getLockPath(level, collName, shardId, replicaName);
-    return doCreateLock(isWriteLock, lockPath);
+
+    return doCreateLock(isWriteLock, lockPath, callingLockIds);
   }
 
   /**

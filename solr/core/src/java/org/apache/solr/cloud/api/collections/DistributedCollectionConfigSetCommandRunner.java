@@ -257,7 +257,10 @@ public class DistributedCollectionConfigSetCommandRunner {
    * </ul>
    */
   public OverseerSolrResponse runCollectionCommand(
-      ZkNodeProps message, CollectionParams.CollectionAction action, long timeoutMs) {
+      ZkNodeProps message,
+      CollectionParams.CollectionAction action,
+      long timeoutMs,
+      String callingLockId) {
     // We refuse new tasks, but will wait for already submitted ones (i.e. those that made it
     // through this method earlier). See stopAndWaitForPendingTasksToComplete() below
     if (shuttingDown) {
@@ -282,7 +285,8 @@ public class DistributedCollectionConfigSetCommandRunner {
           "Task with the same requestid already exists. (" + asyncId + ")");
     }
 
-    CollectionCommandRunner commandRunner = new CollectionCommandRunner(message, action, asyncId);
+    CollectionCommandRunner commandRunner =
+        new CollectionCommandRunner(message, action, asyncId, callingLockId);
     final Future<OverseerSolrResponse> taskFuture;
     try {
       taskFuture = commandsExecutor.submit(commandRunner);
@@ -366,12 +370,17 @@ public class DistributedCollectionConfigSetCommandRunner {
     private final ZkNodeProps message;
     private final CollectionParams.CollectionAction action;
     private final String asyncId;
+    private final String callingLockId;
 
     private CollectionCommandRunner(
-        ZkNodeProps message, CollectionParams.CollectionAction action, String asyncId) {
+        ZkNodeProps message,
+        CollectionParams.CollectionAction action,
+        String asyncId,
+        String callingLockId) {
       this.message = message;
       this.action = action;
       this.asyncId = asyncId;
+      this.callingLockId = callingLockId;
     }
 
     /**
@@ -404,7 +413,8 @@ public class DistributedCollectionConfigSetCommandRunner {
             new CollectionApiLockFactory(
                     new ZkDistributedCollectionLockFactory(
                         ccc.getZkStateReader().getZkClient(), ZK_COLLECTION_LOCKS))
-                .createCollectionApiLock(action.lockLevel, collName, shardId, replicaName);
+                .createCollectionApiLock(
+                    action.lockLevel, collName, shardId, replicaName, callingLockId);
 
         try {
           log.debug(
@@ -431,10 +441,7 @@ public class DistributedCollectionConfigSetCommandRunner {
           if (command != null) {
             // TODO: FIX
             command.call(
-                ccc.getSolrCloudManager().getClusterState(),
-                message,
-                lock.hashCode() + "",
-                results);
+                ccc.getSolrCloudManager().getClusterState(), message, lock.getLockId(), results);
           } else {
             asyncTaskTracker.cancelAsyncId(asyncId);
             // Seeing this is a bug, not bad user data

@@ -372,7 +372,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     if (distributedCollectionConfigSetCommandRunner.isPresent()) {
       return distributedCollectionConfigSetCommandRunner
           .get()
-          .runCollectionCommand(m, action, timeout);
+          .runCollectionCommand(m, action, timeout, m.getStr(CALLING_LOCK_ID));
     } else { // Sending the Collection API message to Overseer via a Zookeeper queue
       String operation = m.getStr(QUEUE_OPERATION);
       if (operation == null) {

@@ -17,19 +17,24 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.solr.cloud.DistributedCollectionLockFactory;
 import org.apache.solr.cloud.DistributedLock;
 import org.apache.solr.cloud.DistributedMultiLock;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class implements a higher level locking abstraction for the Collection API using lower level
  * read and write locks.
  */
 public class CollectionApiLockFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final DistributedCollectionLockFactory lockFactory;
 
@@ -54,7 +59,11 @@ public class CollectionApiLockFactory {
    *     prevent other threads from locking.
    */
   DistributedMultiLock createCollectionApiLock(
-      CollectionParams.LockLevel lockLevel, String collName, String shardId, String replicaName) {
+      CollectionParams.LockLevel lockLevel,
+      String collName,
+      String shardId,
+      String replicaName,
+      String callingLockId) {
     if (lockLevel == CollectionParams.LockLevel.NONE) {
       return new DistributedMultiLock(List.of());
     }
@@ -102,6 +111,9 @@ public class CollectionApiLockFactory {
       // CollectionParams.LockLevel.COLLECTION;
     }
 
+    List<String> callingLockIdList =
+        callingLockId == null ? Collections.emptyList() : List.of(callingLockId.split(","));
+
     // The first requested lock is a write one (on the target object for the action, depending on
     // lock level), then requesting read locks on "higher" levels (collection > shard > replica here
     // for the level. Note LockLevel "height" is other way around).
@@ -121,7 +133,10 @@ public class CollectionApiLockFactory {
       // This comparison is based on the LockLevel height value that classifies replica > shard >
       // collection.
       if (lockLevel.isHigherOrEqual(level)) {
-        locks.add(lockFactory.createLock(requestWriteLock, level, collName, shardId, replicaName));
+        DistributedLock lock =
+            lockFactory.createLock(
+                requestWriteLock, level, collName, shardId, replicaName, callingLockIdList);
+        locks.add(lock);
         requestWriteLock = false;
       }
     }
