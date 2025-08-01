@@ -37,7 +37,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -87,15 +86,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
   private List<Pattern> excludePatterns;
 
   public final boolean isV2Enabled = V2ApiUtils.isEnabled();
-
-  public HttpClient getHttpClient() {
-    try {
-      return containerProvider.getHttpClient();
-    } catch (UnavailableException e) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Internal Http Client Unavailable, startup may have failed");
-    }
-  }
 
   /**
    * Enum to define action that needs to be processed. PASSTHROUGH: Pass through to another filter
