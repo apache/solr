@@ -67,6 +67,11 @@ interface BasicAuthStore : Store<Intent, State, Label> {
          * @property error The error that occurred during the authentication process.
          */
         data class AuthenticationFailed(val error: Throwable) : Label
+
+        /**
+         * Label that is published whenever the error state resets.
+         */
+        data object ErrorReset : Label
     }
 
     /**
@@ -76,7 +81,6 @@ interface BasicAuthStore : Store<Intent, State, Label> {
         val method: BasicAuthMethod = BasicAuthMethod(),
         val username: String = "",
         val password: String = "",
-        val usernameError: Throwable? = null,
-        val passwordError: Throwable? = null,
+        val error: Throwable? = null,
     )
 }

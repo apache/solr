@@ -47,11 +47,14 @@ interface BasicAuthComponent {
      * @property realm The basic auth realm the user is supposed to provide the credentials for.
      * @property username The username that is currently typed in.
      * @property password The password that is currently typed in.
+     * @property hasError Whether the current input has an error. This is a simplified variant that
+     * does not distinguish input fields.
      */
     data class Model(
         val realm: String = "",
         val username: String = "",
         val password: String = "",
+        val hasError: Boolean = false,
     )
 
     sealed interface Output {

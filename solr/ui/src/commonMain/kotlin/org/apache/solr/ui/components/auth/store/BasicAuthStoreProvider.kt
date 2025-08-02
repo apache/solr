@@ -28,11 +28,11 @@ import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.auth.store.BasicAuthStore.Intent
 import org.apache.solr.ui.components.auth.store.BasicAuthStore.Label
 import org.apache.solr.ui.components.auth.store.BasicAuthStore.State
+import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.errors.InvalidCredentialsException
 import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.errors.parseError
 import kotlin.coroutines.CoroutineContext
-import org.apache.solr.ui.domain.AuthMethod
 
 class BasicAuthStoreProvider(
     private val storeFactory: StoreFactory,
@@ -63,13 +63,26 @@ class BasicAuthStoreProvider(
          * Message that is dispatched when the password was successfully updated.
          */
         data class PasswordUpdated(val password: String) : Message
+
+        /**
+         * Message that is dispatched when an authentication error occurred.
+         */
+        data class AuthenticationFailed(val error: Throwable) : Message
     }
 
     private inner class ExecutorImpl : CoroutineExecutor<Intent, Unit, State, Message, Label>(mainContext) {
-        override fun executeIntent(intent: Intent) = when (intent) {
-            is Intent.Authenticate -> authenticate()
-            is Intent.UpdateUsername -> dispatch(Message.UsernameUpdated(intent.username))
-            is Intent.UpdatePassword -> dispatch(Message.PasswordUpdated(intent.password))
+        override fun executeIntent(intent: Intent) {
+            when (intent) {
+                is Intent.Authenticate -> authenticate()
+                is Intent.UpdateUsername -> {
+                    state().error?.let { publish(Label.ErrorReset) }
+                    dispatch(Message.UsernameUpdated(intent.username))
+                }
+                is Intent.UpdatePassword -> {
+                    state().error?.let { publish(Label.ErrorReset) }
+                    dispatch(Message.PasswordUpdated(intent.password))
+                }
+            }
         }
 
         private fun authenticate(): Unit = with(state()) {
@@ -78,6 +91,7 @@ class BasicAuthStoreProvider(
                 context = CoroutineExceptionHandler { _, throwable ->
                     // error returned here is platform-specific and needs further parsing
                     publish(Label.AuthenticationFailed(error = parseError(throwable)))
+                    dispatch(Message.AuthenticationFailed(error = parseError(throwable)))
                 },
             ) {
                 withContext(ioContext) {
@@ -91,13 +105,15 @@ class BasicAuthStoreProvider(
             }
         }
 
-        private fun handleConnectionError(error: Throwable) = when (error) {
-            is UnauthorizedException -> {
+        private fun handleConnectionError(error: Throwable) {
+            val mappedError: Throwable = when (error) {
                 // Unauthorized response means that the credentials are invalid
-                publish(Label.AuthenticationFailed(error = InvalidCredentialsException()))
+                is UnauthorizedException -> InvalidCredentialsException()
+                else -> error
             }
 
-            else -> publish(Label.AuthenticationFailed(error))
+            dispatch(Message.AuthenticationFailed(mappedError))
+            publish(Label.AuthenticationFailed(mappedError))
         }
     }
 
@@ -106,8 +122,9 @@ class BasicAuthStoreProvider(
      */
     private object ReducerImpl : Reducer<State, Message> {
         override fun State.reduce(msg: Message): State = when (msg) {
-            is Message.UsernameUpdated -> copy(username = msg.username, usernameError = null)
-            is Message.PasswordUpdated -> copy(password = msg.password, passwordError = null)
+            is Message.UsernameUpdated -> copy(username = msg.username, error = null)
+            is Message.PasswordUpdated -> copy(password = msg.password, error = null)
+            is Message.AuthenticationFailed -> copy(error = msg.error)
         }
     }
 

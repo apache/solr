@@ -117,6 +117,7 @@ fun UserAuthenticationContent(
 
             model.error?.let { error ->
                 Text(
+                    modifier = Modifier.testTag("error_text"),
                     text = stringResource(resource = error),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,

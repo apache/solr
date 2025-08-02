@@ -20,9 +20,10 @@ package org.apache.solr.ui.views.auth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,40 +66,45 @@ fun BasicAuthContent(
         style = MaterialTheme.typography.bodyMedium,
     )
 
-    TextField(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(tag = "username_input_field"),
+    OutlinedTextField(
+        modifier = Modifier.fillMaxWidth().testTag(tag = "username_input_field"),
         value = model.username,
         singleLine = true,
+        isError = model.hasError,
         label = { Text(stringResource(Res.string.label_username)) },
         onValueChange = component::onChangeUsername,
         enabled = !isAuthenticating,
     )
 
-    TextField(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(tag = "password_input_field"),
+    OutlinedTextField(
+        modifier = Modifier.fillMaxWidth().testTag(tag = "password_input_field"),
         value = model.password,
         singleLine = true,
+        isError = model.hasError,
         label = { Text(stringResource(Res.string.label_password)) },
         visualTransformation = PasswordVisualTransformation(),
         onValueChange = component::onChangePassword,
         enabled = !isAuthenticating,
     )
 
-    SolrButton(
-        modifier = Modifier.fillMaxWidth().testTag(tag = "sign_in_button"),
-        onClick = component::onAuthenticate,
-        enabled = !isAuthenticating,
-    ) {
-        Text(
-            text = if (isAuthenticating) {
-                stringResource(Res.string.authenticating)
-            } else {
-                stringResource(Res.string.action_sign_in_with_credentials)
-            },
-        )
+    Column {
+        SolrButton(
+            modifier = Modifier.fillMaxWidth().testTag(tag = "sign_in_button"),
+            onClick = component::onAuthenticate,
+            enabled = !isAuthenticating,
+        ) {
+            Text(
+                text = if (isAuthenticating) {
+                    stringResource(Res.string.authenticating)
+                } else {
+                    stringResource(Res.string.action_sign_in_with_credentials)
+                },
+            )
+        }
+        if (isAuthenticating) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().testTag(tag = "loading_indicator"),
+            )
+        }
     }
 }

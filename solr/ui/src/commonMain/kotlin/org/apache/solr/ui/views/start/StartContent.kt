@@ -93,7 +93,7 @@ fun StartContent(
             Text(
                 modifier = Modifier.testTag("start_description"),
                 text = stringResource(Res.string.desc_to_get_started),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
             )
 
             OutlinedTextField(

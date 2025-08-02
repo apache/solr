@@ -45,5 +45,6 @@ internal val stateToBasicAuthModel: (BasicAuthStore.State) -> BasicAuthComponent
         realm = it.method.realm,
         username = it.username,
         password = it.password,
+        hasError = it.error != null,
     )
 }
