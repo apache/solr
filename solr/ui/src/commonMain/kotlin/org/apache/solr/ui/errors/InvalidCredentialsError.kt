@@ -17,20 +17,4 @@
 
 package org.apache.solr.ui.errors
 
-import io.ktor.http.Url
-import org.apache.solr.ui.domain.AuthMethod
-
-/**
- * Exception that is thrown for unauthorized access to the API.
- *
- * This is usually used when a response has HTTP status code 401.
- *
- * @property url The URL that threw the unauthorized response.
- * @property methods The authentication methods the unauthorized response contains.
- * This can be used for further redirecting and authenticating the user.
- */
-class UnauthorizedException(
-    val url: Url? = null,
-    val methods: List<AuthMethod> = emptyList(),
-    message: String? = null,
-): Exception(message)
+class InvalidCredentialsException : Throwable()

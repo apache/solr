@@ -15,21 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth.integration
+package org.apache.solr.ui
 
-import com.arkivanov.mvikotlin.core.store.StoreFactory
-import io.ktor.client.HttpClient
-import org.apache.solr.ui.components.auth.UnauthenticatedComponent
-import org.apache.solr.ui.utils.AppComponentContext
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 
-class DefaultUnauthenticatedComponent(
-    componentContext: AppComponentContext,
-    storeFactory: StoreFactory,
-    httpClient: HttpClient,
-    private val output: (UnauthenticatedComponent.Output) -> Unit
-) : UnauthenticatedComponent, AppComponentContext by componentContext {
-
-    // TODO Implement me
-
-    override fun onAbort() = output(UnauthenticatedComponent.Output.OnAbort)
-}
+/**
+ * Checks if a node contains at least one error property.
+ */
+val isErrorSemantics = SemanticsMatcher(
+    description = "Node contains error",
+    matcher = { node ->
+        node.config[SemanticsProperties.Error].isNotEmpty()
+    }
+)
