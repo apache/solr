@@ -657,26 +657,18 @@ Metrics can be aggregated across cores using Shard and Cluster reporters.
 
 These metrics are collected in respective registries for each core (e.g., `solr.core.collection1....`), under the `INDEX` category.
 
-Metrics collection is controlled by boolean parameters in the `<metrics>` section of `solrconfig.xml`:
+Each merge metric is prefixed with `INDEX.merge` followed by components in the metric path indicating if the merge is a `major` or `minor` merge, and
+if the metric is updating when the merge `started` or `finished`. The last component of the metric path indicates the property of the merge being counted:
 
-Basic metrics:
+* `merges` - number of total merge operations
+* `docs` - number of total documents merged
+* `segments` - number of total segments merged
+* `deletedDocs` - number of total deleted documents merged
 
-[source,xml]
-----
-<config>
-  ...
-  <indexConfig>
-    <metrics>
-      <long name="majorMergeDocs">524288</long>
-      <bool name="merge">true</bool>
-    </metrics>
-    ...
-  </indexConfig>
-...
-</config>
-----
+So for example, the metric for "total segments that have finished merging in major merges" would be `INDEX.merge.major.finished.segments`.
+If you want to get the numbers for actively running merges, simply take the difference between any corresponding `started` and `finished` metric at any given time.
 
-Detailed metrics:
+The default size for a "major" merge operation is 512k documents, but this can be configured to whatever you want as follows
 
 [source,xml]
 ----
@@ -685,7 +677,6 @@ Detailed metrics:
   <indexConfig>
     <metrics>
       <long name="majorMergeDocs">524288</long>
-      <bool name="mergeDetails">true</bool>
     </metrics>
     ...
   </indexConfig>
@@ -693,26 +684,12 @@ Detailed metrics:
 </config>
 ----
 
-The following metrics are collected:
+Additionally, the following merge metrics are also reported:
 
-* `INDEX.merge.major` - timer for merge operations that include at least "majorMergeDocs" (default value for this parameter is 512k documents).
-* `INDEX.merge.minor` - timer for merge operations that include less than "majorMergeDocs".
-* `INDEX.merge.errors` - counter for merge errors.
-* `INDEX.flush` - meter for index flush operations.
-
-Additionally, the following gauges are reported, which help to monitor the momentary state of index merge operations:
-
-* `INDEX.merge.major.running` - number of running major merge operations (depending on the implementation of `MergeScheduler` that is used there can be several concurrently running merge operations).
-* `INDEX.merge.minor.running` - as above, for minor merge operations.
-* `INDEX.merge.major.running.docs` - total number of documents in the segments being currently merged in major merge operations.
-* `INDEX.merge.minor.running.docs` - as above, for minor merge operations.
-* `INDEX.merge.major.running.segments` - number of segments being currently merged in major merge operations.
-* `INDEX.merge.minor.running.segments` - as above, for minor merge operations.
-
-If the boolean flag `mergeDetails` is true then the following additional metrics are collected:
-
-* `INDEX.merge.major.docs` - meter for the number of documents merged in major merge operations
-* `INDEX.merge.major.deletedDocs` - meter for the number of deleted documents expunged in major merge operations
+* `INDEX.merge.flushes` - Meter for # of flush operations
+* `INDEX.merge.errors` - Counter of errored merge operations
+* `INDEX.merge.minor.mergeTimes` - Timer of minor merge operations
+* `INDEX.merge.major.mergeTimes` - Timer of major merge operations
 
 == Metrics API
 
