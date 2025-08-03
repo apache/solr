@@ -838,7 +838,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
                   latestSchema.getUniqueKeyField().getName(), stored, MAX_SAMPLE_DOCS);
         }
 
-        // store in the blob store so that we always have access to these docs
+        // store in the Filestore so that we always have access to these docs
         configSetHelper.storeSampleDocs(configSet, docs);
       }
     }

@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -489,6 +490,36 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   // I don't like this guy just hanging out here to support retrieveSampleDocs.
   List<SolrInputDocument> docs = Collections.emptyList();
 
+  List<SolrInputDocument> retrieveSampleDocs(final String configSet) throws IOException {
+
+    String path =
+        "blob" + "/" + configSet
+            + "_sample"; //  needs to be made unique to support multiple uploads.  Maybe hash the
+    // docs?
+
+    try {
+      cc.getFileStore()
+          .get(
+              path,
+              entry -> {
+                try (InputStream is = entry.getInputStream()) {
+                  byte[] bytes = is.readAllBytes();
+                  if (bytes.length > 0) {
+                    docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
+                  }
+                  // Do something with content...
+                } catch (IOException e) {
+                  log.error("Error reading file content", e);
+                }
+              },
+              true);
+    } catch (java.io.FileNotFoundException e) {
+      log.warn("File at path {} not found.", path);
+    }
+
+    return docs != null ? docs : Collections.emptyList();
+  }
+
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
     var request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/blob/" + configSet + "_sample");
@@ -512,6 +543,14 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
     storeSampleDocs(configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
+  }
+
+  protected void storeSampleDocs(String blobName, byte[] bytes) throws IOException {
+    String filePath = "blob" + "/" + blobName;
+
+    FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);
+
+    cc.getFileStore().put(new FileStore.FileEntry(ByteBuffer.wrap(bytes), meta, filePath));
   }
 
   /** Gets the stream, reads all the bytes, closes the stream. */

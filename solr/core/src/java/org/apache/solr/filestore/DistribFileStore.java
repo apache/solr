@@ -344,18 +344,19 @@ public class DistribFileStore implements FileStore {
   private void distribute(FileInfo info) {
     try {
       String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
+
       coreContainer
           .getZkController()
           .getZkClient()
-          .makePath(ZK_PACKAGESTORE + dirName, false, true);
-      coreContainer
-          .getZkController()
-          .getZkClient()
-          .create(
+          .makePath(
               ZK_PACKAGESTORE + info.path,
               info.getDetails().getMetaData().sha512.getBytes(UTF_8),
               CreateMode.PERSISTENT,
-              true);
+              null,
+              false,
+              true,
+              0);
+
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
